@@ -101,9 +101,9 @@ const FinancialDelinquencyPage: React.FC = () => {
   const contractStats = useMemo(() => {
     if (!overdueContracts.length) return { total: 0, amount: 0, avgDays: 0, lawsuits: 0 };
     const total = overdueContracts.length;
-    const amount = overdueContracts.reduce((sum, c) => sum + (c.totalOverdue || 0), 0);
-    const avgDays = Math.round(overdueContracts.reduce((sum, c) => sum + (c.daysOverdue || 0), 0) / total);
-    const lawsuits = overdueContracts.filter(c => c.legalCaseId).length;
+    const amount = overdueContracts.reduce((sum, c) => sum + (c.total_overdue || 0), 0);
+    const avgDays = Math.round(overdueContracts.reduce((sum, c) => sum + (c.days_overdue || 0), 0) / total);
+    const lawsuits = overdueContracts.filter(c => c.has_lawsuit).length;
     return { total, amount, avgDays, lawsuits };
   }, [overdueContracts]);
 
@@ -115,7 +115,7 @@ const FinancialDelinquencyPage: React.FC = () => {
     }
     const headers = ['رقم العقد', 'المستأجر', 'السيارة', 'المبلغ المتأخر', 'أيام التأخير'];
     const rows = overdueContracts.map(c => [
-      c.contractNumber, c.customerName, c.vehiclePlate, c.totalOverdue.toString(), c.daysOverdue.toString()
+      c.contract_number, c.customer_name, c.vehicle_info, c.total_overdue.toString(), c.days_overdue.toString()
     ]);
     const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
     const bom = '\uFEFF';
@@ -242,37 +242,37 @@ const FinancialDelinquencyPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {overdueContracts.map((contract, idx) => (
-                        <tr key={contract.contractId || idx} className="border-t border-neutral-100 hover:bg-neutral-50">
+                        <tr key={contract.contract_id || idx} className="border-t border-neutral-100 hover:bg-neutral-50">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-coral-100 rounded-full flex items-center justify-center">
                                 <Users className="w-5 h-5 text-coral-600" />
                               </div>
                               <div>
-                                <p className="font-medium">{contract.customerName}</p>
-                                <p className="text-sm text-neutral-500">{contract.customerPhone}</p>
+                                <p className="font-medium">{contract.customer_name}</p>
+                                <p className="text-sm text-neutral-500">{contract.customer_id_number}</p>
                               </div>
                             </div>
                           </td>
                           <td className="p-4">
                             <Badge variant="outline" className="gap-1">
                               <Car className="w-3 h-3" />
-                              {contract.contractNumber}
+                              {contract.contract_number}
                             </Badge>
                           </td>
                           <td className="p-4">
-                            <p className="text-sm">🚗 {contract.vehiclePlate}</p>
+                            <p className="text-sm">🚗 {contract.vehicle_info}</p>
                           </td>
                           <td className="p-4">
-                            <p className="font-bold text-red-600">{formatCurrency(contract.totalOverdue)}</p>
+                            <p className="font-bold text-red-600">{formatCurrency(contract.total_overdue)}</p>
                           </td>
                           <td className="p-4">
-                            <Badge variant={contract.daysOverdue > 90 ? 'destructive' : contract.daysOverdue > 30 ? 'default' : 'secondary'}>
-                              {contract.daysOverdue} يوم
+                            <Badge variant={contract.days_overdue > 90 ? 'destructive' : contract.days_overdue > 30 ? 'default' : 'secondary'}>
+                              {contract.days_overdue} يوم
                             </Badge>
                           </td>
                           <td className="p-4">
-                            {contract.legalCaseId ? (
+                            {contract.has_lawsuit ? (
                               <Badge className="bg-purple-100 text-purple-700">قضية مرفوعة</Badge>
                             ) : (
                               <Badge className="bg-orange-100 text-orange-700">متأخر</Badge>
@@ -282,7 +282,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                             <Button 
                               size="sm" 
                               className="bg-coral-500 hover:bg-coral-600 gap-2"
-                              onClick={() => navigate(`/legal/lawsuit/prepare/${contract.contractId}`)}
+                              onClick={() => navigate(`/legal/lawsuit/prepare/${contract.contract_id}`)}
                             >
                               <Gavel className="w-4 h-4" />
                               رفع دعوى
