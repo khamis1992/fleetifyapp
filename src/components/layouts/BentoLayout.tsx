@@ -116,7 +116,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
 
         {/* AI Chat Assistant Widget */}
         <Suspense fallback={null}>
-          <AIChatWidget />
+          <AIChatWidget hideFloatingButton={true} />
         </Suspense>
       </div>
     </TourProvider>

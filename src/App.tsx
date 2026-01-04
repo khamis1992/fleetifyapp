@@ -14,6 +14,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { FABProvider } from '@/contexts/FABContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
+import { AIChatProvider } from '@/contexts/AIChatContext';
 
 // UI Components
 import { Toaster } from '@/components/ui/sonner';
@@ -155,7 +156,8 @@ const App: React.FC = () => {
           >
             <TooltipProvider>
               <AuthProvider>
-                <CompanyContextProvider>
+                <AIChatProvider>
+                  <CompanyContextProvider>
                   <FABProvider>
                     <FinanceProvider>
                       <MobileOptimizationProvider>
@@ -196,6 +198,7 @@ const App: React.FC = () => {
                     </FinanceProvider>
                   </FABProvider>
                 </CompanyContextProvider>
+                </AIChatProvider>
               </AuthProvider>
             </TooltipProvider>
           </ThemeProvider>

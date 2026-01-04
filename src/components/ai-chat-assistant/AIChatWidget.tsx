@@ -9,6 +9,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAIChat } from '@/contexts/AIChatContext';
 import {
   MessageCircle,
   X,
@@ -394,8 +395,19 @@ const WelcomeMessage: React.FC<{
 };
 
 // Main Chat Widget
-export const AIChatWidget: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideFloatingButton = false }) => {
+  const externalAIChat = useAIChat();
+  // Use external state if available, otherwise use local state
+  const [localIsOpen, setLocalIsOpen] = useState(false);
+  const isOpen = externalAIChat?.isOpen ?? localIsOpen;
+  const setIsOpen = (value: boolean) => {
+    if (externalAIChat?.openChat) {
+      if (value) externalAIChat.openChat();
+      else externalAIChat.closeChat();
+    } else {
+      setLocalIsOpen(value);
+    }
+  };
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -564,7 +576,7 @@ export const AIChatWidget: React.FC = () => {
     <>
       {/* Floating Button - المساعد الذكي على اليسار */}
       <AnimatePresence>
-        {!isOpen && (
+        {!isOpen && !hideFloatingButton && (
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
