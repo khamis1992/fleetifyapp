@@ -115,13 +115,14 @@ export function useUploadCustomerDocument() {
         documentId = document.id;
 
         // Step 2: Upload file to storage
+        // Using 'documents' bucket which already exists, with customer-documents subfolder
         console.log('[useUploadCustomerDocument] Step 2: Uploading file to storage...');
         const fileExt = data.file.name.split('.').pop();
-        const fileName = `${data.customer_id}/${documentId}.${fileExt}`;
+        const fileName = `customer-documents/${data.customer_id}/${documentId}.${fileExt}`;
         console.log('[useUploadCustomerDocument] File path:', fileName);
         
         const { error: uploadError } = await supabase.storage
-          .from('customer-documents')
+          .from('documents')
           .upload(fileName, data.file, {
             cacheControl: '3600',
             upsert: false
@@ -157,7 +158,7 @@ export function useUploadCustomerDocument() {
           
           // Rollback: Delete both file and database record
           await supabase.storage
-            .from('customer-documents')
+            .from('documents')
             .remove([fileName]);
 
           await supabase
@@ -206,7 +207,7 @@ export function useDeleteCustomerDocument() {
       // Delete file from storage if it exists
       if (document.file_path) {
         const { error: storageError } = await supabase.storage
-          .from('customer-documents')
+          .from('documents')
           .remove([document.file_path]);
 
         if (storageError) {
@@ -246,7 +247,7 @@ export function useDownloadCustomerDocument() {
       }
 
       const { data, error } = await supabase.storage
-        .from('customer-documents')
+        .from('documents')
         .download(document.file_path);
 
       if (error) throw error;
