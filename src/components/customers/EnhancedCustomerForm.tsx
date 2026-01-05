@@ -42,7 +42,8 @@ import {
   Sparkles,
   FileText,
   CalendarIcon,
-  Loader2
+  Loader2,
+  MapPin
 } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -205,6 +206,9 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     passport_number: editingCustomer.passport_number || '',
     license_number: editingCustomer.license_number || '',
     notes: editingCustomer.notes || '',
+    address: editingCustomer.address || '',
+    city: editingCustomer.city || '',
+    country: editingCustomer.country || '',
   } : undefined;
 
   const form = useForm<CustomerFormData>({
@@ -220,6 +224,9 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       passport_number: '',
       license_number: '',
       notes: '',
+      address: '',
+      city: '',
+      country: '',
       ...initialData,
       ...sanitizedEditingCustomer
     },
@@ -679,6 +686,70 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         </div>
       </div>
 
+      {/* Address Section */}
+      <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+        <div className="flex items-center gap-2 mb-4">
+          <MapPin className="h-4 w-4 text-coral-500" />
+          <span className="text-neutral-700 font-medium">معلومات العنوان</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-neutral-600 text-sm">العنوان</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="أدخل العنوان" 
+                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-neutral-600 text-sm">المدينة</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="أدخل المدينة" 
+                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="country"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-neutral-600 text-sm">البلد</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="أدخل البلد" 
+                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
       <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
         <FormField
           control={form.control}
@@ -858,10 +929,10 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         {currentStep === STEPS.length - 1 ? (
           <Button
             type="submit"
-            disabled={createCustomer.isPending || (hasDuplicates && !forceCreate)}
+            disabled={createCustomer.isPending || updateCustomer.isPending || (hasDuplicates && !forceCreate)}
             className="flex items-center gap-2 bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30"
           >
-            {createCustomer.isPending ? (
+            {(createCustomer.isPending || updateCustomer.isPending) ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 جاري الحفظ...
@@ -869,7 +940,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             ) : (
               <>
                 <Send className="h-4 w-4" />
-                حفظ العميل
+                {mode === 'edit' ? 'حفظ التعديلات' : 'حفظ العميل'}
               </>
             )}
           </Button>

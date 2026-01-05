@@ -21,6 +21,10 @@ export const baseCustomerSchema = z.object({
   license_expiry: z.date().optional(),
   credit_limit: z.number().min(0, 'حد الائتمان يجب أن يكون موجباً').optional(),
   notes: z.string().optional(),
+  // Address fields
+  address: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().optional(),
 });
 
 // Customer creation schema with enhanced validation
