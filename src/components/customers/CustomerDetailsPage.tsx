@@ -2673,6 +2673,49 @@ const CustomerDetailsPage = () => {
             />
           </div>
 
+          {/* Upload Animation Overlay */}
+          {isUploading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mb-6 bg-gradient-to-r from-rose-50 to-orange-50 rounded-2xl p-6 border-2 border-dashed border-rose-300"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <motion.div
+                    className="w-16 h-16 rounded-full border-4 border-rose-200"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  >
+                    <div className="absolute top-0 left-0 w-4 h-4 bg-rose-500 rounded-full -translate-x-1 -translate-y-1" />
+                  </motion.div>
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    <Upload className="w-6 h-6 text-rose-500" />
+                  </motion.div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-rose-600">جاري رفع المستند...</p>
+                  <p className="text-sm text-neutral-500">يرجى الانتظار حتى يتم رفع الملف</p>
+                  <motion.div 
+                    className="mt-2 h-2 bg-rose-100 rounded-full overflow-hidden"
+                  >
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-rose-500 to-orange-500"
+                      initial={{ width: "0%" }}
+                      animate={{ width: ["0%", "30%", "60%", "90%", "100%"] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {documents.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {documents.map((doc: CustomerDocument, index: number) => (
