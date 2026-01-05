@@ -1808,6 +1808,8 @@ const CustomerDetailsPage = () => {
 
   const { data: documents = [] } = useCustomerDocuments(customerId);
   const uploadDocument = useUploadCustomerDocument();
+  const deleteDocument = useDeleteCustomerDocument();
+  const downloadDocument = useDownloadCustomerDocument();
 
   // جلب الفواتير بشكل منفصل
   const { data: customerInvoices = [], isLoading: loadingInvoices } = useQuery({
@@ -2690,11 +2692,33 @@ const CustomerDetailsPage = () => {
                     </p>
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-br from-rose-500/90 to-rose-600/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                    <Button size="sm" variant="secondary" className="h-10 w-10 p-0 rounded-xl shadow-lg">
-                      <Eye className="w-5 h-5" />
-                    </Button>
-                    <Button size="sm" variant="secondary" className="h-10 w-10 p-0 rounded-xl shadow-lg">
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      className="h-10 w-10 p-0 rounded-xl shadow-lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadDocument.mutate(doc);
+                      }}
+                      disabled={downloadDocument.isPending}
+                      title="تحميل"
+                    >
                       <Download className="w-5 h-5" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      className="h-10 w-10 p-0 rounded-xl shadow-lg bg-red-100 hover:bg-red-200 text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+                          deleteDocument.mutate(doc.id);
+                        }
+                      }}
+                      disabled={deleteDocument.isPending}
+                      title="حذف"
+                    >
+                      <Trash2 className="w-5 h-5" />
                     </Button>
                   </div>
                 </motion.div>
