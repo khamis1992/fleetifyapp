@@ -65,11 +65,22 @@ export function useUploadCustomerDocument() {
 
   return useMutation({
     mutationFn: async (data: CreateCustomerDocumentData) => {
+      console.log('[useUploadCustomerDocument] Starting upload...', {
+        customer_id: data.customer_id,
+        document_type: data.document_type,
+        file_name: data.file.name,
+        file_size: data.file.size,
+        user_id: user?.id,
+        company_id: companyId
+      });
+
       if (!user) {
+        console.error('[useUploadCustomerDocument] User not authenticated');
         throw new Error('المستخدم غير مصادق');
       }
 
       if (!companyId) {
+        console.error('[useUploadCustomerDocument] Company ID missing');
         throw new Error('معرف الشركة مفقود');
       }
 
@@ -78,6 +89,7 @@ export function useUploadCustomerDocument() {
 
       try {
         // Step 1: Create database record first
+        console.log('[useUploadCustomerDocument] Step 1: Creating database record...');
         const { data: document, error: dbError } = await supabase
           .from('customer_documents')
           .insert({
@@ -95,15 +107,18 @@ export function useUploadCustomerDocument() {
           .single();
 
         if (dbError) {
-          console.error('Database creation failed:', dbError);
+          console.error('[useUploadCustomerDocument] Database creation failed:', dbError);
           throw new Error(`فشل إنشاء سجل قاعدة البيانات: ${dbError.message}`);
         }
 
+        console.log('[useUploadCustomerDocument] Database record created:', document.id);
         documentId = document.id;
 
         // Step 2: Upload file to storage
+        console.log('[useUploadCustomerDocument] Step 2: Uploading file to storage...');
         const fileExt = data.file.name.split('.').pop();
         const fileName = `${data.customer_id}/${documentId}.${fileExt}`;
+        console.log('[useUploadCustomerDocument] File path:', fileName);
         
         const { error: uploadError } = await supabase.storage
           .from('customer-documents')
@@ -113,7 +128,7 @@ export function useUploadCustomerDocument() {
           });
 
         if (uploadError) {
-          console.error('File upload failed:', uploadError);
+          console.error('[useUploadCustomerDocument] File upload failed:', uploadError);
           
           // Rollback: Delete the database record
           await supabase
@@ -125,8 +140,10 @@ export function useUploadCustomerDocument() {
         }
 
         filePath = fileName;
+        console.log('[useUploadCustomerDocument] File uploaded successfully');
 
         // Step 3: Update database record with file path
+        console.log('[useUploadCustomerDocument] Step 3: Updating database with file path...');
         const { error: updateError } = await supabase
           .from('customer_documents')
           .update({ 
@@ -136,7 +153,7 @@ export function useUploadCustomerDocument() {
           .eq('id', documentId);
 
         if (updateError) {
-          console.error('Database update failed:', updateError);
+          console.error('[useUploadCustomerDocument] Database update failed:', updateError);
           
           // Rollback: Delete both file and database record
           await supabase.storage
@@ -151,9 +168,10 @@ export function useUploadCustomerDocument() {
           throw new Error(`فشل تحديث قاعدة البيانات: ${updateError.message}`);
         }
 
+        console.log('[useUploadCustomerDocument] Upload complete!', document);
         return document;
       } catch (error) {
-        console.error('Upload customer document error:', error);
+        console.error('[useUploadCustomerDocument] Upload customer document error:', error);
         throw error;
       }
     },
