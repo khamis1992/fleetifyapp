@@ -193,6 +193,20 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     sendWelcomeEmail: false
   });
 
+  // Sanitize editingCustomer to convert null values to empty strings
+  const sanitizedEditingCustomer = editingCustomer ? {
+    ...editingCustomer,
+    first_name: editingCustomer.first_name || '',
+    last_name: editingCustomer.last_name || '',
+    company_name: editingCustomer.company_name || '',
+    phone: editingCustomer.phone || '',
+    email: editingCustomer.email || '',
+    national_id: editingCustomer.national_id || '',
+    passport_number: editingCustomer.passport_number || '',
+    license_number: editingCustomer.license_number || '',
+    notes: editingCustomer.notes || '',
+  } : undefined;
+
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -207,7 +221,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       license_number: '',
       notes: '',
       ...initialData,
-      ...editingCustomer
+      ...sanitizedEditingCustomer
     },
   });
 
