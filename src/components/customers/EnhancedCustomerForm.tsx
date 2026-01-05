@@ -187,7 +187,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   const [hasDuplicates, setHasDuplicates] = React.useState(false);
   const [forceCreate, setForceCreate] = React.useState(false);
 
-  const { createCustomer } = useCustomerOperations({
+  const { createCustomer, updateCustomer } = useCustomerOperations({
     enableDuplicateCheck: showDuplicateCheck,
     autoCreateAccounts: context === 'standalone',
     sendWelcomeEmail: false
@@ -245,21 +245,36 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
-      // Check for duplicates
-      if (hasDuplicates && !forceCreate && showDuplicateCheck) {
+      // Check for duplicates (only for create mode)
+      if (mode === 'create' && hasDuplicates && !forceCreate && showDuplicateCheck) {
         toast.error('يوجد عملاء مشابهين في النظام. يرجى مراجعة التحذيرات.');
         return;
       }
 
-      const result = await createCustomer.mutateAsync({
-        ...data,
-        force_create: forceCreate
-      });
-
-      form.reset();
-      setCurrentStep(0);
-      setForceCreate(false);
-      setHasDuplicates(false);
+      let result;
+      
+      if (mode === 'edit' && editingCustomer?.id) {
+        // Update existing customer
+        result = await updateCustomer.mutateAsync({
+          id: editingCustomer.id,
+          ...data,
+          // Keep empty strings for optional fields (schema expects string, not null)
+          email: data.email || undefined,
+          notes: data.notes || undefined,
+          passport_number: data.passport_number || undefined,
+        });
+      } else {
+        // Create new customer
+        result = await createCustomer.mutateAsync({
+          ...data,
+          force_create: forceCreate
+        });
+        
+        form.reset();
+        setCurrentStep(0);
+        setForceCreate(false);
+        setHasDuplicates(false);
+      }
       
       if (onSuccess) {
         onSuccess(result);
