@@ -7,19 +7,13 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Send, 
-  FileText, 
   Printer,
   Sparkles,
   Loader2,
   RefreshCw,
   Copy,
   CheckCircle2,
-  Building2,
-  Car,
-  User,
-  FileEdit,
   Bot,
-  ChevronLeft,
   Eye
 } from 'lucide-react';
 
@@ -32,7 +26,6 @@ import { cn } from '@/lib/utils';
 
 import {
   DOCUMENT_TEMPLATES,
-  DOCUMENT_CATEGORIES,
   generateOfficialDocument,
   DocumentTemplate,
   Question,
@@ -41,22 +34,12 @@ import {
 // أنواع الرسائل
 interface ChatMessage {
   id: string;
-  type: 'bot' | 'user' | 'system';
+  type: 'bot' | 'user';
   content: string;
   timestamp: Date;
   questionId?: string;
   options?: string[];
 }
-
-// خطوات المحادثة
-type ConversationStep = 'welcome' | 'category' | 'template' | 'questions' | 'generating' | 'preview';
-
-const categoryIcons: Record<string, any> = {
-  insurance: Building2,
-  traffic: Car,
-  customer: User,
-  general: FileEdit,
-};
 
 export default function SmartDocumentGenerator() {
   const { toast } = useToast();
@@ -64,30 +47,39 @@ export default function SmartDocumentGenerator() {
   const inputRef = useRef<HTMLInputElement>(null);
   
   // الحالات
-  const [step, setStep] = useState<ConversationStep>('welcome');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [generatedDocument, setGeneratedDocument] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
 
   // التمرير التلقائي للرسائل
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // رسالة الترحيب
+  // رسالة الترحيب - البدء مباشرة بالكتاب الرسمي العام
   useEffect(() => {
     if (messages.length === 0) {
-      addBotMessage(
-        'مرحباً بك في مساعد الكتب الرسمية الذكي! 👋\n\nأنا هنا لمساعدتك في إنشاء الكتب الرسمية بسهولة وسرعة.\n\nاختر نوع الكتاب الذي تريد إنشاءه:'
-      );
-      setStep('category');
+      const generalTemplate = DOCUMENT_TEMPLATES.find(t => t.id === 'general-official');
+      if (generalTemplate) {
+        setSelectedTemplate(generalTemplate);
+        setCurrentQuestionIndex(0);
+        setAnswers({});
+        
+        addBotMessage(
+          'مرحباً بك في مساعد الكتب الرسمية الذكي! 👋\n\nسأساعدك في إنشاء كتاب رسمي.'
+        );
+        
+        setTimeout(() => {
+          askQuestion(generalTemplate.questions[0]);
+        }, 800);
+      }
     }
   }, []);
 
@@ -113,50 +105,6 @@ export default function SmartDocumentGenerator() {
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, message]);
-  };
-
-  // اختيار الفئة
-  const handleCategorySelect = (categoryId: string) => {
-    const category = DOCUMENT_CATEGORIES.find(c => c.id === categoryId);
-    if (!category) return;
-
-    addUserMessage(`${category.icon} ${category.name}`);
-    setSelectedCategory(categoryId);
-    
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const templates = DOCUMENT_TEMPLATES.filter(t => t.category === categoryId);
-      const templatesList = templates.map(t => `• ${t.name}`).join('\n');
-      addBotMessage(
-        `ممتاز! اخترت قسم ${category.name}.\n\nالكتب المتاحة:\n${templatesList}\n\nاختر الكتاب الذي تريد إنشاءه:`
-      );
-      setStep('template');
-    }, 500);
-  };
-
-  // اختيار القالب
-  const handleTemplateSelect = (templateId: string) => {
-    const template = DOCUMENT_TEMPLATES.find(t => t.id === templateId);
-    if (!template) return;
-
-    addUserMessage(template.name);
-    setSelectedTemplate(template);
-    setCurrentQuestionIndex(0);
-    setAnswers({});
-    
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      addBotMessage(
-        `رائع! سأساعدك في إنشاء "${template.name}".\n\nسأطرح عليك بعض الأسئلة لجمع المعلومات المطلوبة. 📝`
-      );
-      
-      setTimeout(() => {
-        askQuestion(template.questions[0]);
-        setStep('questions');
-      }, 800);
-    }, 500);
   };
 
   // طرح سؤال
@@ -203,11 +151,7 @@ export default function SmartDocumentGenerator() {
   // إرسال الرسالة
   const handleSend = () => {
     if (!inputValue.trim()) return;
-    
-    if (step === 'questions') {
-      handleAnswer(inputValue.trim());
-    }
-    
+    handleAnswer(inputValue.trim());
     setInputValue('');
   };
 
@@ -215,18 +159,16 @@ export default function SmartDocumentGenerator() {
   const generateDocument = async () => {
     if (!selectedTemplate) return;
     
-    setStep('generating');
     setIsGenerating(true);
-    
-    addBotMessage('جاري إنشاء الكتاب... ⏳\n\nيرجى الانتظار قليلاً بينما أقوم بصياغة الكتاب لك.');
+    addBotMessage('جاري إنشاء الكتاب... ⏳');
     
     try {
       const result = await generateOfficialDocument(selectedTemplate, answers);
       
       if (result.success) {
         setGeneratedDocument(result.content);
-        setStep('preview');
-        addBotMessage('✅ تم إنشاء الكتاب بنجاح!\n\nاستخدم الأزرار أدناه لعرض أو طباعة الكتاب.');
+        setIsPreview(true);
+        addBotMessage('✅ تم إنشاء الكتاب بنجاح!');
       } else {
         throw new Error(result.error);
       }
@@ -284,12 +226,11 @@ export default function SmartDocumentGenerator() {
   // إعادة البدء
   const handleRestart = () => {
     setMessages([]);
-    setStep('welcome');
-    setSelectedCategory(null);
     setSelectedTemplate(null);
     setCurrentQuestionIndex(0);
     setAnswers({});
     setGeneratedDocument(null);
+    setIsPreview(false);
   };
 
   return (
@@ -315,7 +256,7 @@ export default function SmartDocumentGenerator() {
                     إنشاء الكتب الرسمية بالذكاء الاصطناعي
                   </p>
                 </div>
-                {step !== 'welcome' && step !== 'category' && (
+                {messages.length > 0 && (
                   <Button
                     onClick={handleRestart}
                     variant="outline"
@@ -332,7 +273,7 @@ export default function SmartDocumentGenerator() {
         </motion.div>
 
         {/* Progress Bar */}
-        {selectedTemplate && step === 'questions' && (
+        {selectedTemplate && !isPreview && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -345,7 +286,7 @@ export default function SmartDocumentGenerator() {
                     {selectedTemplate.name}
                   </span>
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
-                    {currentQuestionIndex + 1} / {selectedTemplate.questions.length}
+                    {Math.min(currentQuestionIndex + 1, selectedTemplate.questions.length)} / {selectedTemplate.questions.length}
                   </Badge>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
@@ -469,80 +410,8 @@ export default function SmartDocumentGenerator() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Category Selection */}
-            {step === 'category' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-5 bg-muted/30 border-t border-border"
-              >
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {DOCUMENT_CATEGORIES.map((category) => {
-                    const Icon = categoryIcons[category.id] || FileText;
-                    return (
-                      <motion.button
-                        key={category.id}
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleCategorySelect(category.id)}
-                        className="group p-4 bg-card hover:bg-primary/5 border border-border hover:border-primary/30 rounded-xl transition-all duration-200 shadow-subtle hover:shadow-card"
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <span className="text-3xl group-hover:scale-110 transition-transform duration-200">
-                            {category.icon}
-                          </span>
-                          <span className="font-medium text-foreground text-sm">
-                            {category.name}
-                          </span>
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Template Selection */}
-            {step === 'template' && selectedCategory && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-5 bg-muted/30 border-t border-border"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {DOCUMENT_TEMPLATES
-                    .filter(t => t.category === selectedCategory)
-                    .map((template, index) => (
-                      <motion.button
-                        key={template.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: 1.01, x: 4 }}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => handleTemplateSelect(template.id)}
-                        className="group flex items-center gap-3 p-4 bg-card hover:bg-primary/5 border border-border hover:border-primary/30 rounded-xl text-right transition-all duration-200 shadow-subtle hover:shadow-card"
-                      >
-                        <div className="p-2 bg-primary/10 group-hover:bg-primary/20 rounded-lg transition-colors">
-                          <FileText className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-medium text-foreground block">
-                            {template.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {template.description}
-                          </span>
-                        </div>
-                        <ChevronLeft className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </motion.button>
-                    ))}
-                </div>
-              </motion.div>
-            )}
-
             {/* Input Area */}
-            {step === 'questions' && (
+            {!isPreview && !isGenerating && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -569,7 +438,7 @@ export default function SmartDocumentGenerator() {
             )}
 
             {/* Actions after generation */}
-            {step === 'preview' && (
+            {isPreview && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
