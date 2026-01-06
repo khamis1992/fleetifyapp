@@ -108,7 +108,7 @@ export default function Onboarding() {
   };
 
   const skipToRegister = () => {
-    navigate('/auth/register');
+    navigate('/auth');
   };
 
   const toggleVehicleType = (type: string) => {

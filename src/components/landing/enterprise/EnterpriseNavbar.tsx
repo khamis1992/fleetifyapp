@@ -65,7 +65,7 @@ export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
             className="hidden lg:flex items-center gap-4"
           >
             <button
-              onClick={() => navigate('/auth/login')}
+              onClick={() => navigate('/auth')}
               className="font-semibold text-white/90 hover:text-teal-400 transition-colors"
             >
               تسجيل الدخول

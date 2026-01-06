@@ -40,14 +40,14 @@ export function EnterpriseFeatures() {
             className="flex flex-wrap justify-center gap-4"
           >
             <button
-              onClick={() => navigate('/auth/register')}
+              onClick={() => navigate('/auth')}
               className="group px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-teal-600 transition-all flex items-center gap-2"
             >
               ابدأ الفترة المجانية
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             </button>
             <button
-              onClick={() => navigate('/auth/login')}
+              onClick={() => navigate('/auth')}
               className="px-8 py-4 bg-slate-800 text-white rounded-xl font-bold text-lg border border-slate-700 hover:border-teal-500/50 transition-all flex items-center gap-2"
             >
               <Play className="w-5 h-5 text-teal-400" />

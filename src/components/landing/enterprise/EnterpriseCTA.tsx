@@ -58,7 +58,7 @@ export function EnterpriseCTA() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <motion.button
-              onClick={() => navigate('/auth/register')}
+              onClick={() => navigate('/auth')}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="group px-10 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-semibold text-lg hover:from-amber-600 hover:to-amber-700 transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-3"
@@ -68,7 +68,7 @@ export function EnterpriseCTA() {
             </motion.button>
 
             <motion.button
-              onClick={() => navigate('/auth/login')}
+              onClick={() => navigate('/auth')}
               whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.1)' }}
               whileTap={{ scale: 0.95 }}
               className="px-10 py-4 bg-white/10 text-white rounded-xl font-semibold text-lg border border-white/20 hover:bg-white/20 transition-all"
