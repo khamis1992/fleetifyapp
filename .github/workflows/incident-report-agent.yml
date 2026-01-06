@@ -11,6 +11,10 @@ on:
     - cron: '0 8 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+
 env:
   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
