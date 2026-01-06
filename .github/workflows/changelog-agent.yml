@@ -11,6 +11,9 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: write
+
 jobs:
   generate-changelog:
     name: 📋 Generate ChangeLog
