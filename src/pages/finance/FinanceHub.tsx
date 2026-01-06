@@ -125,10 +125,10 @@ const StatCard: React.FC<StatCardProps> = ({
       whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer h-full border border-slate-100 group"
+      className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all cursor-pointer h-full group"
     >
       <div className="flex items-start justify-between mb-4">
-        <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg', styles.iconBg)}>
+        <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20', styles.iconBg)}>
           <Icon className="w-6 h-6 text-white" />
         </div>
         {change !== undefined && (
@@ -438,12 +438,12 @@ const FinanceHubRedesigned: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
       <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
         {/* Hero Header - Professional SaaS Style */}
         <motion.div
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 to-rose-600 p-8 text-white shadow-2xl"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 to-teal-600 p-8 text-white shadow-2xl"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -587,14 +587,14 @@ const FinanceHubRedesigned: React.FC = () => {
           {/* Treasury Summary - Full Width */}
           <div className="col-span-12">
             <motion.div
-              className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200"
+              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
                     <Landmark className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -602,7 +602,7 @@ const FinanceHubRedesigned: React.FC = () => {
                     <p className="text-sm text-slate-500">الإيداعات والسحوبات لهذا الشهر</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/finance/treasury')} className="hover:bg-emerald-50 border-slate-200">
+                <Button variant="outline" size="sm" onClick={() => navigate('/finance/treasury')} className="hover:bg-teal-50 border-slate-200">
                   عرض التفاصيل
                   <ChevronRight className="w-4 h-4 mr-1" />
                 </Button>
@@ -689,7 +689,7 @@ const FinanceHubRedesigned: React.FC = () => {
               transition={{ delay: 0.3 }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-teal-500/20">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -787,14 +787,14 @@ const FinanceHubRedesigned: React.FC = () => {
 
             {/* Categorized Modules */}
             <motion.div
-              className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200"
+              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
                     <Package className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -802,7 +802,7 @@ const FinanceHubRedesigned: React.FC = () => {
                     <p className="text-sm text-slate-500">مرتبة حسب الفئة</p>
                   </div>
                 </div>
-                <Badge className="bg-gradient-to-r from-rose-500 to-rose-600 text-white text-xs px-4 py-1.5">
+                <Badge className="bg-gradient-to-r from-teal-500 to-teal-600 text-white text-xs px-4 py-1.5">
                   {modules.length} قسم
                 </Badge>
               </div>
@@ -811,7 +811,7 @@ const FinanceHubRedesigned: React.FC = () => {
                 {/* Core Operations */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-rose-500" />
+                    <div className="w-2 h-2 rounded-full bg-teal-500" />
                     <h4 className="text-sm font-semibold text-slate-700">العمليات الأساسية</h4>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -894,7 +894,7 @@ const FinanceHubRedesigned: React.FC = () => {
           {/* Vehicle Installments Summary */}
           <div className="col-span-12 lg:col-span-4">
             <motion.div
-              className="rounded-2xl p-6 shadow-lg h-full text-white relative overflow-hidden border border-sky-200/30"
+              className="rounded-3xl p-6 shadow-lg h-full text-white relative overflow-hidden border border-sky-200/30"
               style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)' }}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -958,7 +958,7 @@ const FinanceHubRedesigned: React.FC = () => {
           {/* Invoice Status */}
           <div className="col-span-12 lg:col-span-6">
             <motion.div
-              className="bg-white rounded-2xl p-6 shadow-sm h-full border border-slate-200"
+              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all h-full"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}

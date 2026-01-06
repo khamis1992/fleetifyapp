@@ -115,11 +115,13 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
   }
 
   return (
-    <Card className={cn(compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <StickyNote className="h-5 w-5 text-coral-500" />
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
+              <StickyNote className="h-5 w-5 text-white" />
+            </div>
             ملاحظات سريعة
           </CardTitle>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -132,7 +134,9 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
             <DialogContent dir="rtl" className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <StickyNote className="h-5 w-5 text-coral-500" />
+                  <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
+                    <StickyNote className="h-5 w-5 text-white" />
+                  </div>
                   ملاحظة جديدة
                 </DialogTitle>
               </DialogHeader>
@@ -203,7 +207,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   <Button
                     onClick={handleAddNote}
                     disabled={!newNote.content.trim() || createNote.isPending}
-                    className="bg-coral-500 hover:bg-coral-600"
+                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
                   >
                     {createNote.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -219,7 +223,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedNotes.length === 0 ? (
-          <div className="text-center py-8 text-neutral-400">
+          <div className="text-center py-8 text-gray-400">
             <StickyNote className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>لا توجد ملاحظات</p>
             <p className="text-sm">سجّل أفكارك وملاحظاتك</p>
@@ -237,7 +241,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   className={cn(
-                    'relative p-4 rounded-lg border shadow-sm',
+                    'relative p-4 rounded-2xl border shadow-sm hover:shadow-xl hover:shadow-teal-500/10 transition-all',
                     note.is_archived && 'opacity-60'
                   )}
                   style={{ backgroundColor: note.color }}
@@ -245,7 +249,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   {/* Pin indicator */}
                   {note.is_pinned && (
                     <div className="absolute top-2 left-2">
-                      <Pin className="h-4 w-4 text-coral-500 transform -rotate-45" />
+                      <Pin className="h-4 w-4 text-teal-500 transform -rotate-45" />
                     </div>
                   )}
 
@@ -319,12 +323,12 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   </div>
 
                   {/* Content */}
-                  <p className="text-sm text-neutral-800 whitespace-pre-wrap mb-3 line-clamp-4">
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap mb-3 line-clamp-4">
                     {note.content}
                   </p>
 
                   {/* Footer */}
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs text-gray-500">
                     {format(new Date(note.created_at), 'd MMM HH:mm', { locale: ar })}
                   </div>
                 </motion.div>
@@ -334,7 +338,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
         )}
 
         {limit && notes.length > limit && (
-          <p className="text-center text-sm text-neutral-500 pt-4">
+          <p className="text-center text-sm text-gray-500 pt-4">
             +{notes.length - limit} ملاحظات أخرى
           </p>
         )}

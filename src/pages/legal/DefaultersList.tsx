@@ -101,84 +101,91 @@ export const DefaultersList: React.FC = () => {
   const eligibleForLegalAction = lateCustomers?.filter(c => c.days_overdue >= 30).length || 0;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Page Header */}
-      <Card className="bg-gradient-to-br from-destructive/5 via-destructive/3 to-background border-destructive/20">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-destructive/10">
-                <AlertTriangle className="h-8 w-8 text-destructive" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-2xl">قائمة المتأخرين عن الدفع</CardTitle>
-                  <HelpIcon
-                    title={financialHelpContent.defaultersList.title}
-                    content={financialHelpContent.defaultersList.content}
-                    examples={financialHelpContent.defaultersList.examples}
-                    size="md"
-                  />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+      <div className="container mx-auto py-6 space-y-6">
+        {/* Page Header */}
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+                  <AlertTriangle className="h-8 w-8 text-white" />
                 </div>
-                <CardDescription className="text-base mt-1">
-                  العملاء المتأخرون عن سداد الإيجار الشهري
-                </CardDescription>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-2xl text-gray-900">قائمة المتأخرين عن الدفع</CardTitle>
+                    <HelpIcon
+                      title={financialHelpContent.defaultersList.title}
+                      content={financialHelpContent.defaultersList.content}
+                      examples={financialHelpContent.defaultersList.examples}
+                      size="md"
+                    />
+                  </div>
+                  <CardDescription className="text-base mt-1 text-gray-600">
+                    العملاء المتأخرون عن سداد الإيجار الشهري
+                  </CardDescription>
+                </div>
               </div>
+              {selectedCustomers.length > 0 && (
+                <Button
+                  onClick={handleCreateLegalCases}
+                  disabled={autoCreateCases.isPending}
+                  className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-xl shadow-lg shadow-teal-500/20"
+                >
+                  <Scale className="h-4 w-4 mr-2" />
+                  إنشاء قضايا قانونية ({selectedCustomers.length})
+                </Button>
+              )}
             </div>
-            {selectedCustomers.length > 0 && (
-              <Button 
-                onClick={handleCreateLegalCases}
-                disabled={autoCreateCases.isPending}
-                variant="destructive"
-              >
-                <Scale className="h-4 w-4 mr-2" />
-                إنشاء قضايا قانونية ({selectedCustomers.length})
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المتأخرين</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <CardTitle className="text-sm font-medium text-gray-700">إجمالي المتأخرين</CardTitle>
+            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <AlertTriangle className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lateCustomers?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-gray-900">{lateCustomers?.length || 0}</div>
+            <p className="text-xs text-gray-500">
               {eligibleForLegalAction} مؤهل للإجراء القانوني
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المبالغ المستحقة</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-700">إجمالي المبالغ المستحقة</CardTitle>
+            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <DollarSign className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalOutstanding)}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-gray-900">{formatCurrency(totalOutstanding)}</div>
+            <p className="text-xs text-gray-500">
               متأخرات غير مدفوعة
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط التأخير</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-700">متوسط التأخير</CardTitle>
+            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <Calendar className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900">
               {lateCustomers && lateCustomers.length > 0
                 ? Math.round(lateCustomers.reduce((sum, c) => sum + c.days_overdue, 0) / lateCustomers.length)
                 : 0} يوم
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500">
               متوسط أيام التأخير
             </p>
           </CardContent>
@@ -186,11 +193,11 @@ export const DefaultersList: React.FC = () => {
       </div>
 
       {/* Defaulters Table */}
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>تفاصيل المتأخرين</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleSelectAll}>
+            <CardTitle className="text-gray-900">تفاصيل المتأخرين</CardTitle>
+            <Button variant="outline" size="sm" onClick={handleSelectAll} className="border-gray-200/50 hover:border-teal-500/30 rounded-xl">
               {selectedCustomers.length === lateCustomers?.length ? 'إلغاء التحديد' : 'تحديد الكل'}
             </Button>
           </div>
@@ -300,14 +307,15 @@ export const DefaultersList: React.FC = () => {
 
       {/* Info Alert */}
       {lateCustomers && lateCustomers.length > 0 && (
-        <Alert>
-          <FileText className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
+          <FileText className="h-4 w-4 text-teal-600" />
+          <AlertDescription className="text-gray-700">
             <strong>ملاحظة:</strong> يتم إدراج العملاء تلقائياً في هذه القائمة إذا لم يدفعوا حتى يوم 10 من كل شهر.
             العملاء الذين تجاوزت متأخراتهم 30 يوماً مؤهلون لإنشاء قضايا قانونية تلقائياً.
           </AlertDescription>
         </Alert>
       )}
+      </div>
     </div>
   );
 };

@@ -95,26 +95,26 @@ const FinancialDelinquencyPage: React.FC = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 font-sans text-right pb-10" dir="rtl">
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 font-sans text-right pb-10" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8">
         {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8"
+          className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 p-8 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl blur-xl opacity-20" />
-                <div className="relative bg-gradient-to-br from-rose-500 to-rose-600 p-4 rounded-2xl shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl blur-xl opacity-20" />
+                <div className="relative bg-gradient-to-br from-teal-500 to-teal-600 p-4 rounded-2xl shadow-lg shadow-teal-500/20">
                   <Gavel className="text-white" size={28} />
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">إدارة المتعثرات المالية</h1>
-                <p className="text-base text-slate-500 mt-1.5">
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">إدارة المتعثرات المالية</h1>
+                <p className="text-base text-gray-600 mt-1.5">
                   متابعة العملاء والعقود المتأخرة عن السداد
                 </p>
               </div>
@@ -124,14 +124,14 @@ const FinancialDelinquencyPage: React.FC = () => {
                 variant="outline"
                 onClick={() => refreshDelinquentCustomers.mutate()}
                 disabled={refreshDelinquentCustomers.isPending}
-                className="gap-2 border-slate-200 hover:bg-slate-50 hover:text-slate-700 rounded-xl transition-all"
+                className="gap-2 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/30 rounded-xl transition-all"
               >
                 <RefreshCw className={cn("h-4 w-4", refreshDelinquentCustomers.isPending && "animate-spin")} />
                 تحديث
               </Button>
               <Button
                 variant="outline"
-                className="gap-2 border-slate-200 hover:bg-slate-50 hover:text-slate-700 rounded-xl transition-all"
+                className="gap-2 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/30 rounded-xl transition-all"
               >
                 <Printer className="h-4 w-4" />
                 طباعة
@@ -139,7 +139,7 @@ const FinancialDelinquencyPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={handleExportContracts}
-                className="gap-2 border-slate-200 hover:bg-slate-50 hover:text-slate-700 rounded-xl transition-all"
+                className="gap-2 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/30 rounded-xl transition-all"
               >
                 <Download className="h-4 w-4" />
                 تصدير
@@ -155,17 +155,17 @@ const FinancialDelinquencyPage: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'customers' | 'contracts')} className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200">
+            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 bg-white/80 backdrop-blur-xl p-1.5 rounded-2xl border border-gray-200/50">
               <TabsTrigger
                 value="customers"
-                className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl transition-all"
+                className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl transition-all hover:bg-teal-50/30"
               >
                 <Users className="w-4 h-4" />
                 حسب العميل
               </TabsTrigger>
               <TabsTrigger
                 value="contracts"
-                className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl transition-all"
+                className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-xl transition-all hover:bg-teal-50/30"
               >
                 <FileText className="w-4 h-4" />
                 حسب العقد
@@ -181,8 +181,8 @@ const FinancialDelinquencyPage: React.FC = () => {
             <TabsContent value="contracts" className="mt-0">
               <div className="space-y-4">
                 {/* Table Header Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                  <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-6 shadow-sm">
+                  <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     <div className="col-span-3">المستأجر</div>
                     <div className="col-span-2">رقم العقد</div>
                     <div className="col-span-2">السيارة</div>
@@ -213,11 +213,11 @@ const FinancialDelinquencyPage: React.FC = () => {
                       exit={{ opacity: 0, scale: 0.95 }}
                       className="flex flex-col items-center justify-center h-80 text-center"
                     >
-                      <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-6 shadow-lg">
-                        <FileText className="w-12 h-12 text-emerald-500" />
+                      <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center mb-6 shadow-lg shadow-teal-500/20">
+                        <FileText className="w-12 h-12 text-teal-500" />
                       </div>
-                      <p className="text-slate-800 text-2xl font-bold mb-3">ممتاز! لا توجد عقود متعثرة</p>
-                      <p className="text-slate-500">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
+                      <p className="text-gray-900 text-2xl font-bold mb-3">ممتاز! لا توجد عقود متعثرة</p>
+                      <p className="text-gray-500">جميع العملاء يسددون التزاماتهم في الوقت المحدد</p>
                     </motion.div>
                   ) : (
                     overdueContracts.map((contract, idx) => (
@@ -229,12 +229,12 @@ const FinancialDelinquencyPage: React.FC = () => {
                         exit={{ opacity: 0, scale: 0.98 }}
                         transition={{ duration: 0.3, delay: idx * 0.05 }}
                         className={cn(
-                          "group bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-xl",
+                          "group bg-white/80 backdrop-blur-xl rounded-3xl border-2 transition-all duration-300 hover:shadow-xl",
                           contract.days_overdue > 90
                             ? "border-red-200 hover:border-red-300 hover:bg-red-50/30"
                             : contract.days_overdue > 60
                               ? "border-amber-200 hover:border-amber-300 hover:bg-amber-50/30"
-                              : "border-slate-200 hover:border-rose-200 hover:bg-rose-50/20"
+                              : "border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/20"
                         )}
                       >
                         <div className="p-6">
@@ -248,7 +248,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                                     ? "bg-gradient-to-br from-red-100 to-red-200"
                                     : contract.days_overdue > 60
                                       ? "bg-gradient-to-br from-amber-100 to-amber-200"
-                                      : "bg-gradient-to-br from-slate-100 to-slate-200 group-hover:from-rose-100 group-hover:to-rose-200"
+                                      : "bg-gradient-to-br from-teal-50 to-teal-100 group-hover:from-teal-100 group-hover:to-teal-200"
                                 )}>
                                   <Users className={cn(
                                     "w-7 h-7 transition-colors",
@@ -256,27 +256,27 @@ const FinancialDelinquencyPage: React.FC = () => {
                                       ? "text-red-600"
                                       : contract.days_overdue > 60
                                         ? "text-amber-600"
-                                        : "text-slate-600 group-hover:text-rose-600"
+                                        : "text-teal-600 group-hover:text-teal-700"
                                   )} />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-bold text-slate-900 text-base truncate">{contract.customer_name}</p>
-                                  <p className="text-sm text-slate-400 mt-0.5 truncate">{contract.customer_id_number}</p>
+                                  <p className="font-bold text-gray-900 text-base truncate">{contract.customer_name}</p>
+                                  <p className="text-sm text-gray-400 mt-0.5 truncate">{contract.customer_id_number}</p>
                                 </div>
                               </div>
                             </div>
 
                             {/* Contract Number */}
                             <div className="col-span-2">
-                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 group-hover:bg-slate-200 transition-colors">
-                                <Car className="w-4 h-4 text-slate-500" />
-                                <span className="text-sm font-semibold text-slate-700">{contract.contract_number}</span>
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 group-hover:bg-teal-50/50 transition-colors">
+                                <Car className="w-4 h-4 text-gray-500" />
+                                <span className="text-sm font-semibold text-gray-700">{contract.contract_number}</span>
                               </div>
                             </div>
 
                             {/* Vehicle */}
                             <div className="col-span-2">
-                              <div className="flex items-center gap-2 text-slate-600">
+                              <div className="flex items-center gap-2 text-gray-600">
                                 <span className="text-2xl">🚗</span>
                                 <span className="text-sm font-medium">{contract.vehicle_info}</span>
                               </div>
@@ -290,7 +290,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                                   ? "bg-red-100 text-red-700"
                                   : contract.days_overdue > 60
                                     ? "bg-amber-100 text-amber-700"
-                                    : "bg-rose-50 text-rose-700"
+                                    : "bg-teal-50 text-teal-700"
                               )}>
                                 {formatCurrency(contract.total_overdue)}
                               </div>
@@ -304,7 +304,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                                   ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
                                   : contract.days_overdue > 60
                                     ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30"
-                                    : "bg-slate-800 text-white"
+                                    : "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30"
                               )}>
                                 {contract.days_overdue}
                               </div>
@@ -333,8 +333,8 @@ const FinancialDelinquencyPage: React.FC = () => {
                                 className={cn(
                                   "gap-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105",
                                   contract.has_lawsuit
-                                    ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                    : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white"
+                                    ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    : "bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-teal-500/20"
                                 )}
                               >
                                 <Gavel className="w-4 h-4" />
@@ -344,12 +344,12 @@ const FinancialDelinquencyPage: React.FC = () => {
                           </div>
 
                           {/* Progress bar for days overdue */}
-                          <div className="mt-4 pt-4 border-t border-slate-100">
-                            <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
                               <span>مستوى التأخير</span>
                               <span>{contract.days_overdue} يوم</span>
                             </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${Math.min(contract.days_overdue / 1.5, 100)}%` }}
@@ -360,7 +360,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                                     ? "bg-gradient-to-r from-red-500 to-red-400"
                                     : contract.days_overdue > 60
                                       ? "bg-gradient-to-r from-amber-500 to-amber-400"
-                                      : "bg-gradient-to-r from-rose-500 to-rose-400"
+                                      : "bg-gradient-to-r from-teal-500 to-teal-400"
                                 )}
                               />
                             </div>

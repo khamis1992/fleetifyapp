@@ -88,19 +88,19 @@ const ProStatCard: React.FC<ProStatCardProps> = ({ value, label, description, ic
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    className="group relative overflow-hidden rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
+    className="relative bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all duration-300"
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <p className="text-3xl font-semibold tracking-tight">{value}</p>
-        <p className="text-sm font-medium text-neutral-900 mt-1">{label}</p>
-        <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
+        <p className="text-3xl font-semibold tracking-tight text-gray-900">{value}</p>
+        <p className="text-sm font-medium text-gray-900 mt-1">{label}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
-      <div className="p-2 rounded-lg bg-neutral-50">
-        <Icon className="w-4 h-4 text-neutral-600" />
+      <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+        <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
       </div>
     </div>
-    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-teal-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
   </motion.div>
 );
 
@@ -169,7 +169,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative rounded-xl border bg-white p-5 shadow-sm hover:shadow-md hover:border-neutral-300 transition-all cursor-pointer"
+      className="group relative bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all duration-300 cursor-pointer"
       onClick={onView}
     >
       {/* VIP Badge */}
@@ -419,42 +419,47 @@ const CustomersPageRedesigned: React.FC = () => {
   // Loading state
   if (isAuthenticating || !companyId) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-neutral-500">جاري التحميل...</p>
+          <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
         <div className="max-w-[1600px] mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             {/* Title */}
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-                العملاء
-              </h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                إدارة بيانات العملاء
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+                <Users className="w-6 h-6 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  العملاء
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  إدارة بيانات العملاء
+                </p>
+              </div>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2">
               {/* View Toggle */}
-              <div className="flex items-center bg-neutral-100 rounded-lg p-1 border">
+              <div className="flex items-center bg-gray-100/80 backdrop-blur rounded-2xl p-1 border border-gray-200/50">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                    "px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
                     viewMode === 'grid'
-                      ? 'bg-white text-neutral-900 shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-900'
+                      ? 'bg-white shadow-sm text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900'
                   )}
                 >
                   <LayoutGrid className="w-4 h-4 ml-1" />
@@ -463,10 +468,10 @@ const CustomersPageRedesigned: React.FC = () => {
                 <button
                   onClick={() => setViewMode('split')}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                    "px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
                     viewMode === 'split'
-                      ? 'bg-white text-neutral-900 shadow-sm'
-                      : 'text-neutral-600 hover:text-neutral-900'
+                      ? 'bg-white shadow-sm text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900'
                   )}
                 >
                   <Columns className="w-4 h-4 ml-1" />
@@ -478,7 +483,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowCSVUpload(true)}
-                className="gap-2"
+                className="gap-2 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50"
               >
                 <Upload className="w-4 h-4" />
                 استيراد
@@ -487,7 +492,7 @@ const CustomersPageRedesigned: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => setShowCreateDialog(true)}
-                className="bg-coral-600 hover:bg-coral-700 text-white gap-2"
+                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-lg shadow-teal-500/20"
               >
                 <UserPlus className="w-4 h-4" />
                 إضافة عميل
@@ -526,11 +531,11 @@ const CustomersPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="bg-white rounded-xl border p-4 shadow-sm">
+        <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 shadow-sm hover:border-teal-500/30 transition-all duration-300">
           <div className="flex flex-col lg:flex-row gap-3">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="بحث بالاسم، الهاتف، أو البريد..."
                 value={searchTerm}
@@ -538,14 +543,14 @@ const CustomersPageRedesigned: React.FC = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 pr-10 text-sm"
+                className="h-10 pr-10 text-sm bg-white/50 border-gray-200/50 focus:border-teal-500/50"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-100 rounded"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
                 >
-                  <Plus className="w-3 h-3 text-neutral-400 rotate-45" />
+                  <Plus className="w-3 h-3 text-gray-400 rotate-45" />
                 </button>
               )}
             </div>
@@ -593,33 +598,35 @@ const CustomersPageRedesigned: React.FC = () => {
             ))}
           </div>
         ) : error ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">خطأ في التحميل</h3>
-            <p className="text-sm text-neutral-500 mb-6">
+          <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-12 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">خطأ في التحميل</h3>
+            <p className="text-sm text-gray-500 mb-6">
               {error instanceof Error ? error.message : 'حدث خطأ غير متوقع'}
             </p>
             <Button
               variant="outline"
               onClick={() => refetch()}
-              className="gap-2"
+              className="gap-2 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50"
             >
               <RefreshCw className="w-4 h-4" />
               إعادة المحاولة
             </Button>
           </div>
         ) : customers.length === 0 ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
-            <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-neutral-400" />
+          <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-12 text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-teal-500/10 to-teal-600/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-teal-500" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد عملاء</h3>
-            <p className="text-sm text-neutral-500 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد عملاء</h3>
+            <p className="text-sm text-gray-500 mb-6">
               ابدأ بإضافة عملاء جدد للنظام
             </p>
             <Button
               onClick={() => setShowCreateDialog(true)}
-              className="bg-coral-600 hover:bg-coral-700"
+              className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20"
             >
               <UserPlus className="w-4 h-4 ml-2" />
               إضافة عميل
@@ -629,9 +636,9 @@ const CustomersPageRedesigned: React.FC = () => {
           <>
             {/* Results Count */}
             <div className="flex items-center justify-between">
-              <p className="text-sm text-neutral-500">
-                <span className="font-medium text-neutral-900">{customers.length}</span> من{' '}
-                <span className="font-medium text-neutral-900">{totalCustomersInDB}</span> عميل
+              <p className="text-sm text-gray-500">
+                <span className="font-medium text-gray-900">{customers.length}</span> من{' '}
+                <span className="font-medium text-gray-900">{totalCustomersInDB}</span> عميل
               </p>
             </div>
 
@@ -655,10 +662,10 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white rounded-xl border p-4">
-                <p className="text-sm text-neutral-500">
-                  صفحة <span className="font-medium text-neutral-900">{currentPage}</span> من{' '}
-                  <span className="font-medium text-neutral-900">{totalPages}</span>
+              <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4">
+                <p className="text-sm text-gray-500">
+                  صفحة <span className="font-medium text-gray-900">{currentPage}</span> من{' '}
+                  <span className="font-medium text-gray-900">{totalPages}</span>
                 </p>
 
                 <div className="flex items-center gap-1">
@@ -667,7 +674,7 @@ const CustomersPageRedesigned: React.FC = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="h-9"
+                    className="h-9 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -681,8 +688,8 @@ const CustomersPageRedesigned: React.FC = () => {
                       className={cn(
                         "h-9 w-9",
                         currentPage === page
-                          ? "bg-coral-600 text-white hover:bg-coral-700"
-                          : "hover:bg-neutral-100"
+                          ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
+                          : "hover:bg-gray-100"
                       )}
                     >
                       {page}
@@ -690,7 +697,7 @@ const CustomersPageRedesigned: React.FC = () => {
                   ))}
                   {totalPages > 5 && (
                     <>
-                      <span className="px-2 text-neutral-400">...</span>
+                      <span className="px-2 text-gray-400">...</span>
                       <Button
                         variant={currentPage === totalPages ? "default" : "ghost"}
                         size="sm"
@@ -698,8 +705,8 @@ const CustomersPageRedesigned: React.FC = () => {
                         className={cn(
                           "h-9 w-9",
                           currentPage === totalPages
-                            ? "bg-coral-600 text-white hover:bg-coral-700"
-                            : "hover:bg-neutral-100"
+                            ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
+                            : "hover:bg-gray-100"
                         )}
                       >
                         {totalPages}
@@ -712,7 +719,7 @@ const CustomersPageRedesigned: React.FC = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="h-9"
+                    className="h-9 border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>

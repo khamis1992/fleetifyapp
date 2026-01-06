@@ -59,168 +59,172 @@ export default function ReportsHub() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
-      {/* Page Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <BarChart3 className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold">مركز التقارير</h1>
-          <p className="text-muted-foreground">الوصول السريع للتقارير المفضلة والمستخدمة بكثرة</p>
-        </div>
-      </div>
-
-      {/* Quick Reports Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>التقارير السريعة</CardTitle>
-          <CardDescription>تقارير جاهزة للاستخدام الفوري</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickReports.map((report) => {
-              const Icon = report.icon;
-              return (
-                <Card
-                  key={report.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => handleQuickReportClick(report.id, report.name)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <CardTitle className="text-base">{report.name}</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{report.description}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+      <div className="container mx-auto p-6 space-y-6" dir="rtl">
+        {/* Page Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-2xl">
+            <BarChart3 className="h-6 w-6 text-white" />
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">مركز التقارير</h1>
+            <p className="text-gray-600">الوصول السريع للتقارير المفضلة والمستخدمة بكثرة</p>
+          </div>
+        </div>
 
-      {/* Favorites Section - Only show if user has favorites */}
-      {!favoritesLoading && favorites.length > 0 && (
-        <Card>
+        {/* Quick Reports Section */}
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  التقارير المفضلة
-                </CardTitle>
-                <CardDescription>التقارير التي قمت بحفظها للوصول السريع</CardDescription>
-              </div>
-              <Badge variant="secondary">{favorites.length}</Badge>
-            </div>
+            <CardTitle className="text-gray-900">التقارير السريعة</CardTitle>
+            <CardDescription className="text-gray-600">تقارير جاهزة للاستخدام الفوري</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {favorites.map((favorite) => (
-                <Card key={favorite.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{favorite.name}</CardTitle>
-                    <CardDescription className="text-xs">
-                      <Badge variant="outline" className="text-xs">
-                        {favorite.report_type}
-                      </Badge>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleRunFavorite(favorite.id, favorite.name)}
-                      className="flex-1"
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      تشغيل
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteFavorite(favorite.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {quickReports.map((report) => {
+                const Icon = report.icon;
+                return (
+                  <Card
+                    key={report.id}
+                    className="cursor-pointer bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
+                    onClick={() => handleQuickReportClick(report.id, report.name)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-xl">
+                          <Icon className="h-5 w-5 text-white" />
+                        </div>
+                        <CardTitle className="text-base text-gray-900">{report.name}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">{report.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Recent Reports Section - Only show if user has recent reports */}
-      {!recentLoading && recentReports.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-500" />
-              التقارير الأخيرة
-            </CardTitle>
-            <CardDescription>التقارير التي تم إنشاؤها مؤخراً</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">اسم التقرير</TableHead>
-                  <TableHead className="text-right">النوع</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentReports.map((report) => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-medium">{report.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{report.type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(report.generated_at), 'PPp', { locale: ar })}
-                    </TableCell>
-                    <TableCell>
+        {/* Favorites Section - Only show if user has favorites */}
+        {!favoritesLoading && favorites.length > 0 && (
+          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-gray-900">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    التقارير المفضلة
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">التقارير التي قمت بحفظها للوصول السريع</CardDescription>
+                </div>
+                <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 border-teal-500/20">{favorites.length}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favorites.map((favorite) => (
+                  <Card key={favorite.id} className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base text-gray-900">{favorite.name}</CardTitle>
+                      <CardDescription className="text-xs">
+                        <Badge variant="outline" className="text-xs border-teal-500/20 text-teal-700 bg-teal-500/10">
+                          {favorite.report_type}
+                        </Badge>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => handleViewReport(report.id)}
+                        onClick={() => handleRunFavorite(favorite.id, favorite.name)}
+                        className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20"
                       >
-                        عرض
+                        <Play className="h-4 w-4 mr-2" />
+                        تشغيل
                       </Button>
-                    </TableCell>
-                  </TableRow>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteFavorite(favorite.id)}
+                        className="border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Loading States */}
-      {(favoritesLoading || recentLoading) && (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      )}
+        {/* Recent Reports Section - Only show if user has recent reports */}
+        {!recentLoading && recentReports.length > 0 && (
+          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Clock className="h-5 w-5 text-teal-600" />
+                التقارير الأخيرة
+              </CardTitle>
+              <CardDescription className="text-gray-600">التقارير التي تم إنشاؤها مؤخراً</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right text-gray-900">اسم التقرير</TableHead>
+                    <TableHead className="text-right text-gray-900">النوع</TableHead>
+                    <TableHead className="text-right text-gray-900">التاريخ</TableHead>
+                    <TableHead className="text-right text-gray-900">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentReports.map((report) => (
+                    <TableRow key={report.id} className="hover:bg-teal-500/5 transition-colors">
+                      <TableCell className="font-medium text-gray-900">{report.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="border-teal-500/20 text-teal-700 bg-teal-500/10">{report.type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {format(new Date(report.generated_at), 'PPp', { locale: ar })}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewReport(report.id)}
+                          className="hover:bg-teal-500/10 hover:text-teal-700"
+                        >
+                          عرض
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Empty States */}
-      {!favoritesLoading && favorites.length === 0 && !recentLoading && recentReports.length === 0 && (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <p>لا توجد تقارير مفضلة أو حديثة بعد</p>
-              <p className="text-sm mt-2">استخدم التقارير السريعة أعلاه للبدء</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Loading States */}
+        {(favoritesLoading || recentLoading) && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+          </div>
+        )}
+
+        {/* Empty States */}
+        {!favoritesLoading && favorites.length === 0 && !recentLoading && recentReports.length === 0 && (
+          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
+            <CardContent className="py-8">
+              <div className="text-center text-gray-600">
+                <p>لا توجد تقارير مفضلة أو حديثة بعد</p>
+                <p className="text-sm mt-2">استخدم التقارير السريعة أعلاه للبدء</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

@@ -333,8 +333,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             animate={{ opacity: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/30">
-              <Car className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">F</span>
             </div>
             <span className="font-bold text-gray-900">Fleetify</span>
           </motion.div>

@@ -142,11 +142,13 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
   }
 
   return (
-    <Card className={cn(compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Bell className="h-5 w-5 text-coral-500" />
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
+              <Bell className="h-5 w-5 text-white" />
+            </div>
             تذكيراتي
           </CardTitle>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -159,7 +161,9 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
             <DialogContent dir="rtl" className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-coral-500" />
+                  <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
+                    <Bell className="h-5 w-5 text-white" />
+                  </div>
                   تذكير جديد
                 </DialogTitle>
               </DialogHeader>
@@ -260,7 +264,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
                   <Button
                     onClick={handleAddReminder}
                     disabled={!newReminder.title.trim() || createReminder.isPending}
-                    className="bg-coral-500 hover:bg-coral-600"
+                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
                   >
                     {createReminder.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -276,7 +280,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedReminders.length === 0 ? (
-          <div className="text-center py-8 text-neutral-400">
+          <div className="text-center py-8 text-gray-400">
             <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>لا توجد تذكيرات</p>
             <p className="text-sm">أضف تذكيراً للبدء</p>
@@ -297,7 +301,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     className={cn(
-                      'flex items-center gap-3 p-3 rounded-lg border bg-white hover:shadow-sm transition-shadow',
+                      'flex items-center gap-3 p-3 rounded-2xl border bg-white/80 backdrop-blur-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
                       reminder.is_completed && 'opacity-50'
                     )}
                   >
@@ -314,14 +318,14 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
                     <div className="flex-1 min-w-0">
                       <p
                         className={cn(
-                          'font-medium text-neutral-900 truncate',
-                          reminder.is_completed && 'line-through text-neutral-500'
+                          'font-medium text-gray-900 truncate',
+                          reminder.is_completed && 'line-through text-gray-500'
                         )}
                       >
                         {reminder.title}
                       </p>
                       {reminder.description && (
-                        <p className="text-sm text-neutral-500 truncate">
+                        <p className="text-sm text-gray-500 truncate">
                           {reminder.description}
                         </p>
                       )}
@@ -386,7 +390,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
             </AnimatePresence>
 
             {limit && reminders.length > limit && (
-              <p className="text-center text-sm text-neutral-500 pt-2">
+              <p className="text-center text-sm text-gray-500 pt-2">
                 +{reminders.length - limit} تذكيرات أخرى
               </p>
             )}

@@ -1012,11 +1012,11 @@ export default function LawsuitPreparationPage() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <Card className="bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
+        <Card className="bg-gradient-to-r from-teal-600 to-teal-700 text-white border-0 shadow-lg shadow-teal-500/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-lg">
+                <div className="p-3 bg-white/10 rounded-xl">
                   <Gavel className="h-6 w-6" />
                 </div>
                 <div>
@@ -1027,7 +1027,7 @@ export default function LawsuitPreparationPage() {
                 </div>
               </div>
               <div className="text-left">
-                <div className="text-2xl font-bold text-emerald-400">
+                <div className="text-2xl font-bold text-white">
                   {calculations.total.toLocaleString('ar-QA')} ر.ق
                 </div>
                 <p className="text-xs text-white/60">إجمالي المطالبة</p>
@@ -1042,8 +1042,8 @@ export default function LawsuitPreparationPage() {
               </div>
               <Progress value={progressData.percentage} className="h-3 bg-white/20" />
               <p className="text-xs text-white/60 text-center">
-                {progressData.percentage === 100 
-                  ? '✅ جميع المستندات جاهزة!' 
+                {progressData.percentage === 100
+                  ? '✅ جميع المستندات جاهزة!'
                   : `${progressData.percentage}% مكتمل`}
               </p>
             </div>

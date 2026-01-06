@@ -394,7 +394,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 space-y-6">
       {/* Header */}
       <ResponsivePageActions
         title="عروض الأسعار"
@@ -409,58 +409,68 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <Clock className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingQuotations.length}</div>
-            <p className="text-xs text-muted-foreground">عرض معلق</p>
+            <div className="text-2xl font-bold text-gray-900">{pendingQuotations.length}</div>
+            <p className="text-xs text-gray-500">عرض معلق</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">مقبولة</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <CheckCircle className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{acceptedQuotations.length}</div>
-            <p className="text-xs text-muted-foreground">تم القبول</p>
+            <div className="text-2xl font-bold text-gray-900">{acceptedQuotations.length}</div>
+            <p className="text-xs text-gray-500">تم القبول</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">مرفوضة</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+              <XCircle className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{rejectedQuotations.length}</div>
-            <p className="text-xs text-muted-foreground">تم الرفض</p>
+            <div className="text-2xl font-bold text-gray-900">{rejectedQuotations.length}</div>
+            <p className="text-xs text-gray-500">تم الرفض</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">محولة لعقود</CardTitle>
-            <FileText className="h-4 w-4 text-blue-600" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <FileText className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{convertedQuotations.length}</div>
-            <p className="text-xs text-muted-foreground">تم التحويل</p>
+            <div className="text-2xl font-bold text-gray-900">{convertedQuotations.length}</div>
+            <p className="text-xs text-gray-500">تم التحويل</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">القيمة الإجمالية</CardTitle>
-            <DollarSign className="h-4 w-4 text-purple-600" />
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <DollarSign className="h-4 w-4 text-white" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{totalQuotationValue.toFixed(3)} د.ك</div>
-            <p className="text-xs text-muted-foreground">العروض المعلقة</p>
+            <div className="text-2xl font-bold text-gray-900">{totalQuotationValue.toFixed(3)} د.ك</div>
+            <p className="text-xs text-gray-500">العروض المعلقة</p>
           </CardContent>
         </Card>
       </div>
@@ -468,12 +478,12 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
       {/* Quotations List */}
       <div className="grid gap-4">
         {quotations?.map((quotation) => (
-          <Card key={quotation.id} className="hover:shadow-md transition-shadow">
+          <Card key={quotation.id} className="bg-white/80 backdrop-blur-xl border-gray-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-lg">عرض سعر رقم {quotation.quotation_number}</h3>
+                    <h3 className="font-semibold text-lg text-gray-900">عرض سعر رقم {quotation.quotation_number}</h3>
                     <Badge className={getStatusColor(quotation.status)}>
                       {getStatusIcon(quotation.status)}
                       <span className="mr-1">
@@ -489,11 +499,11 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                       </Badge>
                     )}
                   </div>
-                  
+
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
                         {quotation.customers ? (
                           quotation.customers.customer_type === 'corporate'
                             ? quotation.customers.company_name
@@ -503,58 +513,59 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                         )}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {quotation.duration} {quotation.quotation_type === 'daily' ? 'يوم' : 
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {quotation.duration} {quotation.quotation_type === 'daily' ? 'يوم' :
                                             quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">
+                      <DollarSign className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-900">
                         {quotation.total_amount?.toFixed(3)} د.ك
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                      <FileText className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
                         صالح حتى: {new Date(quotation.valid_until).toLocaleDateString('en-GB')}
                       </span>
                     </div>
                   </div>
-                  
+
                   {quotation.description && (
-                    <p className="text-sm text-muted-foreground">{quotation.description}</p>
+                    <p className="text-sm text-gray-500">{quotation.description}</p>
                   )}
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
                     <Eye className="h-4 w-4 mr-1" />
                     عرض
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
                     <FileDown className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => shareViaWhatsApp(quotation)}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10"
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
                     ارسال
                   </Button>
                   {quotation.status === 'accepted' && (
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => convertToContractMutation.mutate(quotation.id)}
                       disabled={convertToContractMutation.isPending}
+                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-3xl shadow-lg shadow-teal-500/20"
                     >
                       تحويل لعقد
                     </Button>
@@ -564,16 +575,18 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </CardContent>
           </Card>
         ))}
-        
+
         {quotations?.length === 0 && (
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد عروض أسعار بعد</h3>
-              <p className="text-muted-foreground text-center mb-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-3xl flex items-center justify-center mb-4">
+                <FileText className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد عروض أسعار بعد</h3>
+              <p className="text-gray-500 text-center mb-4">
                 ابدأ في إنشاء عروض أسعار جديدة للعملاء
               </p>
-              <Button onClick={() => setShowQuotationForm(true)}>
+              <Button onClick={() => setShowQuotationForm(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-3xl shadow-lg shadow-teal-500/20">
                 <Plus className="h-4 w-4 mr-2" />
                 إنشاء عرض سعر جديد
               </Button>
@@ -591,20 +604,20 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* معلومات أساسية */}
-            <div className="bg-card p-4 rounded-lg border">
-              <h3 className="text-lg font-semibold mb-4 text-primary">المعلومات الأساسية</h3>
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-200/50">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">المعلومات الأساسية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">العميل *</Label>
                   <Select onValueChange={(value) => setValue('customer_id', value)}>
-                    <SelectTrigger id="customer">
+                    <SelectTrigger id="customer" className="rounded-2xl">
                       <SelectValue placeholder="اختر العميل" />
                     </SelectTrigger>
                     <SelectContent>
                       {customers?.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.customer_type === 'corporate'
-                            ? customer.company_name 
+                            ? customer.company_name
                             : `${customer.first_name} ${customer.last_name}`}
                         </SelectItem>
                       ))}
@@ -615,7 +628,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 <div className="space-y-2">
                   <Label htmlFor="vehicle">المركبة</Label>
                   <Select onValueChange={(value) => setValue('vehicle_id', value)}>
-                    <SelectTrigger id="vehicle">
+                    <SelectTrigger id="vehicle" className="rounded-2xl">
                       <SelectValue placeholder="اختر المركبة (اختياري)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -631,16 +644,16 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
 
             {/* تفاصيل السعر */}
-            <div className="bg-card p-4 rounded-lg border">
-              <h3 className="text-lg font-semibold mb-4 text-primary">تفاصيل السعر</h3>
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-200/50">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">تفاصيل السعر</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="quotation_type">نوع الإيجار *</Label>
-                  <Select 
-                    value={quotationType} 
+                  <Select
+                    value={quotationType}
                     onValueChange={(value) => setValue('quotation_type', value as 'daily' | 'weekly' | 'monthly')}
                   >
-                    <SelectTrigger id="quotation_type">
+                    <SelectTrigger id="quotation_type" className="rounded-2xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -653,39 +666,41 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
 
                 <div className="space-y-2">
                   <Label htmlFor="duration">المدة *</Label>
-                  <Input 
+                  <Input
                     id="duration"
-                    type="number" 
+                    type="number"
                     min="1"
                     placeholder="عدد الأيام/الأسابيع/الشهور"
-                    {...register('duration', { required: true, valueAsNumber: true })} 
+                    className="rounded-2xl"
+                    {...register('duration', { required: true, valueAsNumber: true })}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="rate_per_unit">السعر لكل وحدة (د.ك) *</Label>
-                  <Input 
+                  <Input
                     id="rate_per_unit"
-                    type="number" 
+                    type="number"
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    {...register('rate_per_unit', { required: true, valueAsNumber: true })} 
+                    className="rounded-2xl"
+                    {...register('rate_per_unit', { required: true, valueAsNumber: true })}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="total_amount">المبلغ الإجمالي (د.ك) *</Label>
-                  <Input 
+                  <Input
                     id="total_amount"
-                    type="number" 
+                    type="number"
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    className="font-semibold text-primary"
+                    className="font-semibold text-gray-900 rounded-2xl"
                     {...register('total_amount', { required: true, valueAsNumber: true })}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-500">
                     محسوب تلقائياً: {calculatedAmount.toFixed(3)} د.ك
                   </p>
                 </div>
@@ -693,56 +708,59 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
 
             {/* تفاصيل إضافية */}
-            <div className="bg-card p-4 rounded-lg border">
-              <h3 className="text-lg font-semibold mb-4 text-primary">التفاصيل الإضافية</h3>
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-200/50">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">التفاصيل الإضافية</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="valid_until">صالح حتى *</Label>
-                  <Input 
+                  <Input
                     id="valid_until"
-                    type="date" 
-                    {...register('valid_until', { required: true })} 
+                    type="date"
+                    className="rounded-2xl"
+                    {...register('valid_until', { required: true })}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description">الوصف</Label>
-                  <Textarea 
+                  <Textarea
                     id="description"
                     placeholder="وصف موجز لعرض السعر..."
-                    {...register('description')} 
-                    rows={2} 
+                    className="rounded-2xl"
+                    {...register('description')}
+                    rows={2}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="terms">الشروط والأحكام</Label>
-                  <Textarea 
+                  <Textarea
                     id="terms"
                     placeholder="الشروط والأحكام الخاصة بعرض السعر..."
-                    {...register('terms')} 
-                    rows={3} 
+                    className="rounded-2xl"
+                    {...register('terms')}
+                    rows={3}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button 
-                type="button" 
-                variant="outline" 
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200/50">
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setShowQuotationForm(false)
                   reset()
                 }}
-                className="px-6"
+                className="px-6 rounded-3xl"
               >
                 إلغاء
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={createQuotationMutation.isPending}
-                className="px-6"
+                className="px-6 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-3xl shadow-lg shadow-teal-500/20"
               >
                 {createQuotationMutation.isPending ? 'جاري الحفظ...' : 'حفظ عرض السعر'}
               </Button>

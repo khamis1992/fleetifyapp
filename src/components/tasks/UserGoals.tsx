@@ -117,11 +117,13 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
   }
 
   return (
-    <Card className={cn(compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Target className="h-5 w-5 text-coral-500" />
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
+              <Target className="h-5 w-5 text-white" />
+            </div>
             أهدافي
           </CardTitle>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -134,7 +136,9 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
             <DialogContent dir="rtl" className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-coral-500" />
+                  <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
+                    <Target className="h-5 w-5 text-white" />
+                  </div>
                   هدف جديد
                 </DialogTitle>
               </DialogHeader>
@@ -221,7 +225,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                       newGoal.target_count < 1 ||
                       createGoal.isPending
                     }
-                    className="bg-coral-500 hover:bg-coral-600"
+                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
                   >
                     {createGoal.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -237,7 +241,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedGoals.length === 0 ? (
-          <div className="text-center py-8 text-neutral-400">
+          <div className="text-center py-8 text-gray-400">
             <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>لا توجد أهداف نشطة</p>
             <p className="text-sm">أضف هدفاً لتتبع تقدمك</p>
@@ -258,14 +262,14 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     className={cn(
-                      'p-4 rounded-lg border bg-white',
-                      isCompleted && 'bg-green-50 border-green-200'
+                      'p-4 rounded-2xl border bg-white/80 backdrop-blur-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+                      isCompleted && 'bg-green-50/80 border-green-200'
                     )}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-neutral-900">
+                          <h4 className="font-medium text-gray-900">
                             {goal.title}
                           </h4>
                           {isCompleted && (
@@ -306,7 +310,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-7 w-7 bg-coral-50 hover:bg-coral-100 border-coral-200"
+                              className="h-7 w-7 bg-teal-50 hover:bg-teal-100 border-teal-200"
                               onClick={() =>
                                 incrementProgress.mutate({
                                   id: goal.id,
@@ -314,7 +318,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                                 })
                               }
                             >
-                              <Plus className="h-3 w-3 text-coral-600" />
+                              <Plus className="h-3 w-3 text-teal-600" />
                             </Button>
                           </div>
                         )}
@@ -341,16 +345,16 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                     {/* Progress */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-500">التقدم</span>
+                        <span className="text-gray-500">التقدم</span>
                         <span className="font-medium">
                           <span className={cn(isCompleted && 'text-green-600')}>
                             {goal.current_count}
                           </span>
-                          <span className="text-neutral-400">/{goal.target_count}</span>
+                          <span className="text-gray-400">/{goal.target_count}</span>
                           <span
                             className={cn(
                               'mr-2 text-xs',
-                              isCompleted ? 'text-green-600' : 'text-neutral-400'
+                              isCompleted ? 'text-green-600' : 'text-gray-400'
                             )}
                           >
                             ({percentage}%)
@@ -369,7 +373,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
             </AnimatePresence>
 
             {limit && goals.length > limit && (
-              <p className="text-center text-sm text-neutral-500 pt-2">
+              <p className="text-center text-sm text-gray-500 pt-2">
                 +{goals.length - limit} أهداف أخرى
               </p>
             )}

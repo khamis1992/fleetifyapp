@@ -159,7 +159,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative rounded-xl border bg-white shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+      className="group relative rounded-3xl border bg-white/80 backdrop-blur-xl shadow-sm hover:shadow-md hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all cursor-pointer overflow-hidden"
       onClick={onView}
     >
       {/* Status Bar */}
@@ -503,9 +503,9 @@ const FleetPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
@@ -589,7 +589,7 @@ const FleetPageRedesigned: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => setShowVehicleForm(true)}
-                className="bg-coral-600 hover:bg-coral-700 text-white gap-2"
+                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-lg shadow-teal-500/20"
               >
                 <Plus className="w-4 h-4" />
                 إضافة مركبة
@@ -615,7 +615,7 @@ const FleetPageRedesigned: React.FC = () => {
         />
 
         {/* Quick Status Filter Bar */}
-        <div className="bg-white rounded-xl border p-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm text-neutral-500 font-medium">تصفية سريع:</span>
 
@@ -682,7 +682,7 @@ const FleetPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="bg-white rounded-xl border p-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <div className="flex flex-col lg:flex-row gap-3">
             {/* Search */}
             <div className="flex-1 relative">
@@ -778,9 +778,9 @@ const FleetPageRedesigned: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-coral-50 border border-coral-200 rounded-xl p-4 flex items-center justify-between"
+                className="bg-teal-50 border border-teal-200 rounded-3xl p-4 flex items-center justify-between"
               >
-                <p className="text-sm text-coral-700">
+                <p className="text-sm text-teal-700">
                   <span className="font-semibold">{selectedVehicles.size}</span> مركبة محددة
                 </p>
                 <div className="flex items-center gap-2">
@@ -823,7 +823,7 @@ const FleetPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white rounded-xl border p-4">
+              <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <p className="text-sm text-neutral-500">
                   صفحة <span className="font-medium text-neutral-900">{currentPage}</span> من{' '}
                   <span className="font-medium text-neutral-900">{totalPages}</span>
@@ -894,7 +894,7 @@ const FleetPageRedesigned: React.FC = () => {
                 ? 'لم يتم العثور على مركبات تطابق البحث'
                 : 'ابدأ بإضافة أول مركبة للأسطول'}
             </p>
-            <Button onClick={() => setShowVehicleForm(true)} className="bg-coral-600 hover:bg-coral-700">
+            <Button onClick={() => setShowVehicleForm(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700">
               <Plus className="w-4 h-4 ml-2" />
               إضافة مركبة
             </Button>

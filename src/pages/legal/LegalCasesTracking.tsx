@@ -165,8 +165,8 @@ const TabButton: React.FC<TabButtonProps> = ({ id, label, icon: Icon, activeTab,
     className={cn(
       "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all duration-200 border-b-2",
       activeTab === id
-        ? 'border-rose-500 text-rose-600 bg-rose-50/50'
-        : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+        ? 'border-teal-500 text-teal-600 bg-teal-50/50'
+        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
     )}
   >
     <Icon size={18} />
@@ -868,7 +868,7 @@ export const LegalCasesTracking: React.FC = () => {
 
   if (isLoadingCompany) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F8F9FA]">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
         <LoadingSpinner />
       </div>
     );
@@ -887,13 +887,13 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Financial Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">التحليل المالي للقضايا</h3>
-              <p className="text-sm text-slate-500 mt-1">التعويضات vs المطالبات</p>
+              <h3 className="text-lg font-bold text-gray-900">التحليل المالي للقضايا</h3>
+              <p className="text-sm text-gray-500 mt-1">التعويضات vs المطالبات</p>
             </div>
-            <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+            <Badge variant="outline" className="text-xs border-gray-200/50 text-gray-600">
               آخر 6 أشهر
             </Badge>
           </div>
@@ -925,8 +925,8 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Case Types Pie Chart */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">أنواع القضايا</h3>
+        <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">أنواع القضايا</h3>
           {caseTypesData.length > 0 ? (
             <>
               <div className="h-56 relative">
@@ -949,18 +949,18 @@ export const LegalCasesTracking: React.FC = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                  <span className="text-3xl font-bold text-slate-900">{stats?.total || 0}</span>
-                  <span className="text-xs text-slate-400">قضية</span>
+                  <span className="text-3xl font-bold text-gray-900">{stats?.total || 0}</span>
+                  <span className="text-xs text-gray-400">قضية</span>
                 </div>
               </div>
               <div className="space-y-3 mt-4">
                 {caseTypesData.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
+                  <div key={idx} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-slate-700">{item.name}</span>
+                      <span className="text-gray-700">{item.name}</span>
                     </div>
-                    <span className="font-bold text-slate-900">{item.value}</span>
+                    <span className="font-bold text-gray-900">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -1300,11 +1300,11 @@ export const LegalCasesTracking: React.FC = () => {
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-900 text-lg">جدول الجلسات</h3>
+            <h3 className="font-bold text-gray-900 text-lg">جدول الجلسات</h3>
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+              <Badge variant="outline" className="text-xs border-gray-200/50 text-gray-600">
                 {futureHearings.length} جلسة قادمة
               </Badge>
             </div>

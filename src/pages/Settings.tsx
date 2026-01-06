@@ -108,96 +108,98 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-4xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-lg">
-            <SettingsIcon className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">الإعدادات</h1>
-            <p className="text-muted-foreground">إدارة إعدادات حسابك والتطبيق</p>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* User Info Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>معلومات المستخدم</CardTitle>
-            <CardDescription>معلومات أساسية عن حسابك</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">الاسم</p>
-                <p className="text-lg">
-                  {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">البريد الإلكتروني</p>
-                <p className="text-lg">{user?.email}</p>
-              </div>
-              {user?.profile?.position && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">المنصب</p>
-                  <p className="text-lg">{user.profile.position}</p>
-                </div>
-              )}
-              {user?.company && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">الشركة</p>
-                  <p className="text-lg">{user.company.name_ar || user.company.name}</p>
-                </div>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+      <div className="container mx-auto py-6 px-4 max-w-4xl">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+              <SettingsIcon className="h-8 w-8 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">الإعدادات</h1>
+              <p className="text-gray-600">إدارة إعدادات حسابك والتطبيق</p>
+            </div>
+          </div>
 
-        {/* Settings Options */}
-        <Card>
-          <CardHeader>
-            <CardTitle>إعدادات التطبيق</CardTitle>
-            <CardDescription>خيارات تخصيص التطبيق وإعداداته</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {settingsOptions.map((option, index) => {
-                const IconComponent = option.icon;
-                return (
-                  <div key={index}>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between h-auto p-4"
-                      onClick={option.action}
-                      disabled={!option.available}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-md ${option.available ? 'bg-primary/10' : 'bg-muted'}`}>
-                          <IconComponent className={`h-4 w-4 ${option.available ? 'text-primary' : 'text-muted-foreground'}`} />
-                        </div>
-                        <div className="text-right flex-1">
-                          <div className={`font-medium ${!option.available && 'text-muted-foreground'}`}>
-                            {option.title}
-                            {!option.available && <span className="text-xs ml-2">(قريباً)</span>}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {option.description}
-                          </div>
-                        </div>
-                      </div>
-                      {option.available && <ChevronRight className="h-4 w-4" />}
-                    </Button>
-                    {index < settingsOptions.length - 1 && <Separator className="my-2" />}
+          <Separator />
+
+          {/* User Info Card */}
+          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <CardHeader>
+              <CardTitle className="text-gray-900">معلومات المستخدم</CardTitle>
+              <CardDescription className="text-gray-600">معلومات أساسية عن حسابك</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-600">الاسم</p>
+                  <p className="text-lg text-gray-900">
+                    {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-600">البريد الإلكتروني</p>
+                  <p className="text-lg text-gray-900">{user?.email}</p>
+                </div>
+                {user?.profile?.position && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-600">المنصب</p>
+                    <p className="text-lg text-gray-900">{user.profile.position}</p>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+                {user?.company && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-600">الشركة</p>
+                    <p className="text-lg text-gray-900">{user.company.name_ar || user.company.name}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Settings Options */}
+          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <CardHeader>
+              <CardTitle className="text-gray-900">إعدادات التطبيق</CardTitle>
+              <CardDescription className="text-gray-600">خيارات تخصيص التطبيق وإعداداته</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {settingsOptions.map((option, index) => {
+                  const IconComponent = option.icon;
+                  return (
+                    <div key={index}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between h-auto p-4 hover:bg-teal-50/50 hover:border-teal-500/30 rounded-2xl transition-all"
+                        onClick={option.action}
+                        disabled={!option.available}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-xl ${option.available ? 'bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20' : 'bg-gray-200'}`}>
+                            <IconComponent className={`h-4 w-4 ${option.available ? 'text-white' : 'text-gray-400'}`} />
+                          </div>
+                          <div className="text-right flex-1">
+                            <div className={`font-medium text-gray-900 ${!option.available && 'text-gray-400'}`}>
+                              {option.title}
+                              {!option.available && <span className="text-xs ml-2 text-gray-400">(قريباً)</span>}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {option.description}
+                            </div>
+                          </div>
+                        </div>
+                        {option.available && <ChevronRight className="h-4 w-4 text-gray-600" />}
+                      </Button>
+                      {index < settingsOptions.length - 1 && <Separator className="my-2 bg-gray-200/50" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

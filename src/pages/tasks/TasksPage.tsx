@@ -157,8 +157,8 @@ export default function TasksPage() {
       title: 'إجمالي المهام',
       value: stats?.total || 0,
       icon: <BarChart3 className="h-5 w-5" />,
-      color: 'text-coral-500',
-      bgColor: 'bg-coral-50',
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-50',
     },
     {
       title: 'قيد التنفيذ',
@@ -192,7 +192,7 @@ export default function TasksPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f0efed]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
       <div className="p-6 space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -209,7 +209,7 @@ export default function TasksPage() {
               setEditingTask(null);
               setShowTaskForm(true);
             }}
-            className="bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
+            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
           >
             <Plus className="h-4 w-4 ml-2" />
             إضافة مهمة
@@ -218,12 +218,12 @@ export default function TasksPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="w-full md:w-auto bg-white border p-1 h-auto flex-wrap">
+          <TabsList className="w-full md:w-auto bg-white/80 backdrop-blur-xl border border-gray-200/50 p-1 h-auto flex-wrap rounded-3xl">
             {tabItems.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="flex items-center gap-2 data-[state=active]:bg-coral-500 data-[state=active]:text-white px-4 py-2"
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white px-4 py-2 rounded-2xl data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/20"
               >
                 {tab.icon}
                 {tab.label}
@@ -237,11 +237,13 @@ export default function TasksPage() {
             <MyTasksDashboard />
 
             {/* Tasks Section */}
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <ListTodo className="h-5 w-5 text-coral-500" />
+                    <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-xl p-1.5">
+                      <ListTodo className="h-5 w-5 text-white" />
+                    </div>
                     مهامي
                   </CardTitle>
                   <div className="flex items-center gap-2">
@@ -281,7 +283,7 @@ export default function TasksPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="hover:shadow-md transition-shadow">
+                  <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -299,7 +301,7 @@ export default function TasksPage() {
             </div>
 
             {/* Filters & Search */}
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row gap-4">
                   {/* Search */}
@@ -515,7 +517,7 @@ function renderTasksContent(
             setEditingTask(null);
             setShowTaskForm(true);
           }}
-          className="bg-gradient-to-l from-coral-500 to-orange-500"
+          className="bg-gradient-to-r from-teal-500 to-teal-600"
         >
           <Plus className="h-4 w-4 ml-2" />
           إضافة مهمة
@@ -652,7 +654,7 @@ function renderTasksContent(
           animate={{ opacity: 1, scale: 1 }}
         >
           <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            className="cursor-pointer bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all"
             onClick={() => handleTaskClick(task)}
           >
             <CardContent className="p-4">

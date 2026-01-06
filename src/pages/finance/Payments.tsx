@@ -49,8 +49,8 @@ const StatCard: React.FC<StatCardProps> = ({
   trend = 'neutral',
 }) => {
   return (
-    <motion.div 
-      className="bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-all h-full flex flex-col"
+    <motion.div
+      className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all h-full flex flex-col"
       whileHover={{ y: -2, scale: 1.01 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -196,7 +196,7 @@ const Payments = () => {
       title="خطأ في المدفوعات"
       context="صفحة المدفوعات"
     >
-      <div className="min-h-screen bg-[#f0efed]" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
         <div className="p-5 space-y-5">
           
           {/* Header */}
@@ -210,15 +210,15 @@ const Payments = () => {
             <div className="flex items-center gap-4">
               <motion.button
                 onClick={() => navigate('/finance/hub')}
-                className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-all"
+                className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <ChevronLeft className="w-5 h-5 text-neutral-600" />
               </motion.button>
-              
+
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-coral-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-coral-500/30">
+                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
                   <CreditCard className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -235,7 +235,7 @@ const Payments = () => {
             <div className="flex items-center gap-2">
               <motion.button
                 onClick={() => setIsCreateDialogOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-coral-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors shadow-lg shadow-coral-500/30"
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-full font-semibold text-sm hover:from-teal-600 hover:to-teal-700 transition-all shadow-lg shadow-teal-500/20"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -251,7 +251,7 @@ const Payments = () => {
               title="إجمالي المدفوعات"
               value={filteredPayments.length}
               icon={CreditCard}
-              iconBg="bg-coral-100 text-coral-600"
+              iconBg="bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20"
             />
             <StatCard
               title="المبلغ الإجمالي"
@@ -282,17 +282,17 @@ const Payments = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <TabsList className="bg-white rounded-xl p-1 shadow-sm">
-                <TabsTrigger 
-                  value="list" 
-                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white"
+              <TabsList className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl p-1 shadow-sm">
+                <TabsTrigger
+                  value="list"
+                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white"
                 >
                   <CreditCard className="h-4 w-4" />
                   قائمة المدفوعات
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="analytics" 
-                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white"
+                <TabsTrigger
+                  value="analytics"
+                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white"
                 >
                   <BarChart3 className="h-4 w-4" />
                   التحليلات والتقارير
@@ -301,8 +301,8 @@ const Payments = () => {
             </motion.div>
 
             <TabsContent value="analytics" className="mt-5">
-              <motion.div 
-                className="bg-white rounded-[1.25rem] p-5 shadow-sm"
+              <motion.div
+                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5 shadow-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -333,14 +333,14 @@ const Payments = () => {
 
             <TabsContent value="list" className="mt-5 space-y-4">
               {/* Search & Filters */}
-              <motion.div 
-                className="bg-white rounded-[1.25rem] p-5 shadow-sm"
+              <motion.div
+                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5 shadow-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Filter className="w-4 h-4 text-coral-500" />
+                  <Filter className="w-4 h-4 text-teal-500" />
                   <h3 className="font-bold text-neutral-900 text-sm">البحث والفلتر</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -350,7 +350,7 @@ const Payments = () => {
                       placeholder="ابحث برقم الدفع أو المرجع..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pr-10 rounded-xl border-neutral-200 focus:ring-2 focus:ring-coral-500/20"
+                      className="pr-10 rounded-xl border-neutral-200 focus:ring-2 focus:ring-teal-500/20"
                     />
                   </div>
                   
@@ -396,8 +396,8 @@ const Payments = () => {
               </motion.div>
 
               {/* Payments Table */}
-              <motion.div 
-                className="bg-white rounded-[1.25rem] shadow-sm overflow-hidden"
+              <motion.div
+                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl shadow-sm overflow-hidden hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
@@ -414,7 +414,7 @@ const Payments = () => {
                 <div className="p-4">
                   {isLoading ? (
                     <div className="flex flex-col justify-center items-center py-12 space-y-4">
-                      <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
                       <div className="text-center">
                         <p className="text-neutral-600 mb-1 font-medium">جارى تحميل المدفوعات...</p>
                         <p className="text-xs text-neutral-400">يتم البحث في قاعدة البيانات</p>
@@ -427,9 +427,9 @@ const Payments = () => {
                         <p className="text-red-700 font-medium mb-2">حدث خطأ في تحميل المدفوعات</p>
                         <p className="text-sm text-neutral-500 mb-4">{error.message}</p>
                         <div className="flex justify-center gap-2">
-                          <motion.button 
+                          <motion.button
                             onClick={() => refetch()}
-                            className="px-4 py-2 bg-coral-500 text-white rounded-lg text-sm font-medium"
+                            className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg text-sm font-medium"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -445,14 +445,14 @@ const Payments = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: "spring" }}
                       >
-                        <div className="w-16 h-16 bg-coral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <CreditCard className="w-8 h-8 text-coral-500" />
+                        <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <CreditCard className="w-8 h-8 text-teal-600" />
                         </div>
                         <p className="text-neutral-600 font-medium mb-2">لا توجد مدفوعات</p>
                         <p className="text-xs text-neutral-400 mb-4">ابدأ بإنشاء أول سند قبض أو صرف</p>
-                        <motion.button 
+                        <motion.button
                           onClick={() => setIsCreateDialogOpen(true)}
-                          className="px-5 py-2.5 bg-coral-500 text-white rounded-full text-sm font-semibold inline-flex items-center gap-2"
+                          className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-full text-sm font-semibold inline-flex items-center gap-2"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
@@ -539,12 +539,12 @@ const Payments = () => {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  <motion.button 
+                                  <motion.button
                                     onClick={() => {
                                       setSelectedPayment(payment);
                                       setIsPreviewDialogOpen(true);
                                     }}
-                                    className="w-8 h-8 bg-coral-50 text-coral-600 rounded-lg flex items-center justify-center hover:bg-coral-100 transition-colors mx-auto"
+                                    className="w-8 h-8 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center hover:bg-teal-100 transition-colors mx-auto"
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                   >
@@ -597,7 +597,7 @@ const Payments = () => {
             <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-coral-500" />
+                  <Brain className="h-5 w-5 text-teal-500" />
                   النظام الاحترافي للمدفوعات
                 </DialogTitle>
               </DialogHeader>

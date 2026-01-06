@@ -124,106 +124,113 @@ export default function HRSettings() {
   }
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Settings className="h-6 w-6 text-primary" />
+        <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+          <Settings className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">إعدادات الموارد البشرية</h1>
-          <p className="text-muted-foreground">إدارة إعدادات النظام والرواتب</p>
+          <h1 className="text-2xl font-bold text-gray-900">إعدادات الموارد البشرية</h1>
+          <p className="text-gray-600">إدارة إعدادات النظام والرواتب</p>
         </div>
       </div>
 
       <div className="grid gap-6">
         {/* إعدادات الحضور */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <CardTitle>إعدادات الحضور والانصراف</CardTitle>
+              <Clock className="h-5 w-5 text-teal-600" />
+              <CardTitle className="text-gray-900">إعدادات الحضور والانصراف</CardTitle>
             </div>
-            <CardDescription>تكوين أوقات العمل وسياسات الحضور</CardDescription>
+            <CardDescription className="text-gray-600">تكوين أوقات العمل وسياسات الحضور</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="working-hours">ساعات العمل اليومية</Label>
-                <Input 
-                  id="working-hours" 
-                  type="number" 
+                <Label htmlFor="working-hours" className="text-gray-700">ساعات العمل اليومية</Label>
+                <Input
+                  id="working-hours"
+                  type="number"
                   value={formData.daily_working_hours || 8}
                   onChange={(e) => handleInputChange('daily_working_hours', parseFloat(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="working-days">أيام العمل الأسبوعية</Label>
-                <Input 
-                  id="working-days" 
-                  type="number" 
+                <Label htmlFor="working-days" className="text-gray-700">أيام العمل الأسبوعية</Label>
+                <Input
+                  id="working-days"
+                  type="number"
                   value={formData.working_days_per_week || 5}
                   onChange={(e) => handleInputChange('working_days_per_week', parseInt(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start-time">وقت بداية العمل</Label>
-                <Input 
-                  id="start-time" 
-                  type="time" 
+                <Label htmlFor="start-time" className="text-gray-700">وقت بداية العمل</Label>
+                <Input
+                  id="start-time"
+                  type="time"
                   value={formData.work_start_time || '08:00'}
                   onChange={(e) => handleInputChange('work_start_time', e.target.value)}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end-time">وقت نهاية العمل</Label>
-                <Input 
-                  id="end-time" 
-                  type="time" 
+                <Label htmlFor="end-time" className="text-gray-700">وقت نهاية العمل</Label>
+                <Input
+                  id="end-time"
+                  type="time"
                   value={formData.work_end_time || '17:00'}
                   onChange={(e) => handleInputChange('work_end_time', e.target.value)}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="late-threshold">حد التأخير المسموح (بالدقائق)</Label>
-              <Input 
-                id="late-threshold" 
-                type="number" 
+              <Label htmlFor="late-threshold" className="text-gray-700">حد التأخير المسموح (بالدقائق)</Label>
+              <Input
+                id="late-threshold"
+                type="number"
                 value={formData.late_threshold_minutes || 15}
                 onChange={(e) => handleInputChange('late_threshold_minutes', parseInt(e.target.value))}
+                className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
               />
             </div>
 
-            <Separator />
+            <Separator className="bg-gray-200/50" />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>حساب الإضافي تلقائياً</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <Label className="text-gray-900">حساب الإضافي تلقائياً</Label>
+                  <p className="text-sm text-gray-600">
                     حساب ساعات العمل الإضافية تلقائياً بعد انتهاء وقت العمل الرسمي
                   </p>
                 </div>
-                <Switch 
+                <Switch
                   checked={formData.auto_calculate_overtime ?? true}
                   onCheckedChange={(checked) => handleInputChange('auto_calculate_overtime', checked)}
+                  className="data-[state=checked]:bg-teal-600"
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>السماح بالأرصدة السالبة</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <Label className="text-gray-900">السماح بالأرصدة السالبة</Label>
+                  <p className="text-sm text-gray-600">
                     السماح للموظفين بالحصول على راتب سالب في حالة الخصومات الكبيرة
                   </p>
                 </div>
-                <Switch 
+                <Switch
                   checked={formData.allow_negative_balance ?? false}
                   onCheckedChange={(checked) => handleInputChange('allow_negative_balance', checked)}
+                  className="data-[state=checked]:bg-teal-600"
                 />
               </div>
             </div>
@@ -231,70 +238,74 @@ export default function HRSettings() {
         </Card>
 
         {/* إعدادات الرواتب */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <CardTitle>إعدادات الرواتب</CardTitle>
+              <DollarSign className="h-5 w-5 text-teal-600" />
+              <CardTitle className="text-gray-900">إعدادات الرواتب</CardTitle>
             </div>
-            <CardDescription>تكوين حسابات الرواتب والخصومات</CardDescription>
+            <CardDescription className="text-gray-600">تكوين حسابات الرواتب والخصومات</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="overtime-rate">معدل الساعات الإضافية (%)</Label>
-                <Input 
-                  id="overtime-rate" 
-                  type="number" 
-                  step="0.1" 
+                <Label htmlFor="overtime-rate" className="text-gray-700">معدل الساعات الإضافية (%)</Label>
+                <Input
+                  id="overtime-rate"
+                  type="number"
+                  step="0.1"
                   value={formData.overtime_rate_percentage || 150}
                   onChange={(e) => handleInputChange('overtime_rate_percentage', parseFloat(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
-                <p className="text-xs text-muted-foreground">نسبة الزيادة على الساعة العادية للساعات الإضافية</p>
+                <p className="text-xs text-gray-600">نسبة الزيادة على الساعة العادية للساعات الإضافية</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="late-penalty">غرامة التأخير (للساعة)</Label>
-                <Input 
-                  id="late-penalty" 
-                  type="number" 
-                  step="0.01" 
+                <Label htmlFor="late-penalty" className="text-gray-700">غرامة التأخير (للساعة)</Label>
+                <Input
+                  id="late-penalty"
+                  type="number"
+                  step="0.01"
                   value={formData.late_penalty_per_hour || 0}
                   onChange={(e) => handleInputChange('late_penalty_per_hour', parseFloat(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="social-security">نسبة التأمينات الاجتماعية (%)</Label>
-                <Input 
-                  id="social-security" 
-                  type="number" 
-                  step="0.01" 
+                <Label htmlFor="social-security" className="text-gray-700">نسبة التأمينات الاجتماعية (%)</Label>
+                <Input
+                  id="social-security"
+                  type="number"
+                  step="0.01"
                   value={formData.social_security_rate || 11}
                   onChange={(e) => handleInputChange('social_security_rate', parseFloat(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tax-rate">نسبة الضريبة (%)</Label>
-                <Input 
-                  id="tax-rate" 
-                  type="number" 
-                  step="0.01" 
+                <Label htmlFor="tax-rate" className="text-gray-700">نسبة الضريبة (%)</Label>
+                <Input
+                  id="tax-rate"
+                  type="number"
+                  step="0.01"
                   value={formData.tax_rate || 0}
                   onChange={(e) => handleInputChange('tax_rate', parseFloat(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="payroll-frequency">دورية الرواتب</Label>
-                <Select 
+                <Label htmlFor="payroll-frequency" className="text-gray-700">دورية الرواتب</Label>
+                <Select
                   value={formData.payroll_frequency || 'monthly'}
                   onValueChange={(value) => handleInputChange('payroll_frequency', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 focus:border-teal-500 focus:ring-teal-500">
                     <SelectValue placeholder="اختر دورية الرواتب" />
                   </SelectTrigger>
                   <SelectContent>
@@ -305,14 +316,15 @@ export default function HRSettings() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pay-date">يوم الدفع (من كل شهر)</Label>
-                <Input 
-                  id="pay-date" 
-                  type="number" 
-                  min="1" 
-                  max="31" 
+                <Label htmlFor="pay-date" className="text-gray-700">يوم الدفع (من كل شهر)</Label>
+                <Input
+                  id="pay-date"
+                  type="number"
+                  min="1"
+                  max="31"
                   value={formData.pay_date || 1}
                   onChange={(e) => handleInputChange('pay_date', parseInt(e.target.value))}
+                  className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                 />
               </div>
             </div>
@@ -320,96 +332,106 @@ export default function HRSettings() {
         </Card>
 
         {/* إعدادات الإجازات */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
+                <Calendar className="h-5 w-5 text-teal-600" />
                 <div>
-                  <CardTitle>إعدادات الإجازات</CardTitle>
-                  <CardDescription>إدارة أنواع الإجازات والأرصدة من جدول واحد موحد</CardDescription>
+                  <CardTitle className="text-gray-900">إعدادات الإجازات</CardTitle>
+                  <CardDescription className="text-gray-600">إدارة أنواع الإجازات والأرصدة من جدول واحد موحد</CardDescription>
                 </div>
               </div>
               <Dialog open={isLeaveTypeDialogOpen} onOpenChange={setIsLeaveTypeDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => {
-                    setEditingLeaveType(null);
-                    setLeaveTypeForm({
-                      type_name: '',
-                      type_name_ar: '',
-                      max_days_per_year: 0,
-                      requires_approval: true,
-                      description: ''
-                    });
-                  }}>
+                  <Button
+                    onClick={() => {
+                      setEditingLeaveType(null);
+                      setLeaveTypeForm({
+                        type_name: '',
+                        type_name_ar: '',
+                        max_days_per_year: 0,
+                        requires_approval: true,
+                        description: ''
+                      });
+                    }}
+                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                  >
                     <Plus className="h-4 w-4 ml-2" />
                     إضافة نوع إجازة
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
                   <DialogHeader>
-                    <DialogTitle>
+                    <DialogTitle className="text-gray-900">
                       {editingLeaveType ? 'تعديل نوع الإجازة' : 'إضافة نوع إجازة جديد'}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-gray-600">
                       {editingLeaveType ? 'تعديل تفاصيل نوع الإجازة' : 'إضافة نوع إجازة جديد للنظام'}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="leave-type-name">اسم النوع (بالإنجليزية) *</Label>
+                      <Label htmlFor="leave-type-name" className="text-gray-700">اسم النوع (بالإنجليزية) *</Label>
                       <Input
                         id="leave-type-name"
                         value={leaveTypeForm.type_name}
                         onChange={(e) => setLeaveTypeForm(prev => ({ ...prev, type_name: e.target.value }))}
                         placeholder="Annual Leave"
+                        className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="leave-type-name-ar">اسم النوع (بالعربية) *</Label>
+                      <Label htmlFor="leave-type-name-ar" className="text-gray-700">اسم النوع (بالعربية) *</Label>
                       <Input
                         id="leave-type-name-ar"
                         value={leaveTypeForm.type_name_ar}
                         onChange={(e) => setLeaveTypeForm(prev => ({ ...prev, type_name_ar: e.target.value }))}
                         placeholder="إجازة سنوية"
+                        className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="max-days">عدد الأيام المسموحة سنوياً</Label>
+                      <Label htmlFor="max-days" className="text-gray-700">عدد الأيام المسموحة سنوياً</Label>
                       <Input
                         id="max-days"
                         type="number"
                         value={leaveTypeForm.max_days_per_year}
                         onChange={(e) => setLeaveTypeForm(prev => ({ ...prev, max_days_per_year: parseInt(e.target.value) }))}
+                        className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label>يتطلب موافقة المدير</Label>
+                      <Label className="text-gray-900">يتطلب موافقة المدير</Label>
                       <Switch
                         checked={leaveTypeForm.requires_approval}
                         onCheckedChange={(checked) => setLeaveTypeForm(prev => ({ ...prev, requires_approval: checked }))}
+                        className="data-[state=checked]:bg-teal-600"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="description">الوصف</Label>
+                      <Label htmlFor="description" className="text-gray-700">الوصف</Label>
                       <Textarea
                         id="description"
                         value={leaveTypeForm.description}
                         onChange={(e) => setLeaveTypeForm(prev => ({ ...prev, description: e.target.value }))}
                         placeholder="وصف نوع الإجازة..."
+                        className="border-gray-200 focus:border-teal-500 focus:ring-teal-500"
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setIsLeaveTypeDialogOpen(false)}
+                      className="border-gray-200 hover:border-teal-500 hover:text-teal-600"
                     >
                       إلغاء
                     </Button>
-                    <Button 
+                    <Button
                       onClick={editingLeaveType ? handleUpdateLeaveType : handleCreateLeaveType}
                       disabled={isCreatingLeaveType}
+                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
                     >
                       {editingLeaveType ? 'تحديث' : 'إضافة'}
                     </Button>
@@ -420,7 +442,7 @@ export default function HRSettings() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-600">
                 جميع أنواع الإجازات يتم إدارتها الآن من خلال نظام موحد. يمكنك إضافة وتعديل أنواع الإجازات أدناه.
               </p>
 
@@ -430,24 +452,24 @@ export default function HRSettings() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <h4 className="font-medium">أنواع الإجازات المتاحة</h4>
+                  <h4 className="font-medium text-gray-900">أنواع الإجازات المتاحة</h4>
                   {leaveTypes && leaveTypes.length > 0 ? (
                     <div className="space-y-2">
                       {leaveTypes.map((leaveType) => (
-                        <div key={leaveType.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div key={leaveType.id} className="flex items-center justify-between p-3 border border-gray-200/50 rounded-xl hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10 transition-all bg-white/50 backdrop-blur-sm">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h5 className="font-medium">{leaveType.type_name_ar || leaveType.type_name}</h5>
+                              <h5 className="font-medium text-gray-900">{leaveType.type_name_ar || leaveType.type_name}</h5>
                               <Badge variant={leaveType.is_active ? "default" : "secondary"}>
                                 {leaveType.is_active ? "نشط" : "غير نشط"}
                               </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {leaveType.max_days_per_year} أيام سنوياً • 
+                            <p className="text-sm text-gray-600">
+                              {leaveType.max_days_per_year} أيام سنوياً •
                               {leaveType.requires_approval ? " يتطلب موافقة" : " لا يتطلب موافقة"}
                             </p>
                             {leaveType.description && (
-                              <p className="text-sm text-muted-foreground mt-1">{leaveType.description}</p>
+                              <p className="text-sm text-gray-600 mt-1">{leaveType.description}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
@@ -455,6 +477,7 @@ export default function HRSettings() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditLeaveType(leaveType)}
+                              className="border-gray-200 hover:border-teal-500 hover:text-teal-600"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -462,6 +485,7 @@ export default function HRSettings() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDeleteLeaveType(leaveType.id)}
+                              className="border-gray-200 hover:border-rose-500 hover:text-rose-600"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -470,7 +494,7 @@ export default function HRSettings() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center text-muted-foreground py-4">
+                    <p className="text-center text-gray-600 py-4">
                       لا توجد أنواع إجازات محددة
                     </p>
                   )}
@@ -481,48 +505,51 @@ export default function HRSettings() {
         </Card>
 
         {/* إعدادات النظام */}
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader>
-            <CardTitle>إعدادات النظام</CardTitle>
-            <CardDescription>إعدادات عامة للنظام والإشعارات</CardDescription>
+            <CardTitle className="text-gray-900">إعدادات النظام</CardTitle>
+            <CardDescription className="text-gray-600">إعدادات عامة للنظام والإشعارات</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>موافقة المدير مطلوبة</Label>
-                <p className="text-sm text-muted-foreground">
+                <Label className="text-gray-900">موافقة المدير مطلوبة</Label>
+                <p className="text-sm text-gray-600">
                   يتطلب موافقة المدير على طلبات الإجازات والحضور
                 </p>
               </div>
-              <Switch 
+              <Switch
                 checked={formData.require_manager_approval ?? true}
                 onCheckedChange={(checked) => handleInputChange('require_manager_approval', checked)}
+                className="data-[state=checked]:bg-teal-600"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
-                <Label>إشعارات البريد الإلكتروني</Label>
-                <p className="text-sm text-muted-foreground">
+                <Label className="text-gray-900">إشعارات البريد الإلكتروني</Label>
+                <p className="text-sm text-gray-600">
                   إرسال إشعارات عبر البريد الإلكتروني للموظفين والمديرين
                 </p>
               </div>
-              <Switch 
+              <Switch
                 checked={formData.email_notifications ?? true}
                 onCheckedChange={(checked) => handleInputChange('email_notifications', checked)}
+                className="data-[state=checked]:bg-teal-600"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
-                <Label>إشعارات الرسائل النصية</Label>
-                <p className="text-sm text-muted-foreground">
+                <Label className="text-gray-900">إشعارات الرسائل النصية</Label>
+                <p className="text-sm text-gray-600">
                   إرسال إشعارات عبر الرسائل النصية للمناسبات المهمة
                 </p>
               </div>
-              <Switch 
+              <Switch
                 checked={formData.sms_notifications ?? false}
                 onCheckedChange={(checked) => handleInputChange('sms_notifications', checked)}
+                className="data-[state=checked]:bg-teal-600"
               />
             </div>
           </CardContent>
@@ -530,15 +557,17 @@ export default function HRSettings() {
 
         {/* أزرار الحفظ */}
         <div className="flex justify-end gap-2">
-          <Button 
+          <Button
             variant="outline"
             onClick={() => setFormData(settings || {})}
+            className="border-gray-200 hover:border-teal-500 hover:text-teal-600"
           >
             إلغاء
           </Button>
-          <Button 
+          <Button
             onClick={handleSaveSettings}
             disabled={isUpdating}
+            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
           >
             {isUpdating ? (
               <LoadingSpinner />

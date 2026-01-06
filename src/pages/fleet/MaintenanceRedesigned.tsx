@@ -312,9 +312,9 @@ export default function MaintenanceRedesigned() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
@@ -370,7 +370,7 @@ export default function MaintenanceRedesigned() {
               <Button
                 size="sm"
                 onClick={handleCreateNew}
-                className="bg-coral-600 hover:bg-coral-700 text-white gap-2"
+                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-lg shadow-teal-500/20"
               >
                 <Plus className="w-4 h-4" />
                 صيانة جديدة
@@ -428,7 +428,7 @@ export default function MaintenanceRedesigned() {
             {/* Quick Summary & Alerts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Quick Summary */}
-              <div className="lg:col-span-2 bg-white rounded-xl border p-5">
+              <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-5 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-neutral-900">ملخص سريع</h2>
                   <Button
@@ -466,7 +466,7 @@ export default function MaintenanceRedesigned() {
               </div>
 
               {/* Alerts */}
-              <div className="bg-white rounded-xl border p-5">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-5 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <h2 className="font-semibold text-neutral-900 mb-4">التنبيهات</h2>
 
                 <div className="space-y-2">
@@ -505,14 +505,14 @@ export default function MaintenanceRedesigned() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-xl border">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <div className="p-5 border-b flex items-center justify-between">
                 <h2 className="font-semibold text-neutral-900">النشاط الأخير</h2>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className="text-xs text-coral-600 hover:text-coral-700"
+                  className="text-xs text-teal-600 hover:text-teal-700"
                 >
                   عرض الكل
                 </Button>
@@ -561,7 +561,7 @@ export default function MaintenanceRedesigned() {
         ) : (
           <>
             {/* Search & Filters Bar */}
-            <div className="bg-white rounded-xl border p-4">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <div className="flex flex-col lg:flex-row gap-3">
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -645,7 +645,7 @@ export default function MaintenanceRedesigned() {
             </div>
 
             {/* Records Table */}
-            <div className="bg-white rounded-xl border overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -754,7 +754,7 @@ export default function MaintenanceRedesigned() {
                       : 'ابدأ بإنشاء طلب صيانة جديد'}
                   </p>
                   {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && priorityFilter === 'all' && (
-                    <Button onClick={handleCreateNew} className="bg-coral-600 hover:bg-coral-700">
+                    <Button onClick={handleCreateNew} className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700">
                       <Plus className="w-4 h-4 ml-2" />
                       صيانة جديدة
                     </Button>
@@ -789,7 +789,7 @@ export default function MaintenanceRedesigned() {
                         onClick={() => setCurrentPage(page)}
                         className={cn(
                           "h-9 w-9",
-                          currentPage === page && "bg-coral-600 text-white hover:bg-coral-700"
+                          currentPage === page && "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
                         )}
                       >
                         {page}
@@ -805,7 +805,7 @@ export default function MaintenanceRedesigned() {
                           onClick={() => setCurrentPage(totalPages)}
                           className={cn(
                             "h-9 w-9",
-                            currentPage === totalPages && "bg-coral-600 text-white hover:bg-coral-700"
+                            currentPage === totalPages && "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
                           )}
                         >
                           {totalPages}

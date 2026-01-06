@@ -162,7 +162,7 @@ export default function Reservations() {
   }
   
   return (
-    <div className="min-h-screen bg-[#f0efed]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
       <div className="flex h-full">
         {/* Main Content */}
         <div className="flex-1 overflow-auto">
@@ -172,7 +172,7 @@ export default function Reservations() {
               <p className="text-neutral-600 mb-4">إدارة ومتابعة حجوزات المركبات</p>
               
               {/* View Mode Selector */}
-              <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-4 mb-6">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 p-4 mb-6 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-neutral-900">عرض الحجوزات</h2>
                   <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function Reservations() {
               </div>
               
               {/* Search and Filters */}
-              <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-4 mb-6">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 p-4 mb-6 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <div className="flex flex-col lg:flex-row gap-4 mb-4">
                   <div className="flex-1">
                     <div className="relative">
@@ -274,7 +274,7 @@ export default function Reservations() {
               
               {/* Loading Progress */}
               {loadingStage !== 'idle' && (
-                <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-4 mb-6">
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 p-4 mb-6 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium text-neutral-600">جاري تحميل البيانات</h3>
                     <div className="flex items-center gap-2">
@@ -300,7 +300,7 @@ export default function Reservations() {
               
               {/* List View */}
               {viewMode === 'list' && (
-                <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>

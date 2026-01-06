@@ -157,8 +157,8 @@ const TaskCard: React.FC<{
       animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className={cn(
-        'bg-white rounded-xl border border-neutral-200 p-4 cursor-pointer hover:shadow-md transition-all',
-        isDragging && 'shadow-lg ring-2 ring-coral-500'
+        'bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 cursor-pointer hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+        isDragging && 'shadow-lg ring-2 ring-teal-500'
       )}
       onClick={onClick}
     >
@@ -194,12 +194,12 @@ const TaskCard: React.FC<{
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
           {task.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs bg-neutral-100">
+            <Badge key={tag} variant="secondary" className="text-xs bg-gray-100">
               {tag}
             </Badge>
           ))}
           {task.tags.length > 3 && (
-            <Badge variant="secondary" className="text-xs bg-neutral-100">
+            <Badge variant="secondary" className="text-xs bg-gray-100">
               +{task.tags.length - 3}
             </Badge>
           )}
@@ -209,7 +209,7 @@ const TaskCard: React.FC<{
       {/* Checklist Progress */}
       {checklistProgress && (
         <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
             <span className="flex items-center gap-1">
               <CheckSquare className="h-3 w-3" />
               المهام الفرعية
@@ -221,12 +221,12 @@ const TaskCard: React.FC<{
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100">
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-2">
           {/* Priority */}
           <div className="flex items-center gap-1">
             <div className={cn('w-2 h-2 rounded-full', priorityColors[task.priority])} />
-            <span className="text-xs text-neutral-500">{priorityLabels[task.priority]}</span>
+            <span className="text-xs text-gray-500">{priorityLabels[task.priority]}</span>
           </div>
 
           {/* Due Date */}
@@ -238,7 +238,7 @@ const TaskCard: React.FC<{
                   ? 'text-red-600'
                   : dueDateInfo.isDueToday
                   ? 'text-orange-600'
-                  : 'text-neutral-500'
+                  : 'text-gray-500'
               )}
             >
               <Calendar className="h-3 w-3" />
@@ -309,21 +309,20 @@ const KanbanColumn: React.FC<{
       {/* Column Header */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 rounded-t-xl',
-          column.bgColor
+          'flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/80 backdrop-blur-xl',
         )}
       >
         <div className={cn('flex items-center gap-2', column.color)}>
           {column.icon}
           <span className="font-medium">{column.title}</span>
         </div>
-        <Badge variant="secondary" className={cn('rounded-full', column.bgColor, column.color)}>
+        <Badge variant="secondary" className={cn('rounded-full bg-gray-100', column.color)}>
           {tasks.length}
         </Badge>
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 bg-neutral-50 rounded-b-xl p-3 space-y-3 overflow-y-auto">
+      <div className="flex-1 bg-gray-50/80 backdrop-blur-sm rounded-b-3xl p-3 space-y-3 overflow-y-auto">
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <AnimatePresence mode="popLayout">
             {tasks.map((task) => (
@@ -339,7 +338,7 @@ const KanbanColumn: React.FC<{
         </SortableContext>
 
         {tasks.length === 0 && (
-          <div className="text-center py-8 text-neutral-400 text-sm">
+          <div className="text-center py-8 text-gray-400 text-sm">
             لا توجد مهام
           </div>
         )}

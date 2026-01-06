@@ -146,37 +146,37 @@ const deletePayrollMutation = useDeletePayroll();
   }
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <DollarSign className="h-6 w-6 text-primary" />
+          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+            <DollarSign className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">إدارة الرواتب</h1>
-            <p className="text-muted-foreground">إدارة ومراجعة رواتب الموظفين</p>
+            <h1 className="text-2xl font-bold text-gray-900">إدارة الرواتب</h1>
+            <p className="text-gray-600">إدارة ومراجعة رواتب الموظفين</p>
           </div>
         </div>
-        <Button onClick={() => setShowCreatePayroll(true)}>
+        <Button onClick={() => setShowCreatePayroll(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20">
           <Plus className="h-4 w-4 ml-2" />
           إضافة راتب جديد
         </Button>
       </div>
 
       <Tabs defaultValue="records" className="space-y-4">
-        <TabsList>
+        <TabsList className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl">
           <TabsTrigger value="records">سجلات الرواتب</TabsTrigger>
           <TabsTrigger value="reviews">مراجعات الرواتب</TabsTrigger>
         </TabsList>
 
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="البحث..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10"
+              className="pr-10 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl"
             />
           </div>
         </div>
@@ -184,12 +184,14 @@ const deletePayrollMutation = useDeletePayroll();
         <TabsContent value="records">
           <div className="grid gap-4">
             {filteredRecords.length === 0 ? (
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
                 <CardContent className="p-8">
                   <div className="text-center">
-                    <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">لا توجد سجلات رواتب</p>
-                    <Button className="mt-4" onClick={() => setShowCreatePayroll(true)}>
+                    <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center mx-auto mb-4">
+                      <DollarSign className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="text-gray-600">لا توجد سجلات رواتب</p>
+                    <Button className="mt-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20" onClick={() => setShowCreatePayroll(true)}>
                       <Plus className="h-4 w-4 ml-2" />
                       إضافة أول راتب
                     </Button>
@@ -200,36 +202,36 @@ const deletePayrollMutation = useDeletePayroll();
               filteredRecords.map((record) => {
                 const statusInfo = getStatusBadge(record.status);
                 return (
-                  <Card key={record.id} className="hover:shadow-md transition-shadow">
+                  <Card key={record.id} className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                            <DollarSign className="h-6 w-6 text-primary" />
+                          <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center">
+                            <DollarSign className="h-6 w-6 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-lg">
+                            <h3 className="font-semibold text-lg text-gray-900">
                               {record.employee?.first_name} {record.employee?.last_name}
                             </h3>
-                            <p className="text-muted-foreground">رقم الراتب: {record.payroll_number}</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-gray-600">رقم الراتب: {record.payroll_number}</p>
+                            <p className="text-sm text-gray-600">
                               {new Date(record.pay_period_start).toLocaleDateString('en-GB')} - {' '}
                               {new Date(record.pay_period_end).toLocaleDateString('en-GB')}
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center justify-between flex-1">
                           <div className="flex items-center gap-6">
                             <div className="text-center">
-                              <p className="text-sm text-muted-foreground">صافي الراتب</p>
+                              <p className="text-sm text-gray-600">صافي الراتب</p>
                               <p className="font-semibold text-green-600 text-lg">
                                 {formatCurrency(record.net_amount)}
                               </p>
                             </div>
-                            
+
                             <div className="text-center">
-                              <p className="text-sm text-muted-foreground">حالة التكامل</p>
+                              <p className="text-sm text-gray-600">حالة التكامل</p>
                               <div className="flex items-center gap-1 justify-center">
                                 {record.journal_entry_id ? (
                                   <>
@@ -249,19 +251,19 @@ const deletePayrollMutation = useDeletePayroll();
                                 )}
                               </div>
                               {record.journal_entry_id && (
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-gray-600 mt-1">
                                   قيد رقم: {record.journal_entry_id.substring(0, 8)}...
                                 </p>
                               )}
                             </div>
-                            
+
                             <div className="flex items-center gap-2">
-                              <Badge variant={statusInfo.variant}>
+                              <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white' : ''}>
                                 {statusInfo.label}
                               </Badge>
                             </div>
                           </div>
-                          
+
                           <PayrollActionButtons
                             payroll={record}
                             onView={handleViewPayroll}
@@ -285,11 +287,13 @@ const deletePayrollMutation = useDeletePayroll();
         <TabsContent value="reviews">
           <div className="grid gap-4">
             {filteredReviews.length === 0 ? (
-              <Card>
+              <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
                 <CardContent className="p-8">
                   <div className="text-center">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">لا توجد مراجعات رواتب</p>
+                    <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="text-gray-600">لا توجد مراجعات رواتب</p>
                   </div>
                 </CardContent>
               </Card>
@@ -297,32 +301,32 @@ const deletePayrollMutation = useDeletePayroll();
               filteredReviews.map((review) => {
                 const statusInfo = getStatusBadge(review.status);
                 return (
-                  <Card key={review.id} className="hover:shadow-md transition-shadow">
+                  <Card key={review.id} className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                            <DollarSign className="h-6 w-6 text-primary" />
+                          <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center">
+                            <DollarSign className="h-6 w-6 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-lg">
+                            <h3 className="font-semibold text-lg text-gray-900">
                               دورة رواتب من {review.period_start} إلى {review.period_end}
                             </h3>
-                            <p className="text-muted-foreground">
+                            <p className="text-gray-600">
                               {review.total_employees} موظف
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-6">
                           <div className="text-center">
-                            <p className="text-sm text-muted-foreground">صافي المبلغ</p>
+                            <p className="text-sm text-gray-600">صافي المبلغ</p>
                             <p className="font-semibold text-green-600 text-lg">
                               {formatCurrency(review.net_amount)}
                             </p>
                           </div>
-                          
-                          <Badge variant={statusInfo.variant}>
+
+                          <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white' : ''}>
                             {statusInfo.label}
                           </Badge>
                         </div>

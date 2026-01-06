@@ -138,7 +138,7 @@ const Budgets = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 space-y-6">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -163,7 +163,7 @@ const Budgets = () => {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/20">
               <Plus className="h-4 w-4 mr-2" />
               موازنة جديدة
             </Button>
@@ -232,7 +232,7 @@ const Budgets = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">إجمالي الموازنات</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
@@ -242,8 +242,8 @@ const Budgets = () => {
             <p className="text-xs text-muted-foreground">موازنة مسجلة</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">الإيرادات المتوقعة</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -253,8 +253,8 @@ const Budgets = () => {
             <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المصروفات المتوقعة</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
@@ -264,8 +264,8 @@ const Budgets = () => {
             <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">صافي الدخل المتوقع</CardTitle>
             <Calculator className="h-4 w-4 text-muted-foreground" />
@@ -280,7 +280,7 @@ const Budgets = () => {
       </div>
 
       {/* Main Content */}
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

@@ -232,7 +232,7 @@ export default function TrafficViolationsRedesigned() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 font-sans text-gray-800" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 font-sans text-gray-800" dir="rtl">
       
       {/* Side Panel */}
       <TrafficViolationSidePanelNew
@@ -264,10 +264,10 @@ export default function TrafficViolationsRedesigned() {
       />
 
       {/* --- Top Navbar --- */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="bg-coral-50 p-2.5 rounded-xl">
-            <FileWarning className="w-6 h-6 text-coral-600" />
+          <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 rounded-xl shadow-lg shadow-teal-500/20">
+            <FileWarning className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-neutral-900">إدارة المخالفات المرورية</h1>
@@ -278,7 +278,7 @@ export default function TrafficViolationsRedesigned() {
           <Button
             variant="outline"
             onClick={() => refetch()}
-            className="border-neutral-200 hover:bg-neutral-50 rounded-xl"
+            className="border-gray-200/50 hover:bg-gray-50 rounded-xl hover:border-teal-500/30"
           >
             <RefreshCw className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">تحديث</span>
@@ -286,7 +286,7 @@ export default function TrafficViolationsRedesigned() {
           <Button
             variant="outline"
             onClick={handleOpenReportDialog}
-            className="border-neutral-200 hover:bg-neutral-50 rounded-xl"
+            className="border-gray-200/50 hover:bg-gray-50 rounded-xl hover:border-teal-500/30"
           >
             <Printer className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">طباعة التقرير</span>
@@ -294,8 +294,8 @@ export default function TrafficViolationsRedesigned() {
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => handleOpenModal(null)} 
-                className="bg-coral-500 hover:bg-coral-600 text-white rounded-xl shadow-lg shadow-coral-200"
+                onClick={() => handleOpenModal(null)}
+                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/20"
               >
                 <Plus className="w-5 h-5 ml-2" />
                 تسجيل مخالفة
@@ -337,19 +337,19 @@ export default function TrafficViolationsRedesigned() {
         />
 
         {/* --- Tabs Section --- */}
-        <div className="bg-white rounded-[1.25rem] border border-neutral-200 shadow-sm overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 shadow-sm overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <Tabs defaultValue="list" className="w-full">
             <div className="border-b border-neutral-100 px-4 pt-2">
               <TabsList className="h-auto flex justify-start gap-1 p-1 bg-transparent">
-                <TabsTrigger value="list" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger value="list" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <List className="w-4 h-4" />
                   قائمة المخالفات
                 </TabsTrigger>
-                <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <Upload className="w-4 h-4" />
                   استيراد PDF
                 </TabsTrigger>
-                <TabsTrigger value="reports" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-coral-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger value="reports" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <BarChart className="w-4 h-4" />
                   التقارير
                 </TabsTrigger>
@@ -366,8 +366,8 @@ export default function TrafficViolationsRedesigned() {
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
                   <input 
                     type="text" 
-                    placeholder="بحث: رقم المخالفة، المركبة، العميل..." 
-                    className="w-full pr-10 pl-4 py-2.5 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-coral-500 focus:border-coral-500 focus:outline-none transition"
+                    placeholder="بحث: رقم المخالفة، المركبة، العميل..."
+                    className="w-full pr-10 pl-4 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none transition hover:border-teal-500/30"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -382,7 +382,7 @@ export default function TrafficViolationsRedesigned() {
                     <select 
                       value={filterCar} 
                       onChange={(e) => setFilterCar(e.target.value)}
-                      className="w-full pr-9 pl-8 py-2.5 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-coral-500 focus:border-coral-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 transition"
+                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
                     >
                       <option value="all">جميع المركبات</option>
                       {vehicles.map(v => (
@@ -398,7 +398,7 @@ export default function TrafficViolationsRedesigned() {
                     <select 
                       value={filterCustomer} 
                       onChange={(e) => setFilterCustomer(e.target.value)}
-                      className="w-full pr-9 pl-8 py-2.5 bg-white border border-neutral-200 rounded-xl focus:ring-2 focus:ring-coral-500 focus:border-coral-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 transition"
+                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
                     >
                       <option value="all">جميع العملاء</option>
                       {customers.map(c => (
@@ -474,8 +474,8 @@ export default function TrafficViolationsRedesigned() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div 
-                              className="flex items-center gap-2 cursor-pointer hover:text-coral-600 transition"
+                            <div
+                              className="flex items-center gap-2 cursor-pointer hover:text-teal-600 transition"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 violation.vehicle_id && handleNavigateToVehicle(violation.vehicle_id);
@@ -485,8 +485,8 @@ export default function TrafficViolationsRedesigned() {
                               <span className="font-medium text-neutral-700 hover:underline">{getCarName(violation)}</span>
                             </div>
                             {violation.contract_id && (
-                              <div 
-                                className="text-xs text-coral-600 mt-1 cursor-pointer hover:underline"
+                              <div
+                                className="text-xs text-teal-600 mt-1 cursor-pointer hover:underline"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleNavigateToContract(violation.contract_id!);
@@ -497,8 +497,8 @@ export default function TrafficViolationsRedesigned() {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <div 
-                              className="flex items-center gap-2 cursor-pointer hover:text-coral-600 transition"
+                            <div
+                              className="flex items-center gap-2 cursor-pointer hover:text-teal-600 transition"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 violation.customer_id && handleNavigateToCustomer(violation.customer_id);
@@ -523,7 +523,7 @@ export default function TrafficViolationsRedesigned() {
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 font-bold text-coral-600 text-base">{formatCurrency(violation.amount || 0)}</td>
+                          <td className="px-6 py-4 font-bold text-teal-600 text-base">{formatCurrency(violation.amount || 0)}</td>
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
                               violation.payment_status === 'paid' 
@@ -546,9 +546,9 @@ export default function TrafficViolationsRedesigned() {
                           </td>
                           <td className="px-6 py-4 print:hidden" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={() => handleOpenSidePanel(violation)} 
-                                className="p-2 bg-coral-50 text-coral-600 rounded-lg hover:bg-coral-100 transition" 
+                              <button
+                                onClick={() => handleOpenSidePanel(violation)}
+                                className="p-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition"
                                 title="عرض التفاصيل"
                               >
                                 <Eye className="w-4 h-4" />
@@ -599,8 +599,8 @@ export default function TrafficViolationsRedesigned() {
             {/* Tab Content: Import */}
             <TabsContent value="import" className="p-6">
               <div className="text-center max-w-md mx-auto space-y-4">
-                <div className="w-24 h-24 mx-auto bg-coral-50 rounded-full flex items-center justify-center">
-                  <Upload className="w-12 h-12 text-coral-400" />
+                <div className="w-24 h-24 mx-auto bg-teal-50 rounded-full flex items-center justify-center">
+                  <Upload className="w-12 h-12 text-teal-400" />
                 </div>
                 <h3 className="text-xl font-bold">استيراد مخالفات من PDF</h3>
                 <p className="text-neutral-500">قم بتحميل ملف PDF يحتوي على المخالفات المرورية وسيتم استخراجها تلقائياً</p>
@@ -614,11 +614,11 @@ export default function TrafficViolationsRedesigned() {
             <TabsContent value="reports" className="p-6">
               <h3 className="text-xl font-bold mb-6">التقارير والإحصائيات</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-neutral-200 rounded-[1.25rem]">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-coral-50 rounded-lg">
-                        <BarChart className="w-5 h-5 text-coral-600" />
+                      <div className="p-2 bg-teal-50 rounded-lg">
+                        <BarChart className="w-5 h-5 text-teal-600" />
                       </div>
                       <div>
                         <CardTitle className="text-base">تقرير المخالفات الشهري</CardTitle>
@@ -627,11 +627,11 @@ export default function TrafficViolationsRedesigned() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full rounded-xl border-coral-200 text-coral-600 hover:bg-coral-50">عرض التقرير</Button>
+                    <Button variant="outline" className="w-full rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">عرض التقرير</Button>
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-neutral-200 rounded-[1.25rem]">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-50 rounded-lg">
@@ -648,7 +648,7 @@ export default function TrafficViolationsRedesigned() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-neutral-200 rounded-[1.25rem]">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-amber-50 rounded-lg">
@@ -665,7 +665,7 @@ export default function TrafficViolationsRedesigned() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-neutral-200 rounded-[1.25rem]">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-purple-50 rounded-lg">
