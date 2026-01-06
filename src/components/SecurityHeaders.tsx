@@ -61,8 +61,8 @@ export function SecurityHeaders() {
               if (typeof arg === 'string') {
                 // Remove potential sensitive data patterns
                 return arg
-                  .replace(/(token|password|secret|key|auth)[s:=]+["']?[\w-/+]+=+["']?/gi, '[REDACTED]')
-                  .replace(/Bearer[s][w-/+]+=+/gi, 'Bearer [REDACTED]')
+                  .replace(/(token|password|secret|key|auth)[\s:=]+["']?[\w\-\/+=]+["']?/gi, '[REDACTED]')
+                  .replace(/Bearer\s+[\w\-\/+=]+/gi, 'Bearer [REDACTED]')
                   .replace(/[a-zA-Z0-9]{20,}/g, '[LONG_STRING_REDACTED]');
               }
               return arg;
