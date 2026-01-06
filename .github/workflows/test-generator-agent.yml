@@ -78,7 +78,7 @@ jobs:
                 fi
               done
               
-              if [ "$HAS_TEST" = false ]; then
+              if [[ "$HAS_TEST" == false ]]; then
                 MISSING_TESTS="$MISSING_TESTS\n- $file"
                 MISSING_COUNT=$((MISSING_COUNT + 1))
               fi
@@ -91,14 +91,14 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           
           TOTAL=${{ steps.new_files.outputs.count }}
-          if [ "$TOTAL" -gt "0" ]; then
+          if [[ "$TOTAL" -gt 0 ]]; then
             COVERAGE_PERCENT=$(( (TOTAL - MISSING_COUNT) * 100 / TOTAL ))
           else
             COVERAGE_PERCENT=100
           fi
           echo "coverage_percent=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
           
-          if [ "$COVERAGE_PERCENT" -lt "85" ]; then
+          if [[ "$COVERAGE_PERCENT" -lt 85 ]]; then
             echo "status=fail" >> $GITHUB_OUTPUT
           else
             echo "status=pass" >> $GITHUB_OUTPUT
@@ -118,7 +118,7 @@ jobs:
               FILENAME=$(basename "$file" | sed 's/\.[^.]*$//')
               
               # Determine test file extension
-              if [ "$EXT" = "tsx" ]; then
+              if [[ "$EXT" == "tsx" ]]; then
                 TEST_EXT="test.tsx"
               else
                 TEST_EXT="test.ts"
@@ -139,7 +139,7 @@ jobs:
               DEFAULT_EXPORT=$(grep -oE 'export default \w+' "$file" | awk '{print $3}' || true)
               
               # Generate test skeleton
-              if echo "$file" | grep -qE '\.tsx$'; then
+              if echo "$file" | grep -qE '.tsx$'; then
                 # React component test
                 cat > "generated-tests/$(basename $TEST_FILE)" << TESTEOF
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
