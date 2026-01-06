@@ -71,50 +71,33 @@ export default defineConfig(({ mode }) => ({
         pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : [],
       },
     },
-    // Code splitting strategy
+    // Code splitting strategy - simplified to avoid bundling issues
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // CRITICAL: react-router-dom MUST be in the main entry chunk
-          // to avoid race conditions with lazy-loaded components using useNavigate
+          // Keep react-router-dom in main entry to avoid lazy loading race conditions
           if (id.includes('react-router-dom')) {
-            return undefined; // Keep in main entry chunk
+            return undefined;
           }
-          // Vendor chunks for better caching
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+          // Core React vendor chunk
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
             return 'react-vendor';
           }
-          if (id.includes('node_modules/@radix-ui')) {
+          // UI components vendor chunk
+          if (id.includes('node_modules/@radix-ui/')) {
             return 'ui-vendor';
           }
-          if (id.includes('node_modules/@tanstack/react-query') || id.includes('node_modules/@tanstack/react-virtual')) {
+          // Query vendor chunk
+          if (id.includes('node_modules/@tanstack/')) {
             return 'query-vendor';
           }
-          if (id.includes('node_modules/recharts') || id.includes('node_modules/leaflet')) {
-            return 'charts';
-          }
-          // Heavy libraries - lazy loaded
-          if (id.includes('node_modules/exceljs')) {
-            return 'excel-export';
-          }
-          if (id.includes('node_modules/jspdf')) {
-            return 'pdf-export';
-          }
-          if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform') || id.includes('node_modules/zod')) {
-            return 'forms';
-          }
-          if (id.includes('node_modules/date-fns') || id.includes('node_modules/clsx') || id.includes('node_modules/tailwind-merge')) {
-            return 'utils';
-          }
+          // Let Vite handle recharts/leaflet automatically to avoid initialization issues
         },
-        // Chunk naming for better debugging
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
-      // Warn about large chunks
       onwarn(warning, warn) {
-        // Ignore certain warnings
         if (warning.code === 'CIRCULAR_DEPENDENCY') return;
         if (warning.code === 'EVAL') return;
         warn(warning);
