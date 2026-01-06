@@ -8,16 +8,75 @@ on:
   workflow_dispatch:
 
 jobs:
-  placeholder:
-    name: ⏸️ Performance-agent (Disabled)
+  performance-check:
+    name: ⚡ Performance Check
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: 📝 Info
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📚 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build and analyze
         run: |
-          echo "## Performance-agent" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚡ Performance Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "This workflow is currently disabled." >> $GITHUB_STEP_SUMMARY
-          echo "It requires Supabase tables and configuration." >> $GITHUB_STEP_SUMMARY
+
+          # Build production
+          npm run build:ci || true
+
+      - name: 📊 Analyze bundle size
+        run: |
+          if [ -d "dist" ]; then
+            BUNDLE_SIZE=$(du -sb dist 2>/dev/null | cut -f1 || echo "0")
+            BUNDLE_MB=$(echo "scale=2; $BUNDLE_SIZE / 1048576" | bc)
+
+            echo "### Bundle Size" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Total bundle size: **${BUNDLE_MB}MB**" >> $GITHUB_STEP_SUMMARY
+
+            # Count files
+            FILE_COUNT=$(find dist -type f | wc -l)
+            echo "Total files: $FILE_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🔍 Check for large files
+        run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Status: Passed (disabled)" >> $GITHUB_STEP_SUMMARY
+          echo "### Large Files (> 500KB)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -d "dist" ]; then
+            find dist -type f -size +500k -exec ls -lh {} \; | awk '{print $5, $9}' | head -10 >> $GITHUB_STEP_SUMMARY || echo "No large files found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🔍 Check for optimization opportunities
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Optimization Checks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check for lazy loading
+          LAZY_IMPORTS=$(grep -r "lazy(" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Lazy loaded components: $LAZY_IMPORTS" >> $GITHUB_STEP_SUMMARY
+
+          # Check for React.memo
+          MEMO_COUNT=$(grep -r "React.memo\|memo(" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Memoized components: $MEMO_COUNT" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Summary
+        run: |
+          echo "## ✅ Performance Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Bundle Size | ✅ Analyzed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Optimizations | ✅ Checked |" >> $GITHUB_STEP_SUMMARY

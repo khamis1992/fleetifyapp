@@ -8,16 +8,56 @@ on:
   workflow_dispatch:
 
 jobs:
-  placeholder:
-    name: ⏸️ Incident-report-agent (Disabled)
+  incident-check:
+    name: 🚨 Incident Pattern Check
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: 📝 Info
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Check for error patterns
         run: |
-          echo "## Incident-report-agent" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚨 Incident Pattern Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "This workflow is currently disabled." >> $GITHUB_STEP_SUMMARY
-          echo "It requires Supabase tables and configuration." >> $GITHUB_STEP_SUMMARY
+
+          # Check for common error patterns
+          THROW_COUNT=$(grep -r "throw new Error" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Error throws: $THROW_COUNT" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for console errors
+        run: |
+          CONSOLE_ERROR=$(grep -r "console.error" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Console.error calls: $CONSOLE_ERROR" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for try-catch blocks
+        run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Status: Passed (disabled)" >> $GITHUB_STEP_SUMMARY
+          echo "### Error Handling" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          TRY_CATCH=$(grep -r "try {" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Try-catch blocks: $TRY_CATCH" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for API error handling
+        run: |
+          API_ERRORS=$(grep -r "\.catch\|catch (error\|catch (err" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Error catch handlers: $API_ERRORS" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for TODOs related to bugs
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Bug Trackers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          BUG_TODO=$(grep -ri "bug\|fixme\|incident\|issue" src --include="*.tsx" --include="*.ts" | grep -i "todo\|fixme" | wc -l)
+          echo "Bug-related TODOs: $BUG_TODO" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Summary
+        run: |
+          echo "## ✅ Incident Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Error Patterns | ✅ Scanned |" >> $GITHUB_STEP_SUMMARY
+          echo "| Error Handling | ✅ Checked |" >> $GITHUB_STEP_SUMMARY
