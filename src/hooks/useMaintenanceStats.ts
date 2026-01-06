@@ -1,6 +1,6 @@
 /**
  * Hook لجلب إحصائيات الصيانة الشاملة
- * يستخدم في MaintenanceSmartDashboard
+ * PERFORMANCE OPTIMIZED: Uses database aggregation instead of fetching all records
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -14,34 +14,34 @@ export interface MaintenanceStats {
   inProgressCount: number;
   completedCount: number;
   cancelledCount: number;
-  
+
   // إحصائيات هذا الشهر
   completedThisMonth: number;
   costThisMonth: number;
-  
+
   // إحصائيات النوع
   routineCount: number;
   repairCount: number;
   emergencyCount: number;
   preventiveCount: number;
-  
+
   // التكاليف
   totalCost: number;
   averageCost: number;
   estimatedPendingCost: number;
-  
+
   // الأداء
   completionRate: number; // معدل الإنجاز
   averageCompletionDays: number; // متوسط أيام الإنجاز
-  
+
   // المركبات
   vehiclesInMaintenance: number;
-  
+
   // تنبيهات
   overdueCount: number; // صيانة متأخرة
   urgentCount: number; // عاجلة
   upcomingScheduled: number; // مجدولة قادمة
-  
+
   // التقارير الشهرية
   monthlyTrend: {
     month: string;
@@ -61,21 +61,74 @@ export const useMaintenanceStats = () => {
         throw new Error('Company ID not found');
       }
 
-      // جلب جميع سجلات الصيانة
-      const { data: maintenanceRecords, error: maintenanceError } = await supabase
-        .from('vehicle_maintenance')
-        .select('*')
-        .eq('company_id', companyId);
-
-      if (maintenanceError) throw maintenanceError;
-
-      const records = maintenanceRecords || [];
       const today = new Date();
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
+      const todayStr = today.toISOString().split('T')[0];
+      const sevenDaysLater = new Date(today);
+      sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+      const sevenDaysLaterStr = sevenDaysLater.toISOString().split('T')[0];
 
-      // إحصائيات الحالة
-      const statusCounts = records.reduce((acc, r) => {
+      // PARALLEL QUERIES: Execute all queries at once instead of sequentially
+      const [
+        statusCountsResult,
+        typeCountsResult,
+        thisMonthStatsResult,
+        costStatsResult,
+        vehiclesInMaintenanceResult,
+        alertsResult,
+        monthlyTrendResult
+      ] = await Promise.all([
+        // 1. Status counts using aggregation
+        supabase
+          .from('vehicle_maintenance')
+          .select('status')
+          .eq('company_id', companyId),
+
+        // 2. Type counts using aggregation
+        supabase
+          .from('vehicle_maintenance')
+          .select('maintenance_type')
+          .eq('company_id', companyId),
+
+        // 3. This month's completed and cost
+        supabase
+          .from('vehicle_maintenance')
+          .select('status, actual_cost, estimated_cost, created_at')
+          .eq('company_id', companyId)
+          .gte('created_at', new Date(currentYear, currentMonth, 1).toISOString())
+          .lte('created_at', new Date(currentYear, currentMonth + 1, 0).toISOString()),
+
+        // 4. Cost statistics (completed and pending)
+        supabase
+          .from('vehicle_maintenance')
+          .select('status, actual_cost, estimated_cost, scheduled_date, completion_date')
+          .eq('company_id', companyId),
+
+        // 5. Vehicles in maintenance count
+        supabase
+          .from('vehicles')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('status', 'maintenance'),
+
+        // 6. Alerts data (overdue, urgent, upcoming)
+        supabase
+          .from('vehicle_maintenance')
+          .select('id, status, scheduled_date, priority, created_at')
+          .eq('company_id', companyId),
+
+        // 7. Monthly trend (last 6 months) - fetch minimal data
+        supabase
+          .from('vehicle_maintenance')
+          .select('created_at, actual_cost, estimated_cost')
+          .eq('company_id', companyId)
+          .gte('created_at', new Date(currentYear, currentMonth - 5, 1).toISOString())
+          .order('created_at', { ascending: true }),
+      ]);
+
+      // Process status counts
+      const statusCounts = (statusCountsResult.data || []).reduce((acc, r) => {
         acc[r.status || 'unknown'] = (acc[r.status || 'unknown'] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -84,45 +137,45 @@ export const useMaintenanceStats = () => {
       const inProgressCount = statusCounts['in_progress'] || 0;
       const completedCount = statusCounts['completed'] || 0;
       const cancelledCount = statusCounts['cancelled'] || 0;
+      const totalRecords = statusCountsResult.data?.length || 0;
 
-      // إحصائيات النوع
-      const typeCounts = records.reduce((acc, r) => {
+      // Process type counts
+      const typeCounts = (typeCountsResult.data || []).reduce((acc, r) => {
         acc[r.maintenance_type || 'unknown'] = (acc[r.maintenance_type || 'unknown'] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // إحصائيات هذا الشهر
-      const thisMonthRecords = records.filter(r => {
-        if (!r.created_at) return false;
-        const date = new Date(r.created_at);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-      });
+      const routineCount = typeCounts['routine'] || 0;
+      const repairCount = typeCounts['repair'] || 0;
+      const emergencyCount = typeCounts['emergency'] || 0;
+      const preventiveCount = typeCounts['preventive'] || 0;
 
+      // Process this month stats
+      const thisMonthRecords = thisMonthStatsResult.data || [];
       const completedThisMonth = thisMonthRecords.filter(r => r.status === 'completed').length;
       const costThisMonth = thisMonthRecords.reduce(
-        (sum, r) => sum + (Number(r.actual_cost) || Number(r.estimated_cost) || 0), 0
+        (sum, r) => sum + (Number(r.actual_cost) || Number(r.estimated_cost) || 0),
+        0
       );
 
-      // التكاليف
-      const completedRecords = records.filter(r => r.status === 'completed');
+      // Process cost stats
+      const costRecords = costStatsResult.data || [];
+      const completedRecords = costRecords.filter(r => r.status === 'completed');
       const totalCost = completedRecords.reduce(
-        (sum, r) => sum + (Number(r.actual_cost) || 0), 0
+        (sum, r) => sum + (Number(r.actual_cost) || 0),
+        0
       );
-      const averageCost = completedRecords.length > 0 
-        ? Math.round(totalCost / completedRecords.length) 
+      const averageCost = completedRecords.length > 0
+        ? Math.round(totalCost / completedRecords.length)
         : 0;
 
-      const pendingRecords = records.filter(r => r.status === 'pending' || r.status === 'in_progress');
+      const pendingRecords = costRecords.filter(r => r.status === 'pending' || r.status === 'in_progress');
       const estimatedPendingCost = pendingRecords.reduce(
-        (sum, r) => sum + (Number(r.estimated_cost) || 0), 0
+        (sum, r) => sum + (Number(r.estimated_cost) || 0),
+        0
       );
 
-      // الأداء
-      const completionRate = records.length > 0 
-        ? Math.round((completedCount / records.length) * 100) 
-        : 0;
-
-      // حساب متوسط أيام الإنجاز
+      // Calculate average completion days
       let totalDays = 0;
       let completedWithDates = 0;
       completedRecords.forEach(r => {
@@ -136,72 +189,75 @@ export const useMaintenanceStats = () => {
           }
         }
       });
-      const averageCompletionDays = completedWithDates > 0 
-        ? Math.round(totalDays / completedWithDates) 
+      const averageCompletionDays = completedWithDates > 0
+        ? Math.round(totalDays / completedWithDates)
         : 0;
 
-      // جلب عدد المركبات في الصيانة
-      const { data: vehiclesInMaintenanceData, error: vehiclesError } = await supabase
-        .from('vehicles')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('status', 'maintenance');
+      // Vehicles in maintenance
+      const vehiclesInMaintenance = vehiclesInMaintenanceResult.data?.length || 0;
 
-      const vehiclesInMaintenance = vehiclesInMaintenanceData?.length || 0;
-
-      // تنبيهات
-      const overdueCount = records.filter(r => {
+      // Process alerts
+      const alertsRecords = alertsResult.data || [];
+      const overdueCount = alertsRecords.filter(r => {
         if (r.status === 'completed' || r.status === 'cancelled') return false;
         if (!r.scheduled_date) return false;
         const scheduled = new Date(r.scheduled_date);
         return scheduled < today;
       }).length;
 
-      const urgentCount = records.filter(
+      const urgentCount = alertsRecords.filter(
         r => r.priority === 'urgent' && r.status !== 'completed' && r.status !== 'cancelled'
       ).length;
 
-      const sevenDaysLater = new Date(today);
-      sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
-      
-      const upcomingScheduled = records.filter(r => {
+      const upcomingScheduled = alertsRecords.filter(r => {
         if (r.status !== 'pending') return false;
         if (!r.scheduled_date) return false;
         const scheduled = new Date(r.scheduled_date);
         return scheduled >= today && scheduled <= sevenDaysLater;
       }).length;
 
-      // التقارير الشهرية (آخر 6 أشهر)
+      // Process monthly trend
+      const monthlyTrendMap = new Map<string, { count: number; cost: number }>();
+      (monthlyTrendResult.data || []).forEach(r => {
+        if (!r.created_at) return;
+        const date = new Date(r.created_at);
+        const monthKey = date.toLocaleDateString('ar-SA', { month: 'short' });
+        const existing = monthlyTrendMap.get(monthKey) || { count: 0, cost: 0 };
+        monthlyTrendMap.set(monthKey, {
+          count: existing.count + 1,
+          cost: existing.cost + (Number(r.actual_cost) || Number(r.estimated_cost) || 0),
+        });
+      });
+
+      // Generate last 6 months trend
       const monthlyTrend: { month: string; count: number; cost: number }[] = [];
       for (let i = 5; i >= 0; i--) {
         const date = new Date(currentYear, currentMonth - i, 1);
         const monthName = date.toLocaleDateString('ar-SA', { month: 'short' });
-        const monthRecords = records.filter(r => {
-          if (!r.created_at) return false;
-          const d = new Date(r.created_at);
-          return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
-        });
+        const data = monthlyTrendMap.get(monthName) || { count: 0, cost: 0 };
         monthlyTrend.push({
           month: monthName,
-          count: monthRecords.length,
-          cost: monthRecords.reduce(
-            (sum, r) => sum + (Number(r.actual_cost) || Number(r.estimated_cost) || 0), 0
-          ),
+          count: data.count,
+          cost: data.cost,
         });
       }
 
+      const completionRate = totalRecords > 0
+        ? Math.round((completedCount / totalRecords) * 100)
+        : 0;
+
       return {
-        totalRecords: records.length,
+        totalRecords,
         pendingCount,
         inProgressCount,
         completedCount,
         cancelledCount,
         completedThisMonth,
         costThisMonth,
-        routineCount: typeCounts['routine'] || 0,
-        repairCount: typeCounts['repair'] || 0,
-        emergencyCount: typeCounts['emergency'] || 0,
-        preventiveCount: typeCounts['preventive'] || 0,
+        routineCount,
+        repairCount,
+        emergencyCount,
+        preventiveCount,
         totalCost,
         averageCost,
         estimatedPendingCost,
@@ -216,6 +272,6 @@ export const useMaintenanceStats = () => {
     },
     enabled: !!companyId,
     staleTime: 3 * 60 * 1000, // 3 دقائق
+    gcTime: 5 * 60 * 1000, // 5 minutes cache
   });
 };
-

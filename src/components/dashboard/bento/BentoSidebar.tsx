@@ -230,15 +230,15 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             className={cn(
               'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
               isParentItemActive
-                ? 'bg-gradient-to-l from-coral-500/10 to-orange-500/10 text-coral-600 border-r-2 border-coral-500'
+                ? 'bg-gradient-to-l from-teal-500/10 to-teal-600/10 text-teal-600 border-r-2 border-teal-500'
                 : isExpanded
-                ? 'bg-neutral-100 text-neutral-900'
-                : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
             )}
           >
             <item.icon className={cn(
               'w-5 h-5 flex-shrink-0 transition-colors',
-              isParentItemActive ? 'text-coral-500' : ''
+              isParentItemActive ? 'text-teal-500' : ''
             )} />
             {(!collapsed || isMobile) && (
               <>
@@ -272,13 +272,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                         className={cn(
                           'flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-200',
                           isChildActive
-                            ? 'bg-coral-500 text-white shadow-md shadow-coral-500/20 font-medium'
-                            : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700'
+                            ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/20 font-medium'
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                         )}
                       >
                         <ChildIcon className={cn(
                           'w-4 h-4 flex-shrink-0',
-                          isChildActive ? 'text-white' : 'text-neutral-400'
+                          isChildActive ? 'text-white' : 'text-gray-400'
                         )} />
                         <span>{child.label}</span>
                       </NavLink>
@@ -301,8 +301,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
           isDirectActive
-            ? 'bg-gradient-to-l from-coral-500 to-orange-500 text-white shadow-lg shadow-coral-500/25'
-            : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
+            ? 'bg-gradient-to-l from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
         )}
       >
         <item.icon className={cn(
@@ -322,27 +322,27 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         // ✅ Fixed positioning - يبقى ثابتاً عند التمرير
         "fixed top-0 right-0 h-screen z-40",
         "bg-white flex flex-col shadow-sm",
-        isMobile ? "border-none" : "border-l border-neutral-200"
+        isMobile ? "border-none" : "border-l border-gray-200"
       )}
     >
       {/* === Header: Logo & Collapse Button === */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-neutral-100 flex-shrink-0">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 flex-shrink-0">
         {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="w-8 h-8 bg-gradient-to-bl from-coral-500 to-orange-500 rounded-lg flex items-center justify-center shadow-md shadow-coral-500/20">
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/30">
               <Car className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-neutral-900">Fleetify</span>
+            <span className="font-bold text-gray-900">Fleetify</span>
           </motion.div>
         )}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
             title={collapsed ? 'توسيع' : 'تصغير'}
           >
             {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
@@ -357,12 +357,12 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             {/* Category Label */}
             {categoryLabels[category] && (!collapsed || isMobile) && (
               <div className="px-3 py-2 mb-1">
-                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   {categoryLabels[category]}
                 </span>
               </div>
             )}
-            
+
             {/* Category Items */}
             <ul className="space-y-1">
               {items.map((item) => (
@@ -372,14 +372,14 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
 
             {/* Separator between categories */}
             {categoryIndex < Object.keys(groupedNavigation).length - 1 && (
-              <div className="mt-4 mx-3 border-b border-neutral-100" />
+              <div className="mt-4 mx-3 border-b border-gray-100" />
             )}
           </div>
         ))}
       </nav>
 
       {/* === Compact User Profile === */}
-      <div className="p-2 border-t border-neutral-100 flex-shrink-0 bg-neutral-50/50">
+      <div className="p-2 border-t border-gray-100 flex-shrink-0 bg-gray-50/50">
         <div
           className={cn(
             'flex items-center gap-2 p-2 rounded-lg',
@@ -387,32 +387,32 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           )}
         >
           {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-gradient-to-bl from-coral-500 to-orange-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-lg shadow-teal-500/30">
             {userInitials}
           </div>
-          
+
           {/* User Info + Logout in one row */}
           {(!collapsed || isMobile) && (
             <div className="flex-1 flex items-center justify-between min-w-0">
               <div className="min-w-0">
-                <p className="text-xs font-medium text-neutral-800 truncate">{userName}</p>
-                <p className="text-[10px] text-neutral-400 truncate">{user?.email}</p>
+                <p className="text-xs font-medium text-gray-800 truncate">{userName}</p>
+                <p className="text-[10px] text-gray-400 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={handleSignOut}
-                className="p-1.5 rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
                 title="تسجيل الخروج"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           )}
-          
+
           {/* Collapsed logout */}
           {collapsed && !isMobile && (
             <button
               onClick={handleSignOut}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               title="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />

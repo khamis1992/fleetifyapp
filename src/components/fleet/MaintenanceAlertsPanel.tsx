@@ -1,15 +1,16 @@
 /**
  * لوحة تنبيهات الصيانة
  * تصميم Bento Dashboard متوافق مع الداشبورد الرئيسية
+ * PERFORMANCE OPTIMIZED: Uses parallel queries
  */
 
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  AlertTriangle, 
-  Clock, 
-  Car, 
+import {
+  AlertTriangle,
+  Clock,
+  Car,
   Wrench,
   Calendar,
   ChevronLeft,
@@ -39,11 +40,11 @@ interface MaintenanceAlertsPanelProps {
   compact?: boolean;
 }
 
-export function MaintenanceAlertsPanel({ 
-  onMaintenanceClick, 
+export function MaintenanceAlertsPanel({
+  onMaintenanceClick,
   onVehicleClick,
   maxItems = 5,
-  compact = false 
+  compact = false
 }: MaintenanceAlertsPanelProps) {
   const { user } = useAuth();
   const companyId = user?.profile?.company_id;
@@ -56,30 +57,83 @@ export function MaintenanceAlertsPanel({
       const today = new Date();
       const alertsList: MaintenanceAlert[] = [];
 
-      // جلب الصيانة المتأخرة
-      const { data: overdueData } = await supabase
-        .from('vehicle_maintenance')
-        .select(`
-          id,
-          maintenance_number,
-          scheduled_date,
-          priority,
-          maintenance_type,
-          vehicles (
+      // PARALLEL QUERIES: Execute all queries at once instead of sequentially
+      const [
+        overdueData,
+        urgentData,
+        scheduledData,
+        stoppedVehicles
+      ] = await Promise.all([
+        // 1. جلب الصيانة المتأخرة
+        supabase
+          .from('vehicle_maintenance')
+          .select(`
             id,
-            plate_number
-          )
-        `)
-        .eq('company_id', companyId)
-        .in('status', ['pending', 'in_progress'])
-        .lt('scheduled_date', today.toISOString().split('T')[0])
-        .order('scheduled_date', { ascending: true })
-        .limit(10);
+            maintenance_number,
+            scheduled_date,
+            priority,
+            maintenance_type,
+            vehicles (
+              id,
+              plate_number
+            )
+          `)
+          .eq('company_id', companyId)
+          .in('status', ['pending', 'in_progress'])
+          .lt('scheduled_date', today.toISOString().split('T')[0])
+          .order('scheduled_date', { ascending: true })
+          .limit(10),
 
-      overdueData?.forEach(m => {
+        // 2. جلب الطلبات العاجلة
+        supabase
+          .from('vehicle_maintenance')
+          .select(`
+            id,
+            maintenance_number,
+            description,
+            vehicles (
+              id,
+              plate_number
+            )
+          `)
+          .eq('company_id', companyId)
+          .eq('priority', 'urgent')
+          .in('status', ['pending', 'in_progress'])
+          .limit(5),
+
+        // 3. جلب الصيانة المجدولة خلال 3 أيام
+        supabase
+          .from('vehicle_maintenance')
+          .select(`
+            id,
+            maintenance_number,
+            scheduled_date,
+            maintenance_type,
+            vehicles (
+              id,
+              plate_number
+            )
+          `)
+          .eq('company_id', companyId)
+          .eq('status', 'pending')
+          .gte('scheduled_date', today.toISOString().split('T')[0])
+          .order('scheduled_date', { ascending: true })
+          .limit(10),
+
+        // 4. جلب المركبات المتوقفة للصيانة لفترة طويلة
+        supabase
+          .from('vehicles')
+          .select('id, plate_number, last_maintenance_date')
+          .eq('company_id', companyId)
+          .eq('status', 'maintenance')
+          .limit(10),
+      ]);
+
+      // Process overdue maintenance
+      overdueData?.data?.forEach(m => {
         const scheduled = new Date(m.scheduled_date!);
         const daysOverdue = Math.ceil((today.getTime() - scheduled.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         alertsList.push({
           id: `overdue-${m.id}`,
           type: 'overdue',
@@ -93,24 +147,8 @@ export function MaintenanceAlertsPanel({
         });
       });
 
-      // جلب الطلبات العاجلة
-      const { data: urgentData } = await supabase
-        .from('vehicle_maintenance')
-        .select(`
-          id,
-          maintenance_number,
-          description,
-          vehicles (
-            id,
-            plate_number
-          )
-        `)
-        .eq('company_id', companyId)
-        .eq('priority', 'urgent')
-        .in('status', ['pending', 'in_progress'])
-        .limit(5);
-
-      urgentData?.forEach(m => {
+      // Process urgent maintenance
+      urgentData?.data?.forEach(m => {
         alertsList.push({
           id: `urgent-${m.id}`,
           type: 'urgent',
@@ -123,56 +161,35 @@ export function MaintenanceAlertsPanel({
         });
       });
 
-      // جلب الصيانة المجدولة خلال 3 أيام
+      // Process scheduled maintenance
       const threeDaysLater = new Date(today);
       threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+      const threeDaysLaterStr = threeDaysLater.toISOString().split('T')[0];
 
-      const { data: scheduledData } = await supabase
-        .from('vehicle_maintenance')
-        .select(`
-          id,
-          maintenance_number,
-          scheduled_date,
-          maintenance_type,
-          vehicles (
-            id,
-            plate_number
-          )
-        `)
-        .eq('company_id', companyId)
-        .eq('status', 'pending')
-        .gte('scheduled_date', today.toISOString().split('T')[0])
-        .lte('scheduled_date', threeDaysLater.toISOString().split('T')[0])
-        .order('scheduled_date', { ascending: true })
-        .limit(5);
-
-      scheduledData?.forEach(m => {
-        alertsList.push({
-          id: `scheduled-${m.id}`,
-          type: 'scheduled',
-          title: 'صيانة قادمة',
-          description: `${m.maintenance_type === 'routine' ? 'صيانة دورية' : m.maintenance_type === 'preventive' ? 'صيانة وقائية' : 'صيانة'} مجدولة`,
-          vehiclePlate: m.vehicles?.plate_number,
-          vehicleId: m.vehicles?.id,
-          maintenanceId: m.id,
-          scheduledDate: m.scheduled_date,
-          priority: 'low',
-        });
+      scheduledData?.data?.forEach(m => {
+        const scheduled = new Date(m.scheduled_date!);
+        // Only include if within 3 days
+        if (scheduled <= threeDaysLater) {
+          alertsList.push({
+            id: `scheduled-${m.id}`,
+            type: 'scheduled',
+            title: 'صيانة قادمة',
+            description: `${m.maintenance_type === 'routine' ? 'صيانة دورية' : m.maintenance_type === 'preventive' ? 'صيانة وقائية' : 'صيانة'} مجدولة`,
+            vehiclePlate: m.vehicles?.plate_number,
+            vehicleId: m.vehicles?.id,
+            maintenanceId: m.id,
+            scheduledDate: m.scheduled_date,
+            priority: 'low',
+          });
+        }
       });
 
-      // جلب المركبات المتوقفة للصيانة لفترة طويلة (> 7 أيام)
-      const { data: stoppedVehicles } = await supabase
-        .from('vehicles')
-        .select('id, plate_number, last_maintenance_date')
-        .eq('company_id', companyId)
-        .eq('status', 'maintenance')
-        .limit(5);
-
-      stoppedVehicles?.forEach(v => {
+      // Process stopped vehicles
+      stoppedVehicles?.data?.forEach(v => {
         if (v.last_maintenance_date) {
           const maintenanceStart = new Date(v.last_maintenance_date);
           const daysStopped = Math.ceil((today.getTime() - maintenanceStart.getTime()) / (1000 * 60 * 60 * 24));
-          
+
           if (daysStopped > 7) {
             alertsList.push({
               id: `stopped-${v.id}`,
@@ -196,6 +213,7 @@ export function MaintenanceAlertsPanel({
     },
     enabled: !!companyId,
     staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const alertCounts = useMemo(() => {
@@ -260,7 +278,7 @@ export function MaintenanceAlertsPanel({
             <p className="text-xs text-neutral-500">{alertCounts.total} تنبيه نشط</p>
           </div>
         </div>
-        
+
         {/* ملخص الأولويات */}
         <div className="flex items-center gap-2">
           {alertCounts.critical > 0 && (
@@ -282,7 +300,7 @@ export function MaintenanceAlertsPanel({
           {alerts.map((alert, index) => {
             const Icon = getAlertIcon(alert.type);
             const colors = getAlertColors(alert.priority);
-            
+
             return (
               <motion.div
                 key={alert.id}
@@ -312,7 +330,7 @@ export function MaintenanceAlertsPanel({
                     <p className="text-xs text-neutral-500">{alert.description}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   {alert.vehiclePlate && (
                     <span className="px-2 py-1 bg-white/50 rounded text-xs font-mono text-neutral-700">
@@ -338,4 +356,3 @@ export function MaintenanceAlertsPanel({
     </div>
   );
 }
-

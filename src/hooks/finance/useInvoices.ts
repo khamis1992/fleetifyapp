@@ -98,12 +98,17 @@ const INVOICE_SELECT_FIELDS = `
 `;
 
 export const useInvoices = (filters?: InvoiceFilters) => {
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { hasPermission } = useSimplePermissions();
 
   return useQuery({
     queryKey: queryKeys.invoices.list(filters),
     queryFn: async () => {
+      // Wait for initialization to complete before checking companyId
+      if (isInitializing) {
+        throw new Error('Initializing company context');
+      }
+
       if (!companyId) {
         const error = new Error("No company access");
         Sentry.captureException(error);
@@ -209,7 +214,7 @@ export const useInvoices = (filters?: InvoiceFilters) => {
         throw error;
       }
     },
-    enabled: !!companyId && hasPermission('invoices:read'),
+    enabled: !!companyId && !isInitializing && hasPermission('invoices:read'),
     staleTime: 2 * 60 * 1000,
   });
 };
@@ -426,7 +431,7 @@ export const useOverdueInvoices = () => {
         throw error;
       }
     },
-    enabled: !!companyId && hasPermission('invoices:read'),
+    enabled: !!companyId && !isInitializing && hasPermission('invoices:read'),
     staleTime: 5 * 60 * 1000,
   });
 };

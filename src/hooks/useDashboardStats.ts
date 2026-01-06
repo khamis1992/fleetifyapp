@@ -43,9 +43,9 @@ async function checkBackendAvailability(): Promise<boolean> {
 export const useDashboardStats = () => {
   const { user } = useAuth();
   const { moduleContext } = useModuleConfig();
-  
+
   return useQuery({
-    queryKey: ['dashboard-stats', user?.id],
+    queryKey: ['dashboard-stats', user?.id, moduleContext?.activeModules],
     queryFn: async (): Promise<DashboardStats> => {
       if (!user?.id) {
         return {
@@ -371,7 +371,10 @@ export const useDashboardStats = () => {
       return stats;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1
+    staleTime: 5 * 60 * 1000, // 5 minutes - cache stats
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
+    retry: 1,
+    refetchOnWindowFocus: false, // Don't refetch on window focus for dashboard stats
+    refetchOnMount: false, // Don't refetch on mount if data is fresh
   });
 };

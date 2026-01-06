@@ -197,7 +197,7 @@ export default function CarRentalScheduler() {
 
   // ===== Data Fetching =====
   
-  // Fetch Vehicles
+  // Fetch Vehicles - Added limit for pagination
   const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ['scheduler-vehicles', companyId],
     queryFn: async () => {
@@ -207,14 +207,17 @@ export default function CarRentalScheduler() {
         .select('id, plate_number, make, model, daily_rate, status, vehicle_type')
         .eq('company_id', companyId)
         .eq('is_active', true)
-        .order('plate_number');
+        .order('plate_number')
+        .limit(200); // Added pagination limit
       if (error) throw error;
       return (data || []) as Vehicle[];
     },
     enabled: !!companyId,
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+    gcTime: 5 * 60 * 1000,
   });
 
-  // Fetch Contracts as Bookings
+  // Fetch Contracts as Bookings - Added cache settings
   const { data: contractBookings = [], isLoading: contractsLoading } = useQuery({
     queryKey: ['scheduler-contracts', companyId, format(currentDate, 'yyyy-MM')],
     queryFn: async () => {
@@ -267,6 +270,8 @@ export default function CarRentalScheduler() {
       });
     },
     enabled: !!companyId,
+    staleTime: 1 * 60 * 1000, // 1 minute cache for contracts
+    gcTime: 5 * 60 * 1000,
   });
 
   // Fetch Reservations
@@ -309,6 +314,8 @@ export default function CarRentalScheduler() {
       });
     },
     enabled: !!companyId,
+    staleTime: 1 * 60 * 1000, // 1 minute cache for reservations
+    gcTime: 5 * 60 * 1000,
   });
 
   // Fetch Maintenance Records

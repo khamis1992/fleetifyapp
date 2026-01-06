@@ -1,0 +1,345 @@
+{
+  "auditDate": "2026-01-06",
+  "application": "Fleetify",
+  "overallScore": 45,
+  "status": "CRITICAL",
+
+  "performanceMetrics": {
+    "initialBundle": {
+      "size": 1732982,
+      "sizeFormatted": "1.73MB",
+      "gzipped": 488986,
+      "gzippedFormatted": "477KB",
+      "budget": 600000,
+      "budgetFormatted": "600KB",
+      "overBudgetBy": 1132982,
+      "overBudgetByFormatted": "1.13MB (188%)",
+      "status": "FAIL"
+    },
+    "totalJavaScript": {
+      "size": 5200000,
+      "sizeFormatted": "5.2MB",
+      "status": "FAIL"
+    },
+    "cssBundle": {
+      "size": 280104,
+      "sizeFormatted": "280KB",
+      "gzipped": 39670,
+      "gzippedFormatted": "39.67KB",
+      "status": "FAIL"
+    },
+    "loadTime3G": {
+      "seconds": 10,
+      "range": "8-12s",
+      "target": 3,
+      "status": "FAIL"
+    },
+    "loadTime4G": {
+      "seconds": 4,
+      "range": "3-5s",
+      "target": 1.5,
+      "status": "FAIL"
+    },
+    "timeToInteractive": {
+      "current": "5-8s",
+      "target": "3s",
+      "status": "FAIL"
+    },
+    "lighthouseScore": {
+      "current": 45,
+      "range": "45-55",
+      "target": 90,
+      "status": "FAIL"
+    }
+  },
+
+  "criticalBottlenecks": [
+    {
+      "rank": 1,
+      "issue": "Main Bundle Size",
+      "file": "dist/assets/index-Bv6UQaGz.js",
+      "size": "1.73MB",
+      "impact": "CRITICAL",
+      "fixTime": "2 hours",
+      "expectedImprovement": "60-70% load time reduction",
+      "files": [
+        "src/routes/index.ts",
+        "vite.config.ts"
+      ]
+    },
+    {
+      "rank": 2,
+      "issue": "Serial Queries in Dashboard",
+      "file": "src/hooks/useDashboardStats.ts",
+      "lines": "125-139",
+      "impact": "HIGH",
+      "fixTime": "30 minutes",
+      "expectedImprovement": "500ms faster",
+      "problem": "6 sequential queries in loop"
+    },
+    {
+      "rank": 3,
+      "issue": "Missing Database Indexes",
+      "tables": [
+        "contracts",
+        "payments",
+        "vehicles",
+        "customers"
+      ],
+      "impact": "HIGH",
+      "fixTime": "5 minutes",
+      "expectedImprovement": "80% faster queries"
+    },
+    {
+      "rank": 4,
+      "issue": "Heavy Libraries Not Lazy-Loaded",
+      "libraries": [
+        {
+          "name": "exceljs",
+          "size": "916KB",
+          "file": "dist/assets/exceljs.min-BJ-b9oxc.js"
+        },
+        {
+          "name": "jspdf",
+          "size": "377KB",
+          "file": "dist/assets/jspdf.es.min-fqcXGoYL.js"
+        },
+        {
+          "name": "xlsx",
+          "size": "420KB",
+          "file": "dist/assets/xlsx-CNerDvZX.js"
+        },
+        {
+          "name": "html2pdf",
+          "size": "270KB",
+          "file": "dist/assets/html2pdf-CMpqordR.js"
+        }
+      ],
+      "totalSize": "2.8MB",
+      "impact": "CRITICAL",
+      "fixTime": "2 hours",
+      "expectedImprovement": "2MB smaller bundle"
+    }
+  ],
+
+  "dataFetchingIssues": {
+    "n1Problems": [
+      {
+        "file": "src/hooks/useDashboardStats.ts",
+        "lines": "125-139",
+        "issue": "Query inside for loop (6 iterations)",
+        "fix": "Use GROUP BY aggregation"
+      }
+    ],
+    "parallelQueries": {
+      "count": 10,
+      "location": "src/hooks/useDashboardStats.ts:141-170",
+      "issue": "Too many simultaneous queries",
+      "recommendation": "Batch into groups of 4-5"
+    },
+    "overFetching": {
+      "description": "Queries fetch 20+ columns when only 5 needed",
+      "fix": "Use specific column selection"
+    },
+    "missingPagination": {
+      "affected": [
+        "customers (781 records)",
+        "contracts (588 records)",
+        "payments (6,568 records)"
+      ],
+      "impact": "2-3 second data transfer"
+    }
+  },
+
+  "componentRendering": {
+    "totalComponents": 940,
+    "optimizedComponents": 190,
+    "needOptimization": 752,
+    "percentageOptimized": "20%",
+    "criticalFiles": [
+      {
+        "file": "src/pages/dashboard/DashboardLanding.tsx",
+        "lines": 1019,
+        "issues": [
+          "No React.memo",
+          "Inline component definitions",
+          "Expensive computations in render",
+          "AnimatedCounter creates new intervals"
+        ]
+      }
+    ]
+  },
+
+  "imagesAndAssets": {
+    "publicFolderSize": "7.9MB",
+    "issues": [
+      "Uncompressed PNG files",
+      "No WebP format",
+      "No responsive images",
+      "No lazy loading"
+    ],
+    "potentialSavings": "60-70% (4.7MB)"
+  },
+
+  "databaseRecommendations": {
+    "indexes": [
+      {
+        "name": "idx_contracts_dashboard",
+        "table": "contracts",
+        "columns": ["company_id", "status", "start_date", "end_date"],
+        "impact": "Dashboard queries 80% faster"
+      },
+      {
+        "name": "idx_payments_revenue",
+        "table": "payments",
+        "columns": ["company_id", "payment_date", "payment_status"],
+        "impact": "Revenue calculations 80% faster"
+      },
+      {
+        "name": "idx_vehicles_fleet",
+        "table": "vehicles",
+        "columns": ["company_id", "is_active", "status"],
+        "impact": "Fleet status queries 80% faster"
+      },
+      {
+        "name": "idx_customers_active",
+        "table": "customers",
+        "columns": ["company_id", "is_active"],
+        "where": "is_active = true",
+        "impact": "Customer counts 80% faster"
+      }
+    ]
+  },
+
+  "optimizationRoadmap": {
+    "phase1": {
+      "name": "Critical Fixes",
+      "duration": "1-2 days",
+      "effort": "6 hours",
+      "tasks": [
+        "Lazy load heavy libraries (2h)",
+        "Add database indexes (5min)",
+        "Fix serial queries (30min)",
+        "Add React.memo (2h)",
+        "Optimize dashboard hook (2h)"
+      ],
+      "expectedImprovement": "40-50% performance boost"
+    },
+    "phase2": {
+      "name": "High Impact",
+      "duration": "1 week",
+      "effort": "2-3 days",
+      "tasks": [
+        "Implement pagination (2d)",
+        "Virtual scrolling (2d)",
+        "Optimize images (1d)",
+        "Add service worker (1d)",
+        "Code splitting strategy (2d)"
+      ],
+      "expectedImprovement": "Additional 30-40% improvement"
+    },
+    "phase3": {
+      "name": "Infrastructure",
+      "duration": "1 month",
+      "tasks": [
+        "Edge Functions API layer",
+        "Redis caching",
+        "Request deduplication",
+        "Performance monitoring",
+        "Brotli compression"
+      ],
+      "expectedImprovement": "Additional 20-30% improvement"
+    }
+  },
+
+  "beforeAfterMetrics": {
+    "initialBundle": {
+      "before": "1.73MB",
+      "afterQuickWins": "800KB",
+      "afterComplete": "300KB",
+      "improvement": "83%"
+    },
+    "dashboardLoad": {
+      "before": "8-12s",
+      "afterQuickWins": "4-6s",
+      "afterComplete": "1.5-2s",
+      "improvement": "85%"
+    },
+    "queryTime": {
+      "before": "900ms",
+      "afterQuickWins": "400ms",
+      "afterComplete": "150ms",
+      "improvement": "83%"
+    },
+    "lighthouseScore": {
+      "before": "45-55",
+      "afterQuickWins": "65-75",
+      "afterComplete": "90-95",
+      "improvement": "100%"
+    }
+  },
+
+  "quickWins": [
+    {
+      "task": "Lazy load exceljs, jsPDF, xlsx",
+      "effort": "2 hours",
+      "impact": "2MB smaller bundle",
+      "files": ["src/routes/index.ts"]
+    },
+    {
+      "task": "Add 5 database indexes",
+      "effort": "5 minutes",
+      "impact": "80% faster queries",
+      "files": ["Supabase SQL Editor"]
+    },
+    {
+      "task": "Fix dashboard serial queries",
+      "effort": "30 minutes",
+      "impact": "500ms faster",
+      "files": ["src/hooks/useDashboardStats.ts"]
+    },
+    {
+      "task": "Add React.memo to dashboard",
+      "effort": "2 hours",
+      "impact": "40% fewer renders",
+      "files": ["src/pages/dashboard/DashboardLanding.tsx"]
+    },
+    {
+      "task": "Enable font-display: swap",
+      "effort": "2 minutes",
+      "impact": "0.5-1s faster text",
+      "files": ["src/index.css"]
+    }
+  ],
+
+  "testing": {
+    "tools": [
+      "Lighthouse CI",
+      "Chrome DevTools Performance",
+      "React DevTools Profiler",
+      "Supabase Query Performance Insights"
+    ],
+    "targetMetrics": {
+      "timeToInteractive": "<3s",
+      "firstContentfulPaint": "<1.5s",
+      "lighthouseScore": ">90",
+      "bundleSize": "<600KB"
+    }
+  },
+
+  "summary": {
+    "currentState": "Critical performance issues affecting user experience",
+    "rootCauses": [
+      "Massive bundle size (1.73MB)",
+      "Inefficient data fetching",
+      "Missing database indexes",
+      "No component optimization",
+      "Heavy libraries loaded unnecessarily"
+    ],
+    "immediateActionRequired": true,
+    "quickFixImpact": "40-50% improvement with 6 hours work",
+    "longTermTarget": "<2s Time to Interactive, >90 Lighthouse score",
+    "totalEffortForOptimal": "3-4 weeks",
+    "expectedFinalImprovement": "3-4x faster overall"
+  }
+}

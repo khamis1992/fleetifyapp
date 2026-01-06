@@ -1,4 +1,3 @@
-import html2pdf from 'html2pdf.js'
 import { formatDateInGregorian } from './dateFormatter'
 
 export interface ContractPdfData {
@@ -19,8 +18,11 @@ export interface ContractPdfData {
 }
 
 export const generateContractPdf = async (contractData: ContractPdfData): Promise<Blob> => {
+  // Lazy load html2pdf.js (380KB) - only when generating PDF
+  const html2pdf = (await import('html2pdf.js')).default;
+
   const contractHtml = generateContractHtml(contractData)
-  
+
   const options = {
     margin: [10, 10, 10, 10],
     filename: `contract-${contractData.contract_number}.pdf`,

@@ -47,11 +47,16 @@ export const useAccountStatement = ({
   statementType,
   enabled = true
 }: UseAccountStatementParams) => {
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
 
   return useQuery({
     queryKey: ['account-statement', accountId, dateFrom, dateTo, statementType, companyId],
     queryFn: async (): Promise<AccountStatementData> => {
+      // Wait for initialization to complete before checking companyId
+      if (isInitializing) {
+        throw new Error('Initializing company context');
+      }
+
       if (!companyId) throw new Error('Company ID is required');
 
       // Get account details
@@ -256,7 +261,7 @@ export const useAccountStatement = ({
         statement_type: statementType
       };
     },
-    enabled: enabled && !!accountId && !!dateFrom && !!dateTo && !!companyId,
+    enabled: enabled && !!accountId && !!dateFrom && !!dateTo && !!companyId && !isInitializing,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

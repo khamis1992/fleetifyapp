@@ -30,6 +30,7 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
+const DashboardLanding = lazy(() => import('@/pages/dashboard/DashboardLanding'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPage = lazy(() => import('@/components/customers/CustomerDetailsPage'));
@@ -320,6 +321,18 @@ const routeConfigs: RouteConfig[] = [
     priority: 11,
     protected: true,
     layout: 'bento',
+  },
+  {
+    path: '/dashboard-landing',
+    component: DashboardLanding,
+    lazy: true,
+    exact: true,
+    title: 'Dashboard Landing',
+    description: 'Landing-page inspired dashboard design',
+    group: 'dashboard',
+    priority: 12,
+    protected: true,
+    layout: 'bento', // Use bento layout with sidebar
   },
   {
     path: '/finance/*',

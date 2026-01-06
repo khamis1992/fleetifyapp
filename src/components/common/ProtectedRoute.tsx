@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { PermissionGuard } from './PermissionGuard';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCompanyIdWithInit } from '@/hooks/useUnifiedCompanyAccess';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LazyLoadErrorBoundary } from './LazyLoadErrorBoundary';
 
@@ -25,10 +26,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   showFallback = false
 }) => {
   const { user, loading } = useAuth();
+  const { companyId, isInitializing } = useCompanyIdWithInit();
   const location = useLocation();
 
-  // Show loading while authenticating
-  if (loading) {
+  // Show loading while authenticating OR initializing company context
+  if (loading || isInitializing) {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-1/3" />
@@ -42,6 +44,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Redirect to auth if not logged in
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Redirect to onboarding if no company ID (after initialization is complete)
+  if (!companyId) {
+    return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
 
   // Check permissions using PermissionGuard

@@ -150,7 +150,8 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
             )
           `)
           .eq('company_id', profile.company_id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1); // Apply pagination with range
 
         if (error) {
           console.error('Error fetching traffic violations:', error);

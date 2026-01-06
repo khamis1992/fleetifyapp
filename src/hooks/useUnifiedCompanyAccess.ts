@@ -44,6 +44,7 @@ export const useUnifiedCompanyAccess = () => {
       browsedCompany: null,
       actualUserCompanyId: null,
       isAuthenticating: false,
+      isInitializing: false,
       authError: 'User not authenticated'
     };
 
@@ -52,6 +53,7 @@ export const useUnifiedCompanyAccess = () => {
       return {
         ...defaultReturn,
         isAuthenticating: true,
+        isInitializing: true,
         authError: null,
         validateCompanyAccess: () => { throw new Error('Authentication required') }
       };
@@ -154,9 +156,10 @@ export const useUnifiedCompanyAccess = () => {
       isBrowsingMode: effectiveBrowsingMode,
       browsedCompany: effectiveBrowsingMode ? browsedCompany : null,
       actualUserCompanyId: user?.company?.id || null,
-      
+
       // Authentication state
       isAuthenticating: false,
+      isInitializing: false,
       authError: null
     };
   }, [user?.id, user?.company?.id, session?.access_token, loading, isBrowsingMode, browsedCompany?.id]);
@@ -186,4 +189,13 @@ export const useHasAdminAccess = () => {
 export const useCurrentCompanyId = () => {
   const { companyId } = useUnifiedCompanyAccess();
   return companyId;
+};
+
+/**
+ * Hook for getting company ID with initialization state
+ * Use this when you need to wait for initialization before using companyId
+ */
+export const useCompanyIdWithInit = () => {
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
+  return { companyId, isInitializing };
 };

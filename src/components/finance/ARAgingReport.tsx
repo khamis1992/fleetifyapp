@@ -38,8 +38,6 @@ import {
   Phone,
   Mail
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
-
 interface ARSummary {
   total_customers_with_ar: number;
   total_outstanding_invoices: number;
@@ -141,8 +139,11 @@ export const ARAgingReport: React.FC = () => {
   });
 
   // Export to Excel
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     try {
+      // Lazy load xlsx (300KB) only when exporting
+      const XLSX = (await import('xlsx')).default;
+
       const workbook = XLSX.utils.book_new();
 
       // Summary sheet

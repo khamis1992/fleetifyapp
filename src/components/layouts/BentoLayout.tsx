@@ -115,7 +115,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         </motion.main>
 
         {/* AI Chat Assistant Widget */}
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="w-16 h-16 rounded-full bg-muted animate-pulse" />}>
           <AIChatWidget hideFloatingButton={true} />
         </Suspense>
       </div>

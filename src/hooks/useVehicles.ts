@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
-import { useCurrentCompanyId } from "./useUnifiedCompanyAccess";
+import { useCompanyIdWithInit } from "./useUnifiedCompanyAccess";
 import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration";
 import { createAuditLog } from "@/hooks/useAuditLog";
 import { useVehicleStatusUpdate } from "@/hooks/useVehicleStatusIntegration";
@@ -23,14 +23,20 @@ export type {
 } from '@/types/vehicle.types';
 
 export const useVehicles = (options?: { limit?: number; status?: string }) => {
-  const companyId = useCurrentCompanyId()
+  const { companyId, isInitializing } = useCompanyIdWithInit()
   const queryClient = useQueryClient()
   const { limit, status } = options || {}
-  
+
   return useQuery({
     queryKey: queryKeys.vehicles.list({ companyId, status, pageSize: limit }),
     queryFn: async ({ signal }) => {
       Sentry.addBreadcrumb({ category: "vehicles", message: "Fetching vehicles data", level: "info" }); // ✅ Extract signal from query context
+
+      // Wait for initialization to complete before checking companyId
+      if (isInitializing) {
+        throw new Error('Initializing company context');
+      }
+
       if (!companyId) return []
       
       let query = supabase
@@ -250,7 +256,7 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
 
       return updatedVehicles as Vehicle[]
     },
-    enabled: !!companyId,
+    enabled: !!companyId && !isInitializing,
     staleTime: 3 * 60 * 1000, // 3 minutes cache
   })
 }

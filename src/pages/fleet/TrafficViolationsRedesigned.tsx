@@ -72,8 +72,13 @@ export default function TrafficViolationsRedesigned() {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   
-  // Data Fetching
-  const { data: violations = [], isLoading, refetch } = useTrafficViolations({ limit: 10000, offset: 0 });
+  // Data Fetching - Reduced limit for better performance (was 10000!)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+  const { data: violations = [], isLoading, refetch } = useTrafficViolations({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage
+  });
   const { data: vehicles = [] } = useVehicles({ limit: 500 });
   const deleteViolationMutation = useDeleteTrafficViolation();
   const updatePaymentStatusMutation = useUpdatePaymentStatus();
@@ -119,7 +124,8 @@ export default function TrafficViolationsRedesigned() {
     return 'غير محدد';
   }, []);
 
-  // Filtering Logic
+  // Filtering Logic - Now works on paginated data
+  // For full filtering, we'd need to move this to server-side with query params
   const filteredViolations = useMemo(() => {
     return violations.filter(v => {
       const matchesSearch = 

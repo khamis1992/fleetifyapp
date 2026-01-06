@@ -19,6 +19,7 @@ import { AIChatProvider } from '@/contexts/AIChatContext';
 // UI Components
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Routing System
 import { RouteProvider } from '@/components/router/RouteProvider';
@@ -169,14 +170,14 @@ const App: React.FC = () => {
 
                               {/* Global UI Components */}
                               {APP_CONFIG.ENABLE_COMMAND_PALETTE && (
-                                <Suspense fallback={null}>
+                                <Suspense fallback={<Skeleton className="h-10 w-64" />}>
                                   <CommandPalette />
                                 </Suspense>
                               )}
 
                               {/* PWA Install Prompt */}
                               {APP_CONFIG.ENABLE_PWA && (
-                                <Suspense fallback={null}>
+                                <Suspense fallback={<Skeleton className="h-20 w-full" />}>
                                   <PWAInstallPrompt />
                                 </Suspense>
                               )}

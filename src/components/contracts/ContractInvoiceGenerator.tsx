@@ -48,19 +48,35 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
     enabled: !!contract.id
   })
 
-  // Create invoice mutation
+  // Create invoice mutation with duplicate check
   const createInvoiceMutation = useMutation({
     mutationFn: async (period: string) => {
-      // Call the database function directly
+      const invoiceDate = new Date().toISOString().split('T')[0]
+      const invoiceMonth = invoiceDate.substring(0, 7) // YYYY-MM format
+      
+      // التحقق من وجود فاتورة لهذا الشهر
+      const { data: existingForMonth } = await supabase
+        .from('invoices')
+        .select('id, invoice_number')
+        .eq('contract_id', contract.id)
+        .gte('invoice_date', `${invoiceMonth}-01`)
+        .lt('invoice_date', new Date(new Date(invoiceDate).setMonth(new Date(invoiceDate).getMonth() + 1)).toISOString().split('T')[0])
+        .neq('status', 'cancelled')
+        .limit(1)
+      
+      if (existingForMonth && existingForMonth.length > 0) {
+        throw new Error(`توجد فاتورة مسجلة لهذا الشهر: ${existingForMonth[0].invoice_number}`)
+      }
+      
       const { data, error } = await supabase
         .from('invoices')
         .insert([{
           company_id: contract.company_id,
           customer_id: contract.customer_id,
           contract_id: contract.id,
-          invoice_number: `CNT-INV-${new Date().getFullYear()}-${Date.now()}`,
+          invoice_number: `INV-C-${contract.contract_number?.substring(0, 10) || 'CNT'}-${invoiceMonth}`,
           invoice_type: 'sale',
-          invoice_date: new Date().toISOString().split('T')[0],
+          invoice_date: invoiceDate,
           due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           subtotal: period === 'monthly' ? contract.monthly_amount : 
                    period === 'quarterly' ? contract.monthly_amount * 3 : 
@@ -78,50 +94,52 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
       if (error) throw error
       return data
     },
-    onSuccess: (invoiceId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contract-invoices'] })
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       toast.success('تم إنشاء الفاتورة بنجاح')
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error creating invoice:', error)
-      toast.error('حدث خطأ في إنشاء الفاتورة')
+      toast.error(error.message || 'حدث خطأ في إنشاء الفاتورة')
     }
   })
 
-  // Generate periodic invoices for all active contracts
+  // Generate periodic invoices using database function (with built-in duplicate check)
   const generatePeriodicInvoicesMutation = useMutation({
     mutationFn: async () => {
-      // For now, just create a single invoice for this contract
-      const period = 'monthly'
-      const { data, error } = await supabase
-        .from('invoices')
-        .insert([{
-          company_id: contract.company_id,
-          customer_id: contract.customer_id,
-          contract_id: contract.id,
-          invoice_number: `CNT-INV-${new Date().getFullYear()}-${Date.now()}`,
-          invoice_type: 'sale',
-          invoice_date: new Date().toISOString().split('T')[0],
-          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          subtotal: contract.monthly_amount,
-          tax_amount: 0,
-          total_amount: contract.monthly_amount,
-          status: 'draft',
-          notes: `Auto-generated periodic invoice from contract #${contract.contract_number}`
-        }])
-        .select()
+      // استخدام دالة قاعدة البيانات مع التحقق المدمج من التكرار
+      const currentMonth = new Date().toISOString().substring(0, 7) + '-01'
       
-      if (error) throw error
-      return data?.length || 0
+      const { data, error } = await supabase
+        .rpc('generate_invoice_for_contract_month', {
+          p_contract_id: contract.id,
+          p_invoice_month: currentMonth
+        })
+      
+      if (error) {
+        // إذا كان الخطأ بسبب وجود فاتورة، نعتبره نجاح مع تحذير
+        if (error.message?.includes('already exists')) {
+          return { skipped: true, message: 'الفاتورة موجودة مسبقاً لهذا الشهر' }
+        }
+        throw error
+      }
+      
+      return { created: true, invoiceId: data }
     },
-    onSuccess: (invoicesCount) => {
+    onSuccess: (result: { skipped?: boolean; created?: boolean; message?: string }) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
-      toast.success(`تم إنشاء ${invoicesCount} فاتورة دورية`)
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] })
+      
+      if (result.skipped) {
+        toast.info(result.message || 'الفاتورة موجودة مسبقاً')
+      } else {
+        toast.success('تم إنشاء الفاتورة الدورية بنجاح')
+      }
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error generating periodic invoices:', error)
-      toast.error('حدث خطأ في إنشاء الفواتير الدورية')
+      toast.error(error.message || 'حدث خطأ في إنشاء الفواتير الدورية')
     }
   })
 

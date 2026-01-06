@@ -119,14 +119,41 @@ export function useAutomaticInvoiceGenerator() {
     }
   }, []);
 
-  // 🏗️ إنشاء فاتورة الدفع
+  // 🏗️ إنشاء فاتورة الدفع مع التحقق من التكرار
   const createPaymentInvoice = useCallback(async (
     payment: PaymentData,
     contract: ContractData,
     customer: CustomerData
   ): Promise<GeneratedInvoice> => {
     
-    const invoiceNumber = await generateInvoiceNumber('payment');
+    const invoiceDate = payment.payment_date || new Date().toISOString().split('T')[0];
+    const invoiceMonth = invoiceDate.substring(0, 7); // YYYY-MM
+    
+    // التحقق من وجود فاتورة لهذا العقد في نفس الشهر
+    const { data: existingInvoice } = await supabase
+      .from('invoices')
+      .select('id, invoice_number')
+      .eq('contract_id', contract.id)
+      .gte('invoice_date', `${invoiceMonth}-01`)
+      .lt('invoice_date', `${invoiceMonth.substring(0, 4)}-${String(parseInt(invoiceMonth.substring(5, 7)) + 1).padStart(2, '0')}-01`)
+      .neq('status', 'cancelled')
+      .limit(1);
+    
+    if (existingInvoice && existingInvoice.length > 0) {
+      console.log(`⚠️ فاتورة موجودة مسبقاً: ${existingInvoice[0].invoice_number}`);
+      // إرجاع الفاتورة الموجودة بدلاً من إنشاء واحدة جديدة
+      return {
+        id: existingInvoice[0].id,
+        invoice_number: existingInvoice[0].invoice_number,
+        type: 'payment_received',
+        amount: payment.amount || 0,
+        status: 'paid',
+        created_at: new Date().toISOString(),
+        description: `فاتورة موجودة مسبقاً - ${invoiceMonth}`
+      };
+    }
+    
+    const invoiceNumber = `INV-C-${contract.contract_number?.substring(0, 10) || 'CNT'}-${invoiceMonth}`;
     const description = generateInvoiceDescription(payment, contract, 'payment');
     
     // إنشاء الفاتورة في قاعدة البيانات
@@ -138,8 +165,8 @@ export function useAutomaticInvoiceGenerator() {
         contract_id: contract.id,
         invoice_number: invoiceNumber,
         invoice_type: 'sale',
-        invoice_date: payment.payment_date || new Date().toISOString().split('T')[0],
-        due_date: payment.due_date || new Date().toISOString().split('T')[0],
+        invoice_date: invoiceDate,
+        due_date: payment.due_date || invoiceDate,
         subtotal: payment.amount || 0,
         tax_amount: 0,
         total_amount: payment.amount || 0,
