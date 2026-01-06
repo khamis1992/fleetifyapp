@@ -112,7 +112,7 @@ function parseArabicDate(dateStr: string): string | null {
   if (!dateStr || dateStr === '-') return null;
   
   try {
-    let cleanDate = dateStr.split(' ')[0].trim();
+    const cleanDate = dateStr.split(' ')[0].trim();
     
     if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
       return cleanDate;
@@ -126,9 +126,9 @@ function parseArabicDate(dateStr: string): string | null {
       const fullYear = year.length === 2 ? `20${year}` : year;
       return `${fullYear}-${month}-${day}`;
     }
-    
+
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -140,8 +140,8 @@ async function findVehicle(vehicleNumber: string): Promise<string | null> {
   try {
     const cleanVehicleNumber = vehicleNumber.trim();
     const noSpaces = cleanVehicleNumber.replace(/\s/g, '');
-    
-    let { data, error } = await supabase
+
+    const { data, error } = await supabase
       .from('vehicles')
       .select('id, plate_number')
       .eq('company_id', COMPANY_ID)
@@ -177,9 +177,9 @@ async function findVehicle(vehicleNumber: string): Promise<string | null> {
     if (data3 && data3.length === 1 && !error3) {
       return data3[0].id;
     }
-    
+
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -237,9 +237,9 @@ async function findCustomer(customerName: string, phone: string): Promise<string
         return firstNameMatch[0].id;
       }
     }
-    
+
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -313,8 +313,22 @@ async function createContract(
     const endDate = new Date(startDate);
     endDate.setFullYear(endDate.getFullYear() + 1);
     const endDateStr = endDate.toISOString().split('T')[0];
-    
-    const contractPayload: any = {
+
+    const contractPayload: {
+      company_id: string;
+      vehicle_id: string;
+      customer_id: string;
+      contract_date: string;
+      start_date: string;
+      end_date: string;
+      monthly_amount: number;
+      contract_amount: number;
+      contract_type: string;
+      status: string;
+      contract_number: string;
+      description: string | null;
+      terms: string | null;
+    } = {
       company_id: COMPANY_ID,
       vehicle_id: vehicleId,
       customer_id: customerId,

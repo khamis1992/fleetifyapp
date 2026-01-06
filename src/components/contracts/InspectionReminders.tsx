@@ -349,19 +349,28 @@ interface PendingInspectionsListProps {
 export function PendingInspectionsList({ contracts }: PendingInspectionsListProps) {
   const [selectedContract, setSelectedContract] = useState<string | null>(null);
 
-  // Filter contracts that need inspections
-  const contractsNeedingCheckIn = contracts.filter((c) => {
-    const { data: inspections } = useVehicleInspections({ contractId: c.id });
-    return c.status === 'active' && !inspections?.some((i) => i.inspection_type === 'check_in');
-  });
+  // Fetch all inspections at once using a map, then filter
+  const contractInspections = contracts.map((c) => ({
+    contract: c,
+    inspections: useVehicleInspections({ contractId: c.id }).data,
+  }));
 
-  const contractsNeedingCheckOut = contracts.filter((c) => {
-    const { data: inspections } = useVehicleInspections({ contractId: c.id });
-    const hasCheckIn = inspections?.some((i) => i.inspection_type === 'check_in');
-    const hasCheckOut = inspections?.some((i) => i.inspection_type === 'check_out');
-    const daysUntilEnd = differenceInDays(parseISO(c.end_date), new Date());
-    return hasCheckIn && !hasCheckOut && daysUntilEnd <= 7;
-  });
+  // Filter contracts that need inspections
+  const contractsNeedingCheckIn = contractInspections
+    .filter(({ inspections }) => {
+      return !inspections?.some((i) => i.inspection_type === 'check_in');
+    })
+    .map(({ contract }) => contract)
+    .filter((c) => c.status === 'active');
+
+  const contractsNeedingCheckOut = contractInspections
+    .filter(({ inspections, contract }) => {
+      const hasCheckIn = inspections?.some((i) => i.inspection_type === 'check_in');
+      const hasCheckOut = inspections?.some((i) => i.inspection_type === 'check_out');
+      const daysUntilEnd = differenceInDays(parseISO(contract.end_date), new Date());
+      return hasCheckIn && !hasCheckOut && daysUntilEnd <= 7;
+    })
+    .map(({ contract }) => contract);
 
   const totalPending = contractsNeedingCheckIn.length + contractsNeedingCheckOut.length;
 

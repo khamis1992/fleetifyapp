@@ -73,6 +73,7 @@ import { useVehicleInspections } from '@/hooks/useVehicleInspections';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ContractDocuments } from './ContractDocuments';
+import { printDocument, convertReceiptToPrintable } from '@/utils/printHelper';
 import { OfficialContractView } from './OfficialContractView';
 import { LateFinesTab } from './LateFinesTab';
 import { ContractStatusBadge } from './ContractStatusBadge';
@@ -2217,7 +2218,6 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
   // Handle payment print
   const handlePaymentPrint = useCallback((payment: any) => {
     try {
-      const { printDocument, convertReceiptToPrintable } = require('@/utils/printHelper');
       
       // Convert payment to receipt format
       const receiptData = {

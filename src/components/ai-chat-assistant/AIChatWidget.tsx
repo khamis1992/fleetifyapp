@@ -35,7 +35,6 @@ import { cn } from '@/lib/utils';
 import { useAIChatAssistant, ChatMessage } from '@/hooks/useAIChatAssistant';
 import { PAGE_ROUTES } from '@/lib/ai-knowledge-base';
 import { useToast } from '@/components/ui/use-toast';
-import { useLocation } from 'react-router-dom';
 import { useTourGuide } from '@/components/tour-guide';
 import { useSystemStats, generateStatsPrompt } from '@/hooks/useSystemStats';
 

@@ -211,7 +211,6 @@ export function VirtualVariableList<T>({
   className = '',
   emptyMessage = 'لا توجد عناصر للعرض'
 }: VirtualVariableListProps<T>) {
-  const { VariableSizeList } = require('react-window');
   const { isMobile } = useSimpleBreakpoint();
 
   // Adjust height for mobile

@@ -1,6 +1,9 @@
 import * as React from 'react';
-import type { DuplicateContract } from '@/hooks/useContractDuplicateCheck';
-import { useContractDuplicateCheck, ContractData } from '@/hooks/useContractDuplicateCheck';
+import {
+  useContractDuplicateCheck,
+  type ContractData,
+  type DuplicateContract
+} from '@/hooks/useContractDuplicateCheck';
 import { useImprovedContractDuplicateCheck } from '@/hooks/useImprovedContractDuplicateCheck';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, FileText, User, Calendar } from 'lucide-react';

@@ -214,7 +214,11 @@
       "Bash(git remote:*)",
       "Bash(sort:*)",
       "Bash(du:*)",
-      "Bash(gzip:*)"
+      "Bash(gzip:*)",
+      "Bash(if [ -f \"C:\\\\Users\\\\khamis\\\\Desktop\\\\fleetifyapp\\\\IMPROVED_DASHBOARD_LAYOUT.ts\" ])",
+      "Bash(then echo \"File exists\")",
+      "Bash(else echo \"File not found\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

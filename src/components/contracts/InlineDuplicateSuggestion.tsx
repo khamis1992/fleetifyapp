@@ -57,10 +57,6 @@ export const InlineDuplicateSuggestion: React.FC<InlineDuplicateSuggestionProps>
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
-  if (isDismissed || !duplicates || duplicates.length === 0) {
-    return null;
-  }
-
   const handleDismiss = useCallback(() => {
     setIsDismissed(true);
     onDismiss?.();
@@ -69,6 +65,10 @@ export const InlineDuplicateSuggestion: React.FC<InlineDuplicateSuggestionProps>
   const handleToggleExpand = useCallback(() => {
     setIsExpanded(!isExpanded);
   }, [isExpanded]);
+
+  if (isDismissed || !duplicates || duplicates.length === 0) {
+    return null;
+  }
 
   const displayedDuplicates = isExpanded ? duplicates : duplicates.slice(0, 3);
   const hiddenCount = duplicates.length - 3;

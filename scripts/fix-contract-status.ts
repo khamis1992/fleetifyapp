@@ -97,9 +97,9 @@ async function findVehicle(vehicleNumber: string): Promise<string | null> {
   try {
     const cleanVehicleNumber = vehicleNumber.trim();
     const noSpaces = cleanVehicleNumber.replace(/\s/g, '');
-    
+
     // البحث في plate_number
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('vehicles')
       .select('id, plate_number')
       .eq('company_id', COMPANY_ID)
@@ -137,9 +137,9 @@ async function findVehicle(vehicleNumber: string): Promise<string | null> {
     if (data3 && data3.length === 1 && !error3) {
       return data3[0].id;
     }
-    
+
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -182,9 +182,9 @@ async function findCustomer(customerName: string): Promise<string | null> {
         return firstNameMatch[0].id;
       }
     }
-    
+
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -218,17 +218,13 @@ async function main() {
   
   console.log('🔍 البحث عن العقود التي تم تحديثها...');
   console.log('');
-  
-  const contractsToFix: ContractStatus[] = [];
-  const statusMap: Record<string, string> = {}; // لحفظ الحالة الأصلية
-  
+
   // البحث عن العقود التي يجب أن تكون cancelled أو completed
   // بناءً على الملاحظات أو التواريخ
   for (const vehicleData of vehicles) {
     const vehicleNumber = vehicleData['رقم المركبة'];
     const customerName = vehicleData['اسم العميل'];
-    const notes = vehicleData['ملاحظات '] || '';
-    
+
     // البحث عن المركبة والعميل
     const vehicleId = await findVehicle(vehicleNumber);
     if (!vehicleId) continue;
@@ -255,8 +251,7 @@ async function main() {
         // التحقق من تاريخ التحديث - إذا تم تحديثه اليوم، ربما تم تغييره خطأً
         const updatedAt = new Date(contract.updated_at);
         const today = new Date();
-        const diffHours = (today.getTime() - updatedAt.getTime()) / (1000 * 60 * 60);
-        
+
         // إذا تم تحديثه في آخر 24 ساعة وكان active، قد يكون تم تغييره خطأً
         // لكن سنحتاج إلى معرفة الحالة الأصلية من قاعدة البيانات
         // الحل الأفضل: البحث عن جميع العقود القديمة التي كانت cancelled

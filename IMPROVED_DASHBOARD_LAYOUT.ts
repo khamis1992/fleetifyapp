@@ -470,12 +470,12 @@ export function useDashboardLayoutImproved() {
                 setWidgets(mergedLayout);
                 localStorage.setItem(`${STORAGE_KEY}_${user.id}`, JSON.stringify(mergedLayout));
               }
-            } catch (e) {
+            } catch {
               console.log('Using default layout - cloud data format mismatch');
             }
           }
         }
-      } catch (error) {
+      } catch {
         console.log('Using default layout');
         setWidgets(getDefaultLayout(screenSize));
       } finally {

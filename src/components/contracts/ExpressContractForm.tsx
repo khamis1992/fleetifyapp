@@ -37,11 +37,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentCompanyId } from '@/hooks/useUnifiedCompanyAccess';
 import { useAvailableVehiclesForContracts } from '@/hooks/useVehicles';
-import { useContractTemplates } from '@/hooks/useContractTemplates';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import type { ContractTemplate } from '@/hooks/useContractTemplates';
+import { useContractTemplates, type ContractTemplate } from '@/hooks/useContractTemplates';
 
 interface ExpressContractFormProps {
   open: boolean;
