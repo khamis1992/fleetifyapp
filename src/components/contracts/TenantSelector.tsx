@@ -32,10 +32,13 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
   const [tenantFormOpen, setTenantFormOpen] = React.useState(false);
-  
+
   // Use debounced search like the tenant page
   const debouncedSearch = useDebounce(searchValue, 300);
   const filters = { search: debouncedSearch };
+
+  // Use the useTenants hook for consistent behavior - MUST be before any early returns
+  const { data: tenants, isLoading: tenantsLoading, isFetching: tenantsFetching, error: tenantsError } = useTenants(filters);
 
   // Debug logging for company context
   console.log('🏢 [TenantSelector] Company context:', {
@@ -84,9 +87,6 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
     );
   }
 
-  // Use the useTenants hook for consistent behavior
-  const { data: tenants, isLoading: tenantsLoading, isFetching: tenantsFetching, error: tenantsError } = useTenants(filters);
-  
   const filteredTenants = tenants || [];
 
   console.log('🔍 [TenantSelector] Search results:', {

@@ -73,7 +73,7 @@ export const CSVTableEditor: React.FC<CSVTableEditorProps> = ({
     if (isYMD(raw)) return { formatted: raw, valid: true };
 
     // Try patterns: YYYY/MM/DD or YYYY-MM-DD or YYYY.MM.DD
-    let m = raw.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+    let m = raw.match(/^(\d{4})[/-\.](\d{1,2})[/-\.](\d{1,2})$/);
     if (m) {
       const y = Number(m[1]);
       const mo = clamp(Number(m[2]), 1, 12);
@@ -82,7 +82,7 @@ export const CSVTableEditor: React.FC<CSVTableEditorProps> = ({
     }
 
     // Try patterns: DD/MM/YYYY or MM/DD/YYYY (decide by first segment)
-    m = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    m = raw.match(/^(\d{1,2})[/-\.](\d{1,2})[/-\.](\d{4})$/);
     if (m) {
       const a = Number(m[1]);
       const b = Number(m[2]);

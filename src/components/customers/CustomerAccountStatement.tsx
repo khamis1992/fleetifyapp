@@ -107,6 +107,42 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
     );
   }
 
+  // Helper functions - MUST be before early return to satisfy React Hooks rules
+  const getTransactionTypeBadge = useCallback((type: string) => {
+    const variants = {
+      'invoice': 'destructive',
+      'payment': 'default',
+      'journal_debit': 'secondary',
+      'journal_credit': 'outline',
+      'opening_balance': 'secondary'
+    } as const;
+
+    const labels = {
+      'invoice': 'فاتورة',
+      'payment': 'دفعة',
+      'journal_debit': 'قيد مدين',
+      'journal_credit': 'قيد دائن',
+      'opening_balance': 'رصيد افتتاحي'
+    };
+
+    return (
+      <Badge variant={variants[type as keyof typeof variants] || 'secondary'}>
+        {labels[type as keyof typeof labels] || type}
+      </Badge>
+    );
+  }, []);
+
+  const getTransactionTypeLabel = useCallback((type: string) => {
+    const labels = {
+      'invoice': 'فاتورة',
+      'payment': 'دفعة',
+      'journal_debit': 'قيد مدين',
+      'journal_credit': 'قيد دائن',
+      'opening_balance': 'رصيد افتتاحي'
+    };
+    return labels[type as keyof typeof labels] || type;
+  }, []);
+
   const { data: transactions = [], isLoading, refetch, error } = useCustomerAccountStatement({
     customerCode: customer.customer_code,
     dateFrom: dateFrom || undefined,
@@ -247,42 +283,6 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
       toast.success('تم إعداد الكشف للطباعة');
     }
   };
-
-  // Memoize helper functions
-  const getTransactionTypeBadge = useCallback((type: string) => {
-    const variants = {
-      'invoice': 'destructive',
-      'payment': 'default',
-      'journal_debit': 'secondary',
-      'journal_credit': 'outline',
-      'opening_balance': 'secondary'
-    } as const;
-
-    const labels = {
-      'invoice': 'فاتورة',
-      'payment': 'دفعة',
-      'journal_debit': 'قيد مدين',
-      'journal_credit': 'قيد دائن',
-      'opening_balance': 'رصيد افتتاحي'
-    };
-
-    return (
-      <Badge variant={variants[type as keyof typeof variants] || 'secondary'}>
-        {labels[type as keyof typeof labels] || type}
-      </Badge>
-    );
-  }, []);
-
-  const getTransactionTypeLabel = useCallback((type: string) => {
-    const labels = {
-      'invoice': 'فاتورة',
-      'payment': 'دفعة',
-      'journal_debit': 'قيد مدين',
-      'journal_credit': 'قيد دائن',
-      'opening_balance': 'رصيد افتتاحي'
-    };
-    return labels[type as keyof typeof labels] || type;
-  }, []);
 
   // Memoize expensive financial calculations
   const financialTotals = useMemo(() => {

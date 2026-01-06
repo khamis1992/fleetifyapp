@@ -205,10 +205,11 @@ export const CreateCustomerWithDuplicateCheck: React.FC<CreateCustomerWithDuplic
 
   const validateCurrentStep = () => {
     switch (currentStep) {
-      case 'basic':
-        const basicValid = watchedValues.customer_type && 
+      case 'basic': {
+        const basicValid = watchedValues.customer_type &&
           (customerType === 'individual' ? watchedValues.first_name && watchedValues.last_name : watchedValues.company_name);
         return !!basicValid;
+      }
       case 'contact':
         return !!watchedValues.phone;
       case 'accounting':

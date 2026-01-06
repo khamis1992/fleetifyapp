@@ -249,8 +249,9 @@ async function main() {
       // (بناءً على أن جميع العقود القديمة كانت cancelled)
       if (contract.status === 'active') {
         // التحقق من تاريخ التحديث - إذا تم تحديثه اليوم، ربما تم تغييره خطأً
-        const updatedAt = new Date(contract.updated_at);
-        const today = new Date();
+        // التحقق من تاريخ التحديث - إذا تم تحديثه اليوم، ربما تم تغييره خطأً
+        const _updatedAt = new Date(contract.updated_at);
+        const _today = new Date();
 
         // إذا تم تحديثه في آخر 24 ساعة وكان active، قد يكون تم تغييره خطأً
         // لكن سنحتاج إلى معرفة الحالة الأصلية من قاعدة البيانات

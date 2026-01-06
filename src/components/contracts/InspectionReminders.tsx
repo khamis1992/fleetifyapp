@@ -349,28 +349,34 @@ interface PendingInspectionsListProps {
 export function PendingInspectionsList({ contracts }: PendingInspectionsListProps) {
   const [selectedContract, setSelectedContract] = useState<string | null>(null);
 
-  // Fetch all inspections at once using a map, then filter
-  const contractInspections = contracts.map((c) => ({
-    contract: c,
-    inspections: useVehicleInspections({ contractId: c.id }).data,
-  }));
+  // Get all contract IDs first
+  const contractIds = contracts.map(c => c.id);
+
+  // Fetch inspections for each contract using separate hooks
+  // Note: This is a workaround since we can't use hooks in loops/callbacks
+  const inspections0 = useVehicleInspections({ contractId: contracts[0]?.id }).data;
+  const inspections1 = useVehicleInspections({ contractId: contracts[1]?.id }).data;
+  const inspections2 = useVehicleInspections({ contractId: contracts[2]?.id }).data;
+  const inspections3 = useVehicleInspections({ contractId: contracts[3]?.id }).data;
+  const inspections4 = useVehicleInspections({ contractId: contracts[4]?.id }).data;
+
+  // Create array of inspections
+  const allInspections = [inspections0, inspections1, inspections2, inspections3, inspections4];
 
   // Filter contracts that need inspections
-  const contractsNeedingCheckIn = contractInspections
-    .filter(({ inspections }) => {
-      return !inspections?.some((i) => i.inspection_type === 'check_in');
-    })
-    .map(({ contract }) => contract)
-    .filter((c) => c.status === 'active');
+  const contractsNeedingCheckIn = contracts
+    .filter((c, index) => {
+      const inspections = allInspections[index];
+      return c.status === 'active' && !inspections?.some((i) => i.inspection_type === 'check_in');
+    });
 
-  const contractsNeedingCheckOut = contractInspections
-    .filter(({ inspections, contract }) => {
-      const hasCheckIn = inspections?.some((i) => i.inspection_type === 'check_in');
-      const hasCheckOut = inspections?.some((i) => i.inspection_type === 'check_out');
-      const daysUntilEnd = differenceInDays(parseISO(contract.end_date), new Date());
-      return hasCheckIn && !hasCheckOut && daysUntilEnd <= 7;
-    })
-    .map(({ contract }) => contract);
+  const contractsNeedingCheckOut = contracts.filter((c, index) => {
+    const inspections = allInspections[index];
+    const hasCheckIn = inspections?.some((i) => i.inspection_type === 'check_in');
+    const hasCheckOut = inspections?.some((i) => i.inspection_type === 'check_out');
+    const daysUntilEnd = differenceInDays(parseISO(c.end_date), new Date());
+    return hasCheckIn && !hasCheckOut && daysUntilEnd <= 7;
+  });
 
   const totalPending = contractsNeedingCheckIn.length + contractsNeedingCheckOut.length;
 
