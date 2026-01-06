@@ -51,6 +51,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Add and sync Android platform
+        run: |
+          npx cap add android
+          npx cap sync android
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
@@ -83,7 +88,6 @@ jobs:
       - name: Build APK (Debug)
         if: github.event.inputs.build_type != 'release' && github.ref_type != 'tag'
         run: |
-          npx cap sync android || npx cap add android && npx cap sync android
           cd android
           ./gradlew assembleDebug --no-daemon
 
@@ -95,7 +99,6 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          npx cap sync android || npx cap add android && npx cap sync android
           cd android
           if [ -n "$RELEASE_STORE_FILE" ]; then
             ./gradlew assembleRelease --no-daemon
