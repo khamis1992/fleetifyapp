@@ -46,10 +46,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Redirect to onboarding if no company ID (after initialization is complete)
-  if (!companyId) {
-    return <Navigate to="/onboarding" state={{ from: location }} replace />;
-  }
+  // If no company ID, redirect to dashboard (not onboarding)
+  // Onboarding should only be accessed manually from landing page
+  // The dashboard will handle showing appropriate content for users without a company
 
   // Check permissions using PermissionGuard
   return (

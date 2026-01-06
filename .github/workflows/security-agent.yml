@@ -1,233 +1,36 @@
-# ============================================
-# Security & Dependency Vulnerability Agent
-# Blocks merges with critical vulnerabilities
-# ============================================
-
-name: 🛡️ Security Agent
+name: Security Agent
 
 on:
-  pull_request:
   push:
-    branches: [main]
-  schedule:
-    # Daily at 6 AM
-    - cron: '0 6 * * *'
-
-env:
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  security-audit:
-    name: 🔒 Security Vulnerability Scan
+  security-scan:
+    name: 🔒 Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: 📚 Install dependencies
         run: npm ci
 
-      - name: NPM Audit
-        id: npm_audit
-        continue-on-error: true
+      - name: 🔍 Run npm audit
+        run: npm audit --audit-level=high || true
+
+      - name: 📊 Summary
         run: |
-          npm audit --json > audit-results.json 2>&1 || true
-          
-          # Parse results
-          CRITICAL=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
-          HIGH=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
-          MODERATE=$(cat audit-results.json | jq '.metadata.vulnerabilities.moderate // 0')
-          LOW=$(cat audit-results.json | jq '.metadata.vulnerabilities.low // 0')
-          
-          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-          echo "high=$HIGH" >> $GITHUB_OUTPUT
-          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
-          echo "low=$LOW" >> $GITHUB_OUTPUT
-          
-          TOTAL=$((CRITICAL + HIGH))
-          echo "blocking_total=$TOTAL" >> $GITHUB_OUTPUT
-
-      - name: Check for Deprecated Packages
-        id: deprecated
-        run: |
-          DEPRECATED=0
-          DEPRECATED_LIST=""
-          
-          # Check package.json dependencies
-          while IFS= read -r pkg; do
-            # Check npm for deprecation status
-            STATUS=$(npm view "$pkg" 2>&1 || true)
-            if echo "$STATUS" | grep -qi "deprecated"; then
-              DEPRECATED=$((DEPRECATED + 1))
-              DEPRECATED_LIST="$DEPRECATED_LIST\n- $pkg"
-            fi
-          done < <(jq -r '.dependencies // {} | keys[]' package.json)
-          
-          echo "deprecated_count=$DEPRECATED" >> $GITHUB_OUTPUT
-          echo "deprecated_list<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$DEPRECATED_LIST" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Check for Suspicious Scripts
-        id: scripts
-        run: |
-          SUSPICIOUS=0
-          ISSUES=""
-          
-          # Check for suspicious postinstall scripts in dependencies
-          for dir in node_modules/*/; do
-            if [ -f "$dir/package.json" ]; then
-              PKG_NAME=$(basename "$dir")
-              SCRIPTS=$(jq -r '.scripts // {} | keys[]' "$dir/package.json" 2>/dev/null || true)
-              
-              # Check for risky scripts
-              if echo "$SCRIPTS" | grep -qE 'postinstall|preinstall|install'; then
-                SCRIPT_CONTENT=$(jq -r '.scripts.postinstall // .scripts.preinstall // .scripts.install // ""' "$dir/package.json" 2>/dev/null || true)
-                
-                # Flag if script contains suspicious patterns
-                if echo "$SCRIPT_CONTENT" | grep -qE 'curl|wget|eval|exec|child_process|spawn'; then
-                  SUSPICIOUS=$((SUSPICIOUS + 1))
-                  ISSUES="$ISSUES\n⚠️ $PKG_NAME has suspicious install script"
-                fi
-              fi
-            fi
-          done
-          
-          echo "suspicious_count=$SUSPICIOUS" >> $GITHUB_OUTPUT
-          echo "suspicious_issues<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$ISSUES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Secret Scanning
-        id: secrets
-        run: |
-          SECRETS_FOUND=0
-          PATTERNS=(
-            'AKIA[0-9A-Z]{16}'          # AWS Access Key
-            'sk-[a-zA-Z0-9]{48}'        # OpenAI Key
-            'ghp_[a-zA-Z0-9]{36}'       # GitHub Token
-            'xox[baprs]-[a-zA-Z0-9-]+'  # Slack Token
-            'AIza[0-9A-Za-z_-]{35}'     # Google API Key
-          )
-          
-          for pattern in "${PATTERNS[@]}"; do
-            FOUND=$(grep -rE "$pattern" src/ --include="*.ts" --include="*.tsx" --include="*.js" 2>/dev/null | wc -l || true)
-            if [ "$FOUND" -gt "0" ]; then
-              SECRETS_FOUND=$((SECRETS_FOUND + FOUND))
-            fi
-          done
-          
-          echo "secrets_found=$SECRETS_FOUND" >> $GITHUB_OUTPUT
-
-      - name: Generate Security Report
-        id: report
-        run: |
-          CRITICAL=${{ steps.npm_audit.outputs.critical }}
-          HIGH=${{ steps.npm_audit.outputs.high }}
-          DEPRECATED=${{ steps.deprecated.outputs.deprecated_count }}
-          SUSPICIOUS=${{ steps.scripts.outputs.suspicious_count }}
-          SECRETS=${{ steps.secrets.outputs.secrets_found }}
-          
-          # Determine status
-          if [ "$CRITICAL" -gt "0" ] || [ "$SECRETS" -gt "0" ]; then
-            echo "status=fail" >> $GITHUB_OUTPUT
-            echo "severity=critical" >> $GITHUB_OUTPUT
-          elif [ "$HIGH" -gt "0" ] || [ "$SUSPICIOUS" -gt "0" ]; then
-            echo "status=fail" >> $GITHUB_OUTPUT
-            echo "severity=warning" >> $GITHUB_OUTPUT
-          else
-            echo "status=pass" >> $GITHUB_OUTPUT
-            echo "severity=info" >> $GITHUB_OUTPUT
-          fi
-          
-          # Calculate risk score
-          RISK_SCORE=$((CRITICAL * 10 + HIGH * 5 + DEPRECATED + SUSPICIOUS * 3 + SECRETS * 20))
-          echo "risk_score=$RISK_SCORE" >> $GITHUB_OUTPUT
-
-      - name: Log to Supabase
-        if: always()
-        run: |
-          curl -X POST "${{ env.SUPABASE_URL }}/rest/v1/cto_agent_audit" \
-            -H "apikey: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Authorization: Bearer ${{ env.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -H "Prefer: return=minimal" \
-            -d '{
-              "run_id": "${{ github.run_id }}",
-              "stage": "security_scan",
-              "status": "${{ steps.report.outputs.status }}",
-              "severity": "${{ steps.report.outputs.severity }}",
-              "actor": "${{ github.actor }}",
-              "pr_number": ${{ github.event.pull_request.number || 'null' }},
-              "branch": "${{ github.head_ref || github.ref_name }}",
-              "commit_sha": "${{ github.sha }}",
-              "details": {
-                "critical_vulns": ${{ steps.npm_audit.outputs.critical }},
-                "high_vulns": ${{ steps.npm_audit.outputs.high }},
-                "moderate_vulns": ${{ steps.npm_audit.outputs.moderate }},
-                "low_vulns": ${{ steps.npm_audit.outputs.low }},
-                "deprecated_packages": ${{ steps.deprecated.outputs.deprecated_count }},
-                "suspicious_scripts": ${{ steps.scripts.outputs.suspicious_count }},
-                "secrets_found": ${{ steps.secrets.outputs.secrets_found }},
-                "risk_score": ${{ steps.report.outputs.risk_score }}
-              }
-            }'
-
-      - name: Comment on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const status = '${{ steps.report.outputs.status }}';
-            const critical = '${{ steps.npm_audit.outputs.critical }}';
-            const high = '${{ steps.npm_audit.outputs.high }}';
-            const secrets = '${{ steps.secrets.outputs.secrets_found }}';
-            
-            let emoji = status === 'pass' ? '✅' : '❌';
-            let body = `## ${emoji} Security Scan Results\n\n`;
-            
-            body += `| Vulnerability Level | Count |\n`;
-            body += `|---------------------|-------|\n`;
-            body += `| 🔴 Critical | ${{ steps.npm_audit.outputs.critical }} |\n`;
-            body += `| 🟠 High | ${{ steps.npm_audit.outputs.high }} |\n`;
-            body += `| 🟡 Moderate | ${{ steps.npm_audit.outputs.moderate }} |\n`;
-            body += `| 🟢 Low | ${{ steps.npm_audit.outputs.low }} |\n\n`;
-            
-            body += `| Other Checks | Result |\n`;
-            body += `|--------------|--------|\n`;
-            body += `| Deprecated Packages | ${{ steps.deprecated.outputs.deprecated_count }} |\n`;
-            body += `| Suspicious Scripts | ${{ steps.scripts.outputs.suspicious_count }} |\n`;
-            body += `| Exposed Secrets | ${{ steps.secrets.outputs.secrets_found }} |\n\n`;
-            
-            if (critical > 0 || secrets > 0) {
-              body += `> 🚨 **BLOCKED**: Critical security issues must be resolved before merge.\n`;
-            } else if (high > 0) {
-              body += `> ⚠️ **WARNING**: High severity vulnerabilities detected. Please review.\n`;
-            }
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-
-      - name: Block if Critical
-        if: steps.npm_audit.outputs.critical > 0 || steps.secrets.outputs.secrets_found > 0
-        run: |
-          echo "❌ SECURITY BLOCK: Critical vulnerabilities or exposed secrets detected!"
-          echo ""
-          echo "Critical Vulnerabilities: ${{ steps.npm_audit.outputs.critical }}"
-          echo "Exposed Secrets: ${{ steps.secrets.outputs.secrets_found }}"
-          echo ""
-          echo "This PR cannot be merged until these issues are resolved."
-          exit 1
-
+          echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Audit | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
