@@ -13,34 +13,33 @@ let envConfig: ReturnType<typeof getEnvConfig> | null = null;
 try {
   envConfig = validateEnvironment();
 } catch (error) {
-  if (isProduction) {
-    console.error('❌ Critical: Environment validation failed in production');
-    throw error;
-  } else {
-    console.warn('⚠️ Environment validation failed in development:', error);
-    // Continue in development for better DX
-  }
+  // Don't throw in production for mobile app compatibility
+  // The fallback values will be used instead
+  console.warn('⚠️ Environment validation warning:', error);
+  // Continue with fallback values
 }
+
+// Fallback values for mobile app (Capacitor) where env vars may not be available
+const FALLBACK_SUPABASE_URL = "https://qwhunliohlkkahbspfiu.supabase.co";
+const FALLBACK_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3aHVubGlvaGxra2FoYnNwZml1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MTMwODYsImV4cCI6MjA2ODk4OTA4Nn0.x5o6IpzWcYo7a6jRq2J8V0hKyNeRKZCEQIuXTPADQqs";
 
 /**
  * Get Supabase configuration
- * @throws {Error} If required variables are missing in production
+ * Uses hardcoded fallback values for mobile app compatibility
  */
 export function getSupabaseConfig() {
-  if (!envConfig) {
-    if (isProduction) {
-      throw new Error('Supabase configuration not available in production');
-    }
-    // Fallback for development
+  // Always use fallback values if env vars are not available (for mobile app)
+  if (envConfig) {
     return {
-      url: import.meta.env.VITE_SUPABASE_URL || '',
-      anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+      url: envConfig.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL,
+      anonKey: envConfig.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY,
     };
   }
 
+  // Fallback for mobile/production when envConfig failed to load
   return {
-    url: envConfig.VITE_SUPABASE_URL,
-    anonKey: envConfig.VITE_SUPABASE_ANON_KEY,
+    url: import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL,
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY,
   };
 }
 
