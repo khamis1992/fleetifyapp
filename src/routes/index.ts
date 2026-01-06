@@ -27,6 +27,11 @@ const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
 const HeroDemo = lazy(() => import('@/pages/HeroDemo'));
 const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
+// Mobile app pages
+const MobileLogin = lazy(() => import('@/pages/mobile/MobileLogin'));
+const MobileApp = lazy(() => import('@/pages/mobile/MobileApp'));
+const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
+
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
@@ -295,6 +300,52 @@ const routeConfigs: RouteConfig[] = [
     description: 'Mobile app demo',
     group: 'demo',
     priority: 7,
+  },
+
+  // === Mobile App Routes ===
+  {
+    path: '/mobile',
+    component: MobileLogin,
+    lazy: true,
+    exact: true,
+    title: 'Mobile Login',
+    description: 'Mobile app login screen',
+    group: 'mobile',
+    priority: 1,
+    protected: false,
+  },
+  {
+    path: '/mobile/home',
+    component: MobileApp,
+    lazy: true,
+    exact: true,
+    title: 'Mobile App',
+    description: 'Mobile app main interface',
+    group: 'mobile',
+    priority: 1,
+    protected: true,
+  },
+  {
+    path: '/mobile/contracts/new',
+    component: MobileContractWizard,
+    lazy: true,
+    exact: true,
+    title: 'New Contract',
+    description: 'Mobile contract creation wizard',
+    group: 'mobile',
+    priority: 1,
+    protected: true,
+  },
+  {
+    path: '/mobile/*',
+    component: MobileApp,
+    lazy: true,
+    exact: false,
+    title: 'Mobile App',
+    description: 'Mobile app with nested routes',
+    group: 'mobile',
+    priority: 1,
+    protected: true,
   },
 
   // === Main Application Routes ===

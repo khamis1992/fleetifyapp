@@ -3,8 +3,9 @@
  * Refactored to use route registry system for improved maintainability and reduced complexity
  */
 
-import React, { Suspense, useMemo } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import React, { Suspense, useMemo, useEffect } from 'react';
+import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 
 // Context Providers
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -62,6 +63,36 @@ const APP_CONFIG = {
   QUERY_CACHE_TIME: 5 * 60 * 1000, // 5 minutes
   QUERY_STALE_TIME: 2 * 60 * 1000, // 2 minutes
 } as const;
+
+// === Mobile Redirect Component ===
+// Automatically redirects to mobile app when running in Capacitor (APK)
+const MobileRedirect: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const checkMobileAndRedirect = async () => {
+      // Check if running in Capacitor (native mobile app)
+      const isNative = Capacitor.isNativePlatform();
+      const isMobile = Capacitor.getPlatform() !== 'web';
+
+      // If running in native app and not already on mobile routes, redirect
+      if ((isNative || isMobile) && !location.pathname.startsWith('/mobile')) {
+        // Check if user is authenticated before redirecting to home
+        const token = localStorage.getItem('sb-alaraf-auth-token');
+        if (token) {
+          navigate('/mobile/home', { replace: true });
+        } else {
+          navigate('/mobile', { replace: true });
+        }
+      }
+    };
+
+    checkMobileAndRedirect();
+  }, [navigate, location]);
+
+  return null; // This component doesn't render anything
+};
 
 // === Query Client Configuration ===
 const createQueryClient = () => {
@@ -165,6 +196,9 @@ const App: React.FC = () => {
                         <RouteProvider routes={routeConfigs}>
                           <RouteErrorBoundary>
                             <div className="min-h-screen bg-background">
+                              {/* Mobile Auto-Redirect for Native App */}
+                              <MobileRedirect />
+
                               {/* Main Application Routes */}
                               <RouteRenderer routes={routeConfigs} />
 
