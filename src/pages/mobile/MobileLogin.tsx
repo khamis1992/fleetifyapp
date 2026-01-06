@@ -1,21 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Fingerprint, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import fleetifyLogo from '@/assets/fleetify-logo.png';
 
 export const MobileLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+
+  // Floating particles state
+  const [particles] = useState(() => 
+    Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 4 + 2,
+      duration: Math.random() * 10 + 15,
+      delay: Math.random() * 5,
+    }))
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,25 +41,33 @@ export const MobileLogin: React.FC = () => {
     try {
       console.log('🔐 [MobileLogin] Attempting login with:', { email });
 
-      // Use Supabase directly for mobile login
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
 
-      console.log('🔐 [MobileLogin] Supabase response:', { data, error });
+      console.log('🔐 [MobileLogin] Supabase response:', { data, error: authError });
 
-      if (error) {
-        console.error('❌ [MobileLogin] Supabase error:', error);
-        setError(error.message || 'فشل تسجيل الدخول');
+      if (authError) {
+        console.error('❌ [MobileLogin] Supabase error:', authError);
+        
+        // Translate common errors to Arabic
+        let errorMessage = authError.message;
+        if (authError.message.includes('Invalid login credentials')) {
+          errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+        } else if (authError.message.includes('Email not confirmed')) {
+          errorMessage = 'يرجى تأكيد البريد الإلكتروني أولاً';
+        } else if (authError.message.includes('Too many requests')) {
+          errorMessage = 'محاولات كثيرة جداً، يرجى المحاولة لاحقاً';
+        }
+        
+        setError(errorMessage);
         setIsSubmitting(false);
         return;
       }
 
       if (data.user) {
         console.log('✅ [MobileLogin] Login successful for user:', data.user.email);
-
-        // Small delay for animation
         setTimeout(() => {
           navigate('/mobile/home', { replace: true });
         }, 300);
@@ -64,31 +82,10 @@ export const MobileLogin: React.FC = () => {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring', stiffness: 300, damping: 24 }
-    }
-  };
-
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen relative overflow-hidden bg-[#0a0a0a]"
       style={{
-        background: 'linear-gradient(135deg, #f9fafb 0%, #ffffff 50%, #f0fdfa 100%)',
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
         paddingLeft: 'env(safe-area-inset-left)',
@@ -96,299 +93,388 @@ export const MobileLogin: React.FC = () => {
       }}
       dir="rtl"
     >
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Gradient Orbs */}
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
+            scale: [1, 1.3, 1],
+            x: [0, 30, 0],
+            y: [0, -20, 0],
           }}
           transition={{
-            duration: 20,
+            duration: 8,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-teal-400/20 to-teal-600/20 rounded-full blur-3xl"
+          className="absolute top-0 right-0 w-[300px] h-[300px] bg-teal-500/20 rounded-full blur-[100px]"
         />
         <motion.div
           animate={{
             scale: [1.2, 1, 1.2],
-            rotate: [90, 0, 90],
+            x: [0, -40, 0],
+            y: [0, 30, 0],
           }}
           transition={{
-            duration: 15,
+            duration: 10,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-br from-emerald-400/20 to-teal-600/20 rounded-full blur-3xl"
+          className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-emerald-500/15 rounded-full blur-[120px]"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-cyan-500/10 rounded-full blur-[80px]"
+        />
+
+        {/* Floating Particles */}
+        {particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="absolute rounded-full bg-teal-400/30"
+            style={{
+              width: particle.size,
+              height: particle.size,
+              left: `${particle.x}%`,
+              top: `${particle.y}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              opacity: [0.2, 0.6, 0.2],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              delay: particle.delay,
+              ease: "easeInOut"
+            }}
+          />
+        ))}
+
+        {/* Grid Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }}
         />
       </div>
 
       {/* Main Content */}
       <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10 min-h-screen flex flex-col px-6 py-8"
       >
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex items-center justify-between mb-8"
+        >
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center"
+          >
+            <ArrowLeft className="w-5 h-5 text-white/70" />
+          </motion.button>
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-teal-400" />
+            <span className="text-xs text-white/50">اتصال آمن</span>
+          </div>
+        </motion.div>
+
         {/* Logo Section */}
-        <motion.div variants={itemVariants} className="mb-8 relative">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+          className="flex flex-col items-center mb-10"
+        >
           <motion.div
-            animate={{
-              rotate: [0, 2, -2, 0],
-              scale: [1, 1.02, 1],
+            animate={{ 
+              rotate: [0, 5, -5, 0],
+              y: [0, -5, 0]
             }}
             transition={{
-              duration: 4,
+              duration: 6,
               repeat: Infinity,
-              repeatDelay: 3,
+              ease: "easeInOut"
             }}
+            className="relative mb-6"
           >
-            <div className="relative">
-              {/* Glow Effect */}
-              <motion.div
-                animate={{
-                  scale: [1, 1.15, 1],
-                  opacity: [0.5, 0.8, 0.5],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                }}
-                className="absolute inset-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-[2.5rem] blur-2xl"
+            {/* Glow Effect */}
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.4, 0.7, 0.4],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+              }}
+              className="absolute inset-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-3xl blur-2xl"
+            />
+            
+            {/* Logo Container */}
+            <div className="relative w-24 h-24 bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-4 border border-white/10 backdrop-blur-xl shadow-2xl">
+              <img
+                src={fleetifyLogo}
+                alt="Fleetify Logo"
+                className="w-full h-full object-contain"
               />
-
-              {/* Logo Image Container */}
-              <div className="relative w-32 h-32 flex items-center justify-center">
-                <motion.div
-                  animate={{
-                    y: [0, -5, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="relative w-full h-full"
-                >
-                  <img
-                    src={fleetifyLogo}
-                    alt="Fleetify Logo"
-                    className="w-full h-full object-contain drop-shadow-2xl"
-                  />
-                </motion.div>
-              </div>
-
-              {/* Sparkle Icon */}
-              <motion.div
-                animate={{
-                  rotate: [0, 360],
-                  scale: [1, 1.3, 1],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                }}
-                className="absolute -top-1 -right-1 w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-xl border-2 border-white/50"
-              >
-                <Sparkles className="w-5 h-5 text-white" fill="white" />
-              </motion.div>
             </div>
           </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-3xl font-bold text-white mb-2"
+          >
+            مرحباً بعودتك
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-white/50 text-sm"
+          >
+            سجل دخولك للوصول إلى حسابك
+          </motion.p>
         </motion.div>
 
-        {/* Title Section */}
-        <motion.div variants={itemVariants} className="text-center mb-10">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-2">
-            Fleetify
-          </h1>
-          <p className="text-base text-gray-500 font-medium">فليتفاي - إدارة الأسطول</p>
-        </motion.div>
-
-        {/* Login Form Card */}
-        <motion.div
-          variants={itemVariants}
-          className="w-full max-w-sm"
+        {/* Login Form */}
+        <motion.form
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          onSubmit={handleSubmit}
+          className="flex-1 space-y-5"
         >
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Error Message */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="bg-red-50/90 backdrop-blur-sm border border-red-200/80 rounded-3xl p-4 flex items-start gap-3 shadow-lg shadow-red-500/10"
-                >
-                  <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-red-800 mb-1">خطأ في تسجيل الدخول</p>
-                    <p className="text-xs text-red-600">{error}</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Email Input */}
-            <motion.div
-              className="space-y-2"
-              animate={focusedField === 'email' ? { scale: 1.02 } : { scale: 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            >
-              <label className="text-sm font-semibold text-gray-700 block mb-2">
-                البريد الإلكتروني
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg" />
-                <div className="relative">
-                  <Mail className={cn(
-                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200",
-                    focusedField === 'email' ? "text-teal-600" : "text-gray-400 group-hover:text-gray-500"
-                  )} />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="email@example.com"
-                    className={cn(
-                      'w-full pr-12 pl-4 py-4 rounded-2xl',
-                      'bg-white/90 backdrop-blur-xl border-2 transition-all duration-200',
-                      focusedField === 'email'
-                        ? 'border-teal-500 shadow-lg shadow-teal-500/20'
-                        : 'border-gray-200/80 group-hover:border-gray-300/80',
-                      'focus:outline-none',
-                      'text-gray-900 placeholder:text-gray-400 font-medium'
-                    )}
-                    dir="ltr"
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Password Input */}
-            <motion.div
-              className="space-y-2"
-              animate={focusedField === 'password' ? { scale: 1.02 } : { scale: 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            >
-              <label className="text-sm font-semibold text-gray-700 block mb-2">
-                كلمة المرور
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg" />
-                <div className="relative">
-                  <Lock className={cn(
-                    "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200",
-                    focusedField === 'password' ? "text-teal-600" : "text-gray-400 group-hover:text-gray-500"
-                  )} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="••••••••"
-                    className={cn(
-                      'w-full pr-12 pl-14 py-4 rounded-2xl',
-                      'bg-white/90 backdrop-blur-xl border-2 transition-all duration-200',
-                      focusedField === 'password'
-                        ? 'border-teal-500 shadow-lg shadow-teal-500/20'
-                        : 'border-gray-200/80 group-hover:border-gray-300/80',
-                      'focus:outline-none',
-                      'text-gray-900 placeholder:text-gray-400 font-medium'
-                    )}
-                    dir="ltr"
-                    autoComplete="current-password"
-                  />
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={cn(
-                      "absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-200",
-                      focusedField === 'password' ? "text-teal-600" : "text-gray-400 hover:text-gray-600"
-                    )}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Forgot Password */}
-            <div className="text-left">
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                type="button"
-                className="text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors inline-flex items-center gap-1"
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3 backdrop-blur-xl"
               >
-                نسيت كلمة المرور؟
-                <ChevronRight className="w-4 h-4" />
-              </motion.button>
-            </div>
+                <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                </div>
+                <div className="flex-1 pt-1">
+                  <p className="text-sm font-semibold text-red-300 mb-0.5">خطأ في تسجيل الدخول</p>
+                  <p className="text-xs text-red-400/80">{error}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {/* Submit Button */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              disabled={loading || isSubmitting}
-              className={cn(
-                'relative w-full py-4 rounded-2xl font-bold text-white text-base',
-                'bg-gradient-to-r from-teal-500 to-emerald-600',
-                'shadow-xl shadow-teal-500/30',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-                'transition-all duration-200',
-                'overflow-hidden group'
-              )}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative flex items-center justify-center gap-2">
-                {loading || isSubmitting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>جاري تسجيل الدخول...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>تسجيل الدخول</span>
-                    <ChevronRight className="w-5 h-5" />
-                  </>
-                )}
+          {/* Email Input */}
+          <motion.div
+            animate={focusedField === 'email' ? { scale: 1.01 } : { scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          >
+            <label className="text-sm font-medium text-white/70 block mb-2">
+              البريد الإلكتروني
+            </label>
+            <div className="relative">
+              <div className={cn(
+                "absolute inset-0 rounded-2xl transition-opacity duration-300",
+                focusedField === 'email' 
+                  ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/20 opacity-100" 
+                  : "opacity-0"
+              )} />
+              <div className="relative">
+                <Mail className={cn(
+                  "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300",
+                  focusedField === 'email' ? "text-teal-400" : "text-white/30"
+                )} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="example@email.com"
+                  className={cn(
+                    'w-full pr-12 pl-4 py-4 rounded-2xl text-base',
+                    'bg-white/5 border-2 transition-all duration-300',
+                    focusedField === 'email'
+                      ? 'border-teal-500/50 bg-white/10'
+                      : 'border-white/10 hover:border-white/20',
+                    'focus:outline-none',
+                    'text-white placeholder:text-white/30'
+                  )}
+                  dir="ltr"
+                  autoComplete="email"
+                  inputMode="email"
+                />
               </div>
-            </motion.button>
-          </form>
+            </div>
+          </motion.div>
 
-          {/* Sign Up Link */}
+          {/* Password Input */}
+          <motion.div
+            animate={focusedField === 'password' ? { scale: 1.01 } : { scale: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          >
+            <label className="text-sm font-medium text-white/70 block mb-2">
+              كلمة المرور
+            </label>
+            <div className="relative">
+              <div className={cn(
+                "absolute inset-0 rounded-2xl transition-opacity duration-300",
+                focusedField === 'password' 
+                  ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/20 opacity-100" 
+                  : "opacity-0"
+              )} />
+              <div className="relative">
+                <Lock className={cn(
+                  "absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300",
+                  focusedField === 'password' ? "text-teal-400" : "text-white/30"
+                )} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="••••••••"
+                  className={cn(
+                    'w-full pr-12 pl-14 py-4 rounded-2xl text-base',
+                    'bg-white/5 border-2 transition-all duration-300',
+                    focusedField === 'password'
+                      ? 'border-teal-500/50 bg-white/10'
+                      : 'border-white/10 hover:border-white/20',
+                    'focus:outline-none',
+                    'text-white placeholder:text-white/30'
+                  )}
+                  dir="ltr"
+                  autoComplete="current-password"
+                />
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Forgot Password */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-8 text-center"
+            transition={{ delay: 0.5 }}
+            className="flex justify-start"
           >
-            <p className="text-sm text-gray-500 mb-2">ليس لديك حساب؟</p>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              className="text-base font-bold text-transparent bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text hover:from-teal-700 hover:to-emerald-700 transition-all inline-flex items-center gap-1"
+            <button
+              type="button"
+              className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
             >
-              إنشاء حساب جديد
-              <ChevronRight className="w-4 h-4" />
+              نسيت كلمة المرور؟
+            </button>
+          </motion.div>
+
+          {/* Submit Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="pt-4"
+          >
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              disabled={isSubmitting}
+              className={cn(
+                'w-full py-4 rounded-2xl font-bold text-white text-base relative overflow-hidden',
+                'bg-gradient-to-r from-teal-500 to-emerald-500',
+                'shadow-xl shadow-teal-500/25',
+                'disabled:opacity-60 disabled:cursor-not-allowed',
+                'transition-all duration-300'
+              )}
+            >
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400"
+                initial={{ x: '100%' }}
+                whileHover={{ x: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+              <span className="relative flex items-center justify-center gap-2">
+                {isSubmitting ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                    />
+                    <span>جاري تسجيل الدخول...</span>
+                  </>
+                ) : (
+                  <span>تسجيل الدخول</span>
+                )}
+              </span>
             </motion.button>
           </motion.div>
+
+          {/* Biometric Login Hint */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="flex items-center justify-center gap-3 py-4"
+          >
+            <div className="h-px flex-1 bg-white/10" />
+            <div className="flex items-center gap-2 text-white/40">
+              <Fingerprint className="w-4 h-4" />
+              <span className="text-xs">أو استخدم البصمة</span>
+            </div>
+            <div className="h-px flex-1 bg-white/10" />
+          </motion.div>
+        </motion.form>
+
+        {/* Footer */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="text-center pt-6 pb-4"
+        >
+          <p className="text-white/40 text-sm mb-2">ليس لديك حساب؟</p>
+          <button
+            type="button"
+            className="text-teal-400 font-semibold hover:text-teal-300 transition-colors"
+          >
+            إنشاء حساب جديد
+          </button>
         </motion.div>
 
-        {/* Version Info */}
+        {/* Version */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="mt-auto pt-8 text-center text-xs text-gray-400 font-medium"
+          transition={{ delay: 0.9 }}
+          className="text-center text-xs text-white/20 pb-2"
         >
-          الإصدار 1.0.0
+          الإصدار 2.0.0
         </motion.p>
       </motion.div>
     </div>
