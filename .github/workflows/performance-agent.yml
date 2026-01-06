@@ -28,20 +28,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build & Analyze Bundle
         id: bundle
         run: |
           # Build with stats
-          pnpm run build 2>&1 | tee build-output.txt
+          npm run build 2>&1 | tee build-output.txt
           
           # Calculate bundle size
           TOTAL_SIZE=$(du -sk dist/ | cut -f1)
