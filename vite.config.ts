@@ -20,5 +20,18 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ['playwright', 'playwright-core', 'chromium-bidi'],
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-slot',
+      'framer-motion',
+    ],
   },
 }));

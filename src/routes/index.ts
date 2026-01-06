@@ -11,10 +11,17 @@ import type { RouteConfig, RouteGroup, LazyRouteComponent } from './types';
 // Critical pages - loaded immediately
 import Index from '@/pages/Index';
 import PremiumLanding from '@/pages/PremiumLanding';
+import EnterpriseLanding from '@/pages/landing/EnterpriseLanding';
 import Auth from '@/pages/Auth';
+import Onboarding from '@/pages/onboarding/Onboarding';
 import ResetPassword from '@/pages/ResetPassword';
 import DemoTrial from '@/pages/DemoTrial';
 import NotFound from '@/pages/NotFound';
+
+// Public pages
+const AboutUs = lazy(() => import('@/pages/AboutUs'));
+const Careers = lazy(() => import('@/pages/Careers'));
+const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
 
 // Demo pages - lazy loaded
 const HeroDemo = lazy(() => import('@/pages/HeroDemo'));
@@ -131,6 +138,8 @@ const PerformanceDashboard = lazy(() => import('@/pages/PerformanceDashboard'));
 
 // Legal pages
 const Legal = lazy(() => import('@/pages/Legal'));
+const PrivacyPolicy = lazy(() => import('@/pages/legal/PrivacyPolicy'));
+const TermsAndConditions = lazy(() => import('@/pages/legal/TermsAndConditions'));
 const LegalCasesTracking = lazy(() => import('@/pages/legal/LegalCasesTracking'));
 const LegalCasesTrackingV2 = lazy(() => import('@/pages/legal/LegalCasesTrackingV2'));
 const DefaultersList = lazy(() => import('@/pages/legal/DefaultersList'));
@@ -166,11 +175,11 @@ const routeConfigs: RouteConfig[] = [
   // === Public Routes ===
   {
     path: '/',
-    component: Index,
+    component: EnterpriseLanding,
     lazy: false,
     exact: true,
     title: 'Home',
-    description: 'Landing page',
+    description: 'Fleetify - Enterprise Fleet Management',
     group: 'public',
     priority: 1,
   },
@@ -185,12 +194,32 @@ const routeConfigs: RouteConfig[] = [
     priority: 2,
   },
   {
+    path: '/enterprise',
+    component: EnterpriseLanding,
+    lazy: false,
+    exact: true,
+    title: 'Enterprise',
+    description: 'Professional enterprise landing page',
+    group: 'public',
+    priority: 2,
+  },
+  {
     path: '/auth',
     component: Auth,
     lazy: false,
     exact: true,
     title: 'Authentication',
     description: 'Login and registration',
+    group: 'public',
+    priority: 3,
+  },
+  {
+    path: '/onboarding',
+    component: Onboarding,
+    lazy: false,
+    exact: true,
+    title: 'Onboarding',
+    description: 'User onboarding flow',
     group: 'public',
     priority: 3,
   },
@@ -213,6 +242,36 @@ const routeConfigs: RouteConfig[] = [
     description: 'Demo and trial signup',
     group: 'public',
     priority: 5,
+  },
+  {
+    path: '/about',
+    component: AboutUs,
+    lazy: true,
+    exact: true,
+    title: 'About Us',
+    description: 'About Fleetify page',
+    group: 'public',
+    priority: 3,
+  },
+  {
+    path: '/careers',
+    component: Careers,
+    lazy: true,
+    exact: true,
+    title: 'Careers',
+    description: 'Careers and job openings',
+    group: 'public',
+    priority: 3,
+  },
+  {
+    path: '/help',
+    component: HelpCenter,
+    lazy: true,
+    exact: true,
+    title: 'Help Center',
+    description: 'Help and support center',
+    group: 'public',
+    priority: 3,
   },
 
   // === Demo Routes ===
@@ -1322,6 +1381,26 @@ const routeConfigs: RouteConfig[] = [
     priority: 120,
     protected: true,
     layout: 'bento',
+  },
+  {
+    path: '/privacy-policy',
+    component: PrivacyPolicy,
+    lazy: true,
+    exact: true,
+    title: 'Privacy Policy',
+    description: 'Privacy policy page',
+    group: 'public',
+    priority: 3,
+  },
+  {
+    path: '/terms-and-conditions',
+    component: TermsAndConditions,
+    lazy: true,
+    exact: true,
+    title: 'Terms and Conditions',
+    description: 'Terms and conditions page',
+    group: 'public',
+    priority: 3,
   },
   {
     path: '/legal/cases',
