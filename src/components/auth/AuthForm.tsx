@@ -1,19 +1,16 @@
 import { useState, type ChangeEvent, type FormEvent, type FC } from 'react';
-import { Eye, EyeOff, Rocket } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle, Shield, Zap, Sparkles, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
-import { LazyImage } from '@/components/common/LazyImage';
-import { signInToDemo, isDemoModeEnabled } from '@/lib/demo';
 
 export const AuthForm: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -32,21 +29,12 @@ export const AuthForm: FC = () => {
 
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('🔍 [AUTH_FORM] Login button clicked - START');
-    console.log('🔍 [AUTH_FORM] Current isLoading state:', isLoading);
-    
-    if (isLoading) {
-      console.warn('⚠️ [AUTH_FORM] Login clicked while already loading - IGNORING');
-      return;
-    }
+    if (isLoading) return;
     
     setIsLoading(true);
-    console.log('🔍 [AUTH_FORM] isLoading set to true');
 
     try {
-      console.log('🔍 [AUTH_FORM] Calling signIn with email:', formData.email);
       const { error } = await signIn(formData.email, formData.password);
-      console.log('🔍 [AUTH_FORM] signIn completed with error:', error);
       
       if (error) {
         let errorMessage = 'خطأ في تسجيل الدخول';
@@ -94,229 +82,368 @@ export const AuthForm: FC = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsDemoLoading(true);
-    try {
-      const { data, error } = await signInToDemo();
-      
-      if (error) {
-        toast({
-          title: "خطأ",
-          description: "تعذر الدخول إلى الحساب التجريبي. يرجى المحاولة لاحقاً.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "مرحباً بك في النسخة التجريبية!",
-          description: "لديك 7 أيام لتجربة جميع ميزات النظام مجاناً",
-        });
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
       }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ غير متوقع",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDemoLoading(false);
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" }
+    }
+  };
+
+  const pulseAnimation = {
+    scale: [1, 1.05, 1],
+    opacity: [0.5, 0.8, 0.5],
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "easeInOut"
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background-soft to-accent-muted p-6" dir="rtl">
-      <div className="w-full max-w-md">
-        {/* Logo Section */}
-        <div className="text-center mb-8">
-          <div className="relative inline-flex items-center justify-center w-32 h-32 mb-4">
-            {/* Logo with animated holes/gaps */}
-            <div className="relative z-10 flex items-center justify-center w-32 h-32 bg-destructive rounded-2xl shadow-accent overflow-hidden">
-              {/* Base logo */}
-              <LazyImage 
-                src="/receipts/logo.png" 
-                alt="Fleetify Logo" 
-                className="h-24 w-auto filter brightness-0 invert relative z-10"
-              />
-              
-              {/* Animated holes that appear when dots move out */}
-              <div className="absolute inset-0 bg-transparent">
-                {/* Top hole */}
-                <div className="absolute top-6 left-1/2 w-3 h-3 bg-background rounded-full transform -translate-x-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2s ease-in-out infinite',
-                       animationDelay: '0.2s'
-                     }}></div>
-                
-                {/* Bottom hole */}
-                <div className="absolute bottom-6 left-1/2 w-3 h-3 bg-background rounded-full transform -translate-x-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2s ease-in-out infinite',
-                       animationDelay: '0.7s'
-                     }}></div>
-                
-                {/* Left hole */}
-                <div className="absolute top-1/2 left-6 w-3 h-3 bg-background rounded-full transform -translate-y-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2.2s ease-in-out infinite',
-                       animationDelay: '1s'
-                     }}></div>
-                
-                {/* Right hole */}
-                <div className="absolute top-1/2 right-6 w-3 h-3 bg-background rounded-full transform -translate-y-1/2 opacity-0" 
-                     style={{ 
-                       animation: 'hole-appear 2.2s ease-in-out infinite',
-                       animationDelay: '1.4s'
-                     }}></div>
-              </div>
+    <div className="min-h-screen flex bg-slate-950 overflow-hidden" dir="rtl">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {/* Gradient Orbs */}
+        <motion.div 
+          animate={pulseAnimation}
+          className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[120px]" 
+        />
+        <motion.div 
+          animate={{ ...pulseAnimation, transition: { ...pulseAnimation.transition, delay: 1.5 } }}
+          className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[100px]" 
+        />
+        <motion.div 
+          animate={{ ...pulseAnimation, transition: { ...pulseAnimation.transition, delay: 0.8 } }}
+          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-teal-400/5 rounded-full blur-[80px]" 
+        />
+        
+        {/* Floating Particles */}
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{
+              y: [-20, 20, -20],
+              x: [-10, 10, -10],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{
+              duration: 4 + i,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: i * 0.5
+            }}
+            className="absolute w-2 h-2 bg-teal-400/40 rounded-full"
+            style={{
+              top: `${15 + i * 15}%`,
+              left: `${10 + i * 15}%`,
+            }}
+          />
+        ))}
+
+        {/* Grid Pattern */}
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                             linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }}
+        />
+      </div>
+
+      {/* Left Side - Branding */}
+      <motion.div 
+        className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <div className="relative z-10 max-w-lg">
+          {/* Logo */}
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center gap-3 mb-12"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-xl shadow-teal-500/30 cursor-pointer"
+            >
+              <span className="text-white font-bold text-3xl">F</span>
+            </motion.div>
+            <div>
+              <span className="text-3xl font-bold text-white block">Fleetify</span>
+              <span className="text-teal-400 text-sm">نظام إدارة الأساطيل</span>
             </div>
-            
-            {/* Dots that move out from logo creating holes */}
-            <div className="absolute inset-0">
-              <div className="absolute top-6 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2" 
-                   style={{ animation: 'dot-escape 2s ease-in-out infinite' }}></div>
-              <div className="absolute bottom-6 left-1/2 w-3 h-3 bg-primary rounded-full transform -translate-x-1/2" 
-                   style={{ animation: 'dot-escape-reverse 2s ease-in-out infinite', animationDelay: '0.5s' }}></div>
-              <div className="absolute top-1/2 left-6 w-3 h-3 bg-secondary rounded-full transform -translate-y-1/2" 
-                   style={{ animation: 'dot-escape 2.2s ease-in-out infinite', animationDelay: '0.8s' }}></div>
-              <div className="absolute top-1/2 right-6 w-3 h-3 bg-secondary rounded-full transform -translate-y-1/2" 
-                   style={{ animation: 'dot-escape-reverse 2.2s ease-in-out infinite', animationDelay: '1.2s' }}></div>
-            </div>
-            
-            {/* Additional floating particles */}
-            <div className="absolute inset-0">
-              <div className="absolute top-8 right-8 w-2 h-2 bg-accent rounded-full" 
-                   style={{ animation: 'particle-float 1.8s ease-in-out infinite', animationDelay: '0.3s' }}></div>
-              <div className="absolute bottom-8 left-8 w-2 h-2 bg-accent rounded-full" 
-                   style={{ animation: 'particle-float 1.8s ease-in-out infinite', animationDelay: '0.7s' }}></div>
-            </div>
-          </div>
-          <p className="text-muted-foreground mt-2">
-            نظام إدارة تأجير السيارات المتكامل
-          </p>
+          </motion.div>
+
+          {/* Tagline with animated text */}
+          <motion.h1
+            variants={itemVariants}
+            className="text-5xl font-bold text-white leading-tight mb-6"
+          >
+            ادر أسطولك
+            <motion.span 
+              className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 block"
+              animate={{ 
+                backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+              }}
+              transition={{ duration: 5, repeat: Infinity }}
+              style={{ backgroundSize: '200% 200%' }}
+            >
+              بذكاء وكفاءة
+            </motion.span>
+          </motion.h1>
+
+          <motion.p
+            variants={itemVariants}
+            className="text-xl text-slate-400 mb-12 leading-relaxed"
+          >
+            منصة متكاملة لإدارة الأسطول مع تحليلات فورية وتقارير مفصلة
+          </motion.p>
+
+          {/* Features with hover effects */}
+          <motion.div variants={itemVariants} className="space-y-4">
+            {[
+              { icon: CheckCircle, text: '99.9% مدة تشغيل مضمونة', delay: 0 },
+              { icon: Shield, text: 'حماية متقدمة للبيانات', delay: 0.1 },
+              { icon: Zap, text: 'أداء فائق السرعة', delay: 0.2 },
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + feature.delay }}
+                whileHover={{ x: 10, transition: { duration: 0.2 } }}
+                className="flex items-center gap-4 text-slate-300 group cursor-pointer"
+              >
+                <motion.div 
+                  whileHover={{ scale: 1.1, rotate: 10 }}
+                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center border border-teal-500/20 group-hover:border-teal-400/50 transition-colors"
+                >
+                  <feature.icon className="w-5 h-5 text-teal-400" />
+                </motion.div>
+                <span className="group-hover:text-teal-300 transition-colors">{feature.text}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Stats with counting animation */}
+          <motion.div
+            variants={itemVariants}
+            className="flex gap-10 mt-14 pt-8 border-t border-slate-800/50"
+          >
+            {[
+              { value: '500+', label: 'مركبة مُدارة' },
+              { value: '34+', label: 'شركة عميلة' },
+              { value: '99%', label: 'رضا العملاء' },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.8 + i * 0.1 }}
+                whileHover={{ scale: 1.05 }}
+                className="cursor-default"
+              >
+                <p className="text-4xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+                  {stat.value}
+                </p>
+                <p className="text-slate-500 text-sm mt-1">{stat.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
         </div>
+      </motion.div>
 
-        <Card className="shadow-elevated border-0 bg-card/80 backdrop-blur-sm">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">مرحباً بك</CardTitle>
-            <CardDescription>
-              قم بتسجيل الدخول للبدء
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="example@domain.com"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                  className="text-left"
-                  dir="ltr"
-                />
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="w-full max-w-md"
+        >
+          {/* Mobile Logo */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="lg:hidden text-center mb-8"
+          >
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="inline-flex items-center gap-3 mb-4"
+            >
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                <span className="text-white font-bold text-2xl">F</span>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
-                    className="pl-10 text-left"
-                    dir="ltr"
-                  />
+              <span className="text-2xl font-bold text-white">Fleetify</span>
+            </motion.div>
+            <p className="text-slate-400">نظام إدارة تأجير السيارات المتكامل</p>
+          </motion.div>
+
+          {/* Form Card with glassmorphism */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative"
+          >
+            {/* Card glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20 rounded-[28px] blur-xl opacity-50" />
+            
+            <div className="relative bg-slate-900/90 backdrop-blur-2xl rounded-3xl p-8 border border-slate-800/80 shadow-2xl">
+              {/* Header with icon */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="text-center mb-8"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30 mb-4"
+                >
+                  <Sparkles className="w-7 h-7 text-teal-400" />
+                </motion.div>
+                <h2 className="text-2xl font-bold text-white mb-2">مرحباً بك</h2>
+                <p className="text-slate-400">قم بتسجيل الدخول للمتابعة</p>
+              </motion.div>
+
+              <form onSubmit={handleSignIn} className="space-y-5">
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-2"
+                >
+                  <Label htmlFor="email" className="text-slate-300 font-medium">
+                    البريد الإلكتروني
+                  </Label>
+                  <div className="relative group">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="example@domain.com"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                      className="h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl text-left transition-all group-hover:border-slate-600"
+                      dir="ltr"
+                    />
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-500/0 via-teal-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  </div>
+                </motion.div>
+                
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="space-y-2"
+                >
+                  <Label htmlFor="password" className="text-slate-300 font-medium">
+                    كلمة المرور
+                  </Label>
+                  <div className="relative group">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                      className="h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl pl-12 text-left transition-all group-hover:border-slate-600"
+                      dir="ltr"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 text-slate-400 hover:text-teal-400 hover:bg-teal-500/10 transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-500/0 via-teal-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="flex justify-end"
+                >
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowPassword(!showPassword)}
+                    variant="link"
+                    className="px-0 text-teal-400 hover:text-teal-300 transition-colors"
+                    onClick={handleResetPassword}
+                    disabled={isLoading || !formData.email}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    هل نسيت كلمة المرور؟
                   </Button>
-                </div>
-              </div>
+                </motion.div>
 
-              <div className="flex justify-end -mt-2">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="px-0"
-                  onClick={handleResetPassword}
-                  disabled={isLoading || !formData.email}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
                 >
-                  هل نسيت كلمة المرور؟
-                </Button>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-primary hover:opacity-90 shadow-accent"
-                disabled={isLoading || isDemoLoading}
-              >
-                {isLoading ? <LoadingSpinner size="sm" /> : 'تسجيل الدخول'}
-              </Button>
-
-              {/* Demo Mode Button */}
-              {isDemoModeEnabled() && (
-                <>
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        أو
-                      </span>
-                    </div>
-                  </div>
-
                   <Button 
-                    type="button"
-                    variant="outline"
-                    className="w-full border-2 border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all"
-                    onClick={handleDemoLogin}
-                    disabled={isLoading || isDemoLoading}
+                    type="submit" 
+                    className="w-full h-12 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all group overflow-hidden relative"
+                    disabled={isLoading}
                   >
-                    {isDemoLoading ? (
+                    {/* Button shine effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full"
+                      animate={{ x: ['0%', '200%'] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    />
+                    {isLoading ? (
                       <LoadingSpinner size="sm" />
                     ) : (
-                      <>
-                        <Rocket className="h-4 w-4 ml-2" />
-                        تجربة النظام (7 أيام مجاناً)
-                      </>
+                      <span className="flex items-center gap-2 relative z-10">
+                        تسجيل الدخول
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                      </span>
                     )}
                   </Button>
+                </motion.div>
+              </form>
+            </div>
+          </motion.div>
 
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    لا يتطلب بريد إلكتروني • بيانات تجريبية جاهزة
-                  </p>
-                  <p className="text-xs text-center mt-4">
-                    <a href="/demo-trial" className="text-primary hover:underline font-semibold">
-                      تعرف على المزيد عن التجربة المجانية
-                    </a>
-                  </p>
-                </>
-              )}
-            </form>
-
-          </CardContent>
-        </Card>
-
-        <div className="text-center mt-6 text-sm text-muted-foreground">
-          <p>© 2025 Fleetify - جميع الحقوق محفوظة</p>
-        </div>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="text-center mt-8 text-sm text-slate-500"
+          >
+            © 2025 Fleetify - جميع الحقوق محفوظة
+          </motion.p>
+        </motion.div>
       </div>
     </div>
   );
