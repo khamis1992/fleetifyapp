@@ -16,9 +16,9 @@ const config: CapacitorConfig = {
       releaseType: 'APK'
     },
     captureInput: true,
-    // ⚠️ Security: WebView debugging disabled in production
-    // Enable only for development builds
-    webContentsDebuggingEnabled: false
+    // ⚠️ Security: WebView debugging enabled for troubleshooting
+    // Disable in production builds
+    webContentsDebuggingEnabled: true
   },
   ios: {
     contentInset: 'automatic',

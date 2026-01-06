@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { getSupabaseConfig, debugLog, securityLog } from '@/lib/env';
+import { createCapacitorStorageAdapter } from '@/lib/capacitorStorage';
 
 // Get Supabase configuration securely
 let supabaseConfig: ReturnType<typeof getSupabaseConfig>;
@@ -32,7 +33,7 @@ if (!supabaseConfig.url || !supabaseConfig.anonKey) {
 
 export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfig.anonKey, {
   auth: {
-    storage: localStorage,
+    storage: createCapacitorStorageAdapter(),
     persistSession: true,
     autoRefreshToken: true,
   }
