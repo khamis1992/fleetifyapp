@@ -83,6 +83,7 @@ jobs:
       - name: Build APK (Debug)
         if: github.event.inputs.build_type != 'release' && github.ref_type != 'tag'
         run: |
+          npx cap add android
           npx cap sync android
           cd android
           ./gradlew assembleDebug --no-daemon
@@ -95,6 +96,7 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          npx cap add android
           npx cap sync android
           cd android
           if [ -n "$RELEASE_STORE_FILE" ]; then
