@@ -210,7 +210,8 @@
       "mcp__plugin_playwright_playwright__browser_run_code",
       "Bash(cmd /c \"taskkill /PID 28468 /F\")",
       "Bash(cmd /c \"taskkill /PID 32428 /F\")",
-      "Bash(exit:*)"
+      "Bash(exit:*)",
+      "Bash(git remote:*)"
     ],
     "deny": [],
     "ask": []

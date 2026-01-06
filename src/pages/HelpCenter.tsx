@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Search, BookOpen, Video, FileText, MessageCircle, Mail, Phone, ChevronRight, ExternalLink } from 'lucide-react';
+import { Search, BookOpen, Video, FileText, MessageCircle, Mail, Phone, ChevronRight, ExternalLink, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
