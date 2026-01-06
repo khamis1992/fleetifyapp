@@ -26,7 +26,7 @@ jobs:
         run: npm ci
 
       - name: 🔍 Run npm audit
-        run: npm audit --audit-level=high || true
+        run: npm audit --audit-level=high --no-git 2>/dev/null || true
 
       - name: 📊 Summary
         run: |
