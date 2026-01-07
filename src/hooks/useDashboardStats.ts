@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { apiClient } from '@/lib/api/client';
+import { MobileDebugger } from '@/lib/mobileDebug';
 
 export interface DashboardStats {
   totalVehicles?: number;
@@ -80,13 +81,25 @@ export const useDashboardStats = () => {
       // جلب company_id من جدول profiles
       let company_id: string;
       
+      MobileDebugger.log('DASHBOARD', 'Fetching company_id for user', { user_id: user.id });
+      
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('user_id', user.id)
         .single();
+      
+      MobileDebugger.log('DASHBOARD', 'Profiles query result', { 
+        hasData: !!profileData, 
+        company_id: profileData?.company_id,
+        error: profileError?.message 
+      });
 
       if (profileError || !profileData?.company_id) {
+        MobileDebugger.log('DASHBOARD', 'No company_id in profiles, trying employees table', { 
+          profileError: profileError?.message, 
+          user_id: user.id 
+        });
         console.warn('[useDashboardStats] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
         
         // Try fallback to employees table
@@ -98,6 +111,10 @@ export const useDashboardStats = () => {
           .single();
         
         if (employeeError || !employeeData?.company_id) {
+          MobileDebugger.error('DASHBOARD', 'No company_id found in employees either', { 
+            employeeError: employeeError?.message, 
+            user_id: user.id 
+          });
           console.error('[useDashboardStats] No company_id found in employees either', { employeeError, user_id: user.id });
           
           // Return empty stats instead of throwing error
@@ -110,11 +127,20 @@ export const useDashboardStats = () => {
         }
         
         company_id = employeeData.company_id;
+        MobileDebugger.log('DASHBOARD', 'Found company_id from employees table', { company_id });
         console.log('[useDashboardStats] Found company_id from employees table:', company_id);
       } else {
         company_id = profileData.company_id;
+        MobileDebugger.log('DASHBOARD', 'Found company_id from profiles table', { company_id });
         console.log('[useDashboardStats] Found company_id from profiles table:', company_id);
       }
+      
+      // Log that we're about to fetch data
+      MobileDebugger.log('DASHBOARD', 'Starting data fetch', { 
+        company_id, 
+        isVehiclesEnabled, 
+        isPropertiesEnabled 
+      });
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
       const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
