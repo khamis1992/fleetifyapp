@@ -166,3 +166,15 @@ export const adminRoutes: RouteConfig[] = [
 
 export default adminRoutes;
 
+
+// Debug route for mobile troubleshooting
+export const debugRoute: RouteConfig = {
+  path: '/debug-logs',
+  component: lazy(() => import('@/pages/DebugLogs')),
+  title: 'Debug Logs',
+  requiresAuth: true,
+  layout: 'default',
+  meta: {
+    showInMenu: false,
+  },
+};
