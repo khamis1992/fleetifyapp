@@ -51,7 +51,8 @@ export const MobileHome: React.FC = () => {
     if (!user) return;
 
     try {
-      const companyId = user?.user_metadata?.company_id || '';
+      // استخدام company_id الصحيح من profile أو company
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
 
       // Fetch active contracts count
       const { count: activeCount } = await supabase

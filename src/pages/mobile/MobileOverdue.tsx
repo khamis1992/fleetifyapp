@@ -59,7 +59,7 @@ const MobileOverdue: React.FC = () => {
     if (!user) return;
 
     try {
-      const companyId = user?.user_metadata?.company_id || '';
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
 
       const { data, error } = await supabase
         .from('contracts')
@@ -123,7 +123,7 @@ const MobileOverdue: React.FC = () => {
 
     setProcessing(true);
     try {
-      const companyId = user?.user_metadata?.company_id || '';
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
 
       // Create payment record
       const { error: paymentError } = await supabase

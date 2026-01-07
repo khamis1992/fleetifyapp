@@ -103,7 +103,7 @@ const MobileContractWizard: React.FC = () => {
 
   const fetchCustomers = async () => {
     if (!user) return;
-    const companyId = user?.user_metadata?.company_id || '';
+    const companyId = user?.profile?.company_id || user?.company?.id || '';
 
     const { data } = await supabase
       .from('customers')
@@ -116,7 +116,7 @@ const MobileContractWizard: React.FC = () => {
 
   const fetchVehicles = async () => {
     if (!user) return;
-    const companyId = user?.user_metadata?.company_id || '';
+    const companyId = user?.profile?.company_id || user?.company?.id || '';
 
     const { data } = await supabase
       .from('vehicles')
@@ -190,7 +190,7 @@ const MobileContractWizard: React.FC = () => {
 
     setLoading(true);
     try {
-      const companyId = user?.user_metadata?.company_id || '';
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
 
       // Generate contract number
       const { data: contractNumData } = await supabase.rpc('generate_contract_number', {

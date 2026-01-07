@@ -45,7 +45,7 @@ const MobileCars: React.FC = () => {
     if (!user) return;
 
     try {
-      const companyId = user?.user_metadata?.company_id || '';
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
 
       const { data, error } = await supabase
         .from('vehicles')
