@@ -122,7 +122,7 @@ export const MonitoredQueryExample: React.FC = () => {
     if (!metrics) return null;
     
     return (
-      <div className="performance-metrics p-2 bg-gray-100 rounded text-xs">
+      <div className="performance-metrics p-2 bg-slate-100 rounded text-xs">
         <div className="font-semibold">{label} Performance:</div>
         <div>Executions: {metrics.executionCount}</div>
         <div>Avg Time: {metrics.averageTime?.toFixed(0)}ms</div>
@@ -190,9 +190,9 @@ export const MonitoredQueryExample: React.FC = () => {
       </div>
 
       {/* Performance Summary */}
-      <div className="mt-6 p-4 bg-gray-50 rounded">
+      <div className="mt-6 p-4 bg-slate-50 rounded">
         <h3 className="font-semibold mb-2">Performance Summary</h3>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-slate-600">
           <p>• All queries are now monitored for performance</p>
           <p>• Cache hit rates are tracked to validate optimization effectiveness</p>
           <p>• Slow queries are automatically identified and logged</p>

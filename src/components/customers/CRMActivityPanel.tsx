@@ -40,7 +40,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 // Brand colors
 const BRAND_COLOR = '#F15555';
-const BRAND_BG = 'bg-[#F15555]';
+const BRAND_BG = 'bg-rose-500';
 
 interface CRMActivityPanelProps {
   customerId: string | null;
@@ -72,11 +72,11 @@ function ActivityIcon({ type, status }: { type: string; status?: string }) {
     case 'email':
       return <Mail className={cn(iconClass, "text-blue-500")} />;
     case 'note':
-      return <FileText className={cn(iconClass, "text-gray-500")} />;
+      return <FileText className={cn(iconClass, "text-slate-500")} />;
     case 'followup':
       return <Bell className={cn(iconClass, "text-amber-500")} />;
     default:
-      return <FileText className={cn(iconClass, "text-gray-400")} />;
+      return <FileText className={cn(iconClass, "text-slate-400")} />;
   }
 }
 
@@ -121,13 +121,13 @@ function ActivityItem({ activity }: { activity: CustomerActivity }) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "relative pr-8 pb-4 last:pb-0",
-        "before:absolute before:right-[11px] before:top-6 before:bottom-0 before:w-0.5 before:bg-gray-200 last:before:hidden"
+        "before:absolute before:right-[11px] before:top-6 before:bottom-0 before:w-0.5 before:bg-slate-200 last:before:hidden"
       )}
     >
       {/* Timeline dot */}
       <div className={cn(
         "absolute right-0 top-1 w-6 h-6 rounded-full flex items-center justify-center",
-        activity.is_important ? "bg-amber-100" : "bg-gray-100"
+        activity.is_important ? "bg-amber-100" : "bg-slate-100"
       )}>
         <ActivityIcon type={activity.note_type || 'note'} status={activity.call_status} />
       </div>
@@ -136,14 +136,14 @@ function ActivityItem({ activity }: { activity: CustomerActivity }) {
       <div
         className={cn(
           "rounded-xl border p-3 cursor-pointer transition-all hover:shadow-sm",
-          activity.is_important ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200"
+          activity.is_important ? "bg-amber-50 border-amber-200" : "bg-white border-slate-200"
         )}
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-sm font-medium text-slate-800">
                 {activity.title || getActivityLabel(activity.note_type || '')}
               </span>
               {getStatusBadge(activity.call_status)}
@@ -151,13 +151,13 @@ function ActivityItem({ activity }: { activity: CustomerActivity }) {
                 <Badge className="bg-amber-100 text-amber-700 text-[10px]">مهم</Badge>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: ar })}
               {' • '}
               {format(new Date(activity.created_at), 'dd/MM/yyyy HH:mm')}
             </p>
           </div>
-          <button className="p-1 text-gray-400 hover:text-gray-600">
+          <button className="p-1 text-slate-400 hover:text-slate-600">
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         </div>
@@ -170,7 +170,7 @@ function ActivityItem({ activity }: { activity: CustomerActivity }) {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100 whitespace-pre-wrap">
+              <p className="text-sm text-slate-600 mt-3 pt-3 border-t border-slate-100 whitespace-pre-wrap">
                 {activity.content}
               </p>
             </motion.div>
@@ -237,9 +237,9 @@ function AddActivityForm({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm"
+      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
     >
-      <h3 className="text-sm font-bold text-gray-800 mb-3">إضافة تفاعل جديد</h3>
+      <h3 className="text-sm font-bold text-slate-800 mb-3">إضافة تفاعل جديد</h3>
 
       {/* نوع التفاعل */}
       <div className="flex gap-2 mb-3">
@@ -251,7 +251,7 @@ function AddActivityForm({
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-medium transition",
               type === value
                 ? `${BRAND_BG} text-white`
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             )}
           >
             <Icon size={14} />
@@ -273,7 +273,7 @@ function AddActivityForm({
               onClick={() => setCallStatus(value as any)}
               className={cn(
                 "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition border",
-                callStatus === value ? color : "bg-white text-gray-600 border-gray-200"
+                callStatus === value ? color : "bg-white text-slate-600 border-slate-200"
               )}
             >
               {label}
@@ -301,12 +301,12 @@ function AddActivityForm({
 
       {/* خيارات */}
       <div className="flex items-center gap-4 mb-4">
-        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
           <input
             type="checkbox"
             checked={isImportant}
             onChange={(e) => setIsImportant(e.target.checked)}
-            className="rounded border-gray-300"
+            className="rounded border-slate-300"
           />
           تفاعل مهم
         </label>
@@ -406,7 +406,7 @@ export function CRMActivityPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 h-full w-full max-w-lg bg-gray-50 shadow-2xl z-50 flex flex-col"
+            className="fixed left-0 top-0 h-full w-full max-w-lg bg-slate-50 shadow-2xl z-50 flex flex-col"
             dir="rtl"
           >
             {/* Header */}
@@ -414,11 +414,11 @@ export function CRMActivityPanel({
               <div className="flex items-center justify-between p-4">
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500"
+                  className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500"
                 >
                   <X className="w-5 h-5" />
                 </button>
-                <h2 className="text-lg font-bold text-gray-900">سجل التفاعلات</h2>
+                <h2 className="text-lg font-bold text-slate-900">سجل التفاعلات</h2>
               </div>
 
               {/* Customer Quick Info */}
@@ -431,12 +431,12 @@ export function CRMActivityPanel({
                     {customerName?.substring(0, 2) || <User size={20} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-gray-900 truncate">
+                    <h3 className="text-base font-bold text-slate-900 truncate">
                       {customerName || 'عميل'}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                       {customerCode && (
-                        <span className="flex items-center gap-1 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                        <span className="flex items-center gap-1 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
                           <Hash size={10} />
                           {customerCode}
                         </span>
@@ -454,8 +454,8 @@ export function CRMActivityPanel({
                 {/* Status Row */}
                 <div className="flex items-center gap-3 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <Clock size={12} className="text-gray-400" />
-                    <span className="text-gray-500">آخر تواصل:</span>
+                    <Clock size={12} className="text-slate-400" />
+                    <span className="text-slate-500">آخر تواصل:</span>
                     {getLastContactLabel()}
                   </div>
                   {getPaymentStatusBadge()}
@@ -511,7 +511,7 @@ export function CRMActivityPanel({
                       "px-3 py-1.5 rounded-lg text-xs font-medium transition",
                       filter === value
                         ? `${BRAND_BG} text-white`
-                        : "text-gray-600 hover:bg-gray-100"
+                        : "text-slate-600 hover:bg-slate-100"
                     )}
                   >
                     {label}
@@ -536,12 +536,12 @@ export function CRMActivityPanel({
               {/* Activities List */}
               {isLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                 </div>
               ) : filteredActivities.length === 0 ? (
                 <div className="text-center py-12">
-                  <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-gray-500 mb-3">لا توجد تفاعلات مسجلة</p>
+                  <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                  <p className="text-slate-500 mb-3">لا توجد تفاعلات مسجلة</p>
                   <Button
                     variant="outline"
                     onClick={() => setShowAddForm(true)}
@@ -564,22 +564,22 @@ export function CRMActivityPanel({
             <div className="flex-shrink-0 bg-white border-t p-3">
               <div className="flex items-center justify-around text-center">
                 <div>
-                  <p className="text-lg font-bold text-gray-800">{activities.length}</p>
-                  <p className="text-[10px] text-gray-500">إجمالي التفاعلات</p>
+                  <p className="text-lg font-bold text-slate-800">{activities.length}</p>
+                  <p className="text-[10px] text-slate-500">إجمالي التفاعلات</p>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-8 bg-slate-200" />
                 <div>
                   <p className="text-lg font-bold text-green-600">
                     {activities.filter(a => a.note_type === 'phone' && a.call_status === 'answered').length}
                   </p>
-                  <p className="text-[10px] text-gray-500">مكالمات ناجحة</p>
+                  <p className="text-[10px] text-slate-500">مكالمات ناجحة</p>
                 </div>
-                <div className="w-px h-8 bg-gray-200" />
+                <div className="w-px h-8 bg-slate-200" />
                 <div>
                   <p className="text-lg font-bold text-red-600">
                     {activities.filter(a => a.note_type === 'phone' && a.call_status === 'no_answer').length}
                   </p>
-                  <p className="text-[10px] text-gray-500">لم يرد</p>
+                  <p className="text-[10px] text-slate-500">لم يرد</p>
                 </div>
               </div>
             </div>

@@ -132,7 +132,7 @@ const MobileCars: React.FC = () => {
       case 'maintenance':
         return 'bg-amber-100 text-amber-600';
       default:
-        return 'bg-gray-100 text-gray-600';
+        return 'bg-slate-100 text-slate-600';
     }
   };
 
@@ -165,17 +165,17 @@ const MobileCars: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">حالة الأسطول</h1>
-          <p className="text-sm text-gray-500 mt-1">إدارة المركبات</p>
+          <h1 className="text-2xl font-bold text-slate-900">حالة الأسطول</h1>
+          <p className="text-sm text-slate-500 mt-1">إدارة المركبات</p>
         </div>
-        <button className="p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-gray-200/50">
-          <Filter className="w-5 h-5 text-gray-600" />
+        <button className="p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50">
+          <Filter className="w-5 h-5 text-slate-600" />
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-2">
-        <StatCard value={stats.total} label="الكل" color="from-gray-500 to-gray-600" />
+        <StatCard value={stats.total} label="الكل" color="from-slate-500 to-slate-600" />
         <StatCard value={stats.rented} label="مستأجر" color="from-red-500 to-red-600" />
         <StatCard value={stats.available} label="متاح" color="from-green-500 to-green-600" />
         <StatCard value={stats.maintenance} label="صيانة" color="from-amber-500 to-amber-600" />
@@ -214,14 +214,14 @@ const MobileCars: React.FC = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-gray-500">جاري التحميل...</p>
+            <p className="text-sm text-slate-500">جاري التحميل...</p>
           </div>
         </div>
       ) : filteredVehicles.length === 0 ? (
         <div className="text-center py-12">
-          <CarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد مركبات</h3>
-          <p className="text-sm text-gray-500">لم يتم العثور على مركبات في هذا الفلتر</p>
+          <CarIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" strokeWidth={1.5} />
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد مركبات</h3>
+          <p className="text-sm text-slate-500">لم يتم العثور على مركبات في هذا الفلتر</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -231,7 +231,7 @@ const MobileCars: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={() => navigate(`/mobile/cars/${vehicle.id}`)}
-              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -239,10 +239,10 @@ const MobileCars: React.FC = () => {
                     <CarIcon className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-slate-900">
                       {vehicle.make} {vehicle.model}
                     </p>
-                    <p className="text-sm text-gray-500">{vehicle.license_plate}</p>
+                    <p className="text-sm text-slate-500">{vehicle.license_plate}</p>
                   </div>
                 </div>
                 <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getStatusColor(vehicle.status))}>
@@ -251,23 +251,23 @@ const MobileCars: React.FC = () => {
               </div>
 
               {vehicle.current_contract ? (
-                <div className="space-y-2 pt-3 border-t border-gray-100">
+                <div className="space-y-2 pt-3 border-t border-slate-100">
                   <div className="flex items-center gap-2 text-sm">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700">
                       {vehicle.current_contract.customer.first_name} {vehicle.current_contract.customer.last_name}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700">
                       الاستحقاق: {new Date(vehicle.current_contract.end_date).toLocaleDateString('ar-SA')}
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-sm pt-3 border-t border-gray-100">
-                  <CreditCard className="w-4 h-4 text-gray-400" />
+                <div className="flex items-center gap-2 text-sm pt-3 border-t border-slate-100">
+                  <CreditCard className="w-4 h-4 text-slate-400" />
                   <span className="font-semibold text-teal-600">
                     QAR {vehicle.daily_rate?.toLocaleString()} / يوم
                   </span>
@@ -288,9 +288,9 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ value, label, color }) => (
-  <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl p-3 text-center">
-    <p className="text-xl font-bold text-gray-900">{value}</p>
-    <p className="text-[10px] text-gray-500">{label}</p>
+  <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-3 text-center">
+    <p className="text-xl font-bold text-slate-900">{value}</p>
+    <p className="text-[10px] text-slate-500">{label}</p>
   </div>
 );
 
@@ -308,12 +308,12 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick, count }
       'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2',
       active
         ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-        : 'bg-white/80 text-gray-600 border border-gray-200/50 hover:bg-gray-100'
+        : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
     )}
   >
     {label}
     {count !== undefined && (
-      <span className={cn('text-xs', active ? 'text-white/80' : 'text-gray-400')}>
+      <span className={cn('text-xs', active ? 'text-white/80' : 'text-slate-400')}>
         {count}
       </span>
     )}

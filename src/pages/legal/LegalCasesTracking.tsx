@@ -166,7 +166,7 @@ const TabButton: React.FC<TabButtonProps> = ({ id, label, icon: Icon, activeTab,
       "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all duration-200 border-b-2",
       activeTab === id
         ? 'border-teal-500 text-teal-600 bg-teal-50/50'
-        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+        : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
     )}
   >
     <Icon size={18} />
@@ -455,10 +455,10 @@ export const LegalCasesTracking: React.FC = () => {
   }, [deleteDocumentMutation]);
 
   const getFileIcon = (fileType?: string) => {
-    if (!fileType) return <FileIcon className="w-5 h-5 text-gray-400" />;
+    if (!fileType) return <FileIcon className="w-5 h-5 text-slate-400" />;
     if (fileType.startsWith('image/')) return <Image className="w-5 h-5 text-blue-500" />;
     if (fileType.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />;
-    return <File className="w-5 h-5 text-gray-500" />;
+    return <File className="w-5 h-5 text-slate-500" />;
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -861,14 +861,14 @@ export const LegalCasesTracking: React.FC = () => {
       vehicle_damage: 'bg-orange-100 text-orange-700 border-orange-200',
       accident_claim: 'bg-rose-100 text-rose-700 border-rose-200',
       insurance_claim: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-      other: 'bg-gray-100 text-gray-700 border-gray-200',
+      other: 'bg-slate-100 text-slate-700 border-slate-200',
     };
-    return colors[type] || 'bg-gray-100 text-gray-700 border-gray-200';
+    return colors[type] || 'bg-slate-100 text-slate-700 border-slate-200';
   };
 
   if (isLoadingCompany) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
         <LoadingSpinner />
       </div>
     );
@@ -887,13 +887,13 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Financial Chart */}
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">التحليل المالي للقضايا</h3>
-              <p className="text-sm text-gray-500 mt-1">التعويضات vs المطالبات</p>
+              <h3 className="text-lg font-bold text-slate-900">التحليل المالي للقضايا</h3>
+              <p className="text-sm text-slate-500 mt-1">التعويضات vs المطالبات</p>
             </div>
-            <Badge variant="outline" className="text-xs border-gray-200/50 text-gray-600">
+            <Badge variant="outline" className="text-xs border-slate-200/50 text-slate-600">
               آخر 6 أشهر
             </Badge>
           </div>
@@ -925,8 +925,8 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Case Types Pie Chart */}
-        <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">أنواع القضايا</h3>
+        <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">أنواع القضايا</h3>
           {caseTypesData.length > 0 ? (
             <>
               <div className="h-56 relative">
@@ -949,18 +949,18 @@ export const LegalCasesTracking: React.FC = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                  <span className="text-3xl font-bold text-gray-900">{stats?.total || 0}</span>
-                  <span className="text-xs text-gray-400">قضية</span>
+                  <span className="text-3xl font-bold text-slate-900">{stats?.total || 0}</span>
+                  <span className="text-xs text-slate-400">قضية</span>
                 </div>
               </div>
               <div className="space-y-3 mt-4">
                 {caseTypesData.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded-lg">
+                  <div key={idx} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-gray-700">{item.name}</span>
+                      <span className="text-slate-700">{item.name}</span>
                     </div>
-                    <span className="font-bold text-gray-900">{item.value}</span>
+                    <span className="font-bold text-slate-900">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -1300,11 +1300,11 @@ export const LegalCasesTracking: React.FC = () => {
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 p-6">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 text-lg">جدول الجلسات</h3>
+            <h3 className="font-bold text-slate-900 text-lg">جدول الجلسات</h3>
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs border-gray-200/50 text-gray-600">
+              <Badge variant="outline" className="text-xs border-slate-200/50 text-slate-600">
                 {futureHearings.length} جلسة قادمة
               </Badge>
             </div>
@@ -1883,19 +1883,19 @@ export const LegalCasesTracking: React.FC = () => {
               {/* Case Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">رقم القضية</p>
+                  <p className="text-sm text-slate-500">رقم القضية</p>
                   <p className="font-medium">{selectedCase.case_number}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">نوع القضية</p>
+                  <p className="text-sm text-slate-500">نوع القضية</p>
                   <p className="font-medium">{getTypeLabel(selectedCase.case_type)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">الحالة</p>
+                  <p className="text-sm text-slate-500">الحالة</p>
                   <StatusBadge status={selectedCase.case_status} />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">قيمة المطالبة</p>
+                  <p className="text-sm text-slate-500">قيمة المطالبة</p>
                   <p className="font-medium text-lg text-[#E55B5B]">{formatCurrency(selectedCase.total_costs)}</p>
                 </div>
               </div>
@@ -1908,7 +1908,7 @@ export const LegalCasesTracking: React.FC = () => {
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">اسم العميل</p>
+                    <p className="text-sm text-slate-500">اسم العميل</p>
                     <p className="font-medium">{selectedCase.client_name || 'غير محدد'}</p>
                   </div>
                 </div>
@@ -1918,7 +1918,7 @@ export const LegalCasesTracking: React.FC = () => {
               {selectedCase.description && (
                 <div className="border-t pt-4">
                   <h4 className="font-semibold mb-3">الوصف</h4>
-                  <p className="text-gray-600 text-sm">{selectedCase.description}</p>
+                  <p className="text-slate-600 text-sm">{selectedCase.description}</p>
                 </div>
               )}
 
@@ -1930,35 +1930,35 @@ export const LegalCasesTracking: React.FC = () => {
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">موعد الجلسة القادمة</p>
+                    <p className="text-sm text-slate-500">موعد الجلسة القادمة</p>
                     {selectedCase.hearing_date ? (
                       <p className="font-medium text-[#E55B5B] flex items-center gap-2">
                         <Gavel className="w-4 h-4" />
                         {format(new Date(selectedCase.hearing_date), 'dd MMM yyyy', { locale: ar })}
                       </p>
                     ) : (
-                      <p className="text-gray-400">لم يحدد بعد</p>
+                      <p className="text-slate-400">لم يحدد بعد</p>
                     )}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">تاريخ رفع الدعوى</p>
+                    <p className="text-sm text-slate-500">تاريخ رفع الدعوى</p>
                     {selectedCase.filing_date ? (
                       <p className="font-medium">
                         {format(new Date(selectedCase.filing_date), 'dd MMM yyyy', { locale: ar })}
                       </p>
                     ) : (
-                      <p className="text-gray-400">غير محدد</p>
+                      <p className="text-slate-400">غير محدد</p>
                     )}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">تاريخ الإنشاء</p>
+                    <p className="text-sm text-slate-500">تاريخ الإنشاء</p>
                     <p className="font-medium">
                       {format(new Date(selectedCase.created_at), 'dd MMM yyyy', { locale: ar })}
                     </p>
                   </div>
                   {selectedCase.court_name && (
                     <div className="space-y-1">
-                      <p className="text-sm text-gray-500">المحكمة</p>
+                      <p className="text-sm text-slate-500">المحكمة</p>
                       <p className="font-medium">{selectedCase.court_name}</p>
                     </div>
                   )}
@@ -1991,13 +1991,13 @@ export const LegalCasesTracking: React.FC = () => {
                     {caseDocuments.map((doc) => (
                       <div
                         key={doc.id}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           {getFileIcon(doc.file_type)}
                           <div>
                             <p className="font-medium text-sm">{doc.document_title}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-slate-500">
                               {doc.document_type} • {formatFileSize(doc.file_size)}
                               {doc.is_confidential && (
                                 <Badge variant="destructive" className="mr-2 text-xs">سري</Badge>
@@ -2028,7 +2028,7 @@ export const LegalCasesTracking: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className="text-center py-8 text-slate-400">
                     <Folder className="w-12 h-12 mx-auto mb-2 opacity-30" />
                     <p>لا توجد مستندات مرفقة</p>
                     <p className="text-sm">اضغط على "رفع ملف" لإضافة مستندات</p>
@@ -2106,13 +2106,13 @@ export const LegalCasesTracking: React.FC = () => {
             {/* File Upload */}
             <div className="space-y-2">
               <Label>الملف *</Label>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-[#E55B5B] transition-colors">
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 text-center hover:border-[#E55B5B] transition-colors">
                 {uploadFile ? (
                   <div className="flex items-center justify-center gap-3">
                     {getFileIcon(uploadFile.type)}
                     <div className="text-right">
                       <p className="font-medium text-sm">{uploadFile.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(uploadFile.size)}</p>
+                      <p className="text-xs text-slate-500">{formatFileSize(uploadFile.size)}</p>
                     </div>
                     <Button
                       size="sm"
@@ -2124,9 +2124,9 @@ export const LegalCasesTracking: React.FC = () => {
                   </div>
                 ) : (
                   <label className="cursor-pointer block">
-                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">اضغط لاختيار ملف أو اسحب الملف هنا</p>
-                    <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, صور (حد أقصى 10 MB)</p>
+                    <Upload className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600">اضغط لاختيار ملف أو اسحب الملف هنا</p>
+                    <p className="text-xs text-slate-400 mt-1">PDF, Word, Excel, صور (حد أقصى 10 MB)</p>
                     <input
                       type="file"
                       className="hidden"
@@ -2191,7 +2191,7 @@ export const LegalCasesTracking: React.FC = () => {
                   type="checkbox"
                   checked={uploadFormData.is_confidential}
                   onChange={(e) => setUploadFormData(prev => ({ ...prev, is_confidential: e.target.checked }))}
-                  className="rounded border-gray-300"
+                  className="rounded border-slate-300"
                 />
                 <span className="text-sm">مستند سري</span>
               </label>
@@ -2200,7 +2200,7 @@ export const LegalCasesTracking: React.FC = () => {
                   type="checkbox"
                   checked={uploadFormData.is_original}
                   onChange={(e) => setUploadFormData(prev => ({ ...prev, is_original: e.target.checked }))}
-                  className="rounded border-gray-300"
+                  className="rounded border-slate-300"
                 />
                 <span className="text-sm">نسخة أصلية</span>
               </label>
@@ -2369,7 +2369,7 @@ export const LegalCasesTracking: React.FC = () => {
             {/* الصف الأول: اتجاه القضية والنتيجة */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">اتجاه القضية</Label>
+                <Label className="text-xs text-slate-500">اتجاه القضية</Label>
                 <Select
                   value={closeFormData.case_direction}
                   onValueChange={(value: 'filed_by_us' | 'filed_against_us') => {
@@ -2391,7 +2391,7 @@ export const LegalCasesTracking: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">النتيجة</Label>
+                <Label className="text-xs text-slate-500">النتيجة</Label>
                 <Select
                   value={closeFormData.outcome_type}
                   onValueChange={(value: 'won' | 'lost' | 'settled' | 'dismissed') => 
@@ -2414,7 +2414,7 @@ export const LegalCasesTracking: React.FC = () => {
             {/* الصف الثاني: المبلغ والتاريخ */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">المبلغ (ر.ق)</Label>
+                <Label className="text-xs text-slate-500">المبلغ (ر.ق)</Label>
                 <Input
                   type="number"
                   className="h-9"
@@ -2425,7 +2425,7 @@ export const LegalCasesTracking: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">تاريخ الحكم</Label>
+                <Label className="text-xs text-slate-500">تاريخ الحكم</Label>
                 <Input
                   type="date"
                   className="h-9"
@@ -2438,7 +2438,7 @@ export const LegalCasesTracking: React.FC = () => {
             {/* الصف الثالث: نوع المبلغ واتجاه الدفع */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">نوع المبلغ</Label>
+                <Label className="text-xs text-slate-500">نوع المبلغ</Label>
                 <Select
                   value={closeFormData.outcome_amount_type}
                   onValueChange={(value: 'fine' | 'compensation' | 'settlement' | 'court_fees' | 'other') => 
@@ -2459,7 +2459,7 @@ export const LegalCasesTracking: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">اتجاه الدفع</Label>
+                <Label className="text-xs text-slate-500">اتجاه الدفع</Label>
                 <div className="flex gap-3 h-9 items-center">
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -2487,7 +2487,7 @@ export const LegalCasesTracking: React.FC = () => {
 
             {/* ملاحظات - اختياري */}
             <div className="space-y-1">
-              <Label className="text-xs text-gray-500">ملاحظات (اختياري)</Label>
+              <Label className="text-xs text-slate-500">ملاحظات (اختياري)</Label>
               <Input
                 value={closeFormData.outcome_notes}
                 onChange={(e) => setCloseFormData(prev => ({ ...prev, outcome_notes: e.target.value }))}
@@ -2518,8 +2518,8 @@ export const LegalCasesTracking: React.FC = () => {
             )}
 
             {/* ملخص مضغوط */}
-            <div className="p-3 bg-gray-100 rounded-lg flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span className="text-gray-600">
+            <div className="p-3 bg-slate-100 rounded-lg flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="text-slate-600">
                 {closeFormData.outcome_type === 'won' ? '✅ ربح' :
                  closeFormData.outcome_type === 'lost' ? '❌ خسارة' :
                  closeFormData.outcome_type === 'settled' ? '🤝 تسوية' : '🚫 رفض'}

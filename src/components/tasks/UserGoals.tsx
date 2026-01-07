@@ -103,21 +103,21 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
     if (percentage >= 75) return 'bg-emerald-500';
     if (percentage >= 50) return 'bg-blue-500';
     if (percentage >= 25) return 'bg-orange-500';
-    return 'bg-gray-400';
+    return 'bg-slate-400';
   };
 
   if (isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-32">
-          <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className={cn('bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -241,7 +241,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedGoals.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-slate-400">
             <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>لا توجد أهداف نشطة</p>
             <p className="text-sm">أضف هدفاً لتتبع تقدمك</p>
@@ -269,7 +269,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900">
+                          <h4 className="font-medium text-slate-900">
                             {goal.title}
                           </h4>
                           {isCompleted && (
@@ -345,16 +345,16 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
                     {/* Progress */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">التقدم</span>
+                        <span className="text-slate-500">التقدم</span>
                         <span className="font-medium">
                           <span className={cn(isCompleted && 'text-green-600')}>
                             {goal.current_count}
                           </span>
-                          <span className="text-gray-400">/{goal.target_count}</span>
+                          <span className="text-slate-400">/{goal.target_count}</span>
                           <span
                             className={cn(
                               'mr-2 text-xs',
-                              isCompleted ? 'text-green-600' : 'text-gray-400'
+                              isCompleted ? 'text-green-600' : 'text-slate-400'
                             )}
                           >
                             ({percentage}%)
@@ -373,7 +373,7 @@ export const UserGoals: React.FC<UserGoalsProps> = ({ compact = false, limit }) 
             </AnimatePresence>
 
             {limit && goals.length > limit && (
-              <p className="text-center text-sm text-gray-500 pt-2">
+              <p className="text-center text-sm text-slate-500 pt-2">
                 +{goals.length - limit} أهداف أخرى
               </p>
             )}

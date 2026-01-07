@@ -266,7 +266,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
                 onClick={handleCopyVin}
                 className="p-1 hover:bg-neutral-100 rounded transition-colors"
               >
-                <Copy className="w-3 h-3 text-neutral-400 hover:text-coral-500" />
+                <Copy className="w-3 h-3 text-neutral-400 hover:text-rose-500" />
               </button>
             )}
           </div>
@@ -495,7 +495,7 @@ const FleetPageRedesigned: React.FC = () => {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-neutral-500">جاري التحميل...</p>
         </div>
       </div>
@@ -503,9 +503,9 @@ const FleetPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-10">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
@@ -615,7 +615,7 @@ const FleetPageRedesigned: React.FC = () => {
         />
 
         {/* Quick Status Filter Bar */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm text-neutral-500 font-medium">تصفية سريع:</span>
 
@@ -682,7 +682,7 @@ const FleetPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <div className="flex flex-col lg:flex-row gap-3">
             {/* Search */}
             <div className="flex-1 relative">
@@ -803,7 +803,7 @@ const FleetPageRedesigned: React.FC = () => {
                     type="checkbox"
                     checked={selectedVehicles.has(vehicle.id)}
                     onChange={() => handleSelectVehicle(vehicle.id)}
-                    className="absolute top-4 left-4 z-10 w-4 h-4 rounded border-neutral-300 checked:bg-coral-500 focus:ring-coral-500 cursor-pointer"
+                    className="absolute top-4 left-4 z-10 w-4 h-4 rounded border-neutral-300 checked:bg-rose-500 focus:ring-rose-500 cursor-pointer"
                     onClick={(e) => e.stopPropagation()}
                   />
 
@@ -823,7 +823,7 @@ const FleetPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <p className="text-sm text-neutral-500">
                   صفحة <span className="font-medium text-neutral-900">{currentPage}</span> من{' '}
                   <span className="font-medium text-neutral-900">{totalPages}</span>

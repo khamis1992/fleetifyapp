@@ -75,7 +75,7 @@ const businessTypes: BusinessTypeOption[] = [
     description_ar: 'التصنيع والإنتاج',
     icon: Factory,
     modules: ['core', 'finance', 'inventory', 'suppliers', 'sales'],
-    color: 'from-gray-500 to-gray-600'
+    color: 'from-slate-500 to-slate-600'
   },
   {
     type: 'restaurant',

@@ -170,9 +170,9 @@ const TemplateCard: React.FC<{
       onClick={onSelect}
       className={cn(
         'w-full p-4 rounded-xl border-2 text-right transition-all',
-        'hover:border-coral-300 hover:bg-coral-50/50',
+        'hover:border-coral-300 hover:bg-rose-50/50',
         isSelected
-          ? 'border-coral-500 bg-coral-50 shadow-sm'
+          ? 'border-rose-500 bg-rose-50 shadow-sm'
           : 'border-neutral-200 bg-white'
       )}
     >
@@ -180,7 +180,7 @@ const TemplateCard: React.FC<{
         <div
           className={cn(
             'p-2 rounded-lg',
-            isSelected ? 'bg-coral-500 text-white' : 'bg-neutral-100 text-neutral-600'
+            isSelected ? 'bg-rose-500 text-white' : 'bg-neutral-100 text-neutral-600'
           )}
         >
           <Icon className="h-5 w-5" />
@@ -188,7 +188,7 @@ const TemplateCard: React.FC<{
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-neutral-900">{template.nameAr}</h4>
-            {isSelected && <Check className="h-5 w-5 text-coral-500" />}
+            {isSelected && <Check className="h-5 w-5 text-rose-500" />}
           </div>
           <p className="text-sm text-neutral-500 mt-1">{template.description}</p>
           <div className="flex flex-wrap gap-1 mt-2">

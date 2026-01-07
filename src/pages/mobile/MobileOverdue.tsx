@@ -189,42 +189,42 @@ const MobileOverdue: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">المتأخرات</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900">المتأخرات</h1>
+          <p className="text-sm text-slate-500 mt-1">
             {customers.length} عملاء متأخرين
           </p>
         </div>
       </div>
 
       {/* Summary Card */}
-      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/20">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-rose-500/20">
             <AlertCircle className="w-6 h-6 text-white" strokeWidth={2.5} />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-gray-500">إجمالي المتأخرات</p>
-            <p className="text-2xl font-bold text-gray-900">QAR {totalOverdue.toLocaleString()}</p>
+            <p className="text-sm text-slate-500">إجمالي المتأخرات</p>
+            <p className="text-2xl font-bold text-slate-900">QAR {totalOverdue.toLocaleString()}</p>
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-4 text-center">
+        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xl font-bold text-red-600">
               {customers.filter(c => c.days_overdue > 30).length}
             </p>
-            <p className="text-xs text-gray-500">خطير (+30)</p>
+            <p className="text-xs text-slate-500">خطير (+30)</p>
           </div>
           <div>
             <p className="text-xl font-bold text-amber-600">
               {customers.filter(c => c.days_overdue >= 15 && c.days_overdue <= 30).length}
             </p>
-            <p className="text-xs text-gray-500">متوسط (15-30)</p>
+            <p className="text-xs text-slate-500">متوسط (15-30)</p>
           </div>
           <div>
             <p className="text-xl font-bold text-yellow-600">
               {customers.filter(c => c.days_overdue < 15).length}
             </p>
-            <p className="text-xs text-gray-500">بسيط (&lt;15)</p>
+            <p className="text-xs text-slate-500">بسيط (&lt;15)</p>
           </div>
         </div>
       </div>
@@ -258,14 +258,14 @@ const MobileOverdue: React.FC = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-gray-500">جاري التحميل...</p>
+            <p className="text-sm text-slate-500">جاري التحميل...</p>
           </div>
         </div>
       ) : filteredCustomers.length === 0 ? (
         <div className="text-center py-12">
-          <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد متأخرات</h3>
-          <p className="text-sm text-gray-500">جميع المدفوعات مسددة</p>
+          <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" strokeWidth={1.5} />
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد متأخرات</h3>
+          <p className="text-sm text-slate-500">جميع المدفوعات مسددة</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -274,15 +274,15 @@ const MobileOverdue: React.FC = () => {
               key={customer.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4"
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/20">
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-rose-500/20">
                     <User className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-slate-900">
                       {customer.first_name} {customer.last_name}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
@@ -296,23 +296,23 @@ const MobileOverdue: React.FC = () => {
 
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm">
-                  <CreditCard className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">QAR {customer.outstanding_amount.toLocaleString()} متبقي</span>
+                  <CreditCard className="w-4 h-4 text-slate-400" />
+                  <span className="text-slate-700">QAR {customer.outstanding_amount.toLocaleString()} متبقي</span>
                 </div>
                 {customer.phone && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700" dir="ltr">{customer.phone}</span>
+                    <Phone className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700" dir="ltr">{customer.phone}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-700">العقد: {customer.contract_number}</span>
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <span className="text-slate-700">العقد: {customer.contract_number}</span>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-3 border-t border-gray-100">
+              <div className="flex gap-2 pt-3 border-t border-slate-100">
                 {customer.phone && (
                   <>
                     <button
@@ -360,12 +360,12 @@ const MobileOverdue: React.FC = () => {
           >
             <div className="p-6">
               {/* Handle */}
-              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
+              <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-6" />
 
               {/* Customer Info */}
               <div className="text-center mb-6">
-                <p className="text-sm text-gray-500 mb-1">تسجيل دفعة من</p>
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-sm text-slate-500 mb-1">تسجيل دفعة من</p>
+                <p className="text-xl font-bold text-slate-900">
                   {selectedCustomer.first_name} {selectedCustomer.last_name}
                 </p>
                 <p className="text-sm text-teal-600 mt-1">
@@ -375,19 +375,19 @@ const MobileOverdue: React.FC = () => {
 
               {/* Amount */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">المبلغ</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">المبلغ</label>
                 <input
                   type="number"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   placeholder="QAR 0.00"
-                  className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
                 />
               </div>
 
               {/* Payment Method */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">طريقة الدفع</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">طريقة الدفع</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: 'cash', label: 'نقدي' },
@@ -402,7 +402,7 @@ const MobileOverdue: React.FC = () => {
                         'py-3 rounded-xl border-2 text-sm font-medium transition-colors',
                         paymentMethod === method.value
                           ? 'border-teal-500 bg-teal-50 text-teal-600'
-                          : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                       )}
                     >
                       {method.label}
@@ -413,13 +413,13 @@ const MobileOverdue: React.FC = () => {
 
               {/* Reference */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">رقم المرجع</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">رقم المرجع</label>
                 <input
                   type="text"
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
                   placeholder="TRF-2024-001234"
-                  className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
                 />
               </div>
 
@@ -433,7 +433,7 @@ const MobileOverdue: React.FC = () => {
                     setPaymentReference('');
                   }}
                   disabled={processing}
-                  className="flex-1 py-4 rounded-2xl border border-gray-200 text-gray-700 font-semibold"
+                  className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-700 font-semibold"
                 >
                   إلغاء
                 </button>
@@ -470,8 +470,8 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick }) => (
     className={cn(
       'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
       active
-        ? 'bg-red-500 text-white shadow-md shadow-red-500/20'
-        : 'bg-white/80 text-gray-600 border border-gray-200/50 hover:bg-gray-100'
+        ? 'bg-red-500 text-white shadow-md shadow-rose-500/20'
+        : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
     )}
   >
     {label}

@@ -1211,7 +1211,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <FileText className="w-5 h-5 text-coral-500" />
+            <FileText className="w-5 h-5 text-rose-500" />
             تخصيص تقرير المخالفات المرورية
           </DialogTitle>
           <DialogDescription>
@@ -1221,7 +1221,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
 
         <div className="space-y-6 py-4">
           {/* طريقة العرض */}
-          <div className="p-4 bg-gradient-to-r from-coral-50 to-orange-50 rounded-xl border border-coral-100">
+          <div className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl border border-rose-100">
             <Label className="font-semibold mb-3 flex items-center gap-2">
               <LayoutGrid className="w-4 h-4 text-coral-600" />
               طريقة عرض التقرير
@@ -1300,7 +1300,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
           )}
 
           {/* فلتر المركبات */}
-          <div className="flex items-start gap-3 p-4 bg-coral-50 rounded-xl border border-coral-100">
+          <div className="flex items-start gap-3 p-4 bg-rose-50 rounded-xl border border-rose-100">
             <Checkbox
               id="onlyLinkedToVehicles"
               checked={filters.onlyLinkedToVehicles}
@@ -1520,7 +1520,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
           <Button
             onClick={generateHTMLReport}
             disabled={stats.total === 0 && unlinkedViolations.length === 0}
-            className="flex-1 gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl"
+            className="flex-1 gap-2 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl"
           >
             <Printer className="w-4 h-4" />
             إنشاء التقرير ({stats.vehiclesCount} مركبة | {stats.total} مخالفة)

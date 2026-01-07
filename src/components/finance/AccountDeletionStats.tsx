@@ -88,7 +88,7 @@ export const AccountDeletionStats: React.FC<AccountDeletionStatsProps> = ({
           </div>
           
           {/* فشل */}
-          <div className="p-3 border rounded-lg text-center border-gray-200">
+          <div className="p-3 border rounded-lg text-center border-slate-200">
             {failedCount > 0 ? (
               <>
                 <XCircle className="h-6 w-6 mx-auto mb-2 text-red-500" />

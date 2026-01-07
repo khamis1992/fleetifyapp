@@ -159,7 +159,7 @@ export const TrafficViolationsAlertsPanel: React.FC<TrafficViolationsAlertsPanel
     <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-neutral-700 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-coral-500" />
+          <AlertTriangle className="w-4 h-4 text-rose-500" />
           تنبيهات المخالفات ({alerts.length})
         </h3>
       </div>
@@ -222,7 +222,7 @@ export const TrafficViolationsAlertsPanel: React.FC<TrafficViolationsAlertsPanel
               >
                 <div className="flex items-center gap-3">
                   <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
-                    index === 0 ? 'bg-coral-100 text-coral-600' :
+                    index === 0 ? 'bg-rose-100 text-coral-600' :
                     index === 1 ? 'bg-amber-100 text-amber-600' :
                     'bg-neutral-200 text-neutral-600'
                   }`}>

@@ -113,7 +113,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
           animate={{ rotate: isOpen ? 45 : 0 }}
           className={cn(
             'w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors',
-            isOpen ? 'bg-neutral-900' : 'bg-coral-500 hover:bg-coral-600'
+            isOpen ? 'bg-neutral-900' : 'bg-rose-500 hover:bg-coral-600'
           )}
           style={{ boxShadow: isOpen ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(232, 90, 79, 0.4)' }}
         >
@@ -147,7 +147,7 @@ const StatCard: React.FC<StatCardProps> = ({
   iconBg,
   progressLabel,
   progressValue,
-  progressColor = 'bg-coral-500',
+  progressColor = 'bg-rose-500',
   linkTo,
   onClick,
   sparklineData,
@@ -252,7 +252,7 @@ const StatCard: React.FC<StatCardProps> = ({
           initial={{ y: 5 }}
           animate={{ y: 0 }}
         >
-          <span className="text-[8px] text-coral-500 font-medium">انقر للتفاصيل ←</span>
+          <span className="text-[8px] text-rose-500 font-medium">انقر للتفاصيل ←</span>
         </motion.div>
       )}
     </motion.div>
@@ -422,7 +422,7 @@ const BentoDashboard: React.FC = () => {
           </div>
           <button
             onClick={() => setFabOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-coral-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
           >
             <span>عرض المهام</span>
           </button>
@@ -437,7 +437,7 @@ const BentoDashboard: React.FC = () => {
             <input
               type="text"
               placeholder="ابحث هنا ..."
-              className="w-64 px-4 py-2.5 pr-10 bg-white rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20"
+              className="w-64 px-4 py-2.5 pr-10 bg-white rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20"
             />
             <Search className="w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
           </div>
@@ -464,10 +464,10 @@ const BentoDashboard: React.FC = () => {
                 value={stats?.totalVehicles || 0}
                 change={stats?.vehiclesChange}
                 icon={Car}
-                iconBg="bg-coral-100 text-coral-600"
+                iconBg="bg-rose-100 text-coral-600"
                 progressLabel="نشاط المركبات"
                 progressValue={stats?.vehicleActivityRate || 85}
-                progressColor="bg-coral-500"
+                progressColor="bg-rose-500"
                 linkTo="/fleet"
                 sparklineData={revenueData?.map(item => item.value) || []}
               />
@@ -532,7 +532,7 @@ const BentoDashboard: React.FC = () => {
               <p className="text-[10px] text-neutral-400">تحليل الإيرادات</p>
             </div>
             <motion.div
-              className="text-[9px] text-coral-500 font-medium opacity-0 group-hover:opacity-100"
+              className="text-[9px] text-rose-500 font-medium opacity-0 group-hover:opacity-100"
               whileHover={{ x: 2 }}
             >
               عرض التفاصيل ←
@@ -610,7 +610,7 @@ const BentoDashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-neutral-900 text-sm">حالة الأسطول</h3>
             <motion.span 
-              className="px-2 py-0.5 bg-coral-500 text-white rounded-full text-[9px] font-semibold cursor-pointer"
+              className="px-2 py-0.5 bg-rose-500 text-white rounded-full text-[9px] font-semibold cursor-pointer"
               whileHover={{ scale: 1.1 }}
               onClick={() => navigate('/fleet')}
             >
@@ -657,7 +657,7 @@ const BentoDashboard: React.FC = () => {
                       >
                         <p className="font-semibold text-sm text-neutral-900">{data.name}</p>
                         <p className="text-neutral-600 text-xs">{data.value} مركبة</p>
-                        <p className="text-[9px] text-coral-500 mt-1">انقر للتصفية ←</p>
+                        <p className="text-[9px] text-rose-500 mt-1">انقر للتصفية ←</p>
                       </motion.div>
                     );
                   }}
@@ -775,7 +775,7 @@ const BentoDashboard: React.FC = () => {
             )}
           </div>
           <motion.button 
-            className="w-full mt-2 py-1.5 text-[10px] font-semibold text-coral-600 bg-coral-50 rounded-lg hover:bg-coral-100 transition-colors"
+            className="w-full mt-2 py-1.5 text-[10px] font-semibold text-coral-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/fleet/maintenance')}
@@ -889,7 +889,7 @@ const BentoDashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-neutral-900 text-sm">توقعات الإيرادات</h3>
             <motion.div 
-              className="w-7 h-7 bg-coral-100 rounded-lg flex items-center justify-center"
+              className="w-7 h-7 bg-rose-100 rounded-lg flex items-center justify-center"
               animate={{ rotate: [0, 5, -5, 0] }}
               transition={{ repeat: Infinity, duration: 4, repeatDelay: 2 }}
             >
@@ -911,7 +911,7 @@ const BentoDashboard: React.FC = () => {
               </div>
               <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
                 <motion.div 
-                  className="h-full rounded-full bg-coral-500" 
+                  className="h-full rounded-full bg-rose-500" 
                   initial={{ width: 0 }}
                   animate={{ width: '80%' }}
                   transition={{ duration: 1, ease: "easeOut" }}
@@ -941,7 +941,7 @@ const BentoDashboard: React.FC = () => {
             </div>
           </div>
           <motion.div 
-            className="mt-3 p-2 bg-coral-50 rounded-lg"
+            className="mt-3 p-2 bg-rose-50 rounded-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
@@ -999,7 +999,7 @@ const BentoDashboard: React.FC = () => {
               </motion.div>
               <p className="text-sm">لا توجد نشاطات حديثة</p>
               <motion.button
-                className="mt-2 text-[10px] text-coral-500 font-medium hover:text-coral-600"
+                className="mt-2 text-[10px] text-rose-500 font-medium hover:text-coral-600"
                 whileHover={{ scale: 1.05 }}
                 onClick={() => navigate('/contracts')}
               >

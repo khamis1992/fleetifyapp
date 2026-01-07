@@ -40,11 +40,11 @@ export function DocumentAlertsPanel({
     switch (status) {
       case 'expired':
         return {
-          bg: 'bg-coral-50',
-          border: 'border-coral-200',
+          bg: 'bg-rose-50',
+          border: 'border-rose-200',
           text: 'text-coral-700',
-          badge: 'bg-coral-100 text-coral-700',
-          icon: 'text-coral-500',
+          badge: 'bg-rose-100 text-coral-700',
+          icon: 'text-rose-500',
         };
       case 'expiring_soon':
         return {
@@ -109,7 +109,7 @@ export function DocumentAlertsPanel({
       {showHeader && (
         <div className="p-4 border-b border-neutral-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-coral-100 rounded-xl">
+            <div className="p-2 bg-rose-100 rounded-xl">
               <FileWarning className="w-5 h-5 text-coral-600" />
             </div>
             <div>
@@ -192,7 +192,7 @@ export function DocumentAlertsPanel({
                   </Button>
                 )}
 
-                <ChevronLeft className="w-4 h-4 text-neutral-300 group-hover:text-coral-500 group-hover:translate-x-[-4px] transition-all" />
+                <ChevronLeft className="w-4 h-4 text-neutral-300 group-hover:text-rose-500 group-hover:translate-x-[-4px] transition-all" />
               </motion.div>
             );
           })}
@@ -219,14 +219,14 @@ export function DocumentAlertsBadge({ onClick }: { onClick?: () => void }) {
       className={cn(
         "relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all",
         expiredCount > 0 
-          ? "bg-coral-100 text-coral-700 hover:bg-coral-200" 
+          ? "bg-rose-100 text-coral-700 hover:bg-rose-200" 
           : "bg-amber-100 text-amber-700 hover:bg-amber-200"
       )}
     >
       <Bell className="w-4 h-4" />
       <span>{urgentCount} تنبيه</span>
       {expiredCount > 0 && (
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-coral-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
           {expiredCount}
         </span>
       )}

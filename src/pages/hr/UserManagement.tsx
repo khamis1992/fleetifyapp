@@ -111,7 +111,7 @@ const UserCard: React.FC<UserCardProps> = ({ employee, isSelected, onSelect }) =
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'super_admin': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'company_admin': return 'bg-coral-100 text-coral-700 border-coral-200';
+      case 'company_admin': return 'bg-rose-100 text-coral-700 border-rose-200';
       case 'manager': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'accountant': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
       case 'fleet_manager': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
@@ -142,7 +142,7 @@ const UserCard: React.FC<UserCardProps> = ({ employee, isSelected, onSelect }) =
       className={cn(
         'bg-white rounded-xl p-4 cursor-pointer transition-all border-2',
         isSelected 
-          ? 'border-coral-400 shadow-lg shadow-coral-100' 
+          ? 'border-coral-400 shadow-lg shadow-rose-100' 
           : 'border-transparent shadow-sm hover:border-neutral-200 hover:shadow-md'
       )}
     >
@@ -150,7 +150,7 @@ const UserCard: React.FC<UserCardProps> = ({ employee, isSelected, onSelect }) =
         {/* Avatar */}
         <div className={cn(
           'w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold',
-          isSelected ? 'bg-coral-500 text-white' : 'bg-neutral-100 text-neutral-600'
+          isSelected ? 'bg-rose-500 text-white' : 'bg-neutral-100 text-neutral-600'
         )}>
           {employee.first_name.charAt(0)}
         </div>
@@ -162,7 +162,7 @@ const UserCard: React.FC<UserCardProps> = ({ employee, isSelected, onSelect }) =
               {employee.first_name} {employee.last_name}
             </h4>
             {isSelected && (
-              <CheckCircle2 className="w-4 h-4 text-coral-500 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-rose-500 flex-shrink-0" />
             )}
           </div>
           <p className="text-sm text-neutral-500 truncate">{employee.position || 'غير محدد'}</p>
@@ -468,7 +468,7 @@ function UserManagementContent() {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-neutral-500 font-medium">جاري تحميل البيانات...</p>
         </div>
       </div>
@@ -483,7 +483,7 @@ function UserManagementContent() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
           <p className="text-neutral-600 mb-4">{(accountsError as Error).message}</p>
-          <Button onClick={() => refetch()} className="bg-coral-500 hover:bg-coral-600">
+          <Button onClick={() => refetch()} className="bg-rose-500 hover:bg-coral-600">
             <RefreshCw className="w-4 h-4 ml-2" />
             إعادة المحاولة
           </Button>
@@ -538,7 +538,7 @@ function UserManagementContent() {
                   size="sm"
                   onClick={handleSaveChanges}
                   disabled={updatePermissionsMutation.isPending || updateRolesMutation.isPending}
-                  className="gap-1 bg-coral-500 hover:bg-coral-600"
+                  className="gap-1 bg-rose-500 hover:bg-coral-600"
                 >
                   <Save className="w-4 h-4" />
                   حفظ
@@ -591,7 +591,7 @@ function UserManagementContent() {
                   title="إجمالي الموظفين"
                   value={(employeesWithoutAccess?.length || 0) + (employeesWithAccess?.length || 0)}
                   icon={Users}
-                  iconBg="bg-coral-50"
+                  iconBg="bg-rose-50"
                   iconColor="text-coral-600"
                 />
               </motion.div>
@@ -682,7 +682,7 @@ function UserManagementContent() {
                   className="bg-white rounded-2xl p-6 shadow-sm"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-coral-100 flex items-center justify-center text-2xl font-bold text-coral-600">
+                    <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center text-2xl font-bold text-coral-600">
                       {selectedUserForMatrix.first_name.charAt(0)}
                     </div>
                     <div className="flex-1">
@@ -738,7 +738,7 @@ function UserManagementContent() {
                       <button
                         onClick={handleSaveChanges}
                         disabled={updatePermissionsMutation.isPending || updateRolesMutation.isPending}
-                        className="px-3 py-1 text-sm bg-coral-500 rounded-full hover:bg-coral-600 transition-colors disabled:opacity-50"
+                        className="px-3 py-1 text-sm bg-rose-500 rounded-full hover:bg-coral-600 transition-colors disabled:opacity-50"
                       >
                         حفظ التغييرات
                       </button>

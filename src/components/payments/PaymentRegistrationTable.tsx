@@ -73,7 +73,7 @@ const paymentMethods = {
   bank_transfer: { label: 'تحويل بنكي', icon: '🏦', color: 'bg-blue-100 text-blue-800' },
   check: { label: 'شيك', icon: '📄', color: 'bg-purple-100 text-purple-800' },
   credit_card: { label: 'بطاقة ائتمان', icon: '💳', color: 'bg-orange-100 text-orange-800' },
-  other: { label: 'أخرى', icon: '💰', color: 'bg-gray-100 text-gray-800' }
+  other: { label: 'أخرى', icon: '💰', color: 'bg-slate-100 text-slate-800' }
 };
 
 const statusConfig = {
@@ -245,10 +245,10 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
           <Card key={i} className="animate-pulse">
             <CardContent className="p-4">
               <div className="flex items-center space-x-4">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-4 bg-gray-200 rounded w-32"></div>
-                <div className="h-4 bg-gray-200 rounded w-20"></div>
-                <div className="h-4 bg-gray-200 rounded w-16"></div>
+                <div className="h-4 bg-slate-200 rounded w-24"></div>
+                <div className="h-4 bg-slate-200 rounded w-32"></div>
+                <div className="h-4 bg-slate-200 rounded w-20"></div>
+                <div className="h-4 bg-slate-200 rounded w-16"></div>
               </div>
             </CardContent>
           </Card>

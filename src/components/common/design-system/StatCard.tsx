@@ -49,7 +49,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       className={cn(
-        'relative bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 transition-all duration-300 shadow-sm hover:shadow-xl',
+        'relative bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 transition-all duration-300 shadow-sm hover:shadow-xl',
         isHovered && 'border-teal-500/30 shadow-xl shadow-teal-500/10',
         className
       )}
@@ -84,24 +84,24 @@ export const StatCard: React.FC<StatCardProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="text-2xl font-bold text-gray-900"
+          className="text-2xl font-bold text-slate-900"
         >
           {value}
         </motion.p>
-        <p className="text-sm text-gray-500 mt-1">{title}</p>
+        <p className="text-sm text-slate-500 mt-1">{title}</p>
       </div>
 
       {description && (
-        <p className="text-xs text-gray-400 mt-2">{description}</p>
+        <p className="text-xs text-slate-400 mt-2">{description}</p>
       )}
 
       {progress !== undefined && (
         <div className="mt-4">
-          <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+          <div className="flex justify-between text-xs text-slate-500 mb-1.5">
             <span>Progress</span>
             <span>{progress}%</span>
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}

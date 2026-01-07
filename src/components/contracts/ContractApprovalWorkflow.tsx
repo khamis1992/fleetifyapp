@@ -216,7 +216,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       case 'approved': return <CheckCircle className="h-5 w-5 text-green-600" />;
       case 'rejected': return <XCircle className="h-5 w-5 text-red-600" />;
       case 'pending': return <Clock className="h-5 w-5 text-yellow-600" />;
-      default: return <Clock className="h-5 w-5 text-gray-400" />;
+      default: return <Clock className="h-5 w-5 text-slate-400" />;
     }
   };
 
@@ -234,7 +234,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       case 'approved': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-slate-100 text-slate-800';
     }
   };
 

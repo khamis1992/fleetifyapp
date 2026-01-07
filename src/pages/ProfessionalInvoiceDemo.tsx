@@ -66,12 +66,12 @@ const ProfessionalInvoiceDemo = () => {
         />
       </div>
       
-      <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+      <div className="mt-8 p-4 bg-slate-50 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">معلومات عن القالب</h2>
-        <p className="text-gray-700">
+        <p className="text-slate-700">
           هذا القالب يتضمن تصميم احترافي للفواتير يتضمن:
         </p>
-        <ul className="list-disc list-inside mt-2 text-gray-700">
+        <ul className="list-disc list-inside mt-2 text-slate-700">
           <li>تصميم حديث وأنيق مع ألوان متناسقة</li>
           <li>عرض واضح لجميع تفاصيل الفاتورة</li>
           <li>دعم الطباعة وتحميل PDF</li>

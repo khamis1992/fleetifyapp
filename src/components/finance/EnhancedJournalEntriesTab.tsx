@@ -127,7 +127,7 @@ const statusConfig = {
   cancelled: {
     label: 'ملغي',
     variant: 'outline' as const,
-    className: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+    className: 'bg-slate-100 text-slate-800 hover:bg-slate-100',
     icon: XCircle,
   },
 };

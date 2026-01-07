@@ -371,17 +371,17 @@ export const TrafficViolationPDFImport: React.FC = () => {
               <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                  isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                  isDragActive ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-slate-400'
                 }`}
               >
                 <input {...getInputProps()} />
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <FileText className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                 {isDragActive ? (
                   <p className="text-blue-600">اسحب الملفات هنا...</p>
                 ) : (
                   <div>
                     <p className="text-lg font-medium mb-2">اسحب ملفات PDF هنا أو اضغط للاختيار</p>
-                    <p className="text-sm text-gray-500">يدعم ملفات PDF فقط</p>
+                    <p className="text-sm text-slate-500">يدعم ملفات PDF فقط</p>
                   </div>
                 )}
               </div>
@@ -391,7 +391,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                 <div className="space-y-2">
                   <h4 className="font-medium">الملفات المرفوعة ({uploadedFiles.length})</h4>
                   {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-red-600" />
                         <span className="text-sm font-medium">{file.name}</span>
@@ -457,7 +457,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
                   <p className="text-lg font-medium">جاري استخراج البيانات من PDF...</p>
-                  <p className="text-sm text-gray-500 mt-2">يرجى الانتظار، هذا قد يستغرق بضع دقائق</p>
+                  <p className="text-sm text-slate-500 mt-2">يرجى الانتظار، هذا قد يستغرق بضع دقائق</p>
                 </div>
               )}
             </TabsContent>
@@ -474,7 +474,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <FileText className="h-5 w-5 text-blue-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.totalExtracted}</p>
-                            <p className="text-sm text-gray-600">إجمالي المخالفات</p>
+                            <p className="text-sm text-slate-600">إجمالي المخالفات</p>
                           </div>
                         </div>
                       </CardContent>
@@ -486,7 +486,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <CheckCircle className="h-5 w-5 text-green-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.successfulMatches}</p>
-                            <p className="text-sm text-gray-600">مطابقة للمركبات</p>
+                            <p className="text-sm text-slate-600">مطابقة للمركبات</p>
                           </div>
                         </div>
                       </CardContent>
@@ -498,7 +498,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <AlertTriangle className="h-5 w-5 text-red-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.errors}</p>
-                            <p className="text-sm text-gray-600">أخطاء</p>
+                            <p className="text-sm text-slate-600">أخطاء</p>
                           </div>
                         </div>
                       </CardContent>
@@ -512,7 +512,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                             <p className="text-2xl font-bold">
                               {processingResult.violations.reduce((sum, v) => sum + v.fineAmount, 0).toFixed(2)}
                             </p>
-                            <p className="text-sm text-gray-600">إجمالي الغرامات (د.ك)</p>
+                            <p className="text-sm text-slate-600">إجمالي الغرامات (د.ك)</p>
                           </div>
                         </div>
                       </CardContent>
@@ -532,7 +532,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           : 'تحديد الكل'
                         }
                       </Button>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-slate-600">
                         محدد: {selectedViolations.size} من {processingResult.successfulMatches}
                       </span>
                     </div>
@@ -597,7 +597,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                                       {format(new Date(violation.date), 'dd/MM/yyyy', { locale: ar })}
                                     </div>
                                     {violation.time && (
-                                      <span className="text-xs text-gray-500">{violation.time}</span>
+                                      <span className="text-xs text-slate-500">{violation.time}</span>
                                     )}
                                   </div>
                                 </TableCell>

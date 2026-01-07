@@ -233,7 +233,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 <Label htmlFor="pdf" className="flex items-center cursor-pointer">
                   <FileText className="h-4 w-4 ml-2 text-red-500" />
                   <span>PDF</span>
-                  <span className="text-sm text-gray-500 mr-2">
+                  <span className="text-sm text-slate-500 mr-2">
                     (مناسب للطباعة والعروض التقديمية)
                   </span>
                 </Label>
@@ -244,7 +244,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 <Label htmlFor="excel" className="flex items-center cursor-pointer">
                   <FileSpreadsheet className="h-4 w-4 ml-2 text-green-500" />
                   <span>Excel</span>
-                  <span className="text-sm text-gray-500 mr-2">
+                  <span className="text-sm text-slate-500 mr-2">
                     (مناسب للتحليل والمعالجة)
                   </span>
                 </Label>
@@ -255,7 +255,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 <Label htmlFor="csv" className="flex items-center cursor-pointer">
                   <FileType className="h-4 w-4 ml-2 text-blue-500" />
                   <span>CSV</span>
-                  <span className="text-sm text-gray-500 mr-2">
+                  <span className="text-sm text-slate-500 mr-2">
                     (مناسب للتكامل مع الأنظمة الأخرى)
                   </span>
                 </Label>

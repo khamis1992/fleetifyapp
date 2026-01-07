@@ -36,7 +36,7 @@ export const ChartStatisticsPanel: React.FC = () => {
       revenue: 'bg-green-500',
       expenses: 'bg-orange-500'
     };
-    return colors[type as keyof typeof colors] || 'bg-gray-500';
+    return colors[type as keyof typeof colors] || 'bg-slate-500';
   };
 
   if (isLoading) {

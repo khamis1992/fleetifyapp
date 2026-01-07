@@ -9,8 +9,8 @@ export function SimpleReportFilters({ filters }: SimpleReportFiltersProps) {
 
   return (
     <section className="mb-6">
-      <h3 className="text-lg font-semibold text-gray-700 mb-2">معايير التصفية</h3>
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-500">
+      <h3 className="text-lg font-semibold text-slate-700 mb-2">معايير التصفية</h3>
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-500">
         {hasFilters ? (
           <div className="space-y-1">
             {filters.startDate && (

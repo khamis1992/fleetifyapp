@@ -163,7 +163,7 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
       case 'minor': return 'bg-yellow-500';
       case 'moderate': return 'bg-orange-500';
       case 'severe': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-slate-500';
     }
   };
 
@@ -215,7 +215,7 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
       </div>
 
       {/* Vehicle Diagram */}
-      <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
+      <div className="relative border-2 border-dashed border-slate-300 rounded-lg overflow-hidden">
         <div
           ref={diagramRef}
           className={`vehicle-diagram-container relative w-full bg-white ${readOnly ? 'cursor-default' : 'cursor-crosshair'}`}
@@ -238,16 +238,16 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
                 target.style.display = 'none';
                 // Show fallback content
                 const fallback = document.createElement('div');
-                fallback.className = 'w-full h-full flex items-center justify-center bg-gray-100 text-gray-500';
+                fallback.className = 'w-full h-full flex items-center justify-center bg-slate-100 text-slate-500';
                 fallback.innerHTML = `
                   <div class="text-center p-4">
-                    <div class="w-16 h-16 mx-auto mb-2 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                    <div class="w-16 h-16 mx-auto mb-2 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center">
                       <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2"></path>
                       </svg>
                     </div>
                     <p class="text-sm">مخطط المركبة غير متوفر</p>
-                    <p class="text-xs text-gray-400">يمكنك إضافة نقاط الضرر بالنقر على المنطقة</p>
+                    <p class="text-xs text-slate-400">يمكنك إضافة نقاط الضرر بالنقر على المنطقة</p>
                   </div>
                 `;
                 target.parentNode?.appendChild(fallback);
@@ -283,8 +283,8 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
           {damagePoints.length === 0 && !readOnly && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-10">
               <div className="text-center p-4 bg-white rounded-lg shadow-lg">
-                <Plus className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm text-gray-600">اضغط على أي مكان في المخطط لإضافة نقطة ضرر</p>
+                <Plus className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                <p className="text-sm text-slate-600">اضغط على أي مكان في المخطط لإضافة نقطة ضرر</p>
               </div>
             </div>
           )}
@@ -293,8 +293,8 @@ export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = (
           {damagePoints.length === 0 && readOnly && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-5">
               <div className="text-center p-4 bg-white rounded-lg shadow-lg">
-                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm text-gray-600">لا توجد أضرار مسجلة على هذه المركبة</p>
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                <p className="text-sm text-slate-600">لا توجد أضرار مسجلة على هذه المركبة</p>
               </div>
             </div>
           )}
@@ -505,8 +505,8 @@ const DamagePointForm: React.FC<DamagePointFormProps> = ({
         
         {/* Smart suggestions */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="border rounded-lg p-3 bg-gray-50 space-y-2">
-            <p className="text-xs text-gray-600 font-medium mb-2">
+          <div className="border rounded-lg p-3 bg-slate-50 space-y-2">
+            <p className="text-xs text-slate-600 font-medium mb-2">
               💡 اقتراحات بناءً على موقع الضرر:
             </p>
             <div className="grid grid-cols-1 gap-1">

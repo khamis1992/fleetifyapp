@@ -49,13 +49,13 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
   return (
     <Card className="w-full max-w-4xl mx-auto bg-white shadow-lg">
       {/* Voucher Header */}
-      <CardHeader className="text-center border-b-2 border-gray-800 pb-4">
+      <CardHeader className="text-center border-b-2 border-slate-800 pb-4">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-800">سند قيد محاسبي</h1>
+          <h1 className="text-2xl font-bold text-slate-800">سند قيد محاسبي</h1>
           <div className="flex justify-between items-center">
             <div className="text-right">
-              <p className="text-sm text-gray-600">رقم القيد: <span className="font-bold">{entry.entry_number}</span></p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-600">رقم القيد: <span className="font-bold">{entry.entry_number}</span></p>
+              <p className="text-sm text-slate-600">
                 التاريخ: <span className="font-bold">
                   {format(new Date(entry.entry_date), "dd/MM/yyyy", { locale: ar })}
                 </span>
@@ -66,7 +66,7 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
                 {getStatusLabel(entry.status)}
               </Badge>
               {entry.reference_type && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-slate-600 mt-1">
                   النوع: <span className="font-bold">{entry.reference_type}</span>
                 </p>
               )}
@@ -77,16 +77,16 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
 
       <CardContent className="p-6">
         {/* Voucher Description */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">البيان:</h3>
-          <p className="text-gray-700">{entry.description}</p>
+        <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">البيان:</h3>
+          <p className="text-slate-700">{entry.description}</p>
         </div>
 
         {/* Voucher Table */}
-        <div className="border-2 border-gray-800 rounded-lg overflow-hidden">
+        <div className="border-2 border-slate-800 rounded-lg overflow-hidden">
           {/* Table Header */}
-          <div className="bg-gray-100 border-b-2 border-gray-800">
-            <div className="grid grid-cols-16 gap-1 p-3 font-bold text-gray-800 text-sm">
+          <div className="bg-slate-100 border-b-2 border-slate-800">
+            <div className="grid grid-cols-16 gap-1 p-3 font-bold text-slate-800 text-sm">
               <div className="col-span-2 text-center">رمز الحساب</div>
               <div className="col-span-3 text-center">اسم الحساب</div>
               <div className="col-span-3 text-center">البيان</div>
@@ -101,7 +101,7 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
           {/* Table Body */}
           <div className="divide-y divide-gray-300">
             {entryLines.map((line: any, index: number) => (
-              <div key={line.id} className={`grid grid-cols-16 gap-1 p-3 text-sm ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+              <div key={line.id} className={`grid grid-cols-16 gap-1 p-3 text-sm ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                 <div className="col-span-2 text-center font-mono text-xs">
                   {line.account?.account_code}
                 </div>
@@ -131,8 +131,8 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
           </div>
 
           {/* Table Footer - Totals */}
-          <div className="bg-gray-200 border-t-2 border-gray-800">
-            <div className="grid grid-cols-16 gap-1 p-3 font-bold text-gray-800">
+          <div className="bg-slate-200 border-t-2 border-slate-800">
+            <div className="grid grid-cols-16 gap-1 p-3 font-bold text-slate-800">
               <div className="col-span-14 text-right text-base">الإجمالي:</div>
               <div className="col-span-1 text-center text-base text-green-700">
                 {formatCurrency(entry.total_debit)}
@@ -147,8 +147,8 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
         {/* Voucher Footer */}
         <div className="mt-8 grid grid-cols-3 gap-8 text-center">
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">أعد بواسطة</p>
-            <div className="border-t border-gray-400 pt-2">
+            <p className="text-sm text-slate-600">أعد بواسطة</p>
+            <div className="border-t border-slate-400 pt-2">
               <p className="font-semibold">
                 {entry.created_by_profile?.first_name && entry.created_by_profile?.last_name
                   ? `${entry.created_by_profile.first_name} ${entry.created_by_profile.last_name}`
@@ -159,15 +159,15 @@ export function JournalVoucherDisplay({ entry }: JournalVoucherDisplayProps) {
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">راجع بواسطة</p>
-            <div className="border-t border-gray-400 pt-2">
+            <p className="text-sm text-slate-600">راجع بواسطة</p>
+            <div className="border-t border-slate-400 pt-2">
               <p className="font-semibold">________________</p>
             </div>
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">اعتمد بواسطة</p>
-            <div className="border-t border-gray-400 pt-2">
+            <p className="text-sm text-slate-600">اعتمد بواسطة</p>
+            <div className="border-t border-slate-400 pt-2">
               <p className="font-semibold">________________</p>
             </div>
           </div>

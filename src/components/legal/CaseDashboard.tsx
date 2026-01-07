@@ -231,7 +231,7 @@ export const CaseDashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">القضايا المغلقة</CardTitle>
-            <CheckCircle className="h-4 w-4 text-gray-500" />
+            <CheckCircle className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{caseStats.closedCases}</div>
@@ -310,7 +310,7 @@ export const CaseDashboard: React.FC = () => {
                       <span className="text-sm font-medium">{priority.name}</span>
                       <Badge variant="outline">{priority.cases} قضية ({priority.percentage}%)</Badge>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-slate-200 rounded-full h-2">
                       <div
                         className="bg-blue-600 h-2 rounded-full"
                         style={{ width: `${priority.percentage}%` }}

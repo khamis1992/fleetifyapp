@@ -435,7 +435,7 @@ function ContractsNew() {
             <FileText className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">إدارة العقود</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">إدارة العقود</h2>
           </div>
         </div>
 
@@ -445,7 +445,7 @@ function ContractsNew() {
           <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => setShowContractWizard(true)}
-              className="bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-red-500/30 hover:scale-105 transition-transform flex items-center gap-2"
+              className="bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-rose-500/30 hover:scale-105 transition-transform flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
               <span>إنشاء عقد جديد</span>
@@ -453,7 +453,7 @@ function ContractsNew() {
             <Button
               onClick={() => setShowExpressMode(true)}
               variant="outline"
-              className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2"
+              className="px-5 py-3 rounded-xl font-medium border-slate-300 hover:border-red-500 transition-colors flex items-center gap-2"
             >
               <Zap className="w-5 h-5 text-amber-500" />
               <span>عقود ايجار</span>
@@ -462,7 +462,7 @@ function ContractsNew() {
               <Button
                 onClick={() => setShowCSVUpload(true)}
                 variant="outline"
-                className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2"
+                className="px-5 py-3 rounded-xl font-medium border-slate-300 hover:border-red-500 transition-colors flex items-center gap-2"
               >
                 <Upload className="w-5 h-5 text-blue-500" />
                 <span className="hidden lg:inline">استيراد CSV</span>
@@ -471,7 +471,7 @@ function ContractsNew() {
             <Button
               onClick={() => setShowRemindersDialog(true)}
               variant="outline"
-              className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-purple-500 transition-colors flex items-center gap-2"
+              className="px-5 py-3 rounded-xl font-medium border-slate-300 hover:border-purple-500 transition-colors flex items-center gap-2"
               title="إرسال تنبيهات الواتساب للعقود"
             >
               <MessageSquare className="w-5 h-5 text-purple-500" />
@@ -480,7 +480,7 @@ function ContractsNew() {
             <Button
               onClick={() => setShowExportDialog(true)}
               variant="outline"
-              className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2"
+              className="px-5 py-3 rounded-xl font-medium border-slate-300 hover:border-red-500 transition-colors flex items-center gap-2"
             >
               <Download className="w-5 h-5 text-purple-500" />
               <span className="hidden lg:inline">تصدير</span>
@@ -488,10 +488,10 @@ function ContractsNew() {
             <Button
               onClick={handleRefresh}
               variant="outline"
-              className="px-5 py-3 rounded-xl font-medium border-gray-300 hover:border-red-500 transition-colors flex items-center gap-2 mr-auto"
+              className="px-5 py-3 rounded-xl font-medium border-slate-300 hover:border-red-500 transition-colors flex items-center gap-2 mr-auto"
               disabled={isRefreshing}
             >
-              <RefreshCw className={cn("w-5 h-5 text-gray-500", isRefreshing && "animate-spin")} />
+              <RefreshCw className={cn("w-5 h-5 text-slate-500", isRefreshing && "animate-spin")} />
               <span className="hidden lg:inline">تحديث</span>
             </Button>
           </div>
@@ -499,62 +499,62 @@ function ContractsNew() {
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Active Contracts Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in">
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">نشط</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{safeStatistics.activeContracts?.length || 0}</h3>
-              <p className="text-sm text-gray-600 font-medium">العقود النشطة</p>
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500">إجمالي العقود الفعالة</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-1">{safeStatistics.activeContracts?.length || 0}</h3>
+              <p className="text-sm text-slate-600 font-medium">العقود النشطة</p>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500">إجمالي العقود الفعالة</p>
               </div>
             </div>
 
             {/* Draft Contracts Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in" style={{ animationDelay: "0.1s" }}>
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in" style={{ animationDelay: "0.1s" }}>
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
                   <FileEdit className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">مسودات</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{safeStatistics.draftContracts?.length || 0}</h3>
-              <p className="text-sm text-gray-600 font-medium">المسودات</p>
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500">بانتظار الإكمال</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-1">{safeStatistics.draftContracts?.length || 0}</h3>
+              <p className="text-sm text-slate-600 font-medium">المسودات</p>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500">بانتظار الإكمال</p>
               </div>
             </div>
 
             {/* Under Review Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in" style={{ animationDelay: "0.2s" }}>
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in" style={{ animationDelay: "0.2s" }}>
               <div className="flex items-start justify-between mb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full">مراجعة</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{safeStatistics.underReviewContracts?.length || 0}</h3>
-              <p className="text-sm text-gray-600 font-medium">قيد المراجعة</p>
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500">قيد المعالجة</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-1">{safeStatistics.underReviewContracts?.length || 0}</h3>
+              <p className="text-sm text-slate-600 font-medium">قيد المراجعة</p>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500">قيد المعالجة</p>
               </div>
             </div>
 
             {/* Cancelled Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in" style={{ animationDelay: "0.3s" }}>
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow animate-scale-in" style={{ animationDelay: "0.3s" }}>
               <div className="flex items-start justify-between mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-slate-400 to-slate-600 rounded-xl flex items-center justify-center">
                   <XCircle className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full">ملغية</span>
+                <span className="text-xs font-medium text-slate-600 bg-slate-50 px-2 py-1 rounded-full">ملغية</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{safeStatistics.cancelledContracts?.length || 0}</h3>
-              <p className="text-sm text-gray-600 font-medium">العقود الملغية</p>
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500">عقود موقوفة</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-1">{safeStatistics.cancelledContracts?.length || 0}</h3>
+              <p className="text-sm text-slate-600 font-medium">العقود الملغية</p>
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500">عقود موقوفة</p>
               </div>
             </div>
           </div>
@@ -624,14 +624,14 @@ function ContractsNew() {
           )}
 
           {/* Search & Filters Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden animate-fade-in-up">
-            <div className="p-4 border-b border-gray-200">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in-up">
+            <div className="p-4 border-b border-slate-200">
               <button onClick={() => setShowFilters(!showFilters)} className="w-full flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Search className="w-5 h-5 text-gray-500" />
-                  <span className="font-semibold text-gray-900">البحث والفلاتر</span>
+                  <Search className="w-5 h-5 text-slate-500" />
+                  <span className="font-semibold text-slate-900">البحث والفلاتر</span>
                 </div>
-                <ChevronDown className={cn("w-5 h-5 text-gray-500 transition-transform", showFilters && "rotate-180")} />
+                <ChevronDown className={cn("w-5 h-5 text-slate-500 transition-transform", showFilters && "rotate-180")} />
               </button>
             </div>
 
@@ -639,11 +639,11 @@ function ContractsNew() {
               <div className="p-6 space-y-4">
                 {/* Search Input - محسّن للأداء */}
                 <div className="relative">
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
                     placeholder="بحث برقم العقد، اسم العميل، رقم المركبة... (يمكنك كتابة الاسم الكامل)"
-                    className="w-full pr-12 pl-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                    className="w-full pr-12 pl-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
                     value={searchInput}
                     onChange={(e) => {
                       // تحديث searchInput فقط دون إعادة عرض القوائم
@@ -655,9 +655,9 @@ function ContractsNew() {
                     <button
                       type="button"
                       onClick={() => setSearchInput("")}
-                      className="absolute left-10 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                      className="absolute left-10 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors"
                     >
-                      <XCircle className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                      <XCircle className="w-4 h-4 text-slate-400 hover:text-slate-600" />
                     </button>
                   )}
                   {/* Show spinner while typing (before debounce) OR while fetching data */}
@@ -671,9 +671,9 @@ function ContractsNew() {
                 {/* Search Results Count */}
                 {debouncedSearch && !isFetching && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-500">
+                    <span className="text-slate-500">
                       {safeFilteredContracts.length > 0 ? (
-                        <>تم العثور على <span className="font-semibold text-gray-900">{safeFilteredContracts.length}</span> عقد</>
+                        <>تم العثور على <span className="font-semibold text-slate-900">{safeFilteredContracts.length}</span> عقد</>
                       ) : (
                         <span className="text-amber-600">لم يتم العثور على نتائج للبحث "{debouncedSearch}"</span>
                       )}
@@ -683,7 +683,7 @@ function ContractsNew() {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2" onClick={() => {
+                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-slate-200 transition-colors flex items-center gap-2" onClick={() => {
                     setSearchInput("");
                     setActiveTab("all");
                   }}>
@@ -696,15 +696,15 @@ function ContractsNew() {
           </div>
 
           {/* Tabs Section */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Tabs Header */}
-            <div className="border-b border-gray-200 relative">
+            <div className="border-b border-slate-200 relative">
               <div className="flex gap-2 p-2 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab("all")}
                   className={cn(
                     "px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap",
-                    activeTab === "all" ? "bg-red-50 text-red-700 font-semibold" : "text-gray-600 hover:bg-gray-50"
+                    activeTab === "all" ? "bg-red-50 text-red-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
                   )}
                 >
                   جميع العقود
@@ -713,7 +713,7 @@ function ContractsNew() {
                   onClick={() => setActiveTab("active")}
                   className={cn(
                     "px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap",
-                    activeTab === "active" ? "bg-red-50 text-red-700 font-semibold" : "text-gray-600 hover:bg-gray-50"
+                    activeTab === "active" ? "bg-red-50 text-red-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
                   )}
                 >
                   النشطة
@@ -722,7 +722,7 @@ function ContractsNew() {
                   onClick={() => setActiveTab("cancelled")}
                   className={cn(
                     "px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap",
-                    activeTab === "cancelled" ? "bg-red-50 text-red-700 font-semibold" : "text-gray-600 hover:bg-gray-50"
+                    activeTab === "cancelled" ? "bg-red-50 text-red-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
                   )}
                 >
                   الملغية
@@ -731,7 +731,7 @@ function ContractsNew() {
                   onClick={() => setActiveTab("alerts")}
                   className={cn(
                     "px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap",
-                    activeTab === "alerts" ? "bg-red-50 text-red-700 font-semibold" : "text-gray-600 hover:bg-gray-50"
+                    activeTab === "alerts" ? "bg-red-50 text-red-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
                   )}
                 >
                   تنبيهات الانتهاء
@@ -740,7 +740,7 @@ function ContractsNew() {
                   onClick={() => setActiveTab("settings")}
                   className={cn(
                     "px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap hidden lg:block",
-                    activeTab === "settings" ? "bg-red-50 text-red-700 font-semibold" : "text-gray-600 hover:bg-gray-50"
+                    activeTab === "settings" ? "bg-red-50 text-red-700 font-semibold" : "text-slate-600 hover:bg-slate-50"
                   )}
                 >
                   إعدادات الغرامات
@@ -756,13 +756,13 @@ function ContractsNew() {
                 <div className="space-y-4">
                   {safeFilteredContracts.length === 0 ? (
                     <div className="text-center py-12">
-                      <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد عقود</h3>
+                      <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عقود</h3>
                       {debouncedSearch ? (
                         <>
-                          <p className="text-gray-500 mb-2">لم يتم العثور على نتائج للبحث:</p>
+                          <p className="text-slate-500 mb-2">لم يتم العثور على نتائج للبحث:</p>
                           <p className="text-amber-600 font-medium mb-4">"{debouncedSearch}"</p>
-                          <p className="text-sm text-gray-400 mb-4">جرب البحث باسم العميل الأول فقط أو رقم العقد</p>
+                          <p className="text-sm text-slate-400 mb-4">جرب البحث باسم العميل الأول فقط أو رقم العقد</p>
                           <Button variant="outline" onClick={() => setSearchInput("")} className="mr-2">
                             <XCircle className="w-4 h-4 ml-2" />
                             مسح البحث
@@ -770,7 +770,7 @@ function ContractsNew() {
                         </>
                       ) : (
                         <>
-                          <p className="text-gray-500 mb-4">لم يتم العثور على أي عقود</p>
+                          <p className="text-slate-500 mb-4">لم يتم العثور على أي عقود</p>
                           <Button onClick={() => setShowContractWizard(true)} className="bg-gradient-to-r from-red-600 to-red-800 text-white">
                             <Plus className="w-4 h-4 ml-2" />
                             إنشاء عقد جديد
@@ -784,10 +784,10 @@ function ContractsNew() {
                         key={contract.id} 
                         className={cn(
                           "border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer",
-                          contract.status === 'active' && "bg-white border-gray-200",
+                          contract.status === 'active' && "bg-white border-slate-200",
                           contract.status === 'cancelled' && "bg-red-50 border-red-200",
                           (contract.status === 'expired' || contract.status === 'under_legal_procedure') && "bg-amber-50 border-amber-200",
-                          !['active', 'cancelled', 'expired', 'under_legal_procedure'].includes(contract.status) && "bg-white border-gray-200"
+                          !['active', 'cancelled', 'expired', 'under_legal_procedure'].includes(contract.status) && "bg-white border-slate-200"
                         )}
                         onClick={() => handleViewDetails(contract)}
                       >
@@ -798,17 +798,17 @@ function ContractsNew() {
                               contract.status === 'active' && "bg-gradient-to-br from-green-500 to-green-700",
                               contract.status === 'cancelled' && "bg-gradient-to-br from-red-400 to-red-600",
                               (contract.status === 'expired' || contract.status === 'under_legal_procedure') && "bg-gradient-to-br from-amber-400 to-amber-600",
-                              !['active', 'cancelled', 'expired', 'under_legal_procedure'].includes(contract.status) && "bg-gradient-to-br from-gray-400 to-gray-600"
+                              !['active', 'cancelled', 'expired', 'under_legal_procedure'].includes(contract.status) && "bg-gradient-to-br from-slate-400 to-slate-600"
                             )}>
                               <FileText className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                              <h4 className="text-lg font-bold text-gray-900 mb-1">{contract.contract_number || "غير محدد"}</h4>
-                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                              <h4 className="text-lg font-bold text-slate-900 mb-1">{contract.contract_number || "غير محدد"}</h4>
+                              <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
                                 <User className="w-4 h-4" />
                                 <span>{getCustomerName(contract)}</span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
                                 <Car className="w-4 h-4" />
                                 <span>{getVehicleInfo(contract)}</span>
                               </div>
@@ -817,23 +817,23 @@ function ContractsNew() {
                           {getStatusBadge(contract.status)}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">تاريخ البداية</p>
-                            <p className="font-semibold text-gray-900">{formatDateInGregorian(contract.start_date)}</p>
+                            <p className="text-xs text-slate-500 mb-1">تاريخ البداية</p>
+                            <p className="font-semibold text-slate-900">{formatDateInGregorian(contract.start_date)}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">تاريخ الانتهاء</p>
-                            <p className="font-semibold text-gray-900">{formatDateInGregorian(contract.end_date)}</p>
+                            <p className="text-xs text-slate-500 mb-1">تاريخ الانتهاء</p>
+                            <p className="font-semibold text-slate-900">{formatDateInGregorian(contract.end_date)}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">القيمة الشهرية</p>
+                            <p className="text-xs text-slate-500 mb-1">القيمة الشهرية</p>
                             <p className="font-bold text-red-600 text-lg">{formatCurrencyWithSymbol(contract.monthly_amount || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                           </div>
                         </div>
 
-                        <div className="border-t border-gray-200 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="outline" size="sm" onClick={() => handleViewDetails(contract)} className="bg-gray-50 text-gray-700 hover:bg-gray-100">
+                        <div className="border-t border-slate-200 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="outline" size="sm" onClick={() => handleViewDetails(contract)} className="bg-slate-50 text-slate-700 hover:bg-slate-100">
                             <Eye className="w-4 h-4 ml-2" />
                             عرض
                           </Button>
@@ -852,7 +852,7 @@ function ContractsNew() {
                             <XCircle className="w-4 h-4 ml-2" />
                             إلغاء
                           </Button>
-                          <Button variant="outline" size="sm" className="bg-gray-50 text-gray-700 hover:bg-gray-100 mr-auto">
+                          <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 hover:bg-slate-100 mr-auto">
                             <MoreHorizontal className="w-4 h-4 ml-2" />
                             <span className="hidden lg:inline">المزيد</span>
                           </Button>

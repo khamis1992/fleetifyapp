@@ -28,7 +28,7 @@ const STATUS_LABELS: Record<ApprovalStatus, { ar: string; color: string; icon: R
   },
   cancelled: { 
     ar: 'ملغي', 
-    color: 'bg-gray-500/10 text-gray-700 border-gray-500/20',
+    color: 'bg-slate-500/10 text-slate-700 border-slate-500/20',
     icon: <AlertCircle className="h-3 w-3" />
   },
 };

@@ -39,9 +39,9 @@ const CashReceiptDemo = () => {
         />
       </div>
       
-      <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+      <div className="mt-8 p-4 bg-slate-50 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">معلومات عن السند</h2>
-        <p className="text-gray-700">
+        <p className="text-slate-700">
           هذا السند تم إنشاؤه وفقًا لتصميم شركة العراف لتأجير السيارات. 
           يتضمن جميع العناصر المطلوبة مثل: رقم السند، تاريخ الدفع، اسم العميل، 
           المبلغ بالأرقام والحروف، طريقة الدفع، والتوقيعات المطلوبة.

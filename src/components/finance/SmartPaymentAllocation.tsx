@@ -297,7 +297,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                           <SelectItem key={strategy.value} value={strategy.value}>
                             <div>
                               <div className="font-medium">{strategy.label}</div>
-                              <div className="text-sm text-gray-500">{strategy.description}</div>
+                              <div className="text-sm text-slate-500">{strategy.description}</div>
                             </div>
                           </SelectItem>
                         ))}
@@ -320,7 +320,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
             <CardContent>
               {allocationMode === 'smart' ? (
                 <div className="space-y-4">
-                  <div className="text-sm text-gray-600 mb-4">
+                  <div className="text-sm text-slate-600 mb-4">
                     معاينة كيفية توزيع المبلغ حسب الاستراتيجية المحددة:
                   </div>
                   <Table>
@@ -359,7 +359,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-slate-600">
                       حدد الالتزامات والمبالغ المراد تخصيصها:
                     </div>
                     <div className="flex gap-2">
@@ -374,7 +374,7 @@ export const SmartPaymentAllocation: React.FC<SmartPaymentAllocationProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-lg">
                     <div>
                       <Label>إجمالي المخصص</Label>
                       <div className="font-bold text-blue-600">

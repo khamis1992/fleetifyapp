@@ -213,7 +213,7 @@ export const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 h-9">
                     <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-coral-500 text-white text-xs">
+                      <AvatarFallback className="bg-rose-500 text-white text-xs">
                         {(user?.profile?.first_name_ar || user?.profile?.first_name || 'م')[0]}
                       </AvatarFallback>
                     </Avatar>

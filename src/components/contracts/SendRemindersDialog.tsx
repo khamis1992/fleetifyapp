@@ -564,7 +564,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                       value={customMessage}
                       onChange={(e) => setCustomMessage(e.target.value)}
                       placeholder="اترك فارغاً لاستخدام القالب الافتراضي..."
-                      className="w-full min-h-[80px] p-3 border border-gray-300 rounded-lg mt-2"
+                      className="w-full min-h-[80px] p-3 border border-slate-300 rounded-lg mt-2"
                       maxLength={1000}
                     />
                   </div>
@@ -610,10 +610,10 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                   ) : (
                     <Users className="h-5 w-5 text-blue-600 mx-auto mb-2" />
                   )}
-                  <div className="text-2xl font-bold text-gray-900">
+                  <div className="text-2xl font-bold text-slate-900">
                     {isLoadingContracts ? '...' : eligibleContracts.length}
                   </div>
-                  <div className="text-xs text-gray-600">عقود مؤهلة</div>
+                  <div className="text-xs text-slate-600">عقود مؤهلة</div>
                 </div>
               </CardContent>
             </Card>
@@ -622,8 +622,8 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
               <CardContent className="pt-4">
                 <div className="text-center">
                   <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-gray-900">{selectedContracts.length}</div>
-                  <div className="text-xs text-gray-600">محدد</div>
+                  <div className="text-2xl font-bold text-slate-900">{selectedContracts.length}</div>
+                  <div className="text-xs text-slate-600">محدد</div>
                 </div>
               </CardContent>
             </Card>
@@ -632,10 +632,10 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
               <CardContent className="pt-4">
                 <div className="text-center">
                   <MessageSquare className="h-5 w-5 text-purple-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-gray-900">
+                  <div className="text-2xl font-bold text-slate-900">
                     {eligibleContracts.length - selectedContracts.length}
                   </div>
-                  <div className="text-xs text-gray-600">متبقي</div>
+                  <div className="text-xs text-slate-600">متبقي</div>
                 </div>
               </CardContent>
             </Card>
@@ -651,7 +651,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                   className={`cursor-pointer transition-all ${
                     selectedType === type.value
                       ? 'border-purple-500 bg-purple-50'
-                      : 'hover:border-gray-300'
+                      : 'hover:border-slate-300'
                   }`}
                   onClick={() => setSelectedType(type.value)}
                 >
@@ -661,8 +661,8 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                         <type.icon className={`h-5 w-5 text-${type.color}-600`} />
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-gray-900">{type.label}</div>
-                        <div className="text-sm text-gray-600">{type.description}</div>
+                        <div className="font-semibold text-slate-900">{type.label}</div>
+                        <div className="text-sm text-slate-600">{type.description}</div>
                       </div>
                       {selectedType === type.value && (
                         <CheckCircle className="h-5 w-5 text-purple-600" />
@@ -681,10 +681,10 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
               placeholder="أدخل رسالة مخصصة أو اترك فارغاً لاستخدام القالب الافتراضي..."
-              className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="w-full min-h-[100px] p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               maxLength={1000}
             />
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-slate-500 mt-1">
               {customMessage.length}/1000 حرف
             </div>
           </div>
@@ -705,7 +705,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
             {isLoadingContracts ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-                <span className="mr-3 text-gray-600">جاري تحميل العقود...</span>
+                <span className="mr-3 text-slate-600">جاري تحميل العقود...</span>
               </div>
             ) : eligibleContracts.length === 0 ? (
               <Alert>
@@ -720,11 +720,11 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+              <div className="border border-slate-200 rounded-lg max-h-64 overflow-y-auto">
                 {eligibleContracts.map((contract) => (
                   <div
                     key={contract.id}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0 cursor-pointer"
+                    className="flex items-center gap-3 p-3 hover:bg-slate-50 border-b last:border-b-0 cursor-pointer"
                     onClick={() => {
                       if (selectedContracts.includes(contract.id)) {
                         setSelectedContracts(selectedContracts.filter(id => id !== contract.id));
@@ -744,8 +744,8 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                       }}
                     />
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">{contract.contract_number}</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-medium text-slate-900">{contract.contract_number}</div>
+                      <div className="text-sm text-slate-600">
                         {contract.customer_name || 
                          (contract.customers?.customer_type === 'corporate'
                            ? (contract.customers?.company_name_ar || contract.customers?.company_name)

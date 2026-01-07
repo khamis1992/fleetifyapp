@@ -57,7 +57,7 @@ import {
 } from 'lucide-react';
 
 const priorityOptions = [
-  { value: 'low', label: 'منخفضة', color: 'bg-gray-400' },
+  { value: 'low', label: 'منخفضة', color: 'bg-slate-400' },
   { value: 'medium', label: 'متوسطة', color: 'bg-blue-500' },
   { value: 'high', label: 'عالية', color: 'bg-orange-500' },
   { value: 'urgent', label: 'عاجلة', color: 'bg-red-500' },
@@ -135,14 +135,14 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-32">
-          <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className={cn('bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -280,7 +280,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedReminders.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-slate-400">
             <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>لا توجد تذكيرات</p>
             <p className="text-sm">أضف تذكيراً للبدء</p>
@@ -318,14 +318,14 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
                     <div className="flex-1 min-w-0">
                       <p
                         className={cn(
-                          'font-medium text-gray-900 truncate',
-                          reminder.is_completed && 'line-through text-gray-500'
+                          'font-medium text-slate-900 truncate',
+                          reminder.is_completed && 'line-through text-slate-500'
                         )}
                       >
                         {reminder.title}
                       </p>
                       {reminder.description && (
-                        <p className="text-sm text-gray-500 truncate">
+                        <p className="text-sm text-slate-500 truncate">
                           {reminder.description}
                         </p>
                       )}
@@ -390,7 +390,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
             </AnimatePresence>
 
             {limit && reminders.length > limit && (
-              <p className="text-center text-sm text-gray-500 pt-2">
+              <p className="text-center text-sm text-slate-500 pt-2">
                 +{reminders.length - limit} تذكيرات أخرى
               </p>
             )}

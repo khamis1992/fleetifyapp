@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Enhanced Customer Balance Interface
 export interface CustomerBalance {
@@ -60,12 +61,17 @@ export interface CustomerStatementData {
 
 // Hook to get customer outstanding balance
 export const useCustomerOutstandingBalance = (customerId: string) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['customer-outstanding-balance', customerId],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      if (!companyId) throw new Error('Company ID not found');
+      
       const { data, error } = await supabase.rpc('calculate_customer_outstanding_balance', {
         customer_id_param: customerId,
-        company_id_param: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id
+        company_id_param: companyId
       });
 
       if (error) throw error;
@@ -123,12 +129,17 @@ export const useCustomerAgingAnalysis = (customerId: string) => {
 
 // Hook to get customer credit status
 export const useCustomerCreditStatus = (customerId: string) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['customer-credit-status', customerId],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      if (!companyId) throw new Error('Company ID not found');
+      
       const { data, error } = await supabase.rpc('check_customer_credit_status', {
         customer_id_param: customerId,
-        company_id_param: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id
+        company_id_param: companyId
       });
 
       if (error) throw error;
@@ -141,12 +152,17 @@ export const useCustomerCreditStatus = (customerId: string) => {
 
 // Hook to get customer statement data
 export const useCustomerStatementData = (customerId: string, startDate?: string, endDate?: string) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['customer-statement-data', customerId, startDate, endDate],
     queryFn: async () => {
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      if (!companyId) throw new Error('Company ID not found');
+      
       const { data, error } = await supabase.rpc('generate_customer_statement_data', {
         customer_id_param: customerId,
-        company_id_param: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id,
+        company_id_param: companyId,
         start_date_param: startDate || null,
         end_date_param: endDate || null
       });
@@ -162,12 +178,16 @@ export const useCustomerStatementData = (customerId: string, startDate?: string,
 export const useUpdateCustomerAging = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ customerId }: { customerId: string }) => {
+      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      if (!companyId) throw new Error('Company ID not found');
+      
       const { data, error } = await supabase.rpc('update_customer_aging_analysis', {
         customer_id_param: customerId,
-        company_id_param: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id
+        company_id_param: companyId
       });
 
       if (error) throw error;

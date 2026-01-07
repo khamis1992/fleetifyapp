@@ -215,7 +215,7 @@ export const WorkflowEngine: React.FC<WorkflowEngineProps> = ({
                       'bg-green-100 border-green-500 text-green-700',
                     index === currentStepIndex &&
                       'bg-primary border-primary text-primary-foreground',
-                    index > currentStepIndex && 'border-gray-300 text-gray-400'
+                    index > currentStepIndex && 'border-slate-300 text-slate-400'
                   )}
                 >
                   {index < currentStepIndex ? (
@@ -237,7 +237,7 @@ export const WorkflowEngine: React.FC<WorkflowEngineProps> = ({
                 <div
                   className={cn(
                     'flex-1 h-0.5 mx-2',
-                    index < currentStepIndex ? 'bg-green-500' : 'bg-gray-300'
+                    index < currentStepIndex ? 'bg-green-500' : 'bg-slate-300'
                   )}
                 />
               )}

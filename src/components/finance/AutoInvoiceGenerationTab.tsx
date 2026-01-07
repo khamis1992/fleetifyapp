@@ -261,7 +261,7 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                       <div className="text-sm text-muted-foreground">تم الإنشاء</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-gray-600">
+                      <div className="text-2xl font-bold text-slate-600">
                         {monthlyResults.filter(r => r.status === 'skipped').length}
                       </div>
                       <div className="text-sm text-muted-foreground">تم التخطي</div>
@@ -415,7 +415,7 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                             </TableCell>
                             <TableCell>
                               {result.message && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-slate-500">
                                   {result.message}
                                 </span>
                               )}
@@ -445,7 +445,7 @@ export const AutoInvoiceGenerationTab: React.FC = () => {
                           <div className="text-sm text-muted-foreground">تم تحديثها</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-gray-600">
+                          <div className="text-2xl font-bold text-slate-600">
                             {backfillResults.reduce((sum, r) => sum + r.invoices_skipped, 0)}
                           </div>
                           <div className="text-sm text-muted-foreground">تم تخطيها</div>

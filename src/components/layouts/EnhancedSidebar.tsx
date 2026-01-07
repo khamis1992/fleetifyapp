@@ -40,7 +40,7 @@ export function EnhancedSidebar() {
 
   const getNavClassName = ({ isActive: active }: { isActive: boolean }) => 
     active 
-      ? "bg-gradient-to-l from-coral-500/20 to-orange-500/10 text-coral-600 font-semibold" 
+      ? "bg-gradient-to-l from-rose-500/20 to-orange-500/10 text-coral-600 font-semibold" 
       : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground";
 
   return (
@@ -100,7 +100,7 @@ export function EnhancedSidebar() {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
                           isSectionActive 
-                            ? "bg-gradient-to-l from-coral-500/20 to-orange-500/10 text-coral-600 font-semibold shadow-sm" 
+                            ? "bg-gradient-to-l from-rose-500/20 to-orange-500/10 text-coral-600 font-semibold shadow-sm" 
                             : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground"
                         )}
                       >
@@ -122,7 +122,7 @@ export function EnhancedSidebar() {
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton className={cn(
                             "h-11 justify-center rounded-xl transition-all duration-200",
-                            isSectionActive && "bg-gradient-to-l from-coral-500/20 to-orange-500/10"
+                            isSectionActive && "bg-gradient-to-l from-rose-500/20 to-orange-500/10"
                           )}>
                             <section.icon className={cn(
                               "h-5 w-5",
@@ -159,7 +159,7 @@ export function EnhancedSidebar() {
                   <SidebarMenuItem key={section.id}>
                     <SidebarMenuButton className={cn(
                       "h-11 justify-center rounded-xl transition-all duration-200",
-                      isSectionActive && "bg-gradient-to-l from-coral-500/20 to-orange-500/10"
+                      isSectionActive && "bg-gradient-to-l from-rose-500/20 to-orange-500/10"
                     )}>
                       <section.icon className={cn(
                         "h-5 w-5",

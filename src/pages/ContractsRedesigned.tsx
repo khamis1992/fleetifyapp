@@ -346,7 +346,7 @@ function ContractsRedesigned() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-5 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
+        className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-5 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
       >
         <div className="flex items-start justify-between mb-4">
           <div className={cn("w-12 h-12 rounded-3xl flex items-center justify-center shadow-lg shadow-teal-500/20", style.iconBg)}>
@@ -356,8 +356,8 @@ function ContractsRedesigned() {
             {title}
           </span>
         </div>
-        <p className="text-3xl font-bold text-gray-900 mb-1">{value.toLocaleString()}</p>
-        <p className="text-sm text-gray-500">{description}</p>
+        <p className="text-3xl font-bold text-slate-900 mb-1">{value.toLocaleString()}</p>
+        <p className="text-sm text-slate-500">{description}</p>
       </motion.div>
     );
   };
@@ -400,7 +400,7 @@ function ContractsRedesigned() {
       under_legal_procedure: "bg-gradient-to-br from-amber-500 to-amber-600",
     };
 
-    const cardBg = statusColors[contract.status] || "bg-white/80 border-gray-200/50";
+    const cardBg = statusColors[contract.status] || "bg-white/80 border-slate-200/50";
     const iconGradient = iconGradients[contract.status] || "bg-gradient-to-br from-slate-500 to-slate-600";
 
     return (
@@ -408,7 +408,7 @@ function ContractsRedesigned() {
         layout
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn("rounded-3xl border border-gray-200/50 p-5 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 cursor-pointer backdrop-blur-xl", cardBg)}
+        className={cn("rounded-3xl border border-slate-200/50 p-5 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 cursor-pointer backdrop-blur-xl", cardBg)}
         onClick={() => handleViewDetails(contract)}
       >
         <div className="flex items-start justify-between mb-4">
@@ -417,12 +417,12 @@ function ContractsRedesigned() {
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-gray-900 mb-1">{contract.contract_number || "غير محدد"}</h4>
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <h4 className="text-lg font-bold text-slate-900 mb-1">{contract.contract_number || "غير محدد"}</h4>
+              <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
                 <User className="w-4 h-4" />
                 <span>{getCustomerName(contract)}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <Car className="w-4 h-4" />
                 <span>{getVehicleInfo(contract)}</span>
               </div>
@@ -433,21 +433,21 @@ function ContractsRedesigned() {
 
         <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-white/50 rounded-3xl">
           <div>
-            <p className="text-xs text-gray-500 mb-1">تاريخ البداية</p>
-            <p className="font-semibold text-gray-900 text-sm">{formatDateInGregorian(contract.start_date)}</p>
+            <p className="text-xs text-slate-500 mb-1">تاريخ البداية</p>
+            <p className="font-semibold text-slate-900 text-sm">{formatDateInGregorian(contract.start_date)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">تاريخ الانتهاء</p>
-            <p className="font-semibold text-gray-900 text-sm">{formatDateInGregorian(contract.end_date)}</p>
+            <p className="text-xs text-slate-500 mb-1">تاريخ الانتهاء</p>
+            <p className="font-semibold text-slate-900 text-sm">{formatDateInGregorian(contract.end_date)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">القيمة الشهرية</p>
+            <p className="text-xs text-slate-500 mb-1">القيمة الشهرية</p>
             <p className="font-bold text-red-600">{formatCurrencyWithSymbol(contract.monthly_amount || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
           </div>
         </div>
 
-        <div className="border-t border-gray-200/50 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button variant="outline" size="sm" onClick={() => handleViewDetails(contract)} className="bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
+        <div className="border-t border-slate-200/50 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+          <Button variant="outline" size="sm" onClick={() => handleViewDetails(contract)} className="bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
             <Eye className="w-4 h-4 ml-2" />
             عرض
           </Button>
@@ -466,7 +466,7 @@ function ContractsRedesigned() {
             <XCircle className="w-4 h-4 ml-2" />
             إلغاء
           </Button>
-          <Button variant="outline" size="sm" className="bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-3xl ml-auto hover:shadow-xl hover:shadow-teal-500/10">
+          <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-3xl ml-auto hover:shadow-xl hover:shadow-teal-500/10">
             <MoreHorizontal className="w-4 h-4 ml-2" />
             المزيد
           </Button>
@@ -485,9 +485,9 @@ function ContractsRedesigned() {
 
   return (
     <PageCustomizer pageId="contracts-page" title="" titleAr="">
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30">
+        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30">
           <div className="max-w-[1600px] mx-auto px-6 py-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Title */}
@@ -496,8 +496,8 @@ function ContractsRedesigned() {
                   <FileSignature className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">إدارة العقود</h1>
-                  <p className="text-sm text-gray-500">إدارة ومتابعة جميع عقود الإيجار</p>
+                  <h1 className="text-xl font-bold text-slate-900">إدارة العقود</h1>
+                  <p className="text-sm text-slate-500">إدارة ومتابعة جميع عقود الإيجار</p>
                 </div>
               </div>
 
@@ -513,7 +513,7 @@ function ContractsRedesigned() {
                 <Button
                   onClick={() => setShowExpressMode(true)}
                   variant="outline"
-                  className="px-4 py-2.5 rounded-3xl font-medium border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
+                  className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
                 >
                   <Zap className="w-4 h-4 ml-2 text-amber-500" />
                   عقود ايجار
@@ -522,7 +522,7 @@ function ContractsRedesigned() {
                   <Button
                     onClick={() => setShowCSVUpload(true)}
                     variant="outline"
-                    className="px-4 py-2.5 rounded-3xl font-medium border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
+                    className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
                   >
                     <Upload className="w-4 h-4 ml-2 text-sky-500" />
                     <span className="hidden lg:inline">استيراد CSV</span>
@@ -531,7 +531,7 @@ function ContractsRedesigned() {
                 <Button
                   onClick={() => setShowRemindersDialog(true)}
                   variant="outline"
-                  className="px-4 py-2.5 rounded-3xl font-medium border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
+                  className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
                 >
                   <MessageSquare className="w-4 h-4 ml-2 text-violet-500" />
                   <span className="hidden lg:inline">إرسال تنبيهات</span>
@@ -539,7 +539,7 @@ function ContractsRedesigned() {
                 <Button
                   onClick={() => setShowExportDialog(true)}
                   variant="outline"
-                  className="px-4 py-2.5 rounded-3xl font-medium border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
+                  className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
                 >
                   <Download className="w-4 h-4 ml-2 text-emerald-500" />
                   <span className="hidden lg:inline">تصدير</span>
@@ -547,10 +547,10 @@ function ContractsRedesigned() {
                 <Button
                   onClick={handleRefresh}
                   variant="outline"
-                  className="p-2.5 rounded-3xl border-gray-200/50 hover:bg-gray-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
+                  className="p-2.5 rounded-3xl border-slate-200/50 hover:bg-slate-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
                   disabled={isRefreshing}
                 >
-                  <RefreshCw className={cn("w-4 h-4 text-gray-500", isRefreshing && "animate-spin")} />
+                  <RefreshCw className={cn("w-4 h-4 text-slate-500", isRefreshing && "animate-spin")} />
                 </Button>
               </div>
             </div>
@@ -615,23 +615,23 @@ function ContractsRedesigned() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-6"
+              className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <FileEdit className="w-5 h-5 text-violet-500" />
                   استئناف المسودات ({contractDrafts.loadDrafts.data.length})
                 </h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(contractDrafts.loadDrafts.data || []).map((draft) => (
-                  <Card key={draft.id} className="hover:shadow-xl hover:shadow-teal-500/10 transition-all border-gray-200/50 bg-white/50 backdrop-blur-sm">
+                  <Card key={draft.id} className="hover:shadow-xl hover:shadow-teal-500/10 transition-all border-slate-200/50 bg-white/50 backdrop-blur-sm">
                     <CardContent className="p-4">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-sm truncate">{draft.draft_name || "مسودة بدون اسم"}</h4>
-                            <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                            <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
                               <Clock className="h-3 w-3" />
                               <span>آخر تحديث: {formatDateInGregorian(draft.updated_at)}</span>
                             </div>
@@ -664,17 +664,17 @@ function ContractsRedesigned() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 overflow-hidden"
+            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 overflow-hidden"
           >
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="w-full p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors"
+              className="w-full p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Search className="w-5 h-5 text-gray-500" />
-                <span className="font-semibold text-gray-900">البحث والفلاتر</span>
+                <Search className="w-5 h-5 text-slate-500" />
+                <span className="font-semibold text-slate-900">البحث والفلاتر</span>
               </div>
-              <ChevronDown className={cn("w-5 h-5 text-gray-500 transition-transform", showFilters && "rotate-180")} />
+              <ChevronDown className={cn("w-5 h-5 text-slate-500 transition-transform", showFilters && "rotate-180")} />
             </button>
 
             <AnimatePresence>
@@ -687,11 +687,11 @@ function ContractsRedesigned() {
                 >
                   {/* Search Input */}
                   <div className="relative">
-                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                       type="text"
                       placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
-                      className="w-full pr-12 pl-12 py-3 border border-gray-200/50 rounded-3xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none bg-white/50"
+                      className="w-full pr-12 pl-12 py-3 border border-slate-200/50 rounded-3xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none bg-white/50"
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
                     />
@@ -699,9 +699,9 @@ function ContractsRedesigned() {
                       <button
                         type="button"
                         onClick={() => setSearchInput("")}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors"
                       >
-                        <X className="w-4 h-4 text-gray-400" />
+                        <X className="w-4 h-4 text-slate-400" />
                       </button>
                     )}
                     {((searchInput && searchInput !== debouncedSearch) || (isFetching && !isInitialLoading)) && (
@@ -714,9 +714,9 @@ function ContractsRedesigned() {
                   {/* Search Results Count */}
                   {debouncedSearch && !isFetching && (
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">
+                      <span className="text-slate-500">
                         {safeFilteredContracts.length > 0 ? (
-                          <>تم العثور على <span className="font-semibold text-gray-900">{safeFilteredContracts.length}</span> عقد</>
+                          <>تم العثور على <span className="font-semibold text-slate-900">{safeFilteredContracts.length}</span> عقد</>
                         ) : (
                           <span className="text-amber-600">لم يتم العثور على نتائج</span>
                         )}
@@ -727,7 +727,7 @@ function ContractsRedesigned() {
                   {/* Clear Filters */}
                   <Button
                     variant="outline"
-                    className="px-4 py-2 rounded-3xl font-medium hover:bg-gray-50/50 transition-colors"
+                    className="px-4 py-2 rounded-3xl font-medium hover:bg-slate-50/50 transition-colors"
                     onClick={() => {
                       setSearchInput("");
                       setActiveTab("all");
@@ -745,10 +745,10 @@ function ContractsRedesigned() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 overflow-hidden"
+            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 overflow-hidden"
           >
             {/* Tabs */}
-            <div className="border-b border-gray-200/50">
+            <div className="border-b border-slate-200/50">
               <div className="flex gap-2 p-2 overflow-x-auto">
                 {[
                   { id: "all", label: "جميع العقود" },
@@ -764,7 +764,7 @@ function ContractsRedesigned() {
                       "px-4 py-2.5 rounded-3xl text-sm font-medium transition-all whitespace-nowrap",
                       activeTab === tab.id
                         ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20"
-                        : "text-gray-600 hover:bg-gray-50/50 hover:shadow-xl hover:shadow-teal-500/10"
+                        : "text-slate-600 hover:bg-slate-50/50 hover:shadow-xl hover:shadow-teal-500/10"
                     )}
                   >
                     {tab.label}
@@ -781,13 +781,13 @@ function ContractsRedesigned() {
                 <div className="space-y-4">
                   {safeFilteredContracts.length === 0 ? (
                     <div className="text-center py-16">
-                      <div className="w-16 h-16 bg-gray-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                        <FileText className="w-8 h-8 text-gray-400" />
+                      <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-8 h-8 text-slate-400" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">لا توجد عقود</h3>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عقود</h3>
                       {debouncedSearch ? (
                         <>
-                          <p className="text-gray-500 mb-4">لم يتم العثور على نتائج للبحث: "{debouncedSearch}"</p>
+                          <p className="text-slate-500 mb-4">لم يتم العثور على نتائج للبحث: "{debouncedSearch}"</p>
                           <Button variant="outline" onClick={() => setSearchInput("")}>
                             <XCircle className="w-4 h-4 ml-2" />
                             مسح البحث
@@ -795,7 +795,7 @@ function ContractsRedesigned() {
                         </>
                       ) : (
                         <>
-                          <p className="text-gray-500 mb-4">ابدأ بإنشاء عقد جديد</p>
+                          <p className="text-slate-500 mb-4">ابدأ بإنشاء عقد جديد</p>
                           <Button onClick={() => setShowContractWizard(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 text-white">
                             <Plus className="w-4 h-4 ml-2" />
                             إنشاء عقد جديد
@@ -864,7 +864,7 @@ function ContractsRedesigned() {
           }}
         />
       )}
-      <div className={cn("fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity", showCreationProgress ? "opacity-100" : "opacity-0 pointer-events-none")}>
+      <div className={cn("fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity", showCreationProgress ? "opacity-100" : "opacity-0 pointer-events-none")}>
         <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-2xl shadow-teal-500/20 max-w-md w-full">
           <ContractCreationProgress creationState={creationState} onRetry={handleCreationRetry} onClose={handleCreationComplete} />
         </div>
@@ -886,9 +886,9 @@ function ContractsRedesigned() {
         contracts={safeContracts as any || []}
       />
       {showTemplateManager && (
-        <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-auto">
-            <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50">
+            <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>إدارة قوالب العقود</CardTitle>

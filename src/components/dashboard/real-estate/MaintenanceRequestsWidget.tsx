@@ -168,7 +168,7 @@ export const MaintenanceRequestsWidget: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -211,14 +211,14 @@ export const MaintenanceRequestsWidget: React.FC = () => {
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4 text-blue-600" />
-                <span className="text-sm text-gray-600">طلبات مفتوحة</span>
+                <span className="text-sm text-slate-600">طلبات مفتوحة</span>
               </div>
               <div className="text-3xl font-bold text-blue-700">{openRequests}</div>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-600">مكتملة</span>
+                <span className="text-sm text-slate-600">مكتملة</span>
               </div>
               <div className="text-3xl font-bold text-green-700">{completedRequests}</div>
             </div>
@@ -228,7 +228,7 @@ export const MaintenanceRequestsWidget: React.FC = () => {
           {avgResolutionTime > 0 && (
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 flex items-center justify-between">
               <div className="text-right">
-                <div className="text-sm text-gray-600 mb-1">متوسط وقت الإصلاح</div>
+                <div className="text-sm text-slate-600 mb-1">متوسط وقت الإصلاح</div>
                 <div className="text-3xl font-bold text-purple-700">{avgResolutionTime}</div>
                 <div className="text-xs text-purple-600">يوم</div>
               </div>
@@ -239,7 +239,7 @@ export const MaintenanceRequestsWidget: React.FC = () => {
           {/* Requests by Priority */}
           {priorityData.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">حسب الأولوية</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">حسب الأولوية</h4>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -274,17 +274,17 @@ export const MaintenanceRequestsWidget: React.FC = () => {
           {/* Requests by Status */}
           {statusData.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">حسب الحالة</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">حسب الحالة</h4>
               <div className="space-y-2">
                 {statusData.map((status, index) => {
                   const percentage = totalRequests > 0 ? (status.value / totalRequests) * 100 : 0;
                   return (
                     <div key={index} className="space-y-1">
-                      <div className="flex justify-between text-xs text-gray-600">
+                      <div className="flex justify-between text-xs text-slate-600">
                         <span>{status.value}</span>
                         <span>{status.name}</span>
                       </div>
-                      <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
                         <div
                           className="absolute top-0 right-0 h-full rounded-full transition-all duration-500"
                           style={{
@@ -302,7 +302,7 @@ export const MaintenanceRequestsWidget: React.FC = () => {
 
           {/* Monthly Maintenance Cost */}
           <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600 mb-1 text-right">تكلفة الصيانة هذا الشهر</div>
+            <div className="text-sm text-slate-600 mb-1 text-right">تكلفة الصيانة هذا الشهر</div>
             <div className="text-2xl font-bold text-orange-700">
               {formatCurrency(monthlyMaintenanceCost)}
             </div>
@@ -311,12 +311,12 @@ export const MaintenanceRequestsWidget: React.FC = () => {
           {/* Top Properties with Most Requests */}
           {topProperties.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">العقارات الأكثر طلبات</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">العقارات الأكثر طلبات</h4>
               <div className="space-y-2">
                 {topProperties.map(([propertyId, count], index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">{count} طلب</span>
-                    <span className="text-xs text-gray-500">عقار #{propertyId.slice(0, 8)}...</span>
+                  <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                    <span className="text-sm font-medium text-slate-700">{count} طلب</span>
+                    <span className="text-xs text-slate-500">عقار #{propertyId.slice(0, 8)}...</span>
                   </div>
                 ))}
               </div>

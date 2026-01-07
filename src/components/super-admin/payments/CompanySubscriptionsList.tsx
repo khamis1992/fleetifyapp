@@ -22,7 +22,7 @@ export const CompanySubscriptionsList: React.FC = () => {
       'active': { variant: 'default' as const, text: 'نشط', class: 'bg-green-100 text-green-800' },
       'trial': { variant: 'secondary' as const, text: 'تجريبي', class: 'bg-blue-100 text-blue-800' },
       'suspended': { variant: 'destructive' as const, text: 'معلق', class: 'bg-red-100 text-red-800' },
-      'expired': { variant: 'outline' as const, text: 'منتهي', class: 'bg-gray-100 text-gray-800' }
+      'expired': { variant: 'outline' as const, text: 'منتهي', class: 'bg-slate-100 text-slate-800' }
     };
     
     const config = variants[status as keyof typeof variants] || variants.active;
@@ -35,7 +35,7 @@ export const CompanySubscriptionsList: React.FC = () => {
 
   const getPlanBadge = (plan: string) => {
     const variants = {
-      'basic': { text: 'أساسي', class: 'bg-gray-100 text-gray-800' },
+      'basic': { text: 'أساسي', class: 'bg-slate-100 text-slate-800' },
       'premium': { text: 'مميز', class: 'bg-blue-100 text-blue-800' },
       'enterprise': { text: 'مؤسسي', class: 'bg-purple-100 text-purple-800' }
     };

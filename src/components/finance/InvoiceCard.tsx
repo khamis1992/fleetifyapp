@@ -30,7 +30,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
     };
     
     const config = statusConfig[paymentStatus as keyof typeof statusConfig] || 
-                   { label: paymentStatus, className: 'bg-gray-100 text-gray-800 hover:bg-gray-100' };
+                   { label: paymentStatus, className: 'bg-slate-100 text-slate-800 hover:bg-slate-100' };
     
     return (
       <Badge className={config.className}>

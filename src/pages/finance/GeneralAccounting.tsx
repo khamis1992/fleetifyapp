@@ -88,7 +88,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -102,7 +102,7 @@ const StatCard: React.FC<StatCardProps> = ({
           "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
           trend === 'up' ? 'bg-green-100 text-green-600' :
           trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+          'bg-slate-100 text-slate-600'
         )}>
           {trend === 'up' && <TrendingUp className="w-3 h-3" />}
           {trend === 'down' && <TrendingDown className="w-3 h-3" />}
@@ -184,7 +184,7 @@ const GeneralAccounting = () => {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -288,8 +288,8 @@ const GeneralAccounting = () => {
             className={cn(
               "cursor-pointer transition-all hover:shadow-lg border-2",
               currentTab === tab.id 
-                ? "border-coral-500 bg-coral-50/50 shadow-md" 
-                : "border-transparent hover:border-gray-200"
+                ? "border-rose-500 bg-rose-50/50 shadow-md" 
+                : "border-transparent hover:border-slate-200"
             )}
             onClick={() => handleTabChange(tab.id)}
           >
@@ -305,7 +305,7 @@ const GeneralAccounting = () => {
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-neutral-900">{tab.label}</p>
                     {currentTab === tab.id && (
-                      <Badge className="bg-coral-500 text-white">نشط</Badge>
+                      <Badge className="bg-rose-500 text-white">نشط</Badge>
                     )}
                   </div>
                   <p className="text-sm text-neutral-500 mt-1">{tab.description}</p>
@@ -323,7 +323,7 @@ const GeneralAccounting = () => {
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2 transition-all"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2 transition-all"
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}

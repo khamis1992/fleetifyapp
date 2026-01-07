@@ -230,7 +230,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-10 h-10 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  <div className="w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                   <p className="text-neutral-500 text-sm">جاري التحميل...</p>
                 </div>
               </div>
@@ -241,7 +241,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
             ) : (
               <>
                 {/* Header */}
-                <div className="bg-gradient-to-br from-coral-500 to-coral-600 p-5 text-white">
+                <div className="bg-gradient-to-br from-rose-500 to-coral-600 p-5 text-white">
                   <div className="flex items-start justify-between mb-4">
                     <Button
                       variant="ghost"
@@ -330,19 +330,19 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                 <div className="flex-1 overflow-hidden">
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
                     <TabsList className="grid grid-cols-5 gap-1 p-2 bg-neutral-100 mx-4 mt-4 rounded-xl">
-                      <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-coral-500 data-[state=active]:text-white">
+                      <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-rose-500 data-[state=active]:text-white">
                         نظرة عامة
                       </TabsTrigger>
-                      <TabsTrigger value="contract" className="text-xs data-[state=active]:bg-coral-500 data-[state=active]:text-white">
+                      <TabsTrigger value="contract" className="text-xs data-[state=active]:bg-rose-500 data-[state=active]:text-white">
                         العقود
                       </TabsTrigger>
-                      <TabsTrigger value="maintenance" className="text-xs data-[state=active]:bg-coral-500 data-[state=active]:text-white">
+                      <TabsTrigger value="maintenance" className="text-xs data-[state=active]:bg-rose-500 data-[state=active]:text-white">
                         الصيانة
                       </TabsTrigger>
-                      <TabsTrigger value="penalties" className="text-xs data-[state=active]:bg-coral-500 data-[state=active]:text-white">
+                      <TabsTrigger value="penalties" className="text-xs data-[state=active]:bg-rose-500 data-[state=active]:text-white">
                         المخالفات
                       </TabsTrigger>
-                      <TabsTrigger value="stats" className="text-xs data-[state=active]:bg-coral-500 data-[state=active]:text-white">
+                      <TabsTrigger value="stats" className="text-xs data-[state=active]:bg-rose-500 data-[state=active]:text-white">
                         إحصائيات
                       </TabsTrigger>
                     </TabsList>
@@ -420,7 +420,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                         <div className="bg-white rounded-[1.25rem] p-4 shadow-sm border border-neutral-100">
                           <h3 className="text-sm font-semibold text-neutral-700 mb-3">الأسعار</h3>
                           <div className="grid grid-cols-3 gap-3">
-                            <div className="text-center p-3 bg-coral-50 rounded-xl">
+                            <div className="text-center p-3 bg-rose-50 rounded-xl">
                               <p className="text-lg font-bold text-coral-600">{formatCurrency(data.vehicle.daily_rate)}</p>
                               <p className="text-xs text-neutral-500">يومي</p>
                             </div>
@@ -476,7 +476,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                             <Car className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                             <p className="text-neutral-500">لا يوجد عقد نشط</p>
                             <Button 
-                              className="mt-3 bg-coral-500 hover:bg-coral-600"
+                              className="mt-3 bg-rose-500 hover:bg-coral-600"
                               onClick={handleCreateContract}
                             >
                               <Plus className="w-4 h-4 ml-1" />
@@ -531,7 +531,7 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                             <h3 className="text-sm font-semibold text-neutral-700">سجل الصيانة</h3>
                             <Button 
                               size="sm" 
-                              className="bg-coral-500 hover:bg-coral-600"
+                              className="bg-rose-500 hover:bg-coral-600"
                               onClick={handleAddMaintenance}
                             >
                               <Plus className="w-4 h-4 ml-1" />
@@ -621,9 +621,9 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
                       {/* Stats Tab */}
                       <TabsContent value="stats" className="m-0 space-y-4">
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-gradient-to-br from-coral-50 to-coral-100/50 rounded-[1.25rem] p-4 border border-coral-200">
+                          <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 rounded-[1.25rem] p-4 border border-rose-200">
                             <div className="flex items-center gap-2 mb-2">
-                              <TrendingUp className="w-5 h-5 text-coral-500" />
+                              <TrendingUp className="w-5 h-5 text-rose-500" />
                               <span className="text-sm text-coral-700">إجمالي الإيرادات</span>
                             </div>
                             <p className="text-2xl font-black text-coral-600">

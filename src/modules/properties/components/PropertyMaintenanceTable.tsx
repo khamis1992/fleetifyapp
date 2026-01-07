@@ -61,7 +61,7 @@ const priorityLabels: Record<PropertyMaintenancePriority, string> = {
 };
 
 const priorityColors: Record<PropertyMaintenancePriority, string> = {
-  low: 'bg-gray-100 text-gray-800',
+  low: 'bg-slate-100 text-slate-800',
   medium: 'bg-blue-100 text-blue-800',
   high: 'bg-orange-100 text-orange-800',
   urgent: 'bg-red-100 text-red-800',

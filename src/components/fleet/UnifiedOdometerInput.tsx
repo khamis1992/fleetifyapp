@@ -206,7 +206,7 @@ export const UnifiedOdometerInput: React.FC<UnifiedOdometerInputProps> = ({
             {/* Fuel Level Visual */}
             {fuelLevel !== undefined && fuelLevel >= 0 && fuelLevel <= 100 && (
               <div className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div className="flex-1 bg-slate-200 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all ${
                       fuelLevel >= 75 ? 'bg-green-600' :

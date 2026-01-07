@@ -241,7 +241,7 @@ export const MobilePerformanceDashboard: React.FC = () => {
     switch (trend) {
       case 'up': return <TrendingUp className="h-4 w-4 text-red-500" />;
       case 'down': return <TrendingDown className="h-4 w-4 text-green-500" />;
-      case 'stable': return <div className="h-4 w-4 bg-gray-400 rounded-full" />;
+      case 'stable': return <div className="h-4 w-4 bg-slate-400 rounded-full" />;
     }
   };
 

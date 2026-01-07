@@ -450,7 +450,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
@@ -463,7 +463,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
                   input.click();
                 }}
               >
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <FileText className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                 <p className="text-lg font-medium mb-2">اسحب وأفلت صور الفواتير الحقيقية</p>
                 <p className="text-sm text-muted-foreground mb-4">
                   للحصول على أفضل النتائج، استخدم فواتير متنوعة بمستويات صعوبة مختلفة
@@ -484,12 +484,12 @@ const RealWorldTestingInfrastructure: React.FC = () => {
                           alt={`Test case ${index + 1}`}
                           className="w-full h-20 object-cover rounded mb-1"
                         />
-                        <div className="text-xs text-gray-600">حالة {index + 1}</div>
+                        <div className="text-xs text-slate-600">حالة {index + 1}</div>
                       </div>
                     ))}
                     {testCases.length > 8 && (
-                      <div className="bg-gray-100 p-2 rounded border flex items-center justify-center">
-                        <span className="text-sm text-gray-500">+{testCases.length - 8} أكثر</span>
+                      <div className="bg-slate-100 p-2 rounded border flex items-center justify-center">
+                        <span className="text-sm text-slate-500">+{testCases.length - 8} أكثر</span>
                       </div>
                     )}
                   </div>
@@ -584,7 +584,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
             <CardContent>
               {testResults.length === 0 ? (
                 <div className="text-center py-8">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                   <p className="text-muted-foreground">لا توجد نتائج اختبار بعد</p>
                 </div>
               ) : (
@@ -716,7 +716,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
                     </Card>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                  <div className="bg-slate-50 p-4 rounded-lg text-center">
                     <p className="text-sm text-muted-foreground">
                       لا توجد نتائج اختبار للتقييم. يرجى تشغيل الاختبارات أولاً.
                     </p>

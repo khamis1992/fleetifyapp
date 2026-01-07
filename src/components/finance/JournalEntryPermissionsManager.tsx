@@ -174,26 +174,26 @@ export function JournalEntryPermissionsManager() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between text-sm">
-            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canCreateDraft ? 'bg-green-50' : 'bg-gray-50'}`}>
-              <FileEdit className={`h-6 w-6 mx-auto mb-2 ${permissions.canCreateDraft ? 'text-green-600' : 'text-gray-400'}`} />
+            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canCreateDraft ? 'bg-green-50' : 'bg-slate-50'}`}>
+              <FileEdit className={`h-6 w-6 mx-auto mb-2 ${permissions.canCreateDraft ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">مسودة</p>
               <p className="text-xs text-muted-foreground">Draft</p>
             </div>
             <div className="px-2">→</div>
-            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canReview ? 'bg-green-50' : 'bg-gray-50'}`}>
-              <Eye className={`h-6 w-6 mx-auto mb-2 ${permissions.canReview ? 'text-green-600' : 'text-gray-400'}`} />
+            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canReview ? 'bg-green-50' : 'bg-slate-50'}`}>
+              <Eye className={`h-6 w-6 mx-auto mb-2 ${permissions.canReview ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">مراجعة</p>
               <p className="text-xs text-muted-foreground">Review</p>
             </div>
             <div className="px-2">→</div>
-            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canApprove ? 'bg-green-50' : 'bg-gray-50'}`}>
-              <CheckCircle className={`h-6 w-6 mx-auto mb-2 ${permissions.canApprove ? 'text-green-600' : 'text-gray-400'}`} />
+            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canApprove ? 'bg-green-50' : 'bg-slate-50'}`}>
+              <CheckCircle className={`h-6 w-6 mx-auto mb-2 ${permissions.canApprove ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">معتمد</p>
               <p className="text-xs text-muted-foreground">Approved</p>
             </div>
             <div className="px-2">→</div>
-            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canPost ? 'bg-green-50' : 'bg-gray-50'}`}>
-              <Upload className={`h-6 w-6 mx-auto mb-2 ${permissions.canPost ? 'text-green-600' : 'text-gray-400'}`} />
+            <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canPost ? 'bg-green-50' : 'bg-slate-50'}`}>
+              <Upload className={`h-6 w-6 mx-auto mb-2 ${permissions.canPost ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">مرحل</p>
               <p className="text-xs text-muted-foreground">Posted</p>
             </div>
@@ -217,12 +217,12 @@ export function JournalEntryPermissionsManager() {
                 <div 
                   key={row.id}
                   className={`flex items-center gap-4 p-4 rounded-lg border ${
-                    hasPermission ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                    hasPermission ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   {/* Icon */}
-                  <div className={`p-3 rounded-lg ${hasPermission ? 'bg-green-100' : 'bg-gray-200'}`}>
-                    <Icon className={`h-5 w-5 ${hasPermission ? 'text-green-600' : 'text-gray-500'}`} />
+                  <div className={`p-3 rounded-lg ${hasPermission ? 'bg-green-100' : 'bg-slate-200'}`}>
+                    <Icon className={`h-5 w-5 ${hasPermission ? 'text-green-600' : 'text-slate-500'}`} />
                   </div>
 
                   {/* Content */}
@@ -245,7 +245,7 @@ export function JournalEntryPermissionsManager() {
                         ممنوح
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="bg-gray-200 text-gray-600">
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-600">
                         <XCircle className="h-3 w-3 mr-1" />
                         غير ممنوح
                       </Badge>

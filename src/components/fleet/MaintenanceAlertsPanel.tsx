@@ -238,7 +238,7 @@ export function MaintenanceAlertsPanel({
 
   const getAlertColors = (priority: MaintenanceAlert['priority']) => {
     switch (priority) {
-      case 'critical': return { bg: 'bg-coral-50', border: 'border-coral-200', text: 'text-coral-700', icon: 'text-coral-600', dot: 'bg-coral-500' };
+      case 'critical': return { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-coral-700', icon: 'text-coral-600', dot: 'bg-rose-500' };
       case 'high': return { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: 'text-amber-600', dot: 'bg-amber-500' };
       case 'medium': return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'text-blue-600', dot: 'bg-blue-500' };
       default: return { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-700', icon: 'text-neutral-600', dot: 'bg-neutral-500' };
@@ -270,7 +270,7 @@ export function MaintenanceAlertsPanel({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-coral-100 rounded-lg">
+          <div className="p-2 bg-rose-100 rounded-lg">
             <AlertTriangle className="w-5 h-5 text-coral-600" />
           </div>
           <div>
@@ -282,7 +282,7 @@ export function MaintenanceAlertsPanel({
         {/* ملخص الأولويات */}
         <div className="flex items-center gap-2">
           {alertCounts.critical > 0 && (
-            <span className="px-2 py-1 bg-coral-100 text-coral-700 text-xs font-medium rounded-full">
+            <span className="px-2 py-1 bg-rose-100 text-coral-700 text-xs font-medium rounded-full">
               {alertCounts.critical} حرج
             </span>
           )}

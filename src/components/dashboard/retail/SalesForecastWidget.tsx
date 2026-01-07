@@ -237,7 +237,7 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
       case 'decreasing':
         return <TrendingUp className="h-4 w-4 text-red-500 transform rotate-180" />;
       default:
-        return <Activity className="h-4 w-4 text-gray-500" />;
+        return <Activity className="h-4 w-4 text-slate-500" />;
     }
   };
 
@@ -275,11 +275,11 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
                 <Calendar className="h-4 w-4 text-blue-500" />
                 {getTrendIcon()}
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {formatCurrency(analytics.next7DaysForecast)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">توقعات 7 أيام</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">توقعات 7 أيام</div>
+              <div className="text-xs text-slate-500 mt-1">
                 {formatCurrency(analytics.next7DaysForecast / 7)} متوسط/يوم
               </div>
             </div>
@@ -288,11 +288,11 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
               <div className="flex items-center justify-between mb-2">
                 <DollarSign className="h-4 w-4 text-purple-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {formatCurrency(analytics.next30DaysForecast)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">توقعات 30 يوم</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">توقعات 30 يوم</div>
+              <div className="text-xs text-slate-500 mt-1">
                 {formatCurrency(analytics.next30DaysForecast / 30)} متوسط/يوم
               </div>
             </div>
@@ -301,11 +301,11 @@ export const SalesForecastWidget: React.FC<SalesForecastWidgetProps> = ({ classN
               <div className="flex items-center justify-between mb-2">
                 <Activity className="h-4 w-4 text-green-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {analytics.accuracy.toFixed(1)}%
               </div>
-              <div className="text-xs text-gray-600 mt-1">دقة التوقع</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">دقة التوقع</div>
+              <div className="text-xs text-slate-500 mt-1">
                 {analytics.trendChange >= 0 ? '+' : ''}{analytics.trendChange.toFixed(1)}% تغير
               </div>
             </div>

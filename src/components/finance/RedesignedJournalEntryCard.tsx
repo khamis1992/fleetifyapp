@@ -65,7 +65,7 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
       case 'cancelled':
         return 'bg-blue-100 text-blue-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
     }
   };
 
@@ -86,7 +86,7 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
     >
       {/* Summary Section (Header) */}
       <div 
-        className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100 cursor-pointer"
+        className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-100 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Basic Entry Information */}
@@ -98,15 +98,15 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
           <Badge className={`${getStatusClass(entry.status)} px-3 py-1 rounded-full whitespace-nowrap`}>
             {getStatusLabel(entry.status)}
           </Badge>
-          <p className="text-sm text-gray-600 flex items-center">
-            <Calendar className="ml-1 w-4 h-4 text-gray-400" />
+          <p className="text-sm text-slate-600 flex items-center">
+            <Calendar className="ml-1 w-4 h-4 text-slate-400" />
             التاريخ: {new Date(entry.entry_date).toLocaleDateString('en-GB')}
           </p>
         </div>
         
         {/* Totals and Details Button */}
         <div className="mt-4 md:mt-0 flex items-center space-x-4 space-x-reverse">
-          <div className="text-sm text-gray-700 text-right">
+          <div className="text-sm text-slate-700 text-right">
             <p>إجمالي المدين: <span className="font-semibold text-green-600">{formatCurrency(entry.total_debit, { minimumFractionDigits: 3 })}</span></p>
             <p>إجمالي الدائن: <span className="font-semibold text-red-600">{formatCurrency(entry.total_credit, { minimumFractionDigits: 3 })}</span></p>
           </div>
@@ -126,18 +126,18 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
 
       {/* Expanded Details Section */}
       {isExpanded && (
-        <div className="p-5 bg-gray-50 rounded-b-xl">
+        <div className="p-5 bg-slate-50 rounded-b-xl">
           {entry.description && (
-            <p className="text-gray-700 font-medium text-right mb-4">
+            <p className="text-slate-700 font-medium text-right mb-4">
               البيان: <span className="font-normal">{entry.description}</span>
             </p>
           )}
           
           {/* Entry Details Table */}
-          <div className="overflow-x-auto mt-4 pt-4 border-t border-gray-200">
+          <div className="overflow-x-auto mt-4 pt-4 border-t border-slate-200">
             <Table className="min-w-full divide-y divide-gray-200 text-sm">
               <TableHeader>
-                <TableRow className="text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                <TableRow className="text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50">
                   <TableHead className="px-6 py-3 text-right">رمز الحساب</TableHead>
                   <TableHead className="px-6 py-3 text-right">اسم الحساب</TableHead>
                   <TableHead className="px-6 py-3 text-right">البيان</TableHead>
@@ -147,11 +147,11 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
               </TableHeader>
               <TableBody className="bg-white divide-y divide-gray-200">
                 {entry.journal_entry_lines?.map((line, index) => (
-                  <TableRow key={line.id || index} className="hover:bg-gray-50">
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono">
+                  <TableRow key={line.id || index} className="hover:bg-slate-50">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono">
                       {line.chart_of_accounts?.account_code || '-'}
                     </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-gray-900">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-slate-900">
                       <div className="space-y-1">
                         <div className="font-medium">
                           {line.chart_of_accounts?.account_name_ar || line.chart_of_accounts?.account_name || '-'}
@@ -163,7 +163,7 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="px-6 py-4 text-gray-600">
+                    <TableCell className="px-6 py-4 text-slate-600">
                       {line.line_description || entry.description || '-'}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-green-600 font-semibold">
@@ -177,7 +177,7 @@ export function RedesignedJournalEntryCard({ entry }: RedesignedJournalEntryCard
                 
                 {/* Totals Row */}
                 <TableRow className="bg-indigo-50 font-bold">
-                  <TableCell className="px-6 py-3 text-base text-gray-800" colSpan={3}>
+                  <TableCell className="px-6 py-3 text-base text-slate-800" colSpan={3}>
                     المجموع
                   </TableCell>
                   <TableCell className="px-6 py-3 whitespace-nowrap text-green-700 text-base">

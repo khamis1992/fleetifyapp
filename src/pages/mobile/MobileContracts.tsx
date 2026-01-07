@@ -168,7 +168,7 @@ export const MobileContracts: React.FC = () => {
 
     if (contract.status === 'expired' || contract.status === 'cancelled') {
       return (
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
           {contract.status === 'expired' ? 'منتهي' : 'ملغي'}
         </span>
       );
@@ -187,8 +187,8 @@ export const MobileContracts: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">العقود</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900">العقود</h1>
+          <p className="text-sm text-slate-500 mt-1">
             {filteredContracts.length} عقد
           </p>
         </div>
@@ -202,7 +202,7 @@ export const MobileContracts: React.FC = () => {
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
           value={searchQuery}
@@ -210,7 +210,7 @@ export const MobileContracts: React.FC = () => {
           placeholder="بحث في العقود..."
           className={cn(
             'w-full pr-10 pl-10 py-3 rounded-2xl',
-            'bg-white/80 backdrop-blur-xl border border-gray-200/50',
+            'bg-white/80 backdrop-blur-xl border border-slate-200/50',
             'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
             'transition-all duration-200'
           )}
@@ -218,7 +218,7 @@ export const MobileContracts: React.FC = () => {
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -254,7 +254,7 @@ export const MobileContracts: React.FC = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-gray-500">جاري التحميل...</p>
+            <p className="text-sm text-slate-500">جاري التحميل...</p>
           </div>
         </div>
       ) : filteredContracts.length === 0 ? (
@@ -275,7 +275,7 @@ export const MobileContracts: React.FC = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => navigate(`/mobile/contracts/${contract.id}`)}
-                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ export const MobileContracts: React.FC = () => {
                       <FileText className="w-5 h-5 text-white" strokeWidth={2} />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{contract.contract_number}</p>
+                      <p className="font-semibold text-slate-900">{contract.contract_number}</p>
                       <div className="flex items-center gap-2 mt-1">
                         {getStatusBadge(contract)}
                       </div>
@@ -294,8 +294,8 @@ export const MobileContracts: React.FC = () => {
                 <div className="space-y-2">
                   {/* Customer */}
                   <div className="flex items-center gap-2 text-sm">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700">
                       {contract.customer.first_name} {contract.customer.last_name}
                     </span>
                   </div>
@@ -303,8 +303,8 @@ export const MobileContracts: React.FC = () => {
                   {/* Vehicle */}
                   {contract.vehicle && (
                     <div className="flex items-center gap-2 text-sm">
-                      <CarIcon className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-700">
+                      <CarIcon className="w-4 h-4 text-slate-400" />
+                      <span className="text-slate-700">
                         {contract.vehicle.make} {contract.vehicle.model} | {contract.vehicle.license_plate}
                       </span>
                     </div>
@@ -312,15 +312,15 @@ export const MobileContracts: React.FC = () => {
 
                   {/* Dates */}
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700">
                       {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
                     </span>
                   </div>
 
                   {/* Amount */}
-                  <div className="flex items-center gap-2 text-sm pt-2 border-t border-gray-100">
-                    <CreditCard className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-2 text-sm pt-2 border-t border-slate-100">
+                    <CreditCard className="w-4 h-4 text-slate-400" />
                     <span className="font-semibold text-teal-600">
                       QAR {contract.monthly_amount.toLocaleString()} / شهرياً
                     </span>
@@ -348,7 +348,7 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick }) => (
       'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
       active
         ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-        : 'bg-white/80 text-gray-600 border border-gray-200/50 hover:bg-gray-100'
+        : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
     )}
   >
     {label}
@@ -364,11 +364,11 @@ interface EmptyStateProps {
 
 const EmptyState: React.FC<EmptyStateProps> = ({ title, description, actionLabel, onAction }) => (
   <div className="text-center py-12 px-6">
-    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-      <FileText className="w-8 h-8 text-gray-400" strokeWidth={1.5} />
+    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+      <FileText className="w-8 h-8 text-slate-400" strokeWidth={1.5} />
     </div>
-    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-    <p className="text-sm text-gray-500 mb-6">{description}</p>
+    <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
+    <p className="text-sm text-slate-500 mb-6">{description}</p>
     {actionLabel && onAction && (
       <button
         onClick={onAction}

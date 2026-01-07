@@ -76,9 +76,9 @@ export const ContractsPageHelpContent = () => (
           الصفحة مقسمة إلى عدة تبويبات لتسهيل التنقل:
         </p>
         <div className='space-y-3'>
-          <div className='p-3 bg-gray-50 rounded-lg'>
+          <div className='p-3 bg-slate-50 rounded-lg'>
             <h4 className='font-bold mb-1'>الكل</h4>
-            <p className='text-sm text-gray-700'>
+            <p className='text-sm text-slate-700'>
               عرض جميع العقود بغض النظر عن حالتها.
             </p>
           </div>
@@ -121,7 +121,7 @@ export const ContractsPageHelpContent = () => (
             'تاريخ البداية أو الانتهاء',
           ]}
         />
-        <p className='mt-3 text-sm text-gray-600'>
+        <p className='mt-3 text-sm text-slate-600'>
           النتائج تظهر فوراً أثناء الكتابة.
         </p>
       </HelpSection>

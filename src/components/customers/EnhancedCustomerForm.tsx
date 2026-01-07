@@ -1,5 +1,5 @@
 /**
- * Enhanced Customer Form - Redesigned with Dashboard Theme (coral-500)
+ * Enhanced Customer Form - Redesigned with Dashboard Theme (rose-500)
  * 
  * Features:
  * - 3-step wizard design matching SimpleContractWizard
@@ -110,11 +110,11 @@ const stepVariants = {
 // === Progress Bar Component ===
 const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ currentStep, totalSteps }) => {
   const progress = ((currentStep + 1) / totalSteps) * 100;
-  
+
   return (
-    <div className="relative h-2 bg-neutral-100 rounded-full overflow-hidden">
+    <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
       <motion.div
-        className="absolute inset-y-0 left-0 bg-gradient-to-l from-coral-500 to-orange-500 rounded-full"
+        className="absolute inset-y-0 left-0 bg-gradient-to-l from-rose-500 to-orange-500 rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${progress}%` }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -124,8 +124,8 @@ const ProgressBar: React.FC<{ currentStep: number; totalSteps: number }> = ({ cu
 };
 
 // === Step Indicator Component ===
-const StepIndicator: React.FC<{ 
-  steps: typeof STEPS; 
+const StepIndicator: React.FC<{
+  steps: typeof STEPS;
   currentStep: number;
   onStepClick: (index: number) => void;
 }> = ({ steps, currentStep, onStepClick }) => {
@@ -136,13 +136,13 @@ const StepIndicator: React.FC<{
         const isActive = index === currentStep;
         const isCompleted = index < currentStep;
         const isClickable = index <= currentStep;
-        
+
         return (
           <React.Fragment key={step.id}>
             {index > 0 && (
               <div className={cn(
                 "h-0.5 w-8 transition-colors duration-300",
-                index <= currentStep ? "bg-coral-500" : "bg-neutral-200"
+                index <= currentStep ? "bg-rose-500" : "bg-slate-200"
               )} />
             )}
             <button
@@ -151,9 +151,9 @@ const StepIndicator: React.FC<{
               disabled={!isClickable}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300",
-                isActive && "bg-gradient-to-l from-coral-500 to-orange-500 text-white shadow-lg shadow-coral-500/30",
-                isCompleted && !isActive && "bg-coral-100 text-coral-700",
-                !isActive && !isCompleted && "bg-neutral-100 text-neutral-400",
+                isActive && "bg-gradient-to-l from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30",
+                isCompleted && !isActive && "bg-rose-100 text-rose-700",
+                !isActive && !isCompleted && "bg-slate-100 text-slate-400",
                 isClickable && "cursor-pointer hover:scale-105",
                 !isClickable && "cursor-not-allowed"
               )}
@@ -330,37 +330,37 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     >
       {/* Step Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-bl from-coral-500 to-orange-500 text-white mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-bl from-rose-500 to-orange-500 text-white mb-4">
           <User className="h-8 w-8" />
         </div>
-        <h3 className="text-xl font-bold text-neutral-800">البيانات الأساسية</h3>
-        <p className="text-neutral-500 text-sm">أدخل المعلومات الشخصية والوثائق</p>
+        <h3 className="text-xl font-bold text-slate-800">البيانات الأساسية</h3>
+        <p className="text-slate-500 text-sm">أدخل المعلومات الشخصية والوثائق</p>
       </div>
 
       {/* Customer Type */}
-      <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
         <FormField
           control={form.control}
           name="customer_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium">نوع العميل *</FormLabel>
+              <FormLabel className="text-slate-700 font-medium">نوع العميل *</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20">
+                  <SelectTrigger className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20">
                     <SelectValue placeholder="اختر نوع العميل" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="individual">
                     <span className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-coral-500" />
+                      <User className="h-4 w-4 text-rose-500" />
                       فرد
                     </span>
                   </SelectItem>
                   <SelectItem value="corporate">
                     <span className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-coral-500" />
+                      <Building2 className="h-4 w-4 text-rose-500" />
                       شركة
                     </span>
                   </SelectItem>
@@ -375,18 +375,18 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       {/* Individual Fields */}
       {customerType === 'individual' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <FormField
               control={form.control}
               name="first_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">الاسم الأول *</FormLabel>
+                  <FormLabel className="text-slate-700 font-medium">الاسم الأول *</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
                       placeholder="أدخل الاسم الأول" 
-                      className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                      className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                     />
                   </FormControl>
                   <FormMessage />
@@ -395,18 +395,18 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             />
           </div>
 
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <FormField
               control={form.control}
               name="last_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">اسم العائلة *</FormLabel>
+                  <FormLabel className="text-slate-700 font-medium">اسم العائلة *</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
                       placeholder="أدخل اسم العائلة" 
-                      className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                      className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                     />
                   </FormControl>
                   <FormMessage />
@@ -419,18 +419,18 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
       {/* Company Fields */}
       {customerType === 'corporate' && (
-        <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
           <FormField
             control={form.control}
             name="company_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-700 font-medium">اسم الشركة *</FormLabel>
+                <FormLabel className="text-slate-700 font-medium">اسم الشركة *</FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 
                     placeholder="أدخل اسم الشركة" 
-                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                    className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                   />
                 </FormControl>
                 <FormMessage />
@@ -442,24 +442,24 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
       {/* Identification Documents */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-neutral-600">
-          <CreditCard className="h-5 w-5 text-coral-500" />
+        <div className="flex items-center gap-2 text-slate-600">
+          <CreditCard className="h-5 w-5 text-rose-500" />
           <span className="font-medium">الوثائق والهوية</span>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <FormField
               control={form.control}
               name="national_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">البطاقة المدنية / الرقم الشخصي</FormLabel>
+                  <FormLabel className="text-slate-700 font-medium">البطاقة المدنية / الرقم الشخصي</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
                       placeholder="أدخل رقم البطاقة المدنية" 
-                      className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                      className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                     />
                   </FormControl>
                   <FormMessage />
@@ -468,7 +468,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             />
           </div>
 
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <FormField
               control={form.control}
               name="national_id_expiry"
@@ -476,7 +476,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                 const isExpired = field.value && field.value <= new Date();
                 return (
                   <FormItem>
-                    <FormLabel className={cn("text-neutral-700 font-medium", isExpired && "text-red-500")}>
+                    <FormLabel className={cn("text-slate-700 font-medium", isExpired && "text-red-500")}>
                       تاريخ انتهاء البطاقة
                       {isExpired && <AlertTriangle className="inline h-4 w-4 mr-1" />}
                     </FormLabel>
@@ -517,18 +517,18 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <FormField
               control={form.control}
               name="passport_number"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-neutral-700 font-medium">رقم الجواز</FormLabel>
+                  <FormLabel className="text-slate-700 font-medium">رقم الجواز</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
                       placeholder="أدخل رقم الجواز" 
-                      className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                      className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                     />
                   </FormControl>
                   <FormMessage />
@@ -538,22 +538,22 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           </div>
 
           {customerType === 'individual' && (
-            <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
               <FormField
                 control={form.control}
                 name="license_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-neutral-700 font-medium">رقم رخصة القيادة</FormLabel>
+                    <FormLabel className="text-slate-700 font-medium">رقم رخصة القيادة</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
                         placeholder="يتم تعبئتها تلقائياً" 
-                        className="bg-neutral-100 border-neutral-200"
+                        className="bg-slate-100 border-slate-200"
                         readOnly
                       />
                     </FormControl>
-                    <p className="text-xs text-neutral-500">يتم تعبئة هذا الحقل تلقائياً من رقم البطاقة</p>
+                    <p className="text-xs text-slate-500">يتم تعبئة هذا الحقل تلقائياً من رقم البطاقة</p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -563,7 +563,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         </div>
 
         {customerType === 'individual' && (
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <FormField
               control={form.control}
               name="license_expiry"
@@ -571,7 +571,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                 const isExpired = field.value && field.value <= new Date();
                 return (
                   <FormItem>
-                    <FormLabel className={cn("text-neutral-700 font-medium", isExpired && "text-red-500")}>
+                    <FormLabel className={cn("text-slate-700 font-medium", isExpired && "text-red-500")}>
                       تاريخ انتهاء رخصة القيادة
                       {isExpired && <AlertTriangle className="inline h-4 w-4 mr-1" />}
                     </FormLabel>
@@ -628,29 +628,29 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     >
       {/* Step Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-bl from-coral-500 to-orange-500 text-white mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-bl from-rose-500 to-orange-500 text-white mb-4">
           <Phone className="h-8 w-8" />
         </div>
-        <h3 className="text-xl font-bold text-neutral-800">معلومات الاتصال</h3>
-        <p className="text-neutral-500 text-sm">أدخل بيانات التواصل مع العميل</p>
+        <h3 className="text-xl font-bold text-slate-800">معلومات الاتصال</h3>
+        <p className="text-slate-500 text-sm">أدخل بيانات التواصل مع العميل</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
           <FormField
             control={form.control}
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-700 font-medium flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-coral-500" />
+                <FormLabel className="text-slate-700 font-medium flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-rose-500" />
                   رقم الهاتف *
                 </FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 
                     placeholder="أدخل رقم الهاتف" 
-                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                    className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                     dir="ltr"
                   />
                 </FormControl>
@@ -660,14 +660,14 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           />
         </div>
 
-        <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-700 font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-coral-500" />
+                <FormLabel className="text-slate-700 font-medium flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-rose-500" />
                   البريد الإلكتروني
                 </FormLabel>
                 <FormControl>
@@ -675,7 +675,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     {...field} 
                     type="email"
                     placeholder="أدخل البريد الإلكتروني" 
-                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                    className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                     dir="ltr"
                   />
                 </FormControl>
@@ -687,10 +687,10 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       </div>
 
       {/* Address Section */}
-      <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
         <div className="flex items-center gap-2 mb-4">
-          <MapPin className="h-4 w-4 text-coral-500" />
-          <span className="text-neutral-700 font-medium">معلومات العنوان</span>
+          <MapPin className="h-4 w-4 text-rose-500" />
+          <span className="text-slate-700 font-medium">معلومات العنوان</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
@@ -698,13 +698,13 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             name="address"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-600 text-sm">العنوان</FormLabel>
+                <FormLabel className="text-slate-600 text-sm">العنوان</FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 
                     value={field.value || ''}
                     placeholder="أدخل العنوان" 
-                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                    className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                   />
                 </FormControl>
                 <FormMessage />
@@ -716,13 +716,13 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-600 text-sm">المدينة</FormLabel>
+                <FormLabel className="text-slate-600 text-sm">المدينة</FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 
                     value={field.value || ''}
                     placeholder="أدخل المدينة" 
-                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                    className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                   />
                 </FormControl>
                 <FormMessage />
@@ -734,13 +734,13 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             name="country"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-neutral-600 text-sm">البلد</FormLabel>
+                <FormLabel className="text-slate-600 text-sm">البلد</FormLabel>
                 <FormControl>
                   <Input 
                     {...field} 
                     value={field.value || ''}
                     placeholder="أدخل البلد" 
-                    className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20"
+                    className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20"
                   />
                 </FormControl>
                 <FormMessage />
@@ -750,21 +750,21 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         </div>
       </div>
 
-      <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
         <FormField
           control={form.control}
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-neutral-700 font-medium flex items-center gap-2">
-                <FileText className="h-4 w-4 text-coral-500" />
+              <FormLabel className="text-slate-700 font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-rose-500" />
                 ملاحظات
               </FormLabel>
               <FormControl>
                 <Textarea 
                   {...field} 
                   placeholder="أدخل أي ملاحظات إضافية..." 
-                  className="bg-white border-neutral-200 focus:border-coral-500 focus:ring-coral-500/20 min-h-[100px]"
+                  className="bg-white border-slate-200 focus:border-rose-500 focus:ring-rose-500/20 min-h-[100px]"
                 />
               </FormControl>
               <FormMessage />
@@ -789,28 +789,28 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     >
       {/* Step Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-bl from-coral-500 to-orange-500 text-white mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-bl from-rose-500 to-orange-500 text-white mb-4">
           <CheckCircle className="h-8 w-8" />
         </div>
-        <h3 className="text-xl font-bold text-neutral-800">مراجعة البيانات</h3>
-        <p className="text-neutral-500 text-sm">تأكد من صحة البيانات قبل الحفظ</p>
+        <h3 className="text-xl font-bold text-slate-800">مراجعة البيانات</h3>
+        <p className="text-slate-500 text-sm">تأكد من صحة البيانات قبل الحفظ</p>
       </div>
 
       {/* Summary Card */}
-      <div className="bg-gradient-to-bl from-coral-50 to-orange-50 rounded-2xl p-6 border border-coral-200">
+      <div className="bg-gradient-to-bl from-rose-50 to-orange-50 rounded-2xl p-6 border border-rose-200">
         <div className="grid gap-4">
           {/* Customer Type */}
-          <div className="flex items-center justify-between py-2 border-b border-coral-200">
-            <span className="text-neutral-600">نوع العميل</span>
-            <Badge className="bg-coral-500">
+          <div className="flex items-center justify-between py-2 border-b border-rose-200">
+            <span className="text-slate-600">نوع العميل</span>
+            <Badge className="bg-rose-500">
               {watchedValues.customer_type === 'individual' ? 'فرد' : 'شركة'}
             </Badge>
           </div>
 
           {/* Name */}
-          <div className="flex items-center justify-between py-2 border-b border-coral-200">
-            <span className="text-neutral-600">الاسم</span>
-            <span className="font-medium text-neutral-800">
+          <div className="flex items-center justify-between py-2 border-b border-rose-200">
+            <span className="text-slate-600">الاسم</span>
+            <span className="font-medium text-slate-800">
               {customerType === 'individual' 
                 ? `${watchedValues.first_name || ''} ${watchedValues.last_name || ''}`
                 : watchedValues.company_name || '-'}
@@ -819,40 +819,40 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
 
           {/* National ID */}
           {watchedValues.national_id && (
-            <div className="flex items-center justify-between py-2 border-b border-coral-200">
-              <span className="text-neutral-600">الرقم الشخصي</span>
-              <span className="font-medium text-neutral-800 font-mono">{watchedValues.national_id}</span>
+            <div className="flex items-center justify-between py-2 border-b border-rose-200">
+              <span className="text-slate-600">الرقم الشخصي</span>
+              <span className="font-medium text-slate-800 font-mono">{watchedValues.national_id}</span>
             </div>
           )}
 
           {/* Phone */}
-          <div className="flex items-center justify-between py-2 border-b border-coral-200">
-            <span className="text-neutral-600">الهاتف</span>
-            <span className="font-medium text-neutral-800 font-mono" dir="ltr">{watchedValues.phone || '-'}</span>
+          <div className="flex items-center justify-between py-2 border-b border-rose-200">
+            <span className="text-slate-600">الهاتف</span>
+            <span className="font-medium text-slate-800 font-mono" dir="ltr">{watchedValues.phone || '-'}</span>
           </div>
 
           {/* Email */}
           {watchedValues.email && (
-            <div className="flex items-center justify-between py-2 border-b border-coral-200">
-              <span className="text-neutral-600">البريد الإلكتروني</span>
-              <span className="font-medium text-neutral-800" dir="ltr">{watchedValues.email}</span>
+            <div className="flex items-center justify-between py-2 border-b border-rose-200">
+              <span className="text-slate-600">البريد الإلكتروني</span>
+              <span className="font-medium text-slate-800" dir="ltr">{watchedValues.email}</span>
             </div>
           )}
 
           {/* Notes */}
           {watchedValues.notes && (
             <div className="py-2">
-              <span className="text-neutral-600 block mb-2">ملاحظات</span>
-              <p className="text-neutral-800 bg-white rounded-lg p-3 text-sm">{watchedValues.notes}</p>
+              <span className="text-slate-600 block mb-2">ملاحظات</span>
+              <p className="text-slate-800 bg-white rounded-2xl p-3 text-sm">{watchedValues.notes}</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Confirmation Message */}
-      <Alert className="border-coral-200 bg-coral-50">
-        <Sparkles className="h-4 w-4 text-coral-500" />
-        <AlertDescription className="text-coral-800">
+      <Alert className="border-rose-200 bg-rose-50">
+        <Sparkles className="h-4 w-4 text-rose-500" />
+        <AlertDescription className="text-rose-800">
           بعد الحفظ، سيتم إنشاء حساب مالي للعميل تلقائياً في دليل الحسابات.
         </AlertDescription>
       </Alert>
@@ -908,7 +908,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       )}
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between items-center pt-6 border-t border-neutral-200">
+      <div className="flex justify-between items-center pt-6 border-t border-slate-200">
         <Button
           type="button"
           variant="outline"
@@ -921,7 +921,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
         </Button>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-500">
+          <span className="text-sm text-slate-500">
             الخطوة {currentStep + 1} من {STEPS.length}
           </span>
         </div>
@@ -930,7 +930,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           <Button
             type="submit"
             disabled={createCustomer.isPending || updateCustomer.isPending || (hasDuplicates && !forceCreate)}
-            className="flex items-center gap-2 bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30"
+            className="flex items-center gap-2 bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-rose-500/30"
           >
             {(createCustomer.isPending || updateCustomer.isPending) ? (
               <>
@@ -949,7 +949,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
             type="button"
             onClick={nextStep}
             disabled={hasDuplicates && !forceCreate}
-            className="flex items-center gap-2 bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
+            className="flex items-center gap-2 bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
           >
             التالي
             <ChevronLeft className="h-4 w-4" />
@@ -1021,7 +1021,7 @@ export const EnhancedCustomerDialog: React.FC<{
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-bl from-coral-500 to-orange-500 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-bl from-rose-500 to-orange-500 flex items-center justify-center">
               <User className="h-5 w-5 text-white" />
             </div>
             {editingCustomer ? 'تعديل بيانات العميل' : 'إضافة عميل جديد'}
@@ -1185,7 +1185,7 @@ const QuickCustomerDialogContent: React.FC<{
       <DialogContent className="sm:max-w-[450px]" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-bl from-coral-500 to-orange-500 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-bl from-rose-500 to-orange-500 flex items-center justify-center">
               <User className="h-5 w-5 text-white" />
             </div>
             إضافة عميل سريع
@@ -1193,9 +1193,9 @@ const QuickCustomerDialogContent: React.FC<{
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
-            <label className="text-sm font-medium text-neutral-700 flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-coral-500" />
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2 mb-2">
+              <User className="h-4 w-4 text-rose-500" />
               الاسم الكامل
             </label>
             <Input
@@ -1208,9 +1208,9 @@ const QuickCustomerDialogContent: React.FC<{
             )}
           </div>
 
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
-            <label className="text-sm font-medium text-neutral-700 flex items-center gap-2 mb-2">
-              <Phone className="h-4 w-4 text-coral-500" />
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2 mb-2">
+              <Phone className="h-4 w-4 text-rose-500" />
               رقم الهاتف
             </label>
             <Input
@@ -1224,9 +1224,9 @@ const QuickCustomerDialogContent: React.FC<{
             )}
           </div>
 
-          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
-            <label className="text-sm font-medium text-neutral-700 flex items-center gap-2 mb-2">
-              <CreditCard className="h-4 w-4 text-coral-500" />
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2 mb-2">
+              <CreditCard className="h-4 w-4 text-rose-500" />
               الرقم الشخصي
             </label>
             <div className="relative">
@@ -1237,7 +1237,7 @@ const QuickCustomerDialogContent: React.FC<{
                 dir="ltr"
               />
               {duplicateCheck.checking && (
-                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-coral-500" />
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-rose-500" />
               )}
             </div>
             {form.formState.errors.national_id && (
@@ -1281,7 +1281,7 @@ const QuickCustomerDialogContent: React.FC<{
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
+              className="flex-1 bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
             >
               {isSubmitting ? (
                 <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الحفظ...</>

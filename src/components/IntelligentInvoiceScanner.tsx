@@ -532,12 +532,12 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           <Card>
             <CardContent className="pt-6">
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
               >
-                <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <Upload className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                 <p className="text-lg font-medium mb-2">اسحب وأفلت صورة الفاتورة هنا</p>
                 <p className="text-sm text-muted-foreground mb-4">
                   أو انقر لاختيار ملف (PNG, JPG, JPEG)

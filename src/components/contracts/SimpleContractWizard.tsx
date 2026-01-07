@@ -1,6 +1,6 @@
 /**
  * Simple Contract Wizard - 3 Steps Version
- * Redesigned to match Dashboard color scheme (coral-500 theme)
+ * Redesigned to match Dashboard color scheme (rose-500 theme)
  * 
  * Steps:
  * 1. العميل والمركبة (Customer & Vehicle)
@@ -120,7 +120,7 @@ const StepIndicator: React.FC<{
       
       {/* Progress bar fill */}
       <motion.div 
-        className="absolute top-5 right-0 h-1 bg-gradient-to-l from-coral-500 to-orange-400 rounded-full mx-8"
+        className="absolute top-5 right-0 h-1 bg-gradient-to-l from-rose-500 to-orange-400 rounded-full mx-8"
         initial={{ width: '0%' }}
         animate={{ width: `${((currentStep) / (totalSteps - 1)) * 100}%` }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -137,8 +137,8 @@ const StepIndicator: React.FC<{
               <motion.div
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all',
-                  isCompleted && 'bg-gradient-to-br from-coral-500 to-orange-500 border-coral-500 text-white shadow-lg shadow-coral-500/30',
-                  isCurrent && 'bg-white border-coral-500 text-coral-600 shadow-lg shadow-coral-500/20',
+                  isCompleted && 'bg-gradient-to-br from-rose-500 to-orange-500 border-rose-500 text-white shadow-lg shadow-rose-500/30',
+                  isCurrent && 'bg-white border-rose-500 text-coral-600 shadow-lg shadow-rose-500/20',
                   !isCompleted && !isCurrent && 'bg-neutral-100 border-neutral-300 text-neutral-400'
                 )}
                 animate={{ scale: isCurrent ? 1.1 : 1 }}
@@ -198,9 +198,9 @@ const Step1CustomerVehicle: React.FC<{
     >
       {/* Customer Selection Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-        <div className="bg-gradient-to-l from-coral-50 to-orange-50 px-5 py-4 border-b border-neutral-100">
+        <div className="bg-gradient-to-l from-rose-50 to-orange-50 px-5 py-4 border-b border-neutral-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
               <User className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -225,7 +225,7 @@ const Step1CustomerVehicle: React.FC<{
             <Button
               type="button"
               onClick={() => setShowQuickCustomer(true)}
-              className="h-12 gap-2 bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all"
+              className="h-12 gap-2 bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all"
             >
               <Plus className="h-4 w-4" />
               عميل جديد
@@ -268,7 +268,7 @@ const Step1CustomerVehicle: React.FC<{
               >
                 {isLoadingCustomers ? (
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-coral-500 mb-2" />
+                    <Loader2 className="h-8 w-8 animate-spin text-rose-500 mb-2" />
                     <p className="text-neutral-500 text-sm">جاري تحميل العملاء...</p>
                   </div>
                 ) : filteredCustomers.length === 0 ? (
@@ -284,17 +284,17 @@ const Step1CustomerVehicle: React.FC<{
                       animate={{ opacity: 1, x: 0, transition: { delay: index * 0.05 } }}
                       type="button"
                       onClick={() => onUpdate({ customer_id: customer.id })}
-                      className="w-full p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-coral-300 hover:bg-coral-50/50 transition-all group"
+                      className="w-full p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-coral-300 hover:bg-rose-50/50 transition-all group"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-coral-100 flex items-center justify-center transition-colors">
+                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-rose-100 flex items-center justify-center transition-colors">
                           <User className="h-5 w-5 text-neutral-500 group-hover:text-coral-600" />
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-neutral-900">{customer.full_name}</p>
                           <p className="text-sm text-neutral-500">{customer.phone}</p>
                         </div>
-                        <ChevronLeft className="h-5 w-5 text-neutral-300 group-hover:text-coral-500 transition-colors" />
+                        <ChevronLeft className="h-5 w-5 text-neutral-300 group-hover:text-rose-500 transition-colors" />
                       </div>
                     </motion.button>
                   ))
@@ -404,7 +404,7 @@ const Step1CustomerVehicle: React.FC<{
                         </div>
                       </div>
                       {vehicle.daily_rate && (
-                        <Badge className="mt-2 bg-gradient-to-l from-coral-100 to-orange-100 text-coral-700 border-0">
+                        <Badge className="mt-2 bg-gradient-to-l from-rose-100 to-orange-100 text-coral-700 border-0">
                           {vehicle.daily_rate} ر.ق/يوم
                         </Badge>
                       )}
@@ -489,7 +489,7 @@ const Step2DetailsPricing: React.FC<{
       {/* Contract Type Selection */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-coral-500" />
+          <FileText className="h-5 w-5 text-rose-500" />
           نوع العقد
         </h3>
         <div className="grid grid-cols-5 gap-2">
@@ -501,8 +501,8 @@ const Step2DetailsPricing: React.FC<{
               className={cn(
                 'p-3 rounded-xl border-2 transition-all text-center',
                 formData.contract_type === type.value
-                  ? 'border-coral-500 bg-gradient-to-br from-coral-50 to-orange-50 shadow-lg shadow-coral-500/20'
-                  : 'border-neutral-200 bg-white hover:border-coral-200 hover:bg-coral-50/30'
+                  ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-orange-50 shadow-lg shadow-rose-500/20'
+                  : 'border-neutral-200 bg-white hover:border-rose-200 hover:bg-rose-50/30'
               )}
             >
               <div className="text-2xl mb-1">{type.icon}</div>
@@ -520,7 +520,7 @@ const Step2DetailsPricing: React.FC<{
       {/* Dates Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-coral-500" />
+          <Calendar className="h-5 w-5 text-rose-500" />
           مدة العقد
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -552,10 +552,10 @@ const Step2DetailsPricing: React.FC<{
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 p-4 bg-gradient-to-l from-coral-50 to-orange-50 rounded-xl flex items-center gap-3"
+              className="mt-4 p-4 bg-gradient-to-l from-rose-50 to-orange-50 rounded-xl flex items-center gap-3"
             >
               <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow">
-                <Clock className="h-6 w-6 text-coral-500" />
+                <Clock className="h-6 w-6 text-rose-500" />
               </div>
               <div>
                 <p className="text-neutral-600">مدة العقد</p>
@@ -581,7 +581,7 @@ const Step2DetailsPricing: React.FC<{
       {/* Monthly Rent & Contract Amount Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-coral-500" />
+          <DollarSign className="h-5 w-5 text-rose-500" />
           الإيجار الشهري
         </h3>
         
@@ -616,12 +616,12 @@ const Step2DetailsPricing: React.FC<{
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-gradient-to-l from-coral-50 to-orange-50 rounded-xl"
+              className="p-4 bg-gradient-to-l from-rose-50 to-orange-50 rounded-xl"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow">
-                    <Sparkles className="h-5 w-5 text-coral-500" />
+                    <Sparkles className="h-5 w-5 text-rose-500" />
                   </div>
                   <div>
                     <p className="text-sm text-neutral-600">إجمالي قيمة العقد</p>
@@ -673,7 +673,7 @@ const Step2DetailsPricing: React.FC<{
               id="late_fines_enabled"
               checked={formData.late_fines_enabled || false}
               onChange={(e) => onUpdate({ late_fines_enabled: e.target.checked })}
-              className="h-5 w-5 rounded text-coral-500 focus:ring-coral-400"
+              className="h-5 w-5 rounded text-rose-500 focus:ring-coral-400"
             />
             <Label htmlFor="late_fines_enabled" className="cursor-pointer">تفعيل غرامات التأخير</Label>
           </div>
@@ -766,11 +766,11 @@ const Step3Review: React.FC<{
       >
         <div className="flex items-center justify-between">
           <span className="text-sm text-neutral-500">العميل</span>
-          <Badge className="bg-coral-100 text-coral-700 border-0">إلزامي</Badge>
+          <Badge className="bg-rose-100 text-coral-700 border-0">إلزامي</Badge>
         </div>
         {customer ? (
           <div className="flex items-center gap-4 mt-3">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-coral-100 to-orange-100 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-100 to-orange-100 flex items-center justify-center">
               <User className="h-7 w-7 text-coral-600" />
             </div>
             <div>
@@ -834,14 +834,14 @@ const Step3Review: React.FC<{
           </div>
           <div className="flex justify-between items-center py-2 border-t border-neutral-100">
             <span className="text-neutral-500">المدة</span>
-            <Badge className="bg-coral-100 text-coral-700 border-0">
+            <Badge className="bg-rose-100 text-coral-700 border-0">
               {formData.rental_days} يوم
             </Badge>
           </div>
         </div>
         
         {/* Monthly & Total Amount */}
-        <div className="bg-gradient-to-l from-coral-500 to-orange-500 p-5 space-y-3">
+        <div className="bg-gradient-to-l from-rose-500 to-orange-500 p-5 space-y-3">
           {formData.monthly_amount && (
             <div className="flex justify-between items-center text-white/90">
               <span className="font-medium">الإيجار الشهري</span>
@@ -1153,7 +1153,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between text-xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg shadow-coral-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 إنشاء عقد جديد
@@ -1167,8 +1167,8 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
                   className={cn(
                     "gap-2 rounded-xl transition-all",
                     isAssistantOpen 
-                      ? "bg-gradient-to-l from-coral-500 to-orange-500 text-white shadow-lg shadow-coral-500/30" 
-                      : "border-coral-200 text-coral-600 hover:bg-coral-50"
+                      ? "bg-gradient-to-l from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30" 
+                      : "border-rose-200 text-coral-600 hover:bg-rose-50"
                   )}
                 >
                   <Sparkles className="h-4 w-4" />
@@ -1240,7 +1240,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             <Button
               onClick={handleSubmit}
               disabled={!canProceed() || isSubmitting}
-              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all"
+              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all"
             >
               {isSubmitting ? (
                 <>
@@ -1258,7 +1258,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             <Button
               onClick={handleNext}
               disabled={!canProceed()}
-              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all disabled:opacity-50 disabled:shadow-none"
+              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all disabled:opacity-50 disabled:shadow-none"
             >
               التالي
               <ChevronLeft className="h-5 w-5" />

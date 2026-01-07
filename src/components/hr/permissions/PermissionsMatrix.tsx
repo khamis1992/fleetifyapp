@@ -76,7 +76,7 @@ const getPermissionLevelColor = (level: string) => {
     case 'admin':
       return 'text-red-600';
     default:
-      return 'text-gray-600';
+      return 'text-slate-600';
   }
 };
 
@@ -331,7 +331,7 @@ export default function PermissionsMatrix({
                                   <div
                                     key={permission.id}
                                     className={`flex items-center justify-between p-3 rounded-lg border ${
-                                      isGranted ? 'bg-green-50 border-green-200' : 'bg-gray-50'
+                                      isGranted ? 'bg-green-50 border-green-200' : 'bg-slate-50'
                                     } ${isSystemLevel ? 'ring-1 ring-red-200' : ''}`}
                                   >
                                     <div className="flex items-center space-x-3">

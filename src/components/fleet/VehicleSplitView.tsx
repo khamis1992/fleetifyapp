@@ -173,7 +173,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
       case 'police_station':
         return <Badge className="bg-orange-100 text-orange-700 border-orange-200">في مركز الشرطة</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-700 border-gray-200">{status}</Badge>;
+        return <Badge className="bg-slate-100 text-slate-700 border-slate-200">{status}</Badge>;
     }
   };
 
@@ -187,7 +187,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
       case 'accident': return 'bg-rose-600';
       case 'stolen': return 'bg-slate-700';
       case 'police_station': return 'bg-orange-600';
-      default: return 'bg-gray-500';
+      default: return 'bg-slate-500';
     }
   };
 
@@ -230,7 +230,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
               placeholder="بحث عن مركبة..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 border-neutral-200 focus:border-coral-500 focus:ring-coral-500 rounded-xl"
+              className="pr-10 border-neutral-200 focus:border-rose-500 focus:ring-rose-500 rounded-xl"
             />
           </div>
         </div>
@@ -255,7 +255,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                     "w-full p-3 rounded-xl text-right transition-all",
                     "hover:bg-neutral-50 group",
                     selectedVehicle?.id === vehicle.id
-                      ? "bg-coral-50 border-2 border-coral-500"
+                      ? "bg-rose-50 border-2 border-rose-500"
                       : "border-2 border-transparent"
                   )}
                 >
@@ -360,7 +360,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                         </div>
                         <Button
                           onClick={handleCreateContract}
-                          className="bg-coral-500 hover:bg-coral-600 text-white rounded-xl shadow-md"
+                          className="bg-rose-500 hover:bg-coral-600 text-white rounded-xl shadow-md"
                           style={{ boxShadow: '0 4px 14px rgba(232, 90, 79, 0.3)' }}
                         >
                           <Plus className="w-4 h-4 ml-2" />
@@ -374,7 +374,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                   <div className="grid grid-cols-4 gap-4 mb-6">
                     <Card className="bg-neutral-50 border-0 rounded-xl">
                       <CardContent className="p-4 text-center">
-                        <Gauge className="w-5 h-5 text-coral-500 mx-auto mb-1" />
+                        <Gauge className="w-5 h-5 text-rose-500 mx-auto mb-1" />
                         <p className="text-lg font-bold text-neutral-900">
                           {selectedVehicle.current_mileage?.toLocaleString('en-US') || 0}
                         </p>
@@ -417,7 +417,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-coral-100 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
                           <Car className="w-5 h-5 text-coral-600" />
                         </div>
                         <div>
@@ -475,7 +475,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(`/fleet/vehicles/${selectedVehicle.id}`)}
-                        className="text-coral-600 hover:text-coral-700 hover:bg-coral-50"
+                        className="text-coral-600 hover:text-coral-700 hover:bg-rose-50"
                       >
                         عرض الكل
                         <ChevronLeft className="w-4 h-4 mr-1" />
@@ -535,7 +535,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(`/fleet/vehicles/${selectedVehicle.id}?tab=maintenance`)}
-                        className="text-coral-600 hover:text-coral-700 hover:bg-coral-50"
+                        className="text-coral-600 hover:text-coral-700 hover:bg-rose-50"
                       >
                         عرض الكل
                         <ChevronLeft className="w-4 h-4 mr-1" />
@@ -595,7 +595,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                   <Button
                     variant="outline"
                     onClick={() => onEditVehicle(selectedVehicle)}
-                    className="border-neutral-200 hover:border-coral-500 hover:text-coral-600 rounded-xl"
+                    className="border-neutral-200 hover:border-rose-500 hover:text-coral-600 rounded-xl"
                   >
                     <Edit className="w-4 h-4 ml-2" />
                     تعديل
@@ -611,7 +611,7 @@ export const VehicleSplitView: React.FC<VehicleSplitViewProps> = ({
                 </div>
                 <Button
                   onClick={() => navigate(`/fleet/vehicles/${selectedVehicle.id}`)}
-                  className="bg-coral-500 hover:bg-coral-600 text-white rounded-xl"
+                  className="bg-rose-500 hover:bg-coral-600 text-white rounded-xl"
                 >
                   عرض الصفحة الكاملة
                   <ChevronLeft className="w-4 h-4 mr-2" />

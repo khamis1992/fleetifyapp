@@ -72,7 +72,7 @@ export function APIHealthDashboard({
       case 'unhealthy':
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-slate-500" />;
     }
   };
 
@@ -85,7 +85,7 @@ export function APIHealthDashboard({
       case 'unhealthy':
         return 'text-red-600 bg-red-50 border-red-200';
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'text-slate-600 bg-slate-50 border-slate-200';
     }
   };
 

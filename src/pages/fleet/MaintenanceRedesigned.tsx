@@ -304,7 +304,7 @@ export default function MaintenanceRedesigned() {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-neutral-500">جاري التحميل...</p>
         </div>
       </div>
@@ -312,9 +312,9 @@ export default function MaintenanceRedesigned() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-10">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
@@ -428,7 +428,7 @@ export default function MaintenanceRedesigned() {
             {/* Quick Summary & Alerts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Quick Summary */}
-              <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-5 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-5 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-neutral-900">ملخص سريع</h2>
                   <Button
@@ -466,7 +466,7 @@ export default function MaintenanceRedesigned() {
               </div>
 
               {/* Alerts */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-5 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-5 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                 <h2 className="font-semibold text-neutral-900 mb-4">التنبيهات</h2>
 
                 <div className="space-y-2">
@@ -505,7 +505,7 @@ export default function MaintenanceRedesigned() {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <div className="p-5 border-b flex items-center justify-between">
                 <h2 className="font-semibold text-neutral-900">النشاط الأخير</h2>
                 <Button
@@ -561,7 +561,7 @@ export default function MaintenanceRedesigned() {
         ) : (
           <>
             {/* Search & Filters Bar */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <div className="flex flex-col lg:flex-row gap-3">
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -645,7 +645,7 @@ export default function MaintenanceRedesigned() {
             </div>
 
             {/* Records Table */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>

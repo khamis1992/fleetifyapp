@@ -104,7 +104,7 @@ export const TaskNotificationBell: React.FC = () => {
         <ScrollArea className="max-h-[400px]">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-8 text-neutral-400">
@@ -120,7 +120,7 @@ export const TaskNotificationBell: React.FC = () => {
                   animate={{ opacity: 1 }}
                   className={cn(
                     'p-4 cursor-pointer hover:bg-neutral-50 transition-colors',
-                    !notification.is_read && 'bg-coral-50'
+                    !notification.is_read && 'bg-rose-50'
                   )}
                   onClick={() => handleNotificationClick(notification)}
                 >
@@ -134,7 +134,7 @@ export const TaskNotificationBell: React.FC = () => {
                           {notificationTypeLabels[notification.type]}
                         </span>
                         {!notification.is_read && (
-                          <div className="w-2 h-2 rounded-full bg-coral-500" />
+                          <div className="w-2 h-2 rounded-full bg-rose-500" />
                         )}
                       </div>
                       <p className="font-medium text-sm text-neutral-900 mt-0.5">

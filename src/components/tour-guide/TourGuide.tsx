@@ -116,7 +116,7 @@ const Spotlight: React.FC<{ target: HTMLElement }> = ({ target }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="absolute border-2 border-coral-500 rounded-lg shadow-[0_0_0_4px_rgba(241,85,85,0.3)]"
+        className="absolute border-2 border-rose-500 rounded-lg shadow-[0_0_0_4px_rgba(241,85,85,0.3)]"
         style={{
           top: rect.top - padding,
           left: rect.left - padding,
@@ -135,7 +135,7 @@ const Spotlight: React.FC<{ target: HTMLElement }> = ({ target }) => {
           duration: 1.5,
           repeat: Infinity,
         }}
-        className="absolute w-6 h-6 bg-coral-500 rounded-full"
+        className="absolute w-6 h-6 bg-rose-500 rounded-full"
         style={{
           top: rect.top - 12,
           left: rect.left + rect.width / 2 - 12,
@@ -198,7 +198,7 @@ const TooltipCard: React.FC<{
       }}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-coral-500 to-orange-500 px-4 py-3 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full">
             {currentStep + 1} / {totalSteps}
@@ -255,7 +255,7 @@ const TooltipCard: React.FC<{
               key={i}
               className={cn(
                 'w-2 h-2 rounded-full transition-colors',
-                i === currentStep ? 'bg-coral-500' : 'bg-neutral-200'
+                i === currentStep ? 'bg-rose-500' : 'bg-neutral-200'
               )}
             />
           ))}
@@ -268,7 +268,7 @@ const TooltipCard: React.FC<{
             'text-white',
             isLastStep
               ? 'bg-green-500 hover:bg-green-600'
-              : 'bg-coral-500 hover:bg-coral-600'
+              : 'bg-rose-500 hover:bg-coral-600'
           )}
         >
           {isLastStep ? (

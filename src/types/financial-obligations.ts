@@ -150,7 +150,7 @@ export const OBLIGATION_STATUS_COLORS: Record<FinancialObligation['status'], str
   paid: 'bg-green-100 text-green-800',
   overdue: 'bg-red-100 text-red-800',
   partially_paid: 'bg-blue-100 text-blue-800',
-  cancelled: 'bg-gray-100 text-gray-800'
+  cancelled: 'bg-slate-100 text-slate-800'
 };
 
 // Additional interfaces for financial components

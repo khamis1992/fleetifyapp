@@ -172,7 +172,7 @@ export default function UnifiedSettings() {
                 ) : module.status === 'partial' ? (
                   <AlertCircle className="h-4 w-4 text-yellow-600" />
                 ) : (
-                  <Loader2 className="h-4 w-4 text-gray-400" />
+                  <Loader2 className="h-4 w-4 text-slate-400" />
                 )}
                 <span className="text-sm font-medium">{module.name}</span>
               </div>
@@ -462,7 +462,7 @@ export default function UnifiedSettings() {
                       ) : module.status === 'partial' ? (
                         <AlertCircle className="h-5 w-5 text-yellow-600" />
                       ) : (
-                        <Loader2 className="h-5 w-5 text-gray-400" />
+                        <Loader2 className="h-5 w-5 text-slate-400" />
                       )}
                       <span className="font-medium">{module.name}</span>
                     </div>

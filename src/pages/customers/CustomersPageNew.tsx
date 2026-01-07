@@ -129,7 +129,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
 
   const getAvatarColors = () => {
     const colors = [
-      { bg: 'bg-coral-100', text: 'text-coral-600' },
+      { bg: 'bg-rose-100', text: 'text-coral-600' },
       { bg: 'bg-blue-100', text: 'text-blue-600' },
       { bg: 'bg-green-100', text: 'text-green-600' },
       { bg: 'bg-purple-100', text: 'text-purple-600' },
@@ -146,7 +146,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-white rounded-2xl border border-neutral-200 p-5 hover:shadow-lg hover:border-coral-200 transition-all duration-300 group cursor-pointer"
+      className="bg-white rounded-2xl border border-neutral-200 p-5 hover:shadow-lg hover:border-rose-200 transition-all duration-300 group cursor-pointer"
       onClick={onView}
     >
       {/* Header - Avatar and Info */}
@@ -206,10 +206,10 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       {/* Contract Count & Arrow */}
       <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-coral-50 rounded-lg">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 rounded-lg">
             <FileText className="w-3.5 h-3.5 text-coral-600" />
             <span className="text-xs font-bold text-coral-600">{contractCount}</span>
-            <span className="text-xs text-coral-500">عقد</span>
+            <span className="text-xs text-rose-500">عقد</span>
           </div>
           {contractCount === 0 && (
             <button 
@@ -225,7 +225,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           )}
         </div>
 
-        <ChevronLeft className="w-4 h-4 text-neutral-300 group-hover:text-coral-500 group-hover:translate-x-[-4px] transition-all" />
+        <ChevronLeft className="w-4 h-4 text-neutral-300 group-hover:text-rose-500 group-hover:translate-x-[-4px] transition-all" />
       </div>
     </motion.div>
   );
@@ -242,7 +242,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, subtitle }) => {
   const colorStyles = {
-    coral: { bg: 'bg-coral-50', text: 'text-coral-600', border: 'border-coral-100' },
+    coral: { bg: 'bg-rose-50', text: 'text-coral-600', border: 'border-rose-100' },
     blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' },
     green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100' },
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
@@ -444,7 +444,7 @@ const CustomersPageNew: React.FC = () => {
     return (
       <div className="min-h-screen bg-neutral-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-500">جاري تحميل البيانات...</p>
         </div>
       </div>
@@ -457,7 +457,7 @@ const CustomersPageNew: React.FC = () => {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-coral-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
               <Users className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -475,7 +475,7 @@ const CustomersPageNew: React.FC = () => {
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   "rounded-lg px-3",
-                  viewMode === 'grid' && "bg-coral-500 text-white hover:bg-coral-600"
+                  viewMode === 'grid' && "bg-rose-500 text-white hover:bg-coral-600"
                 )}
               >
                 <LayoutGrid className="w-4 h-4 ml-1" />
@@ -487,7 +487,7 @@ const CustomersPageNew: React.FC = () => {
                 onClick={() => setViewMode('split')}
                 className={cn(
                   "rounded-lg px-3",
-                  viewMode === 'split' && "bg-coral-500 text-white hover:bg-coral-600"
+                  viewMode === 'split' && "bg-rose-500 text-white hover:bg-coral-600"
                 )}
               >
                 <Columns className="w-4 h-4 ml-1" />
@@ -504,7 +504,7 @@ const CustomersPageNew: React.FC = () => {
               استيراد
             </Button>
             <Button
-              className="bg-coral-500 hover:bg-coral-600 text-white gap-2 shadow-lg"
+              className="bg-rose-500 hover:bg-coral-600 text-white gap-2 shadow-lg"
               onClick={() => setShowCreateDialog(true)}
             >
               <UserPlus className="w-4 h-4" />
@@ -526,7 +526,7 @@ const CustomersPageNew: React.FC = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pr-12 h-12 rounded-xl border-neutral-200 focus:border-coral-500"
+                className="pr-12 h-12 rounded-xl border-neutral-200 focus:border-rose-500"
               />
             </div>
 
@@ -589,7 +589,7 @@ const CustomersPageNew: React.FC = () => {
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
             <p className="text-neutral-500 mb-4">{error instanceof Error ? error.message : 'حدث خطأ غير متوقع'}</p>
-            <Button onClick={() => refetch()} className="bg-coral-500 hover:bg-coral-600">
+            <Button onClick={() => refetch()} className="bg-rose-500 hover:bg-coral-600">
               إعادة المحاولة
             </Button>
           </div>
@@ -598,7 +598,7 @@ const CustomersPageNew: React.FC = () => {
             <Users className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-neutral-900 mb-2">لا توجد عملاء</h3>
             <p className="text-neutral-500 mb-4">ابدأ بإضافة عملاء جدد للنظام</p>
-            <Button onClick={() => setShowCreateDialog(true)} className="bg-coral-500 hover:bg-coral-600">
+            <Button onClick={() => setShowCreateDialog(true)} className="bg-rose-500 hover:bg-coral-600">
               <UserPlus className="w-4 h-4 ml-2" />
               إضافة عميل
             </Button>
@@ -649,7 +649,7 @@ const CustomersPageNew: React.FC = () => {
                         onClick={() => setCurrentPage(page)}
                         className={cn(
                           "rounded-lg w-9 h-9",
-                          currentPage === page && "bg-coral-500 hover:bg-coral-600"
+                          currentPage === page && "bg-rose-500 hover:bg-coral-600"
                         )}
                       >
                         {page}

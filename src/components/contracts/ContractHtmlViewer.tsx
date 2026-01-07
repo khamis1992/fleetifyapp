@@ -257,7 +257,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
 
       {/* محتوى العقد */}
       <div id="contract-print-content">
-        <div className="container max-w-4xl mx-auto bg-white border-2 border-gray-200 p-8">
+        <div className="container max-w-4xl mx-auto bg-white border-2 border-slate-200 p-8">
           <div className="header text-center mb-8 border-b-2 border-blue-600 pb-5">
             <div className="company-name text-2xl font-bold text-blue-600 mb-3">
               {contractData.company_name}
@@ -265,55 +265,55 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
             <div className="contract-title text-xl font-bold mb-3">
               عقد {getContractTypeInArabic(contractData.contract_type)}
             </div>
-            <div className="contract-number text-gray-600">
+            <div className="contract-number text-slate-600">
               رقم العقد: {contractData.contract_number}
             </div>
           </div>
 
           <div className="section mb-6">
-            <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+            <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">
               معلومات العقد
             </div>
             <div className="info-grid grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">نوع العقد</div>
-                <div className="info-value text-gray-900">
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">نوع العقد</div>
+                <div className="info-value text-slate-900">
                   {getContractTypeInArabic(contractData.contract_type)}
                 </div>
               </div>
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">تاريخ الإنشاء</div>
-                <div className="info-value text-gray-900">{contractData.created_date}</div>
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">تاريخ الإنشاء</div>
+                <div className="info-value text-slate-900">{contractData.created_date}</div>
               </div>
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">تاريخ البداية</div>
-                <div className="info-value text-gray-900">{formatDateInGregorian(contractData.start_date)}</div>
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">تاريخ البداية</div>
+                <div className="info-value text-slate-900">{formatDateInGregorian(contractData.start_date)}</div>
               </div>
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">تاريخ النهاية</div>
-                <div className="info-value text-gray-900">{formatDateInGregorian(contractData.end_date)}</div>
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">تاريخ النهاية</div>
+                <div className="info-value text-slate-900">{formatDateInGregorian(contractData.end_date)}</div>
               </div>
             </div>
           </div>
 
           <div className="section mb-6">
-            <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+            <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">
               معلومات العميل
             </div>
-            <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-              <div className="info-label font-bold text-gray-700 mb-1">اسم العميل</div>
-              <div className="info-value text-gray-900">{contractData.customer_name}</div>
+            <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+              <div className="info-label font-bold text-slate-700 mb-1">اسم العميل</div>
+              <div className="info-value text-slate-900">{contractData.customer_name}</div>
             </div>
           </div>
 
           {contractData.vehicle_info && (
             <div className="section mb-6">
-              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">
                 معلومات المركبة
               </div>
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">تفاصيل المركبة</div>
-                <div className="info-value text-gray-900">{contractData.vehicle_info}</div>
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">تفاصيل المركبة</div>
+                <div className="info-value text-slate-900">{contractData.vehicle_info}</div>
               </div>
             </div>
           )}
@@ -321,7 +321,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
           {/* تقرير فحص المركبة */}
           {conditionReportData && (
             <div className="section mb-6">
-              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">
                 تقرير فحص المركبة
               </div>
               <ContractVehicleConditionReport 
@@ -332,19 +332,19 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
           )}
 
           <div className="section mb-6">
-            <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+            <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">
               التفاصيل المالية
             </div>
             <div className="info-grid grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">المبلغ الإجمالي</div>
-                <div className="info-value text-gray-900">
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">المبلغ الإجمالي</div>
+                <div className="info-value text-slate-900">
                   {formatCurrency(contractData.contract_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </div>
               </div>
-              <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-                <div className="info-label font-bold text-gray-700 mb-1">المبلغ الشهري</div>
-                <div className="info-value text-gray-900">
+              <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+                <div className="info-label font-bold text-slate-700 mb-1">المبلغ الشهري</div>
+                <div className="info-value text-slate-900">
                   {formatCurrency(contractData.monthly_amount ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                 </div>
               </div>
@@ -356,10 +356,10 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
 
           {contractData.terms && (
             <div className="section mb-6">
-              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-gray-200 pb-2">
+              <div className="section-title text-lg font-bold text-blue-600 mb-4 border-b border-slate-200 pb-2">
                 الشروط والأحكام
               </div>
-              <div className="terms-section bg-gray-50 p-5 rounded-lg">
+              <div className="terms-section bg-slate-50 p-5 rounded-lg">
                 {/* SECURITY: Sanitized HTML content - XSS protection enabled */}
                 <div
                   className="whitespace-pre-line"
@@ -375,32 +375,32 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
           {/* Signature Section - Only show if electronic signature is enabled */}
           {isSignatureEnabled && (
             <div className="signature-section grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
-              <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
+              <div className="signature-box text-center p-5 border-2 border-slate-200 rounded-lg">
                 <div className="signature-label font-bold mb-3">توقيع العميل</div>
                 {contractData.customer_signature ? (
                   <LazyImage 
                     src={contractData.customer_signature} 
                     alt="توقيع العميل" 
-                    className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
+                    className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-slate-200"
                   />
                 ) : (
-                  <div className="signature-line border-t-2 border-gray-800 w-48 mx-auto my-5"></div>
+                  <div className="signature-line border-t-2 border-slate-800 w-48 mx-auto my-5"></div>
                 )}
-                <div className="text-sm text-gray-600">الطرف الأول</div>
+                <div className="text-sm text-slate-600">الطرف الأول</div>
               </div>
               
-              <div className="signature-box text-center p-5 border-2 border-gray-200 rounded-lg">
+              <div className="signature-box text-center p-5 border-2 border-slate-200 rounded-lg">
                 <div className="signature-label font-bold mb-3">توقيع ممثل الشركة</div>
                 {contractData.company_signature ? (
                   <LazyImage 
                     src={contractData.company_signature} 
                     alt="توقيع الشركة" 
-                    className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-gray-200"
+                    className="signature-image max-w-48 max-h-24 mx-auto my-3 border border-slate-200"
                   />
                 ) : (
-                  <div className="signature-line border-t-2 border-gray-800 w-48 mx-auto my-5"></div>
+                  <div className="signature-line border-t-2 border-slate-800 w-48 mx-auto my-5"></div>
                 )}
-                <div className="text-sm text-gray-600">الطرف الثاني</div>
+                <div className="text-sm text-slate-600">الطرف الثاني</div>
               </div>
             </div>
           )}
@@ -417,7 +417,7 @@ export const ContractHtmlViewer: React.FC<ContractHtmlViewerProps> = ({
             </div>
           )}
 
-          <div className="footer mt-10 text-center text-sm text-gray-600 border-t border-gray-200 pt-5">
+          <div className="footer mt-10 text-center text-sm text-slate-600 border-t border-slate-200 pt-5">
             تم إنشاء هذا العقد بتاريخ {contractData.created_date}
           </div>
         </div>

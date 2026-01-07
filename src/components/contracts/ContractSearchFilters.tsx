@@ -147,7 +147,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="جميع الحالات" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-700 z-50">
+              <SelectContent className="bg-white dark:bg-slate-700 z-50">
                 <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="draft">مسودة</SelectItem>
                 <SelectItem value="active">نشط</SelectItem>
@@ -166,7 +166,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
               <SelectTrigger>
                 <SelectValue placeholder="جميع الأنواع" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-700 z-50">
+              <SelectContent className="bg-white dark:bg-slate-700 z-50">
                 <SelectItem value="all">جميع الأنواع</SelectItem>
                 <SelectItem value="rent_to_own">إيجار حتى التملك</SelectItem>
                 <SelectItem value="rental">إيجار</SelectItem>
@@ -287,7 +287,7 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
                   <SelectTrigger>
                     <SelectValue placeholder="جميع المراكز" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-700 z-50">
+                  <SelectContent className="bg-white dark:bg-slate-700 z-50">
                     <SelectItem value="all">جميع المراكز</SelectItem>
                     {costCenters?.map((center) => (
                       <SelectItem key={center.id} value={center.id}>

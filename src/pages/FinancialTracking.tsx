@@ -267,10 +267,10 @@ const UnpaidByMonthView: React.FC<UnpaidByMonthViewProps> = ({ allCustomers, all
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">
                 رائع! جميع العملاء دفعوا
               </h3>
-              <p className="text-gray-600">
+              <p className="text-slate-600">
                 جميع العملاء قاموا بالدفع في {selectedMonthName} {selectedYear}
               </p>
             </div>
@@ -1875,7 +1875,7 @@ const FinancialTrackingInner: React.FC = () => {
                           className={`flex items-center justify-between gap-2 p-3 rounded-lg border transition-all cursor-pointer ${
                             selectedVehicleId === vehicle.id
                               ? 'bg-primary/10 border-primary'
-                              : 'bg-white border-gray-200 hover:border-primary/50'
+                              : 'bg-white border-slate-200 hover:border-primary/50'
                           }`}
                           onClick={() => setSelectedVehicleId(vehicle.id)}
                         >
@@ -2303,7 +2303,7 @@ const FinancialTrackingInner: React.FC = () => {
                         className={isPartial ? 'bg-orange-50/50' : ''}
                       >
                         <TableCell>
-                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                          <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">
                             {(receipt as any).receipt_number || 'غير متاح'}
                           </span>
                         </TableCell>
@@ -2462,7 +2462,7 @@ const FinancialTrackingInner: React.FC = () => {
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </div>

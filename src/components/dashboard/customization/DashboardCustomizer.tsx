@@ -176,7 +176,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                   {tab.label}
                   {activeTab === tab.id && (
                     <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-coral-500"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500"
                       layoutId="tabIndicator"
                     />
                   )}
@@ -233,7 +233,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
                         settings.layout === option.value
-                          ? "bg-coral-50 border border-coral-200"
+                          ? "bg-rose-50 border border-rose-200"
                           : "bg-neutral-50 border border-transparent hover:bg-neutral-100"
                       )}
                     >
@@ -253,12 +253,12 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                         className={cn(
                           "w-4 h-4 rounded-full border-2 flex items-center justify-center",
                           settings.layout === option.value
-                            ? "border-coral-500"
+                            ? "border-rose-500"
                             : "border-neutral-300"
                         )}
                       >
                         {settings.layout === option.value && (
-                          <div className="w-2 h-2 rounded-full bg-coral-500" />
+                          <div className="w-2 h-2 rounded-full bg-rose-500" />
                         )}
                       </div>
                     </label>
@@ -277,7 +277,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       onClick={() => setSettings({ ...settings, theme: settings.theme === 'light' ? 'dark' : 'light' })}
                       className={cn(
                         "relative w-12 h-6 rounded-full transition-colors",
-                        settings.theme === 'dark' ? "bg-coral-500" : "bg-neutral-300"
+                        settings.theme === 'dark' ? "bg-rose-500" : "bg-neutral-300"
                       )}
                     >
                       <motion.div
@@ -294,7 +294,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                       onClick={() => setSettings({ ...settings, compactMode: !settings.compactMode })}
                       className={cn(
                         "relative w-12 h-6 rounded-full transition-colors",
-                        settings.compactMode ? "bg-coral-500" : "bg-neutral-300"
+                        settings.compactMode ? "bg-rose-500" : "bg-neutral-300"
                       )}
                     >
                       <motion.div
@@ -325,7 +325,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
                 </button>
                 <button
                   onClick={applySettings}
-                  className="px-4 py-2 text-sm font-medium text-white bg-coral-500 rounded-lg hover:bg-coral-600 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-rose-500 rounded-lg hover:bg-coral-600 transition-colors"
                 >
                   تطبيق
                 </button>

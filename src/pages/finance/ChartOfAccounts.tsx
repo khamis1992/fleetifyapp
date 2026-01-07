@@ -42,7 +42,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -114,7 +114,7 @@ const ChartOfAccounts = () => {
       <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
         {/* Hero Header */}
         <motion.div
-          className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+          className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -216,7 +216,7 @@ const ChartOfAccounts = () => {
             value={stats.expenseAccounts}
             subtitle="Expenses"
             icon={Receipt}
-            iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+            iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
             delay={0.3}
           />
         </div>

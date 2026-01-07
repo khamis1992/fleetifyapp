@@ -81,13 +81,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
       // Default fallback UI
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
           <Card className="max-w-2xl w-full shadow-2xl">
             <CardHeader className="text-center space-y-4">
               <div className="mx-auto w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertCircle className="w-10 h-10 text-red-600" />
               </div>
-              <CardTitle className="text-3xl font-bold text-gray-900">
+              <CardTitle className="text-3xl font-bold text-slate-900">
                 عذراً، حدث خطأ غير متوقع
               </CardTitle>
               <CardDescription className="text-lg">
@@ -97,13 +97,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             <CardContent className="space-y-6">
               {/* Error Details (only in development) */}
               {import.meta.env.DEV && this.state.error && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
-                  <p className="text-sm font-semibold text-gray-700">تفاصيل الخطأ (وضع التطوير):</p>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-semibold text-slate-700">تفاصيل الخطأ (وضع التطوير):</p>
                   <pre className="text-xs text-red-600 overflow-auto max-h-40 whitespace-pre-wrap">
                     {this.state.error.toString()}
                   </pre>
                   {this.state.errorInfo && (
-                    <pre className="text-xs text-gray-600 overflow-auto max-h-40 whitespace-pre-wrap">
+                    <pre className="text-xs text-slate-600 overflow-auto max-h-40 whitespace-pre-wrap">
                       {this.state.errorInfo.componentStack}
                     </pre>
                   )}
@@ -133,7 +133,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
               </div>
 
               {/* Help Text */}
-              <p className="text-center text-sm text-gray-600">
+              <p className="text-center text-sm text-slate-600">
                 إذا استمرت المشكلة، يرجى التواصل مع الدعم الفني
               </p>
             </CardContent>

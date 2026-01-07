@@ -113,7 +113,7 @@ export const InvoiceDisputeManagement: React.FC = () => {
   // Get status badge color
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { label: string; variant: string; color: string }> = {
-      pending: { label: 'في الانتظار', variant: 'secondary', color: 'bg-gray-500' },
+      pending: { label: 'في الانتظار', variant: 'secondary', color: 'bg-slate-500' },
       under_review: { label: 'قيد المراجعة', variant: 'default', color: 'bg-blue-500' },
       investigating: { label: 'قيد التحقيق', variant: 'default', color: 'bg-yellow-500' },
       resolved: { label: 'تم الحل', variant: 'default', color: 'bg-green-500' },

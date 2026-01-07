@@ -281,12 +281,12 @@ export const FinancialAnalyticsSection: React.FC = () => {
     return (
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         <div className="glass-card rounded-3xl p-6 animate-pulse">
-          <div className="h-8 bg-gray-200 rounded mb-4"></div>
-          <div className="h-80 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-slate-200 rounded mb-4"></div>
+          <div className="h-80 bg-slate-200 rounded"></div>
         </div>
         <div className="glass-card rounded-3xl p-6 animate-pulse">
-          <div className="h-8 bg-gray-200 rounded mb-4"></div>
-          <div className="h-80 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-slate-200 rounded mb-4"></div>
+          <div className="h-80 bg-slate-200 rounded"></div>
         </div>
       </section>
     );
@@ -303,8 +303,8 @@ export const FinancialAnalyticsSection: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">الأداء المالي</h3>
-            <p className="text-sm text-gray-600">تحليل الإيرادات والأرباح</p>
+            <h3 className="text-xl font-bold text-slate-900">الأداء المالي</h3>
+            <p className="text-sm text-slate-600">تحليل الإيرادات والأرباح</p>
           </div>
           <div className="flex gap-2">
             <button 
@@ -373,21 +373,21 @@ export const FinancialAnalyticsSection: React.FC = () => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-200">
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">معدل النمو</p>
+            <p className="text-sm text-slate-600 mb-1">معدل النمو</p>
             <p className="text-2xl font-bold text-green-600">
               {dashboardStats?.revenueChange || '0%'}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">الإيرادات الشهرية</p>
+            <p className="text-sm text-slate-600 mb-1">الإيرادات الشهرية</p>
             <p className="text-2xl font-bold text-blue-600">
               {formatCurrency(dashboardStats?.monthlyRevenue || 0).replace(/\.00/, '')}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-1">العقود النشطة</p>
+            <p className="text-sm text-slate-600 mb-1">العقود النشطة</p>
             <p className="text-2xl font-bold text-purple-600">
               {dashboardStats?.activeContracts || 0}
             </p>
@@ -404,10 +404,10 @@ export const FinancialAnalyticsSection: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">تحليل العملاء</h3>
-            <p className="text-sm text-gray-600">أداء واتجاهات العملاء</p>
+            <h3 className="text-xl font-bold text-slate-900">تحليل العملاء</h3>
+            <p className="text-sm text-slate-600">أداء واتجاهات العملاء</p>
           </div>
-          <select className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <select className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500">
             <option>هذا الشهر</option>
             <option>آخر 3 أشهر</option>
             <option>السنة الحالية</option>
@@ -449,13 +449,13 @@ export const FinancialAnalyticsSection: React.FC = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
+        <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-200">
           <div className="text-center p-4 bg-blue-50 rounded-xl">
             <p className="text-3xl font-bold text-blue-600 mb-1">
               {dashboardStats?.totalCustomers || 0}
             </p>
-            <p className="text-sm text-gray-600">إجمالي العملاء</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-sm text-slate-600">إجمالي العملاء</p>
+            <p className="text-xs text-slate-500 mt-1">
               {dashboardStats?.customersChange || '+0%'} مقارنة بالشهر السابق
             </p>
           </div>
@@ -463,8 +463,8 @@ export const FinancialAnalyticsSection: React.FC = () => {
             <p className="text-3xl font-bold text-green-600 mb-1">
               {dashboardStats?.customerSatisfactionRate || 0}%
             </p>
-            <p className="text-sm text-gray-600">معدل الرضا</p>
-            <p className="text-xs text-gray-500 mt-1">بناءً على نشاط العملاء</p>
+            <p className="text-sm text-slate-600">معدل الرضا</p>
+            <p className="text-xs text-slate-500 mt-1">بناءً على نشاط العملاء</p>
           </div>
         </div>
       </motion.div>

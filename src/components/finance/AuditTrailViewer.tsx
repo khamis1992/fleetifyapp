@@ -318,7 +318,7 @@ export function AuditTrailViewer() {
           {selectedEntry && (
             <div className="space-y-4">
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
                 <div>
                   <p className="text-sm text-muted-foreground">الإجراء</p>
                   <Badge className={getActionColor(selectedEntry.action)}>
@@ -399,14 +399,14 @@ export function AuditTrailViewer() {
 
               {/* Description */}
               {selectedEntry.description && (
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-sm text-muted-foreground mb-1">الوصف</p>
                   <p className="text-sm">{selectedEntry.description}</p>
                 </div>
               )}
 
               {/* Record ID */}
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-slate-50 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-1">معرف السجل</p>
                 <p className="text-xs font-mono">{selectedEntry.record_id}</p>
               </div>

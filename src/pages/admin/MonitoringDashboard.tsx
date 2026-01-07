@@ -46,7 +46,7 @@ export function MonitoringDashboard() {
   };
 
   const getSystemStatusIcon = () => {
-    if (!healthStatus) return <Clock className="h-6 w-6 text-gray-500" />;
+    if (!healthStatus) return <Clock className="h-6 w-6 text-slate-500" />;
 
     switch (healthStatus.overall) {
       case 'healthy':
@@ -56,7 +56,7 @@ export function MonitoringDashboard() {
       case 'unhealthy':
         return <AlertTriangle className="h-6 w-6 text-red-500" />;
       default:
-        return <Clock className="h-6 w-6 text-gray-500" />;
+        return <Clock className="h-6 w-6 text-slate-500" />;
     }
   };
 
@@ -66,7 +66,7 @@ export function MonitoringDashboard() {
   };
 
   const getSystemStatusColor = () => {
-    if (!healthStatus) return 'bg-gray-100 text-gray-800';
+    if (!healthStatus) return 'bg-slate-100 text-slate-800';
 
     switch (healthStatus.overall) {
       case 'healthy':
@@ -76,7 +76,7 @@ export function MonitoringDashboard() {
       case 'unhealthy':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
     }
   };
 

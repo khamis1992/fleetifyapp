@@ -243,7 +243,7 @@ export const ARAgingReport: React.FC = () => {
       high: { label: 'مخاطرة عالية', color: 'bg-orange-500' },
       medium: { label: 'متوسط', color: 'bg-yellow-500' },
       low: { label: 'منخفض', color: 'bg-blue-500' },
-      watch: { label: 'مراقبة', color: 'bg-gray-500' }
+      watch: { label: 'مراقبة', color: 'bg-slate-500' }
     };
     
     const badge = badges[category] || badges.watch;
@@ -567,10 +567,10 @@ const AgingBar: React.FC<{
           <span className="text-muted-foreground">{percentage.toFixed(1)}%</span>
         </div>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-slate-200 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all ${
-            percentage > 0 ? 'bg-primary' : 'bg-gray-300'
+            percentage > 0 ? 'bg-primary' : 'bg-slate-300'
           }`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />

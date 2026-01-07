@@ -55,7 +55,7 @@ interface CasesCardListProps {
 }
 
 const priorityConfig = {
-  low: { label: 'منخفض', color: 'bg-gray-500' },
+  low: { label: 'منخفض', color: 'bg-slate-500' },
   medium: { label: 'متوسط', color: 'bg-blue-500' },
   high: { label: 'عالي', color: 'bg-orange-500' },
   urgent: { label: 'عاجل', color: 'bg-red-500' },
@@ -64,7 +64,7 @@ const priorityConfig = {
 const statusConfig = {
   active: { label: 'نشطة', color: 'bg-green-600', icon: AlertCircle },
   pending: { label: 'معلقة', color: 'bg-yellow-600', icon: Clock },
-  closed: { label: 'مغلقة', color: 'bg-gray-600', icon: AlertCircle },
+  closed: { label: 'مغلقة', color: 'bg-slate-600', icon: AlertCircle },
 };
 
 const caseTypeLabels: Record<string, string> = {
@@ -89,13 +89,13 @@ const CasesCardList: React.FC<CasesCardListProps> = ({
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="h-3 bg-gray-200 rounded"></div>
-              <div className="h-3 bg-gray-200 rounded"></div>
-              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              <div className="h-3 bg-slate-200 rounded"></div>
+              <div className="h-3 bg-slate-200 rounded"></div>
+              <div className="h-3 bg-slate-200 rounded w-2/3"></div>
             </CardContent>
           </Card>
         ))}
@@ -223,7 +223,7 @@ const CasesCardList: React.FC<CasesCardListProps> = ({
               {legalCase.next_hearing_date && (
                 <div
                   className={`flex items-center gap-2 text-sm p-2 rounded-md ${
-                    isUrgent ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'
+                    isUrgent ? 'bg-orange-50 border border-orange-200' : 'bg-slate-50'
                   }`}
                 >
                   <Calendar className={`h-4 w-4 ${isUrgent ? 'text-orange-600' : 'text-muted-foreground'}`} />

@@ -129,7 +129,7 @@ const SwipeableCard = <T extends DataItem>({
         <div
           className={cn(
             'absolute inset-y-0 left-0 w-20 flex items-center justify-center',
-            swipeAction.variant === 'destructive' ? 'bg-red-500' : 'bg-coral-500'
+            swipeAction.variant === 'destructive' ? 'bg-red-500' : 'bg-rose-500'
           )}
         >
           <button

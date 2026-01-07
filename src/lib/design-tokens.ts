@@ -270,13 +270,13 @@ export const getStatusBadgeClasses = (status: string): string => {
     active: 'bg-green-100 text-green-800 border-green-200',
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     expired: 'bg-red-100 text-red-800 border-red-200',
-    cancelled: 'bg-gray-100 text-gray-800 border-gray-200',
+    cancelled: 'bg-slate-100 text-slate-800 border-slate-200',
     available: 'bg-green-100 text-green-800 border-green-200',
-    rented: 'bg-coral-100 text-coral-800 border-coral-200',
+    rented: 'bg-rose-100 text-coral-800 border-rose-200',
     maintenance: 'bg-amber-100 text-amber-800 border-amber-200',
     reserved: 'bg-blue-100 text-blue-800 border-blue-200',
   };
-  return statusClasses[status.toLowerCase()] || 'bg-gray-100 text-gray-800 border-gray-200';
+  return statusClasses[status.toLowerCase()] || 'bg-slate-100 text-slate-800 border-slate-200';
 };
 
 /**

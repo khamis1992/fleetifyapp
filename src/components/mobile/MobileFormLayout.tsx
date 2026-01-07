@@ -198,7 +198,7 @@ export const MobileFormLayout: React.FC<MobileFormLayoutProps> = ({
               <Button
                 onClick={onNext}
                 disabled={disableNext || isSubmitting}
-                className="flex-1 h-12 bg-coral-500 hover:bg-coral-600"
+                className="flex-1 h-12 bg-rose-500 hover:bg-coral-600"
               >
                 التالي
                 <ChevronLeft className="h-5 w-5 mr-2" />
@@ -207,7 +207,7 @@ export const MobileFormLayout: React.FC<MobileFormLayoutProps> = ({
               <Button
                 onClick={onSubmit}
                 disabled={disableNext || isSubmitting}
-                className="flex-1 h-12 bg-coral-500 hover:bg-coral-600"
+                className="flex-1 h-12 bg-rose-500 hover:bg-coral-600"
               >
                 {isSubmitting ? (
                   <>

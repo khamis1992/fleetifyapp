@@ -58,7 +58,7 @@ export const generateReportContent = (
     for (let i = 0; i < Math.min(3, entries.length); i++) {
       const [key, value] = entries[i];
       const label = getSummaryLabel(key);
-      let colorClass = 'text-gray-800';
+      let colorClass = 'text-slate-800';
 
       if (key.includes('paid') || key.includes('active') || key.includes('resolved')) {
         colorClass = 'text-green-700';
@@ -71,8 +71,8 @@ export const generateReportContent = (
         : value?.toString() || '0';
 
       cards.push(`
-        <div class="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm no-break">
-          <h4 class="text-sm text-gray-500 mb-2">${label}</h4>
+        <div class="bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm no-break">
+          <h4 class="text-sm text-slate-500 mb-2">${label}</h4>
           <p class="text-3xl font-bold ${colorClass}">${formattedValue}</p>
         </div>
       `);

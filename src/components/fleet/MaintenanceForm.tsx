@@ -94,7 +94,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
     try {
       const maintenanceData = {
         ...data,
-        company_id: user?.user_metadata?.company_id,
+        company_id: user?.profile?.company_id || user?.company?.id || '',
         estimated_cost: data.estimated_cost ? parseFloat(data.estimated_cost) : 0,
         tax_amount: data.tax_amount ? parseFloat(data.tax_amount) : 0,
         parts_replaced: data.parts_replaced ? data.parts_replaced.split(",").map((p: string) => p.trim()) : [],
@@ -197,15 +197,15 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-4">
             {/* Step 1: Basic Information */}
-            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+            <div className="step-card bg-white border border-slate-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-slate-100">
                 <div className="flex items-center gap-3">
                   <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
                     1
                   </span>
                   <h3 className="text-lg font-bold">المعلومات الأساسية</h3>
                 </div>
-                <span className="text-xs text-gray-500">1/4</span>
+                <span className="text-xs text-slate-500">1/4</span>
               </div>
 
               <div className="space-y-5">
@@ -361,15 +361,15 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
             </div>
 
             {/* Step 2: Financial Information */}
-            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+            <div className="step-card bg-white border border-slate-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-slate-100">
                 <div className="flex items-center gap-3">
                   <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
                     2
                   </span>
                   <h3 className="text-lg font-bold">المعلومات المالية</h3>
                 </div>
-                <span className="text-xs text-gray-500">2/4</span>
+                <span className="text-xs text-slate-500">2/4</span>
               </div>
 
               <div className="space-y-5">
@@ -446,15 +446,15 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
             </div>
 
             {/* Step 3: Service Provider */}
-            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+            <div className="step-card bg-white border border-slate-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-slate-100">
                 <div className="flex items-center gap-3">
                   <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
                     3
                   </span>
                   <h3 className="text-lg font-bold">مزود الخدمة</h3>
                 </div>
-                <span className="text-xs text-gray-500">3/4</span>
+                <span className="text-xs text-slate-500">3/4</span>
               </div>
 
               <div className="space-y-5">
@@ -514,15 +514,15 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
             </div>
 
             {/* Step 4: Additional Settings */}
-            <div className="step-card bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+            <div className="step-card bg-white border border-slate-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-slate-100">
                 <div className="flex items-center gap-3">
                   <span className="step-number w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm">
                     4
                   </span>
                   <h3 className="text-lg font-bold">إعدادات إضافية</h3>
                 </div>
-                <span className="text-xs text-gray-500">4/4</span>
+                <span className="text-xs text-slate-500">4/4</span>
               </div>
 
               <div className="space-y-5">
@@ -584,10 +584,10 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
                     className="mt-1"
                   />
                   <label htmlFor="moveToMaintenance" className="flex-1 cursor-pointer">
-                    <div className="font-semibold text-gray-900 mb-1">
+                    <div className="font-semibold text-slate-900 mb-1">
                       نقل المركبة إلى قسم الصيانة تلقائياً
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs text-slate-600">
                       عند تفعيل هذا الخيار، ستختفي المركبة من قائمة الأسطول وتظهر في قسم الصيانة حتى انتهاء الصيانة
                     </div>
                   </label>
@@ -596,7 +596,7 @@ export function MaintenanceForm({ maintenance, vehicleId, open, onOpenChange }: 
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
               <Button 
                 type="button" 
                 variant="outline" 

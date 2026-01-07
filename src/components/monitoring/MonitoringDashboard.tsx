@@ -31,7 +31,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, tre
       case 'good': return 'text-green-600';
       case 'warning': return 'text-yellow-600';
       case 'critical': return 'text-red-600';
-      default: return 'text-gray-600';
+      default: return 'text-slate-600';
     }
   };
 
@@ -50,9 +50,9 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, unit, status, tre
           <div className="flex items-center space-x-2">
             {icon}
             <div>
-              <p className="text-sm font-medium text-gray-600">{title}</p>
+              <p className="text-sm font-medium text-slate-600">{title}</p>
               <p className={`text-2xl font-bold ${getStatusColor()}`}>
-                {value}{unit && <span className="text-sm text-gray-500 ml-1">{unit}</span>}
+                {value}{unit && <span className="text-sm text-slate-500 ml-1">{unit}</span>}
               </p>
             </div>
           </div>
@@ -104,7 +104,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({ error, onResolve, onIgnore }) =
       </AlertTitle>
       <AlertDescription>
         <div className="flex items-center justify-between mt-2">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-slate-600">
             <span>{error.context?.component} • {formatTime(error.lastSeen)}</span>
             <span className="ml-2">Occurrences: {error.occurrences}</span>
           </div>
@@ -201,7 +201,7 @@ export const MonitoringDashboard: React.FC = () => {
       case 'healthy': return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'degraded': return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       case 'unhealthy': return <XCircle className="h-5 w-5 text-red-500" />;
-      default: return <Activity className="h-5 w-5 text-gray-500" />;
+      default: return <Activity className="h-5 w-5 text-slate-500" />;
     }
   };
 
@@ -216,11 +216,11 @@ export const MonitoringDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">System Monitoring Dashboard</h1>
-          <p className="text-gray-600">Real-time system health and performance metrics</p>
+          <h1 className="text-3xl font-bold text-slate-900">System Monitoring Dashboard</h1>
+          <p className="text-slate-600">Real-time system health and performance metrics</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <div className="flex items-center space-x-2 text-sm text-slate-600">
             <Clock className="h-4 w-4" />
             <span>Last refresh: {lastRefresh.toLocaleTimeString()}</span>
           </div>
@@ -318,7 +318,7 @@ export const MonitoringDashboard: React.FC = () => {
                     />
                   ))}
                   {errors.length === 0 && (
-                    <p className="text-center text-gray-500 py-4">No recent errors</p>
+                    <p className="text-center text-slate-500 py-4">No recent errors</p>
                   )}
                 </div>
               </CardContent>
@@ -341,7 +341,7 @@ export const MonitoringDashboard: React.FC = () => {
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="text-sm font-medium">{metric.name}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-500">
                           {metric.value} {metric.unit}
                         </p>
                       </div>
@@ -402,7 +402,7 @@ export const MonitoringDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold">Error Management</h3>
-              <p className="text-gray-600">Monitor and manage system errors</p>
+              <p className="text-slate-600">Monitor and manage system errors</p>
             </div>
             <div className="flex space-x-2">
               <Button variant="outline" size="sm">
@@ -543,7 +543,7 @@ export const MonitoringDashboard: React.FC = () => {
                         }`} />
                         <span className="text-sm font-medium">{service.service}</span>
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-slate-600">
                         {service.responseTime}ms
                       </div>
                     </div>
@@ -583,7 +583,7 @@ export const MonitoringDashboard: React.FC = () => {
               <CardTitle>Business Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">Business metrics integration coming soon...</p>
+              <p className="text-slate-600">Business metrics integration coming soon...</p>
             </CardContent>
           </Card>
         </TabsContent>

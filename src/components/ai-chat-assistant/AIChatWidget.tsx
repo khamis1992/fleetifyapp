@@ -166,7 +166,7 @@ const ActionButtons: React.FC<{
       case 'tour':
         return 'border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300';
       case 'action':
-        return 'bg-gradient-to-r from-coral-500 to-orange-500 text-white hover:from-coral-600 hover:to-orange-600 border-0';
+        return 'bg-gradient-to-r from-rose-500 to-orange-500 text-white hover:from-coral-600 hover:to-orange-600 border-0';
     }
   };
 
@@ -279,7 +279,7 @@ const MessageBubble: React.FC<{
       <div className={cn(
         'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
         isUser 
-          ? 'bg-gradient-to-br from-coral-500 to-orange-500 text-white'
+          ? 'bg-gradient-to-br from-rose-500 to-orange-500 text-white'
           : 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white'
       )}>
         {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
@@ -289,7 +289,7 @@ const MessageBubble: React.FC<{
       <div className={cn(
         'max-w-[85%] rounded-2xl px-4 py-3 shadow-sm',
         isUser 
-          ? 'bg-gradient-to-br from-coral-500 to-orange-500 text-white rounded-br-md'
+          ? 'bg-gradient-to-br from-rose-500 to-orange-500 text-white rounded-br-md'
           : 'bg-white border border-neutral-200 text-neutral-800 rounded-bl-md'
       )}>
         {message.isStreaming && !message.content ? (

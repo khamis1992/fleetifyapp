@@ -74,13 +74,13 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
   const getScoreBg = (value: number) => {
     if (value >= 70) return 'bg-green-500';
     if (value >= 40) return 'bg-amber-500';
-    return 'bg-coral-500';
+    return 'bg-rose-500';
   };
 
   const getTrendIcon = () => {
     switch (score.trend) {
       case 'up': return <TrendingUp className="w-4 h-4 text-green-500" />;
-      case 'down': return <TrendingDown className="w-4 h-4 text-coral-500" />;
+      case 'down': return <TrendingDown className="w-4 h-4 text-rose-500" />;
       default: return <Minus className="w-4 h-4 text-neutral-400" />;
     }
   };
@@ -89,7 +89,7 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
     <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-coral-100 rounded-lg">
+          <div className="p-2 bg-rose-100 rounded-lg">
             <Heart className="w-5 h-5 text-coral-600" />
           </div>
           <span className="font-semibold text-neutral-900">صحة العميل</span>
@@ -177,7 +177,7 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
           </div>
         )}
         {score.factors.negative.length > 0 && (
-          <div className="bg-coral-50 rounded-xl p-2.5 border border-coral-100">
+          <div className="bg-rose-50 rounded-xl p-2.5 border border-rose-100">
             <div className="flex items-center gap-1 text-coral-600 font-medium mb-1.5">
               <AlertTriangle className="w-3 h-3" />
               تحتاج تحسين
@@ -185,7 +185,7 @@ function HealthScoreDisplay({ score }: { score: CustomerHealthScore }) {
             <ul className="space-y-1 text-neutral-600">
               {score.factors.negative.slice(0, 3).map((f, i) => (
                 <li key={i} className="flex items-start gap-1">
-                  <AlertCircle className="w-3 h-3 text-coral-500 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="w-3 h-3 text-rose-500 mt-0.5 flex-shrink-0" />
                   <span className="line-clamp-1">{f}</span>
                 </li>
               ))}
@@ -216,18 +216,18 @@ function InfoCard({ icon: Icon, label, value, copyable }: {
   if (!value) return null;
 
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0 group">
-      <div className="p-2 bg-gray-50 rounded-lg text-gray-500">
+    <div className="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0 group">
+      <div className="p-2 bg-slate-50 rounded-lg text-slate-500">
         <Icon className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-sm font-medium text-gray-800 truncate">{value}</p>
+        <p className="text-xs text-slate-400">{label}</p>
+        <p className="text-sm font-medium text-slate-800 truncate">{value}</p>
       </div>
       {copyable && (
         <button
           onClick={handleCopy}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition"
+          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded opacity-0 group-hover:opacity-100 transition"
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
@@ -246,7 +246,7 @@ function StatCard({ label, value, subValue, type }: {
   const styles = {
     success: 'bg-green-50 border-green-100 text-green-700',
     warning: 'bg-amber-50 border-amber-100 text-amber-700',
-    danger: 'bg-coral-50 border-coral-100 text-coral-700',
+    danger: 'bg-rose-50 border-rose-100 text-coral-700',
     info: 'bg-blue-50 border-blue-100 text-blue-700',
   };
 
@@ -315,11 +315,11 @@ export function CustomerSidePanel({
             dir="rtl"
           >
             {/* Header */}
-            <div className="flex-shrink-0 border-b bg-gray-50/80 backdrop-blur">
+            <div className="flex-shrink-0 border-b bg-slate-50/80 backdrop-blur">
               <div className="flex items-center justify-between p-4">
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-500"
+                  className="p-2 hover:bg-slate-200 rounded-lg transition text-slate-500"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -384,7 +384,7 @@ export function CustomerSidePanel({
                       {getInitials()}
                     </div>
                     <div className="flex-1">
-                      <h2 className="text-xl font-bold text-gray-900">{getFullName()}</h2>
+                      <h2 className="text-xl font-bold text-slate-900">{getFullName()}</h2>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant="outline" className="text-xs">
                           {customer.basic.customer_code}
@@ -392,7 +392,7 @@ export function CustomerSidePanel({
                         {customer.basic.is_active ? (
                           <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">نشط</Badge>
                         ) : (
-                          <Badge className="bg-gray-100 text-gray-600">غير نشط</Badge>
+                          <Badge className="bg-slate-100 text-slate-600">غير نشط</Badge>
                         )}
                         {customer.basic.is_blacklisted && (
                           <Badge className="bg-red-100 text-red-700 border-red-200">قائمة سوداء</Badge>
@@ -413,16 +413,16 @@ export function CustomerSidePanel({
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center h-64">
-                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                  <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                 </div>
               ) : error ? (
                 <div className="p-8 text-center">
                   <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                  <p className="text-gray-600">حدث خطأ في تحميل البيانات</p>
+                  <p className="text-slate-600">حدث خطأ في تحميل البيانات</p>
                 </div>
               ) : customer ? (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="p-4">
-                  <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-gray-100 rounded-xl">
+                  <TabsList className="w-full grid grid-cols-5 h-auto p-1 bg-slate-100 rounded-xl">
                     <TabsTrigger value="overview" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">نظرة عامة</TabsTrigger>
                     <TabsTrigger value="financial" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">مالي</TabsTrigger>
                     <TabsTrigger value="contracts" className="text-xs py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg">عقود</TabsTrigger>
@@ -467,7 +467,7 @@ export function CustomerSidePanel({
 
                     {/* Contact Info */}
                     <div className="bg-white rounded-xl border p-4">
-                      <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                         <User className="w-4 h-4" />
                         معلومات الاتصال
                       </h3>
@@ -480,7 +480,7 @@ export function CustomerSidePanel({
 
                     {/* Identity Documents */}
                     <div className="bg-white rounded-xl border p-4">
-                      <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                         <CreditCard className="w-4 h-4" />
                         بيانات الهوية
                       </h3>
@@ -505,13 +505,13 @@ export function CustomerSidePanel({
 
                     {/* Documents Status */}
                     <div className="bg-white rounded-xl border p-4">
-                      <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                         <FileText className="w-4 h-4" />
                         حالة الوثائق
                       </h3>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between py-2">
-                          <span className="text-sm text-gray-600">الهوية الوطنية</span>
+                          <span className="text-sm text-slate-600">الهوية الوطنية</span>
                           {customer.basic?.national_id ? (
                             <Badge className="bg-emerald-50 text-emerald-700">متوفرة</Badge>
                           ) : (
@@ -519,7 +519,7 @@ export function CustomerSidePanel({
                           )}
                         </div>
                         <div className="flex items-center justify-between py-2">
-                          <span className="text-sm text-gray-600">رخصة القيادة</span>
+                          <span className="text-sm text-slate-600">رخصة القيادة</span>
                           {customer.basic?.license_number ? (
                             customer.basic.license_expiry && new Date(customer.basic.license_expiry) < new Date() ? (
                               <Badge className="bg-amber-50 text-amber-700">منتهية</Badge>
@@ -550,8 +550,8 @@ export function CustomerSidePanel({
                                   <Clock className="w-3.5 h-3.5" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-800 truncate">{followup.title}</p>
-                                  <p className="text-xs text-gray-500">
+                                  <p className="text-sm font-medium text-slate-800 truncate">{followup.title}</p>
+                                  <p className="text-xs text-slate-500">
                                     {format(new Date(followup.scheduled_date), 'dd/MM/yyyy', { locale: ar })}
                                     {followup.scheduled_time && ` - ${followup.scheduled_time}`}
                                   </p>
@@ -580,7 +580,7 @@ export function CustomerSidePanel({
                       return (
                         <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
                           <div className="flex items-center gap-2 mb-4">
-                            <div className="p-2 bg-coral-100 rounded-lg">
+                            <div className="p-2 bg-rose-100 rounded-lg">
                               <Banknote className="w-4 h-4 text-coral-600" />
                             </div>
                             <span className="font-semibold text-neutral-900">الملخص المالي</span>
@@ -598,7 +598,7 @@ export function CustomerSidePanel({
                                 {totalPaid.toLocaleString('en-US')}
                               </p>
                             </div>
-                            <div className="p-3 bg-coral-50 rounded-xl">
+                            <div className="p-3 bg-rose-50 rounded-xl">
                               <p className="text-[11px] text-coral-600 mb-1">المتبقي</p>
                               <p className="text-xl font-bold text-coral-700">
                                 {totalOutstanding.toLocaleString('en-US')}
@@ -618,15 +618,15 @@ export function CustomerSidePanel({
                     {/* Payment Behavior */}
                     {customer.behavior && (
                       <div className="bg-white rounded-xl border p-4">
-                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                           <Target className="w-4 h-4" />
                           سلوك الدفع
                         </h3>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">معدل الالتزام</span>
+                            <span className="text-sm text-slate-600">معدل الالتزام</span>
                             <div className="flex items-center gap-2">
-                              <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-emerald-500 rounded-full"
                                   style={{ width: `${customer.behavior.on_time_payment_rate || 0}%` }}
@@ -636,9 +636,9 @@ export function CustomerSidePanel({
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">معدل الاستجابة</span>
+                            <span className="text-sm text-slate-600">معدل الاستجابة</span>
                             <div className="flex items-center gap-2">
-                              <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-blue-500 rounded-full"
                                   style={{ width: `${customer.behavior.response_rate || 0}%` }}
@@ -648,9 +648,9 @@ export function CustomerSidePanel({
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">الالتزام بالوعود</span>
+                            <span className="text-sm text-slate-600">الالتزام بالوعود</span>
                             <div className="flex items-center gap-2">
-                              <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-purple-500 rounded-full"
                                   style={{ width: `${customer.behavior.promise_keeping_rate || 0}%` }}
@@ -674,23 +674,23 @@ export function CustomerSidePanel({
 
                     {/* Recent Invoices */}
                     <div className="bg-white rounded-xl border p-4">
-                      <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                         <FileText className="w-4 h-4" />
                         آخر الفواتير
                       </h3>
                       <div className="space-y-2">
                         {customer.invoices.slice(0, 5).map(invoice => (
-                          <div key={invoice.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg">
+                          <div key={invoice.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
                             <div>
-                              <p className="text-sm font-medium text-gray-800">
+                              <p className="text-sm font-medium text-slate-800">
                                 {invoice.invoice_number || '#' + invoice.id.substring(0, 8)}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-slate-500">
                                 {format(new Date(invoice.created_at), 'dd/MM/yyyy')}
                               </p>
                             </div>
                             <div className="text-left">
-                              <p className="text-sm font-bold text-gray-800">
+                              <p className="text-sm font-bold text-slate-800">
                                 {invoice.total_amount.toLocaleString()} ر.ق
                               </p>
                               <Badge
@@ -713,18 +713,18 @@ export function CustomerSidePanel({
                     {/* Payment Promises */}
                     {customer.promises.length > 0 && (
                       <div className="bg-white rounded-xl border p-4">
-                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                           <Star className="w-4 h-4" />
                           وعود الدفع
                         </h3>
                         <div className="space-y-2">
                           {customer.promises.slice(0, 3).map(promise => (
-                            <div key={promise.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg">
+                            <div key={promise.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
                               <div>
-                                <p className="text-sm font-medium text-gray-800">
+                                <p className="text-sm font-medium text-slate-800">
                                   {promise.promised_amount.toLocaleString()} ر.ق
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-slate-500">
                                   {format(new Date(promise.promise_date), 'dd/MM/yyyy')}
                                 </p>
                               </div>
@@ -749,12 +749,12 @@ export function CustomerSidePanel({
                   {/* العقود */}
                   <TabsContent value="contracts" className="mt-4 space-y-4">
                     {customer.contracts.length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
+                      <div className="text-center py-12 text-slate-500">
                         <Car className="w-12 h-12 mx-auto mb-3 opacity-30" />
                         <p>لا توجد عقود لهذا العميل</p>
                         {onNewContract && (
                           <Button
-                            className="mt-3 bg-coral-500 hover:bg-coral-600"
+                            className="mt-3 bg-rose-500 hover:bg-coral-600"
                             onClick={() => onNewContract(customer.basic!.id)}
                           >
                             <Plus className="w-4 h-4 ml-1" />
@@ -775,23 +775,23 @@ export function CustomerSidePanel({
                             onClick={() => navigate(`/contracts/${contract.contract_number}`)}
                             className={cn(
                               'rounded-xl border p-4 transition cursor-pointer hover:shadow-md hover:scale-[1.02] hover:border-coral-400',
-                              isActive ? 'bg-white border-blue-200' : 'bg-gray-50 border-gray-200'
+                              isActive ? 'bg-white border-blue-200' : 'bg-slate-50 border-slate-200'
                             )}
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center gap-2">
                                 <div className={cn(
                                   'p-2 rounded-lg',
-                                  isActive ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
+                                  isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
                                 )}>
                                   <Car className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <p className="font-bold text-gray-800">{contract.contract_number}</p>
+                                  <p className="font-bold text-slate-800">{contract.contract_number}</p>
                                   <Badge
                                     className={cn(
                                       'text-[10px] mt-1',
-                                      isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                      isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
                                     )}
                                   >
                                     {isActive ? 'نشط' : contract.status}
@@ -799,14 +799,14 @@ export function CustomerSidePanel({
                                 </div>
                               </div>
                               <div className="text-left">
-                                <p className="text-lg font-bold text-gray-800">
+                                <p className="text-lg font-bold text-slate-800">
                                   {contract.monthly_amount.toLocaleString()} ر.ق
                                 </p>
-                                <p className="text-xs text-gray-500">شهرياً</p>
+                                <p className="text-xs text-slate-500">شهرياً</p>
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between text-sm text-gray-600">
+                            <div className="flex items-center justify-between text-sm text-slate-600">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />
                                 <span>{format(new Date(contract.start_date), 'dd/MM/yyyy')}</span>
@@ -835,8 +835,8 @@ export function CustomerSidePanel({
                           {customer.penalties.slice(0, 3).map(penalty => (
                             <div key={penalty.id} className="flex items-center justify-between bg-white p-2.5 rounded-lg">
                               <div>
-                                <p className="text-sm font-medium text-gray-800">{penalty.violation_type || 'مخالفة مرورية'}</p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-sm font-medium text-slate-800">{penalty.violation_type || 'مخالفة مرورية'}</p>
+                                <p className="text-xs text-slate-500">
                                   {format(new Date(penalty.penalty_date), 'dd/MM/yyyy')}
                                   {penalty.vehicle_plate && ` - ${penalty.vehicle_plate}`}
                                 </p>
@@ -863,7 +863,7 @@ export function CustomerSidePanel({
                   <TabsContent value="history" className="mt-4 space-y-4">
                     <div className="relative">
                       {/* Timeline line */}
-                      <div className="absolute top-0 bottom-0 right-4 w-0.5 bg-gray-200" />
+                      <div className="absolute top-0 bottom-0 right-4 w-0.5 bg-slate-200" />
 
                       <div className="space-y-4">
                         {customer.notes.map((note, index) => (
@@ -873,7 +873,7 @@ export function CustomerSidePanel({
                               'absolute right-2 w-4 h-4 rounded-full border-2 bg-white',
                               note.note_type === 'phone' ? 'border-blue-500' :
                               note.note_type === 'message' ? 'border-emerald-500' :
-                              'border-gray-400'
+                              'border-slate-400'
                             )} />
 
                             <div className={cn(
@@ -884,22 +884,22 @@ export function CustomerSidePanel({
                                 <div className="flex items-center gap-2">
                                   {note.note_type === 'phone' && <Phone className="w-4 h-4 text-blue-500" />}
                                   {note.note_type === 'message' && <MessageCircle className="w-4 h-4 text-emerald-500" />}
-                                  <span className="text-sm font-medium text-gray-800">{note.title}</span>
+                                  <span className="text-sm font-medium text-slate-800">{note.title}</span>
                                   {note.is_important && (
                                     <Badge className="bg-amber-100 text-amber-700 text-[10px]">مهم</Badge>
                                   )}
                                 </div>
-                                <span className="text-xs text-gray-400">
+                                <span className="text-xs text-slate-400">
                                   {format(new Date(note.created_at), 'dd/MM/yyyy HH:mm')}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 whitespace-pre-wrap">{note.content}</p>
+                              <p className="text-sm text-slate-600 whitespace-pre-wrap">{note.content}</p>
                             </div>
                           </div>
                         ))}
 
                         {customer.notes.length === 0 && (
-                          <div className="text-center py-12 text-gray-500">
+                          <div className="text-center py-12 text-slate-500">
                             <History className="w-12 h-12 mx-auto mb-3 opacity-30" />
                             <p>لا يوجد سجل تفاعلات</p>
                             <Button
@@ -918,7 +918,7 @@ export function CustomerSidePanel({
                   {/* القانوني */}
                   <TabsContent value="legal" className="mt-4 space-y-4">
                     {customer.legalCases.length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
+                      <div className="text-center py-12 text-slate-500">
                         <Scale className="w-12 h-12 mx-auto mb-3 opacity-30" />
                         <p>لا توجد قضايا قانونية</p>
                       </div>
@@ -929,7 +929,7 @@ export function CustomerSidePanel({
                           className={cn(
                             'rounded-xl border p-4',
                             legalCase.case_status === 'closed' || legalCase.case_status === 'resolved'
-                              ? 'bg-gray-50 border-gray-200'
+                              ? 'bg-slate-50 border-slate-200'
                               : 'bg-white border-red-200'
                           )}
                         >
@@ -939,13 +939,13 @@ export function CustomerSidePanel({
                                 'p-2 rounded-lg',
                                 legalCase.priority === 'high' ? 'bg-red-50 text-red-600' :
                                 legalCase.priority === 'medium' ? 'bg-amber-50 text-amber-600' :
-                                'bg-gray-100 text-gray-600'
+                                'bg-slate-100 text-slate-600'
                               )}>
                                 <Scale className="w-4 h-4" />
                               </div>
                               <div>
-                                <p className="font-bold text-gray-800">{legalCase.case_number}</p>
-                                <p className="text-xs text-gray-500">{legalCase.case_title}</p>
+                                <p className="font-bold text-slate-800">{legalCase.case_number}</p>
+                                <p className="text-xs text-slate-500">{legalCase.case_title}</p>
                               </div>
                             </div>
                             <Badge
@@ -963,7 +963,7 @@ export function CustomerSidePanel({
                             </Badge>
                           </div>
 
-                          <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div className="flex items-center justify-between text-sm text-slate-600">
                             <span>النوع: {legalCase.case_type}</span>
                             {legalCase.case_value && (
                               <span className="font-bold">{legalCase.case_value.toLocaleString()} ر.ق</span>
@@ -986,10 +986,10 @@ export function CustomerSidePanel({
 
             {/* Footer Actions */}
             {customer?.basic && (
-              <div className="flex-shrink-0 border-t bg-gray-50 p-4">
+              <div className="flex-shrink-0 border-t bg-slate-50 p-4">
                 <div className="flex gap-2">
                   <Button
-                    className="flex-1 bg-[#F15555] hover:bg-[#d64545]"
+                    className="flex-1 bg-rose-500 hover:bg-[#d64545]"
                     onClick={() => onAddNote?.(customer.basic!.id)}
                   >
                     إضافة ملاحظة

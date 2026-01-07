@@ -60,7 +60,7 @@ const getConditionColor = (condition: string) => {
     case 'damaged':
       return 'text-red-600';
     default:
-      return 'text-gray-600';
+      return 'text-slate-600';
   }
 };
 

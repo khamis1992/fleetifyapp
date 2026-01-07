@@ -345,14 +345,14 @@ export const FixMissingInvoices: React.FC = () => {
                             {result.invoices_created}
                           </Badge>
                         ) : (
-                          <span className="text-gray-400">0</span>
+                          <span className="text-slate-400">0</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {result.invoices_skipped > 0 ? (
                           <Badge variant="secondary">{result.invoices_skipped}</Badge>
                         ) : (
-                          <span className="text-gray-400">0</span>
+                          <span className="text-slate-400">0</span>
                         )}
                       </TableCell>
                       <TableCell>

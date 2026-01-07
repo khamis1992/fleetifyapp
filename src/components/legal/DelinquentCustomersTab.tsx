@@ -203,7 +203,7 @@ const RiskBadge: React.FC<{ level: string; score: number }> = ({ level, score })
       </div>
       {/* Visual Risk Indicator */}
       <div className="flex items-center gap-2">
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-12 h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div 
             className={cn("h-full transition-all", color)}
             style={{ width: `${Math.min(score, 100)}%` }}
@@ -996,9 +996,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all",
                   contractStatusFilter === id
-                    ? id === 'cancelled' ? 'bg-red-500 text-white' : id === 'closed' ? 'bg-gray-500 text-white' : 'bg-green-500 text-white'
+                    ? id === 'cancelled' ? 'bg-red-500 text-white' : id === 'closed' ? 'bg-slate-500 text-white' : 'bg-green-500 text-white'
                     : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' 
-                    : id === 'closed' ? 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                    : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
                     : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
                 )}
               >
@@ -1245,7 +1245,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                                       "w-3 h-3",
                                       i <= (customer.payment_history_score || 3)
                                         ? "text-yellow-400 fill-current"
-                                        : "text-gray-300"
+                                        : "text-slate-300"
                                     )}
                                   />
                                 ))}
@@ -1334,9 +1334,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                         <div className={cn(
                           "flex items-center justify-center w-14 h-14 rounded-xl text-sm font-bold",
                           customer.days_overdue > 90
-                            ? "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
+                            ? "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-rose-500/30"
                             : customer.days_overdue > 60
-                              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+                              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-amber-500/30"
                               : customer.days_overdue > 30
                                 ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
                                 : "bg-slate-800 text-white"

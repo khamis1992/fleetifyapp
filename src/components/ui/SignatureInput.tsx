@@ -238,7 +238,7 @@ export function SignatureInput({
                   ref={canvasRef}
                   className={cn(
                     'border-2 border-dashed rounded-md cursor-crosshair',
-                    hasSignature ? 'border-green-500' : 'border-gray-300'
+                    hasSignature ? 'border-green-500' : 'border-slate-300'
                   )}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
@@ -298,7 +298,7 @@ export function SignatureInput({
                 </div>
 
                 {textSignature.trim() && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-8 bg-white">
+                  <div className="border-2 border-dashed border-slate-300 rounded-md p-8 bg-white">
                     <p
                       className="text-4xl text-center"
                       style={{ fontFamily: 'cursive' }}

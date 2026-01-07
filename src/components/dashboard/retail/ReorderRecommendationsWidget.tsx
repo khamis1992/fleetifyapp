@@ -240,25 +240,25 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
               <div className="text-2xl font-bold text-red-600">
                 {recommendations.urgencyCount.critical}
               </div>
-              <div className="text-xs text-gray-600 mt-1">حرج</div>
+              <div className="text-xs text-slate-600 mt-1">حرج</div>
             </div>
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-3 rounded-lg border border-orange-100">
               <div className="text-2xl font-bold text-orange-600">
                 {recommendations.urgencyCount.high}
               </div>
-              <div className="text-xs text-gray-600 mt-1">عالي</div>
+              <div className="text-xs text-slate-600 mt-1">عالي</div>
             </div>
             <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-3 rounded-lg border border-yellow-100">
               <div className="text-2xl font-bold text-yellow-600">
                 {recommendations.urgencyCount.medium}
               </div>
-              <div className="text-xs text-gray-600 mt-1">متوسط</div>
+              <div className="text-xs text-slate-600 mt-1">متوسط</div>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-3 rounded-lg border border-blue-100">
               <div className="text-xl font-bold text-blue-600">
                 {formatCurrency(recommendations.totalEstimatedCost)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">التكلفة المقدرة</div>
+              <div className="text-xs text-slate-600 mt-1">التكلفة المقدرة</div>
             </div>
           </div>
 
@@ -272,7 +272,7 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
                 {recommendations.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                    className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:shadow-md transition-shadow"
                   >
                     <Checkbox
                       checked={selectedItems.has(item.id)}
@@ -282,10 +282,10 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-sm text-gray-900">
+                          <div className="font-medium text-sm text-slate-900">
                             {item.itemName}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-slate-500 mt-1">
                             {item.itemCode && `رمز: ${item.itemCode}`}
                           </div>
                         </div>
@@ -294,15 +294,15 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs">
                         <div>
-                          <div className="text-gray-500">المخزون الحالي</div>
+                          <div className="text-slate-500">المخزون الحالي</div>
                           <div className="font-semibold text-red-600">{item.currentStock}</div>
                         </div>
                         <div>
-                          <div className="text-gray-500">الكمية الموصى بها</div>
+                          <div className="text-slate-500">الكمية الموصى بها</div>
                           <div className="font-semibold text-green-600">{item.reorderQuantity}</div>
                         </div>
                         <div>
-                          <div className="text-gray-500">أيام حتى النفاد</div>
+                          <div className="text-slate-500">أيام حتى النفاد</div>
                           <div className="font-semibold text-orange-600">
                             {item.daysUntilStockout < 999
                               ? `${Math.ceil(item.daysUntilStockout)} يوم`
@@ -310,14 +310,14 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
                           </div>
                         </div>
                         <div>
-                          <div className="text-gray-500">التكلفة المقدرة</div>
+                          <div className="text-slate-500">التكلفة المقدرة</div>
                           <div className="font-semibold text-blue-600">
                             {formatCurrency(item.estimatedCost)}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           سرعة البيع: {item.dailySalesVelocity.toFixed(1)} وحدة/يوم
@@ -345,10 +345,10 @@ export const ReorderRecommendationsWidget: React.FC<ReorderRecommendationsWidget
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-semibold text-slate-900">
                     تم اختيار {selectedItems.size} منتج
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-slate-600 mt-1">
                     التكلفة الإجمالية: {formatCurrency(selectedItemsCost)}
                   </div>
                 </div>

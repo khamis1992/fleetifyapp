@@ -66,7 +66,7 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
               <FileText className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-gray-600">إجمالي المخالفات</p>
+                <p className="text-sm text-slate-600">إجمالي المخالفات</p>
               </div>
             </div>
           </CardContent>
@@ -78,7 +78,7 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-2xl font-bold">{stats.matched}</p>
-                <p className="text-sm text-gray-600">مطابقة للمركبات</p>
+                <p className="text-sm text-slate-600">مطابقة للمركبات</p>
                 <p className="text-xs text-green-600">
                   {stats.total > 0 ? Math.round((stats.matched / stats.total) * 100) : 0}% نجاح
                 </p>
@@ -93,7 +93,7 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
               <AlertTriangle className="h-5 w-5 text-red-600" />
               <div>
                 <p className="text-2xl font-bold">{stats.errors}</p>
-                <p className="text-sm text-gray-600">أخطاء</p>
+                <p className="text-sm text-slate-600">أخطاء</p>
                 <p className="text-xs text-red-600">
                   {stats.total > 0 ? Math.round((stats.errors / stats.total) * 100) : 0}% فشل
                 </p>
@@ -108,8 +108,8 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
               <DollarSign className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalFines.toFixed(2)}</p>
-                <p className="text-sm text-gray-600">إجمالي الغرامات (د.ك)</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm text-slate-600">إجمالي الغرامات (د.ك)</p>
+                <p className="text-xs text-slate-500">
                   متوسط: {stats.avgFine.toFixed(2)} د.ك
                 </p>
               </div>
@@ -144,14 +144,14 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{count}</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         ({Math.round((count / stats.total) * 100)}%)
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-slate-500 text-center py-4">
                   لا توجد بيانات متاحة
                 </p>
               )}
@@ -183,14 +183,14 @@ export const TrafficViolationStats: React.FC<ViolationStatsProps> = ({ violation
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{count}</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         ({Math.round((count / stats.total) * 100)}%)
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-slate-500 text-center py-4">
                   لا توجد بيانات متاحة
                 </p>
               )}

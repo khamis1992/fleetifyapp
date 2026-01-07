@@ -59,7 +59,7 @@ const priorityStyles: Record<string, string> = {
   urgent: 'bg-red-100 text-red-700 border-red-200',
   high: 'bg-orange-100 text-orange-700 border-orange-200',
   normal: 'bg-blue-100 text-blue-700 border-blue-200',
-  low: 'bg-gray-100 text-gray-600 border-gray-200',
+  low: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
 const priorityLabels: Record<string, string> = {
@@ -121,7 +121,7 @@ function FollowupCard({
       exit={{ opacity: 0, y: -10 }}
       className={`
         bg-white rounded-xl border p-4 shadow-sm hover:shadow-md transition-all
-        ${isOverdue ? 'border-red-200 bg-red-50/30' : isToday ? 'border-orange-200 bg-orange-50/20' : 'border-gray-100'}
+        ${isOverdue ? 'border-red-200 bg-red-50/30' : isToday ? 'border-orange-200 bg-orange-50/20' : 'border-slate-100'}
       `}
     >
       {/* Header */}
@@ -131,8 +131,8 @@ function FollowupCard({
             <FollowupTypeIcon type={followup.followup_type} />
           </div>
           <div>
-            <h4 className="font-bold text-gray-900 text-sm">{fullName}</h4>
-            <span className="text-xs text-gray-500 font-mono">
+            <h4 className="font-bold text-slate-900 text-sm">{fullName}</h4>
+            <span className="text-xs text-slate-500 font-mono">
               {followup.customer?.customer_code}
             </span>
           </div>
@@ -143,12 +143,12 @@ function FollowupCard({
       </div>
 
       {/* Title */}
-      <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+      <p className="text-sm text-slate-700 mb-3 line-clamp-2">
         {followup.title}
       </p>
 
       {/* Date & Time */}
-      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+      <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
         <div className="flex items-center gap-1">
           <Calendar size={12} />
           <span className={isOverdue ? 'text-red-600 font-bold' : ''}>
@@ -173,7 +173,7 @@ function FollowupCard({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+      <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
         {followup.customer?.phone && (
           <Button
             size="sm"
@@ -197,7 +197,7 @@ function FollowupCard({
         <Button
           size="sm"
           variant="ghost"
-          className="h-8 text-xs text-gray-500 hover:text-gray-700"
+          className="h-8 text-xs text-slate-500 hover:text-slate-700"
           onClick={() => onReschedule(followup)}
         >
           <RefreshCw size={12} />
@@ -281,8 +281,8 @@ export function ScheduledFollowupsPanel() {
               <Calendar size={20} />
             </div>
             <div className="text-right">
-              <h3 className="font-bold text-gray-900">المتابعات المجدولة</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="font-bold text-slate-900">المتابعات المجدولة</h3>
+              <p className="text-xs text-slate-500">
                 {followups.length} متابعة قادمة
               </p>
             </div>
@@ -305,7 +305,7 @@ export function ScheduledFollowupsPanel() {
             )}
             
             <div className={`p-2 rounded-full transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-              <ChevronDown size={20} className="text-gray-400" />
+              <ChevronDown size={20} className="text-slate-400" />
             </div>
           </div>
         </button>
@@ -321,7 +321,7 @@ export function ScheduledFollowupsPanel() {
             >
               <div className="p-4 pt-0">
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-8 text-gray-400">
+                  <div className="flex items-center justify-center py-8 text-slate-400">
                     <RefreshCw className="animate-spin ml-2" size={16} />
                     جاري التحميل...
                   </div>
@@ -371,7 +371,7 @@ export function ScheduledFollowupsPanel() {
                       flex items-center justify-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all
                       ${outcome === opt.id
                         ? 'bg-blue-50 border-blue-500 text-blue-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }
                     `}
                   >

@@ -181,7 +181,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
 
                 <div className="grid grid-cols-6 gap-2">
                   {Object.entries(stats.accountsByLevel).map(([level, count]) => (
-                    <div key={level} className="text-center p-2 bg-gray-50 rounded">
+                    <div key={level} className="text-center p-2 bg-slate-50 rounded">
                       <div className="font-bold">{count}</div>
                       <div className="text-xs">مستوى {level}</div>
                     </div>

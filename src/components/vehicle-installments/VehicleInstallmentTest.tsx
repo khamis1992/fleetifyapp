@@ -142,7 +142,7 @@ export const VehicleInstallmentTest = () => {
         </div>
 
         {/* معلومات الحالة الحالية */}
-        <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="p-4 bg-slate-50 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">الحالة الحالية</h3>
           <p><strong>المركبة المختارة:</strong> {selectedVehicleId || 'لا شيء'}</p>
           <p><strong>المركبات المستبعدة:</strong> {excludeIds.length > 0 ? excludeIds.join(', ') : 'لا شيء'}</p>

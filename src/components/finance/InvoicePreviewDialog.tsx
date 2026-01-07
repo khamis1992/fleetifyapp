@@ -219,7 +219,7 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
         </div>
 
         {/* Receipt Preview with Ref */}
-        <div ref={receiptRef} className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '65vh' }}>
+        <div ref={receiptRef} className="p-4 bg-slate-100 rounded-lg overflow-auto" style={{ maxHeight: '65vh' }}>
           <PaymentReceipt
             receiptNumber={invoice.invoice_number || 'غير محدد'}
             date={formattedDate}

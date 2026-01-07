@@ -135,9 +135,9 @@ export function CallDialog({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4 bg-gray-50">
+        <div className="p-4 space-y-4 bg-slate-50">
           {/* Timer Display */}
-          <div className="bg-white rounded-xl p-4 text-center border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Clock className="w-4 h-4 text-slate-500" />
               <span className="text-xs text-slate-600 font-medium">مدة المكالمة</span>
@@ -160,7 +160,7 @@ export function CallDialog({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="اكتب تفاصيل المكالمة..."
               rows={3}
-              className="resize-none text-sm bg-white border-gray-200 focus:border-green-500 focus:ring-green-500/20"
+              className="resize-none text-sm bg-white border-slate-200 focus:border-green-500 focus:ring-green-500/20"
               disabled={saving}
             />
           </div>
@@ -177,7 +177,7 @@ export function CallDialog({
                       const separator = notes.trim() ? '\n' : '';
                       setNotes(notes + separator + '• ' + quickNote);
                     }}
-                    className="text-[10px] px-2 py-1 bg-white border border-gray-200 rounded-md text-slate-600 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors"
+                    className="text-[10px] px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-600 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors"
                     disabled={saving}
                   >
                     {quickNote}
@@ -189,7 +189,7 @@ export function CallDialog({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-4 pt-0 bg-gray-50 space-y-2">
+        <div className="p-4 pt-0 bg-slate-50 space-y-2">
           {callStatus === 'ringing' && (
             <>
               <Button

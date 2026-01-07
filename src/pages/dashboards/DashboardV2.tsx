@@ -133,8 +133,8 @@ const StatCard: React.FC<{
       "relative overflow-hidden rounded-2xl p-6",
       "backdrop-blur-xl border",
       isDark 
-        ? "bg-gray-900/60 border-gray-800/50" 
-        : "bg-white/80 border-gray-200/50",
+        ? "bg-slate-900/60 border-slate-800/50" 
+        : "bg-white/80 border-slate-200/50",
       "shadow-xl"
     )}
   >
@@ -148,7 +148,7 @@ const StatCard: React.FC<{
       <div className="flex items-start justify-between mb-4">
         <div className={cn(
           "p-3 rounded-xl",
-          isDark ? "bg-gray-800/80" : "bg-gray-100",
+          isDark ? "bg-slate-800/80" : "bg-slate-100",
           color
         )}>
           {icon}
@@ -160,7 +160,7 @@ const StatCard: React.FC<{
               "font-medium text-xs",
               trend === 'up' && "text-emerald-500 border-emerald-500/30 bg-emerald-500/10",
               trend === 'down' && "text-rose-500 border-rose-500/30 bg-rose-500/10",
-              trend === 'neutral' && "text-gray-500 border-gray-500/30 bg-gray-500/10"
+              trend === 'neutral' && "text-slate-500 border-slate-500/30 bg-slate-500/10"
             )}
           >
             {trend === 'up' && <TrendingUp className="w-3 h-3 ml-1" />}
@@ -172,7 +172,7 @@ const StatCard: React.FC<{
       
       <h3 className={cn(
         "text-sm font-medium mb-1",
-        isDark ? "text-gray-400" : "text-gray-600"
+        isDark ? "text-slate-400" : "text-slate-600"
       )}>
         {title}
       </h3>
@@ -183,7 +183,7 @@ const StatCard: React.FC<{
         transition={{ delay: delay + 0.2 }}
         className={cn(
           "text-3xl font-bold tracking-tight",
-          isDark ? "text-white" : "text-gray-900"
+          isDark ? "text-white" : "text-slate-900"
         )}
       >
         {value}
@@ -208,8 +208,8 @@ const QuickAction: React.FC<{
       "flex flex-col items-center gap-2 p-4 rounded-2xl",
       "transition-all duration-300",
       isDark 
-        ? "bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800/50" 
-        : "bg-white/80 hover:bg-white border border-gray-200/50",
+        ? "bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/50" 
+        : "bg-white/80 hover:bg-white border border-slate-200/50",
       "backdrop-blur-xl shadow-lg"
     )}
   >
@@ -218,7 +218,7 @@ const QuickAction: React.FC<{
     </div>
     <span className={cn(
       "text-xs font-medium",
-      isDark ? "text-gray-300" : "text-gray-700"
+      isDark ? "text-slate-300" : "text-slate-700"
     )}>
       {title}
     </span>
@@ -238,7 +238,7 @@ const ActivityItem: React.FC<{
     animate={{ opacity: 1, x: 0 }}
     className={cn(
       "flex items-center gap-4 p-3 rounded-xl",
-      isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-100/80",
+      isDark ? "hover:bg-slate-800/50" : "hover:bg-slate-100/80",
       "transition-colors duration-200"
     )}
   >
@@ -251,20 +251,20 @@ const ActivityItem: React.FC<{
     <div className="flex-1 min-w-0">
       <p className={cn(
         "text-sm font-medium truncate",
-        isDark ? "text-white" : "text-gray-900"
+        isDark ? "text-white" : "text-slate-900"
       )}>
         {title}
       </p>
       <p className={cn(
         "text-xs truncate",
-        isDark ? "text-gray-400" : "text-gray-500"
+        isDark ? "text-slate-400" : "text-slate-500"
       )}>
         {subtitle}
       </p>
     </div>
     <span className={cn(
       "text-xs whitespace-nowrap",
-      isDark ? "text-gray-500" : "text-gray-400"
+      isDark ? "text-slate-500" : "text-slate-400"
     )}>
       {time}
     </span>
@@ -375,7 +375,7 @@ const DashboardV2: React.FC = () => {
     return (
       <div className={cn(
         "min-h-screen flex items-center justify-center",
-        isDark ? "bg-gray-950" : "bg-gray-50"
+        isDark ? "bg-slate-950" : "bg-slate-50"
       )}>
         <motion.div
           animate={{ rotate: 360 }}
@@ -389,7 +389,7 @@ const DashboardV2: React.FC = () => {
   return (
     <div className={cn(
       "min-h-screen transition-colors duration-500",
-      isDark ? "bg-gray-950" : "bg-gray-50"
+      isDark ? "bg-slate-950" : "bg-slate-50"
     )}>
       <AnimatedBackground isDark={isDark} />
       
@@ -419,13 +419,13 @@ const DashboardV2: React.FC = () => {
               <div>
                 <h1 className={cn(
                   "text-2xl font-bold",
-                  isDark ? "text-white" : "text-gray-900"
+                  isDark ? "text-white" : "text-slate-900"
                 )}>
                   مرحباً، {user?.profile?.full_name?.split(' ')[0] || 'مستخدم'}
                 </h1>
                 <p className={cn(
                   "text-sm",
-                  isDark ? "text-gray-400" : "text-gray-600"
+                  isDark ? "text-slate-400" : "text-slate-600"
                 )}>
                   لوحة تحكم النظام V2 • {browsedCompany?.name || 'شركة العراف'}
                 </p>
@@ -442,8 +442,8 @@ const DashboardV2: React.FC = () => {
               className={cn(
                 "p-3 rounded-xl",
                 isDark 
-                  ? "bg-gray-800 text-amber-400" 
-                  : "bg-white text-gray-700 shadow-lg"
+                  ? "bg-slate-800 text-amber-400" 
+                  : "bg-white text-slate-700 shadow-lg"
               )}
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -455,7 +455,7 @@ const DashboardV2: React.FC = () => {
               whileTap={{ scale: 0.9 }}
               className={cn(
                 "relative p-3 rounded-xl",
-                isDark ? "bg-gray-800 text-gray-300" : "bg-white text-gray-700 shadow-lg"
+                isDark ? "bg-slate-800 text-slate-300" : "bg-white text-slate-700 shadow-lg"
               )}
             >
               <Bell className="w-5 h-5" />
@@ -519,7 +519,7 @@ const DashboardV2: React.FC = () => {
         >
           <h2 className={cn(
             "text-lg font-semibold mb-4 flex items-center gap-2",
-            isDark ? "text-white" : "text-gray-900"
+            isDark ? "text-white" : "text-slate-900"
           )}>
             <Zap className="w-5 h-5 text-amber-500" />
             إجراءات سريعة
@@ -576,8 +576,8 @@ const DashboardV2: React.FC = () => {
             />
             <QuickAction
               title="الإعدادات"
-              icon={<Settings className="w-5 h-5 text-gray-500" />}
-              color="bg-gray-500/10"
+              icon={<Settings className="w-5 h-5 text-slate-500" />}
+              color="bg-slate-500/10"
               onClick={() => navigate('/settings')}
               isDark={isDark}
             />
@@ -595,14 +595,14 @@ const DashboardV2: React.FC = () => {
               "lg:col-span-2 rounded-2xl p-6",
               "backdrop-blur-xl border",
               isDark 
-                ? "bg-gray-900/60 border-gray-800/50" 
-                : "bg-white/80 border-gray-200/50"
+                ? "bg-slate-900/60 border-slate-800/50" 
+                : "bg-white/80 border-slate-200/50"
             )}
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={cn(
                 "text-lg font-semibold",
-                isDark ? "text-white" : "text-gray-900"
+                isDark ? "text-white" : "text-slate-900"
               )}>
                 تحليل الإيرادات
               </h3>
@@ -661,14 +661,14 @@ const DashboardV2: React.FC = () => {
               "rounded-2xl p-6",
               "backdrop-blur-xl border",
               isDark 
-                ? "bg-gray-900/60 border-gray-800/50" 
-                : "bg-white/80 border-gray-200/50"
+                ? "bg-slate-900/60 border-slate-800/50" 
+                : "bg-white/80 border-slate-200/50"
             )}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className={cn(
                 "text-lg font-semibold",
-                isDark ? "text-white" : "text-gray-900"
+                isDark ? "text-white" : "text-slate-900"
               )}>
                 حالة الأسطول
               </h3>
@@ -710,7 +710,7 @@ const DashboardV2: React.FC = () => {
                   key={item.name}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-lg",
-                    isDark ? "bg-gray-800/50" : "bg-gray-100"
+                    isDark ? "bg-slate-800/50" : "bg-slate-100"
                   )}
                 >
                   <div 
@@ -720,13 +720,13 @@ const DashboardV2: React.FC = () => {
                   <div className="flex-1">
                     <p className={cn(
                       "text-xs",
-                      isDark ? "text-gray-400" : "text-gray-500"
+                      isDark ? "text-slate-400" : "text-slate-500"
                     )}>
                       {item.name}
                     </p>
                     <p className={cn(
                       "text-sm font-bold",
-                      isDark ? "text-white" : "text-gray-900"
+                      isDark ? "text-white" : "text-slate-900"
                     )}>
                       {item.value}
                     </p>
@@ -748,14 +748,14 @@ const DashboardV2: React.FC = () => {
               "rounded-2xl p-6",
               "backdrop-blur-xl border",
               isDark 
-                ? "bg-gray-900/60 border-gray-800/50" 
-                : "bg-white/80 border-gray-200/50"
+                ? "bg-slate-900/60 border-slate-800/50" 
+                : "bg-white/80 border-slate-200/50"
             )}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className={cn(
                 "text-lg font-semibold",
-                isDark ? "text-white" : "text-gray-900"
+                isDark ? "text-white" : "text-slate-900"
               )}>
                 آخر العقود
               </h3>
@@ -763,7 +763,7 @@ const DashboardV2: React.FC = () => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/contracts')}
-                className={isDark ? "text-gray-400 hover:text-white" : ""}
+                className={isDark ? "text-slate-400 hover:text-white" : ""}
               >
                 عرض الكل
                 <ChevronRight className="w-4 h-4 mr-1" />
@@ -779,7 +779,7 @@ const DashboardV2: React.FC = () => {
                   transition={{ delay: 0.8 + idx * 0.1 }}
                   className={cn(
                     "flex items-center justify-between p-3 rounded-xl cursor-pointer",
-                    isDark ? "bg-gray-800/50 hover:bg-gray-800" : "bg-gray-100 hover:bg-gray-200",
+                    isDark ? "bg-slate-800/50 hover:bg-slate-800" : "bg-slate-100 hover:bg-slate-200",
                     "transition-colors duration-200"
                   )}
                   onClick={() => navigate(`/contracts/${contract.contract_number}`)}
@@ -788,7 +788,7 @@ const DashboardV2: React.FC = () => {
                     <div className={cn(
                       "p-2 rounded-lg",
                       contract.status === 'active' ? "bg-emerald-500/20 text-emerald-500" :
-                      contract.status === 'draft' ? "bg-gray-500/20 text-gray-500" :
+                      contract.status === 'draft' ? "bg-slate-500/20 text-slate-500" :
                       "bg-amber-500/20 text-amber-500"
                     )}>
                       <FileText className="w-4 h-4" />
@@ -796,13 +796,13 @@ const DashboardV2: React.FC = () => {
                     <div>
                       <p className={cn(
                         "text-sm font-medium",
-                        isDark ? "text-white" : "text-gray-900"
+                        isDark ? "text-white" : "text-slate-900"
                       )}>
                         {contract.contract_number}
                       </p>
                       <p className={cn(
                         "text-xs",
-                        isDark ? "text-gray-400" : "text-gray-500"
+                        isDark ? "text-slate-400" : "text-slate-500"
                       )}>
                         {getCustomerName(contract.customer)}
                       </p>
@@ -811,7 +811,7 @@ const DashboardV2: React.FC = () => {
                   <div className="text-left">
                     <p className={cn(
                       "text-sm font-bold",
-                      isDark ? "text-white" : "text-gray-900"
+                      isDark ? "text-white" : "text-slate-900"
                     )}>
                       {formatCurrency(contract.monthly_amount || 0)}
                     </p>
@@ -820,7 +820,7 @@ const DashboardV2: React.FC = () => {
                       className={cn(
                         "text-[10px]",
                         contract.status === 'active' && "text-emerald-500 border-emerald-500/30",
-                        contract.status === 'draft' && "text-gray-500 border-gray-500/30",
+                        contract.status === 'draft' && "text-slate-500 border-slate-500/30",
                         contract.status === 'pending' && "text-amber-500 border-amber-500/30"
                       )}
                     >
@@ -842,13 +842,13 @@ const DashboardV2: React.FC = () => {
               "rounded-2xl p-6",
               "backdrop-blur-xl border",
               isDark 
-                ? "bg-gray-900/60 border-gray-800/50" 
-                : "bg-white/80 border-gray-200/50"
+                ? "bg-slate-900/60 border-slate-800/50" 
+                : "bg-white/80 border-slate-200/50"
             )}
           >
             <h3 className={cn(
               "text-lg font-semibold mb-6",
-              isDark ? "text-white" : "text-gray-900"
+              isDark ? "text-white" : "text-slate-900"
             )}>
               مؤشرات الأداء
             </h3>
@@ -859,14 +859,14 @@ const DashboardV2: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
                     "text-sm flex items-center gap-2",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     <Gauge className="w-4 h-4" />
                     معدل نشاط المركبات
                   </span>
                   <span className={cn(
                     "text-sm font-bold",
-                    isDark ? "text-white" : "text-gray-900"
+                    isDark ? "text-white" : "text-slate-900"
                   )}>
                     {stats?.vehicleActivityRate || 0}%
                   </span>
@@ -882,14 +882,14 @@ const DashboardV2: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
                     "text-sm flex items-center gap-2",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     <CheckCircle className="w-4 h-4" />
                     معدل إكمال العقود
                   </span>
                   <span className={cn(
                     "text-sm font-bold",
-                    isDark ? "text-white" : "text-gray-900"
+                    isDark ? "text-white" : "text-slate-900"
                   )}>
                     {stats?.contractCompletionRate || 0}%
                   </span>
@@ -905,14 +905,14 @@ const DashboardV2: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
                     "text-sm flex items-center gap-2",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     <Star className="w-4 h-4" />
                     رضا العملاء
                   </span>
                   <span className={cn(
                     "text-sm font-bold",
-                    isDark ? "text-white" : "text-gray-900"
+                    isDark ? "text-white" : "text-slate-900"
                   )}>
                     {stats?.customerSatisfactionRate || 0}%
                   </span>
@@ -928,14 +928,14 @@ const DashboardV2: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
                     "text-sm flex items-center gap-2",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     <Activity className="w-4 h-4" />
                     نسبة الإشغال
                   </span>
                   <span className={cn(
                     "text-sm font-bold",
-                    isDark ? "text-white" : "text-gray-900"
+                    isDark ? "text-white" : "text-slate-900"
                   )}>
                     {occupancyRate}%
                   </span>
@@ -960,13 +960,13 @@ const DashboardV2: React.FC = () => {
                 <div>
                   <p className={cn(
                     "text-sm font-medium",
-                    isDark ? "text-white" : "text-gray-900"
+                    isDark ? "text-white" : "text-slate-900"
                   )}>
                     أداء ممتاز هذا الشهر!
                   </p>
                   <p className={cn(
                     "text-xs",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     نمو 12% في الإيرادات مقارنة بالشهر الماضي
                   </p>
@@ -983,7 +983,7 @@ const DashboardV2: React.FC = () => {
           transition={{ delay: 1 }}
           className={cn(
             "text-center mt-8 py-4",
-            isDark ? "text-gray-500" : "text-gray-400"
+            isDark ? "text-slate-500" : "text-slate-400"
           )}
         >
           <p className="text-sm">

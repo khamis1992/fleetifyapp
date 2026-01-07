@@ -456,7 +456,7 @@ const VehicleDetailsPageNew = () => {
             </div>
             <h3 className="text-xl font-bold text-neutral-900 mb-2">المركبة غير موجودة</h3>
             <p className="text-neutral-600 mb-6">لم يتم العثور على هذه المركبة</p>
-            <Button onClick={() => navigate('/fleet')} className="bg-coral-500 hover:bg-coral-600 rounded-xl">
+            <Button onClick={() => navigate('/fleet')} className="bg-rose-500 hover:bg-coral-600 rounded-xl">
               العودة لصفحة الأسطول
             </Button>
           </CardContent>
@@ -521,7 +521,7 @@ const VehicleDetailsPageNew = () => {
                   <TooltipTrigger asChild>
                     <Button 
                       onClick={handleEdit}
-                      className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl"
+                      className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl"
                     >
                       <Edit3 className="w-4 h-4" />
                       تعديل
@@ -739,52 +739,52 @@ const VehicleDetailsPageNew = () => {
                   <TabsList className="w-full justify-start bg-transparent h-auto p-2 rounded-none flex gap-1">
                     <TabsTrigger
                       value="overview"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <Info className="w-4 h-4" />
                       نظرة عامة
                     </TabsTrigger>
                     <TabsTrigger
                       value="contracts"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <FileText className="w-4 h-4" />
                       العقود
                       {contracts.length > 0 && (
-                        <Badge className="bg-coral-500 text-white text-[10px] px-1.5">{contracts.length}</Badge>
+                        <Badge className="bg-rose-500 text-white text-[10px] px-1.5">{contracts.length}</Badge>
                       )}
                     </TabsTrigger>
                     <TabsTrigger
                       value="maintenance"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <Wrench className="w-4 h-4" />
                       الصيانة
                     </TabsTrigger>
                     <TabsTrigger
                       value="violations"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <AlertTriangle className="w-4 h-4" />
                       المخالفات
                     </TabsTrigger>
                     <TabsTrigger
                       value="pricing"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <Tag className="w-4 h-4" />
                       التسعير
                     </TabsTrigger>
                     <TabsTrigger
                       value="insurance"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <Shield className="w-4 h-4" />
                       التأمين والاستمارة
                     </TabsTrigger>
                     <TabsTrigger
                       value="documents"
-                      className="data-[state=active]:bg-coral-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
+                      className="data-[state=active]:bg-rose-50 data-[state=active]:text-coral-600 rounded-xl gap-2 px-4"
                     >
                       <Folder className="w-4 h-4" />
                       الوثائق
@@ -828,7 +828,7 @@ const VehicleDetailsPageNew = () => {
                     <ErrorBoundary fallback={<TabErrorFallback tabName="العقود" />}>
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-neutral-900">العقود المرتبطة</h4>
-                        <Button onClick={handleNewContract} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
+                        <Button onClick={handleNewContract} className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl" size="sm">
                           <Plus className="w-4 h-4" />
                           عقد جديد
                         </Button>
@@ -883,7 +883,7 @@ const VehicleDetailsPageNew = () => {
                     <ErrorBoundary fallback={<TabErrorFallback tabName="الصيانة" />}>
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-neutral-900">سجل الصيانة</h4>
-                        <Button onClick={() => setShowMaintenanceForm(true)} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
+                        <Button onClick={() => setShowMaintenanceForm(true)} className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl" size="sm">
                           <Plus className="w-4 h-4" />
                           تسجيل صيانة
                         </Button>
@@ -932,7 +932,7 @@ const VehicleDetailsPageNew = () => {
                     <ErrorBoundary fallback={<TabErrorFallback tabName="المخالفات" />}>
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-neutral-900">المخالفات المرورية</h4>
-                        <Button onClick={() => setShowViolationForm(true)} className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl" size="sm">
+                        <Button onClick={() => setShowViolationForm(true)} className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl" size="sm">
                           <Plus className="w-4 h-4" />
                           تسجيل مخالفة
                         </Button>

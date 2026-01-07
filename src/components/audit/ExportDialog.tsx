@@ -98,7 +98,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                   className={`cursor-pointer transition-colors ${
                     selectedFormat === format.value
                       ? 'border-blue-500 bg-blue-50'
-                      : 'hover:border-gray-300'
+                      : 'hover:border-slate-300'
                   }`}
                   onClick={() => setSelectedFormat(format.value as any)}
                 >
@@ -107,7 +107,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                       <div className={`p-2 rounded ${
                         selectedFormat === format.value
                           ? 'bg-blue-100 text-blue-600'
-                          : 'bg-gray-100 text-gray-600'
+                          : 'bg-slate-100 text-slate-600'
                       }`}>
                         {format.icon}
                       </div>
@@ -220,7 +220,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
           </Tabs>
 
           {/* Export Summary */}
-          <Card className="border-gray-200">
+          <Card className="border-slate-200">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Export Summary</CardTitle>
             </CardHeader>

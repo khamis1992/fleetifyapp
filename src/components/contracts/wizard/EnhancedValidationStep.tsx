@@ -225,7 +225,7 @@ export const EnhancedValidationStep: React.FC<EnhancedValidationStepProps> = ({
               {/* Raw Data Preview */}
               <div>
                 <p className="font-medium mb-2">بيانات العقد (JSON):</p>
-                <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-xs overflow-auto max-h-32">
+                <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded text-xs overflow-auto max-h-32">
                   {JSON.stringify(data, null, 2)}
                 </pre>
               </div>

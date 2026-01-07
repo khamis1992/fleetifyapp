@@ -15,7 +15,7 @@ export function SimpleReportFooter() {
   });
 
   return (
-    <footer className="border-t pt-4 mt-8 text-sm text-gray-500 text-center">
+    <footer className="border-t pt-4 mt-8 text-sm text-slate-500 text-center">
       تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات بتاريخ{' '}
       <span className="font-semibold">{currentDate} - {currentTime}</span>
     </footer>

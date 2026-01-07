@@ -140,7 +140,7 @@ const getStatusColor = (status: string) => {
     case 'maintenance': return 'bg-[#EF4444] border-[#DC2626] text-white stripes';
     case 'completed': return 'bg-[#6B7280] border-[#4B5563] text-white';
     case 'cancelled': return 'bg-[#9CA3AF] border-[#6B7280] text-white opacity-60';
-    default: return 'bg-gray-400';
+    default: return 'bg-slate-400';
   }
 };
 
@@ -831,15 +831,15 @@ export default function CarRentalScheduler() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 bg-gray-50">
-        <Loader2 className="w-12 h-12 text-coral-500 animate-spin mb-4" />
-        <p className="text-gray-600 font-medium">جاري تحميل جدول الحجوزات...</p>
+      <div className="flex flex-col items-center justify-center h-96 bg-slate-50">
+        <Loader2 className="w-12 h-12 text-rose-500 animate-spin mb-4" />
+        <p className="text-slate-600 font-medium">جاري تحميل جدول الحجوزات...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-280px)] bg-gray-50 text-gray-800 font-sans overflow-hidden" dir="rtl">
+    <div className="flex h-[calc(100vh-280px)] bg-slate-50 text-slate-800 font-sans overflow-hidden" dir="rtl">
       
       {/* Toast Error */}
       {errorMsg && (
@@ -850,59 +850,59 @@ export default function CarRentalScheduler() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-gray-50">
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
         
         {currentView === 'scheduler' ? (
           <>
             {/* --- SCHEDULER HEADER --- */}
-            <header className="bg-white border-b border-gray-200 shadow-sm z-40 flex-none px-6 py-3 flex justify-between items-center">
+            <header className="bg-white border-b border-slate-200 shadow-sm z-40 flex-none px-6 py-3 flex justify-between items-center">
               <div className="flex gap-6 items-center">
-                <h2 className="text-lg font-bold text-gray-800">الجدول الزمني</h2>
+                <h2 className="text-lg font-bold text-slate-800">الجدول الزمني</h2>
                 
                 {/* Navigation Tabs */}
-                <div className="flex bg-gray-100 p-1 rounded-lg">
+                <div className="flex bg-slate-100 p-1 rounded-lg">
                   <button 
                     onClick={() => setCurrentView('scheduler')} 
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'scheduler' ? 'bg-white text-coral-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'scheduler' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <LayoutGrid className="w-4 h-4" /> الجدول
                   </button>
                   <button 
                     onClick={() => setCurrentView('drivers')} 
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'drivers' ? 'bg-white text-coral-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'drivers' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <Users className="w-4 h-4" /> السائقين
                   </button>
                 </div>
 
-                <div className="hidden lg:flex gap-4 border-r border-gray-200 pr-4 mr-4">
-                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-xs">
+                <div className="hidden lg:flex gap-4 border-r border-slate-200 pr-4 mr-4">
+                  <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs">
                     <DollarSign className="w-3.5 h-3.5 text-blue-600" />
-                    <span className="text-gray-500">الدخل:</span>
-                    <span className="font-bold text-gray-800">{stats.totalRevenue.toLocaleString()}</span>
+                    <span className="text-slate-500">الدخل:</span>
+                    <span className="font-bold text-slate-800">{stats.totalRevenue.toLocaleString()}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 text-xs">
+                  <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs">
                     <Activity className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-gray-500">إشغال:</span>
-                    <span className="font-bold text-gray-800">{stats.utilization}%</span>
+                    <span className="text-slate-500">إشغال:</span>
+                    <span className="font-bold text-slate-800">{stats.utilization}%</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 border border-gray-200 focus-within:border-coral-500 transition-colors">
-                  <Search className="w-4 h-4 text-gray-400 ml-2" />
+                <div className="flex items-center bg-slate-100 rounded-lg px-3 py-2 border border-slate-200 focus-within:border-rose-500 transition-colors">
+                  <Search className="w-4 h-4 text-slate-400 ml-2" />
                   <input 
                     type="text" 
                     placeholder="بحث مركبات..." 
-                    className="bg-transparent border-none focus:outline-none text-sm w-32 md:w-48 text-gray-700"
+                    className="bg-transparent border-none focus:outline-none text-sm w-32 md:w-48 text-slate-700"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <button 
                   onClick={() => handleNewBooking(null, null)}
-                  className="bg-coral-500 hover:bg-coral-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow-sm transition"
+                  className="bg-rose-500 hover:bg-coral-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold shadow-sm transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="hidden md:inline">حجز جديد</span>
@@ -911,42 +911,42 @@ export default function CarRentalScheduler() {
             </header>
 
             {/* --- SCHEDULER TOOLBAR --- */}
-            <div className="flex items-center justify-between px-6 py-2 bg-white border-b border-gray-200 flex-none">
+            <div className="flex items-center justify-between px-6 py-2 bg-white border-b border-slate-200 flex-none">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 bg-gray-50 rounded-lg border border-gray-200 p-1">
+                <div className="flex items-center gap-1 bg-slate-50 rounded-lg border border-slate-200 p-1">
                   <button 
                     onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate()-7); setCurrentDate(d); }} 
-                    className="p-1 hover:bg-gray-200 rounded text-gray-600"
+                    className="p-1 hover:bg-slate-200 rounded text-slate-600"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
-                  <span className="font-bold text-gray-800 px-3 min-w-[120px] text-center text-sm">
+                  <span className="font-bold text-slate-800 px-3 min-w-[120px] text-center text-sm">
                     {currentDate.toLocaleDateString('ar-EG', { month: 'short', year: 'numeric' })}
                   </span>
                   <button 
                     onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate()+7); setCurrentDate(d); }} 
-                    className="p-1 hover:bg-gray-200 rounded text-gray-600"
+                    className="p-1 hover:bg-slate-200 rounded text-slate-600"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-400" />
+                    <Filter className="w-4 h-4 text-slate-400" />
                     <select 
                       value={filterType} 
                       onChange={(e) => setFilterType(e.target.value)} 
-                      className="text-sm bg-transparent border-none focus:ring-0 text-gray-600 font-medium cursor-pointer"
+                      className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 font-medium cursor-pointer"
                     >
                       {CAR_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                     </select>
                   </div>
-                  <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
-                    <Car className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
+                    <Car className="w-4 h-4 text-slate-400" />
                     <select 
                       value={filterStatus} 
                       onChange={(e) => setFilterStatus(e.target.value)} 
-                      className="text-sm bg-transparent border-none focus:ring-0 text-gray-600 font-medium cursor-pointer"
+                      className="text-sm bg-transparent border-none focus:ring-0 text-slate-600 font-medium cursor-pointer"
                     >
                       {VEHICLE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
@@ -964,13 +964,13 @@ export default function CarRentalScheduler() {
             {/* --- SCHEDULER BODY --- */}
             <div className="flex-1 overflow-hidden flex flex-col relative select-none bg-white">
               {/* Timeline Header */}
-              <div className="flex border-b border-gray-200 bg-white relative z-30 shadow-sm flex-none">
-                <div className="w-64 flex-shrink-0 p-3 font-bold text-gray-700 border-l border-gray-200 bg-gray-50 flex items-center justify-between text-sm">
+              <div className="flex border-b border-slate-200 bg-white relative z-30 shadow-sm flex-none">
+                <div className="w-64 flex-shrink-0 p-3 font-bold text-slate-700 border-l border-slate-200 bg-slate-50 flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4 text-gray-400" />
+                    <LayoutGrid className="w-4 h-4 text-slate-400" />
                     السيارات
                   </div>
-                  <span className="text-xs bg-coral-100 text-coral-600 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-xs bg-rose-100 text-coral-600 px-2 py-0.5 rounded-full font-bold">
                     {filteredCars.length}
                   </span>
                 </div>
@@ -981,16 +981,16 @@ export default function CarRentalScheduler() {
                       return (
                         <div 
                           key={i} 
-                          className={`border-l border-gray-100 flex-shrink-0 text-center py-2 text-sm flex flex-col justify-center transition-colors relative ${isToday ? 'bg-red-50/40' : 'bg-white'}`} 
+                          className={`border-l border-slate-100 flex-shrink-0 text-center py-2 text-sm flex flex-col justify-center transition-colors relative ${isToday ? 'bg-red-50/40' : 'bg-white'}`} 
                           style={{ width: `${cellWidth}px` }}
                         >
-                          <div className={`text-[10px] mb-0.5 ${isToday ? 'text-coral-500 font-bold' : 'text-gray-400'}`}>
+                          <div className={`text-[10px] mb-0.5 ${isToday ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
                             {date.toLocaleDateString('ar-EG', { weekday: 'short' })}
                           </div>
-                          <div className={`text-sm ${isToday ? 'text-coral-500 font-bold' : 'text-gray-700'}`}>
+                          <div className={`text-sm ${isToday ? 'text-rose-500 font-bold' : 'text-slate-700'}`}>
                             {date.getDate()}
                           </div>
-                          {isToday && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-coral-500"></div>}
+                          {isToday && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500"></div>}
                         </div>
                       );
                     })}
@@ -1001,7 +1001,7 @@ export default function CarRentalScheduler() {
               {/* Rows */}
               <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden relative bg-white">
                 <div 
-                  className="absolute top-0 bottom-0 pointer-events-none z-10 border-r-2 border-coral-500 border-dashed opacity-50" 
+                  className="absolute top-0 bottom-0 pointer-events-none z-10 border-r-2 border-rose-500 border-dashed opacity-50" 
                   style={{ 
                     right: 'auto', 
                     left: `${(Math.floor((new Date().getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))) * cellWidth + cellWidth/2 + 256}px` 
@@ -1009,9 +1009,9 @@ export default function CarRentalScheduler() {
                 ></div>
 
                 {filteredCars.map(car => (
-                  <div key={car.id} data-car-id={car.id} className="flex border-b border-gray-100 hover:bg-gray-50/50 transition group h-16 relative">
-                    <div className="w-64 flex-shrink-0 px-4 py-2 border-l border-gray-200 flex flex-col justify-center bg-white z-40 relative group-hover:bg-gray-50 transition">
-                      <div className="font-bold text-gray-800 text-sm truncate flex items-center gap-2">
+                  <div key={car.id} data-car-id={car.id} className="flex border-b border-slate-100 hover:bg-slate-50/50 transition group h-16 relative">
+                    <div className="w-64 flex-shrink-0 px-4 py-2 border-l border-slate-200 flex flex-col justify-center bg-white z-40 relative group-hover:bg-slate-50 transition">
+                      <div className="font-bold text-slate-800 text-sm truncate flex items-center gap-2">
                         {car.make} {car.model}
                         {car.status === 'available' && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
                         {car.status === 'rented' && <div className="w-2 h-2 rounded-full bg-blue-500"></div>}
@@ -1019,8 +1019,8 @@ export default function CarRentalScheduler() {
                         {car.status === 'maintenance' && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>}
                       </div>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 rounded border border-gray-200 font-mono">{car.plate_number}</span>
-                        <span className="text-[11px] font-bold text-gray-900">{car.daily_rate} ر.ق</span>
+                        <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 rounded border border-slate-200 font-mono">{car.plate_number}</span>
+                        <span className="text-[11px] font-bold text-slate-900">{car.daily_rate} ر.ق</span>
                       </div>
                     </div>
                     <div className="flex-1 relative">
@@ -1029,7 +1029,7 @@ export default function CarRentalScheduler() {
                           <div 
                             key={i} 
                             onClick={() => !dragState.hasMoved && handleNewBooking(car.id, date)} 
-                            className={`border-l border-gray-100/80 h-full flex-shrink-0 cursor-pointer hover:bg-red-50/10 transition ${date.toDateString() === new Date().toDateString() ? 'bg-red-50/20' : ''}`} 
+                            className={`border-l border-slate-100/80 h-full flex-shrink-0 cursor-pointer hover:bg-red-50/10 transition ${date.toDateString() === new Date().toDateString() ? 'bg-red-50/20' : ''}`} 
                             style={{ width: `${cellWidth}px` }} 
                           />
                         ))}
@@ -1087,7 +1087,7 @@ export default function CarRentalScheduler() {
                             </div>
                             
                             {hoveredBooking === booking.id && !dragState.isDragging && (
-                              <div className="absolute -top-10 right-0 bg-gray-800 text-white text-[10px] p-2 rounded shadow-lg z-50 whitespace-nowrap pointer-events-none flex flex-col gap-1">
+                              <div className="absolute -top-10 right-0 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg z-50 whitespace-nowrap pointer-events-none flex flex-col gap-1">
                                 <span>{booking.days} أيام • {car.daily_rate * booking.days} ر.ق</span>
                                 {assignedDriver && <span className="text-yellow-300 flex items-center gap-1"><User className="w-3 h-3"/> {assignedDriver.name}</span>}
                               </div>
@@ -1100,8 +1100,8 @@ export default function CarRentalScheduler() {
                 ))}
                 
                 {filteredCars.length === 0 && (
-                  <div className="p-12 text-center text-gray-400 flex flex-col items-center gap-2">
-                    <Car className="w-12 h-12 text-gray-200" />
+                  <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
+                    <Car className="w-12 h-12 text-slate-200" />
                     <p>لا توجد مركبات مطابقة للبحث</p>
                   </div>
                 )}
@@ -1139,41 +1139,41 @@ export default function CarRentalScheduler() {
             {isModalOpen && modalData && (
               <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="font-bold text-xl text-gray-800">{modalData.id ? 'تعديل الحجز' : 'حجز جديد'}</h3>
-                    <button onClick={() => setIsModalOpen(false)} className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-600 shadow-sm border border-gray-100">
+                  <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h3 className="font-bold text-xl text-slate-800">{modalData.id ? 'تعديل الحجز' : 'حجز جديد'}</h3>
+                    <button onClick={() => setIsModalOpen(false)} className="bg-white p-1 rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-100">
                       <X className="w-5 h-5" />
                     </button>
                   </div>
                   <form onSubmit={saveBooking} className="p-6 space-y-5">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1.5">العميل</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-1.5">العميل</label>
                       <input 
                         required 
                         type="text" 
                         value={modalData.customer} 
                         onChange={e => setModalData({...modalData, customer: e.target.value})} 
-                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500 focus:outline-none" 
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none" 
                       />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">السيارة</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">السيارة</label>
                         <select 
                           value={modalData.carId} 
                           onChange={e => setModalData({...modalData, carId: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500 bg-white"
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 bg-white"
                         >
                           {vehicles.map(c => <option key={c.id} value={c.id}>{c.make} {c.model}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">الحالة</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">الحالة</label>
                         <select 
                           value={modalData.status} 
                           onChange={e => setModalData({...modalData, status: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500 bg-white"
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 bg-white"
                         >
                           <option value="pending">انتظار</option>
                           <option value="confirmed">مؤكد</option>
@@ -1184,11 +1184,11 @@ export default function CarRentalScheduler() {
                     
                     {/* Driver Selection */}
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1.5">السائق (اختياري)</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-1.5">السائق (اختياري)</label>
                       <select 
                         value={modalData.driverId || ''} 
                         onChange={e => setModalData({...modalData, driverId: e.target.value})} 
-                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500 bg-white"
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 bg-white"
                       >
                         <option value="">-- بدون سائق --</option>
                         {drivers.map(driver => (
@@ -1201,17 +1201,17 @@ export default function CarRentalScheduler() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">تاريخ البدء</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">تاريخ البدء</label>
                         <input 
                           required 
                           type="date" 
                           value={modalData.start} 
                           onChange={e => setModalData({...modalData, start: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500" 
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500" 
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">المدة (أيام)</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">المدة (أيام)</label>
                         <input 
                           required 
                           type="number" 
@@ -1219,14 +1219,14 @@ export default function CarRentalScheduler() {
                           max="30" 
                           value={modalData.days} 
                           onChange={e => setModalData({...modalData, days: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500" 
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500" 
                         />
                       </div>
                     </div>
                     
-                    <div className="bg-gray-50 rounded-xl p-4 flex justify-between items-center border border-gray-100">
-                      <div className="text-sm text-gray-500">التكلفة المتوقعة</div>
-                      <div className="font-bold text-lg text-coral-500">
+                    <div className="bg-slate-50 rounded-xl p-4 flex justify-between items-center border border-slate-100">
+                      <div className="text-sm text-slate-500">التكلفة المتوقعة</div>
+                      <div className="font-bold text-lg text-rose-500">
                         {(getCarPrice(modalData.carId) * modalData.days).toLocaleString()} ر.ق
                       </div>
                     </div>
@@ -1235,7 +1235,7 @@ export default function CarRentalScheduler() {
                       <button 
                         type="submit" 
                         disabled={createReservation.isPending}
-                        className="w-full bg-coral-500 hover:bg-coral-600 text-white py-2.5 rounded-xl font-bold shadow-md shadow-red-200 transition disabled:opacity-50"
+                        className="w-full bg-rose-500 hover:bg-coral-600 text-white py-2.5 rounded-xl font-bold shadow-md shadow-rose-200 transition disabled:opacity-50"
                       >
                         {createReservation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
                       </button>
@@ -1250,19 +1250,19 @@ export default function CarRentalScheduler() {
           <div className="p-8 h-full overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">قائمة السائقين</h2>
+                <h2 className="text-2xl font-bold text-slate-800">قائمة السائقين</h2>
                 
                 {/* Navigation Tabs (Drivers View) */}
-                <div className="flex bg-gray-100 p-1 rounded-lg mt-2 inline-flex">
+                <div className="flex bg-slate-100 p-1 rounded-lg mt-2 inline-flex">
                   <button 
                     onClick={() => setCurrentView('scheduler')} 
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'scheduler' ? 'bg-white text-coral-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'scheduler' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <LayoutGrid className="w-4 h-4" /> الجدول
                   </button>
                   <button 
                     onClick={() => setCurrentView('drivers')} 
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'drivers' ? 'bg-white text-coral-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2 ${currentView === 'drivers' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                   >
                     <Users className="w-4 h-4" /> السائقين
                   </button>
@@ -1270,16 +1270,16 @@ export default function CarRentalScheduler() {
               </div>
               <button 
                 onClick={handleNewDriver} 
-                className="bg-coral-500 hover:bg-coral-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2"
+                className="bg-rose-500 hover:bg-coral-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" /> إضافة سائق
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex items-center gap-4">
-                <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 w-96">
-                  <Search className="w-5 h-5 text-gray-400 ml-2" />
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-100 flex items-center gap-4">
+                <div className="flex items-center bg-slate-50 rounded-lg px-3 py-2 border border-slate-200 w-96">
+                  <Search className="w-5 h-5 text-slate-400 ml-2" />
                   <input 
                     type="text" 
                     placeholder="بحث بالاسم أو رقم الرخصة..." 
@@ -1292,7 +1292,7 @@ export default function CarRentalScheduler() {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-right">
-                  <thead className="bg-gray-50 text-gray-600 font-bold text-sm">
+                  <thead className="bg-slate-50 text-slate-600 font-bold text-sm">
                     <tr>
                       <th className="px-6 py-4 rounded-tr-lg">الاسم</th>
                       <th className="px-6 py-4">رقم الرخصة</th>
@@ -1304,23 +1304,23 @@ export default function CarRentalScheduler() {
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {filteredDrivers.map(driver => (
-                      <tr key={driver.id} className="hover:bg-gray-50 transition group">
+                      <tr key={driver.id} className="hover:bg-slate-50 transition group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
                               {driver.name.charAt(0)}
                             </div>
-                            <div className="font-bold text-gray-800">{driver.name}</div>
+                            <div className="font-bold text-slate-800">{driver.name}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 font-mono text-gray-600">{driver.license}</td>
-                        <td className="px-6 py-4 text-gray-600" dir="ltr">{driver.phone}</td>
-                        <td className="px-6 py-4 text-gray-600">{driver.location}</td>
+                        <td className="px-6 py-4 font-mono text-slate-600">{driver.license}</td>
+                        <td className="px-6 py-4 text-slate-600" dir="ltr">{driver.phone}</td>
+                        <td className="px-6 py-4 text-slate-600">{driver.location}</td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                             driver.status === 'available' ? 'bg-green-100 text-green-700' :
                             driver.status === 'busy' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-700'
+                            'bg-slate-100 text-slate-700'
                           }`}>
                             {driver.status === 'available' ? 'متاح' : driver.status === 'busy' ? 'مشغول' : 'إجازة'}
                           </span>
@@ -1340,7 +1340,7 @@ export default function CarRentalScheduler() {
                   </tbody>
                 </table>
                 {filteredDrivers.length === 0 && (
-                  <div className="p-12 text-center text-gray-400">
+                  <div className="p-12 text-center text-slate-400">
                     {driversLoading ? 'جاري تحميل السائقين...' : 'لا يوجد سائقين مطابقين'}
                   </div>
                 )}
@@ -1351,61 +1351,61 @@ export default function CarRentalScheduler() {
             {isDriverModalOpen && driverModalData && (
               <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="font-bold text-xl text-gray-800">{driverModalData?.id ? 'تعديل بيانات سائق' : 'إضافة سائق جديد'}</h3>
-                    <button onClick={() => setIsDriverModalOpen(false)} className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-600 shadow-sm">
+                  <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 className="font-bold text-xl text-slate-800">{driverModalData?.id ? 'تعديل بيانات سائق' : 'إضافة سائق جديد'}</h3>
+                    <button onClick={() => setIsDriverModalOpen(false)} className="bg-white p-1 rounded-full text-slate-400 hover:text-slate-600 shadow-sm">
                       <X className="w-5 h-5" />
                     </button>
                   </div>
                   <form onSubmit={saveDriver} className="p-6 space-y-5">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-1.5">الاسم الثلاثي</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-1.5">الاسم الثلاثي</label>
                       <input 
                         required 
                         type="text" 
                         value={driverModalData.name} 
                         onChange={e => setDriverModalData({...driverModalData, name: e.target.value})} 
-                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500 focus:outline-none" 
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 focus:outline-none" 
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">رقم الرخصة</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">رقم الرخصة</label>
                         <input 
                           required 
                           type="text" 
                           value={driverModalData.license} 
                           onChange={e => setDriverModalData({...driverModalData, license: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500" 
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500" 
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">رقم الجوال</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">رقم الجوال</label>
                         <input 
                           required 
                           type="text" 
                           value={driverModalData.phone} 
                           onChange={e => setDriverModalData({...driverModalData, phone: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500" 
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500" 
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">الموقع الحالي</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">الموقع الحالي</label>
                         <input 
                           type="text" 
                           value={driverModalData.location} 
                           onChange={e => setDriverModalData({...driverModalData, location: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500" 
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500" 
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">الحالة</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1.5">الحالة</label>
                         <select 
                           value={driverModalData.status} 
                           onChange={e => setDriverModalData({...driverModalData, status: e.target.value})} 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-coral-500 bg-white"
+                          className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-rose-500 bg-white"
                         >
                           <option value="available">متاح</option>
                           <option value="busy">مشغول</option>
@@ -1414,7 +1414,7 @@ export default function CarRentalScheduler() {
                       </div>
                     </div>
                     <div className="pt-2">
-                      <button type="submit" className="w-full bg-coral-500 hover:bg-coral-600 text-white py-2.5 rounded-xl font-bold shadow-md shadow-red-200 transition">
+                      <button type="submit" className="w-full bg-rose-500 hover:bg-coral-600 text-white py-2.5 rounded-xl font-bold shadow-md shadow-rose-200 transition">
                         حفظ البيانات
                       </button>
                     </div>
@@ -1429,24 +1429,24 @@ export default function CarRentalScheduler() {
       {/* Context Menu (Scheduler) */}
       {contextMenu && (
         <div 
-          className="fixed bg-white border border-gray-200 shadow-xl rounded-lg py-1 z-[60] text-sm w-48 text-right" 
+          className="fixed bg-white border border-slate-200 shadow-xl rounded-lg py-1 z-[60] text-sm w-48 text-right" 
           style={{ top: contextMenu.y, left: contextMenu.x }} 
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-3 py-2 border-b border-gray-100 font-bold text-gray-700 bg-gray-50">{contextMenu.booking.customer}</div>
-          <button onClick={() => handleContextMenuAction('edit')} className="w-full text-right px-4 py-2 hover:bg-gray-50 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-400" /> 
+          <div className="px-3 py-2 border-b border-slate-100 font-bold text-slate-700 bg-slate-50">{contextMenu.booking.customer}</div>
+          <button onClick={() => handleContextMenuAction('edit')} className="w-full text-right px-4 py-2 hover:bg-slate-50 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-400" /> 
             {String(contextMenu.booking.id).startsWith('contract-') ? 'عرض العقد' : 'تعديل الحجز'}
           </button>
           {!String(contextMenu.booking.id).startsWith('contract-') && !String(contextMenu.booking.id).startsWith('maintenance-') && (
             <>
-              <button onClick={() => handleContextMenuAction('confirm')} className="w-full text-right px-4 py-2 hover:bg-gray-50 flex items-center gap-2">
+              <button onClick={() => handleContextMenuAction('confirm')} className="w-full text-right px-4 py-2 hover:bg-slate-50 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-blue-500" /> تأكيد (مؤكد)
               </button>
-              <button onClick={() => handleContextMenuAction('active')} className="w-full text-right px-4 py-2 hover:bg-gray-50 flex items-center gap-2">
+              <button onClick={() => handleContextMenuAction('active')} className="w-full text-right px-4 py-2 hover:bg-slate-50 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-green-500" /> بدء الرحلة (جاري)
               </button>
-              <div className="border-t border-gray-100 my-1"></div>
+              <div className="border-t border-slate-100 my-1"></div>
               <button onClick={() => handleContextMenuAction('delete')} className="w-full text-right px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2">
                 <Trash2 className="w-4 h-4" /> حذف الحجز
               </button>

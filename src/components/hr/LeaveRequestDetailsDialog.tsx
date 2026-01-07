@@ -20,7 +20,7 @@ export const LeaveRequestDetailsDialog = ({
       pending: { label: "قيد الانتظار", variant: "secondary" as const, color: "bg-yellow-100 text-yellow-800" },
       approved: { label: "موافق عليه", variant: "default" as const, color: "bg-green-100 text-green-800" },
       rejected: { label: "مرفوض", variant: "destructive" as const, color: "bg-red-100 text-red-800" },
-      cancelled: { label: "ملغي", variant: "outline" as const, color: "bg-gray-100 text-gray-800" },
+      cancelled: { label: "ملغي", variant: "outline" as const, color: "bg-slate-100 text-slate-800" },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig];

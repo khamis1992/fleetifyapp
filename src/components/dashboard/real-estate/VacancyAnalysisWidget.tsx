@@ -108,7 +108,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.6 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -140,7 +140,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
           {/* Current Vacancy Status */}
           <div className={`rounded-lg p-4 ${getVacancyColor(vacancyRate)}`}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">معدل الشغور الحالي</span>
+              <span className="text-sm text-slate-600">معدل الشغور الحالي</span>
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${getVacancyColor(vacancyRate)}`}>
                 <TrendingDown className="w-3 h-3" />
                 {getVacancyStatus(vacancyRate)}
@@ -163,12 +163,12 @@ export const VacancyAnalysisWidget: React.FC = () => {
           {/* Vacancy Metrics */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1 text-right">متوسط وقت التأجير</div>
+              <div className="text-sm text-slate-600 mb-1 text-right">متوسط وقت التأجير</div>
               <div className="text-3xl font-bold text-blue-700">{avgTimeToFill}</div>
               <div className="text-xs text-blue-600">يوم</div>
             </div>
             <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1 text-right">إيراد ضائع شهرياً</div>
+              <div className="text-sm text-slate-600 mb-1 text-right">إيراد ضائع شهرياً</div>
               <div className="text-xl font-bold text-red-700">
                 {formatCurrency(lostRevenuePerMonth)}
               </div>
@@ -178,7 +178,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
           {/* Vacancy Trend Chart */}
           {vacancyTrendData.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">اتجاه الشغور (آخر 6 أشهر)</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">اتجاه الشغور (آخر 6 أشهر)</h4>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={vacancyTrendData}>
@@ -224,15 +224,15 @@ export const VacancyAnalysisWidget: React.FC = () => {
           {/* Vacancy Reasons */}
           {vacancyReasons.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">أسباب الشغور</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">أسباب الشغور</h4>
               <div className="space-y-2">
                 {vacancyReasons.map((reason, index) => (
                   <div key={index} className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-600">
+                    <div className="flex justify-between text-xs text-slate-600">
                       <span>{reason.count} وحدة ({reason.percentage}%)</span>
                       <span>{reason.reason}</span>
                     </div>
-                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className="absolute top-0 right-0 h-full bg-gradient-to-l from-orange-400 to-red-500 rounded-full transition-all duration-500"
                         style={{ width: `${reason.percentage}%` }}
@@ -247,7 +247,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
           {/* Areas with Highest Vacancy */}
           {areasWithVacancy.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">مناطق بشغور عالي</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">مناطق بشغور عالي</h4>
               <div className="space-y-2">
                 {areasWithVacancy.map((area, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-orange-50 rounded-lg border border-orange-200">
@@ -255,7 +255,7 @@ export const VacancyAnalysisWidget: React.FC = () => {
                       {area.vacancyRate.toFixed(0)}%
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">{area.area}</span>
+                      <span className="text-sm text-slate-600">{area.area}</span>
                       <MapPin className="w-4 h-4 text-orange-500" />
                     </div>
                   </div>
@@ -270,13 +270,13 @@ export const VacancyAnalysisWidget: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <DollarSign className="w-8 h-8 text-red-500" />
                 <div className="text-right">
-                  <div className="text-xs text-gray-600">تأثير الإيراد الضائع</div>
+                  <div className="text-xs text-slate-600">تأثير الإيراد الضائع</div>
                   <div className="text-sm font-medium text-red-600">
                     {formatCurrency(lostRevenuePerMonth * 12)} سنوياً
                   </div>
                 </div>
               </div>
-              <div className="text-xs text-gray-500 text-right">
+              <div className="text-xs text-slate-500 text-right">
                 بناءً على {vacantCount} وحدة شاغرة بمتوسط {avgTimeToFill} يوم للتأجير
               </div>
             </div>

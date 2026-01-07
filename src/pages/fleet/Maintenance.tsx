@@ -48,13 +48,13 @@ const statusColors = {
   pending: "bg-green-100 text-green-700 border-green-200",
   in_progress: "bg-amber-500",
   completed: "bg-neutral-500",
-  cancelled: "bg-coral-500"
+  cancelled: "bg-rose-500"
 };
 
 const priorityColors = {
   low: "bg-blue-100 text-blue-700",
   medium: "bg-amber-100 text-amber-700",
-  high: "bg-coral-100 text-coral-700",
+  high: "bg-rose-100 text-coral-700",
   urgent: "bg-red-100 text-red-700"
 };
 

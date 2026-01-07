@@ -50,7 +50,7 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   return (
     <motion.div
-      className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all h-full flex flex-col"
+      className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all h-full flex flex-col"
       whileHover={{ y: -2, scale: 1.01 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -182,7 +182,7 @@ const Payments = () => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'receipt': return 'bg-green-100 text-green-700';
-      case 'payment': return 'bg-coral-100 text-coral-700';
+      case 'payment': return 'bg-rose-100 text-coral-700';
       default: return 'bg-neutral-100 text-neutral-600';
     }
   };
@@ -196,7 +196,7 @@ const Payments = () => {
       title="خطأ في المدفوعات"
       context="صفحة المدفوعات"
     >
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
         <div className="p-5 space-y-5">
           
           {/* Header */}
@@ -210,7 +210,7 @@ const Payments = () => {
             <div className="flex items-center gap-4">
               <motion.button
                 onClick={() => navigate('/finance/hub')}
-                className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-all"
+                className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl flex items-center justify-center shadow-sm hover:shadow-md transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -282,7 +282,7 @@ const Payments = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <TabsList className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl p-1 shadow-sm">
+              <TabsList className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl p-1 shadow-sm">
                 <TabsTrigger
                   value="list"
                   className="flex items-center gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white"
@@ -302,7 +302,7 @@ const Payments = () => {
 
             <TabsContent value="analytics" className="mt-5">
               <motion.div
-                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5 shadow-sm"
+                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5 shadow-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -334,7 +334,7 @@ const Payments = () => {
             <TabsContent value="list" className="mt-5 space-y-4">
               {/* Search & Filters */}
               <motion.div
-                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5 shadow-sm"
+                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5 shadow-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
@@ -397,7 +397,7 @@ const Payments = () => {
 
               {/* Payments Table */}
               <motion.div
-                className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl shadow-sm overflow-hidden hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
+                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl shadow-sm overflow-hidden hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}

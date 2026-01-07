@@ -38,7 +38,7 @@ const getStepIcon = (step: ContractCreationStep) => {
     case 'warning':
       return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
     default:
-      return <Clock className="h-4 w-4 text-gray-400" />;
+      return <Clock className="h-4 w-4 text-slate-400" />;
   }
 };
 
@@ -53,7 +53,7 @@ const getStepColor = (step: ContractCreationStep) => {
     case 'warning':
       return 'bg-yellow-100 border-yellow-300 dark:bg-yellow-900/20';
     default:
-      return 'bg-gray-50 border-gray-200 dark:bg-gray-900/20';
+      return 'bg-slate-50 border-slate-200 dark:bg-slate-900/20';
   }
 };
 
@@ -247,7 +247,7 @@ export const EnhancedContractCreationProgress: React.FC<EnhancedContractCreation
                   onClick={() => toggleStepExpansion(step.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-gray-800 border">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-slate-800 border">
                       <span className="text-xs font-medium">{index + 1}</span>
                     </div>
                     {getStepIcon(step)}
@@ -267,16 +267,16 @@ export const EnhancedContractCreationProgress: React.FC<EnhancedContractCreation
                       </Badge>
                     )}
                     {expandedSteps.has(step.id) ? (
-                      <ChevronUp className="h-4 w-4 text-gray-400" />
+                      <ChevronUp className="h-4 w-4 text-slate-400" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
                     )}
                   </div>
                 </div>
 
                 {/* Expanded Step Details */}
                 {expandedSteps.has(step.id) && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">الحالة:</span>

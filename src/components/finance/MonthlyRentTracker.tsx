@@ -80,7 +80,7 @@ const StatCard: React.FC<StatCardProps> = ({
     className={cn(
       "bg-white rounded-2xl p-5 shadow-sm transition-all border",
       onClick ? "cursor-pointer hover:shadow-md" : "",
-      isActive ? "border-coral-500 ring-2 ring-coral-200" : "border-gray-100"
+      isActive ? "border-rose-500 ring-2 ring-rose-200" : "border-slate-100"
     )}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ const StatCard: React.FC<StatCardProps> = ({
           "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
           trend === 'up' ? 'bg-green-100 text-green-600' :
           trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+          'bg-slate-100 text-slate-600'
         )}>
           {trend === 'up' && <TrendingUp className="w-3 h-3" />}
           {trend === 'down' && <TrendingDown className="w-3 h-3" />}
@@ -242,9 +242,9 @@ export const MonthlyRentTracker: React.FC = () => {
         <div className="flex flex-wrap items-center gap-4">
           {/* Month & Year */}
           <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-coral-500" />
+            <Calendar className="w-5 h-5 text-rose-500" />
             <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-              <SelectTrigger className="w-[140px] h-11 rounded-xl border-gray-200">
+              <SelectTrigger className="w-[140px] h-11 rounded-xl border-slate-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -257,7 +257,7 @@ export const MonthlyRentTracker: React.FC = () => {
             </Select>
 
             <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-              <SelectTrigger className="w-[120px] h-11 rounded-xl border-gray-200">
+              <SelectTrigger className="w-[120px] h-11 rounded-xl border-slate-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -273,7 +273,7 @@ export const MonthlyRentTracker: React.FC = () => {
             </Select>
           </div>
 
-          <div className="h-8 w-px bg-gray-200 hidden md:block" />
+          <div className="h-8 w-px bg-slate-200 hidden md:block" />
 
           {/* Search */}
           <div className="flex-1 min-w-[250px] relative">
@@ -282,13 +282,13 @@ export const MonthlyRentTracker: React.FC = () => {
               placeholder="ابحث باسم العميل، الكود، أو رقم اللوحة..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 h-11 rounded-xl border-gray-200 bg-gray-50"
+              className="pr-10 h-11 rounded-xl border-slate-200 bg-slate-50"
             />
           </div>
 
           {/* Status Filter */}
           <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-            <SelectTrigger className="w-[160px] h-11 rounded-xl border-gray-200">
+            <SelectTrigger className="w-[160px] h-11 rounded-xl border-slate-200">
               <Filter className="w-4 h-4 ml-2 text-neutral-400" />
               <SelectValue />
             </SelectTrigger>
@@ -321,7 +321,7 @@ export const MonthlyRentTracker: React.FC = () => {
               onClick={() => refetch()}
               variant="outline"
               size="sm"
-              className="h-11 rounded-xl border-gray-200 hover:bg-gray-50"
+              className="h-11 rounded-xl border-slate-200 hover:bg-slate-50"
             >
               <RefreshCw className="h-4 w-4 ml-2" />
               تحديث
@@ -330,7 +330,7 @@ export const MonthlyRentTracker: React.FC = () => {
               onClick={exportToCSV}
               variant="outline"
               size="sm"
-              className="h-11 rounded-xl border-coral-200 text-coral-600 hover:bg-coral-50"
+              className="h-11 rounded-xl border-rose-200 text-coral-600 hover:bg-rose-50"
             >
               <Download className="h-4 w-4 ml-2" />
               تصدير
@@ -346,7 +346,7 @@ export const MonthlyRentTracker: React.FC = () => {
           value={summary.totalCustomers}
           subtitle="عميل نشط"
           icon={Users}
-          iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
           delay={0.1}
           onClick={() => setFilterStatus('all')}
           isActive={filterStatus === 'all'}
@@ -395,7 +395,7 @@ export const MonthlyRentTracker: React.FC = () => {
         transition={{ delay: 0.3 }}
       >
         {/* Table Header */}
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-neutral-900">تفاصيل الدفعات</h3>
             <p className="text-sm text-neutral-500">
@@ -404,7 +404,7 @@ export const MonthlyRentTracker: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             {filterStatus !== 'all' && (
-              <Badge variant="outline" className="bg-coral-50 text-coral-600 border-coral-200">
+              <Badge variant="outline" className="bg-rose-50 text-coral-600 border-rose-200">
                 {filterStatus === 'paid' ? 'مدفوع' : filterStatus === 'unpaid' ? 'غير مدفوع' : 'دفع جزئي'}
               </Badge>
             )}
@@ -414,14 +414,14 @@ export const MonthlyRentTracker: React.FC = () => {
         {/* Table Content */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <RefreshCw className="h-10 w-10 animate-spin text-coral-500 mb-4" />
+            <RefreshCw className="h-10 w-10 animate-spin text-rose-500 mb-4" />
             <p className="text-neutral-500">جاري تحميل البيانات...</p>
           </div>
         ) : filteredData && filteredData.length > 0 ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50/50">
+                <TableRow className="bg-slate-50/50">
                   <TableHead className="text-right font-semibold text-neutral-700">اسم العميل</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">رقم اللوحة</TableHead>
                   <TableHead className="text-right font-semibold text-neutral-700">الإيجار الشهري</TableHead>
@@ -443,7 +443,7 @@ export const MonthlyRentTracker: React.FC = () => {
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ delay: index * 0.02 }}
                       className={cn(
-                        "border-b border-gray-50 hover:bg-gray-50/50 transition-colors",
+                        "border-b border-slate-50 hover:bg-slate-50/50 transition-colors",
                         item.payment_status === 'unpaid' && 'bg-red-50/30',
                         item.payment_status === 'partial' && 'bg-amber-50/30',
                         item.payment_status === 'paid' && 'bg-green-50/30'
@@ -492,7 +492,7 @@ export const MonthlyRentTracker: React.FC = () => {
                           {item.phone && (
                             <a
                               href={`tel:${item.phone}`}
-                              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-coral-500 transition-colors"
+                              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-rose-500 transition-colors"
                             >
                               <Phone className="h-3 w-3" />
                               {item.phone}
@@ -501,7 +501,7 @@ export const MonthlyRentTracker: React.FC = () => {
                           {item.email && (
                             <a
                               href={`mailto:${item.email}`}
-                              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-coral-500 transition-colors"
+                              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-rose-500 transition-colors"
                             >
                               <Mail className="h-3 w-3" />
                               {item.email}
@@ -544,8 +544,8 @@ export const MonthlyRentTracker: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <FileSpreadsheet className="w-8 h-8 text-gray-400" />
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+              <FileSpreadsheet className="w-8 h-8 text-slate-400" />
             </div>
             <p className="text-neutral-600 font-medium">لا توجد بيانات</p>
             <p className="text-sm text-neutral-400 mt-1">لا توجد بيانات للشهر المحدد</p>

@@ -329,9 +329,9 @@ function getCategoryColor(category: string, level: string): string {
     'fleet': 'text-purple-600 bg-purple-100',
     'hr': 'text-indigo-600 bg-indigo-100',
     'finance': 'text-emerald-600 bg-emerald-100',
-    'system': 'text-gray-600 bg-gray-100'
+    'system': 'text-slate-600 bg-slate-100'
   };
-  return colorMap[category] || 'text-gray-600 bg-gray-100';
+  return colorMap[category] || 'text-slate-600 bg-slate-100';
 }
 
 function getPriorityFromLevel(level: string): 'high' | 'medium' | 'low' {
@@ -433,7 +433,7 @@ function getTableColor(tableName: string): string {
     'payments': 'text-emerald-600 bg-emerald-100',
     'vehicle_maintenance': 'text-orange-600 bg-orange-100'
   };
-  return colorMap[tableName] || 'text-gray-600 bg-gray-100';
+  return colorMap[tableName] || 'text-slate-600 bg-slate-100';
 }
 
 function generateDescription(item: unknown): string {

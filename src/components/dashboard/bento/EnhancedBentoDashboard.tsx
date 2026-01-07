@@ -131,7 +131,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
           animate={{ rotate: isOpen ? 45 : 0 }}
           className={cn(
             'w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors',
-            isOpen ? 'bg-neutral-900' : 'bg-coral-500 hover:bg-coral-600'
+            isOpen ? 'bg-neutral-900' : 'bg-rose-500 hover:bg-coral-600'
           )}
           style={{ boxShadow: isOpen ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(232, 90, 79, 0.4)' }}
         >
@@ -333,7 +333,7 @@ const EnhancedBentoDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold text-neutral-900">لوحة التحكم الهرمية</h1>
           <button
             onClick={() => setShowCustomizer(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-coral-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
           >
             <Settings className="w-4 h-4" />
             تخصيص
@@ -358,7 +358,7 @@ const EnhancedBentoDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold text-neutral-900">لوحة التحكم المحسّنة</h1>
           <button
             onClick={() => setShowCustomizer(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-coral-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
           >
             <Settings className="w-4 h-4" />
             تخصيص
@@ -393,7 +393,7 @@ const EnhancedBentoDashboard: React.FC = () => {
           </div>
           <button
             onClick={() => setFabOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-coral-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-full font-semibold text-sm hover:bg-coral-600 transition-colors"
           >
             <span>عرض المهام</span>
           </button>
@@ -408,7 +408,7 @@ const EnhancedBentoDashboard: React.FC = () => {
             <input
               type="text"
               placeholder="ابحث هنا ..."
-              className="w-64 px-4 py-2.5 pr-10 bg-white rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-coral-500/20"
+              className="w-64 px-4 py-2.5 pr-10 bg-white rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20"
             />
             <Search className="w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
           </div>
@@ -426,7 +426,7 @@ const EnhancedBentoDashboard: React.FC = () => {
             onClick={() => setDashboardMode(DashboardMode.STANDARD)}
             className={cn(
               "px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors",
-              dashboardMode === DashboardMode.STANDARD ? "bg-coral-100 text-coral-700" : "text-neutral-600 hover:text-neutral-900"
+              dashboardMode === DashboardMode.STANDARD ? "bg-rose-100 text-coral-700" : "text-neutral-600 hover:text-neutral-900"
             )}
           >
             <Grid3x3 className="w-4 h-4" />
@@ -436,7 +436,7 @@ const EnhancedBentoDashboard: React.FC = () => {
             onClick={() => setDashboardMode(DashboardMode.HIERARCHICAL)}
             className={cn(
               "px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors",
-              dashboardMode === DashboardMode.HIERARCHICAL ? "bg-coral-100 text-coral-700" : "text-neutral-600 hover:text-neutral-900"
+              dashboardMode === DashboardMode.HIERARCHICAL ? "bg-rose-100 text-coral-700" : "text-neutral-600 hover:text-neutral-900"
             )}
           >
             <BarChart3 className="w-4 h-4" />
@@ -446,7 +446,7 @@ const EnhancedBentoDashboard: React.FC = () => {
             onClick={() => setDashboardMode(DashboardMode.OPTIMIZED)}
             className={cn(
               "px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors",
-              dashboardMode === DashboardMode.OPTIMIZED ? "bg-coral-100 text-coral-700" : "text-neutral-600 hover:text-neutral-900"
+              dashboardMode === DashboardMode.OPTIMIZED ? "bg-rose-100 text-coral-700" : "text-neutral-600 hover:text-neutral-900"
             )}
           >
             <TrendingUp className="w-4 h-4" />
@@ -489,7 +489,7 @@ const EnhancedBentoDashboard: React.FC = () => {
                   transition={{ duration: 0.4 }}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-coral-100 text-coral-600">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-100 text-coral-600">
                       <Car className="w-4 h-4" />
                     </div>
                   </div>
@@ -500,7 +500,7 @@ const EnhancedBentoDashboard: React.FC = () => {
                   <div className="mt-auto">
                     <div className="h-[5px] bg-neutral-200 rounded-full overflow-hidden">
                       <motion.div 
-                        className="h-full rounded-full bg-coral-500" 
+                        className="h-full rounded-full bg-rose-500" 
                         initial={{ width: 0 }}
                         animate={{ width: `${stats?.vehicleActivityRate || 85}%` }}
                         transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
@@ -696,7 +696,7 @@ const EnhancedBentoDashboard: React.FC = () => {
         <div className="col-span-12 flex justify-center mt-4">
           <button
             onClick={() => setShowCustomizer(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-coral-500 text-white rounded-lg font-medium text-sm hover:bg-coral-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-lg font-medium text-sm hover:bg-coral-600 transition-colors"
           >
             <Settings className="w-4 h-4" />
             تخصيص لوحة التحكم

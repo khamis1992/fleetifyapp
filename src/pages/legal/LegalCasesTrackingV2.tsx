@@ -20,7 +20,7 @@ export const LegalCasesTrackingV2: React.FC = () => {
         </div>
         <div>
           <h1 className="text-3xl font-bold">تتبع القضايا القانونية V2</h1>
-          <p className="text-gray-600">إعادة بناء كاملة من الصفر</p>
+          <p className="text-slate-600">إعادة بناء كاملة من الصفر</p>
         </div>
       </div>
 
@@ -33,7 +33,7 @@ export const LegalCasesTrackingV2: React.FC = () => {
               className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all border-b-4 ${
                 activeTab === 'overview'
                   ? 'bg-white text-primary border-primary font-bold'
-                  : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100'
+                  : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
               }`}
             >
               <LayoutDashboard className="w-5 h-5" />
@@ -45,7 +45,7 @@ export const LegalCasesTrackingV2: React.FC = () => {
               className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all border-b-4 ${
                 activeTab === 'cases'
                   ? 'bg-white text-primary border-primary font-bold'
-                  : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100'
+                  : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
               }`}
             >
               <Folder className="w-5 h-5" />
@@ -57,7 +57,7 @@ export const LegalCasesTrackingV2: React.FC = () => {
               className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all border-b-4 ${
                 activeTab === 'settings'
                   ? 'bg-white text-primary border-primary font-bold'
-                  : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100'
+                  : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
               }`}
             >
               <Settings className="w-5 h-5" />
@@ -69,7 +69,7 @@ export const LegalCasesTrackingV2: React.FC = () => {
               className={`flex items-center justify-center gap-2 px-4 py-4 text-sm font-medium transition-all border-b-4 ${
                 activeTab === 'reports'
                   ? 'bg-white text-primary border-primary font-bold'
-                  : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100'
+                  : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
               }`}
             >
               <FileText className="w-5 h-5" />
@@ -91,13 +91,13 @@ export const LegalCasesTrackingV2: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-lg font-medium text-gray-700">
+            <p className="text-lg font-medium text-slate-700">
               التبويب النشط: <span className="text-primary font-bold">{activeTab}</span>
             </p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-slate-500 mt-2">
               إذا كنت ترى هذه الرسالة، فإن التبويبات تعمل بشكل صحيح! ✅
             </p>
-            <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs text-slate-400 mt-4">
               URL: /legal/cases-v2?tab={activeTab}
             </p>
           </div>

@@ -363,10 +363,10 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
                       />
                     )}
                     <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-900">
+                      <div className="font-medium text-sm text-slate-900">
                         {product.itemName}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-slate-500 mt-1">
                         {product.itemCode && `رمز: ${product.itemCode} | `}
                         هامش ربح: {product.profitMargin.toFixed(1)}%
                       </div>
@@ -375,7 +375,7 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
                       <div className="font-bold text-orange-600">
                         {viewMode === 'revenue' ? formatCurrency(product.revenue) : `${product.quantity} وحدة`}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-slate-500 mt-1">
                         ربح: {formatCurrency(product.profit)}
                       </div>
                     </div>
@@ -401,11 +401,11 @@ export const TopProductsWidget: React.FC<TopProductsWidgetProps> = ({ className 
                         {category.profitMargin.toFixed(1)}% هامش
                       </Badge>
                     </div>
-                    <div className="font-semibold text-gray-900">{category.name}</div>
-                    <div className="text-sm text-gray-600 mt-2">
+                    <div className="font-semibold text-slate-900">{category.name}</div>
+                    <div className="text-sm text-slate-600 mt-2">
                       {formatCurrency(category.revenue)}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-slate-500 mt-1">
                       {category.quantity} وحدة مباعة
                     </div>
                   </div>

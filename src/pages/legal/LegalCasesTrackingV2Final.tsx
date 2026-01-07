@@ -51,7 +51,7 @@ interface LegalCasesTrackingV2FinalProps {
 
 const LegalCasesTrackingV2Final: React.FC<LegalCasesTrackingV2FinalProps> = ({ companyId: propCompanyId }) => {
   const { user } = useAuth();
-  const companyId = propCompanyId || user?.user_metadata?.company_id;
+  const companyId = propCompanyId || user?.profile?.company_id || user?.company?.id || '';
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showTriggersConfig, setShowTriggersConfig] = useState(false);
@@ -275,7 +275,7 @@ const LegalCasesTrackingV2Final: React.FC<LegalCasesTrackingV2FinalProps> = ({ c
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">مغلقة</CardTitle>
-                    <XCircle className="h-4 w-4 text-gray-600" />
+                    <XCircle className="h-4 w-4 text-slate-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats?.closed || 0}</div>

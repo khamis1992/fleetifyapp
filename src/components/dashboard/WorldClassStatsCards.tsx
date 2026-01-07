@@ -55,19 +55,19 @@ const StatCard = React.memo<StatCardProps>(({
           </div>
           
           {/* Content */}
-          <h3 className="text-sm font-medium text-gray-600 mb-2">{title}</h3>
+          <h3 className="text-sm font-medium text-slate-600 mb-2">{title}</h3>
           <p className="text-4xl font-bold number-display mb-2">{value}</p>
           
           {/* Progress Bar */}
           {progress !== undefined && (
             <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div 
                   className={`h-full bg-gradient-to-r ${gradient} rounded-full`}
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
-              <span className="text-xs text-gray-500">{progressLabel}</span>
+              <span className="text-xs text-slate-500">{progressLabel}</span>
             </div>
           )}
         </div>
@@ -141,9 +141,9 @@ export const WorldClassStatsCards: React.FC = () => {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="glass-card rounded-2xl p-6 animate-pulse">
-            <div className="h-16 w-16 bg-gray-200 rounded-2xl mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="h-10 bg-gray-200 rounded"></div>
+            <div className="h-16 w-16 bg-slate-200 rounded-2xl mb-4"></div>
+            <div className="h-4 bg-slate-200 rounded mb-2"></div>
+            <div className="h-10 bg-slate-200 rounded"></div>
           </div>
         ))}
       </section>

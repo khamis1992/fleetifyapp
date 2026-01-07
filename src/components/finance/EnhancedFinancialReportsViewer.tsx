@@ -225,7 +225,7 @@ export function EnhancedFinancialReportsViewer() {
                       className={`flex items-center justify-between p-3 rounded-lg ${
                         account.isHeader 
                           ? 'bg-blue-50 border border-blue-200' 
-                          : 'bg-gray-50'
+                          : 'bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-1">
@@ -286,7 +286,7 @@ export function EnhancedFinancialReportsViewer() {
                       {formatCurrency(reportData.totalCredits)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-100 rounded-lg">
+                  <div className="flex justify-between items-center p-3 bg-slate-100 rounded-lg">
                     <span className="font-semibold">الفرق</span>
                     <span className={`font-bold text-lg ${
                       Math.abs(reportData.totalDebits - reportData.totalCredits) < 0.001 

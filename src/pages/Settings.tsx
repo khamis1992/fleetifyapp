@@ -108,7 +108,7 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="container mx-auto py-6 px-4 max-w-4xl">
         <div className="space-y-6">
           {/* Header */}
@@ -117,41 +117,41 @@ const Settings: React.FC = () => {
               <SettingsIcon className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">الإعدادات</h1>
-              <p className="text-gray-600">إدارة إعدادات حسابك والتطبيق</p>
+              <h1 className="text-3xl font-bold text-slate-900">الإعدادات</h1>
+              <p className="text-slate-600">إدارة إعدادات حسابك والتطبيق</p>
             </div>
           </div>
 
           <Separator />
 
           {/* User Info Card */}
-          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
             <CardHeader>
-              <CardTitle className="text-gray-900">معلومات المستخدم</CardTitle>
-              <CardDescription className="text-gray-600">معلومات أساسية عن حسابك</CardDescription>
+              <CardTitle className="text-slate-900">معلومات المستخدم</CardTitle>
+              <CardDescription className="text-slate-600">معلومات أساسية عن حسابك</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600">الاسم</p>
-                  <p className="text-lg text-gray-900">
+                  <p className="text-sm font-medium text-slate-600">الاسم</p>
+                  <p className="text-lg text-slate-900">
                     {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600">البريد الإلكتروني</p>
-                  <p className="text-lg text-gray-900">{user?.email}</p>
+                  <p className="text-sm font-medium text-slate-600">البريد الإلكتروني</p>
+                  <p className="text-lg text-slate-900">{user?.email}</p>
                 </div>
                 {user?.profile?.position && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">المنصب</p>
-                    <p className="text-lg text-gray-900">{user.profile.position}</p>
+                    <p className="text-sm font-medium text-slate-600">المنصب</p>
+                    <p className="text-lg text-slate-900">{user.profile.position}</p>
                   </div>
                 )}
                 {user?.company && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-600">الشركة</p>
-                    <p className="text-lg text-gray-900">{user.company.name_ar || user.company.name}</p>
+                    <p className="text-sm font-medium text-slate-600">الشركة</p>
+                    <p className="text-lg text-slate-900">{user.company.name_ar || user.company.name}</p>
                   </div>
                 )}
               </div>
@@ -159,10 +159,10 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Settings Options */}
-          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
             <CardHeader>
-              <CardTitle className="text-gray-900">إعدادات التطبيق</CardTitle>
-              <CardDescription className="text-gray-600">خيارات تخصيص التطبيق وإعداداته</CardDescription>
+              <CardTitle className="text-slate-900">إعدادات التطبيق</CardTitle>
+              <CardDescription className="text-slate-600">خيارات تخصيص التطبيق وإعداداته</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -177,22 +177,22 @@ const Settings: React.FC = () => {
                         disabled={!option.available}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-xl ${option.available ? 'bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20' : 'bg-gray-200'}`}>
-                            <IconComponent className={`h-4 w-4 ${option.available ? 'text-white' : 'text-gray-400'}`} />
+                          <div className={`p-2 rounded-xl ${option.available ? 'bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20' : 'bg-slate-200'}`}>
+                            <IconComponent className={`h-4 w-4 ${option.available ? 'text-white' : 'text-slate-400'}`} />
                           </div>
                           <div className="text-right flex-1">
-                            <div className={`font-medium text-gray-900 ${!option.available && 'text-gray-400'}`}>
+                            <div className={`font-medium text-slate-900 ${!option.available && 'text-slate-400'}`}>
                               {option.title}
-                              {!option.available && <span className="text-xs ml-2 text-gray-400">(قريباً)</span>}
+                              {!option.available && <span className="text-xs ml-2 text-slate-400">(قريباً)</span>}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-slate-600">
                               {option.description}
                             </div>
                           </div>
                         </div>
-                        {option.available && <ChevronRight className="h-4 w-4 text-gray-600" />}
+                        {option.available && <ChevronRight className="h-4 w-4 text-slate-600" />}
                       </Button>
-                      {index < settingsOptions.length - 1 && <Separator className="my-2 bg-gray-200/50" />}
+                      {index < settingsOptions.length - 1 && <Separator className="my-2 bg-slate-200/50" />}
                     </div>
                   );
                 })}

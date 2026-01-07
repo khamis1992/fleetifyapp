@@ -138,7 +138,7 @@ export const HierarchicalAccountsList: React.FC<HierarchicalAccountsListProps> =
       case 'expenses':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 

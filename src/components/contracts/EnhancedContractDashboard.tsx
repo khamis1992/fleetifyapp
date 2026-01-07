@@ -168,7 +168,7 @@ export function EnhancedContractDashboard({
       case 'error': return 'bg-orange-500';
       case 'warning': return 'bg-yellow-500';
       case 'info': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-slate-500';
     }
   };
 
@@ -178,8 +178,8 @@ export function EnhancedContractDashboard({
       case 'in_progress': return 'bg-blue-500';
       case 'pending': return 'bg-yellow-500';
       case 'failed': return 'bg-red-500';
-      case 'cancelled': return 'bg-gray-500';
-      default: return 'bg-gray-500';
+      case 'cancelled': return 'bg-slate-500';
+      default: return 'bg-slate-500';
     }
   };
 

@@ -78,14 +78,14 @@ type ViewMode = 'kanban' | 'list' | 'grid';
 type TabType = 'all' | 'my-tasks' | 'reminders' | 'goals' | 'notes';
 
 const priorityColors = {
-  low: 'bg-gray-400',
+  low: 'bg-slate-400',
   medium: 'bg-blue-500',
   high: 'bg-orange-500',
   urgent: 'bg-red-500',
 };
 
 const statusColors = {
-  pending: 'bg-gray-500',
+  pending: 'bg-slate-500',
   in_progress: 'bg-blue-500',
   completed: 'bg-green-500',
   cancelled: 'bg-red-500',
@@ -192,13 +192,13 @@ export default function TasksPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="p-6 space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-coral-500" />
+              <Sparkles className="h-6 w-6 text-rose-500" />
               إدارة المهام
             </h1>
             <p className="text-neutral-500 mt-1">تتبع وإدارة مهامك وأهدافك</p>
@@ -218,7 +218,7 @@ export default function TasksPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="w-full md:w-auto bg-white/80 backdrop-blur-xl border border-gray-200/50 p-1 h-auto flex-wrap rounded-3xl">
+          <TabsList className="w-full md:w-auto bg-white/80 backdrop-blur-xl border border-slate-200/50 p-1 h-auto flex-wrap rounded-3xl">
             {tabItems.map((tab) => (
               <TabsTrigger
                 key={tab.id}
@@ -237,7 +237,7 @@ export default function TasksPage() {
             <MyTasksDashboard />
 
             {/* Tasks Section */}
-            <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -283,7 +283,7 @@ export default function TasksPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+                  <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -301,7 +301,7 @@ export default function TasksPage() {
             </div>
 
             {/* Filters & Search */}
-            <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row gap-4">
                   {/* Search */}
@@ -495,7 +495,7 @@ function renderTasksContent(
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-coral-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
       </div>
     );
   }
@@ -654,7 +654,7 @@ function renderTasksContent(
           animate={{ opacity: 1, scale: 1 }}
         >
           <Card
-            className="cursor-pointer bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all"
+            className="cursor-pointer bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all"
             onClick={() => handleTaskClick(task)}
           >
             <CardContent className="p-4">

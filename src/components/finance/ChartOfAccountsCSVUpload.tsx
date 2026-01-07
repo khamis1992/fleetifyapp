@@ -318,7 +318,7 @@ export const ChartOfAccountsCSVUpload: React.FC<ChartOfAccountsCSVUploadProps> =
         />
         
         {/* Debug: عرض إحصائيات البيانات المُمررة للشجرة */}
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+        <div className="mt-4 p-4 bg-slate-100 rounded-lg">
           <h4 className="font-semibold mb-2">🔍 إحصائيات البيانات المُمررة للشجرة:</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>

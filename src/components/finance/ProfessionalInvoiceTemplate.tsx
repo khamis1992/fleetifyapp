@@ -43,8 +43,8 @@ export function ProfessionalInvoiceTemplate({
       case 'paid': return 'bg-green-100 text-green-800 border-green-200';
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'overdue': return 'bg-red-100 text-red-800 border-red-200';
-      case 'cancelled': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'cancelled': return 'bg-slate-100 text-slate-800 border-slate-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 
@@ -151,7 +151,7 @@ export function ProfessionalInvoiceTemplate({
                   <FileText className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">فاتورة {getTypeLabel(invoice.invoice_type)}</h1>
+                  <h1 className="text-2xl font-bold text-slate-900">فاتورة {getTypeLabel(invoice.invoice_type)}</h1>
                   <p className="text-muted-foreground">رقم الفاتورة: {invoice.invoice_number}</p>
                 </div>
               </div>
@@ -169,7 +169,7 @@ export function ProfessionalInvoiceTemplate({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             {/* From Section */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 من
               </h3>
@@ -189,7 +189,7 @@ export function ProfessionalInvoiceTemplate({
 
             {/* To Section */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <User className="h-4 w-4" />
                 إلى
               </h3>
@@ -204,7 +204,7 @@ export function ProfessionalInvoiceTemplate({
 
             {/* Invoice Details */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                 <Hash className="h-4 w-4" />
                 تفاصيل الفاتورة
               </h3>
@@ -232,7 +232,7 @@ export function ProfessionalInvoiceTemplate({
 
           {/* Invoice Items */}
           <div className="mb-8">
-            <h3 className="font-semibold text-gray-900 mb-4">أصناف الفاتورة</h3>
+            <h3 className="font-semibold text-slate-900 mb-4">أصناف الفاتورة</h3>
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader className="bg-muted">
@@ -289,13 +289,13 @@ export function ProfessionalInvoiceTemplate({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {invoice.terms && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">شروط الدفع</h3>
+                  <h3 className="font-semibold text-slate-900 mb-2">شروط الدفع</h3>
                   <p className="text-sm text-muted-foreground">{invoice.terms}</p>
                 </div>
               )}
               {invoice.notes && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">ملاحظات</h3>
+                  <h3 className="font-semibold text-slate-900 mb-2">ملاحظات</h3>
                   <p className="text-sm text-muted-foreground">{invoice.notes}</p>
                 </div>
               )}

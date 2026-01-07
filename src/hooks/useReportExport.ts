@@ -55,13 +55,13 @@ const { toast } = useToast();
       const printContent = `
         <div id="print-content" style="display: none;">
           <!-- Header -->
-          <header class="border-b-4 border-gray-700 pb-4 mb-6">
+          <header class="border-b-4 border-slate-700 pb-4 mb-6">
             <div class="flex justify-between items-center">
               <div>
-                <h1 class="text-2xl font-bold text-gray-800">اسم الشركة</h1>
-                <h2 class="text-lg text-gray-500">${options.title}</h2>
+                <h1 class="text-2xl font-bold text-slate-800">اسم الشركة</h1>
+                <h2 class="text-lg text-slate-500">${options.title}</h2>
               </div>
-              <div class="text-sm text-gray-600">
+              <div class="text-sm text-slate-600">
                 <p>تاريخ التقرير: <span class="font-semibold">${new Date().toLocaleDateString('en-GB')}</span></p>
                 <p>الوقت: <span class="font-semibold">${new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></p>
               </div>
@@ -70,8 +70,8 @@ const { toast } = useToast();
 
           <!-- Filters -->
           <section class="mb-6">
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">معايير التصفية</h3>
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-500">
+            <h3 class="text-lg font-semibold text-slate-700 mb-2">معايير التصفية</h3>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-500">
               ${options.filters && Object.keys(options.filters).length > 0 ? 
                 `${options.filters.startDate ? `من تاريخ: ${options.filters.startDate}<br>` : ''}
                  ${options.filters.endDate ? `إلى تاريخ: ${options.filters.endDate}<br>` : ''}
@@ -86,14 +86,14 @@ const { toast } = useToast();
           ${reportData && (reportData as any)?.metrics ? '' : `
           <!-- No Data Alert -->
           <section class="mb-6">
-            <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-600 font-medium">
+            <div class="bg-slate-100 border border-slate-300 rounded-lg p-4 text-center text-slate-600 font-medium">
               لا توجد سجلات متاحة للفترة المحددة
             </div>
           </section>
           `}
 
           <!-- Footer -->
-          <footer class="border-t pt-4 mt-8 text-sm text-gray-500 text-center">
+          <footer class="border-t pt-4 mt-8 text-sm text-slate-500 text-center">
             تم إنشاء هذا التقرير بواسطة نظام إدارة الشركات بتاريخ 
             <span class="font-semibold">${new Date().toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric', calendar: 'islamic-umalqura' })} - ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
           </footer>
@@ -143,7 +143,7 @@ const { toast } = useToast();
               border-bottom: 4px solid;
             }
             
-            .border-gray-700 {
+            .border-slate-700 {
               border-color: #374151;
             }
             
@@ -187,24 +187,24 @@ const { toast } = useToast();
               font-weight: 600;
             }
             
-            .text-gray-800 {
+            .text-slate-800 {
               color: #1f2937;
             }
             
-            .text-gray-500 {
+            .text-slate-500 {
               color: #6b7280;
             }
             
-            .text-gray-600 {
+            .text-slate-600 {
               color: #4b5563;
             }
             
-            .text-gray-700 {
+            .text-slate-700 {
               color: #374151;
             }
             
             /* Filters section */
-            .bg-gray-50 {
+            .bg-slate-50 {
               background-color: #f9fafb;
             }
             
@@ -212,11 +212,11 @@ const { toast } = useToast();
               border: 1px solid;
             }
             
-            .border-gray-200 {
+            .border-slate-200 {
               border-color: #e5e7eb;
             }
             
-            .border-gray-300 {
+            .border-slate-300 {
               border-color: #d1d5db;
             }
             
@@ -253,7 +253,7 @@ const { toast } = useToast();
               background-color: white;
             }
             
-            .bg-gray-100 {
+            .bg-slate-100 {
               background-color: #f3f4f6;
             }
             
@@ -442,7 +442,7 @@ const { toast } = useToast();
       for (let i = 0; i < Math.min(3, entries.length); i++) {
         const [key, value] = entries[i];
         const label = getSummaryLabel(key);
-        let colorClass = 'text-gray-800';
+        let colorClass = 'text-slate-800';
         
         if (key.includes('paid') || key.includes('active') || key.includes('resolved')) {
           colorClass = 'text-green-700';
@@ -455,8 +455,8 @@ const { toast } = useToast();
           : value?.toString() || '0';
 
         cards.push(`
-          <div class="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm no-break">
-            <h4 class="text-sm text-gray-500 mb-2">${label}</h4>
+          <div class="bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm no-break">
+            <h4 class="text-sm text-slate-500 mb-2">${label}</h4>
             <p class="text-3xl font-bold ${colorClass}">${formattedValue}</p>
           </div>
         `);

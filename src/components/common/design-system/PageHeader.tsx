@@ -35,9 +35,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         )}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
           {description && (
-            <p className="text-sm text-gray-500 mt-1">{description}</p>
+            <p className="text-sm text-slate-500 mt-1">{description}</p>
           )}
         </div>
       </div>

@@ -820,12 +820,12 @@ export const DemoDataGenerator: React.FC = () => {
       <CardContent className="space-y-6">
         {/* معلومات الشركة الحالية */}
         <div className={`p-4 rounded-lg border ${
-          isSystemCompany === null ? 'bg-gray-50 border-gray-200' :
+          isSystemCompany === null ? 'bg-slate-50 border-slate-200' :
           isSystemCompany ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
         }`}>
           <div className="flex items-center gap-2 mb-2">
             {isSystemCompany === null ? (
-              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
             ) : isSystemCompany ? (
               <CheckCircle className="h-4 w-4 text-green-600" />
             ) : (
@@ -836,7 +836,7 @@ export const DemoDataGenerator: React.FC = () => {
                isSystemCompany ? 'مؤهل للبيانات التجريبية' : 'غير مؤهل للبيانات التجريبية'}
             </span>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slate-600">
             الشركة الحالية: <strong>{companyName}</strong>
           </p>
           {isSystemCompany === false && (
@@ -852,7 +852,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
               <Users className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-sm text-gray-600">العملاء</p>
+                <p className="text-sm text-slate-600">العملاء</p>
                 <p className="font-bold text-blue-600">{stats.customers}</p>
               </div>
             </div>
@@ -860,7 +860,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
               <Users className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600">الموردين</p>
+                <p className="text-sm text-slate-600">الموردين</p>
                 <p className="font-bold text-green-600">{stats.vendors}</p>
               </div>
             </div>
@@ -868,7 +868,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
               <Receipt className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-sm text-gray-600">الفواتير</p>
+                <p className="text-sm text-slate-600">الفواتير</p>
                 <p className="font-bold text-purple-600">{stats.invoices}</p>
               </div>
             </div>
@@ -876,7 +876,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
               <CreditCard className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-sm text-gray-600">المدفوعات</p>
+                <p className="text-sm text-slate-600">المدفوعات</p>
                 <p className="font-bold text-orange-600">{stats.payments}</p>
               </div>
             </div>
@@ -884,7 +884,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
               <FileText className="h-5 w-5 text-red-600" />
               <div>
-                <p className="text-sm text-gray-600">القيود</p>
+                <p className="text-sm text-slate-600">القيود</p>
                 <p className="font-bold text-red-600">{stats.journalEntries}</p>
               </div>
             </div>
@@ -892,7 +892,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-teal-50 rounded-lg">
               <TrendingUp className="h-5 w-5 text-teal-600" />
               <div>
-                <p className="text-sm text-gray-600">العقود</p>
+                <p className="text-sm text-slate-600">العقود</p>
                 <p className="font-bold text-teal-600">{stats.contracts}</p>
               </div>
             </div>
@@ -900,7 +900,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg">
               <Database className="h-5 w-5 text-indigo-600" />
               <div>
-                <p className="text-sm text-gray-600">المركبات</p>
+                <p className="text-sm text-slate-600">المركبات</p>
                 <p className="font-bold text-indigo-600">{stats.vehicles}</p>
               </div>
             </div>
@@ -908,7 +908,7 @@ export const DemoDataGenerator: React.FC = () => {
             <div className="flex items-center gap-2 p-3 bg-cyan-50 rounded-lg">
               <CreditCard className="h-5 w-5 text-cyan-600" />
               <div>
-                <p className="text-sm text-gray-600">حسابات بنكية</p>
+                <p className="text-sm text-slate-600">حسابات بنكية</p>
                 <p className="font-bold text-cyan-600">{stats.bankAccounts}</p>
               </div>
             </div>
@@ -955,12 +955,12 @@ export const DemoDataGenerator: React.FC = () => {
         </div>
         
         {/* معلومات إضافية */}
-        <div className="p-4 bg-gray-50 rounded-lg">
+        <div className="p-4 bg-slate-50 rounded-lg">
           <h4 className="font-semibold mb-2 flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
             ما سيتم إنشاؤه:
           </h4>
-          <ul className="text-sm text-gray-600 space-y-1">
+          <ul className="text-sm text-slate-600 space-y-1">
             <li>• 5 عملاء وهميين مع معلومات الاتصال</li>
             <li>• 5 موردين وهميين (كهرباء، اتصالات، مكتبية، صيانة، وقود)</li>
             <li>• 8 مركبات متنوعة مع أسعار ايجار مختلفة</li>

@@ -95,14 +95,14 @@ export const InlineDuplicateSuggestion: React.FC<InlineDuplicateSuggestionProps>
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, string> = {
       active: 'bg-green-100 text-green-800',
-      draft: 'bg-gray-100 text-gray-800',
+      draft: 'bg-slate-100 text-slate-800',
       pending_approval: 'bg-yellow-100 text-yellow-800',
       approved: 'bg-blue-100 text-blue-800',
       sent: 'bg-purple-100 text-purple-800',
       expired: 'bg-red-100 text-red-800',
-      cancelled: 'bg-gray-200 text-gray-700',
+      cancelled: 'bg-slate-200 text-slate-700',
     };
-    return statusMap[status] || 'bg-gray-100 text-gray-800';
+    return statusMap[status] || 'bg-slate-100 text-slate-800';
   };
 
   const getStatusLabel = (status: string) => {

@@ -85,7 +85,7 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className="h-[300px] flex items-center justify-center text-slate-500">
               لا توجد بيانات للعرض
             </div>
           )}
@@ -103,14 +103,14 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
         <CardContent className="space-y-4">
           {/* صف قيمة العقد */}
           <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <span className="text-sm text-gray-700">قيمة العقد الأساسية</span>
+            <span className="text-sm text-slate-700">قيمة العقد الأساسية</span>
             <span className="font-semibold text-blue-600">{formatCurrency(totalAmount)}</span>
           </div>
 
           {/* صف المدفوع */}
           <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">المدفوع</span>
+              <span className="text-sm text-slate-700">المدفوع</span>
               <Badge variant="secondary" className="text-xs">
                 {paymentPercentage}%
               </Badge>
@@ -123,7 +123,7 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-orange-600" />
-                <span className="text-sm text-gray-700">مبالغ إضافية</span>
+                <span className="text-sm text-slate-700">مبالغ إضافية</span>
               </div>
               <span className="font-semibold text-orange-600">{formatCurrency(totalPaid - totalAmount)}</span>
             </div>
@@ -132,15 +132,15 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
           {/* صف المتبقي */}
           {totalPaid < totalAmount && (
             <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-              <span className="text-sm text-gray-700">المتبقي</span>
+              <span className="text-sm text-slate-700">المتبقي</span>
               <span className="font-semibold text-red-600">{formatCurrency(totalAmount - totalPaid)}</span>
             </div>
           )}
 
           {/* صف الإجمالي */}
-          <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg border border-gray-300 font-bold">
-            <span className="text-sm text-gray-800">الإجمالي المدفوع</span>
-            <span className="text-gray-800">{formatCurrency(totalPaid)}</span>
+          <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg border border-slate-300 font-bold">
+            <span className="text-sm text-slate-800">الإجمالي المدفوع</span>
+            <span className="text-slate-800">{formatCurrency(totalPaid)}</span>
           </div>
         </CardContent>
       </Card>

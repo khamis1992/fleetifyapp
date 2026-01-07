@@ -792,7 +792,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
               {/* Receipt Preview */}
               {showReceipt && (
-                <div className="mt-6 border rounded-lg overflow-auto bg-gray-100 p-2 sm:p-4" style={{ maxHeight: '80vh' }}>
+                <div className="mt-6 border rounded-lg overflow-auto bg-slate-100 p-2 sm:p-4" style={{ maxHeight: '80vh' }}>
                   <div className="w-full">
                     <PaymentReceipt
                       ref={receiptRef}
@@ -919,7 +919,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => {}}
-                              className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                              className="h-5 w-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
                             />
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
@@ -964,7 +964,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full text-gray-600 hover:text-gray-700"
+                        className="w-full text-slate-600 hover:text-slate-700"
                         onClick={() => setShowAllInvoices(false)}
                       >
                         إخفاء الفواتير المستقبلية
@@ -1030,7 +1030,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
               </div>
 
               {/* Summary of selected invoices */}
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+              <div className="bg-slate-50 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
                 {selectedInvoices.map((invoice) => (
                   <div key={invoice.id} className="flex justify-between items-center text-sm">
                     <span>{invoice.invoice_number}</span>

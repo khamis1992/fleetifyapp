@@ -191,14 +191,14 @@ export const MobileHome: React.FC = () => {
       {/* Header */}
       <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">لوحة التحكم</h1>
-          <p className="text-sm text-gray-500 mt-1">مرحباً بك في فليتفاي</p>
+          <h1 className="text-2xl font-bold text-slate-900">لوحة التحكم</h1>
+          <p className="text-sm text-slate-500 mt-1">مرحباً بك في فليتفاي</p>
         </div>
         <button
           onClick={() => navigate('/mobile/notifications')}
-          className="relative p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-gray-200/50"
+          className="relative p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50"
         >
-          <Bell className="w-5 h-5 text-gray-600" />
+          <Bell className="w-5 h-5 text-slate-600" />
           {alerts.length > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
               {alerts.length}
@@ -233,7 +233,7 @@ export const MobileHome: React.FC = () => {
       {alerts.length > 0 && (
         <motion.div variants={itemVariants} className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">⚠️ تنبيهات عاجلة</h2>
+            <h2 className="text-lg font-semibold text-slate-900">⚠️ تنبيهات عاجلة</h2>
             <button className="text-sm text-teal-600">عرض الكل</button>
           </div>
 
@@ -247,32 +247,32 @@ export const MobileHome: React.FC = () => {
 
       {/* Monthly Revenue */}
       <motion.div variants={itemVariants}>
-        <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5">
+        <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
                 <TrendingUp className="w-5 h-5 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">إيرادات الشهر</h3>
-                <p className="text-xs text-gray-500">يناير 2026</p>
+                <h3 className="font-semibold text-slate-900">إيرادات الشهر</h3>
+                <p className="text-xs text-slate-500">يناير 2026</p>
               </div>
             </div>
           </div>
 
           <div className="mb-3">
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-2xl font-bold text-slate-900">
                 QAR {stats.monthlyRevenue.toLocaleString()}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-slate-500">
                 / {stats.monthlyTarget.toLocaleString()}
               </span>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${revenuePercentage}%` }}
@@ -282,7 +282,7 @@ export const MobileHome: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-500">{revenuePercentage.toFixed(0)}% من الهدف</span>
+            <span className="text-slate-500">{revenuePercentage.toFixed(0)}% من الهدف</span>
             <span className="text-teal-600 font-medium">
               QAR {(stats.monthlyTarget - stats.monthlyRevenue).toLocaleString()} متبقي
             </span>
@@ -317,12 +317,12 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon: Icon, value, label, color }) => (
-  <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4">
+  <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4">
     <div className={`p-2 rounded-xl bg-gradient-to-br ${color} shadow-lg mb-2`}>
       <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
     </div>
-    <p className="text-xl font-bold text-gray-900">{value}</p>
-    <p className="text-[10px] text-gray-500">{label}</p>
+    <p className="text-xl font-bold text-slate-900">{value}</p>
+    <p className="text-[10px] text-slate-500">{label}</p>
   </div>
 );
 
@@ -342,8 +342,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
       'border rounded-2xl p-4',
       severityColors[alert.severity]
     )}>
-      <p className="text-sm font-semibold text-gray-900 mb-1">{alert.title}</p>
-      <p className="text-xs text-gray-600">{alert.description}</p>
+      <p className="text-sm font-semibold text-slate-900 mb-1">{alert.title}</p>
+      <p className="text-xs text-slate-600">{alert.description}</p>
     </div>
   );
 };
@@ -364,12 +364,12 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   <motion.button
     whileTap={{ scale: 0.97 }}
     onClick={onClick}
-    className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 text-right"
+    className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 text-right"
   >
     <div className={`p-2.5 rounded-2xl bg-gradient-to-br ${color} shadow-lg shadow-teal-500/20 mb-3 w-fit`}>
       <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
     </div>
-    <p className="text-sm font-semibold text-gray-900">{label}</p>
+    <p className="text-sm font-semibold text-slate-900">{label}</p>
   </motion.button>
 );
 

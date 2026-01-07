@@ -178,7 +178,7 @@ export function DriverLicenseManager({ customerId }: DriverLicenseManagerProps) 
         );
       case 'expired':
         return (
-          <Badge variant="secondary" className="bg-gray-500 text-white">
+          <Badge variant="secondary" className="bg-slate-500 text-white">
             <AlertTriangle className="h-3 w-3 ml-1" />
             منتهي
           </Badge>

@@ -246,16 +246,16 @@ const MobileContractWizard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between px-4 py-4">
           <button onClick={() => navigate('/mobile/contracts')} className="p-2">
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-gray-900">عقد جديد</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-lg font-semibold text-slate-900">عقد جديد</h1>
+            <p className="text-xs text-slate-500">
               الخطوة {currentStep} من 4
             </p>
           </div>
@@ -271,14 +271,14 @@ const MobileContractWizard: React.FC = () => {
                   'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors',
                   currentStep >= step
                     ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20'
-                    : 'bg-gray-200 text-gray-500'
+                    : 'bg-slate-200 text-slate-500'
                 )}>
                   {currentStep > step ? <Check className="w-4 h-4" /> : step}
                 </div>
                 {step < 4 && (
                   <div className={cn(
                     'flex-1 h-1 mx-2 rounded-full transition-colors',
-                    currentStep > step ? 'bg-teal-500' : 'bg-gray-200'
+                    currentStep > step ? 'bg-teal-500' : 'bg-slate-200'
                   )} />
                 )}
               </div>
@@ -330,14 +330,14 @@ const MobileContractWizard: React.FC = () => {
 
       {/* Bottom Actions */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200/50"
+        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex gap-3 p-4">
           {currentStep > 1 && (
             <button
               onClick={handlePrevious}
-              className="flex-1 py-4 rounded-2xl border border-gray-200 text-gray-700 font-semibold"
+              className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-700 font-semibold"
             >
               السابق
             </button>
@@ -381,7 +381,7 @@ const Step1CustomerVehicle: React.FC<{
     >
       {/* Customer Selection */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           👤 اختر العميل
         </label>
         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -396,15 +396,15 @@ const Step1CustomerVehicle: React.FC<{
                 'w-full p-4 rounded-2xl border-2 text-right transition-all',
                 formData.customerId === customer.id
                   ? 'border-teal-500 bg-teal-50'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
               )}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-slate-900">
                     {customer.first_name} {customer.last_name}
                   </p>
-                  <p className="text-sm text-gray-500">{customer.customer_code}</p>
+                  <p className="text-sm text-slate-500">{customer.customer_code}</p>
                 </div>
                 {formData.customerId === customer.id && (
                   <Check className="w-5 h-5 text-teal-600" />
@@ -417,7 +417,7 @@ const Step1CustomerVehicle: React.FC<{
 
       {/* Vehicle Selection */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           🚗 اختر المركبة
         </label>
         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -432,15 +432,15 @@ const Step1CustomerVehicle: React.FC<{
                 'w-full p-4 rounded-2xl border-2 text-right transition-all',
                 formData.vehicleId === vehicle.id
                   ? 'border-teal-500 bg-teal-50'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
               )}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-slate-900">
                     {vehicle.make} {vehicle.model}
                   </p>
-                  <p className="text-sm text-gray-500">{vehicle.license_plate}</p>
+                  <p className="text-sm text-slate-500">{vehicle.license_plate}</p>
                   <p className="text-xs text-teal-600 font-medium mt-1">
                     QAR {vehicle.monthly_rate?.toLocaleString()}/شهر
                   </p>
@@ -457,25 +457,25 @@ const Step1CustomerVehicle: React.FC<{
       {/* Dates */}
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
             📅 تاريخ البدء
           </label>
           <input
             type="date"
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+            className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
             📅 تاريخ النهاية
           </label>
           <input
             type="date"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+            className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
           />
         </div>
       </div>
@@ -506,7 +506,7 @@ const Step2PricingTerms: React.FC<{
     >
       {/* Contract Type */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           💰 نوع العقد
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -522,7 +522,7 @@ const Step2PricingTerms: React.FC<{
                 'py-3 rounded-2xl border-2 text-sm font-semibold transition-colors',
                 formData.contractType === type.value
                   ? 'border-teal-500 bg-teal-50 text-teal-600'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
               {type.label}
@@ -532,27 +532,27 @@ const Step2PricingTerms: React.FC<{
       </div>
 
       {/* Amount Display */}
-      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-gray-500">المبلغ الشهري</span>
+          <span className="text-sm text-slate-500">المبلغ الشهري</span>
           <div className="text-left">
             <input
               type="number"
               value={formData.monthlyAmount}
               onChange={(e) => setFormData({ ...formData, monthlyAmount: parseFloat(e.target.value) || 0 })}
-              className="w-32 text-left text-xl font-bold text-gray-900 bg-transparent border-none focus:outline-none p-0"
+              className="w-32 text-left text-xl font-bold text-slate-900 bg-transparent border-none focus:outline-none p-0"
               dir="ltr"
             />
-            <p className="text-xs text-gray-400">QAR</p>
+            <p className="text-xs text-slate-400">QAR</p>
           </div>
         </div>
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">المدة:</span>
-            <span className="text-sm font-semibold text-gray-900">{days} يوم</span>
+            <span className="text-sm text-slate-500">المدة:</span>
+            <span className="text-sm font-semibold text-slate-900">{days} يوم</span>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-sm text-gray-500">الإجمالي:</span>
+            <span className="text-sm text-slate-500">الإجمالي:</span>
             <span className="text-lg font-bold text-teal-600" dir="ltr">
               QAR {(formData.monthlyAmount * Math.ceil(days / 30)).toLocaleString()}
             </span>
@@ -562,7 +562,7 @@ const Step2PricingTerms: React.FC<{
 
       {/* Payment Day */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           📅 يوم الاستحقاق
         </label>
         <div className="grid grid-cols-7 gap-2">
@@ -574,7 +574,7 @@ const Step2PricingTerms: React.FC<{
                 'py-3 rounded-xl text-sm font-semibold transition-colors',
                 formData.paymentDay === day
                   ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               )}
             >
                 {day}
@@ -584,16 +584,16 @@ const Step2PricingTerms: React.FC<{
       </div>
 
       {/* Auto Renew */}
-      <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl p-4">
+      <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4">
         <div>
-          <p className="font-semibold text-gray-900">تجديد تلقائي</p>
-          <p className="text-xs text-gray-500">تجديد العقد تلقائياً عند الانتهاء</p>
+          <p className="font-semibold text-slate-900">تجديد تلقائي</p>
+          <p className="text-xs text-slate-500">تجديد العقد تلقائياً عند الانتهاء</p>
         </div>
         <button
           onClick={() => setFormData({ ...formData, autoRenew: !formData.autoRenew })}
           className={cn(
             'w-12 h-7 rounded-full transition-colors relative',
-            formData.autoRenew ? 'bg-teal-500' : 'bg-gray-300'
+            formData.autoRenew ? 'bg-teal-500' : 'bg-slate-300'
           )}
         >
           <div
@@ -607,7 +607,7 @@ const Step2PricingTerms: React.FC<{
 
       {/* Notes */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
           📝 ملاحظات
         </label>
         <textarea
@@ -615,7 +615,7 @@ const Step2PricingTerms: React.FC<{
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="أي شروط إضافية..."
           rows={3}
-          className="w-full px-4 py-3 rounded-2xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
+          className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
         />
       </div>
     </motion.div>
@@ -636,7 +636,7 @@ const Step3VehicleCondition: React.FC<{
     >
       {/* Fuel Level */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           ⛽ مستوى الوقود
         </label>
         <div className="flex items-center gap-3">
@@ -656,7 +656,7 @@ const Step3VehicleCondition: React.FC<{
 
       {/* Mileage */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
           📊 المسافة المقطوعة (km)
         </label>
         <input
@@ -664,13 +664,13 @@ const Step3VehicleCondition: React.FC<{
           value={formData.mileage}
           onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
           placeholder="0"
-          className="w-full px-4 py-3 rounded-2xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+          className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
         />
       </div>
 
       {/* Exterior Condition */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           🚗 الحالة الخارجية
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -682,7 +682,7 @@ const Step3VehicleCondition: React.FC<{
                 'py-3 rounded-xl border-2 text-sm font-medium transition-colors',
                 formData.exteriorCondition === condition
                   ? 'border-teal-500 bg-teal-50 text-teal-600'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
               {condition}
@@ -693,7 +693,7 @@ const Step3VehicleCondition: React.FC<{
 
       {/* Interior Condition */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           🪑 الحالة الداخلية
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -705,7 +705,7 @@ const Step3VehicleCondition: React.FC<{
                 'py-3 rounded-xl border-2 text-sm font-medium transition-colors',
                 formData.interiorCondition === condition
                   ? 'border-teal-500 bg-teal-50 text-teal-600'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
               {condition}
@@ -716,7 +716,7 @@ const Step3VehicleCondition: React.FC<{
 
       {/* Existing Damage */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
           ⚠️ الأضراف الموجودة
         </label>
         <textarea
@@ -724,18 +724,18 @@ const Step3VehicleCondition: React.FC<{
           onChange={(e) => setFormData({ ...formData, existingDamage: e.target.value })}
           placeholder="صف أي أضراف موجودة..."
           rows={3}
-          className="w-full px-4 py-3 rounded-2xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
+          className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
         />
       </div>
 
       {/* Photos */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-slate-700 mb-3">
           📷 إضافة صور
         </label>
         <div className="grid grid-cols-4 gap-2">
           {formData.photos.map((photo, index) => (
-            <div key={index} className="aspect-square rounded-2xl bg-gray-100 overflow-hidden relative">
+            <div key={index} className="aspect-square rounded-2xl bg-slate-100 overflow-hidden relative">
               <img src={photo} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => {
@@ -750,7 +750,7 @@ const Step3VehicleCondition: React.FC<{
             </div>
           ))}
           {formData.photos.length < 8 && (
-            <button className="aspect-square rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-teal-500 hover:text-teal-500 transition-colors">
+            <button className="aspect-square rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:border-teal-500 hover:text-teal-500 transition-colors">
               <Camera className="w-6 h-6" />
             </button>
           )}
@@ -793,17 +793,17 @@ const Step4Review: React.FC<{
       className="space-y-4"
     >
       {/* Summary Card */}
-      <div className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-5 space-y-4">
+      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5 space-y-4">
         {/* Customer */}
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
             <User className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">
+            <p className="font-semibold text-slate-900">
               {selectedCustomer?.first_name} {selectedCustomer?.last_name}
             </p>
-            <p className="text-sm text-gray-500">{selectedCustomer?.phone}</p>
+            <p className="text-sm text-slate-500">{selectedCustomer?.phone}</p>
           </div>
         </div>
 
@@ -813,10 +813,10 @@ const Step4Review: React.FC<{
             <CarIcon className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">
+            <p className="font-semibold text-slate-900">
               {selectedVehicle?.make} {selectedVehicle?.model}
             </p>
-            <p className="text-sm text-gray-500">{selectedVehicle?.license_plate}</p>
+            <p className="text-sm text-slate-500">{selectedVehicle?.license_plate}</p>
           </div>
         </div>
 
@@ -826,50 +826,50 @@ const Step4Review: React.FC<{
             <Calendar className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
-            <p className="text-sm text-gray-500">الفترة: {days} يوم</p>
-            <p className="font-semibold text-gray-900">
+            <p className="text-sm text-slate-500">الفترة: {days} يوم</p>
+            <p className="font-semibold text-slate-900">
               {new Date(formData.startDate).toLocaleDateString('ar-SA')} - {new Date(formData.endDate).toLocaleDateString('ar-SA')}
             </p>
           </div>
         </div>
 
         {/* Pricing */}
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">نوع العقد:</span>
-            <span className="font-semibold text-gray-900">
+            <span className="text-sm text-slate-500">نوع العقد:</span>
+            <span className="font-semibold text-slate-900">
               {formData.contractType === 'daily' ? 'يومي' : formData.contractType === 'weekly' ? 'أسبوعي' : 'شهري'}
             </span>
           </div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">المبلغ الشهري:</span>
-            <span className="font-semibold text-gray-900">QAR {formData.monthlyAmount.toLocaleString()}</span>
+            <span className="text-sm text-slate-500">المبلغ الشهري:</span>
+            <span className="font-semibold text-slate-900">QAR {formData.monthlyAmount.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">الإجمالي:</span>
+            <span className="text-sm text-slate-500">الإجمالي:</span>
             <span className="text-xl font-bold text-teal-600">QAR {total.toLocaleString()}</span>
           </div>
         </div>
 
         {/* Terms */}
         {formData.notes && (
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-500 mb-2">ملاحظات:</p>
-            <p className="text-sm text-gray-700">{formData.notes}</p>
+          <div className="pt-4 border-t border-slate-100">
+            <p className="text-sm text-slate-500 mb-2">ملاحظات:</p>
+            <p className="text-sm text-slate-700">{formData.notes}</p>
           </div>
         )}
 
         {/* Options */}
-        <div className="pt-4 border-t border-gray-100 space-y-2">
+        <div className="pt-4 border-t border-slate-100 space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">يوم الاستحقاق:</span>
-            <span className="font-semibold text-gray-900">اليوم {formData.paymentDay} من كل شهر</span>
+            <span className="text-slate-500">يوم الاستحقاق:</span>
+            <span className="font-semibold text-slate-900">اليوم {formData.paymentDay} من كل شهر</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">التجديد التلقائي:</span>
+            <span className="text-slate-500">التجديد التلقائي:</span>
             <span className={cn(
               'font-semibold',
-              formData.autoRenew ? 'text-teal-600' : 'text-gray-500'
+              formData.autoRenew ? 'text-teal-600' : 'text-slate-500'
             )}>
               {formData.autoRenew ? 'مفعّل' : 'معطّل'}
             </span>

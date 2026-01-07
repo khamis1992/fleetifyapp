@@ -282,11 +282,11 @@ const BillingCenter = () => {
       pending: { label: 'معلقة', className: 'bg-yellow-100 text-yellow-700' },
       partial: { label: 'جزئية', className: 'bg-blue-100 text-blue-700' },
       overdue: { label: 'متأخرة', className: 'bg-red-100 text-red-700' },
-      cancelled: { label: 'ملغاة', className: 'bg-gray-100 text-gray-700' },
+      cancelled: { label: 'ملغاة', className: 'bg-slate-100 text-slate-700' },
       completed: { label: 'مكتملة', className: 'bg-green-100 text-green-700' },
       confirmed: { label: 'مؤكدة', className: 'bg-green-100 text-green-700' },
     };
-    const config = configs[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
+    const config = configs[status] || { label: status, className: 'bg-slate-100 text-slate-700' };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
@@ -368,7 +368,7 @@ const BillingCenter = () => {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
               <Receipt className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -379,7 +379,7 @@ const BillingCenter = () => {
           <div className="flex gap-3">
             <Button 
               onClick={() => setIsCreateInvoiceOpen(true)}
-              className="bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white gap-2"
+              className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white gap-2"
             >
               <Plus className="w-4 h-4" />
               فاتورة جديدة
@@ -398,7 +398,7 @@ const BillingCenter = () => {
 
       {/* Monthly Summary - New Section */}
       <motion.div 
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -460,28 +460,28 @@ const BillingCenter = () => {
           <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger 
               value="invoices" 
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
             >
               <Receipt className="w-4 h-4 ml-2" />
               الفواتير
             </TabsTrigger>
             <TabsTrigger 
               value="payments"
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
             >
               <CreditCard className="w-4 h-4 ml-2" />
               المدفوعات
             </TabsTrigger>
             <TabsTrigger 
               value="deposits"
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
             >
               <Wallet className="w-4 h-4 ml-2" />
               الودائع
             </TabsTrigger>
             <TabsTrigger 
               value="rent"
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
             >
               <CalendarDays className="w-4 h-4 ml-2" />
               الإيجارات
@@ -523,7 +523,7 @@ const BillingCenter = () => {
           >
             {invoicesLoading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-coral-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
               </div>
             ) : filteredInvoices.length === 0 ? (
               <div className="text-center py-20">
@@ -531,7 +531,7 @@ const BillingCenter = () => {
                 <p className="text-neutral-500">لا توجد فواتير</p>
                 <Button 
                   onClick={() => setIsCreateInvoiceOpen(true)}
-                  className="mt-4 bg-coral-500 hover:bg-coral-600"
+                  className="mt-4 bg-rose-500 hover:bg-coral-600"
                 >
                   إنشاء فاتورة جديدة
                 </Button>
@@ -612,7 +612,7 @@ const BillingCenter = () => {
           >
             {paymentsLoading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-coral-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
               </div>
             ) : filteredPayments.length === 0 ? (
               <div className="text-center py-20">
@@ -620,7 +620,7 @@ const BillingCenter = () => {
                 <p className="text-neutral-500">لا توجد مدفوعات</p>
                 <Button 
                   onClick={() => setIsCreatePaymentOpen(true)}
-                  className="mt-4 bg-coral-500 hover:bg-coral-600"
+                  className="mt-4 bg-rose-500 hover:bg-coral-600"
                 >
                   تسجيل دفعة جديدة
                 </Button>

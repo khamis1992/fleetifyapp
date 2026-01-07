@@ -690,7 +690,7 @@ export function VehicleAvailabilityCalendar() {
               <span className="text-sm font-medium">اليوم</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-gray-100 border-2 border-gray-300 rounded-md"></div>
+              <div className="w-5 h-5 bg-slate-100 border-2 border-slate-300 rounded-md"></div>
               <span className="text-sm font-medium">خارج الشهر</span>
             </div>
           </div>
@@ -843,7 +843,7 @@ function VehicleCalendarRow({
                   whileHover={{ scale: isCurrentMonth ? 1.05 : 1 }}
                   whileTap={{ scale: isCurrentMonth ? 0.95 : 1 }}
                   className={`aspect-square rounded-md flex flex-col items-center justify-center text-xs font-semibold cursor-pointer transition-all relative group
-                    ${!isCurrentMonth ? 'bg-gray-50 text-gray-300 border-2 border-gray-200' : ''}
+                    ${!isCurrentMonth ? 'bg-slate-50 text-slate-300 border-2 border-slate-200' : ''}
                     ${isUnavailable 
                       ? 'bg-red-50 border-2 border-red-400 text-red-900 hover:bg-red-100 hover:border-red-500' 
                       : isCurrentMonth ? 'bg-green-50 border-2 border-green-400 text-green-900 hover:bg-green-100 hover:border-green-500' : ''

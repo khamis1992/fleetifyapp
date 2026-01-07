@@ -190,7 +190,7 @@ export const VehicleConditionComparisonReport = ({
                     {getConditionText(conditionChanges.overallConditionChange.from)}
                   </Badge>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full" 
                     style={{ width: `${getConditionScore(conditionChanges.overallConditionChange.from)}%` }}
@@ -203,7 +203,7 @@ export const VehicleConditionComparisonReport = ({
                     {getConditionText(conditionChanges.overallConditionChange.to)}
                   </Badge>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-slate-200 rounded-full h-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full" 
                     style={{ width: `${getConditionScore(conditionChanges.overallConditionChange.to)}%` }}

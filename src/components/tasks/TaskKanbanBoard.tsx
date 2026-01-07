@@ -66,8 +66,8 @@ const columns: Column[] = [
     id: 'pending',
     title: 'معلقة',
     icon: <Circle className="h-4 w-4" />,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
+    color: 'text-slate-600',
+    bgColor: 'bg-slate-100',
   },
   {
     id: 'in_progress',
@@ -100,7 +100,7 @@ const columns: Column[] = [
 ];
 
 const priorityColors = {
-  low: 'bg-gray-400',
+  low: 'bg-slate-400',
   medium: 'bg-blue-500',
   high: 'bg-orange-500',
   urgent: 'bg-red-500',
@@ -157,7 +157,7 @@ const TaskCard: React.FC<{
       animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className={cn(
-        'bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-4 cursor-pointer hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+        'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 cursor-pointer hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
         isDragging && 'shadow-lg ring-2 ring-teal-500'
       )}
       onClick={onClick}
@@ -194,12 +194,12 @@ const TaskCard: React.FC<{
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
           {task.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs bg-gray-100">
+            <Badge key={tag} variant="secondary" className="text-xs bg-slate-100">
               {tag}
             </Badge>
           ))}
           {task.tags.length > 3 && (
-            <Badge variant="secondary" className="text-xs bg-gray-100">
+            <Badge variant="secondary" className="text-xs bg-slate-100">
               +{task.tags.length - 3}
             </Badge>
           )}
@@ -209,7 +209,7 @@ const TaskCard: React.FC<{
       {/* Checklist Progress */}
       {checklistProgress && (
         <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
             <span className="flex items-center gap-1">
               <CheckSquare className="h-3 w-3" />
               المهام الفرعية
@@ -221,12 +221,12 @@ const TaskCard: React.FC<{
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
         <div className="flex items-center gap-2">
           {/* Priority */}
           <div className="flex items-center gap-1">
             <div className={cn('w-2 h-2 rounded-full', priorityColors[task.priority])} />
-            <span className="text-xs text-gray-500">{priorityLabels[task.priority]}</span>
+            <span className="text-xs text-slate-500">{priorityLabels[task.priority]}</span>
           </div>
 
           {/* Due Date */}
@@ -238,7 +238,7 @@ const TaskCard: React.FC<{
                   ? 'text-red-600'
                   : dueDateInfo.isDueToday
                   ? 'text-orange-600'
-                  : 'text-gray-500'
+                  : 'text-slate-500'
               )}
             >
               <Calendar className="h-3 w-3" />
@@ -252,7 +252,7 @@ const TaskCard: React.FC<{
         {task.assignee && (
           <Avatar className="h-6 w-6">
             <AvatarImage src={task.assignee.avatar_url || ''} />
-            <AvatarFallback className="text-xs bg-coral-100 text-coral-700">
+            <AvatarFallback className="text-xs bg-rose-100 text-coral-700">
               {(task.assignee.first_name_ar || task.assignee.first_name || '?')[0]}
             </AvatarFallback>
           </Avatar>
@@ -316,13 +316,13 @@ const KanbanColumn: React.FC<{
           {column.icon}
           <span className="font-medium">{column.title}</span>
         </div>
-        <Badge variant="secondary" className={cn('rounded-full bg-gray-100', column.color)}>
+        <Badge variant="secondary" className={cn('rounded-full bg-slate-100', column.color)}>
           {tasks.length}
         </Badge>
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 bg-gray-50/80 backdrop-blur-sm rounded-b-3xl p-3 space-y-3 overflow-y-auto">
+      <div className="flex-1 bg-slate-50/80 backdrop-blur-sm rounded-b-3xl p-3 space-y-3 overflow-y-auto">
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <AnimatePresence mode="popLayout">
             {tasks.map((task) => (
@@ -338,7 +338,7 @@ const KanbanColumn: React.FC<{
         </SortableContext>
 
         {tasks.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">
+          <div className="text-center py-8 text-slate-400 text-sm">
             لا توجد مهام
           </div>
         )}

@@ -17,7 +17,7 @@ const BentoLoader: React.FC = () => (
   <div className="min-h-screen bg-[#f0efed] p-5">
     <div className="flex items-center justify-center min-h-[80vh]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-neutral-500 font-medium">جاري تحميل لوحة التحكم...</p>
       </div>
     </div>

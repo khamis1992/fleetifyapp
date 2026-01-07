@@ -234,11 +234,11 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <div className="flex items-center justify-between mb-2">
                 <Users className="h-4 w-4 text-blue-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {analytics.totalCustomers}
               </div>
-              <div className="text-xs text-gray-600 mt-1">إجمالي العملاء</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">إجمالي العملاء</div>
+              <div className="text-xs text-slate-500 mt-1">
                 {analytics.activeCustomers} نشط
               </div>
             </div>
@@ -248,11 +248,11 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="h-4 w-4 text-green-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {analytics.newCustomersCount}
               </div>
-              <div className="text-xs text-gray-600 mt-1">عملاء جدد</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">عملاء جدد</div>
+              <div className="text-xs text-slate-500 mt-1">
                 هذا الشهر
               </div>
             </div>
@@ -262,11 +262,11 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <div className="flex items-center justify-between mb-2">
                 <Award className="h-4 w-4 text-purple-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {analytics.returningCustomersRate.toFixed(1)}%
               </div>
-              <div className="text-xs text-gray-600 mt-1">معدل العودة</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">معدل العودة</div>
+              <div className="text-xs text-slate-500 mt-1">
                 عملاء متكررون
               </div>
             </div>
@@ -276,15 +276,15 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <div className="flex items-center justify-between mb-2">
                 <Award className="h-4 w-4 text-orange-500" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-slate-900">
                 {formatCurrency(analytics.avgCLV)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="text-xs text-slate-600 mt-1">
                 <EnhancedTooltip kpi={kpiDefinitions.clv}>
                   <span>القيمة الدائمة</span>
                 </EnhancedTooltip>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-500 mt-1">
                 متوسط CLV
               </div>
             </div>
@@ -317,19 +317,19 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
                 <div className="text-center p-2 bg-green-50 rounded border border-green-100">
                   <div className="text-lg font-bold text-green-600">{analytics.segments.new}</div>
-                  <div className="text-xs text-gray-600">جديد</div>
+                  <div className="text-xs text-slate-600">جديد</div>
                 </div>
                 <div className="text-center p-2 bg-blue-50 rounded border border-blue-100">
                   <div className="text-lg font-bold text-blue-600">{analytics.segments.regular}</div>
-                  <div className="text-xs text-gray-600">منتظم</div>
+                  <div className="text-xs text-slate-600">منتظم</div>
                 </div>
                 <div className="text-center p-2 bg-amber-50 rounded border border-amber-100">
                   <div className="text-lg font-bold text-amber-600">{analytics.segments.vip}</div>
-                  <div className="text-xs text-gray-600">VIP</div>
+                  <div className="text-xs text-slate-600">VIP</div>
                 </div>
                 <div className="text-center p-2 bg-red-50 rounded border border-red-100">
                   <div className="text-lg font-bold text-red-600">{analytics.segments.atRisk}</div>
-                  <div className="text-xs text-gray-600">معرض للخطر</div>
+                  <div className="text-xs text-slate-600">معرض للخطر</div>
                 </div>
               </div>
             </div>
@@ -350,10 +350,10 @@ export const CustomerInsightsWidget: React.FC<CustomerInsightsWidgetProps> = ({ 
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-medium text-sm text-gray-900">
+                        <div className="font-medium text-sm text-slate-900">
                           {customer.customerName}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-slate-500 mt-1">
                           {customer.purchaseCount} عملية شراء
                         </div>
                       </div>

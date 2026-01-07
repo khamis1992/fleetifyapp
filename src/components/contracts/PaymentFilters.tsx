@@ -54,7 +54,7 @@ export const PaymentFilters = ({
   const isFiltered = selectedStatus !== 'all' || searchText.length > 0;
 
   const statusOptions: Array<{ value: PaymentStatus; label: string; color: string }> = [
-    { value: 'all', label: 'الكل', color: 'bg-gray-100' },
+    { value: 'all', label: 'الكل', color: 'bg-slate-100' },
     { value: 'completed', label: 'مدفوع', color: 'bg-green-100' },
     { value: 'pending', label: 'معلق', color: 'bg-yellow-100' },
     { value: 'overdue', label: 'متأخر', color: 'bg-red-100' },
@@ -91,7 +91,7 @@ export const PaymentFilters = ({
 
       {/* شريط البحث */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
           placeholder="ابحث برقم الدفعة أو الفاتورة..."
           value={searchText}
@@ -102,7 +102,7 @@ export const PaymentFilters = ({
 
       {/* معلومات التصفية */}
       {isFiltered && (
-        <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+        <div className="flex items-center gap-2 text-sm text-slate-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
           <Filter className="w-4 h-4 text-blue-600" />
           <span>
             يتم عرض <strong>{filteredCount}</strong> من <strong>{totalCount}</strong> دفعة

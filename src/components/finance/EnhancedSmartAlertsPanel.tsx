@@ -78,7 +78,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
       case 'low':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 
@@ -106,7 +106,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
       case 'resolved':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'dismissed':
-        return <X className="h-4 w-4 text-gray-600" />;
+        return <X className="h-4 w-4 text-slate-600" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
@@ -167,7 +167,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">إجمالي التنبيهات</p>
+                  <p className="text-sm text-slate-600">إجمالي التنبيهات</p>
                   <p className="text-2xl font-bold">{statistics.total}</p>
                 </div>
                 <Bell className="h-8 w-8 text-blue-600" />
@@ -179,7 +179,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">نشطة</p>
+                  <p className="text-sm text-slate-600">نشطة</p>
                   <p className="text-2xl font-bold text-red-600">{statistics.active}</p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -191,7 +191,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">تم الإقرار</p>
+                  <p className="text-sm text-slate-600">تم الإقرار</p>
                   <p className="text-2xl font-bold text-yellow-600">{statistics.acknowledged}</p>
                 </div>
                 <Eye className="h-8 w-8 text-yellow-600" />
@@ -203,7 +203,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">تم الحل</p>
+                  <p className="text-sm text-slate-600">تم الحل</p>
                   <p className="text-2xl font-bold text-green-600">{statistics.resolved}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-600" />
@@ -269,12 +269,12 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-slate-600">
                                 {JSON.stringify(config.trigger_conditions)}
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-slate-600">
                                 {config.notification_settings?.email && '📧 '}
                                 {config.notification_settings?.sms && '📱 '}
                                 {config.notification_settings?.in_app && '🔔 '}
@@ -299,7 +299,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
 
             <TabsContent value="alerts" className="space-y-4">
               {!alerts || alerts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-500">
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
                   <p>لا توجد تنبيهات نشطة</p>
                 </div>
@@ -327,8 +327,8 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
                                  alert.status === 'resolved' ? 'تم الحل' : 'مرفوض'}
                               </Badge>
                             </div>
-                            <p className="text-gray-600 mb-2">{alert.alert_message}</p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <p className="text-slate-600 mb-2">{alert.alert_message}</p>
+                            <div className="flex items-center gap-4 text-sm text-slate-500">
                               <span>{getAlertTypeLabel(alert.alert_type)}</span>
                               <span>•</span>
                               <span>{format(new Date(alert.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}</span>
@@ -493,7 +493,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
               
               <div>
                 <Label>الرسالة</Label>
-                <div className="mt-1 p-3 bg-gray-50 rounded-lg">
+                <div className="mt-1 p-3 bg-slate-50 rounded-lg">
                   {selectedAlert.alert_message}
                 </div>
               </div>
@@ -501,7 +501,7 @@ export const EnhancedSmartAlertsPanel: React.FC = () => {
               {selectedAlert.alert_data && Object.keys(selectedAlert.alert_data).length > 0 && (
                 <div>
                   <Label>بيانات إضافية</Label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-lg">
+                  <div className="mt-1 p-3 bg-slate-50 rounded-lg">
                     <pre className="text-sm overflow-auto">
                       {JSON.stringify(selectedAlert.alert_data, null, 2)}
                     </pre>

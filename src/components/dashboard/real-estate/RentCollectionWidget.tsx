@@ -117,7 +117,7 @@ export const RentCollectionWidget: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.1 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -151,7 +151,7 @@ export const RentCollectionWidget: React.FC = () => {
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-600">إيجارات محصلة</span>
+                <span className="text-sm text-slate-600">إيجارات محصلة</span>
               </div>
               <div className="text-2xl font-bold text-green-700">
                 {formatCurrency(rentCollected)}
@@ -160,7 +160,7 @@ export const RentCollectionWidget: React.FC = () => {
             <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-4 h-4 text-orange-600" />
-                <span className="text-sm text-gray-600">إيجارات متأخرة</span>
+                <span className="text-sm text-slate-600">إيجارات متأخرة</span>
               </div>
               <div className="text-2xl font-bold text-orange-700">
                 {formatCurrency(outstandingRent)}
@@ -172,7 +172,7 @@ export const RentCollectionWidget: React.FC = () => {
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <EnhancedTooltip kpi={kpiDefinitions.collection_rate}>
-                <span className="text-sm text-gray-600">معدل التحصيل</span>
+                <span className="text-sm text-slate-600">معدل التحصيل</span>
               </EnhancedTooltip>
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
                 collectionRate >= 90
@@ -191,7 +191,7 @@ export const RentCollectionWidget: React.FC = () => {
               </span>
             </div>
             {/* Progress Bar */}
-            <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="relative h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="absolute top-0 right-0 h-full bg-gradient-to-l from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(collectionRate, 100)}%` }}
@@ -202,7 +202,7 @@ export const RentCollectionWidget: React.FC = () => {
           {/* Overdue Aging Chart */}
           {overduePayments.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">تصنيف المتأخرات حسب المدة</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">تصنيف المتأخرات حسب المدة</h4>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={agingData}>
@@ -241,15 +241,15 @@ export const RentCollectionWidget: React.FC = () => {
           {/* Overdue Summary */}
           {overduePayments.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">ملخص المتأخرات</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">ملخص المتأخرات</h4>
               <div className="space-y-2">
                 {agingData.map((bucket, index) => (
                   bucket.count > 0 && (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700">{formatCurrency(bucket.amount)}</span>
+                    <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                      <span className="text-sm font-medium text-slate-700">{formatCurrency(bucket.amount)}</span>
                       <div className="text-right">
-                        <span className="text-xs text-gray-500">{bucket.name}</span>
-                        <span className="text-xs text-gray-400 mr-2">({bucket.count} دفعة)</span>
+                        <span className="text-xs text-slate-500">{bucket.name}</span>
+                        <span className="text-xs text-slate-400 mr-2">({bucket.count} دفعة)</span>
                       </div>
                     </div>
                   )

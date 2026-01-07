@@ -558,7 +558,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
         "min-h-[100px] border-2 rounded-lg p-2 cursor-pointer transition-all hover:shadow-md",
         isCurrentMonth ? "opacity-100" : "opacity-40",
         isSelected ? "ring-2 ring-primary" : "",
-        status.color || "bg-white border-gray-200",
+        status.color || "bg-white border-slate-200",
         status.count > 0 ? "hover:scale-105" : ""
       )}
     >

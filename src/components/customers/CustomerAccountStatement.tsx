@@ -95,7 +95,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-slate-600 mb-4">
               لا يمكن عرض كشف الحساب - كود العميل غير متوفر
             </p>
             <p className="text-sm text-muted-foreground">
@@ -338,7 +338,7 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-slate-600 mb-4">
               {isDbFunctionError 
                 ? 'نظام كشف الحساب غير مفعّل حالياً. يرجى التواصل مع الدعم الفني.'
                 : errorMessage

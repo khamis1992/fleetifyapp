@@ -108,14 +108,14 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-32">
-          <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
+          <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className={cn('bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -187,7 +187,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                         className={cn(
                           'w-8 h-8 rounded-full border-2 transition-transform hover:scale-110',
                           selectedColor === color
-                            ? 'border-coral-500 scale-110'
+                            ? 'border-rose-500 scale-110'
                             : 'border-transparent'
                         )}
                         style={{ backgroundColor: color }}
@@ -223,7 +223,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
 
       <CardContent className={cn(compact && 'px-0 pb-0')}>
         {displayedNotes.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-slate-400">
             <StickyNote className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>لا توجد ملاحظات</p>
             <p className="text-sm">سجّل أفكارك وملاحظاتك</p>
@@ -323,12 +323,12 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
                   </div>
 
                   {/* Content */}
-                  <p className="text-sm text-gray-800 whitespace-pre-wrap mb-3 line-clamp-4">
+                  <p className="text-sm text-slate-800 whitespace-pre-wrap mb-3 line-clamp-4">
                     {note.content}
                   </p>
 
                   {/* Footer */}
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-slate-500">
                     {format(new Date(note.created_at), 'd MMM HH:mm', { locale: ar })}
                   </div>
                 </motion.div>
@@ -338,7 +338,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
         )}
 
         {limit && notes.length > limit && (
-          <p className="text-center text-sm text-gray-500 pt-4">
+          <p className="text-center text-sm text-slate-500 pt-4">
             +{notes.length - limit} ملاحظات أخرى
           </p>
         )}

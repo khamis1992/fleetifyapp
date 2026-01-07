@@ -180,8 +180,8 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
                 }}>
                   <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
-                      <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-                      <p className="text-lg text-gray-600 mb-8">Page not found</p>
+                      <h1 className="text-4xl font-bold text-slate-900 mb-4">404</h1>
+                      <p className="text-lg text-slate-600 mb-8">Page not found</p>
                       <a
                         href="/dashboard"
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

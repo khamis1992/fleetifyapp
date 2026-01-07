@@ -65,7 +65,7 @@ export const AuditLogViewer: React.FC = () => {
       case 'info':
         return <Eye className="h-4 w-4 text-blue-600" />;
       default:
-        return <Activity className="h-4 w-4 text-gray-600" />;
+        return <Activity className="h-4 w-4 text-slate-600" />;
     }
   };
 

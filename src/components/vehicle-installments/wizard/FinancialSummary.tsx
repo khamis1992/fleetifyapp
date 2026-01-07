@@ -70,10 +70,10 @@ export function FinancialSummary({
   };
 
   return (
-    <Card className="bg-gradient-to-br from-coral-50 to-orange-50 border-coral-200">
+    <Card className="bg-gradient-to-br from-rose-50 to-orange-50 border-rose-200">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Calculator className="w-5 h-5 text-coral-500" />
+          <Calculator className="w-5 h-5 text-rose-500" />
           الملخص المالي التفاعلي
         </CardTitle>
       </CardHeader>
@@ -81,9 +81,9 @@ export function FinancialSummary({
         {/* Main Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {/* Monthly Installment */}
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-coral-100">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-rose-100">
             <div className="flex items-center gap-2 mb-1">
-              <CreditCard className="w-4 h-4 text-coral-500" />
+              <CreditCard className="w-4 h-4 text-rose-500" />
               <span className="text-xs text-neutral-500">القسط الشهري</span>
             </div>
             <p className="text-lg font-bold text-coral-600">
@@ -92,7 +92,7 @@ export function FinancialSummary({
           </div>
 
           {/* Total with Interest */}
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-coral-100">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-rose-100">
             <div className="flex items-center gap-2 mb-1">
               <Wallet className="w-4 h-4 text-emerald-500" />
               <span className="text-xs text-neutral-500">الإجمالي مع الفوائد</span>
@@ -103,7 +103,7 @@ export function FinancialSummary({
           </div>
 
           {/* Total Interest */}
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-coral-100">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-rose-100">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-amber-500" />
               <span className="text-xs text-neutral-500">إجمالي الفوائد</span>
@@ -114,7 +114,7 @@ export function FinancialSummary({
           </div>
 
           {/* Principal Amount */}
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-coral-100">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-rose-100">
             <div className="flex items-center gap-2 mb-1">
               <PiggyBank className="w-4 h-4 text-blue-500" />
               <span className="text-xs text-neutral-500">المبلغ المتبقي</span>
@@ -125,7 +125,7 @@ export function FinancialSummary({
           </div>
 
           {/* End Date */}
-          <div className="bg-white rounded-lg p-3 shadow-sm border border-coral-100">
+          <div className="bg-white rounded-lg p-3 shadow-sm border border-rose-100">
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="w-4 h-4 text-purple-500" />
               <span className="text-xs text-neutral-500">تاريخ الانتهاء</span>
@@ -137,7 +137,7 @@ export function FinancialSummary({
 
           {/* Per Vehicle */}
           {vehicleCount > 0 && (
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-coral-100">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-rose-100">
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="secondary" className="text-xs">
                   {vehicleCount} مركبات

@@ -162,7 +162,7 @@ export const ALL_REPORT_MODULES: Record<string, ReportModule> = {
     title: 'تقارير الإنتاج',
     description: 'تقارير الإنتاج والجودة والكفاءة',
     icon: Factory,
-    color: 'bg-gray-100 text-gray-600',
+    color: 'bg-slate-100 text-slate-600',
     count: 7,
     reports: [
       { id: 'production_summary', name: 'ملخص الإنتاج', type: 'production' },

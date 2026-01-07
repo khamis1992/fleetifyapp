@@ -57,7 +57,7 @@ export function InstallmentCalendar({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-lg">
           <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-coral-500" />
+            <Calendar className="w-5 h-5 text-rose-500" />
             جدول الأقساط
           </div>
           <Badge variant="outline" className="text-xs">
@@ -70,10 +70,10 @@ export function InstallmentCalendar({
           {schedule.map((item, index) => (
             <div
               key={item.number}
-              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-neutral-50 to-white border border-neutral-100 hover:border-coral-200 transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-neutral-50 to-white border border-neutral-100 hover:border-rose-200 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-coral-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center">
                   <span className="text-sm font-bold text-coral-600">
                     {item.number}
                   </span>
@@ -115,7 +115,7 @@ export function InstallmentCalendar({
         </div>
 
         {/* ملخص */}
-        <div className="mt-4 p-3 bg-coral-50 rounded-lg">
+        <div className="mt-4 p-3 bg-rose-50 rounded-lg">
           <div className="flex justify-between items-center">
             <span className="text-sm text-neutral-600">إجمالي الأقساط</span>
             <span className="font-bold text-coral-600">

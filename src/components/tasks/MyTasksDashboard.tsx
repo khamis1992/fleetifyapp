@@ -124,14 +124,14 @@ export const MyTasksDashboard: React.FC = () => {
           >
             <Card
               className={cn(
-                'bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+                'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
                 stat.highlight && 'ring-2 ring-red-400 ring-offset-2'
               )}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">{stat.title}</p>
+                    <p className="text-sm text-slate-500">{stat.title}</p>
                     <p className={cn('text-2xl font-bold mt-1', stat.color)}>
                       {stat.value}
                     </p>
@@ -149,7 +149,7 @@ export const MyTasksDashboard: React.FC = () => {
       {/* Quick Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Today's Tasks */}
-        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
@@ -160,7 +160,7 @@ export const MyTasksDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             {todayTasks.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">
+              <p className="text-sm text-slate-400 text-center py-4">
                 لا توجد مهام لليوم
               </p>
             ) : (
@@ -168,7 +168,7 @@ export const MyTasksDashboard: React.FC = () => {
                 {todayTasks.slice(0, 3).map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-gray-50"
+                    className="flex items-center gap-2 p-2 rounded-lg bg-slate-50"
                   >
                     <div
                       className={cn(
@@ -176,7 +176,7 @@ export const MyTasksDashboard: React.FC = () => {
                         task.priority === 'urgent' && 'bg-red-500',
                         task.priority === 'high' && 'bg-orange-500',
                         task.priority === 'medium' && 'bg-blue-500',
-                        task.priority === 'low' && 'bg-gray-400'
+                        task.priority === 'low' && 'bg-slate-400'
                       )}
                     />
                     <span className="text-sm truncate flex-1">{task.title}</span>
@@ -188,7 +188,7 @@ export const MyTasksDashboard: React.FC = () => {
                   </div>
                 ))}
                 {todayTasks.length > 3 && (
-                  <p className="text-xs text-gray-400 text-center">
+                  <p className="text-xs text-slate-400 text-center">
                     +{todayTasks.length - 3} مهام أخرى
                   </p>
                 )}
@@ -198,7 +198,7 @@ export const MyTasksDashboard: React.FC = () => {
         </Card>
 
         {/* Upcoming Reminders */}
-        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
@@ -209,7 +209,7 @@ export const MyTasksDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             {reminders.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">
+              <p className="text-sm text-slate-400 text-center py-4">
                 لا توجد تذكيرات قادمة
               </p>
             ) : (
@@ -217,19 +217,19 @@ export const MyTasksDashboard: React.FC = () => {
                 {reminders.slice(0, 3).map((reminder) => (
                   <div
                     key={reminder.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-gray-50"
+                    className="flex items-center gap-2 p-2 rounded-lg bg-slate-50"
                   >
-                    <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                    <Clock className="h-3 w-3 text-slate-400 flex-shrink-0" />
                     <span className="text-sm truncate flex-1">{reminder.title}</span>
                     {reminder.reminder_time && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         {format(parseISO(reminder.reminder_time), 'HH:mm', { locale: ar })}
                       </span>
                     )}
                   </div>
                 ))}
                 {reminders.length > 3 && (
-                  <p className="text-xs text-gray-400 text-center">
+                  <p className="text-xs text-slate-400 text-center">
                     +{reminders.length - 3} تذكيرات أخرى
                   </p>
                 )}
@@ -239,7 +239,7 @@ export const MyTasksDashboard: React.FC = () => {
         </Card>
 
         {/* Goals Progress */}
-        <Card className="bg-white/80 backdrop-blur-xl border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
@@ -250,7 +250,7 @@ export const MyTasksDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             {goals.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">
+              <p className="text-sm text-slate-400 text-center py-4">
                 لا توجد أهداف نشطة
               </p>
             ) : (
@@ -263,7 +263,7 @@ export const MyTasksDashboard: React.FC = () => {
                     <div key={goal.id} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="truncate flex-1">{goal.title}</span>
-                        <span className="text-xs text-gray-500 mr-2">
+                        <span className="text-xs text-slate-500 mr-2">
                           {goal.current_count}/{goal.target_count}
                         </span>
                       </div>
@@ -282,7 +282,7 @@ export const MyTasksDashboard: React.FC = () => {
                   );
                 })}
                 {goals.length > 3 && (
-                  <p className="text-xs text-gray-400 text-center">
+                  <p className="text-xs text-slate-400 text-center">
                     +{goals.length - 3} أهداف أخرى
                   </p>
                 )}

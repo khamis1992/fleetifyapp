@@ -38,12 +38,12 @@ export const FinancialTrendsReport: React.FC<FinancialTrendsReportProps> = ({
       case 'down':
         return <TrendingDown className="h-4 w-4 text-red-600" />;
       default:
-        return <BarChart3 className="h-4 w-4 text-gray-600" />;
+        return <BarChart3 className="h-4 w-4 text-slate-600" />;
     }
   };
 
   const getTrendColor = (direction: 'up' | 'down' | 'neutral', isGoodTrend: boolean) => {
-    if (direction === 'neutral') return 'text-gray-600';
+    if (direction === 'neutral') return 'text-slate-600';
     const isPositive = (direction === 'up' && isGoodTrend) || (direction === 'down' && !isGoodTrend);
     return isPositive ? 'text-green-600' : 'text-red-600';
   };

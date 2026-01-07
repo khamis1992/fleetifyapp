@@ -166,10 +166,10 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
       {/* Error state */}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-500">
           <div className="text-center p-4">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -188,7 +188,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
       {/* Loading spinner */}
       {!isLoaded && !error && priority && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}

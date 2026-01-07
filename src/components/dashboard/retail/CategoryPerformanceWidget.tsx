@@ -243,7 +243,7 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
                   {analytics.categories.map((category, index) => (
                     <div
                       key={category.name}
-                      className="p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      className="p-4 bg-gradient-to-br from-slate-50 to-slate-50 rounded-lg border border-slate-200 hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                           />
-                          <div className="font-semibold text-gray-900">{category.name}</div>
+                          <div className="font-semibold text-slate-900">{category.name}</div>
                         </div>
                         {category.growthRate >= 0 ? (
                           <Badge className="bg-green-500">
@@ -266,19 +266,19 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
 
                       <div className="grid grid-cols-2 gap-2 mt-3">
                         <div>
-                          <div className="text-xs text-gray-500">الإيرادات</div>
-                          <div className="font-bold text-sm text-gray-900">
+                          <div className="text-xs text-slate-500">الإيرادات</div>
+                          <div className="font-bold text-sm text-slate-900">
                             {formatCurrency(category.revenue)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-gray-500">الربح</div>
+                          <div className="text-xs text-slate-500">الربح</div>
                           <div className="font-bold text-sm text-green-600">
                             {formatCurrency(category.profit)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-slate-500">
                             <EnhancedTooltip kpi={kpiDefinitions.grossMargin}>
                               <span>هامش الربح</span>
                             </EnhancedTooltip>
@@ -288,7 +288,7 @@ export const CategoryPerformanceWidget: React.FC<CategoryPerformanceWidgetProps>
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-gray-500">وحدات مباعة</div>
+                          <div className="text-xs text-slate-500">وحدات مباعة</div>
                           <div className="font-bold text-sm text-orange-600">
                             {category.unitsSold}
                           </div>

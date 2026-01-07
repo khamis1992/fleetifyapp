@@ -62,7 +62,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -76,7 +76,7 @@ const StatCard: React.FC<StatCardProps> = ({
           "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
           trend === 'up' ? 'bg-green-100 text-green-600' :
           trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+          'bg-slate-100 text-slate-600'
         )}>
           {trend === 'up' && <TrendingUp className="w-3 h-3" />}
           {change}
@@ -183,7 +183,7 @@ const Vendors = () => {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -210,7 +210,7 @@ const Vendors = () => {
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <Building className="w-5 h-5 text-coral-500" />
+                    <Building className="w-5 h-5 text-rose-500" />
                     إضافة مورد جديد
                   </DialogTitle>
                   <DialogDescription>
@@ -275,7 +275,7 @@ const Vendors = () => {
           value={stats.totalVendors}
           subtitle="جميع الموردين"
           icon={Building}
-          iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
           delay={0.1}
         />
         <StatCard
@@ -314,7 +314,7 @@ const Vendors = () => {
         transition={{ delay: 0.2 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-coral-500" />
+          <Filter className="h-5 w-5 text-rose-500" />
           <h3 className="font-semibold text-neutral-900">البحث والتصفية</h3>
         </div>
         <div className="flex flex-wrap gap-4">
@@ -324,11 +324,11 @@ const Vendors = () => {
               placeholder="البحث بالاسم أو جهة الاتصال أو البريد الإلكتروني..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 bg-gray-50 border-gray-200"
+              className="pr-10 bg-slate-50 border-slate-200"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[250px] bg-gray-50 border-gray-200">
+            <SelectTrigger className="w-[250px] bg-slate-50 border-slate-200">
               <SelectValue placeholder="اختر التصنيف" />
             </SelectTrigger>
             <SelectContent>
@@ -350,10 +350,10 @@ const Vendors = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6 border-b border-slate-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -362,7 +362,7 @@ const Vendors = () => {
               </div>
             </div>
             {filteredVendors.length !== stats.totalVendors && (
-              <Badge variant="secondary" className="bg-coral-100 text-coral-700">
+              <Badge variant="secondary" className="bg-rose-100 text-coral-700">
                 تم تصفية {stats.totalVendors - filteredVendors.length} مورد
               </Badge>
             )}
@@ -371,7 +371,7 @@ const Vendors = () => {
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <RefreshCw className="w-10 h-10 animate-spin text-coral-500 mb-4" />
+            <RefreshCw className="w-10 h-10 animate-spin text-rose-500 mb-4" />
             <p className="text-neutral-500">جاري تحميل الموردين...</p>
           </div>
         ) : error ? (
@@ -386,12 +386,12 @@ const Vendors = () => {
           </div>
         ) : filteredVendors.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-coral-100 flex items-center justify-center mx-auto mb-4">
-              <Building className="w-8 h-8 text-coral-500" />
+            <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4">
+              <Building className="w-8 h-8 text-rose-500" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-800 mb-2">لا توجد موردين</h3>
             <p className="text-neutral-500 mb-4">لم يتم العثور على موردين تطابق معايير البحث</p>
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-coral-500 hover:bg-coral-600">
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-rose-500 hover:bg-coral-600">
               <Plus className="h-4 w-4 ml-2" />
               إضافة مورد جديد
             </Button>
@@ -400,7 +400,7 @@ const Vendors = () => {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
+                <TableRow className="bg-slate-50">
                   <TableHead className="text-right">اسم المورد</TableHead>
                   <TableHead className="text-right">جهة الاتصال</TableHead>
                   <TableHead className="text-right">البريد الإلكتروني</TableHead>
@@ -420,8 +420,8 @@ const Vendors = () => {
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ delay: index * 0.02 }}
                       className={cn(
-                        "border-b border-gray-50 hover:bg-gray-50/50 transition-colors",
-                        !vendor.is_active && "bg-gray-50/30"
+                        "border-b border-slate-50 hover:bg-slate-50/50 transition-colors",
+                        !vendor.is_active && "bg-slate-50/30"
                       )}
                     >
                       <TableCell className="font-medium">
@@ -429,12 +429,12 @@ const Vendors = () => {
                           <div className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center",
                             vendor.is_active 
-                              ? "bg-gradient-to-br from-coral-100 to-orange-100" 
-                              : "bg-gray-100"
+                              ? "bg-gradient-to-br from-rose-100 to-orange-100" 
+                              : "bg-slate-100"
                           )}>
                             <Building className={cn(
                               "h-5 w-5",
-                              vendor.is_active ? "text-coral-600" : "text-gray-400"
+                              vendor.is_active ? "text-coral-600" : "text-slate-400"
                             )} />
                           </div>
                           <div>
@@ -560,7 +560,7 @@ const Vendors = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit className="w-5 h-5 text-coral-500" />
+              <Edit className="w-5 h-5 text-rose-500" />
               تعديل المورد
             </DialogTitle>
             <DialogDescription>

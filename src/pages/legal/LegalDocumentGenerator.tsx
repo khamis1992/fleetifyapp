@@ -118,9 +118,9 @@ export default function LegalDocumentGeneratorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-xl sticky top-0 z-10 border-gray-200/50">
+      <div className="border-b bg-white/80 backdrop-blur-xl sticky top-0 z-10 border-slate-200/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -128,15 +128,15 @@ export default function LegalDocumentGeneratorPage() {
                 <FileText className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">مولد الكتب الرسمية</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-2xl font-bold text-slate-900">مولد الكتب الرسمية</h1>
+                <p className="text-sm text-slate-600">
                   نظام توليد الكتب الرسمية لشركة العراف
                 </p>
               </div>
             </div>
 
             {currentStep !== 'category' && (
-              <Button variant="outline" onClick={handleNewDocument} className="border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-50/30 rounded-xl">
+              <Button variant="outline" onClick={handleNewDocument} className="border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/30 rounded-xl">
                 <Plus className="h-4 w-4 ml-2" />
                 كتاب جديد
               </Button>
@@ -181,7 +181,7 @@ export default function LegalDocumentGeneratorPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="generator" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 bg-white/80 backdrop-blur-xl p-1.5 rounded-2xl border border-gray-200/50">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 bg-white/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200/50">
             <TabsTrigger value="generator" className="hover:bg-teal-50/30 rounded-xl">
               <FileText className="h-4 w-4 ml-2" />
               إنشاء كتاب
@@ -200,10 +200,10 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                   <CardHeader>
-                    <CardTitle className="text-gray-900">اختر نوع الكتاب</CardTitle>
-                    <CardDescription className="text-gray-600">
+                    <CardTitle className="text-slate-900">اختر نوع الكتاب</CardTitle>
+                    <CardDescription className="text-slate-600">
                       اختر الفئة المناسبة للكتاب الذي تريد إنشاءه
                     </CardDescription>
                   </CardHeader>
@@ -230,12 +230,12 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-gray-900">اختر القالب</CardTitle>
-                        <CardDescription className="text-gray-600">
+                        <CardTitle className="text-slate-900">اختر القالب</CardTitle>
+                        <CardDescription className="text-slate-600">
                           اختر القالب المناسب من فئة {CATEGORY_INFO[selectedCategory as keyof typeof CATEGORY_INFO]?.name_ar}
                         </CardDescription>
                       </div>
@@ -263,12 +263,12 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-gray-900">{selectedTemplate.name_ar}</CardTitle>
-                        <CardDescription className="text-gray-600">
+                        <CardTitle className="text-slate-900">{selectedTemplate.name_ar}</CardTitle>
+                        <CardDescription className="text-slate-600">
                           {selectedTemplate.description_ar}
                         </CardDescription>
                       </div>
@@ -295,15 +295,15 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="flex items-center gap-2 text-gray-900">
+                        <CardTitle className="flex items-center gap-2 text-slate-900">
                           <CheckCircle className="h-5 w-5 text-teal-500" />
                           معاينة الكتاب
                         </CardTitle>
-                        <CardDescription className="text-gray-600">
+                        <CardDescription className="text-slate-600">
                           راجع الكتاب وقم بتصديره أو إرساله للموافقة
                         </CardDescription>
                       </div>
@@ -327,10 +327,10 @@ export default function LegalDocumentGeneratorPage() {
           </TabsContent>
 
           <TabsContent value="history">
-            <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
               <CardHeader>
-                <CardTitle className="text-gray-900">سجل الكتب</CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardTitle className="text-slate-900">سجل الكتب</CardTitle>
+                <CardDescription className="text-slate-600">
                   عرض جميع الكتب التي تم إنشاؤها
                 </CardDescription>
               </CardHeader>
@@ -366,12 +366,12 @@ function StepIndicator({ number, label, active, completed }: StepIndicatorProps)
           w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
           ${completed ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20' : ''}
           ${active && !completed ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20' : ''}
-          ${!active && !completed ? 'bg-gray-100 text-gray-500' : ''}
+          ${!active && !completed ? 'bg-slate-100 text-slate-500' : ''}
         `}
       >
         {completed ? <CheckCircle className="h-5 w-5" /> : number}
       </div>
-      <span className={`text-xs mt-1 ${active ? 'text-teal-600 font-medium' : 'text-gray-500'}`}>
+      <span className={`text-xs mt-1 ${active ? 'text-teal-600 font-medium' : 'text-slate-500'}`}>
         {label}
       </span>
     </div>

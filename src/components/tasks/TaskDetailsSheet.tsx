@@ -56,7 +56,7 @@ const priorityLabels = {
 };
 
 const priorityColors = {
-  low: 'bg-gray-500',
+  low: 'bg-slate-500',
   medium: 'bg-blue-500',
   high: 'bg-orange-500',
   urgent: 'bg-red-500',
@@ -71,7 +71,7 @@ const statusLabels = {
 };
 
 const statusColors = {
-  pending: 'bg-gray-500',
+  pending: 'bg-slate-500',
   in_progress: 'bg-blue-500',
   completed: 'bg-green-500',
   cancelled: 'bg-red-500',
@@ -118,7 +118,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-full sm:max-w-lg p-0 overflow-hidden" dir="rtl">
         {/* Header */}
-        <div className="bg-gradient-to-l from-coral-500 to-orange-500 p-6">
+        <div className="bg-gradient-to-l from-rose-500 to-orange-500 p-6">
           <SheetHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -240,7 +240,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
               </div>
               <div className="flex flex-wrap gap-2">
                 {task.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="bg-coral-100 text-coral-700">
+                  <Badge key={tag} variant="secondary" className="bg-rose-100 text-coral-700">
                     {tag}
                   </Badge>
                 ))}
@@ -319,7 +319,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
               <Button
                 onClick={handleAddComment}
                 disabled={!newComment.trim() || addComment.isPending}
-                className="w-full bg-gradient-to-l from-coral-500 to-orange-500"
+                className="w-full bg-gradient-to-l from-rose-500 to-orange-500"
               >
                 {addComment.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -332,7 +332,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
               {/* Comments List */}
               {loadingComments ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
                 </div>
               ) : comments.length === 0 ? (
                 <p className="text-center text-neutral-400 py-8">لا توجد تعليقات بعد</p>
@@ -376,7 +376,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
             <TabsContent value="activity" className="mt-4">
               {loadingActivity ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-coral-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
                 </div>
               ) : activityLog.length === 0 ? (
                 <p className="text-center text-neutral-400 py-8">لا يوجد سجل نشاط</p>
@@ -384,7 +384,7 @@ export const TaskDetailsSheet: React.FC<TaskDetailsSheetProps> = ({
                 <div className="space-y-4">
                   {activityLog.map((log) => (
                     <div key={log.id} className="flex gap-3">
-                      <div className="w-2 h-2 rounded-full bg-coral-500 mt-2 flex-shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-rose-500 mt-2 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm text-neutral-700">{log.description}</p>
                         <p className="text-xs text-neutral-400 mt-1">

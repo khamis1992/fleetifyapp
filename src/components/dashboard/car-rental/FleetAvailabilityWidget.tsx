@@ -175,7 +175,7 @@ export const FleetAvailabilityWidget: React.FC = () => {
                 {availabilityPercentage}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div className="w-full bg-slate-200 rounded-full h-2.5">
               <div
                 className="bg-gradient-to-r from-teal-500 to-cyan-600 h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${availabilityPercentage}%` }}

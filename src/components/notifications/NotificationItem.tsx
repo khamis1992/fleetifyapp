@@ -67,7 +67,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
       property: { label: 'عقار', color: 'bg-green-500/10 text-green-600' },
       notification: { label: 'إشعار', color: 'bg-primary/10 text-primary' },
       smart: { label: 'ذكي', color: 'bg-purple-500/10 text-purple-600' },
-      system: { label: 'نظام', color: 'bg-gray-500/10 text-gray-600' }
+      system: { label: 'نظام', color: 'bg-slate-500/10 text-slate-600' }
     };
     
     return types[alert.type] || types.notification;

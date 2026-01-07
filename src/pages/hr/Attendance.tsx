@@ -102,33 +102,33 @@ export default function Attendance() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
             <Clock className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">الحضور والانصراف</h1>
-            <p className="text-gray-600">إدارة حضور الموظفين ومراقبة أوقات العمل</p>
+            <h1 className="text-2xl font-bold text-slate-900">الحضور والانصراف</h1>
+            <p className="text-slate-600">إدارة حضور الموظفين ومراقبة أوقات العمل</p>
           </div>
         </div>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input
             placeholder="البحث عن موظف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl"
+            className="pr-10 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl"
           />
         </div>
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="justify-start text-right bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-2xl hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10">
+            <Button variant="outline" className="justify-start text-right bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10">
               <CalendarIcon className="ml-2 h-4 w-4" />
               {format(selectedDate, 'PPP', { locale: ar })}
             </Button>
@@ -146,13 +146,13 @@ export default function Attendance() {
 
       <div className="grid gap-4">
         {filteredRecords.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
             <CardContent className="p-8">
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center mx-auto mb-4">
                   <Clock className="h-8 w-8 text-white" />
                 </div>
-                <p className="text-gray-600">
+                <p className="text-slate-600">
                   لا توجد سجلات حضور لتاريخ {format(selectedDate, 'PPP', { locale: ar })}
                 </p>
               </div>
@@ -162,7 +162,7 @@ export default function Attendance() {
           filteredRecords.map((record) => {
             const statusInfo = getStatusBadge(record.status);
             return (
-              <Card key={record.id} className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+              <Card key={record.id} className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -170,10 +170,10 @@ export default function Attendance() {
                         <Clock className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-900">
+                        <h3 className="font-semibold text-lg text-slate-900">
                           {record.employees?.first_name} {record.employees?.last_name}
                         </h3>
-                        <p className="text-gray-600">
+                        <p className="text-slate-600">
                           رقم الموظف: {record.employees?.employee_number}
                         </p>
                       </div>
@@ -181,29 +181,29 @@ export default function Attendance() {
 
                     <div className="flex items-center gap-6">
                       <div className="text-center">
-                        <p className="text-sm text-gray-600">وقت الحضور</p>
-                        <p className="font-semibold text-gray-900">
+                        <p className="text-sm text-slate-600">وقت الحضور</p>
+                        <p className="font-semibold text-slate-900">
                           {record.check_in_time || '--:--'}
                         </p>
                       </div>
 
                       <div className="text-center">
-                        <p className="text-sm text-gray-600">وقت الانصراف</p>
-                        <p className="font-semibold text-gray-900">
+                        <p className="text-sm text-slate-600">وقت الانصراف</p>
+                        <p className="font-semibold text-slate-900">
                           {record.check_out_time || '--:--'}
                         </p>
                       </div>
 
                       <div className="text-center">
-                        <p className="text-sm text-gray-600">ساعات العمل</p>
-                        <p className="font-semibold text-gray-900">
+                        <p className="text-sm text-slate-600">ساعات العمل</p>
+                        <p className="font-semibold text-slate-900">
                           {record.total_hours.toFixed(1)} ساعة
                         </p>
                       </div>
 
                       {record.late_hours > 0 && (
                         <div className="text-center">
-                          <p className="text-sm text-gray-600">ساعات التأخير</p>
+                          <p className="text-sm text-slate-600">ساعات التأخير</p>
                           <p className="font-semibold text-orange-600">
                             {record.late_hours.toFixed(1)} ساعة
                           </p>
@@ -212,7 +212,7 @@ export default function Attendance() {
 
                       {record.overtime_hours > 0 && (
                         <div className="text-center">
-                          <p className="text-sm text-gray-600">ساعات إضافية</p>
+                          <p className="text-sm text-slate-600">ساعات إضافية</p>
                           <p className="font-semibold text-green-600">
                             {record.overtime_hours.toFixed(1)} ساعة
                           </p>

@@ -122,7 +122,7 @@ export const UpdateVehicleRegistrationDialog: React.FC<UpdateVehicleRegistration
       <DialogContent className="max-w-md" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
-            <FileText className="w-5 h-5 text-coral-500" />
+            <FileText className="w-5 h-5 text-rose-500" />
             تحديث بيانات الاستمارة
           </DialogTitle>
           <DialogDescription>
@@ -211,7 +211,7 @@ export const UpdateVehicleRegistrationDialog: React.FC<UpdateVehicleRegistration
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
-              className="flex-1 bg-coral-500 hover:bg-coral-600 rounded-xl"
+              className="flex-1 bg-rose-500 hover:bg-coral-600 rounded-xl"
               disabled={updateVehicle.isPending}
             >
               {updateVehicle.isPending ? (

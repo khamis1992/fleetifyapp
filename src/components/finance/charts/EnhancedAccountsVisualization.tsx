@@ -506,7 +506,7 @@ export const EnhancedAccountsVisualization: React.FC<EnhancedAccountsVisualizati
       revenue: 'text-green-600 bg-green-50 border-green-200',
       expenses: 'text-orange-600 bg-orange-50 border-orange-200',
     };
-    return colors[type as keyof typeof colors] || 'text-gray-600 bg-gray-50 border-gray-200';
+    return colors[type as keyof typeof colors] || 'text-slate-600 bg-slate-50 border-slate-200';
   };
 
   const getAccountTypeLabel = (type: string) => {

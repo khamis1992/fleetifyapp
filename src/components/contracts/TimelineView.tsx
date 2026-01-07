@@ -102,7 +102,7 @@ export const TimelineView = ({
       case 'warning':
         return 'bg-amber-100 text-amber-700 border-amber-300';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return 'bg-slate-100 text-slate-700 border-slate-300';
     }
   };
 
@@ -115,7 +115,7 @@ export const TimelineView = ({
       case 'warning':
         return 'text-amber-600';
       default:
-        return 'text-gray-600';
+        return 'text-slate-600';
     }
   };
 
@@ -143,14 +143,14 @@ export const TimelineView = ({
                 </div>
                 {/* الخط الرابط */}
                 {index < events.length - 1 && (
-                  <div className="w-1 h-16 bg-gray-300 mt-2" />
+                  <div className="w-1 h-16 bg-slate-300 mt-2" />
                 )}
               </div>
 
               {/* العمود الأيمن - المحتوى */}
               <div className="flex-1 pb-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-sm text-gray-900">{event.title}</h4>
+                  <h4 className="font-semibold text-sm text-slate-900">{event.title}</h4>
                   <Badge
                     variant={
                       event.status === 'completed'
@@ -168,8 +168,8 @@ export const TimelineView = ({
                         : 'تحذير'}
                   </Badge>
                 </div>
-                <p className="text-xs text-gray-600 mb-2">{event.description}</p>
-                <time className="text-xs text-gray-500">
+                <p className="text-xs text-slate-600 mb-2">{event.description}</p>
+                <time className="text-xs text-slate-500">
                   {format(event.date, 'dd MMMM yyyy', { locale: ar })}
                 </time>
               </div>
@@ -178,8 +178,8 @@ export const TimelineView = ({
         </div>
 
         {events.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+          <div className="text-center py-8 text-slate-500">
+            <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
             <p className="text-sm">لا توجد أحداث في الجدول الزمني</p>
           </div>
         )}

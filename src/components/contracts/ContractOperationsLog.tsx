@@ -41,8 +41,8 @@ export const ContractOperationsLog: React.FC<ContractOperationsLogProps> = ({ co
       case 'suspended': return <Pause className="h-4 w-4 text-orange-600" />
       case 'cancelled': return <XCircle className="h-4 w-4 text-red-600" />
       case 'renewed': return <RefreshCw className="h-4 w-4 text-purple-600" />
-      case 'updated': return <Edit className="h-4 w-4 text-gray-600" />
-      default: return <FileText className="h-4 w-4 text-gray-400" />
+      case 'updated': return <Edit className="h-4 w-4 text-slate-600" />
+      default: return <FileText className="h-4 w-4 text-slate-400" />
     }
   }
 
@@ -53,8 +53,8 @@ export const ContractOperationsLog: React.FC<ContractOperationsLogProps> = ({ co
       case 'suspended': return 'bg-orange-100 text-orange-800'
       case 'cancelled': return 'bg-red-100 text-red-800'
       case 'renewed': return 'bg-purple-100 text-purple-800'
-      case 'updated': return 'bg-gray-100 text-gray-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'updated': return 'bg-slate-100 text-slate-800'
+      default: return 'bg-slate-100 text-slate-800'
     }
   }
 

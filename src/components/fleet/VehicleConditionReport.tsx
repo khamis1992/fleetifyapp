@@ -175,7 +175,7 @@ export const VehicleConditionReport: React.FC<VehicleConditionReportProps> = ({
               <div className="bg-muted/50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">مستوى الوقود</h4>
                 <div className="flex items-center gap-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-slate-200 rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full" 
                       style={{ width: `${formData.fuel_level || 0}%` }}

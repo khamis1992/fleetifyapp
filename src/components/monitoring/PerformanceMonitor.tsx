@@ -197,7 +197,7 @@ export function PerformanceMonitor({ className, endpoint }: PerformanceMonitorPr
       case 'low':
         return 'text-green-600 bg-green-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-slate-600 bg-slate-50';
     }
   };
 

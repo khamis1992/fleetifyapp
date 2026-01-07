@@ -394,7 +394,7 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
                 onClick={capturePhoto}
                 disabled={isProcessing}
                 size="lg"
-                className="rounded-full bg-white text-black hover:bg-gray-100 w-16 h-16"
+                className="rounded-full bg-white text-black hover:bg-slate-100 w-16 h-16"
               >
                 {isProcessing ? (
                   <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -405,8 +405,8 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
             </div>
           </div>
         ) : (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-            <Camera className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center bg-slate-50">
+            <Camera className="h-12 w-12 mx-auto mb-4 text-slate-400" />
             <p className="text-lg font-medium mb-2">كاميرا محسنة للهاتف المحمول</p>
             <p className="text-sm text-muted-foreground mb-4">
               مع تركيز تلقائي، تحسين الإضاءة، وتحسينات خاصة بالهاتف المحمول

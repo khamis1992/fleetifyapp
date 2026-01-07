@@ -309,7 +309,7 @@ const MasterPerformanceTestRunner: React.FC = () => {
     <div data-testid="master-performance-test-runner">
       <div className="p-6 max-w-7xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl p-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">
+          <h1 className="text-3xl font-bold text-slate-800 mb-6">
             Master Performance Test Runner
           </h1>
           
@@ -318,7 +318,7 @@ const MasterPerformanceTestRunner: React.FC = () => {
               data-testid="run-all-tests-button"
               onClick={runAllTests}
               disabled={isRunning}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
             >
               {isRunning ? (
                 <span className="flex items-center">
@@ -342,11 +342,11 @@ const MasterPerformanceTestRunner: React.FC = () => {
 
           {/* Progress Bar */}
           <div className="mb-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <div className="flex justify-between text-sm text-slate-600 mb-2">
               <span>Overall Progress</span>
               <span>{Math.round(overallProgress)}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-slate-200 rounded-full h-2">
               <div 
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${overallProgress}%` }}
@@ -357,12 +357,12 @@ const MasterPerformanceTestRunner: React.FC = () => {
           {/* Test Results */}
           {testResults.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Test Results</h2>
+              <h2 className="text-2xl font-bold text-slate-800 mb-4">Test Results</h2>
               
               {testResults.map((result, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-800">
+                    <h3 className="text-lg font-semibold text-slate-800">
                       {result.suite}
                     </h3>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -372,7 +372,7 @@ const MasterPerformanceTestRunner: React.FC = () => {
                     </span>
                   </div>
                   
-                  <div className="text-sm text-gray-600 mb-2">
+                  <div className="text-sm text-slate-600 mb-2">
                     {result.description}
                   </div>
                   
@@ -406,39 +406,39 @@ const MasterPerformanceTestRunner: React.FC = () => {
 
           {/* Performance Summary */}
           {testResults.length > 0 && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Performance Summary</h2>
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">Performance Summary</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Query Performance</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Query Performance</h3>
                   <div className="text-2xl font-bold text-blue-600">
                     {testResults.reduce((sum, r) => sum + r.performance.avgQueryTime, 0) / testResults.length}
-                    <span className="text-sm font-normal text-gray-600">ms avg</span>
+                    <span className="text-sm font-normal text-slate-600">ms avg</span>
                   </div>
                 </div>
                 
                 <div className="bg-white p-4 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Cache Efficiency</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Cache Efficiency</h3>
                   <div className="text-2xl font-bold text-green-600">
                     {(testResults.reduce((sum, r) => sum + r.performance.cacheHitRate, 0) / testResults.length * 100).toFixed(1)}
-                    <span className="text-sm font-normal text-gray-600">% hit rate</span>
+                    <span className="text-sm font-normal text-slate-600">% hit rate</span>
                   </div>
                 </div>
                 
                 <div className="bg-white p-4 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Navigation Speed</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Navigation Speed</h3>
                   <div className="text-2xl font-bold text-purple-600">
                     {testResults.reduce((sum, r) => sum + r.performance.navigationTime, 0) / testResults.length}
-                    <span className="text-sm font-normal text-gray-600">ms avg</span>
+                    <span className="text-sm font-normal text-slate-600">ms avg</span>
                   </div>
                 </div>
                 
                 <div className="bg-white p-4 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Memory Usage</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Memory Usage</h3>
                   <div className="text-2xl font-bold text-orange-600">
                     {testResults.reduce((sum, r) => sum + r.performance.memoryUsage, 0) / testResults.length}
-                    <span className="text-sm font-normal text-gray-600">MB avg</span>
+                    <span className="text-sm font-normal text-slate-600">MB avg</span>
                   </div>
                 </div>
               </div>
@@ -463,7 +463,7 @@ const MasterPerformanceTestRunner: React.FC = () => {
                   setOverallProgress(0);
                   mockPerformanceLogger.clear();
                 }}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 bg-slate-500 text-white rounded-lg font-medium hover:bg-slate-600 transition-colors"
               >
                 🗑️ Clear Results
               </button>

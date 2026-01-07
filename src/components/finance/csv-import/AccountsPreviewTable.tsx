@@ -186,9 +186,9 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-600">لا توجد بيانات للمعاينة</p>
-          <p className="text-sm text-gray-500">قم برفع ملف CSV لمعاينة البيانات</p>
+          <Eye className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-lg font-medium text-slate-600">لا توجد بيانات للمعاينة</p>
+          <p className="text-sm text-slate-500">قم برفع ملف CSV لمعاينة البيانات</p>
         </CardContent>
       </Card>
     );
@@ -210,7 +210,7 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="البحث في البيانات..."
                 value={searchTerm}
@@ -316,7 +316,7 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-slate-600">
               صفحة {currentPage} من {totalPages}
             </div>
             <div className="flex gap-2">
@@ -354,7 +354,7 @@ export const AccountsPreviewTable: React.FC<AccountsPreviewTableProps> = ({
                 </div>
               ))}
               {hierarchyErrors.length > 10 && (
-                <p className="text-sm text-gray-600 p-2">
+                <p className="text-sm text-slate-600 p-2">
                   و {hierarchyErrors.length - 10} أخطاء أخرى...
                 </p>
               )}

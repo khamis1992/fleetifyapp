@@ -48,10 +48,10 @@ const SmartStatCard: React.FC<SmartStatCardProps> = ({
 }) => {
   const colorStyles = {
     coral: {
-      bg: 'bg-gradient-to-br from-coral-50 to-coral-100/50',
-      iconBg: 'bg-coral-500',
+      bg: 'bg-gradient-to-br from-rose-50 to-rose-100/50',
+      iconBg: 'bg-rose-500',
       text: 'text-coral-600',
-      border: 'border-coral-200',
+      border: 'border-rose-200',
     },
     green: {
       bg: 'bg-gradient-to-br from-green-50 to-green-100/50',
@@ -204,7 +204,7 @@ const QuickSummary: React.FC<QuickSummaryProps> = ({
   return (
     <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-coral-500 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center">
           <Activity className="w-4 h-4 text-white" />
         </div>
         <h3 className="text-sm font-semibold text-neutral-700">ملخص الأسطول</h3>
@@ -221,7 +221,7 @@ const QuickSummary: React.FC<QuickSummaryProps> = ({
             initial={{ width: 0 }}
             animate={{ width: `${utilizationRate}%` }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="h-full bg-gradient-to-r from-coral-500 to-coral-400 rounded-full"
+            className="h-full bg-gradient-to-r from-rose-500 to-coral-400 rounded-full"
           />
         </div>
       </div>
@@ -236,7 +236,7 @@ const QuickSummary: React.FC<QuickSummaryProps> = ({
           <p className="text-lg font-bold text-green-600">{availableVehicles}</p>
           <p className="text-[10px] text-green-600">متاحة</p>
         </div>
-        <div className="text-center p-2 bg-coral-50 rounded-xl">
+        <div className="text-center p-2 bg-rose-50 rounded-xl">
           <p className="text-lg font-bold text-coral-600">{rentedVehicles}</p>
           <p className="text-[10px] text-coral-600">مؤجرة</p>
         </div>

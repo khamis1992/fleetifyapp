@@ -272,8 +272,8 @@ const QuickActionsDashboard: React.FC = () => {
           {/* Header */}
           <div className="relative mb-8">
             <div className="text-center">
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">ابدأ بسرعة</h3>
-              <p className="text-gray-600 text-lg">اختر إجراء لتنفيذه بنقرة واحدة</p>
+              <h3 className="text-3xl font-bold text-slate-900 mb-2">ابدأ بسرعة</h3>
+              <p className="text-slate-600 text-lg">اختر إجراء لتنفيذه بنقرة واحدة</p>
             </div>
           </div>
           
@@ -296,7 +296,7 @@ const QuickActionsDashboard: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <FileText className="w-7 h-7 text-red-600 group-hover:text-red-700" />
                     </div>
-                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">عقد جديد</span>
+                    <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">عقد جديد</span>
                   </div>
                   <div className="absolute inset-0 rounded-2xl ring-2 ring-red-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
@@ -318,7 +318,7 @@ const QuickActionsDashboard: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Car className="w-7 h-7 text-orange-600 group-hover:text-orange-700" />
                     </div>
-                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">إضافة مركبة</span>
+                    <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">إضافة مركبة</span>
                   </div>
                   <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
@@ -340,7 +340,7 @@ const QuickActionsDashboard: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Users className="w-7 h-7 text-rose-600 group-hover:text-rose-700" />
                     </div>
-                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">عميل جديد</span>
+                    <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">عميل جديد</span>
                   </div>
                   <div className="absolute inset-0 rounded-2xl ring-2 ring-rose-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
@@ -362,7 +362,7 @@ const QuickActionsDashboard: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <DollarSign className="w-7 h-7 text-amber-600 group-hover:text-amber-700" />
                     </div>
-                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">تسجيل دفعة</span>
+                    <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">تسجيل دفعة</span>
                   </div>
                   <div className="absolute inset-0 rounded-2xl ring-2 ring-amber-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
@@ -384,7 +384,7 @@ const QuickActionsDashboard: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Calculator className="w-7 h-7 text-pink-600 group-hover:text-pink-700" />
                     </div>
-                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">الحاسبة المالية</span>
+                    <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">الحاسبة المالية</span>
                   </div>
                   <div className="absolute inset-0 rounded-2xl ring-2 ring-pink-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
@@ -406,14 +406,14 @@ const QuickActionsDashboard: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Search className="w-7 h-7 text-orange-600 group-hover:text-orange-700" />
                     </div>
-                    <span className="font-semibold text-gray-800 group-hover:text-white text-sm text-center">البحث المتقدم</span>
+                    <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">البحث المتقدم</span>
                   </div>
                   <div className="absolute inset-0 rounded-2xl ring-2 ring-orange-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
               </motion.div>
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-500">
               <Clock size={48} className="mx-auto mb-4 opacity-50" />
               <p className="font-semibold mb-2">لا توجد إجراءات متاحة</p>
               <p className="text-sm">تحتاج إلى صلاحيات إضافية للوصول للإجراءات السريعة</p>
@@ -422,11 +422,11 @@ const QuickActionsDashboard: React.FC = () => {
           
           {/* Keyboard Shortcuts Hint */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               <span className="inline-flex items-center gap-1">
-                <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">Ctrl</kbd>
+                <kbd className="px-2 py-1 text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 rounded">Ctrl</kbd>
                 <span>+</span>
-                <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">K</kbd>
+                <kbd className="px-2 py-1 text-xs font-semibold text-slate-800 bg-slate-100 border border-slate-300 rounded">K</kbd>
                 <span className="mr-2">لفتح قائمة الإجراءات السريعة</span>
               </span>
             </p>

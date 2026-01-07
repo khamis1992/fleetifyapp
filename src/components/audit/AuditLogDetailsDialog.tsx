@@ -61,7 +61,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
       case 'low':
         return 'text-green-600 bg-green-50 border-green-200';
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'text-slate-600 bg-slate-50 border-slate-200';
     }
   };
 
@@ -74,7 +74,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
       case 'pending':
         return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
-        return <Info className="h-4 w-4 text-gray-600" />;
+        return <Info className="h-4 w-4 text-slate-600" />;
     }
   };
 
@@ -87,7 +87,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
       case 'suspicious':
         return <AlertTriangle className="h-4 w-4 text-orange-600" />;
       default:
-        return <Info className="h-4 w-4 text-gray-400" />;
+        return <Info className="h-4 w-4 text-slate-400" />;
     }
   };
 

@@ -161,7 +161,7 @@ NEXT ACTIONS
       case 'critical':
         return 'text-red-600 bg-red-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-slate-600 bg-slate-50';
     }
   }, []);
 
@@ -175,7 +175,7 @@ NEXT ACTIONS
       case 'fail':
         return 'text-red-600';
       default:
-        return 'text-gray-600';
+        return 'text-slate-600';
     }
   }, []);
 
@@ -184,25 +184,25 @@ NEXT ACTIONS
       <div className="bg-white rounded-lg shadow-xl p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Performance Test Runner</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Performance Test Runner</h1>
           <div className="flex items-center space-x-4">
             <button
               onClick={runComprehensiveValidation}
               disabled={isRunningTests}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
             >
               {isRunningTests ? '🔄 Running...' : '🚀 Run Full Validation'}
             </button>
             <button
               onClick={runQuickValidation}
               disabled={isRunningTests}
-              className="px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
             >
               {isRunningTests ? '🔄 Running...' : '⚡ Quick Validation'}
             </button>
             <button
               onClick={() => setHealthReport(null)}
-              className="px-6 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 transition-colors"
+              className="px-6 py-3 bg-slate-500 text-white rounded-lg font-medium hover:bg-slate-600 transition-colors"
             >
               🗑️ Clear Report
             </button>
@@ -210,15 +210,15 @@ NEXT ACTIONS
         </div>
 
         {/* Auto-refresh Controls */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between mb-6 p-4 bg-slate-50 rounded-lg">
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">Auto-refresh:</span>
+            <span className="text-sm text-slate-600">Auto-refresh:</span>
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                 autoRefresh 
                   ? 'bg-green-500 text-white hover:bg-green-600' 
-                  : 'bg-gray-500 text-white hover:bg-gray-600'
+                  : 'bg-slate-500 text-white hover:bg-slate-600'
               }`}
             >
               {autoRefresh ? '🟢 ON' : '⏸️ OFF'}
@@ -233,7 +233,7 @@ NEXT ACTIONS
               <option value={5000}>5s</option>
               <option value={10000}>10s</option>
             </select>
-            <span className="text-sm text-gray-600 ml-4">
+            <span className="text-sm text-slate-600 ml-4">
               Last check: {healthReport ? new Date(healthReport.timestamp).toLocaleTimeString() : 'Never'}
             </span>
           </div>
@@ -251,11 +251,11 @@ NEXT ACTIONS
                     {healthReport.overall === 'healthy' ? '✅' : 
                      healthReport.overall === 'warning' ? '⚠️' : '❌'}
                   </span>
-                  <span className="text-xl font-bold text-gray-800">
+                  <span className="text-xl font-bold text-slate-800">
                     System Status: {healthReport.overall.toUpperCase()}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-600">
                   Last updated: {new Date(healthReport.timestamp).toLocaleString()}
                 </div>
               </div>
@@ -263,60 +263,60 @@ NEXT ACTIONS
               {/* Component Status Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <div className="bg-white p-3 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Performance Logger</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Performance Logger</h3>
                   <div className={`text-lg font-medium ${getComponentStatusColor(healthReport.components.performanceLogger.status)}`}>
                     {healthReport.components.performanceLogger.status.toUpperCase()}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-slate-600 mt-1">
                     {healthReport.components.performanceLogger.message}
                   </div>
                 </div>
 
                 <div className="bg-white p-3 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Performance Monitor Hook</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Performance Monitor Hook</h3>
                   <div className={`text-lg font-medium ${getComponentStatusColor(healthReport.components.performanceMonitor.status)}`}>
                     {healthReport.components.performanceMonitor.status.toUpperCase()}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-slate-600 mt-1">
                     {healthReport.components.performanceMonitor.message}
                   </div>
                 </div>
 
                 <div className="bg-white p-3 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">QueryClient Integration</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">QueryClient Integration</h3>
                   <div className={`text-lg font-medium ${getComponentStatusColor(healthReport.components.queryClient.status)}`}>
                     {healthReport.components.queryClient.status.toUpperCase()}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-slate-600 mt-1">
                     {healthReport.components.queryClient.message}
                   </div>
                 </div>
 
                 <div className="bg-white p-3 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Cache Optimization</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Cache Optimization</h3>
                   <div className={`text-lg font-medium ${getComponentStatusColor(healthReport.components.cacheOptimization.status)}`}>
                     {healthReport.components.cacheOptimization.status.toUpperCase()}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-slate-600 mt-1">
                     {healthReport.components.cacheOptimization.message}
                   </div>
                 </div>
 
                 <div className="bg-white p-3 rounded border">
-                  <h3 className="font-semibold text-gray-800 mb-2">Dashboard</h3>
+                  <h3 className="font-semibold text-slate-800 mb-2">Dashboard</h3>
                   <div className={`text-lg font-medium ${getComponentStatusColor(healthReport.components.dashboard.status)}`}>
                     {healthReport.components.dashboard.status.toUpperCase()}
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-slate-600 mt-1">
                     {healthReport.components.dashboard.message}
                   </div>
                 </div>
               </div>
 
               {/* Performance Summary */}
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">Performance Summary</h3>
-                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono bg-white p-4 rounded border">
+              <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+                <h3 className="font-semibold text-slate-800 mb-2">Performance Summary</h3>
+                <pre className="text-sm text-slate-700 whitespace-pre-wrap font-mono bg-white p-4 rounded border">
                   {healthReport.summary}
                 </pre>
               </div>
@@ -329,7 +329,7 @@ NEXT ACTIONS
           <button
             onClick={generateDiagnosticReport}
             disabled={!healthReport}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
           >
             📄 Generate Diagnostic Report
           </button>
@@ -349,8 +349,8 @@ NEXT ACTIONS
 
         {/* Instructions */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-gray-800 mb-2">Usage Instructions</h3>
-          <div className="text-sm text-gray-600 space-y-2">
+          <h3 className="font-semibold text-slate-800 mb-2">Usage Instructions</h3>
+          <div className="text-sm text-slate-600 space-y-2">
             <p><strong>Full Validation:</strong> Tests all performance monitoring components comprehensively</p>
             <p><strong>Quick Validation:</strong> Tests performance logger functionality only (faster)</p>
             <p><strong>Diagnostic Report:</strong> Generates detailed system health report for analysis</p>

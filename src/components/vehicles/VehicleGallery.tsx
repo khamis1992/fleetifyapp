@@ -106,7 +106,7 @@ const VehicleCard: React.FC<{
       className={cn(
         'w-full rounded-xl overflow-hidden border-2 transition-all text-right',
         isAvailable && 'hover:border-coral-300 hover:shadow-md cursor-pointer',
-        isSelected && 'border-coral-500 shadow-lg ring-2 ring-coral-500/20',
+        isSelected && 'border-rose-500 shadow-lg ring-2 ring-rose-500/20',
         !isSelected && 'border-neutral-200',
         !isAvailable && 'opacity-60 cursor-not-allowed'
       )}
@@ -136,7 +136,7 @@ const VehicleCard: React.FC<{
 
         {/* Selected Indicator */}
         {isSelected && (
-          <div className="absolute top-2 left-2 p-1.5 bg-coral-500 rounded-full">
+          <div className="absolute top-2 left-2 p-1.5 bg-rose-500 rounded-full">
             <Check className="h-4 w-4 text-white" />
           </div>
         )}

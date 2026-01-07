@@ -199,7 +199,7 @@ export function TaqadiAutomationProgress({
                       {/* Step Icon */}
                       <div className="flex-shrink-0">
                         {step.status === 'pending' && (
-                          <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                          <div className="w-5 h-5 rounded-full border-2 border-slate-300" />
                         )}
                         {step.status === 'running' && (
                           <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
@@ -214,7 +214,7 @@ export function TaqadiAutomationProgress({
 
                       {/* Step Name */}
                       <span className={`text-sm flex-1 ${
-                        isFailed ? 'text-red-700' : isCompleted ? 'text-green-700' : 'text-gray-700'
+                        isFailed ? 'text-red-700' : isCompleted ? 'text-green-700' : 'text-slate-700'
                       }`}>
                         {step.name}
                       </span>

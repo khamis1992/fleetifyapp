@@ -98,7 +98,7 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
       case 'medium':
         return 'bg-yellow-100 text-yellow-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
     }
   };
 
@@ -113,7 +113,7 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
       case 'critical':
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-600" />;
+        return <Clock className="w-4 h-4 text-slate-600" />;
     }
   };
 
@@ -144,8 +144,8 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Compliance Dashboard</h1>
-          <p className="text-gray-600">Monitor currency exposure and regulatory compliance</p>
+          <h1 className="text-3xl font-bold text-slate-900">Compliance Dashboard</h1>
+          <p className="text-slate-600">Monitor currency exposure and regulatory compliance</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -260,13 +260,13 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
                     </Badge>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Risk Score</div>
+                    <div className="text-sm text-slate-600 mb-1">Risk Score</div>
                     <div className="text-2xl font-bold">
                       {riskIndicators.totalRiskScore.toFixed(1)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">Volatility Currencies</div>
+                    <div className="text-sm text-slate-600 mb-1">Volatility Currencies</div>
                     <div className="text-lg font-semibold">
                       {Object.keys(riskIndicators.currencyVolatility).length}
                     </div>
@@ -305,7 +305,7 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
                     <div key={validation.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <div className="font-medium">{validation.entity_type}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-slate-600">
                           {new Date(validation.validated_at).toLocaleDateString()}
                         </div>
                       </div>
@@ -341,25 +341,25 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-sm text-gray-600">Total Exposure</div>
+                        <div className="text-sm text-slate-600">Total Exposure</div>
                         <div className="text-lg font-semibold">
                           {EnhancedCurrencyUtils.formatCurrency(exposure.total_exposure, exposure.currency)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-sm text-gray-600">Net Exposure</div>
+                        <div className="text-sm text-slate-600">Net Exposure</div>
                         <div className="text-lg font-semibold">
                           {EnhancedCurrencyUtils.formatCurrency(exposure.net_exposure, exposure.currency)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-sm text-gray-600">Hedged Amount</div>
+                        <div className="text-sm text-slate-600">Hedged Amount</div>
                         <div className="text-lg font-semibold">
                           {EnhancedCurrencyUtils.formatCurrency(exposure.hedged_amount, exposure.currency)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-sm text-gray-600">Hedge Coverage</div>
+                        <div className="text-sm text-slate-600">Hedge Coverage</div>
                         <div className="text-lg font-semibold">
                           {exposure.total_exposure > 0
                             ? ((exposure.hedged_amount / exposure.total_exposure) * 100).toFixed(1)
@@ -485,9 +485,9 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold">{deadline.event_title}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{deadline.event_description}</p>
+                        <p className="text-sm text-slate-600 mt-1">{deadline.event_description}</p>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-slate-600">
                             Due: {new Date(deadline.due_date).toLocaleDateString()}
                           </span>
                           <Badge className={getStatusColor(deadline.priority)}>
@@ -514,7 +514,7 @@ export const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ compan
               <CardContent className="pt-6 text-center">
                 <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Upcoming Deadlines</h3>
-                <p className="text-gray-600">All compliance deadlines are up to date</p>
+                <p className="text-slate-600">All compliance deadlines are up to date</p>
               </CardContent>
             </Card>
           )}

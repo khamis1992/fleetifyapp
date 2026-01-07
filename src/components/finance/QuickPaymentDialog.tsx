@@ -604,7 +604,7 @@ export function QuickPaymentDialog({
               </div>
 
               {showReceipt && (
-                <div className="mt-4 border rounded-lg overflow-auto bg-gray-100 p-2" style={{ maxHeight: '50vh' }}>
+                <div className="mt-4 border rounded-lg overflow-auto bg-slate-100 p-2" style={{ maxHeight: '50vh' }}>
                   <PaymentReceipt
                     ref={receiptRef}
                     receiptNumber={paymentSuccess.receiptNumber}
@@ -625,7 +625,7 @@ export function QuickPaymentDialog({
             {/* Loading State */}
             {loadingInvoices ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-coral-500" />
+                <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
               </div>
             ) : !readyToPay ? (
               /* Invoice Selection */
@@ -671,7 +671,7 @@ export function QuickPaymentDialog({
                                 type="checkbox"
                                 checked={isSelected}
                                 onChange={() => {}}
-                                className="h-4 w-4 rounded border-gray-300 text-green-600"
+                                className="h-4 w-4 rounded border-slate-300 text-green-600"
                               />
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
@@ -738,7 +738,7 @@ export function QuickPaymentDialog({
                   </Button>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
+                <div className="bg-slate-50 rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
                   {selectedInvoices.map((invoice) => (
                     <div key={invoice.id} className="flex justify-between items-center text-sm">
                       <span>{invoice.invoice_number}</span>

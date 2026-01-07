@@ -344,7 +344,7 @@ export const PropertyReportViewer: React.FC<PropertyReportViewerProps> = ({
                         <span>{type}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold">{data.count}</span>
-                          <div className="w-20 h-2 bg-gray-200 rounded">
+                          <div className="w-20 h-2 bg-slate-200 rounded">
                             <div 
                               className="h-full bg-primary rounded"
                               style={{ width: `${(data.count / (portfolioData.propertyCount || 1)) * 100}%` }}

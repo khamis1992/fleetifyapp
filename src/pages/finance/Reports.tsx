@@ -58,7 +58,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -79,7 +79,7 @@ const TABS = [
   { id: "trial-balance", label: "ميزان المراجعة", icon: Scale, gradient: "from-blue-500 to-cyan-500" },
   { id: "income-statement", label: "قائمة الدخل", icon: TrendingUp, gradient: "from-green-500 to-emerald-500" },
   { id: "balance-sheet", label: "المركز المالي", icon: BarChart3, gradient: "from-purple-500 to-indigo-500" },
-  { id: "cash-flow", label: "التدفقات النقدية", icon: Wallet, gradient: "from-coral-500 to-orange-500" },
+  { id: "cash-flow", label: "التدفقات النقدية", icon: Wallet, gradient: "from-rose-500 to-orange-500" },
   { id: "payroll", label: "الرواتب", icon: Users, gradient: "from-pink-500 to-rose-500" },
   { id: "cost-centers", label: "مراكز التكلفة", icon: Building2, gradient: "from-amber-500 to-yellow-500" },
   { id: "receivables", label: "الذمم المدينة", icon: Receipt, gradient: "from-teal-500 to-cyan-500" },
@@ -111,7 +111,7 @@ const Reports = () => {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -181,7 +181,7 @@ const Reports = () => {
           value={TABS.length}
           subtitle="نوع تقرير"
           icon={FileBarChart}
-          iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
           delay={0.1}
         />
         <StatCard
@@ -222,7 +222,7 @@ const Reports = () => {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-3 py-2 text-sm gap-1.5 transition-all"
+                className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-3 py-2 text-sm gap-1.5 transition-all"
               >
                 <tab.icon className="w-4 h-4" />
                 <span className="hidden md:inline">{tab.label}</span>
@@ -244,8 +244,8 @@ const Reports = () => {
               className={cn(
                 "cursor-pointer transition-all hover:shadow-lg border-2",
                 activeTab === tab.id 
-                  ? "border-coral-500 bg-coral-50/50 shadow-md" 
-                  : "border-transparent hover:border-gray-200"
+                  ? "border-rose-500 bg-rose-50/50 shadow-md" 
+                  : "border-transparent hover:border-slate-200"
               )}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -260,7 +260,7 @@ const Reports = () => {
                   <div className="flex-1">
                     <p className="font-medium text-sm text-neutral-900">{tab.label}</p>
                     {activeTab === tab.id && (
-                      <Badge className="bg-coral-500 text-white text-xs mt-1">نشط</Badge>
+                      <Badge className="bg-rose-500 text-white text-xs mt-1">نشط</Badge>
                     )}
                   </div>
                 </div>

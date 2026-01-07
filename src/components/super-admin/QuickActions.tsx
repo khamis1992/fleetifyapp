@@ -58,7 +58,7 @@ export const QuickActions: React.FC = () => {
       label: 'إعدادات النظام',
       description: 'تكوين معاملات النظام',
       icon: Settings,
-      color: 'from-gray-500 to-gray-600',
+      color: 'from-slate-500 to-slate-600',
       route: '/super-admin/settings',
       action: () => handleAction('system_settings', '/super-admin/settings')
     },

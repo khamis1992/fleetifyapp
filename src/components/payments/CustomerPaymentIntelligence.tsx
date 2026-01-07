@@ -323,13 +323,13 @@ const PaymentScoreCard: React.FC<PaymentScoreCardProps> = ({ score }) => {
       poor: 'bg-orange-600',
       very_poor: 'bg-red-600',
     };
-    return colors[category] || 'bg-gray-600';
+    return colors[category] || 'bg-slate-600';
   };
 
   const getTrendIcon = (trend: string) => {
     if (trend === 'improving') return <TrendingUp className="h-4 w-4 text-green-600" />;
     if (trend === 'declining') return <TrendingDown className="h-4 w-4 text-red-600" />;
-    return <Minus className="h-4 w-4 text-gray-600" />;
+    return <Minus className="h-4 w-4 text-slate-600" />;
   };
 
   return (

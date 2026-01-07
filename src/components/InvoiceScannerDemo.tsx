@@ -152,7 +152,7 @@ const InvoiceScannerDemo: React.FC = () => {
               AI Demo
             </Badge>
           </CardTitle>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             عرض توضيحي شامل لقدرات النظام في التعرف الضوئي، معالجة اللغات الطبيعية، والتطابق الضبابي
           </p>
         </CardHeader>
@@ -164,7 +164,7 @@ const InvoiceScannerDemo: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">إجمالي المسحات</p>
+                <p className="text-sm font-medium text-slate-600">إجمالي المسحات</p>
                 <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
               </div>
               <FileText className="h-8 w-8 text-blue-500" />
@@ -176,7 +176,7 @@ const InvoiceScannerDemo: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">معدل النجاح</p>
+                <p className="text-sm font-medium text-slate-600">معدل النجاح</p>
                 <p className="text-2xl font-bold text-green-600">{stats.successRate}%</p>
               </div>
               <Target className="h-8 w-8 text-green-500" />
@@ -188,7 +188,7 @@ const InvoiceScannerDemo: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">دقة التعرف</p>
+                <p className="text-sm font-medium text-slate-600">دقة التعرف</p>
                 <p className="text-2xl font-bold text-purple-600">{stats.avgOcrConfidence}%</p>
               </div>
               <Eye className="h-8 w-8 text-purple-500" />
@@ -200,7 +200,7 @@ const InvoiceScannerDemo: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">دقة التطابق</p>
+                <p className="text-sm font-medium text-slate-600">دقة التطابق</p>
                 <p className="text-2xl font-bold text-orange-600">{stats.avgMatchConfidence}%</p>
               </div>
               <Cpu className="h-8 w-8 text-orange-500" />
@@ -241,8 +241,8 @@ const InvoiceScannerDemo: React.FC = () => {
                     <CardContent className="pt-6">
                       <div className="text-center space-y-3">
                         <h3 className="font-semibold">{invoice.name}</h3>
-                        <p className="text-sm text-gray-600">{invoice.description}</p>
-                        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        <p className="text-sm text-slate-600">{invoice.description}</p>
+                        <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded">
                           <div>العميل: {invoice.mockData.customer_name}</div>
                           <div>المركبة: {invoice.mockData.car_number}</div>
                           <div>المبلغ: {invoice.mockData.total_amount} د.ك</div>
@@ -302,7 +302,7 @@ const InvoiceScannerDemo: React.FC = () => {
               </Button>
               
               {textAnalysis && (
-                <Card className="bg-gray-50">
+                <Card className="bg-slate-50">
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -342,7 +342,7 @@ const InvoiceScannerDemo: React.FC = () => {
             </CardHeader>
             <CardContent>
               {scanHistory.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-500">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>لا توجد عمليات مسح حتى الآن</p>
                   <p className="text-sm">جرب المسح في قسم العرض التفاعلي</p>
@@ -368,15 +368,15 @@ const InvoiceScannerDemo: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
                             <span className="font-medium">العميل:</span>
-                            <p className="text-gray-600">{scan.data.customer_name || 'غير محدد'}</p>
+                            <p className="text-slate-600">{scan.data.customer_name || 'غير محدد'}</p>
                           </div>
                           <div>
                             <span className="font-medium">أفضل تطابق:</span>
-                            <p className="text-gray-600">{scan.matching.best_match?.name || 'لا يوجد'}</p>
+                            <p className="text-slate-600">{scan.matching.best_match?.name || 'لا يوجد'}</p>
                           </div>
                           <div>
                             <span className="font-medium">دقة التعرف:</span>
-                            <p className="text-gray-600">{scan.processing_info.ocr_confidence}%</p>
+                            <p className="text-slate-600">{scan.processing_info.ocr_confidence}%</p>
                           </div>
                         </div>
                         

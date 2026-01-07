@@ -93,7 +93,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, isOpen, onClose }) =
         </div>
 
         {/* منطقة عرض PDF */}
-        <div className="flex-1 overflow-auto bg-gray-100 rounded-lg p-4">
+        <div className="flex-1 overflow-auto bg-slate-100 rounded-lg p-4">
           <div 
             className="mx-auto bg-white shadow-lg"
             style={{
@@ -103,14 +103,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, isOpen, onClose }) =
             }}
           >
             {/* هنا يمكن إضافة مكتبة عرض PDF مثل react-pdf */}
-            <div className="w-full h-[600px] flex items-center justify-center border-2 border-dashed border-gray-300">
+            <div className="w-full h-[600px] flex items-center justify-center border-2 border-dashed border-slate-300">
               <div className="text-center">
-                <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-medium text-gray-600">معاينة PDF</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <FileText className="h-16 w-16 mx-auto mb-4 text-slate-400" />
+                <p className="text-lg font-medium text-slate-600">معاينة PDF</p>
+                <p className="text-sm text-slate-500 mt-2">
                   لعرض محتوى PDF الفعلي، يتطلب تثبيت مكتبة react-pdf
                 </p>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-slate-400 mt-2">
                   الملف: {file.name}
                 </p>
               </div>
@@ -122,19 +122,19 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ file, isOpen, onClose }) =
         <div className="border-t pt-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="font-medium text-gray-600">اسم الملف:</span>
+              <span className="font-medium text-slate-600">اسم الملف:</span>
               <p className="truncate">{file.name}</p>
             </div>
             <div>
-              <span className="font-medium text-gray-600">الحجم:</span>
+              <span className="font-medium text-slate-600">الحجم:</span>
               <p>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
             <div>
-              <span className="font-medium text-gray-600">النوع:</span>
+              <span className="font-medium text-slate-600">النوع:</span>
               <p>{file.type}</p>
             </div>
             <div>
-              <span className="font-medium text-gray-600">آخر تعديل:</span>
+              <span className="font-medium text-slate-600">آخر تعديل:</span>
               <p>{new Date(file.lastModified).toLocaleDateString('en-US')}</p>
             </div>
           </div>

@@ -139,7 +139,7 @@ export default function QualityDashboard() {
     switch (status) {
       case 'pass': return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'fail': return <XCircle className="h-4 w-4 text-red-500" />;
-      default: return <Clock className="h-4 w-4 text-gray-500" />;
+      default: return <Clock className="h-4 w-4 text-slate-500" />;
     }
   };
 
@@ -149,7 +149,7 @@ export default function QualityDashboard() {
       warning: 'bg-yellow-100 text-yellow-800',
       info: 'bg-blue-100 text-blue-800'
     };
-    return colors[severity] || 'bg-gray-100 text-gray-800';
+    return colors[severity] || 'bg-slate-100 text-slate-800';
   };
 
   if (isLoading) {
@@ -165,8 +165,8 @@ export default function QualityDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">🤖 CTO Agent Dashboard</h1>
-          <p className="text-gray-500">Quality & compliance monitoring</p>
+          <h1 className="text-2xl font-bold text-slate-900">🤖 CTO Agent Dashboard</h1>
+          <p className="text-slate-500">Quality & compliance monitoring</p>
         </div>
         <div className="flex items-center gap-4">
           <select 
@@ -191,7 +191,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Runs</p>
+                <p className="text-sm text-slate-500">Total Runs</p>
                 <p className="text-3xl font-bold">{metrics?.total || 0}</p>
               </div>
               <Activity className="h-8 w-8 text-blue-500" />
@@ -203,7 +203,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Pass Rate</p>
+                <p className="text-sm text-slate-500">Pass Rate</p>
                 <p className="text-3xl font-bold text-green-600">{metrics?.passRate || 0}%</p>
               </div>
               {(metrics?.passRate || 0) >= 80 ? (
@@ -220,7 +220,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Failed Checks</p>
+                <p className="text-sm text-slate-500">Failed Checks</p>
                 <p className="text-3xl font-bold text-red-600">{metrics?.failed || 0}</p>
               </div>
               <XCircle className="h-8 w-8 text-red-500" />
@@ -232,7 +232,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Critical Issues</p>
+                <p className="text-sm text-slate-500">Critical Issues</p>
                 <p className="text-3xl font-bold text-red-600">{metrics?.critical || 0}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -344,7 +344,7 @@ export default function QualityDashboard() {
                       </div>
                       <div>
                         <h3 className="font-semibold">{agent.name}</h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-slate-500">
                           {agent.total} runs
                         </p>
                       </div>
@@ -359,13 +359,13 @@ export default function QualityDashboard() {
                       </div>
                       <Progress value={passRate} className="h-2" />
                       
-                      <div className="flex justify-between text-sm text-gray-500 mt-2">
+                      <div className="flex justify-between text-sm text-slate-500 mt-2">
                         <span>✅ {agent.passed} passed</span>
                         <span>❌ {agent.failed} failed</span>
                       </div>
                       
                       {agent.lastRun && (
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-slate-400 mt-2">
                           Last run: {new Date(agent.lastRun).toLocaleString()}
                         </p>
                       )}
@@ -389,13 +389,13 @@ export default function QualityDashboard() {
                 {auditLogs?.slice(0, 50).map((log: any) => (
                   <div 
                     key={log.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100"
                   >
                     <div className="flex items-center gap-3">
                       {getStatusIcon(log.status)}
                       <div>
                         <p className="font-medium text-sm">{log.stage}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-500">
                           {log.actor} • {log.branch || 'main'}
                         </p>
                       </div>
@@ -404,7 +404,7 @@ export default function QualityDashboard() {
                       <Badge className={getSeverityBadge(log.severity)}>
                         {log.severity}
                       </Badge>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-slate-400">
                         {new Date(log.created_at).toLocaleString()}
                       </span>
                     </div>

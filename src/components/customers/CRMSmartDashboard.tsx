@@ -27,9 +27,9 @@ import { cn } from '@/lib/utils';
 // ألوان متوافقة مع Bento Dashboard
 const COLORS = {
   coral: {
-    bg: 'bg-coral-100',
+    bg: 'bg-rose-100',
     text: 'text-coral-600',
-    fill: 'bg-coral-500',
+    fill: 'bg-rose-500',
   },
   green: {
     bg: 'bg-green-100',
@@ -144,7 +144,7 @@ function SmartStatCard({
     <motion.div
       className={cn(
         "bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-lg transition-all h-full flex flex-col group cursor-pointer relative",
-        isUrgent && "ring-2 ring-coral-200"
+        isUrgent && "ring-2 ring-rose-200"
       )}
       onClick={onClick}
       whileHover={{ y: -4, scale: 1.02 }}
@@ -157,7 +157,7 @@ function SmartStatCard({
       {isUrgent && (
         <span className="absolute top-3 left-3 flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-coral-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-coral-500" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
         </span>
       )}
 
@@ -239,7 +239,7 @@ function SmartStatCard({
         initial={{ y: 5 }}
         animate={{ y: 0 }}
       >
-        <span className="text-[8px] text-coral-500 font-medium">انقر للتفاصيل ←</span>
+        <span className="text-[8px] text-rose-500 font-medium">انقر للتفاصيل ←</span>
       </motion.div>
     </motion.div>
   );
@@ -252,7 +252,7 @@ function AlertsPanel({ alerts }: { alerts: Alert[] }) {
   const getAlertStyles = (type: Alert['type']) => {
     switch (type) {
       case 'urgent':
-        return 'bg-coral-50 border-coral-200';
+        return 'bg-rose-50 border-rose-200';
       case 'warning':
         return 'bg-amber-50 border-amber-200';
       case 'info':
@@ -263,7 +263,7 @@ function AlertsPanel({ alerts }: { alerts: Alert[] }) {
   const getAlertIcon = (type: Alert['type']) => {
     switch (type) {
       case 'urgent':
-        return <AlertTriangle className="w-4 h-4 text-coral-500" />;
+        return <AlertTriangle className="w-4 h-4 text-rose-500" />;
       case 'warning':
         return <Bell className="w-4 h-4 text-amber-500" />;
       case 'info':
@@ -279,7 +279,7 @@ function AlertsPanel({ alerts }: { alerts: Alert[] }) {
       transition={{ duration: 0.4 }}
     >
       <h3 className="text-[11px] text-neutral-500 font-medium mb-3 flex items-center gap-2">
-        <Bell className="w-3.5 h-3.5 text-coral-500" />
+        <Bell className="w-3.5 h-3.5 text-rose-500" />
         تنبيهات ذكية
       </h3>
       <div className="space-y-2">
@@ -355,7 +355,7 @@ function QuickSummary({ stats }: { stats: DashboardStats }) {
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[11px] text-neutral-500 font-medium flex items-center gap-2">
-          <Target className="w-3.5 h-3.5 text-coral-500" />
+          <Target className="w-3.5 h-3.5 text-rose-500" />
           ملخص سريع
         </h3>
         <span className="text-[10px] text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">تحديث مباشر</span>

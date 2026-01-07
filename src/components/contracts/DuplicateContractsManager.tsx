@@ -113,7 +113,7 @@ const DuplicateContractsManager = () => {
     } else if (contract.payments_count > 0) {
       return <Badge variant="destructive" className="bg-red-100 text-red-800">له مدفوعات</Badge>;
     } else {
-      return <Badge variant="secondary" className="bg-gray-100 text-gray-800">يحتاج مراجعة</Badge>;
+      return <Badge variant="secondary" className="bg-slate-100 text-slate-800">يحتاج مراجعة</Badge>;
     }
   };
 
@@ -324,7 +324,7 @@ const DuplicateContractsManager = () => {
                       {group.contracts.map((contract, index) => (
                         <div 
                           key={contract.id} 
-                          className={`p-4 border rounded-lg ${contract.is_safe_to_delete ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}
+                          className={`p-4 border rounded-lg ${contract.is_safe_to_delete ? 'bg-green-50 border-green-200' : 'bg-slate-50'}`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">

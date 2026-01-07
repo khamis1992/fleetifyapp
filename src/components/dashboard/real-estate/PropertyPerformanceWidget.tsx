@@ -98,7 +98,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
   const getPerformanceColor = (value: number, avg: number) => {
     if (value >= avg * 1.1) return 'text-green-700 bg-green-50';
     if (value <= avg * 0.9) return 'text-red-700 bg-red-50';
-    return 'text-gray-700 bg-gray-50';
+    return 'text-slate-700 bg-slate-50';
   };
 
   // Get unique property types
@@ -125,7 +125,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.3 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -167,12 +167,12 @@ export const PropertyPerformanceWidget: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 text-center">
               <EnhancedTooltip kpi={kpiDefinitions.roi}>
-                <div className="text-sm text-gray-600 mb-1">متوسط العائد على الاستثمار</div>
+                <div className="text-sm text-slate-600 mb-1">متوسط العائد على الاستثمار</div>
               </EnhancedTooltip>
               <div className="text-3xl font-bold text-blue-700">{avgROI.toFixed(1)}%</div>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 text-center">
-              <div className="text-sm text-gray-600 mb-1">متوسط هامش الربح</div>
+              <div className="text-sm text-slate-600 mb-1">متوسط هامش الربح</div>
               <div className="text-3xl font-bold text-green-700">{avgProfitMargin.toFixed(1)}%</div>
             </div>
           </div>
@@ -187,7 +187,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     filterType === type
                       ? 'bg-emerald-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {type === 'all' ? 'الكل' : type}
@@ -200,7 +200,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
           <div className="overflow-x-auto">
             <div className="min-w-full">
               {/* Table Header */}
-              <div className="grid grid-cols-6 gap-2 p-3 bg-gray-50 rounded-t-lg border-b border-gray-200 text-xs font-semibold text-gray-600">
+              <div className="grid grid-cols-6 gap-2 p-3 bg-slate-50 rounded-t-lg border-b border-slate-200 text-xs font-semibold text-slate-600">
                 <button
                   onClick={() => handleSort('propertyName')}
                   className="flex items-center justify-end gap-1 hover:text-emerald-600 transition-colors"
@@ -249,17 +249,17 @@ export const PropertyPerformanceWidget: React.FC = () => {
                   return (
                     <div
                       key={property.propertyId}
-                      className={`grid grid-cols-6 gap-2 p-3 border-b border-gray-100 text-xs hover:bg-gray-50 transition-colors ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                      className={`grid grid-cols-6 gap-2 p-3 border-b border-slate-100 text-xs hover:bg-slate-50 transition-colors ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
                       }`}
                     >
                       <div className="flex items-center justify-end gap-2">
-                        <span className="font-medium text-gray-800 truncate">
+                        <span className="font-medium text-slate-800 truncate">
                           {property.propertyName}
                         </span>
                         <Building className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       </div>
-                      <div className="text-right font-medium text-gray-700">
+                      <div className="text-right font-medium text-slate-700">
                         {formatCurrency(property.monthlyRent)}
                       </div>
                       <div className="text-right font-medium text-orange-600">
@@ -300,7 +300,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-6 text-xs text-gray-600">
+          <div className="flex items-center justify-center gap-6 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-green-50 border border-green-200"></div>
               <span>أداء أعلى من المتوسط</span>

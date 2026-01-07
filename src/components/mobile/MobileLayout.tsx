@@ -30,7 +30,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
 }) => {
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30"
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
@@ -50,7 +50,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-200/50 shadow-lg"
+          className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50 shadow-lg"
           style={{
             paddingBottom: 'env(safe-area-inset-bottom)',
           }}
@@ -69,7 +69,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                       'flex flex-col items-center justify-center relative px-4 py-2 rounded-2xl transition-all duration-200 min-w-[64px]',
                       isActive
                         ? 'text-teal-600'
-                        : 'text-gray-400 hover:text-gray-600'
+                        : 'text-slate-400 hover:text-slate-600'
                     )}
                     whileTap={{ scale: 0.95 }}
                   >

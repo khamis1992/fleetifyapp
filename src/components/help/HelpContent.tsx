@@ -18,11 +18,11 @@ export const HelpSection: React.FC<HelpSectionProps> = ({ title, children, icon 
 
   return (
     <div className="space-y-2">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center justify-end gap-2">
+      <h3 className="text-lg font-semibold text-slate-900 flex items-center justify-end gap-2">
         {icon && icons[icon]}
         {title}
       </h3>
-      <div className="text-gray-700 leading-relaxed">
+      <div className="text-slate-700 leading-relaxed">
         {children}
       </div>
     </div>
@@ -42,8 +42,8 @@ export const HelpStep: React.FC<HelpStepProps> = ({ number, title, description }
         {number}
       </div>
       <div className="flex-1">
-        <h4 className="font-semibold text-gray-900 mb-1">{title}</h4>
-        <p className="text-gray-600 text-sm">{description}</p>
+        <h4 className="font-semibold text-slate-900 mb-1">{title}</h4>
+        <p className="text-slate-600 text-sm">{description}</p>
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ export const HelpList: React.FC<HelpListProps> = ({ items, type = 'bullet' }) =>
           ) : (
             <span className="text-blue-600 font-bold flex-shrink-0">•</span>
           )}
-          <span className="text-gray-700">{item}</span>
+          <span className="text-slate-700">{item}</span>
         </li>
       ))}
     </ul>
@@ -110,7 +110,7 @@ interface HelpCodeProps {
 
 export const HelpCode: React.FC<HelpCodeProps> = ({ children }) => {
   return (
-    <code className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm font-mono">
+    <code className="px-2 py-1 bg-slate-100 text-slate-800 rounded text-sm font-mono">
       {children}
     </code>
   );

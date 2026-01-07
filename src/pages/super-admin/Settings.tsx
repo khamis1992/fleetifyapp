@@ -73,7 +73,7 @@ const SuperAdminSettings: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 space-y-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 space-y-8 animate-fade-in">
       {/* Header */}
       <div className="space-y-4">
         <Breadcrumbs />
@@ -90,7 +90,7 @@ const SuperAdminSettings: React.FC = () => {
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-teal-600 bg-clip-text text-transparent">
                     System Settings
                   </h1>
-                  <p className="text-gray-600 text-lg">
+                  <p className="text-slate-600 text-lg">
                     Configure system-wide settings and manage platform features
                   </p>
                 </div>
@@ -101,19 +101,19 @@ const SuperAdminSettings: React.FC = () => {
       </div>
 
       {/* Settings Tabs */}
-      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-gray-900">
+          <CardTitle className="flex items-center gap-2 text-slate-900">
             <Settings className="h-5 w-5 text-teal-600" />
             Configuration Management
           </CardTitle>
-          <CardDescription className="text-gray-600">
+          <CardDescription className="text-slate-600">
             Manage all system-wide settings from this centralized control panel
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="security" className="space-y-6">
-            <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-2xl">
+            <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl">
               {settingsTabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
@@ -131,10 +131,10 @@ const SuperAdminSettings: React.FC = () => {
             {settingsTabs.map((tab) => (
               <TabsContent key={tab.id} value={tab.id} className="space-y-6">
                 <div className="border-l-4 border-teal-500/20 pl-6 space-y-2">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-semibold text-slate-900">
                     {tab.label}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-slate-600">
                     {tab.description}
                   </p>
                 </div>

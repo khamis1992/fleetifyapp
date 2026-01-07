@@ -55,7 +55,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -179,7 +179,7 @@ export default function FinancialRatios() {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-coral-500" />
+          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
           <p className="text-neutral-500">جاري تحميل النسب المالية...</p>
         </div>
       </div>
@@ -190,7 +190,7 @@ export default function FinancialRatios() {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -370,9 +370,9 @@ export default function FinancialRatios() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>

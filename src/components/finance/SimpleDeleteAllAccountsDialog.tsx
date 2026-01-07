@@ -320,7 +320,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
               <div className="space-y-2">
                 <div 
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    deletionMode === 'soft' ? 'border-blue-500 bg-blue-100' : 'border-gray-200 bg-white'
+                    deletionMode === 'soft' ? 'border-blue-500 bg-blue-100' : 'border-slate-200 bg-white'
                   }`}
                   onClick={() => setDeletionMode('soft')}
                 >
@@ -335,7 +335,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
 
                 <div 
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    deletionMode === 'auto' ? 'border-yellow-500 bg-yellow-100' : 'border-gray-200 bg-white'
+                    deletionMode === 'auto' ? 'border-yellow-500 bg-yellow-100' : 'border-slate-200 bg-white'
                   }`}
                   onClick={() => setDeletionMode('auto')}
                 >
@@ -350,7 +350,7 @@ export const SimpleDeleteAllAccountsDialog: React.FC<SimpleDeleteAllAccountsDial
 
                 <div 
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    deletionMode === 'force' ? 'border-red-500 bg-red-100' : 'border-gray-200 bg-white'
+                    deletionMode === 'force' ? 'border-red-500 bg-red-100' : 'border-slate-200 bg-white'
                   }`}
                   onClick={() => setDeletionMode('force')}
                 >

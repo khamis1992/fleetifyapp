@@ -92,7 +92,7 @@ export function VendorAutoSuggest({
       {/* حقل اسم الوكيل */}
       <div className="relative">
         <Label htmlFor="vendor_name" className="flex items-center gap-2 mb-1.5 text-sm">
-          <Building2 className="w-3.5 h-3.5 text-coral-500" />
+          <Building2 className="w-3.5 h-3.5 text-rose-500" />
           اسم الوكيل / المورد
         </Label>
         <div className="relative">
@@ -121,8 +121,8 @@ export function VendorAutoSuggest({
                     type="button"
                     onClick={() => handleSelectVendor(vendor)}
                     className={cn(
-                      "w-full px-3 py-2 text-right hover:bg-coral-50 transition-colors flex items-center justify-between",
-                      selectedVendor?.id === vendor.id && "bg-coral-50"
+                      "w-full px-3 py-2 text-right hover:bg-rose-50 transition-colors flex items-center justify-between",
+                      selectedVendor?.id === vendor.id && "bg-rose-50"
                     )}
                   >
                     <div>
@@ -132,7 +132,7 @@ export function VendorAutoSuggest({
                       )}
                     </div>
                     {selectedVendor?.id === vendor.id && (
-                      <Check className="w-4 h-4 text-coral-500" />
+                      <Check className="w-4 h-4 text-rose-500" />
                     )}
                   </button>
                 ))}
@@ -143,7 +143,7 @@ export function VendorAutoSuggest({
                 <p className="text-sm text-neutral-500">
                   لم يتم العثور على وكيل بهذا الاسم
                 </p>
-                <p className="text-xs text-coral-500 mt-1">
+                <p className="text-xs text-rose-500 mt-1">
                   سيتم إنشاء وكيل جديد تلقائياً
                 </p>
               </div>
@@ -153,7 +153,7 @@ export function VendorAutoSuggest({
 
         {/* مؤشر الوكيل الجديد */}
         {searchTerm && !selectedVendor && !showSuggestions && (
-          <p className="text-xs text-coral-500 mt-1 flex items-center gap-1">
+          <p className="text-xs text-rose-500 mt-1 flex items-center gap-1">
             <Plus className="w-3 h-3" />
             سيتم إنشاء وكيل جديد باسم "{searchTerm}"
           </p>
@@ -163,7 +163,7 @@ export function VendorAutoSuggest({
       {/* حقل رقم الهاتف */}
       <div>
         <Label htmlFor="vendor_phone" className="flex items-center gap-2 mb-1.5 text-sm">
-          <Phone className="w-3.5 h-3.5 text-coral-500" />
+          <Phone className="w-3.5 h-3.5 text-rose-500" />
           رقم هاتف الوكيل
           {!selectedVendor && (
             <span className="text-[10px] text-neutral-400">(اختياري)</span>

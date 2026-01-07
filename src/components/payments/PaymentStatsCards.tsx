@@ -170,10 +170,10 @@ export function PaymentStatsCards() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-20"></div>
-                  <div className="h-8 bg-gray-200 rounded w-32"></div>
+                  <div className="h-4 bg-slate-200 rounded w-20"></div>
+                  <div className="h-8 bg-slate-200 rounded w-32"></div>
                 </div>
-                <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                <div className="w-12 h-12 bg-slate-200 rounded-lg"></div>
               </div>
             </CardContent>
           </Card>

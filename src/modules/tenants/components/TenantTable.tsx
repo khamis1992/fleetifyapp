@@ -104,7 +104,7 @@ export function TenantTable({
         <div className="flex gap-4 flex-wrap">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
               <Input
                 placeholder="البحث بالاسم، الهاتف، البريد أو الكود..."
                 value={filters.search || ""}
@@ -143,7 +143,7 @@ export function TenantTable({
       <CardContent>
         {tenants.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">لا توجد مستأجرين</p>
+            <p className="text-slate-500">لا توجد مستأجرين</p>
             <Button onClick={onAddTenant} className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
               إضافة أول مستأجر
@@ -172,7 +172,7 @@ export function TenantTable({
                     <div>
                       <div className="font-medium">{tenant.full_name}</div>
                       {tenant.full_name_ar && (
-                        <div className="text-sm text-gray-500">{tenant.full_name_ar}</div>
+                        <div className="text-sm text-slate-500">{tenant.full_name_ar}</div>
                       )}
                     </div>
                   </TableCell>

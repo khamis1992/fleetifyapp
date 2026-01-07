@@ -180,7 +180,7 @@ export default function PermissionsDashboard() {
       accountant: 'bg-emerald-500',
       fleet_manager: 'bg-cyan-500',
       sales_agent: 'bg-green-500',
-      employee: 'bg-gray-500'
+      employee: 'bg-slate-500'
     };
     return colors[role];
   };

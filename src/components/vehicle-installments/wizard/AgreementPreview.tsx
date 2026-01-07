@@ -89,8 +89,8 @@ export function AgreementPreview({
       </div>
 
       {/* معاينة الاتفاقية */}
-      <Card className="bg-white border-2 border-coral-200" id="agreement-preview">
-        <CardHeader className="bg-gradient-to-r from-coral-500 to-orange-500 text-white rounded-t-lg">
+      <Card className="bg-white border-2 border-rose-200" id="agreement-preview">
+        <CardHeader className="bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-xl">
               <FileText className="w-6 h-6" />
@@ -109,7 +109,7 @@ export function AgreementPreview({
           {/* معلومات الوكيل */}
           <div>
             <h3 className="font-semibold text-neutral-900 flex items-center gap-2 mb-3">
-              <Building2 className="w-5 h-5 text-coral-500" />
+              <Building2 className="w-5 h-5 text-rose-500" />
               معلومات الوكيل / المورد
             </h3>
             <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 rounded-lg">
@@ -129,7 +129,7 @@ export function AgreementPreview({
           {/* المركبات */}
           <div>
             <h3 className="font-semibold text-neutral-900 flex items-center gap-2 mb-3">
-              <Car className="w-5 h-5 text-coral-500" />
+              <Car className="w-5 h-5 text-rose-500" />
               المركبات ({vehicles.length})
             </h3>
             <div className="space-y-2">
@@ -139,7 +139,7 @@ export function AgreementPreview({
                   className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-coral-100 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center">
                       <span className="text-sm font-bold text-coral-600">
                         {index + 1}
                       </span>
@@ -166,7 +166,7 @@ export function AgreementPreview({
           {/* التفاصيل المالية */}
           <div>
             <h3 className="font-semibold text-neutral-900 flex items-center gap-2 mb-3">
-              <CreditCard className="w-5 h-5 text-coral-500" />
+              <CreditCard className="w-5 h-5 text-rose-500" />
               التفاصيل المالية
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -178,7 +178,7 @@ export function AgreementPreview({
                 <p className="text-xs text-neutral-500">الدفعة المقدمة</p>
                 <p className="font-bold text-lg text-emerald-600">{formatCurrency(downPayment)}</p>
               </div>
-              <div className="p-3 bg-coral-50 rounded-lg border border-coral-200">
+              <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
                 <p className="text-xs text-neutral-500">القسط الشهري</p>
                 <p className="font-bold text-lg text-coral-600">{formatCurrency(installmentAmount)}</p>
               </div>
@@ -202,7 +202,7 @@ export function AgreementPreview({
           {/* مواعيد السداد */}
           <div>
             <h3 className="font-semibold text-neutral-900 flex items-center gap-2 mb-3">
-              <Calendar className="w-5 h-5 text-coral-500" />
+              <Calendar className="w-5 h-5 text-rose-500" />
               مواعيد السداد
             </h3>
             <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 rounded-lg">

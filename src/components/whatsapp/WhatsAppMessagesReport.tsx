@@ -247,8 +247,8 @@ export const WhatsAppMessagesReport = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">تقرير رسائل WhatsApp</h2>
-          <p className="text-sm text-gray-500 mt-1">سجل شامل لجميع الرسائل المرسلة والمعلقة</p>
+          <h2 className="text-2xl font-bold text-slate-900">تقرير رسائل WhatsApp</h2>
+          <p className="text-sm text-slate-500 mt-1">سجل شامل لجميع الرسائل المرسلة والمعلقة</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={loadReportData} variant="outline" size="sm">
@@ -269,8 +269,8 @@ export const WhatsAppMessagesReport = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">إجمالي التذكيرات</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total_reminders}</p>
+                  <p className="text-sm font-medium text-slate-600">إجمالي التذكيرات</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-1">{stats.total_reminders}</p>
                 </div>
                 <MessageSquare className="h-10 w-10 text-blue-500" />
               </div>
@@ -281,7 +281,7 @@ export const WhatsAppMessagesReport = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">تم الإرسال</p>
+                  <p className="text-sm font-medium text-slate-600">تم الإرسال</p>
                   <p className="text-3xl font-bold text-green-600 mt-1">{stats.sent_count}</p>
                 </div>
                 <CheckCircle2 className="h-10 w-10 text-green-500" />
@@ -293,7 +293,7 @@ export const WhatsAppMessagesReport = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">معلق</p>
+                  <p className="text-sm font-medium text-slate-600">معلق</p>
                   <p className="text-3xl font-bold text-orange-600 mt-1">{stats.pending_count}</p>
                 </div>
                 <Clock className="h-10 w-10 text-orange-500" />
@@ -305,7 +305,7 @@ export const WhatsAppMessagesReport = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">عملاء فريدين</p>
+                  <p className="text-sm font-medium text-slate-600">عملاء فريدين</p>
                   <p className="text-3xl font-bold text-purple-600 mt-1">{stats.unique_customers}</p>
                 </div>
                 <Users className="h-10 w-10 text-purple-500" />
@@ -342,8 +342,8 @@ export const WhatsAppMessagesReport = () => {
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5 text-blue-500" />
                       <div>
-                        <p className="font-semibold text-gray-900">{msg.customer_name}</p>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="font-semibold text-slate-900">{msg.customer_name}</p>
+                        <p className="text-sm text-slate-500 flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           {msg.phone_number}
                         </p>
@@ -355,17 +355,17 @@ export const WhatsAppMessagesReport = () => {
                     <Badge variant={getReminderTypeBadge(msg.reminder_type)}>
                       {getReminderTypeLabel(msg.reminder_type)}
                     </Badge>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       {format(new Date(msg.sent_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
                     </p>
                   </div>
 
                   <div className="md:col-span-2">
                     <div className="flex items-center gap-1 text-sm">
-                      <FileText className="h-4 w-4 text-gray-400" />
+                      <FileText className="h-4 w-4 text-slate-400" />
                       <span className="font-medium">{msg.invoice_number}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       الاستحقاق: {format(new Date(msg.due_date), 'dd/MM/yyyy', { locale: ar })}
                     </p>
                   </div>
@@ -385,8 +385,8 @@ export const WhatsAppMessagesReport = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 whitespace-pre-line">{msg.message_preview}</p>
+                <div className="mt-4 p-3 bg-slate-50 rounded-lg">
+                  <p className="text-sm text-slate-600 whitespace-pre-line">{msg.message_preview}</p>
                 </div>
               </CardContent>
             </Card>
@@ -395,8 +395,8 @@ export const WhatsAppMessagesReport = () => {
           {sentMessages.length === 0 && (
             <Card>
               <CardContent className="pt-6 text-center py-12">
-                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">لا توجد رسائل مرسلة</p>
+                <MessageSquare className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">لا توجد رسائل مرسلة</p>
               </CardContent>
             </Card>
           )}
@@ -412,8 +412,8 @@ export const WhatsAppMessagesReport = () => {
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5 text-orange-500" />
                       <div>
-                        <p className="font-semibold text-gray-900">{msg.customer_name}</p>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="font-semibold text-slate-900">{msg.customer_name}</p>
+                        <p className="text-sm text-slate-500 flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           {msg.phone_number}
                         </p>
@@ -425,7 +425,7 @@ export const WhatsAppMessagesReport = () => {
                     <Badge variant={getReminderTypeBadge(msg.reminder_type)}>
                       {getReminderTypeLabel(msg.reminder_type)}
                     </Badge>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       المجدول: {format(new Date(msg.scheduled_date), 'dd/MM/yyyy', { locale: ar })} - {msg.scheduled_time}
                     </p>
@@ -433,10 +433,10 @@ export const WhatsAppMessagesReport = () => {
 
                   <div className="md:col-span-2">
                     <div className="flex items-center gap-1 text-sm">
-                      <FileText className="h-4 w-4 text-gray-400" />
+                      <FileText className="h-4 w-4 text-slate-400" />
                       <span className="font-medium">{msg.invoice_number}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       الاستحقاق: {format(new Date(msg.due_date), 'dd/MM/yyyy', { locale: ar })}
                     </p>
                   </div>
@@ -462,8 +462,8 @@ export const WhatsAppMessagesReport = () => {
           {pendingMessages.length === 0 && (
             <Card>
               <CardContent className="pt-6 text-center py-12">
-                <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">لا توجد رسائل معلقة</p>
+                <Clock className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">لا توجد رسائل معلقة</p>
               </CardContent>
             </Card>
           )}
@@ -479,8 +479,8 @@ export const WhatsAppMessagesReport = () => {
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5 text-red-500" />
                       <div>
-                        <p className="font-semibold text-gray-900">{msg.customer_name}</p>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="font-semibold text-slate-900">{msg.customer_name}</p>
+                        <p className="text-sm text-slate-500 flex items-center gap-1">
                           <Phone className="h-3 w-3" />
                           {msg.phone_number}
                         </p>
@@ -492,7 +492,7 @@ export const WhatsAppMessagesReport = () => {
                     <Badge variant="destructive">
                       {getReminderTypeLabel(msg.reminder_type)}
                     </Badge>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       محاولات: {msg.retry_count}
                     </p>
                   </div>
@@ -502,7 +502,7 @@ export const WhatsAppMessagesReport = () => {
                       <p className="text-xs font-medium text-red-800">سبب الفشل:</p>
                       <p className="text-xs text-red-600 mt-1">{msg.last_error || 'غير محدد'}</p>
                       {msg.next_retry_at && (
-                        <p className="text-xs text-gray-600 mt-1">
+                        <p className="text-xs text-slate-600 mt-1">
                           المحاولة التالية: {format(new Date(msg.next_retry_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
                         </p>
                       )}
@@ -517,7 +517,7 @@ export const WhatsAppMessagesReport = () => {
             <Card>
               <CardContent className="pt-6 text-center py-12">
                 <CheckCircle2 className="h-12 w-12 text-green-300 mx-auto mb-4" />
-                <p className="text-gray-500">رائع! لا توجد رسائل فاشلة</p>
+                <p className="text-slate-500">رائع! لا توجد رسائل فاشلة</p>
               </CardContent>
             </Card>
           )}

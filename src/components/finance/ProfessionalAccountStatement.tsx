@@ -216,8 +216,8 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
           {/* Header Section - للطباعة */}
           <div className="hidden print:block text-center border-b pb-4 mb-6">
             <h1 className="text-2xl font-bold mb-2">شركة المثال للتجارة</h1>
-            <p className="text-gray-600">كشف حساب تفصيلي</p>
-            <p className="text-sm text-gray-500">تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
+            <p className="text-slate-600">كشف حساب تفصيلي</p>
+            <p className="text-sm text-slate-500">تاريخ الطباعة: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
           </div>
 
           {/* رسالة عدم تحديد حساب */}
@@ -225,10 +225,10 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
             <Card>
               <CardContent className="p-8 text-center">
                 <div className="flex flex-col items-center gap-4">
-                  <FileText className="h-12 w-12 text-gray-400" />
+                  <FileText className="h-12 w-12 text-slate-400" />
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-700">لم يتم تحديد حساب</h3>
-                    <p className="text-gray-500 mt-2">
+                    <h3 className="text-lg font-semibold text-slate-700">لم يتم تحديد حساب</h3>
+                    <p className="text-slate-500 mt-2">
                       يرجى اختيار حساب من شجرة الحسابات لعرض كشف الحساب المخصص له
                     </p>
                   </div>
@@ -252,15 +252,15 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">رقم الحساب</Label>
+                  <Label className="text-sm font-medium text-slate-600">رقم الحساب</Label>
                   <p className="font-mono text-lg font-bold">{accountCode}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">اسم الحساب</Label>
+                  <Label className="text-sm font-medium text-slate-600">اسم الحساب</Label>
                   <p className="text-lg font-semibold">{accountName}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">نوع الحساب</Label>
+                  <Label className="text-sm font-medium text-slate-600">نوع الحساب</Label>
                   <Badge variant="outline" className="mt-1">
                     {accountType === 'assets' ? 'الأصول' : 
                      accountType === 'liabilities' ? 'الالتزامات' :
@@ -269,7 +269,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">طبيعة الرصيد</Label>
+                  <Label className="text-sm font-medium text-slate-600">طبيعة الرصيد</Label>
                   <Badge variant={balanceType === 'debit' ? 'default' : 'secondary'} className="mt-1">
                     {balanceType === 'debit' ? 'مدين' : 'دائن'}
                   </Badge>
@@ -320,7 +320,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                 <div>
                   <Label>البحث</Label>
                   <div className="relative">
-                    <Search className="absolute right-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Search className="absolute right-2 top-2.5 h-4 w-4 text-slate-400" />
                     <Input
                       placeholder="بحث في البيان أو المرجع..."
                       value={searchTerm}
@@ -340,7 +340,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-600">إجمالي المدين</p>
+                    <p className="text-sm font-medium text-slate-600">إجمالي المدين</p>
                     <p className="text-lg font-bold text-green-600">{formatCurrency(summary.totalDebits)}</p>
                   </div>
                 </div>
@@ -352,7 +352,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                 <div className="flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-red-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-600">إجمالي الدائن</p>
+                    <p className="text-sm font-medium text-slate-600">إجمالي الدائن</p>
                     <p className="text-lg font-bold text-red-600">{formatCurrency(summary.totalCredits)}</p>
                   </div>
                 </div>
@@ -364,7 +364,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-blue-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-600">الرصيد النهائي</p>
+                    <p className="text-sm font-medium text-slate-600">الرصيد النهائي</p>
                     <p className="text-lg font-bold text-blue-600">{formatCurrency(summary.finalBalance)}</p>
                   </div>
                 </div>
@@ -376,7 +376,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-purple-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-600">عدد الحركات</p>
+                    <p className="text-sm font-medium text-slate-600">عدد الحركات</p>
                     <p className="text-lg font-bold text-purple-600">{summary.transactionCount}</p>
                   </div>
                 </div>
@@ -433,7 +433,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                     {filteredTransactions.map((transaction, index) => (
                       <tr 
                         key={transaction.id} 
-                        className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-gray-25' : ''}`}
+                        className={`border-b hover:bg-slate-50 ${index % 2 === 0 ? 'bg-slate-25' : ''}`}
                       >
                         <td className="p-3 font-mono text-sm">
                           {formatDate(transaction.date)}
@@ -454,7 +454,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                               {formatCurrency(transaction.debit)}
                             </span>
                           ) : (
-                            <span className="text-gray-300">-</span>
+                            <span className="text-slate-300">-</span>
                           )}
                         </td>
                         <td className="p-3 text-center font-mono">
@@ -463,7 +463,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                               {formatCurrency(transaction.credit)}
                             </span>
                           ) : (
-                            <span className="text-gray-300">-</span>
+                            <span className="text-slate-300">-</span>
                           )}
                         </td>
                         <td className="p-3 text-center font-mono font-bold">
@@ -475,7 +475,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 bg-gray-100 font-bold">
+                    <tr className="border-t-2 bg-slate-100 font-bold">
                       <td colSpan={3} className="p-3 text-right">الإجمالي:</td>
                       <td className="p-3 text-center font-mono text-green-600">
                         {formatCurrency(summary.totalDebits)}
@@ -494,7 +494,7 @@ export const ProfessionalAccountStatement: React.FC<AccountStatementProps> = ({
           </Card>
 
           {/* Footer - للطباعة فقط */}
-          <div className="hidden print:block text-center text-sm text-gray-500 border-t pt-4">
+          <div className="hidden print:block text-center text-sm text-slate-500 border-t pt-4">
             <p>تم إنشاء هذا التقرير بواسطة نظام إدارة الحسابات</p>
             <p>جميع المبالغ بالدينار الكويتي (د.ك)</p>
           </div>

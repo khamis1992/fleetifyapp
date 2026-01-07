@@ -51,7 +51,7 @@ const getSeverityColor = (severity: string) => {
     case 'high': return 'border-orange-500 bg-orange-50 dark:bg-orange-900/20';
     case 'medium': return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20';
     case 'low': return 'border-blue-500 bg-blue-50 dark:bg-blue-900/20';
-    default: return 'border-gray-300 bg-gray-50 dark:bg-gray-900/20';
+    default: return 'border-slate-300 bg-slate-50 dark:bg-slate-900/20';
   }
 };
 

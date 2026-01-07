@@ -254,7 +254,7 @@ const VehicleDetailsPage = () => {
       stolen: 'bg-slate-100 text-slate-800',
       police_station: 'bg-amber-100 text-amber-800',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-slate-100 text-slate-800';
   };
 
   const getStatusText = (status: string): string => {
@@ -292,12 +292,12 @@ const VehicleDetailsPage = () => {
 
   if (vehicleError || !vehicle) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
-            <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">المركبة غير موجودة</h3>
-            <p className="text-gray-600 mb-4">لم يتم العثور على هذه المركبة</p>
+            <Car className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">المركبة غير موجودة</h3>
+            <p className="text-slate-600 mb-4">لم يتم العثور على هذه المركبة</p>
             <Button onClick={() => navigate('/fleet')}>
               العودة لصفحة الأسطول
             </Button>
@@ -315,9 +315,9 @@ const VehicleDetailsPage = () => {
     : '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* شريط التنقل العلوي */}
-      <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
+      <nav className="bg-white border-b border-slate-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
@@ -325,8 +325,8 @@ const VehicleDetailsPage = () => {
                 <ArrowRight className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">تفاصيل المركبة</h1>
-                <p className="text-xs text-gray-500">إدارة ومتابعة بيانات المركبة</p>
+                <h1 className="text-lg font-semibold text-slate-900">تفاصيل المركبة</h1>
+                <p className="text-xs text-slate-500">إدارة ومتابعة بيانات المركبة</p>
               </div>
             </div>
 
@@ -353,7 +353,7 @@ const VehicleDetailsPage = () => {
             <div className="flex flex-col lg:flex-row gap-6">
               {/* صورة المركبة */}
               <div className="lg:w-1/3">
-                <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden">
                   {vehicleImage ? (
                     <img
                       src={vehicleImage}
@@ -362,7 +362,7 @@ const VehicleDetailsPage = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Car className="w-16 h-16 text-gray-400" />
+                      <Car className="w-16 h-16 text-slate-400" />
                     </div>
                   )}
                 </div>
@@ -372,13 +372,13 @@ const VehicleDetailsPage = () => {
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">{vehicleName}</h2>
-                    <p className="text-lg text-gray-600">
+                    <h2 className="text-3xl font-bold text-slate-900 mb-2">{vehicleName}</h2>
+                    <p className="text-lg text-slate-600">
                       رقم اللوحة: <span className="font-mono font-semibold">{vehicle.plate_number}</span>
                     </p>
                     {vehicle.vin && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        رقم الهيكل (VIN): <span className="font-mono font-medium text-gray-700">{vehicle.vin}</span>
+                      <p className="text-sm text-slate-500 mt-1">
+                        رقم الهيكل (VIN): <span className="font-mono font-medium text-slate-700">{vehicle.vin}</span>
                       </p>
                     )}
                   </div>
@@ -390,19 +390,19 @@ const VehicleDetailsPage = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   {vehicle.vin && (
                     <div>
-                      <span className="text-gray-500">رقم الهيكل:</span>
+                      <span className="text-slate-500">رقم الهيكل:</span>
                       <p className="font-mono font-semibold">{vehicle.vin}</p>
                     </div>
                   )}
                   {vehicle.color && (
                     <div>
-                      <span className="text-gray-500">اللون:</span>
+                      <span className="text-slate-500">اللون:</span>
                       <p className="font-semibold">{vehicle.color}</p>
                     </div>
                   )}
                   {vehicle.transmission_type && (
                     <div>
-                      <span className="text-gray-500">ناقل الحركة:</span>
+                      <span className="text-slate-500">ناقل الحركة:</span>
                       <p className="font-semibold">
                         {vehicle.transmission_type === 'automatic' ? 'أوتوماتيك' : 'يدوي'}
                       </p>
@@ -410,7 +410,7 @@ const VehicleDetailsPage = () => {
                   )}
                   {vehicle.fuel_type && (
                     <div>
-                      <span className="text-gray-500">نوع الوقود:</span>
+                      <span className="text-slate-500">نوع الوقود:</span>
                       <p className="font-semibold">
                         {vehicle.fuel_type === 'gasoline' ? 'بنزين' :
                          vehicle.fuel_type === 'diesel' ? 'ديزل' :
@@ -433,12 +433,12 @@ const VehicleDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
-                <span className="text-xs text-gray-500">الحالة</span>
+                <span className="text-xs text-slate-500">الحالة</span>
               </div>
               <div className="text-2xl font-bold text-green-600 mb-1">
                 {getStatusText(vehicle.status)}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-slate-600">
                 {vehicle.status === 'available' ? 'للإيجار الفوري' : 'غير متاحة'}
               </div>
             </CardContent>
@@ -451,12 +451,12 @@ const VehicleDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-red-600" />
                 </div>
-                <span className="text-xs text-gray-500">العقود</span>
+                <span className="text-xs text-slate-500">العقود</span>
               </div>
               <div className="text-2xl font-bold text-red-600 mb-1">
                 {vehicleStats?.activeContracts || 0}
               </div>
-              <div className="text-sm text-gray-600">عقد نشط</div>
+              <div className="text-sm text-slate-600">عقد نشط</div>
             </CardContent>
           </Card>
 
@@ -467,12 +467,12 @@ const VehicleDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-orange-600" />
                 </div>
-                <span className="text-xs text-gray-500">الإيرادات</span>
+                <span className="text-xs text-slate-500">الإيرادات</span>
               </div>
               <div className="text-2xl font-bold text-orange-600 mb-1">
                 {formatCurrency(vehicleStats?.totalRevenue || 0)}
               </div>
-              <div className="text-sm text-gray-600">إجمالي</div>
+              <div className="text-sm text-slate-600">إجمالي</div>
             </CardContent>
           </Card>
 
@@ -483,12 +483,12 @@ const VehicleDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Gauge className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="text-xs text-gray-500">العداد</span>
+                <span className="text-xs text-slate-500">العداد</span>
               </div>
               <div className="text-2xl font-bold text-blue-600 mb-1">
                 {vehicle.current_mileage?.toLocaleString('en-US') || 0}
               </div>
-              <div className="text-sm text-gray-600">كم</div>
+              <div className="text-sm text-slate-600">كم</div>
             </CardContent>
           </Card>
         </div>
@@ -496,7 +496,7 @@ const VehicleDetailsPage = () => {
         {/* قسم التبويبات */}
         <Card>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b border-gray-200 overflow-x-auto">
+            <div className="border-b border-slate-200 overflow-x-auto">
               <TabsList className="w-full justify-start bg-transparent h-auto p-2 rounded-none flex gap-1">
                 <TabsTrigger
                   value="overview"
@@ -673,7 +673,7 @@ interface OverviewTabProps {
 const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {/* المعلومات الأساسية */}
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Car className="w-5 h-5 text-red-600" />
@@ -690,7 +690,7 @@ const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
     </Card>
 
     {/* المواصفات التقنية */}
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Settings className="w-5 h-5 text-blue-600" />
@@ -717,7 +717,7 @@ const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
     </Card>
 
     {/* التسعير */}
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Tag className="w-5 h-5 text-orange-600" />
@@ -742,7 +742,7 @@ interface InfoRowProps {
 
 const InfoRow = ({ label, value, mono }: InfoRowProps) => (
   <div className="flex justify-between items-center">
-    <span className="text-gray-600">{label}</span>
+    <span className="text-slate-600">{label}</span>
     <span className={cn('font-semibold', mono && 'font-mono text-sm')}>
       {value || '-'}
     </span>
@@ -756,7 +756,7 @@ interface TechnicalTabProps {
 
 const TechnicalTab = ({ vehicle }: TechnicalTabProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle>المواصفات التقنية التفصيلية</CardTitle>
       </CardHeader>
@@ -782,7 +782,7 @@ const TechnicalTab = ({ vehicle }: TechnicalTabProps) => (
       </CardContent>
     </Card>
 
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle>التواريخ المهمة</CardTitle>
       </CardHeader>
@@ -813,7 +813,7 @@ interface FinancialTabProps {
 
 const FinancialTab = ({ vehicle, formatCurrency }: FinancialTabProps) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle>معلومات الشراء</CardTitle>
       </CardHeader>
@@ -835,7 +835,7 @@ const FinancialTab = ({ vehicle, formatCurrency }: FinancialTabProps) => (
       </CardContent>
     </Card>
 
-    <Card className="bg-gray-50">
+    <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle>معلومات التأمين</CardTitle>
       </CardHeader>
@@ -877,7 +877,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">العقود المرتبطة بالمركبة</h3>
+        <h3 className="text-lg font-semibold text-slate-900">العقود المرتبطة بالمركبة</h3>
         <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={handleClick}>
           <Plus className="w-4 h-4" />
           عقد جديد
@@ -886,7 +886,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
 
       {contracts.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-gray-500">
+          <CardContent className="p-8 text-center text-slate-500">
             لا توجد عقود لهذه المركبة
           </CardContent>
         </Card>
@@ -907,37 +907,37 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-gray-900 mb-1">
+                        <h4 className="font-semibold text-slate-900 mb-1">
                           عقد #{contract.contract_number}
                         </h4>
-                        <ChevronLeft className="w-4 h-4 text-gray-400" />
+                        <ChevronLeft className="w-4 h-4 text-slate-400" />
                       </div>
-                      <p className="text-sm text-gray-600">العميل: {customerName}</p>
+                      <p className="text-sm text-slate-600">العميل: {customerName}</p>
                     </div>
-                    <Badge className={contract.status === 'active' ? 'status-available' : 'bg-gray-100'}>
+                    <Badge className={contract.status === 'active' ? 'status-available' : 'bg-slate-100'}>
                       {contract.status === 'active' ? 'نشط' : contract.status}
                     </Badge>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <div className="text-gray-500">البداية</div>
+                      <div className="text-slate-500">البداية</div>
                       <div className="font-semibold">
                         {contract.start_date ? format(new Date(contract.start_date), 'dd/MM/yyyy') : '-'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-500">النهاية</div>
+                      <div className="text-slate-500">النهاية</div>
                       <div className="font-semibold">
                         {contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : '-'}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-500">الإيجار الشهري</div>
+                      <div className="text-slate-500">الإيجار الشهري</div>
                       <div className="font-semibold">{formatCurrency(contract.monthly_amount || 0)}</div>
                     </div>
                     <div>
-                      <div className="text-gray-500">المتبقي</div>
+                      <div className="text-slate-500">المتبقي</div>
                       <div className={cn('font-semibold', daysRemaining < 30 ? 'text-orange-600' : '')}>
                         {daysRemaining > 0 ? `${daysRemaining} يوم` : 'منتهي'}
                       </div>
@@ -989,7 +989,7 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
 
       {maintenanceRecords.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-gray-500">
+          <CardContent className="p-8 text-center text-slate-500">
             لا توجد سجلات صيانة لهذه المركبة
           </CardContent>
         </Card>
@@ -1002,11 +1002,11 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">
                     {record.maintenance_type || 'صيانة'}
                     {record.maintenance_number && ` (#${record.maintenance_number})`}
                   </h4>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-slate-600 mb-2">
                     تاريخ: {record.scheduled_date ? format(new Date(record.scheduled_date), 'dd/MM/yyyy', { locale: ar }) : 
                               record.completed_date ? format(new Date(record.completed_date), 'dd/MM/yyyy', { locale: ar }) : '-'} 
                     {record.service_provider && ` • الورشة: ${record.service_provider}`}
@@ -1018,15 +1018,15 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
                       </Badge>
                     )}
                   </p>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-slate-600 mb-2">
                     التكلفة: {formatCurrency(record.actual_cost || record.estimated_cost || 0)} 
                     {record.mileage_at_service && ` • المسافة: ${record.mileage_at_service.toLocaleString('en-US')} كم`}
                   </p>
                   {record.description && (
-                    <p className="text-sm text-gray-500">{record.description}</p>
+                    <p className="text-sm text-slate-500">{record.description}</p>
                   )}
                   {record.notes && (
-                    <p className="text-sm text-gray-400 mt-1">{record.notes}</p>
+                    <p className="text-sm text-slate-400 mt-1">{record.notes}</p>
                   )}
                 </div>
               </CardContent>
@@ -1086,7 +1086,7 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
 
       {violations.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-gray-500">
+          <CardContent className="p-8 text-center text-slate-500">
             لا توجد مخالفات مسجلة لهذه المركبة
           </CardContent>
         </Card>
@@ -1097,10 +1097,10 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">
+                    <h4 className="font-semibold text-slate-900 mb-1">
                       {violation.violation_type || 'مخالفة مرورية'}
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-600">
                       رقم المخالفة: #{violation.violation_number || violation.id.substring(0, 8)}
                     </p>
                   </div>
@@ -1111,25 +1111,25 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <div className="text-gray-500">التاريخ</div>
+                    <div className="text-slate-500">التاريخ</div>
                     <div className="font-semibold">
                       {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">المبلغ</div>
+                    <div className="text-slate-500">المبلغ</div>
                     <div className="font-semibold text-red-600">
                       {formatCurrency(violation.fine_amount || 0)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">الحالة</div>
+                    <div className="text-slate-500">الحالة</div>
                     <div className="font-semibold">
                       {violation.payment_status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500">المسؤول</div>
+                    <div className="text-slate-500">المسؤول</div>
                     <div className="font-semibold">
                       {violation.responsible_party === 'customer' ? 'العميل' : 'الشركة'}
                     </div>

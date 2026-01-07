@@ -70,7 +70,7 @@ const statusConfig = {
   },
   cancelled: {
     label: "ملغى",
-    color: "bg-gray-500",
+    color: "bg-slate-500",
     icon: XCircle,
     variant: "secondary" as const
   }

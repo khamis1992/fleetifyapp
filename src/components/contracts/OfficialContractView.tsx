@@ -462,7 +462,7 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-coral-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
                 <Printer className="h-5 w-5 text-coral-600" />
               </div>
               <div>
@@ -483,7 +483,7 @@ export const OfficialContractView: React.FC<OfficialContractViewProps> = ({
             <Button
               onClick={handlePrint}
               size="sm"
-                className="gap-2 bg-coral-500 hover:bg-coral-600 text-white shadow-lg shadow-coral-500/30"
+                className="gap-2 bg-rose-500 hover:bg-coral-600 text-white shadow-lg shadow-rose-500/30"
             >
               <Printer className="h-4 w-4" />
                 طباعة A4

@@ -112,7 +112,7 @@ export const VendorPerformanceIndicator: React.FC<VendorPerformanceIndicatorProp
           <Star
             key={star}
             className={`${sizeClass} ${
-              star <= stars ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              star <= stars ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'
             }`}
           />
         ))}
@@ -301,7 +301,7 @@ export const VendorStars: React.FC<{
           <Star
             key={star}
             className={`h-3 w-3 ${
-              star <= stars ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              star <= stars ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'
             }`}
           />
         ))}

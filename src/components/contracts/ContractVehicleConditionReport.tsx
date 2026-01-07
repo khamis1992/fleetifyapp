@@ -52,7 +52,7 @@ const getConditionIcon = (condition: string) => {
     case 'damaged':
       return <XCircle className="h-4 w-4 text-red-600" />;
     default:
-      return <CheckCircle className="h-4 w-4 text-gray-400" />;
+      return <CheckCircle className="h-4 w-4 text-slate-400" />;
   }
 };
 
@@ -78,7 +78,7 @@ const getConditionColor = (condition: string): string => {
     case 'damaged':
       return 'text-red-700 bg-red-50';
     default:
-      return 'text-gray-700 bg-gray-50';
+      return 'text-slate-700 bg-slate-50';
   }
 };
 
@@ -90,7 +90,7 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
   if (!conditionData) {
     return (
       <div className={`vehicle-condition-report ${className}`}>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500">
+        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center text-slate-500">
           <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">لم يتم إرفاق تقرير فحص المركبة</p>
         </div>
@@ -114,7 +114,7 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
         <h3 className="text-xl font-bold text-blue-600 text-center mb-2">
           تقرير فحص المركبة
         </h3>
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-sm text-slate-600">
           {vehicleInfo && <p className="mb-1">{vehicleInfo}</p>}
           <p>تاريخ الفحص: {formatDateInGregorian(conditionData.created_at)}</p>
           {conditionData.inspector_name && (
@@ -125,8 +125,8 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
 
       {/* الحالة العامة */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-          <div className="info-label font-bold text-gray-700 mb-1">الحالة العامة</div>
+        <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+          <div className="info-label font-bold text-slate-700 mb-1">الحالة العامة</div>
           <div className="flex items-center gap-2">
             {getConditionIcon(conditionData.overall_condition)}
             <Badge className={getConditionColor(conditionData.overall_condition)}>
@@ -135,16 +135,16 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
           </div>
         </div>
         
-        <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-          <div className="info-label font-bold text-gray-700 mb-1">قراءة العداد</div>
-          <div className="info-value text-gray-900">
+        <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+          <div className="info-label font-bold text-slate-700 mb-1">قراءة العداد</div>
+          <div className="info-value text-slate-900">
             {conditionData.mileage_reading.toLocaleString()} كم
           </div>
         </div>
         
-        <div className="info-item p-3 bg-gray-50 border-r-4 border-blue-600">
-          <div className="info-label font-bold text-gray-700 mb-1">مستوى الوقود</div>
-          <div className="info-value text-gray-900">
+        <div className="info-item p-3 bg-slate-50 border-r-4 border-blue-600">
+          <div className="info-label font-bold text-slate-700 mb-1">مستوى الوقود</div>
+          <div className="info-value text-slate-900">
             {conditionData.fuel_level}%
           </div>
         </div>
@@ -155,13 +155,13 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
         {/* الفحص الخارجي */}
         {Object.keys(exteriorItems).length > 0 && (
           <div className="condition-category">
-            <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
+            <h4 className="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-1">
               الفحص الخارجي
             </h4>
             <div className="space-y-2">
               {Object.entries(exteriorItems).map(([key, value]: [string, any]) => (
                 <div key={key} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 capitalize">
+                  <span className="text-slate-600 capitalize">
                     {key.replace(/_/g, ' ')}
                   </span>
                   <div className="flex items-center gap-1">
@@ -179,13 +179,13 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
         {/* الفحص الداخلي */}
         {Object.keys(interiorItems).length > 0 && (
           <div className="condition-category">
-            <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
+            <h4 className="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-1">
               الفحص الداخلي
             </h4>
             <div className="space-y-2">
               {Object.entries(interiorItems).map(([key, value]: [string, any]) => (
                 <div key={key} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 capitalize">
+                  <span className="text-slate-600 capitalize">
                     {key.replace(/_/g, ' ')}
                   </span>
                   <div className="flex items-center gap-1">
@@ -206,13 +206,13 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
         {/* الفحص الميكانيكي */}
         {Object.keys(mechanicalItems).length > 0 && (
           <div className="condition-category">
-            <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
+            <h4 className="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-1">
               الفحص الميكانيكي
             </h4>
             <div className="space-y-2">
               {Object.entries(mechanicalItems).map(([key, value]: [string, any]) => (
                 <div key={key} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 capitalize">
+                  <span className="text-slate-600 capitalize">
                     {key.replace(/_/g, ' ')}
                   </span>
                   <div className="flex items-center gap-1">
@@ -230,13 +230,13 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
         {/* فحص السوائل */}
         {Object.keys(fluidItems).length > 0 && (
           <div className="condition-category">
-            <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
+            <h4 className="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-1">
               فحص السوائل
             </h4>
             <div className="space-y-2">
               {Object.entries(fluidItems).map(([key, value]: [string, any]) => (
                 <div key={key} className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 capitalize">
+                  <span className="text-slate-600 capitalize">
                     {key.replace(/_/g, ' ')}
                   </span>
                   <div className="flex items-center gap-1">
@@ -258,7 +258,7 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
           <h4 className="font-bold text-red-700 mb-3 border-b border-red-200 pb-1">
             المشاكل والأضرار المكتشفة
           </h4>
-          <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-700">
             {conditionData.damage_items.map((item, index) => (
               <li key={index} className="flex items-start gap-2">
                 <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
@@ -291,11 +291,11 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
       {/* ملاحظات */}
       {conditionData.notes && (
         <div className="notes-section">
-          <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
+          <h4 className="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-1">
             ملاحظات المفتش
           </h4>
           <div className="bg-blue-50 p-4 rounded-lg border-r-4 border-blue-500">
-            <p className="text-sm text-gray-700 whitespace-pre-line">
+            <p className="text-sm text-slate-700 whitespace-pre-line">
               {conditionData.notes}
             </p>
           </div>
@@ -303,7 +303,7 @@ export const ContractVehicleConditionReport: React.FC<ContractVehicleConditionRe
       )}
 
       {/* تاريخ الفحص */}
-      <div className="mt-6 pt-4 border-t border-gray-200 text-center text-xs text-gray-500">
+      <div className="mt-6 pt-4 border-t border-slate-200 text-center text-xs text-slate-500">
         تم إجراء هذا الفحص بتاريخ {formatDateInGregorian(conditionData.created_at)} 
         {conditionData.inspection_type === 'pre_dispatch' ? ' (فحص ما قبل التسليم)' : ' (فحص ما بعد الإرجاع)'}
       </div>

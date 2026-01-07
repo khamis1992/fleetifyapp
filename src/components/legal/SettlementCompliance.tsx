@@ -279,7 +279,7 @@ export const SettlementCompliance: React.FC<SettlementComplianceProps> = ({
                         <TableCell>{formatCurrency(settlement.monthlyPayment)}</TableCell>
                         <TableCell>
                           <div className="w-full space-y-2">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-slate-200 rounded-full h-2">
                               <div
                                 className={`h-2 rounded-full ${getProgressColor(paidPayments, totalPayments)}`}
                                 style={{ width: `${progressPercent}%` }}

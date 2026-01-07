@@ -182,10 +182,10 @@ export function PaymentStatsCardsRedesigned() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                  <div className="h-8 bg-gray-200 rounded w-32"></div>
+                  <div className="h-4 bg-slate-200 rounded w-24"></div>
+                  <div className="h-8 bg-slate-200 rounded w-32"></div>
                 </div>
-                <div className="w-14 h-14 bg-gray-200 rounded-2xl"></div>
+                <div className="w-14 h-14 bg-slate-200 rounded-2xl"></div>
               </div>
             </CardContent>
           </Card>

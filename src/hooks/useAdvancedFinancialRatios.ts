@@ -278,6 +278,6 @@ export function getRatioAssessment(
     }
   }
 
-  return { status: 'fair', label: 'غير محدد', color: 'text-gray-600' };
+  return { status: 'fair', label: 'غير محدد', color: 'text-slate-600' };
 }
 

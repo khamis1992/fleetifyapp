@@ -105,7 +105,7 @@ export const PaymentTransactionsList: React.FC = () => {
       'completed': { variant: 'default' as const, text: 'مكتمل', class: 'bg-green-100 text-green-800' },
       'pending': { variant: 'secondary' as const, text: 'معلق', class: 'bg-yellow-100 text-yellow-800' },
       'failed': { variant: 'destructive' as const, text: 'فاشل', class: 'bg-red-100 text-red-800' },
-      'refunded': { variant: 'outline' as const, text: 'مسترد', class: 'bg-gray-100 text-gray-800' }
+      'refunded': { variant: 'outline' as const, text: 'مسترد', class: 'bg-slate-100 text-slate-800' }
     };
     
     const config = variants[status as keyof typeof variants] || variants.completed;

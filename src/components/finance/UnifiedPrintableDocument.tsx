@@ -231,7 +231,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
         </Button>
       </div>
 
-      <Card className="w-full max-w-4xl mx-auto bg-white shadow-lg border-2 border-gray-800 print:shadow-none print:border-0">
+      <Card className="w-full max-w-4xl mx-auto bg-white shadow-lg border-2 border-slate-800 print:shadow-none print:border-0">
         {/* Header Section */}
         <CardHeader className="bg-[#004d40] text-white p-6 print:p-4">
           <div className="flex justify-between items-start flex-wrap gap-4">
@@ -267,7 +267,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {/* Date */}
           <div className="flex justify-end mb-6">
             <div className="text-center">
-              <div className="text-sm font-medium text-gray-600 mb-1">التاريخ | Date</div>
+              <div className="text-sm font-medium text-slate-600 mb-1">التاريخ | Date</div>
               <div className="text-lg font-bold text-[#004d40]">
                 {format(new Date(data.date), 'dd MMMM yyyy', { locale: ar })}
               </div>
@@ -279,23 +279,23 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {/* Customer Information */}
           <div className="space-y-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-              <div className="md:col-span-2 text-base font-medium text-gray-700">
+              <div className="md:col-span-2 text-base font-medium text-slate-700">
                 {data.type === 'voucher' 
                   ? 'استلمنا من السيد / السادة | Received From'
                   : 'اسم العميل | Customer Name'
                 }
               </div>
-              <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-gray-300 pb-1">
+              <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                 {data.customer.name}
               </div>
             </div>
 
             {data.customer.phone && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                <div className="md:col-span-2 text-base font-medium text-gray-700">
+                <div className="md:col-span-2 text-base font-medium text-slate-700">
                   رقم الجوال | Phone Number
                 </div>
-                <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-gray-300 pb-1">
+                <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                   {data.customer.phone}
                 </div>
               </div>
@@ -303,10 +303,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
 
             {data.customer.vehicle_number && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                <div className="md:col-span-2 text-base font-medium text-gray-700">
+                <div className="md:col-span-2 text-base font-medium text-slate-700">
                   رقم المركبة | Vehicle Number
                 </div>
-                <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-gray-300 pb-1">
+                <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                   {data.customer.vehicle_number}
                 </div>
               </div>
@@ -314,10 +314,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
 
             {data.month && (
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                <div className="md:col-span-2 text-base font-medium text-gray-700">
+                <div className="md:col-span-2 text-base font-medium text-slate-700">
                   الشهر | Month
                 </div>
-                <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-gray-300 pb-1">
+                <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                   {data.month}
                 </div>
               </div>
@@ -325,10 +325,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
 
             {/* Amount in Words */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-              <div className="md:col-span-2 text-base font-medium text-gray-700">
+              <div className="md:col-span-2 text-base font-medium text-slate-700">
                 مبلغ وقدره | The Sum of
               </div>
-              <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-gray-300 pb-1">
+              <div className="md:col-span-3 text-lg font-bold text-[#004d40] border-b-2 border-slate-300 pb-1">
                 {amountInWords}
               </div>
             </div>
@@ -338,10 +338,10 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
 
           {/* Payment Method */}
           {data.paymentMethod && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <div className="text-sm font-medium text-gray-600 mb-2">
+                  <div className="text-sm font-medium text-slate-600 mb-2">
                     طريقة الدفع | Payment Method
                   </div>
                   <div className="text-lg font-bold text-[#004d40]">
@@ -354,19 +354,19 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
                   <div className="space-y-2">
                     {data.checkDetails.checkNumber && (
                       <div>
-                        <span className="text-xs text-gray-500">شيك رقم | Cheque No.: </span>
+                        <span className="text-xs text-slate-500">شيك رقم | Cheque No.: </span>
                         <span className="font-bold">{data.checkDetails.checkNumber}</span>
                       </div>
                     )}
                     {data.checkDetails.bankName && (
                       <div>
-                        <span className="text-xs text-gray-500">على بنك | On Bank: </span>
+                        <span className="text-xs text-slate-500">على بنك | On Bank: </span>
                         <span className="font-bold">{data.checkDetails.bankName}</span>
                       </div>
                     )}
                     {data.checkDetails.dueDate && (
                       <div>
-                        <span className="text-xs text-gray-500">تاريخ الاستحقاق | Due Date: </span>
+                        <span className="text-xs text-slate-500">تاريخ الاستحقاق | Due Date: </span>
                         <span className="font-bold">
                           {format(new Date(data.checkDetails.dueDate), 'dd/MM/yyyy')}
                         </span>
@@ -381,24 +381,24 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {/* Items (for invoices) */}
           {data.items && data.items.length > 0 && (
             <div className="mb-6">
-              <table className="w-full border border-gray-300">
-                <thead className="bg-gray-100">
+              <table className="w-full border border-slate-300">
+                <thead className="bg-slate-100">
                   <tr>
-                    <th className="border border-gray-300 p-2 text-right">البيان | Description</th>
-                    <th className="border border-gray-300 p-2 text-center">الكمية | Qty</th>
-                    <th className="border border-gray-300 p-2 text-center">السعر | Price</th>
-                    <th className="border border-gray-300 p-2 text-center">المجموع | Total</th>
+                    <th className="border border-slate-300 p-2 text-right">البيان | Description</th>
+                    <th className="border border-slate-300 p-2 text-center">الكمية | Qty</th>
+                    <th className="border border-slate-300 p-2 text-center">السعر | Price</th>
+                    <th className="border border-slate-300 p-2 text-center">المجموع | Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((item, index) => (
                     <tr key={index}>
-                      <td className="border border-gray-300 p-2">{item.description}</td>
-                      <td className="border border-gray-300 p-2 text-center">{item.quantity || 1}</td>
-                      <td className="border border-gray-300 p-2 text-center">
+                      <td className="border border-slate-300 p-2">{item.description}</td>
+                      <td className="border border-slate-300 p-2 text-center">{item.quantity || 1}</td>
+                      <td className="border border-slate-300 p-2 text-center">
                         {(item.unitPrice || item.total || 0).toLocaleString('en-US')}
                       </td>
-                      <td className="border border-gray-300 p-2 text-center font-bold">
+                      <td className="border border-slate-300 p-2 text-center font-bold">
                         {(item.total || 0).toLocaleString('en-US')}
                       </td>
                     </tr>
@@ -413,7 +413,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
             <div className="mb-6 space-y-2">
               {data.breakdown.rentAmount !== undefined && (
                 <div className="flex justify-between items-center p-2 border-b">
-                  <span className="text-gray-700">الإيجار الشهري | Monthly Rent</span>
+                  <span className="text-slate-700">الإيجار الشهري | Monthly Rent</span>
                   <span className="font-bold">{data.breakdown.rentAmount.toLocaleString('en-US')} {currency}</span>
                 </div>
               )}
@@ -427,7 +427,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               )}
               {data.breakdown.otherCharges !== undefined && data.breakdown.otherCharges > 0 && (
                 <div className="flex justify-between items-center p-2 border-b">
-                  <span className="text-gray-700">رسوم أخرى | Other Charges</span>
+                  <span className="text-slate-700">رسوم أخرى | Other Charges</span>
                   <span className="font-bold">{data.breakdown.otherCharges.toLocaleString('en-US')} {currency}</span>
                 </div>
               )}
@@ -436,11 +436,11 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
 
           {/* Notes */}
           {data.notes && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm font-medium text-gray-600 mb-2">
+            <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+              <div className="text-sm font-medium text-slate-600 mb-2">
                 وذلك عن | Being for
               </div>
-              <div className="text-base text-gray-800">
+              <div className="text-base text-slate-800">
                 {data.notes}
               </div>
             </div>
@@ -449,7 +449,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {/* Total Amount */}
           <div className="mt-6 p-4 bg-[#004d40]/5 border-2 border-[#004d40] rounded-lg">
             <div className="flex justify-between items-center">
-              <span className="text-xl font-bold text-gray-700">
+              <span className="text-xl font-bold text-slate-700">
                 المبلغ الإجمالي | Total Amount
               </span>
               <div className="flex items-center gap-2">
@@ -466,17 +466,17 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           {/* Signatures */}
           <div className="mt-10 grid grid-cols-3 gap-10 print:mt-20">
             <div className="text-center">
-              <div className="border-t-2 border-gray-400 pt-2 mt-16 text-sm text-gray-600">
+              <div className="border-t-2 border-slate-400 pt-2 mt-16 text-sm text-slate-600">
                 توقيع المستلم | Receiver Sign.
               </div>
             </div>
             <div className="text-center">
-              <div className="border-t-2 border-gray-400 pt-2 mt-16 text-sm text-gray-600">
+              <div className="border-t-2 border-slate-400 pt-2 mt-16 text-sm text-slate-600">
                 توقيع المحاسب | Accountant's Sign.
               </div>
             </div>
             <div className="text-center">
-              <div className="border-t-2 border-gray-400 pt-2 mt-16 text-sm text-gray-600">
+              <div className="border-t-2 border-slate-400 pt-2 mt-16 text-sm text-slate-600">
                 توقيع المدير | Manager's Sign.
               </div>
             </div>
@@ -484,7 +484,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
         </CardContent>
 
         {/* Footer */}
-        <CardFooter className="bg-gray-800 text-white p-4 text-xs text-center print:p-2">
+        <CardFooter className="bg-slate-800 text-white p-4 text-xs text-center print:p-2">
           <div className="max-w-xl mx-auto space-y-1">
             <p>
               {data.company?.address || 'P. O. Box: 9022 - Lusail City, Doha, Qatar | Marina twin Tower Block A-31th Floor'}
@@ -494,7 +494,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
               <span>|</span>
               <span>alaraf.online</span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-2">
+            <p className="text-[10px] text-slate-400 mt-2">
               تم الطباعة بتاريخ: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}
             </p>
           </div>

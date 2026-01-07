@@ -60,8 +60,8 @@ const KPICard: React.FC<KPICardProps> = ({
         "relative overflow-hidden rounded-2xl p-5",
         "backdrop-blur-xl border",
         isDark 
-          ? "bg-gray-900/60 border-gray-800/50" 
-          : "bg-white/80 border-gray-200/50",
+          ? "bg-slate-900/60 border-slate-800/50" 
+          : "bg-white/80 border-slate-200/50",
         "shadow-xl"
       )}
     >
@@ -75,7 +75,7 @@ const KPICard: React.FC<KPICardProps> = ({
         <div className="flex items-start justify-between mb-3">
           <div className={cn(
             "p-2.5 rounded-xl",
-            isDark ? "bg-gray-800/80" : "bg-gray-100",
+            isDark ? "bg-slate-800/80" : "bg-slate-100",
             color
           )}>
             {icon}
@@ -87,7 +87,7 @@ const KPICard: React.FC<KPICardProps> = ({
                 "font-medium text-xs",
                 trend === 'up' && "text-emerald-500 border-emerald-500/30 bg-emerald-500/10",
                 trend === 'down' && "text-rose-500 border-rose-500/30 bg-rose-500/10",
-                trend === 'neutral' && "text-gray-500 border-gray-500/30 bg-gray-500/10"
+                trend === 'neutral' && "text-slate-500 border-slate-500/30 bg-slate-500/10"
               )}
             >
               {trend === 'up' && <TrendingUp className="w-3 h-3 ml-1" />}
@@ -99,7 +99,7 @@ const KPICard: React.FC<KPICardProps> = ({
         
         <h3 className={cn(
           "text-sm font-medium mb-1",
-          isDark ? "text-gray-400" : "text-gray-600"
+          isDark ? "text-slate-400" : "text-slate-600"
         )}>
           {title}
         </h3>
@@ -110,7 +110,7 @@ const KPICard: React.FC<KPICardProps> = ({
           transition={{ delay: delay + 0.2 }}
           className={cn(
             "text-2xl font-bold tracking-tight",
-            isDark ? "text-white" : "text-gray-900"
+            isDark ? "text-white" : "text-slate-900"
           )}
         >
           {value}
@@ -119,7 +119,7 @@ const KPICard: React.FC<KPICardProps> = ({
         {showProgress && (
           <div className="mt-3">
             <div className="flex justify-between text-xs mb-1">
-              <span className={isDark ? "text-gray-500" : "text-gray-400"}>
+              <span className={isDark ? "text-slate-500" : "text-slate-400"}>
                 الهدف: {target}
               </span>
               <span className={cn(

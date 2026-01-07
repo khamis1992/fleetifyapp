@@ -74,7 +74,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -88,7 +88,7 @@ const StatCard: React.FC<StatCardProps> = ({
           "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
           trend === 'up' ? 'bg-green-100 text-green-600' :
           trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+          'bg-slate-100 text-slate-600'
         )}>
           {trend === 'up' && <TrendingUp className="w-3 h-3" />}
           {trend === 'down' && <TrendingDown className="w-3 h-3" />}
@@ -200,7 +200,7 @@ export default function GeneralLedger() {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-coral-500" />
+          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
           <p className="text-neutral-500">جاري تحميل دفتر الأستاذ...</p>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default function GeneralLedger() {
         <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
           {/* Hero Header */}
           <motion.div
-            className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+            className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -298,7 +298,7 @@ export default function GeneralLedger() {
               value={stats.totalEntries}
               subtitle="All Entries"
               icon={FileText}
-              iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+              iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
               delay={0.1}
             />
             <StatCard
@@ -341,7 +341,7 @@ export default function GeneralLedger() {
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-4 py-2 gap-2 transition-all"
+                    className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-4 py-2 gap-2 transition-all"
                   >
                     <tab.icon className="w-4 h-4" />
                     <span className={isMobile ? "hidden" : ""}>{tab.label}</span>
@@ -377,7 +377,7 @@ export default function GeneralLedger() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-2xl shadow-sm overflow-hidden"
               >
-                <div className="p-6 border-b border-gray-100">
+                <div className="p-6 border-b border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                       <Scale className="w-5 h-5 text-white" />
@@ -397,7 +397,7 @@ export default function GeneralLedger() {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-slate-50">
                             <TableHead className="text-right">رمز الحساب</TableHead>
                             <TableHead className="text-right">اسم الحساب</TableHead>
                             <TableHead className="text-center">نوع الحساب</TableHead>
@@ -416,7 +416,7 @@ export default function GeneralLedger() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
                                 transition={{ delay: index * 0.02 }}
-                                className="cursor-pointer hover:bg-gray-50/50 transition-colors border-b border-gray-50"
+                                className="cursor-pointer hover:bg-slate-50/50 transition-colors border-b border-slate-50"
                                 onClick={() => setSelectedAccount({
                                   id: balance.account_id,
                                   code: balance.account_code,
@@ -457,7 +457,7 @@ export default function GeneralLedger() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-2xl shadow-sm overflow-hidden"
               >
-                <div className="p-6 border-b border-gray-100">
+                <div className="p-6 border-b border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
                       <BarChart3 className="w-5 h-5 text-white" />
@@ -477,7 +477,7 @@ export default function GeneralLedger() {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-slate-50">
                             <TableHead className="text-right">رمز الحساب</TableHead>
                             <TableHead className="text-right">اسم الحساب</TableHead>
                             <TableHead className="text-center">نوع الحساب</TableHead>
@@ -495,7 +495,7 @@ export default function GeneralLedger() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
                                 transition={{ delay: index * 0.02 }}
-                                className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                                className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                               >
                                 <TableCell className="font-mono font-medium">{item.account_code}</TableCell>
                                 <TableCell>
@@ -534,7 +534,7 @@ export default function GeneralLedger() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-2xl shadow-sm overflow-hidden"
               >
-                <div className="p-6 border-b border-gray-100">
+                <div className="p-6 border-b border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                       <Building2 className="w-5 h-5 text-white" />
@@ -554,7 +554,7 @@ export default function GeneralLedger() {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-slate-50">
                             <TableHead className="text-right">رمز المركز</TableHead>
                             <TableHead className="text-right">اسم المركز</TableHead>
                             <TableHead className="text-center text-green-700">إجمالي المدين</TableHead>
@@ -572,7 +572,7 @@ export default function GeneralLedger() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
                                 transition={{ delay: index * 0.02 }}
-                                className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                                className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                               >
                                 <TableCell className="font-mono font-medium">{center.center_code}</TableCell>
                                 <TableCell>
@@ -615,7 +615,7 @@ export default function GeneralLedger() {
                 {/* Financial Summary Card */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
                       <Calculator className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -630,27 +630,27 @@ export default function GeneralLedger() {
                     </div>
                   ) : financialSummary ? (
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                         <span className="text-neutral-600">إجمالي الأصول</span>
                         <span className="font-bold text-green-600">{formatCurrency(financialSummary.total_assets)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                         <span className="text-neutral-600">إجمالي الالتزامات</span>
                         <span className="font-bold text-red-600">{formatCurrency(financialSummary.total_liabilities)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                         <span className="text-neutral-600">حقوق الملكية</span>
                         <span className="font-bold">{formatCurrency(financialSummary.total_equity)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                         <span className="text-neutral-600">إجمالي الإيرادات</span>
                         <span className="font-bold text-green-600">{formatCurrency(financialSummary.total_revenue)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                         <span className="text-neutral-600">إجمالي المصروفات</span>
                         <span className="font-bold text-red-600">{formatCurrency(financialSummary.total_expenses)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-coral-50 to-orange-50 rounded-xl border border-coral-200">
+                      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl border border-rose-200">
                         <span className="font-medium text-neutral-700">صافي الدخل</span>
                         <span className={cn(
                           "text-xl font-bold",
@@ -676,7 +676,7 @@ export default function GeneralLedger() {
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span className="text-neutral-600">إجمالي القيود</span>
                       <span className="font-bold">{stats.totalEntries}</span>
                     </div>
@@ -692,11 +692,11 @@ export default function GeneralLedger() {
                       <span className="text-neutral-600">القيود الملغية</span>
                       <span className="font-bold text-red-600">{stats.reversedEntries}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span className="text-neutral-600">عدد الحسابات</span>
                       <span className="font-bold">{stats.totalAccounts}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                    <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                       <span className="text-neutral-600">مراكز التكلفة</span>
                       <span className="font-bold">{stats.totalCostCenters}</span>
                     </div>

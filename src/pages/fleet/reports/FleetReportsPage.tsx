@@ -161,7 +161,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
   >
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-coral-100 flex items-center justify-center">
+        <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
           <Icon className="w-5 h-5 text-coral-600" />
         </div>
         <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
@@ -267,7 +267,7 @@ const FleetReportsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-neutral-500 font-medium">جاري تحميل التقارير...</p>
         </div>
       </div>
@@ -285,7 +285,7 @@ const FleetReportsPage: React.FC = () => {
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-coral-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -349,7 +349,7 @@ const FleetReportsPage: React.FC = () => {
             value={`${(analytics?.utilizationRate || 0).toFixed(0)}%`}
             change={analytics?.utilizationRate && analytics.utilizationRate >= 50 ? '+3%' : '-2%'}
             icon={Percent}
-            iconBg="bg-coral-100 text-coral-600"
+            iconBg="bg-rose-100 text-coral-600"
           />
           <StatCard
             title="إجمالي الإيرادات"
@@ -384,28 +384,28 @@ const FleetReportsPage: React.FC = () => {
           <TabsList className="w-full justify-start bg-white rounded-2xl p-1 shadow-sm gap-1 overflow-x-auto">
             <TabsTrigger 
               value="overview" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
             >
               <BarChart3 className="w-4 h-4" />
               نظرة عامة
             </TabsTrigger>
             <TabsTrigger 
               value="financial" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
             >
               <DollarSign className="w-4 h-4" />
               التحليل المالي
             </TabsTrigger>
             <TabsTrigger 
               value="maintenance" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
             >
               <Wrench className="w-4 h-4" />
               الصيانة
             </TabsTrigger>
             <TabsTrigger 
               value="insurance" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-coral-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
             >
               <Shield className="w-4 h-4" />
               التأمين والتسجيل
@@ -539,7 +539,7 @@ const FleetReportsPage: React.FC = () => {
                 title="تكاليف الصيانة"
                 value={formatCurrency(financialOverview?.totalMaintenanceCosts || 0)}
                 icon={Wrench}
-                iconBg="bg-coral-100 text-coral-600"
+                iconBg="bg-rose-100 text-coral-600"
               />
               <StatCard
                 title="الاستهلاك المتراكم"
@@ -620,7 +620,7 @@ const FleetReportsPage: React.FC = () => {
                     <p className="text-xs text-blue-600 font-medium mb-1">معدل العائد على الاستثمار</p>
                     <p className="text-xl font-bold text-blue-700">{(financialSummary.roi || 0).toFixed(1)}%</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-coral-50 border border-coral-100">
+                  <div className="p-4 rounded-xl bg-rose-50 border border-rose-100">
                     <p className="text-xs text-coral-600 font-medium mb-1">هامش الربح</p>
                     <p className="text-xl font-bold text-coral-700">{(financialSummary.profitMargin || 0).toFixed(1)}%</p>
                   </div>
@@ -999,7 +999,7 @@ const FleetReportsPage: React.FC = () => {
               <Button
                 onClick={() => sendDailyReport()}
                 disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
-                className="bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
+                className="bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
               >
                 <Send className="w-4 h-4 ml-2" />
                 {isSending ? 'جاري الإرسال...' : 'إرسال تقرير الآن'}
@@ -1047,10 +1047,10 @@ const FleetReportsPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="mt-6 bg-gradient-to-l from-coral-50 to-orange-50 rounded-2xl p-6 border border-coral-100"
+          className="mt-6 bg-gradient-to-l from-rose-50 to-orange-50 rounded-2xl p-6 border border-rose-100"
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-l from-coral-500 to-orange-500 rounded-xl">
+            <div className="p-3 bg-gradient-to-l from-rose-500 to-orange-500 rounded-xl">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
@@ -1072,14 +1072,14 @@ const FleetReportsPage: React.FC = () => {
                 </p>
                 <p className="text-xs text-neutral-500">مركبة</p>
               </div>
-              <div className="w-px h-12 bg-coral-200" />
+              <div className="w-px h-12 bg-rose-200" />
               <div className="text-center">
                 <p className="text-2xl font-bold text-neutral-900">
                   {analytics?.rentedVehicles || 0}
                 </p>
                 <p className="text-xs text-neutral-500">مؤجرة</p>
               </div>
-              <div className="w-px h-12 bg-coral-200" />
+              <div className="w-px h-12 bg-rose-200" />
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">
                   {formatCurrency(analytics?.totalProfit || 0)}

@@ -354,7 +354,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-2xl z-50"
           >
             <Command
-              className="rounded-lg border shadow-2xl bg-white dark:bg-gray-900 overflow-hidden"
+              className="rounded-lg border shadow-2xl bg-white dark:bg-slate-900 overflow-hidden"
               shouldFilter={false}
             >
               {/* Search Input */}

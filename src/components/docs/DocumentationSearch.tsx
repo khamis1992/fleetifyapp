@@ -206,7 +206,7 @@ export function DocumentationSearch({
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
+          <Search className="h-5 w-5 text-slate-400" />
         </div>
         <input
           type="text"
@@ -217,7 +217,7 @@ export function DocumentationSearch({
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
         />
         {query && (
           <button
@@ -228,16 +228,16 @@ export function DocumentationSearch({
             }}
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
           >
-            <span className="text-gray-400 hover:text-gray-600">&times;</span>
+            <span className="text-slate-400 hover:text-slate-600">&times;</span>
           </button>
         )}
       </div>
 
       {/* Results Dropdown */}
       {isOpen && (query.length >= 2 || results.length > 0) && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-96 overflow-y-auto">
           {isLoading ? (
-            <div className="px-4 py-3 text-sm text-gray-500">
+            <div className="px-4 py-3 text-sm text-slate-500">
               Searching...
             </div>
           ) : results.length > 0 ? (
@@ -248,22 +248,22 @@ export function DocumentationSearch({
                   <button
                     key={result.id}
                     onClick={() => handleResultClick(result.url)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                    className="w-full px-4 py-3 text-left hover:bg-slate-50 focus:outline-none focus:bg-slate-50 border-b border-slate-100 last:border-b-0"
                   >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-1">
-                        <Icon className="h-5 w-5 text-gray-400" />
+                        <Icon className="h-5 w-5 text-slate-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-slate-900 truncate">
                             {highlightText(result.title, query)}
                           </p>
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                             {result.category}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                        <p className="text-sm text-slate-500 mt-1 line-clamp-2">
                           {highlightText(result.content, query)}
                         </p>
                         <div className="flex items-center space-x-4 mt-2">
@@ -271,13 +271,13 @@ export function DocumentationSearch({
                             {result.tags.slice(0, 3).map((tag) => (
                               <span
                                 key={tag}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600"
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600"
                               >
                                 {tag}
                               </span>
                             ))}
                           </div>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-slate-400">
                             {result.lastModified}
                           </span>
                         </div>
@@ -288,20 +288,20 @@ export function DocumentationSearch({
               })}
             </div>
           ) : query.length >= 2 ? (
-            <div className="px-4 py-3 text-sm text-gray-500">
+            <div className="px-4 py-3 text-sm text-slate-500">
               No documentation found for "{query}"
             </div>
           ) : (
-            <div className="px-4 py-3 text-sm text-gray-500">
+            <div className="px-4 py-3 text-sm text-slate-500">
               Type at least 2 characters to search
             </div>
           )}
 
           {/* Footer */}
-          <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>Press <kbd className="px-1 py-0.5 bg-gray-100 rounded">Esc</kbd> to close</span>
-              <span>Use <kbd className="px-1 py-0.5 bg-gray-100 rounded">Ctrl+K</kbd> for quick search</span>
+          <div className="px-4 py-2 bg-slate-50 border-t border-slate-200">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>Press <kbd className="px-1 py-0.5 bg-slate-100 rounded">Esc</kbd> to close</span>
+              <span>Use <kbd className="px-1 py-0.5 bg-slate-100 rounded">Ctrl+K</kbd> for quick search</span>
             </div>
           </div>
         </div>

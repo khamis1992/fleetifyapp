@@ -42,11 +42,11 @@ import { useCRMCustomersOptimized, getPaymentStatusOptimized, getLastContactDays
 
 // --- الثوابت ---
 const ITEMS_PER_PAGE = 15;
-// اللون الأساسي للنظام (الأحمر المرجاني)
-const BRAND_COLOR = "text-[#F15555]";
-const BRAND_BG = "bg-[#F15555]";
-const BRAND_BORDER = "border-[#F15555]";
-const BRAND_RING = "focus:ring-[#F15555]";
+// اللون الأساسي للنظام (الوردي الجديد - Rose)
+const BRAND_COLOR = "text-rose-500";
+const BRAND_BG = "bg-rose-500";
+const BRAND_BORDER = "border-rose-500";
+const BRAND_RING = "focus:ring-rose-500";
 
 // --- الأنواع ---
 interface Customer {
@@ -101,7 +101,7 @@ const StatusBadge = ({ status, type }: { status: string; type: 'payment' | 'cont
       paid: 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-100',
       due: 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-100',
       late: 'bg-red-50 text-red-700 border-red-200 ring-red-100',
-      none: 'bg-gray-50 text-gray-700 border-gray-200 ring-gray-100',
+      none: 'bg-slate-50 text-slate-700 border-slate-200 ring-slate-100',
     };
     const labels: Record<string, string> = { paid: 'مسدد ✅', due: 'مستحق 💰', late: 'متأخر ⚠️', none: 'لا فواتير 📝' };
     const style = styles[status] || styles.none;
@@ -179,42 +179,42 @@ function CustomerRow({
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="group transition-all duration-200 bg-white hover:bg-gray-50"
+      className="group transition-all duration-200 bg-white hover:bg-slate-50"
     >
       <div className="px-6 py-4 flex flex-col md:flex-row items-center gap-4 cursor-pointer" onClick={onToggle}>
 
         {/* Section 1: Avatar & Info */}
         <div className="flex items-center gap-4 w-full md:w-5/12">
           <div className="relative">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 
-              ${isNew ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2
+              ${isNew ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
               {getInitials()}
             </div>
           </div>
 
           <div className="flex flex-col">
-            <h3 className="font-bold text-gray-900 text-base">{nameAr}</h3>
-            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+            <h3 className="font-bold text-slate-900 text-base">{nameAr}</h3>
+            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
               {isNew ? (
-                <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] rounded-full font-medium border border-orange-200">
+                <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] rounded-full font-medium border border-amber-200">
                   لم يتم الاتصال
                 </span>
               ) : (
                 <>
                   {nameEn && <span className="font-medium">{nameEn}</span>}
-                  {nameEn && <span className="w-1 h-1 bg-gray-300 rounded-full"></span>}
+                  {nameEn && <span className="w-1 h-1 bg-slate-300 rounded-full"></span>}
                 </>
               )}
-              <span className="font-mono bg-gray-100 px-1 rounded text-gray-600 border flex items-center gap-1">
+              <span className="font-mono bg-slate-100 px-1 rounded text-slate-600 border flex items-center gap-1">
                 <Hash size={10} /> {contract?.contract_number || customer.customer_code}
               </span>
             </div>
             {/* Add phone number */}
-            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-              <Phone size={12} className="text-gray-400" />
+            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+              <Phone size={12} className="text-slate-400" />
               <span className="font-mono">{customer.phone}</span>
               {isNew && (
-                <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] rounded-full font-medium border border-orange-200">
+                <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] rounded-full font-medium border border-amber-200">
                   جديد
                 </span>
               )}
@@ -225,15 +225,15 @@ function CustomerRow({
         {/* Section 2: Metrics & Status */}
         <div className="flex flex-wrap items-center justify-start md:justify-center gap-4 w-full md:w-4/12">
           <div className="flex flex-col items-center gap-1 min-w-[80px]">
-            <span className="text-[10px] text-gray-400 font-medium">حالة الدفع</span>
+            <span className="text-[10px] text-slate-400 font-medium">حالة الدفع</span>
             <StatusBadge status={paymentStatus} type="payment" />
           </div>
 
-          <div className="w-px h-8 bg-gray-200 hidden md:block"></div>
+          <div className="w-px h-8 bg-slate-200 hidden md:block"></div>
 
           <div className="flex flex-col items-center gap-1 min-w-[100px]">
-            <span className="text-[10px] text-gray-400 font-medium">آخر تواصل</span>
-            <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${isNew ? `bg-red-50 ${BRAND_COLOR} border-red-100` : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+            <span className="text-[10px] text-slate-400 font-medium">آخر تواصل</span>
+            <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${isNew ? `bg-rose-50 ${BRAND_COLOR} border-rose-100` : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               <Clock size={12} />
               {isNew ? 'لم يتم الاتصال' : `منذ ${daysSinceContact} يوم`}
             </div>
@@ -242,18 +242,18 @@ function CustomerRow({
 
         {/* Section 3: Quick Actions */}
         <div className="flex items-center justify-end gap-2 w-full md:w-3/12 opacity-80 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); onCall(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition shadow-sm" title="اتصال">
+          <button onClick={(e) => { e.stopPropagation(); onCall(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-sky-50 hover:text-sky-600 transition shadow-sm" title="اتصال">
             <Phone size={18} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition shadow-sm" title="واتساب">
+          <button onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-emerald-50 hover:text-emerald-600 transition shadow-sm" title="واتساب">
             <MessageCircle size={18} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition shadow-sm" title="ملاحظة">
+          <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 hover:text-slate-800 transition shadow-sm" title="ملاحظة">
             <Plus size={18} />
           </button>
           <button
             onClick={onToggle}
-            className={`px-3 py-2 ${BRAND_BG} text-white rounded-lg hover:bg-opacity-90 transition flex items-center gap-1 text-sm font-medium shadow-sm`}
+            className={`px-3 py-2 ${BRAND_BG} text-white rounded-2xl hover:bg-opacity-90 transition flex items-center gap-1 text-sm font-medium shadow-sm`}
             title="عرض التفاصيل الشاملة"
           >
             <ChevronDown size={16} className="transform -rotate-90" />
@@ -1017,8 +1017,8 @@ export default function CustomerCRMNew() {
   // --- Render ---
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fa] p-6">
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-3">
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
           <RefreshCw className="animate-spin" size={24} />
           <p>جاري تحميل سجلات العملاء...</p>
         </div>
@@ -1028,17 +1028,17 @@ export default function CustomerCRMNew() {
 
   return (
     <CRMErrorBoundary>
-      <div className="min-h-screen bg-[#f8f9fa] text-gray-800 font-sans" dir="rtl">
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans" dir="rtl">
 
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className={`${BRAND_BG} p-2 rounded-lg text-white shadow-md shadow-red-200`}>
+          <div className={`${BRAND_BG} p-2.5 rounded-2xl text-white shadow-lg shadow-rose-200`}>
             <Filter size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">متابعة العملاء والاتصالات</h1>
-            <p className="text-xs text-gray-500">نظام إدارة علاقات العملاء الذكي</p>
+            <h1 className="text-xl font-bold text-slate-900">متابعة العملاء والاتصالات</h1>
+            <p className="text-xs text-slate-500">نظام إدارة علاقات العملاء الذكي</p>
           </div>
         </div>
 
@@ -1050,21 +1050,21 @@ export default function CustomerCRMNew() {
               placeholder="بحث باسم العميل، الهاتف، أو الرمز..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className={`w-full pl-12 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 ${BRAND_RING} ${BRAND_BORDER} outline-none transition-all text-sm`}
+              className={`w-full pl-12 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-2 ${BRAND_RING} ${BRAND_BORDER} outline-none transition-all text-sm`}
             />
-            <Search className="absolute right-3 top-2.5 text-gray-400 group-focus-within:text-[#F15555] transition-colors" size={18} />
-            <kbd className="absolute left-3 top-2.5 text-[10px] text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 bg-white hidden md:block font-sans">/</kbd>
+            <Search className="absolute right-3 top-2.5 text-slate-400 group-focus-within:text-rose-500 transition-colors" size={18} />
+            <kbd className="absolute left-3 top-2.5 text-[10px] text-slate-400 border border-slate-200 rounded-lg px-1.5 py-0.5 bg-white hidden md:block font-sans">/</kbd>
           </div>
           <button
             onClick={() => refetch()}
-            className="p-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition hover:shadow-sm"
+            className="p-2.5 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 text-slate-600 transition hover:shadow-sm"
             title="تحديث البيانات"
           >
             <RefreshCw size={18} />
           </button>
           <button
             onClick={handlePrintLateReport}
-            className="p-2.5 bg-[#F15555] text-white rounded-lg hover:bg-[#d64545] transition hover:shadow-md flex items-center gap-2"
+            className="p-2.5 bg-rose-500 text-white rounded-2xl hover:bg-rose-600 transition hover:shadow-md flex items-center gap-2"
             title="طباعة تقرير المتأخرين"
           >
             <Printer size={18} />
@@ -1098,9 +1098,9 @@ export default function CustomerCRMNew() {
         <ScheduledFollowupsPanel />
 
         {/* Filters & Content Wrapper */}
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Smart Filters Header */}
-          <div className="border-b bg-gray-50/50 px-6 py-3 flex overflow-x-auto gap-2 scrollbar-hide">
+          <div className="border-b border-slate-200 bg-slate-50/50 px-6 py-3 flex overflow-x-auto gap-2 scrollbar-hide">
             {[
               { id: 'all', label: 'جميع العملاء', count: stats.total },
               { id: 'late', label: '🔥 عاجل - متأخر', count: stats.late },
@@ -1114,12 +1114,12 @@ export default function CustomerCRMNew() {
                 className={`
                   flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap
                   ${activeFilter === filter.id
-                    ? `${BRAND_BG} text-white shadow-md shadow-red-200`
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'}
+                    ? `${BRAND_BG} text-white shadow-md shadow-rose-200`
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:border-slate-300'}
                 `}
               >
                 {filter.label}
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeFilter === filter.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeFilter === filter.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {filter.count}
                 </span>
               </button>
@@ -1127,20 +1127,20 @@ export default function CustomerCRMNew() {
           </div>
 
           {/* Customer List */}
-          <div className="divide-y divide-gray-100 min-h-[400px]">
+          <div className="divide-y divide-slate-100 min-h-[400px]">
             {paginatedCustomers.length === 0 ? (
               <div className="text-center py-20">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="text-gray-400" size={24} />
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="text-slate-400" size={24} />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900">لا توجد نتائج</h3>
-                <p className="text-gray-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
+                <h3 className="text-lg font-bold text-slate-900">لا توجد نتائج</h3>
+                <p className="text-slate-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
               </div>
             ) : (
               paginatedCustomers.map(customer => {
                 // Find the corresponding CRM customer data
                 const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
-                
+
                 return (
                   <CustomerRow
                     key={customer.id}
@@ -1161,15 +1161,15 @@ export default function CustomerCRMNew() {
 
           {/* Pagination Footer */}
           {filteredData.length > 0 && (
-            <div className="border-t bg-gray-50 px-6 py-4 flex items-center justify-between">
-              <span className="text-sm text-gray-500">
+            <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-between">
+              <span className="text-sm text-slate-500">
                 عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} إلى {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} من أصل {filteredData.length} عميل
               </span>
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(p => p - 1)}
-                  className="p-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ArrowRight size={16} />
                 </button>
@@ -1177,9 +1177,9 @@ export default function CustomerCRMNew() {
                   <button
                     key={idx + 1}
                     onClick={() => setCurrentPage(idx + 1)}
-                    className={`w-8 h-8 rounded text-sm font-medium transition ${currentPage === idx + 1
+                    className={`w-8 h-8 rounded-2xl text-sm font-medium transition ${currentPage === idx + 1
                       ? `${BRAND_BG} text-white`
-                      : 'bg-white border text-gray-600 hover:bg-gray-50'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                       }`}
                   >
                     {idx + 1}
@@ -1188,7 +1188,7 @@ export default function CustomerCRMNew() {
                 <button
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(p => p + 1)}
-                  className="p-2 bg-white border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ArrowLeft size={16} />
                 </button>
@@ -1201,23 +1201,23 @@ export default function CustomerCRMNew() {
       {/* Add Note Dialog */}
       <AnimatePresence>
         {dialogOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200"
             >
-              <div className="flex justify-between items-center p-5 border-b bg-gray-50">
+              <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${dialogOpen === 'call' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                  <div className={`p-2 rounded-xl ${dialogOpen === 'call' ? 'bg-sky-50 text-sky-600' : 'bg-violet-50 text-violet-600'}`}>
                     {dialogOpen === 'call' ? <Phone size={20} /> : <MoreHorizontal size={20} />}
                   </div>
-                  <h3 className="font-bold text-gray-800 text-lg">
+                  <h3 className="font-bold text-slate-800 text-lg">
                     {dialogOpen === 'call' ? 'تسجيل مكالمة جديدة' : 'إضافة ملاحظة متابعة'}
                   </h3>
                 </div>
-                <button onClick={() => setDialogOpen(null)} className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500">
+                <button onClick={() => setDialogOpen(null)} className="p-2 hover:bg-slate-200 rounded-full transition text-slate-500">
                   <X size={20} />
                 </button>
               </div>
@@ -1225,7 +1225,7 @@ export default function CustomerCRMNew() {
               <div className="p-6 space-y-5">
                 {dialogOpen === 'call' && (
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-3">حالة المكالمة</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-3">حالة المكالمة</label>
                     <div className="grid grid-cols-3 gap-3">
                       {[
                         { id: 'answered', label: 'تم الرد ✅', color: 'emerald' },
@@ -1237,7 +1237,7 @@ export default function CustomerCRMNew() {
                           onClick={() => setDialogData({ ...dialogData, outcome: opt.id })}
                           className={`py-3 text-sm rounded-xl border transition-all ${dialogData.outcome === opt.id
                             ? `bg-${opt.color}-50 border-${opt.color}-500 text-${opt.color}-700 font-bold ring-1 ring-${opt.color}-500`
-                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                         >
                           {opt.label}
@@ -1248,11 +1248,11 @@ export default function CustomerCRMNew() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-3">التفاصيل / الملاحظات</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">التفاصيل / الملاحظات</label>
                   <Textarea
                     value={dialogData.content}
                     onChange={(e) => setDialogData({ ...dialogData, content: e.target.value })}
-                    className={`w-full p-4 border border-gray-300 rounded-xl focus:ring-2 ${BRAND_RING} outline-none min-h-[120px] text-sm resize-none bg-gray-50 focus:bg-white transition-colors`}
+                    className={`w-full p-4 border border-slate-300 rounded-xl focus:ring-2 ${BRAND_RING} outline-none min-h-[120px] text-sm resize-none bg-slate-50 focus:bg-white transition-colors`}
                     placeholder="اكتب ملخص المكالمة أو الملاحظة هنا..."
                   />
                 </div>
@@ -1260,7 +1260,7 @@ export default function CustomerCRMNew() {
                 <div className="pt-2">
                   <button
                     onClick={handleSaveInteraction}
-                    className={`w-full py-3.5 ${BRAND_BG} hover:bg-opacity-90 active:scale-[0.98] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-100`}
+                    className={`w-full py-3.5 ${BRAND_BG} hover:bg-opacity-90 active:scale-[0.98] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-100`}
                   >
                     <Save size={18} />
                     حفظ السجل

@@ -107,7 +107,7 @@ export function SmartPaymentMatching({ payment, isOpen, onClose, onMatch }: Smar
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-blue-600" />
                 <div>
-                  <p className="text-xs text-gray-600">المبلغ</p>
+                  <p className="text-xs text-slate-600">المبلغ</p>
                   <p className="font-semibold">{payment.amount.toLocaleString()} {payment.currency || 'QAR'}</p>
                 </div>
               </div>
@@ -115,7 +115,7 @@ export function SmartPaymentMatching({ payment, isOpen, onClose, onMatch }: Smar
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-blue-600" />
                 <div>
-                  <p className="text-xs text-gray-600">التاريخ</p>
+                  <p className="text-xs text-slate-600">التاريخ</p>
                   <p className="font-semibold">{new Date(payment.payment_date).toLocaleDateString('ar')}</p>
                 </div>
               </div>
@@ -123,7 +123,7 @@ export function SmartPaymentMatching({ payment, isOpen, onClose, onMatch }: Smar
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-blue-600" />
                 <div>
-                  <p className="text-xs text-gray-600">رقم الدفعة</p>
+                  <p className="text-xs text-slate-600">رقم الدفعة</p>
                   <p className="font-semibold">{payment.payment_number}</p>
                 </div>
               </div>
@@ -132,7 +132,7 @@ export function SmartPaymentMatching({ payment, isOpen, onClose, onMatch }: Smar
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-blue-600" />
                   <div>
-                    <p className="text-xs text-gray-600">الرقم المرجعي</p>
+                    <p className="text-xs text-slate-600">الرقم المرجعي</p>
                     <p className="font-semibold">{payment.reference_number}</p>
                   </div>
                 </div>
@@ -155,7 +155,7 @@ export function SmartPaymentMatching({ payment, isOpen, onClose, onMatch }: Smar
           {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <p className="ml-3 text-gray-600">جاري البحث عن الفواتير المطابقة...</p>
+              <p className="ml-3 text-slate-600">جاري البحث عن الفواتير المطابقة...</p>
             </div>
           )}
 
@@ -204,14 +204,14 @@ export function SmartPaymentMatching({ payment, isOpen, onClose, onMatch }: Smar
 
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                           <div>
-                            <p className="text-gray-600">المبلغ</p>
+                            <p className="text-slate-600">المبلغ</p>
                             <p className="font-semibold">
                               {suggestion.amount.toLocaleString()} QAR
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-gray-600">سبب المطابقة</p>
+                            <p className="text-slate-600">سبب المطابقة</p>
                             <p className="font-semibold">{suggestion.reason}</p>
                           </div>
 

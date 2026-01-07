@@ -102,7 +102,7 @@ export const PropertyContractsCalendar: React.FC = () => {
       case 'contract_renewal': return 'bg-orange-500 text-white';
       case 'payment_due': return 'bg-blue-500 text-white';
       case 'maintenance': return 'bg-green-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      default: return 'bg-slate-500 text-white';
     }
   };
 

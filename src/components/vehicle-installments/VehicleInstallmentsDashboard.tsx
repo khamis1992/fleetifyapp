@@ -164,7 +164,7 @@ const FilterTab: React.FC<FilterTabProps> = ({ label, value, count, isActive, on
     className={cn(
       "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2",
       isActive
-        ? "bg-coral-500 text-white shadow-md"
+        ? "bg-rose-500 text-white shadow-md"
         : "bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200"
     )}
   >
@@ -265,7 +265,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
               {status.label}
             </span>
             {installment.contract_type === 'multi_vehicle' && (
-              <Badge variant="outline" className="text-[10px] border-coral-200 text-coral-600">
+              <Badge variant="outline" className="text-[10px] border-rose-200 text-coral-600">
                 <Car className="w-3 h-3 ml-1" />
                 {installment.total_vehicles_count} مركبات
               </Badge>
@@ -308,7 +308,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({
               </div>
               <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
                 <motion.div 
-                  className="h-full bg-gradient-to-r from-coral-400 to-coral-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-coral-400 to-rose-500 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercentage}%` }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -561,7 +561,7 @@ const VehicleInstallmentsDashboard = () => {
           </div>
           <MultiVehicleWizard 
             trigger={
-              <Button className="gap-2 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-coral-500/25">
+              <Button className="gap-2 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-rose-500/25">
                 <Plus className="h-4 w-4" />
                 إنشاء اتفاقية جديدة
               </Button>
@@ -575,7 +575,7 @@ const VehicleInstallmentsDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 shadow-lg shadow-red-500/20"
+          className="mb-6 bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 shadow-lg shadow-rose-500/20"
         >
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3 text-white">
@@ -615,7 +615,7 @@ const VehicleInstallmentsDashboard = () => {
               value={summary.total_agreements}
               subtitle={`${summary.active_agreements} نشط • ${summary.completed_agreements} مكتمل`}
               icon={CalendarClock}
-              iconBg="bg-coral-100"
+              iconBg="bg-rose-100"
               iconColor="text-coral-600"
               delay={1}
               onClick={() => handleStatCardClick('all')}
@@ -744,7 +744,7 @@ const VehicleInstallmentsDashboard = () => {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center py-16"
             >
-              <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mb-4" />
               <p className="text-neutral-500 font-medium">جاري التحميل...</p>
             </motion.div>
           ) : filteredInstallments.length === 0 ? (
@@ -761,7 +761,7 @@ const VehicleInstallmentsDashboard = () => {
               <p className="text-neutral-500 font-medium mb-4">لا توجد اتفاقيات أقساط</p>
               <MultiVehicleWizard 
                 trigger={
-                  <Button className="gap-2 bg-coral-500 hover:bg-coral-600 rounded-xl">
+                  <Button className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl">
                     <Plus className="h-4 w-4" />
                     إنشاء اتفاقية جديدة
                   </Button>
@@ -820,7 +820,7 @@ const VehicleInstallmentsDashboard = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="w-5 h-5 text-coral-500" />
+              <Pencil className="w-5 h-5 text-rose-500" />
               تعديل الاتفاقية
             </DialogTitle>
             <DialogDescription>
@@ -932,7 +932,7 @@ const VehicleInstallmentsDashboard = () => {
             <Button
               onClick={handleEditSave}
               disabled={updateInstallment.isPending}
-              className="bg-coral-500 hover:bg-coral-600"
+              className="bg-rose-500 hover:bg-coral-600"
             >
               {updateInstallment.isPending ? (
                 <>جاري الحفظ...</>

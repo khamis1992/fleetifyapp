@@ -84,7 +84,7 @@ export const AccountSummaryPanel: React.FC<AccountSummaryPanelProps> = ({
       revenue: 'text-green-600 bg-green-50',
       expenses: 'text-orange-600 bg-orange-50',
     };
-    return colors[type as keyof typeof colors] || 'text-gray-600 bg-gray-50';
+    return colors[type as keyof typeof colors] || 'text-slate-600 bg-slate-50';
   };
   
   const getTypeLabel = (type: string) => {
@@ -206,10 +206,10 @@ export const AccountSummaryPanel: React.FC<AccountSummaryPanelProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gray-400" />
+                <div className="w-3 h-3 rounded-full bg-slate-400" />
                 <span className="text-muted-foreground">أرصدة صفر</span>
               </div>
-              <Badge variant="outline" className="text-gray-600">
+              <Badge variant="outline" className="text-slate-600">
                 {stats.zeroBalance}
               </Badge>
             </div>

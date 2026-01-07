@@ -178,7 +178,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
         </div>
 
         {/* معدل النجاح */}
-        <div className="text-center p-4 bg-gray-50 rounded-lg">
+        <div className="text-center p-4 bg-slate-50 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">معدل نجاح الاستيراد</h3>
           <div className="flex items-center justify-center gap-4">
             <Badge 
@@ -187,7 +187,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
             >
               {stats.total > 0 ? Math.round((stats.successful / stats.total) * 100) : 0}%
             </Badge>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-slate-600">
               {stats.successful} من {stats.total} مخالفة تم استيرادها بنجاح
             </span>
           </div>
@@ -236,7 +236,7 @@ export const ViolationImportReport: React.FC<ViolationImportReportProps> = ({
         </div>
 
         {/* معلومات إضافية */}
-        <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+        <div className="text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
           <h4 className="font-medium mb-2">ملاحظات:</h4>
           <ul className="list-disc list-inside space-y-1">
             <li>تم إنشاء هذا التقرير في {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}</li>

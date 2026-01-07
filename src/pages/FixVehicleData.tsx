@@ -68,7 +68,7 @@ export default function FixVehicleData() {
                     <div>
                       <p className="font-semibold text-green-600 mb-2">✅ حقول المركبات موجودة</p>
                       {checkResult.data && checkResult.data.length > 0 && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                        <div className="mt-2 p-2 bg-slate-50 rounded text-sm">
                           <p className="font-medium mb-1">عينة من البيانات:</p>
                           <pre className="overflow-x-auto">{JSON.stringify(checkResult.data[0], null, 2)}</pre>
                         </div>

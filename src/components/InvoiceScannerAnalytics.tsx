@@ -156,7 +156,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Invoice Scanner Analytics</h1>
-          <p className="text-gray-600">Comprehensive performance metrics and insights</p>
+          <p className="text-slate-600">Comprehensive performance metrics and insights</p>
         </div>
         <div className="flex gap-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -187,9 +187,9 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Scans</p>
+                <p className="text-sm font-medium text-slate-600">Total Scans</p>
                 <p className="text-3xl font-bold text-blue-600">{analytics.processingMetrics.totalScans.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">+12.5% vs last period</p>
+                <p className="text-xs text-slate-500">+12.5% vs last period</p>
               </div>
               <FileText className="h-12 w-12 text-blue-500" />
             </div>
@@ -200,11 +200,11 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Processing Time</p>
+                <p className="text-sm font-medium text-slate-600">Avg Processing Time</p>
                 <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.avgProcessingTime, 'time')}`}>
                   {analytics.processingMetrics.avgProcessingTime}s
                 </p>
-                <p className="text-xs text-gray-500">-0.8s improvement</p>
+                <p className="text-xs text-slate-500">-0.8s improvement</p>
               </div>
               <Clock className="h-12 w-12 text-green-500" />
             </div>
@@ -215,11 +215,11 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Success Rate</p>
+                <p className="text-sm font-medium text-slate-600">Success Rate</p>
                 <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.successRate, 'percentage')}`}>
                   {analytics.processingMetrics.successRate}%
                 </p>
-                <p className="text-xs text-gray-500">+2.3% improvement</p>
+                <p className="text-xs text-slate-500">+2.3% improvement</p>
               </div>
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
@@ -230,11 +230,11 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Accuracy</p>
+                <p className="text-sm font-medium text-slate-600">Avg Accuracy</p>
                 <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.avgAccuracy, 'percentage')}`}>
                   {analytics.processingMetrics.avgAccuracy}%
                 </p>
-                <p className="text-xs text-gray-500">+5.2% vs baseline</p>
+                <p className="text-xs text-slate-500">+5.2% vs baseline</p>
               </div>
               <Target className="h-12 w-12 text-purple-500" />
             </div>
@@ -266,13 +266,13 @@ const InvoiceScannerAnalytics: React.FC = () => {
                     <div key={day.date} className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
-                        <p className="text-sm text-gray-500">{day.scans} scans processed</p>
+                        <p className="text-sm text-slate-500">{day.scans} scans processed</p>
                       </div>
                       <div className="text-right">
                         <p className={`font-medium ${getMetricColor(day.accuracy, 'percentage')}`}>
                           {day.accuracy}%
                         </p>
-                        <p className="text-sm text-gray-500">{day.avgTime}s avg</p>
+                        <p className="text-sm text-slate-500">{day.avgTime}s avg</p>
                       </div>
                     </div>
                   ))}
@@ -326,7 +326,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                 <div className="text-center">
                   <p className="text-4xl font-bold text-blue-600">{analytics.userProductivity.timeSaved}</p>
                   <p className="text-lg font-medium">Hours Saved</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-slate-500 mt-2">
                     Equivalent to {Math.round(analytics.userProductivity.timeSaved / 8)} working days
                   </p>
                   <Badge className="mt-3 bg-blue-100 text-blue-800">
@@ -347,7 +347,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                 <div className="text-center">
                   <p className="text-4xl font-bold text-orange-600">{analytics.userProductivity.errorReduction}%</p>
                   <p className="text-lg font-medium">Fewer Errors</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-slate-500 mt-2">
                     Manual entry error rate dropped significantly
                   </p>
                   <Badge className="mt-3 bg-orange-100 text-orange-800">
@@ -368,7 +368,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                 <div className="text-center">
                   <p className="text-4xl font-bold text-purple-600">{analytics.userProductivity.automationRate}%</p>
                   <p className="text-lg font-medium">Auto-Processed</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-slate-500 mt-2">
                     Invoices processed without manual intervention
                   </p>
                   <Badge className="mt-3 bg-purple-100 text-purple-800">
@@ -428,7 +428,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                     <span className="font-bold text-2xl text-green-600">{analytics.financialImpact.roi}%</span>
                   </div>
                   <Progress value={Math.min(analytics.financialImpact.roi, 100)} className="h-3" />
-                  <p className="text-sm text-gray-500 mt-1">Investment recovered in 2.8 months</p>
+                  <p className="text-sm text-slate-500 mt-1">Investment recovered in 2.8 months</p>
                 </div>
 
                 <div>
@@ -437,7 +437,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                     <span className="font-bold text-2xl text-blue-600">{analytics.financialImpact.efficiencyGain}%</span>
                   </div>
                   <Progress value={analytics.financialImpact.efficiencyGain} className="h-3" />
-                  <p className="text-sm text-gray-500 mt-1">Faster invoice processing workflow</p>
+                  <p className="text-sm text-slate-500 mt-1">Faster invoice processing workflow</p>
                 </div>
               </CardContent>
             </Card>
@@ -457,23 +457,23 @@ const InvoiceScannerAnalytics: React.FC = () => {
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-600">+{analytics.qualityTrends.accuracyImprovement}%</p>
                   <p className="font-medium">Accuracy Improvement</p>
-                  <p className="text-sm text-gray-500">Since system deployment</p>
+                  <p className="text-sm text-slate-500">Since system deployment</p>
                 </div>
                 
                 <div className="text-center">
                   <p className="text-3xl font-bold text-blue-600">{analytics.qualityTrends.confidenceScore}%</p>
                   <p className="font-medium">Avg Confidence Score</p>
-                  <p className="text-sm text-gray-500">Quality of matches</p>
+                  <p className="text-sm text-slate-500">Quality of matches</p>
                 </div>
                 
                 <div className="text-center">
                   <p className="text-3xl font-bold text-orange-600">{analytics.qualityTrends.failureRate}%</p>
                   <p className="font-medium">Failure Rate</p>
-                  <p className="text-sm text-gray-500">Processing failures</p>
+                  <p className="text-sm text-slate-500">Processing failures</p>
                 </div>
               </div>
               
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+              <div className="mt-8 p-4 bg-slate-50 rounded-lg">
                 <h4 className="font-medium mb-3">Key Insights & Recommendations</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">

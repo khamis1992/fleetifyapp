@@ -136,7 +136,7 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
           <CardTitle>الالتزامات المالية</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-slate-500">
             لا توجد التزامات مالية لهذا العميل
           </div>
         </CardContent>
@@ -158,20 +158,20 @@ export const FinancialObligationsTable: React.FC<FinancialObligationsTableProps>
           <div className="flex gap-4 text-sm">
             <div className="text-center">
               <div className="font-semibold text-blue-600">{formatCurrency(totalAmount)}</div>
-              <div className="text-gray-500">إجمالي المبلغ</div>
+              <div className="text-slate-500">إجمالي المبلغ</div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-green-600">{formatCurrency(totalPaid)}</div>
-              <div className="text-gray-500">المدفوع</div>
+              <div className="text-slate-500">المدفوع</div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-orange-600">{formatCurrency(totalRemaining)}</div>
-              <div className="text-gray-500">المتبقي</div>
+              <div className="text-slate-500">المتبقي</div>
             </div>
             {overdueCount > 0 && (
               <div className="text-center">
                 <div className="font-semibold text-red-600">{overdueCount}</div>
-                <div className="text-gray-500">متأخر</div>
+                <div className="text-slate-500">متأخر</div>
               </div>
             )}
           </div>

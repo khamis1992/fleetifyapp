@@ -195,7 +195,7 @@ export const SimpleAccountDeleteDialog: React.FC<SimpleAccountDeleteDialogProps>
               <div className="space-y-2">
                 <div 
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedMode === 'soft' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    selectedMode === 'soft' ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
                   }`}
                   onClick={() => setSelectedMode('soft')}
                 >
@@ -211,7 +211,7 @@ export const SimpleAccountDeleteDialog: React.FC<SimpleAccountDeleteDialogProps>
                 {(analysis.has_journal_entries || analysis.has_child_accounts || analysis.has_fixed_assets) && (
                   <div 
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedMode === 'transfer' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200'
+                      selectedMode === 'transfer' ? 'border-yellow-500 bg-yellow-50' : 'border-slate-200'
                     }`}
                     onClick={() => setSelectedMode('transfer')}
                   >
@@ -227,7 +227,7 @@ export const SimpleAccountDeleteDialog: React.FC<SimpleAccountDeleteDialogProps>
 
                 <div 
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedMode === 'force' ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                    selectedMode === 'force' ? 'border-red-500 bg-red-50' : 'border-slate-200'
                   }`}
                   onClick={() => setSelectedMode('force')}
                 >

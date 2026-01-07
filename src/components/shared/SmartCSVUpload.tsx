@@ -316,7 +316,7 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
               <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                 currentStep === step ? 'bg-primary text-primary-foreground' :
                 ['upload', 'mapping', 'preview'].indexOf(currentStep) > index ? 'bg-green-500 text-white' :
-                'bg-gray-200 text-gray-500'
+                'bg-slate-200 text-slate-500'
               }`}>
                 {['upload', 'mapping', 'preview'].indexOf(currentStep) > index ? (
                   <CheckCircle className="w-4 h-4" />
@@ -326,7 +326,7 @@ export const SmartCSVUpload: React.FC<SmartCSVUploadProps> = ({
               </div>
               {index < 3 && (
                 <div className={`w-8 h-0.5 ${
-                  ['upload', 'mapping', 'preview'].indexOf(currentStep) > index ? 'bg-green-500' : 'bg-gray-200'
+                  ['upload', 'mapping', 'preview'].indexOf(currentStep) > index ? 'bg-green-500' : 'bg-slate-200'
                 }`} />
               )}
             </div>

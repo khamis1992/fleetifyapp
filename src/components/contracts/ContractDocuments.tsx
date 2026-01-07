@@ -304,7 +304,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       case 'good': return 'text-blue-600';
       case 'fair': return 'text-yellow-600';
       case 'poor': return 'text-red-600';
-      default: return 'text-gray-600';
+      default: return 'text-slate-600';
     }
   };
 
@@ -644,7 +644,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <h4 className="font-semibold mb-2">مستوى الوقود</h4>
                   <div className="flex items-center gap-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-slate-200 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full" 
                         style={{ width: `${conditionReport.fuel_level || 0}%` }}
@@ -675,7 +675,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                                   ? getConditionColor(conditionObj.condition)
                                   : typeof conditionObj === 'string'
                                   ? getConditionColor(conditionObj)
-                                  : 'text-gray-600'
+                                  : 'text-slate-600'
                               }`}>
                                 {typeof conditionObj === 'object' && conditionObj?.condition 
                                   ? getConditionLabel(conditionObj.condition)

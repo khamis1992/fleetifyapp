@@ -39,7 +39,7 @@ export const EnhancedSecurityDashboard: React.FC = () => {
       case 'memory':
         return value <= 50 ? 'text-green-600' : value <= 100 ? 'text-yellow-600' : 'text-red-600';
       default:
-        return 'text-gray-600';
+        return 'text-slate-600';
     }
   };
 

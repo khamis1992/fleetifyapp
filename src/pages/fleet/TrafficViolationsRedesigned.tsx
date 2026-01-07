@@ -232,7 +232,7 @@ export default function TrafficViolationsRedesigned() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30 font-sans text-gray-800" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 font-sans text-slate-800" dir="rtl">
       
       {/* Side Panel */}
       <TrafficViolationSidePanelNew
@@ -264,7 +264,7 @@ export default function TrafficViolationsRedesigned() {
       />
 
       {/* --- Top Navbar --- */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 rounded-xl shadow-lg shadow-teal-500/20">
             <FileWarning className="w-6 h-6 text-white" />
@@ -278,7 +278,7 @@ export default function TrafficViolationsRedesigned() {
           <Button
             variant="outline"
             onClick={() => refetch()}
-            className="border-gray-200/50 hover:bg-gray-50 rounded-xl hover:border-teal-500/30"
+            className="border-slate-200/50 hover:bg-slate-50 rounded-xl hover:border-teal-500/30"
           >
             <RefreshCw className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">تحديث</span>
@@ -286,7 +286,7 @@ export default function TrafficViolationsRedesigned() {
           <Button
             variant="outline"
             onClick={handleOpenReportDialog}
-            className="border-gray-200/50 hover:bg-gray-50 rounded-xl hover:border-teal-500/30"
+            className="border-slate-200/50 hover:bg-slate-50 rounded-xl hover:border-teal-500/30"
           >
             <Printer className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">طباعة التقرير</span>
@@ -320,9 +320,9 @@ export default function TrafficViolationsRedesigned() {
       </header>
 
       {/* Print Header */}
-      <div className="hidden print:block p-8 border-b border-gray-200 text-center mb-6">
+      <div className="hidden print:block p-8 border-b border-slate-200 text-center mb-6">
         <h1 className="text-2xl font-bold mb-2">تقرير المخالفات المرورية</h1>
-        <p className="text-gray-500 text-sm">تاريخ التقرير: {new Date().toLocaleDateString('en-US')}</p>
+        <p className="text-slate-500 text-sm">تاريخ التقرير: {new Date().toLocaleDateString('en-US')}</p>
       </div>
 
       <main className="max-w-7xl mx-auto p-6 space-y-6 print:p-0 print:max-w-none">
@@ -337,7 +337,7 @@ export default function TrafficViolationsRedesigned() {
         />
 
         {/* --- Tabs Section --- */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-200/50 shadow-sm overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 shadow-sm overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <Tabs defaultValue="list" className="w-full">
             <div className="border-b border-neutral-100 px-4 pt-2">
               <TabsList className="h-auto flex justify-start gap-1 p-1 bg-transparent">
@@ -367,7 +367,7 @@ export default function TrafficViolationsRedesigned() {
                   <input 
                     type="text" 
                     placeholder="بحث: رقم المخالفة، المركبة، العميل..."
-                    className="w-full pr-10 pl-4 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none transition hover:border-teal-500/30"
+                    className="w-full pr-10 pl-4 py-2.5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none transition hover:border-teal-500/30"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -382,7 +382,7 @@ export default function TrafficViolationsRedesigned() {
                     <select 
                       value={filterCar} 
                       onChange={(e) => setFilterCar(e.target.value)}
-                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
+                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
                     >
                       <option value="all">جميع المركبات</option>
                       {vehicles.map(v => (
@@ -398,7 +398,7 @@ export default function TrafficViolationsRedesigned() {
                     <select 
                       value={filterCustomer} 
                       onChange={(e) => setFilterCustomer(e.target.value)}
-                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
+                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
                     >
                       <option value="all">جميع العملاء</option>
                       {customers.map(c => (
@@ -614,7 +614,7 @@ export default function TrafficViolationsRedesigned() {
             <TabsContent value="reports" className="p-6">
               <h3 className="text-xl font-bold mb-6">التقارير والإحصائيات</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-teal-50 rounded-lg">
@@ -631,7 +631,7 @@ export default function TrafficViolationsRedesigned() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-50 rounded-lg">
@@ -648,7 +648,7 @@ export default function TrafficViolationsRedesigned() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-amber-50 rounded-lg">
@@ -665,7 +665,7 @@ export default function TrafficViolationsRedesigned() {
                   </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-gray-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
+                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-purple-50 rounded-lg">
@@ -700,7 +700,7 @@ export default function TrafficViolationsRedesigned() {
           .print\\:hidden { display: none !important; }
           .print\\:block { display: block !important; }
           .print\\:text-black { color: black !important; }
-          .print\\:border-gray-300 { border-color: #d1d5db !important; }
+          .print\\:border-slate-300 { border-color: #d1d5db !important; }
           .print\\:bg-transparent { background: transparent !important; }
           .print\\:overflow-visible { overflow: visible !important; }
           .print\\:whitespace-normal { white-space: normal !important; }

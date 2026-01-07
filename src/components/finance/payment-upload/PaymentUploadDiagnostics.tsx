@@ -210,7 +210,7 @@ export function PaymentUploadDiagnostics({
                     {diagnostic.message}
                   </AlertDescription>
                   {diagnostic.suggestion && (
-                    <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
+                    <div className="text-xs text-muted-foreground bg-slate-50 p-2 rounded">
                       💡 {diagnostic.suggestion}
                     </div>
                   )}
@@ -232,9 +232,9 @@ export function PaymentUploadDiagnostics({
             </Button>
             
             {showDetails && (
-              <div className="max-h-60 overflow-y-auto bg-gray-50 p-3 rounded text-sm">
+              <div className="max-h-60 overflow-y-auto bg-slate-50 p-3 rounded text-sm">
                 {errors.slice(0, 20).map((error, index) => (
-                  <div key={index} className="mb-2 pb-2 border-b border-gray-200 last:border-b-0">
+                  <div key={index} className="mb-2 pb-2 border-b border-slate-200 last:border-b-0">
                     <span className="font-medium text-red-600">السطر {error.row}:</span>
                     <span className="ml-2">{error.message}</span>
                   </div>

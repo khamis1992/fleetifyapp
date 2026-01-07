@@ -342,7 +342,7 @@ export function InvoiceJournalLinkingReport() {
           ) : journalDetails ? (
             <div className="space-y-4">
               {/* Journal Entry Header */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
                 <div>
                   <p className="text-sm text-muted-foreground">رقم القيد</p>
                   <p className="font-medium">{journalDetails.entry_number}</p>
@@ -405,7 +405,7 @@ export function InvoiceJournalLinkingReport() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    <TableRow className="bg-gray-50 font-bold">
+                    <TableRow className="bg-slate-50 font-bold">
                       <TableCell colSpan={2}>الإجمالي</TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(Number(journalDetails.total_debit || 0))}

@@ -34,7 +34,7 @@ export const CompaniesOverview: React.FC<CompaniesOverviewProps> = ({ companies,
       case 'trial':
         return 'bg-blue-100 text-blue-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
     }
   };
 

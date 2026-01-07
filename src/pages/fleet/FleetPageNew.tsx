@@ -173,7 +173,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-white rounded-2xl border border-neutral-200 overflow-hidden hover:shadow-xl hover:border-coral-200 transition-all duration-300 group cursor-pointer"
+      className="bg-white rounded-2xl border border-neutral-200 overflow-hidden hover:shadow-xl hover:border-rose-200 transition-all duration-300 group cursor-pointer"
       onClick={onView}
     >
       {/* Header - Status & Serial */}
@@ -241,7 +241,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
                 onClick={handleCopyVin}
                 className="p-1 hover:bg-neutral-100 rounded transition-colors"
               >
-                <Copy className="w-3.5 h-3.5 text-neutral-400 hover:text-coral-500" />
+                <Copy className="w-3.5 h-3.5 text-neutral-400 hover:text-rose-500" />
               </button>
             )}
           </div>
@@ -287,7 +287,7 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, onClick, isActive }) => {
   const colorStyles = {
     green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200', activeBg: 'bg-green-100' },
-    coral: { bg: 'bg-coral-50', text: 'text-coral-600', border: 'border-coral-200', activeBg: 'bg-coral-100' },
+    coral: { bg: 'bg-rose-50', text: 'text-coral-600', border: 'border-rose-200', activeBg: 'bg-rose-100' },
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', activeBg: 'bg-amber-100' },
     red: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', activeBg: 'bg-red-100' },
   };
@@ -310,7 +310,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, on
           <Icon className={cn("w-6 h-6", style.text)} />
         </div>
         {isActive && (
-          <Badge className="bg-coral-500 text-white text-[10px]">نشط</Badge>
+          <Badge className="bg-rose-500 text-white text-[10px]">نشط</Badge>
         )}
       </div>
       <div className="mt-4">
@@ -452,7 +452,7 @@ const FleetPageNew: React.FC = () => {
     return (
       <div className="min-h-screen bg-neutral-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-coral-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-neutral-500">جاري تحميل البيانات...</p>
         </div>
       </div>
@@ -465,7 +465,7 @@ const FleetPageNew: React.FC = () => {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-coral-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
               <Car className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -483,7 +483,7 @@ const FleetPageNew: React.FC = () => {
                 onClick={() => setViewMode('grid')}
                 className={cn(
                   "rounded-lg px-3",
-                  viewMode === 'grid' && "bg-coral-500 text-white hover:bg-coral-600"
+                  viewMode === 'grid' && "bg-rose-500 text-white hover:bg-coral-600"
                 )}
               >
                 <LayoutGrid className="w-4 h-4 ml-1" />
@@ -495,7 +495,7 @@ const FleetPageNew: React.FC = () => {
                 onClick={() => setViewMode('split')}
                 className={cn(
                   "rounded-lg px-3",
-                  viewMode === 'split' && "bg-coral-500 text-white hover:bg-coral-600"
+                  viewMode === 'split' && "bg-rose-500 text-white hover:bg-coral-600"
                 )}
               >
                 <Columns className="w-4 h-4 ml-1" />
@@ -531,7 +531,7 @@ const FleetPageNew: React.FC = () => {
               </Button>
             )}
             <Button
-              className="bg-coral-500 hover:bg-coral-600 text-white gap-2 shadow-lg"
+              className="bg-rose-500 hover:bg-coral-600 text-white gap-2 shadow-lg"
               onClick={() => setShowVehicleForm(true)}
             >
               <Plus className="w-4 h-4" />
@@ -683,7 +683,7 @@ const FleetPageNew: React.FC = () => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pr-12 h-12 rounded-xl border-neutral-200 focus:border-coral-500"
+                className="pr-12 h-12 rounded-xl border-neutral-200 focus:border-rose-500"
               />
             </div>
 
@@ -844,7 +844,7 @@ const FleetPageNew: React.FC = () => {
                         onClick={() => setCurrentPage(page)}
                         className={cn(
                           "rounded-lg w-9 h-9",
-                          currentPage === page && "bg-coral-500 hover:bg-coral-600"
+                          currentPage === page && "bg-rose-500 hover:bg-coral-600"
                         )}
                       >
                         {page}
@@ -885,7 +885,7 @@ const FleetPageNew: React.FC = () => {
             <p className="text-neutral-500 mb-4">
               {activeFiltersCount > 0 ? 'لم يتم العثور على مركبات تطابق الفلاتر' : 'ابدأ بإضافة أول مركبة للأسطول'}
             </p>
-            <Button onClick={() => setShowVehicleForm(true)} className="bg-coral-500 hover:bg-coral-600">
+            <Button onClick={() => setShowVehicleForm(true)} className="bg-rose-500 hover:bg-coral-600">
               <Plus className="w-4 h-4 ml-2" />
               إضافة مركبة
             </Button>

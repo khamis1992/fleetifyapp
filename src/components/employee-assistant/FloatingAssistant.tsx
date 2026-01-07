@@ -63,7 +63,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
           >
             <Button
               onClick={() => setIsOpen(true)}
-              className="h-14 px-5 gap-2 rounded-full bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-coral-500/30 hover:shadow-coral-500/40 transition-all"
+              className="h-14 px-5 gap-2 rounded-full bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all"
             >
               <Sparkles className="h-5 w-5" />
               <span className="font-medium">مساعد الموظف</span>
@@ -98,7 +98,7 @@ export const FloatingAssistant: React.FC<FloatingAssistantProps> = ({
             )}
           >
             {/* Header */}
-            <div className="bg-gradient-to-l from-coral-500 to-orange-500 px-5 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-l from-rose-500 to-orange-500 px-5 py-4 flex items-center justify-between">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
                 {displayTitle}

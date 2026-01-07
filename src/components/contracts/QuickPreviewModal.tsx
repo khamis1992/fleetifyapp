@@ -78,7 +78,7 @@ export const QuickPreviewModal = ({
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">التاريخ</p>
+                  <p className="text-xs text-slate-500">التاريخ</p>
                   <p className="font-semibold">
                     {format(
                       new Date(data.invoice_date || data.payment_date),
@@ -88,14 +88,14 @@ export const QuickPreviewModal = ({
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">المبلغ</p>
+                  <p className="text-xs text-slate-500">المبلغ</p>
                   <p className="font-semibold text-green-600">
                     {formatCurrency(data.total_amount || data.amount)}
                   </p>
                 </div>
                 {isInvoice && data.due_date && (
                   <div>
-                    <p className="text-xs text-gray-500">تاريخ الاستحقاق</p>
+                    <p className="text-xs text-slate-500">تاريخ الاستحقاق</p>
                     <p className="font-semibold">
                       {format(new Date(data.due_date), 'dd MMMM yyyy', { locale: ar })}
                     </p>
@@ -103,7 +103,7 @@ export const QuickPreviewModal = ({
                 )}
                 {!isInvoice && data.reference_number && (
                   <div>
-                    <p className="text-xs text-gray-500">رقم المرجع</p>
+                    <p className="text-xs text-slate-500">رقم المرجع</p>
                     <p className="font-semibold">{data.reference_number}</p>
                   </div>
                 )}
@@ -118,7 +118,7 @@ export const QuickPreviewModal = ({
                 <CardTitle className="text-sm">الوصف</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600">{data.description}</p>
+                <p className="text-sm text-slate-600">{data.description}</p>
               </CardContent>
             </Card>
           )}
@@ -141,7 +141,7 @@ export const QuickPreviewModal = ({
                 <CardTitle className="text-sm">ملاحظات</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600">{data.notes}</p>
+                <p className="text-sm text-slate-600">{data.notes}</p>
               </CardContent>
             </Card>
           )}

@@ -179,7 +179,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
     if (customer.is_active) {
       return <Badge className="bg-green-100 text-green-700 border-green-200">نشط</Badge>;
     }
-    return <Badge className="bg-gray-100 text-gray-700 border-gray-200">غير نشط</Badge>;
+    return <Badge className="bg-slate-100 text-slate-700 border-slate-200">غير نشط</Badge>;
   };
 
   const handleCreateContract = () => {
@@ -221,7 +221,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
               placeholder="بحث عن عميل..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10 border-neutral-200 focus:border-coral-500 focus:ring-coral-500 rounded-xl"
+              className="pr-10 border-neutral-200 focus:border-rose-500 focus:ring-rose-500 rounded-xl"
             />
           </div>
         </div>
@@ -246,14 +246,14 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     "w-full p-3 rounded-xl text-right transition-all",
                     "hover:bg-neutral-50 group",
                     selectedCustomer?.id === customer.id
-                      ? "bg-coral-50 border-2 border-coral-500"
+                      ? "bg-rose-50 border-2 border-rose-500"
                       : "border-2 border-transparent"
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0",
-                      customer.customer_type === 'individual' ? "bg-coral-500" : "bg-blue-500"
+                      customer.customer_type === 'individual' ? "bg-rose-500" : "bg-blue-500"
                     )}>
                       {getCustomerInitials(customer)}
                     </div>
@@ -301,7 +301,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     <div className="flex items-center gap-4">
                       <div className={cn(
                         "w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl",
-                        selectedCustomer.customer_type === 'individual' ? "bg-coral-500" : "bg-blue-500"
+                        selectedCustomer.customer_type === 'individual' ? "bg-rose-500" : "bg-blue-500"
                       )}>
                         {getCustomerInitials(selectedCustomer)}
                       </div>
@@ -322,7 +322,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     </div>
                     <Button
                       onClick={handleCreateContract}
-                      className="bg-coral-500 hover:bg-coral-600 text-white rounded-xl shadow-md"
+                      className="bg-rose-500 hover:bg-coral-600 text-white rounded-xl shadow-md"
                       style={{ boxShadow: '0 4px 14px rgba(232, 90, 79, 0.3)' }}
                     >
                       <Plus className="w-4 h-4 ml-2" />
@@ -371,7 +371,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-coral-100 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
                           <Phone className="w-5 h-5 text-coral-600" />
                         </div>
                         <div>
@@ -416,7 +416,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(`/customers/${selectedCustomer.id}`)}
-                        className="text-coral-600 hover:text-coral-700 hover:bg-coral-50"
+                        className="text-coral-600 hover:text-coral-700 hover:bg-rose-50"
                       >
                         عرض الكل
                         <ChevronLeft className="w-4 h-4 mr-1" />
@@ -476,7 +476,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                     <Button
                       variant="outline"
                       onClick={() => onEditCustomer(selectedCustomer)}
-                      className="border-neutral-200 hover:border-coral-500 hover:text-coral-600 rounded-xl"
+                      className="border-neutral-200 hover:border-rose-500 hover:text-coral-600 rounded-xl"
                     >
                       <Edit className="w-4 h-4 ml-2" />
                       تعديل
@@ -495,7 +495,7 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
                 </div>
                 <Button
                   onClick={() => navigate(`/customers/${selectedCustomer.id}`)}
-                  className="bg-coral-500 hover:bg-coral-600 text-white rounded-xl"
+                  className="bg-rose-500 hover:bg-coral-600 text-white rounded-xl"
                 >
                   عرض الصفحة الكاملة
                   <ChevronLeft className="w-4 h-4 mr-2" />

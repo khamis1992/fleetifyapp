@@ -231,12 +231,12 @@ const DashboardLanding: React.FC = () => {
                   animate={{ opacity: 1, x: 0, transition: { delay: index * 0.06 } }}
                   exit={{ opacity: 0, x: -20 }}
                   onClick={() => handleAction(action.id)}
-                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-gray-100"
+                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-slate-100"
                 >
                   <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', action.color)}>
                     <action.icon className="w-5 h-5 text-white" />
                   </div>
-                  <span className="font-bold text-gray-800 text-sm">{action.label}</span>
+                  <span className="font-bold text-slate-800 text-sm">{action.label}</span>
                 </motion.button>
               ))}
             </motion.div>
@@ -248,7 +248,7 @@ const DashboardLanding: React.FC = () => {
           animate={{ rotate: isOpen ? 135 : 0, scale: isOpen ? 1.05 : 1 }}
           className={cn(
             'w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all',
-            isOpen ? 'bg-gray-900' : 'bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
+            isOpen ? 'bg-slate-900' : 'bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
           )}
         >
           <Plus className="w-7 h-7 text-white" strokeWidth={3} />
@@ -367,7 +367,7 @@ const DashboardLanding: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
       {/* Animated background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-teal-400/5 rounded-full blur-[120px] animate-pulse" />
@@ -376,7 +376,7 @@ const DashboardLanding: React.FC = () => {
       </div>
 
       {/* Landing Page Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -385,30 +385,30 @@ const DashboardLanding: React.FC = () => {
                   <Activity className="w-7 h-7 text-white" strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 leading-tight" style={{ fontFamily: 'Cairo, sans-serif' }}>لوحة التحكم</h1>
-                  <p className="text-xs text-gray-500">{company?.name || 'العُراف لتأجير السيارات'}</p>
+                  <h1 className="text-2xl font-bold text-slate-900 leading-tight" style={{ fontFamily: 'Cairo, sans-serif' }}>لوحة التحكم</h1>
+                  <p className="text-xs text-slate-500">{company?.name || 'العُراف لتأجير السيارات'}</p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="h-8 w-px bg-gray-200" />
+              <div className="h-8 w-px bg-slate-200" />
 
               <div className="flex items-center gap-2 text-sm">
-                <span className="font-bold text-gray-900 text-lg">{dayNumber}</span>
-                <span className="text-gray-600">{dayName}</span>
-                <span className="text-gray-400">{gregorianDate}</span>
+                <span className="font-bold text-slate-900 text-lg">{dayNumber}</span>
+                <span className="text-slate-600">{dayName}</span>
+                <span className="text-slate-400">{gregorianDate}</span>
               </div>
 
-              <div className="h-8 w-px bg-gray-200" />
+              <div className="h-8 w-px bg-slate-200" />
 
               <div className="relative">
                 <input
                   type="text"
                   placeholder="بحث..."
-                  className="w-64 pl-4 pr-10 py-2.5 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 border border-transparent focus:border-teal-500/30 transition-all"
+                  className="w-64 pl-4 pr-10 py-2.5 bg-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 border border-transparent focus:border-teal-500/30 transition-all"
                 />
-                <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
               <motion.button
@@ -450,7 +450,7 @@ const DashboardLanding: React.FC = () => {
                   className="relative group cursor-pointer"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-blue-400/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 hover:border-teal-500/30 transition-all duration-300 shadow-sm hover:shadow-xl">
+                  <div className="relative bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 hover:border-teal-500/30 transition-all duration-300 shadow-sm hover:shadow-xl">
                     <div className="flex items-start justify-between mb-4">
                       <div className={`p-3 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg`}>
                         <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
@@ -473,18 +473,18 @@ const DashboardLanding: React.FC = () => {
                       )}
                     </div>
 
-                    <h3 className="text-gray-500 text-sm mb-2 font-semibold">{stat.title}</h3>
-                    <p className="text-3xl font-bold text-gray-900 mb-3" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                    <h3 className="text-slate-500 text-sm mb-2 font-semibold">{stat.title}</h3>
+                    <p className="text-3xl font-bold text-slate-900 mb-3" style={{ fontFamily: 'Cairo, sans-serif' }}>
                       <AnimatedCounter value={stat.value} />
                     </p>
 
                     {stat.progressLabel && stat.progressValue && (
                       <div className="mt-auto">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                        <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
                           <span className="font-medium">{stat.progressLabel}</span>
                           <span className="font-bold text-teal-600">{stat.progressValue}%</span>
                         </div>
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                           <motion.div
                             className={cn('h-full rounded-full bg-gradient-to-r shadow-inner', stat.color)}
                             initial={{ width: 0 }}
@@ -506,13 +506,13 @@ const DashboardLanding: React.FC = () => {
             {/* Financial Performance Chart */}
             <motion.div
               variants={itemVariants}
-              className="col-span-5 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer"
+              className="col-span-5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all cursor-pointer"
               onClick={() => navigate('/finance')}
             >
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>الأداء المالي</h3>
-                  <p className="text-sm text-gray-500 font-medium">تحليل الإيرادات الشهرية</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>الأداء المالي</h3>
+                  <p className="text-sm text-slate-500 font-medium">تحليل الإيرادات الشهرية</p>
                 </div>
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
                   <Activity className="w-6 h-6 text-white" />
@@ -554,7 +554,7 @@ const DashboardLanding: React.FC = () => {
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-200">
                 {[
                   { value: '+22%', label: 'معدل النمو', color: 'text-emerald-600', bg: 'bg-emerald-50' },
                   { value: formatCurrency(stats?.monthlyRevenue || 0), label: 'الإيرادات', color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -576,7 +576,7 @@ const DashboardLanding: React.FC = () => {
                     >
                       {item.value}
                     </motion.p>
-                    <p className="text-xs text-gray-600 font-semibold uppercase">{item.label}</p>
+                    <p className="text-xs text-slate-600 font-semibold uppercase">{item.label}</p>
                   </motion.div>
                 ))}
               </div>
@@ -585,12 +585,12 @@ const DashboardLanding: React.FC = () => {
             {/* Fleet Status */}
             <motion.div
               variants={itemVariants}
-              className="col-span-3 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm"
+              className="col-span-3 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Cairo, sans-serif' }}>حالة الأسطول</h3>
-                  <p className="text-sm text-gray-500">توزيع المركبات</p>
+                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>حالة الأسطول</h3>
+                  <p className="text-sm text-slate-500">توزيع المركبات</p>
                 </div>
                 <motion.span
                   className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-500/30 cursor-pointer"
@@ -636,9 +636,9 @@ const DashboardLanding: React.FC = () => {
                         if (!payload?.[0]) return null;
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-white px-4 py-3 rounded-2xl shadow-xl border border-gray-100">
-                            <p className="font-bold text-sm text-gray-900">{data.name}</p>
-                            <p className="text-gray-600 text-xs mt-1">{data.value} مركبة</p>
+                          <div className="bg-white px-4 py-3 rounded-2xl shadow-xl border border-slate-100">
+                            <p className="font-bold text-sm text-slate-900">{data.name}</p>
+                            <p className="text-slate-600 text-xs mt-1">{data.value} مركبة</p>
                           </div>
                         );
                       }}
@@ -652,8 +652,8 @@ const DashboardLanding: React.FC = () => {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <p className="text-4xl font-bold text-gray-900" style={{ fontFamily: 'Cairo, sans-serif' }}>{totalVehicles}</p>
-                  <p className="text-xs text-gray-400 font-semibold uppercase">إجمالي</p>
+                  <p className="text-4xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>{totalVehicles}</p>
+                  <p className="text-xs text-slate-400 font-semibold uppercase">إجمالي</p>
                 </motion.div>
               </div>
 
@@ -664,8 +664,8 @@ const DashboardLanding: React.FC = () => {
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all",
                       activeFleetIndex === index
-                        ? 'bg-gray-100 ring-2 ring-teal-500'
-                        : 'bg-gray-50 hover:bg-gray-100'
+                        ? 'bg-slate-100 ring-2 ring-teal-500'
+                        : 'bg-slate-50 hover:bg-slate-100'
                     )}
                     onClick={() => navigate(`/fleet?status=${item.name}`)}
                     onMouseEnter={() => setActiveFleetIndex(index)}
@@ -680,8 +680,8 @@ const DashboardLanding: React.FC = () => {
                       transition={{ type: "spring", stiffness: 400 }}
                     />
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-gray-900">{item.value}</p>
-                      <p className="text-xs text-gray-500 font-medium">{item.name}</p>
+                      <p className="text-sm font-bold text-slate-900">{item.value}</p>
+                      <p className="text-xs text-slate-500 font-medium">{item.name}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -691,12 +691,12 @@ const DashboardLanding: React.FC = () => {
             {/* Maintenance Schedule */}
             <motion.div
               variants={itemVariants}
-              className="col-span-4 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm"
+              className="col-span-4 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Cairo, sans-serif' }}>جدول الصيانة</h3>
-                  <p className="text-sm text-gray-500">الصيانات القادمة</p>
+                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>جدول الصيانة</h3>
+                  <p className="text-sm text-slate-500">الصيانات القادمة</p>
                 </div>
                 <motion.span
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-amber-500/30 cursor-pointer"
@@ -738,16 +738,16 @@ const DashboardLanding: React.FC = () => {
                         )}
                       </motion.div>
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-gray-900">
+                        <p className="text-sm font-bold text-slate-900">
                           {item.vehicles?.plate_number || 'غير محدد'}
                         </p>
-                        <p className="text-xs text-gray-600">{item.maintenance_type}</p>
+                        <p className="text-xs text-slate-600">{item.maintenance_type}</p>
                       </div>
-                      <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+                      <ChevronLeft className="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
                     </motion.div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className="text-center py-8 text-slate-400">
                     <Wrench className="w-12 h-12 mx-auto mb-3 opacity-40" />
                     <p className="text-sm font-medium">لا توجد صيانات</p>
                   </div>
@@ -767,12 +767,12 @@ const DashboardLanding: React.FC = () => {
             {/* Reservations Calendar */}
             <motion.div
               variants={itemVariants}
-              className="col-span-4 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm"
+              className="col-span-4 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm"
             >
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Cairo, sans-serif' }}>تقويم الحجوزات</h3>
-                  <p className="text-sm text-gray-500">الأسبوع القادم</p>
+                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>تقويم الحجوزات</h3>
+                  <p className="text-sm text-slate-500">الأسبوع القادم</p>
                 </div>
                 <motion.button
                   className="p-2.5 bg-teal-50 rounded-xl hover:bg-teal-100 transition-colors"
@@ -785,7 +785,7 @@ const DashboardLanding: React.FC = () => {
 
               <div className="grid grid-cols-7 gap-2 text-center mb-2">
                 {['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'].map((day) => (
-                  <span key={day} className="text-xs text-gray-500 font-semibold uppercase">{day}</span>
+                  <span key={day} className="text-xs text-slate-500 font-semibold uppercase">{day}</span>
                 ))}
               </div>
 
@@ -815,10 +815,10 @@ const DashboardLanding: React.FC = () => {
                       navigate(`/fleet/reservations?date=${targetDate.toISOString().split('T')[0]}`);
                     }}
                   >
-                    <span className={cn('text-sm font-bold', day.isToday ? 'text-white' : 'text-gray-700')}>
+                    <span className={cn('text-sm font-bold', day.isToday ? 'text-white' : 'text-slate-700')}>
                       {day.day}
                     </span>
-                    <span className={cn('text-xs font-bold', day.isToday ? 'text-white/80' : 'text-gray-500')}>
+                    <span className={cn('text-xs font-bold', day.isToday ? 'text-white/80' : 'text-slate-500')}>
                       {day.isToday ? 'اليوم' : `${day.occupancy}%`}
                     </span>
                   </motion.div>
@@ -834,8 +834,8 @@ const DashboardLanding: React.FC = () => {
                 }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-bold text-gray-900">ملخص الأسبوع</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-sm font-bold text-slate-900">ملخص الأسبوع</span>
+                  <span className="text-xs text-slate-500">
                     {dayNumber}-{dayNumber + 6} {gregorianDate.split(' ')[0]}
                   </span>
                 </div>
@@ -849,7 +849,7 @@ const DashboardLanding: React.FC = () => {
                     >
                       {occupancyRate}%
                     </motion.p>
-                    <p className="text-xs text-gray-600 font-semibold uppercase">الإشغال</p>
+                    <p className="text-xs text-slate-600 font-semibold uppercase">الإشغال</p>
                   </div>
                   <div className="text-center">
                     <motion.p
@@ -860,7 +860,7 @@ const DashboardLanding: React.FC = () => {
                     >
                       {stats?.activeContracts || 0}
                     </motion.p>
-                    <p className="text-xs text-gray-600 font-semibold uppercase">عقود</p>
+                    <p className="text-xs text-slate-600 font-semibold uppercase">عقود</p>
                   </div>
                 </div>
               </motion.div>
@@ -869,12 +869,12 @@ const DashboardLanding: React.FC = () => {
             {/* Revenue Forecast */}
             <motion.div
               variants={itemVariants}
-              className="col-span-4 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm"
+              className="col-span-4 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm"
             >
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900" style={{ fontFamily: 'Cairo, sans-serif' }}>توقعات الإيرادات</h3>
-                  <p className="text-sm text-gray-500">تحليل ذكي باستخدام AI</p>
+                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Cairo, sans-serif' }}>توقعات الإيرادات</h3>
+                  <p className="text-sm text-slate-500">تحليل ذكي باستخدام AI</p>
                 </div>
                 <motion.div
                   className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30"
@@ -888,9 +888,9 @@ const DashboardLanding: React.FC = () => {
               <div className="space-y-4 mb-5">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600 font-semibold">الشهر الحالي</span>
+                    <span className="text-sm text-slate-600 font-semibold">الشهر الحالي</span>
                     <motion.span
-                      className="text-sm font-bold text-gray-900"
+                      className="text-sm font-bold text-slate-900"
                       key={stats?.monthlyRevenue}
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -898,7 +898,7 @@ const DashboardLanding: React.FC = () => {
                       {formatCurrency(stats?.monthlyRevenue || 0)}
                     </motion.span>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 shadow-inner"
                       initial={{ width: 0 }}
@@ -910,7 +910,7 @@ const DashboardLanding: React.FC = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600 font-semibold">توقع الشهر القادم</span>
+                    <span className="text-sm text-slate-600 font-semibold">توقع الشهر القادم</span>
                     <motion.span
                       className="text-sm font-bold text-emerald-600"
                       initial={{ opacity: 0, y: -5 }}
@@ -920,7 +920,7 @@ const DashboardLanding: React.FC = () => {
                       {formatCurrency((stats?.monthlyRevenue || 0) * 1.22)}
                     </motion.span>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 shadow-inner"
                       initial={{ width: 0 }}
@@ -937,7 +937,7 @@ const DashboardLanding: React.FC = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <p className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <Target className="w-4 h-4 text-purple-600" />
                   العوامل المؤثرة
                 </p>
@@ -957,7 +957,7 @@ const DashboardLanding: React.FC = () => {
                       <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center', factor.bg)}>
                         <factor.icon className={`w-3.5 h-3.5 ${factor.color}`} strokeWidth={3} />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">{factor.text}</span>
+                      <span className="text-sm font-semibold text-slate-700">{factor.text}</span>
                     </motion.div>
                   ))}
                 </div>

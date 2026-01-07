@@ -46,7 +46,7 @@ export const Example2_CustomerList = () => {
             className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
           >
             <div className="font-semibold">{customer.name}</div>
-            <div className="text-sm text-gray-600">ID: {customer.id}</div>
+            <div className="text-sm text-slate-600">ID: {customer.id}</div>
           </Link>
         ))}
       </div>

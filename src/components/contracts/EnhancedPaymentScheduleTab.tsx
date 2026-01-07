@@ -94,7 +94,7 @@ export const EnhancedPaymentScheduleTab = ({
       case 'pending':
         return 'bg-yellow-50';
       default:
-        return 'bg-gray-50';
+        return 'bg-slate-50';
     }
   };
 
@@ -123,15 +123,15 @@ export const EnhancedPaymentScheduleTab = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs text-gray-500 mb-1">إجمالي القيمة</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-xs text-slate-500 mb-1">إجمالي القيمة</div>
+            <div className="text-2xl font-bold text-slate-900">
               {formatCurrency(stats.totalAmount)}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs text-gray-500 mb-1">المدفوع</div>
+            <div className="text-xs text-slate-500 mb-1">المدفوع</div>
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(stats.totalPaid)}
             </div>
@@ -140,7 +140,7 @@ export const EnhancedPaymentScheduleTab = ({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs text-gray-500 mb-1">المتبقي</div>
+            <div className="text-xs text-slate-500 mb-1">المتبقي</div>
             <div className="text-2xl font-bold text-orange-600">
               {formatCurrency(stats.balanceDue)}
             </div>
@@ -151,7 +151,7 @@ export const EnhancedPaymentScheduleTab = ({
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs text-gray-500 mb-1">نسبة الإنجاز</div>
+            <div className="text-xs text-slate-500 mb-1">نسبة الإنجاز</div>
             <div className="text-2xl font-bold text-blue-600">{stats.progressPercentage}%</div>
             <Progress value={stats.progressPercentage} className="h-2 mt-2" />
           </CardContent>
@@ -165,30 +165,30 @@ export const EnhancedPaymentScheduleTab = ({
         </CardHeader>
         <CardContent>
           {filteredPayments.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-slate-500">
               <p>لا توجد دفعات تطابق معايير البحث</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                       #
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                       تاريخ الاستحقاق
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                       تاريخ الدفع
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                       المبلغ
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                       الحالة
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
                       الإجراءات
                     </th>
                   </tr>
@@ -197,14 +197,14 @@ export const EnhancedPaymentScheduleTab = ({
                   {filteredPayments.map((payment, index) => (
                     <tr
                       key={payment.id || index}
-                      className={cn('hover:bg-gray-50 transition-colors', getStatusColor(payment.status))}
+                      className={cn('hover:bg-slate-50 transition-colors', getStatusColor(payment.status))}
                     >
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                           {index + 1}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-slate-700">
                         {payment.due_date
                           ? format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ar })
                           : '-'}
@@ -215,10 +215,10 @@ export const EnhancedPaymentScheduleTab = ({
                             {format(new Date(payment.payment_date), 'dd/MM/yyyy', { locale: ar })}
                           </span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                      <td className="px-4 py-3 text-sm font-semibold text-slate-900">
                         {formatCurrency(payment.amount || payment.total_amount)}
                       </td>
                       <td className="px-4 py-3">{getStatusBadge(payment.status)}</td>

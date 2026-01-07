@@ -70,7 +70,7 @@ const InfoCard: React.FC<{
         {copyable && value && (
           <button 
             onClick={handleCopy} 
-            className="text-neutral-400 hover:text-coral-500 transition-colors"
+            className="text-neutral-400 hover:text-rose-500 transition-colors"
             title="نسخ"
           >
             <FileText className="w-3 h-3" />
@@ -271,7 +271,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
         dir="rtl"
       >
         {/* Header */}
-        <div className="bg-gradient-to-l from-coral-500 to-coral-600 text-white p-5">
+        <div className="bg-gradient-to-l from-rose-500 to-coral-600 text-white p-5">
           <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
@@ -293,7 +293,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
             </div>
             <div>
               <h2 className="text-xl font-bold">{violation.penalty_number}</h2>
-              <p className="text-coral-100 text-sm">
+              <p className="text-rose-100 text-sm">
                 {violation.violation_type || 'مخالفة مرورية'}
               </p>
             </div>
@@ -301,7 +301,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
 
           {/* Amount Display */}
           <div className="mt-4 bg-white/10 rounded-xl p-3 flex items-center justify-between">
-            <span className="text-coral-100">قيمة المخالفة</span>
+            <span className="text-rose-100">قيمة المخالفة</span>
             <span className="text-2xl font-black">{formatCurrency(violation.amount || 0)}</span>
           </div>
         </div>
@@ -309,16 +309,16 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="grid grid-cols-4 gap-1 p-2 bg-neutral-50 mx-4 mt-4 rounded-xl">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg text-xs">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg text-xs">
               نظرة عامة
             </TabsTrigger>
-            <TabsTrigger value="vehicle" className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg text-xs">
+            <TabsTrigger value="vehicle" className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg text-xs">
               المركبة
             </TabsTrigger>
-            <TabsTrigger value="customer" className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg text-xs">
+            <TabsTrigger value="customer" className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg text-xs">
               العميل
             </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg text-xs">
+            <TabsTrigger value="history" className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg text-xs">
               السجل
             </TabsTrigger>
           </TabsList>
@@ -329,7 +329,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
               {/* Basic Info */}
               <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-coral-500" />
+                  <FileText className="w-4 h-4 text-rose-500" />
                   معلومات المخالفة
                 </h3>
                 <InfoCard icon={FileWarning} label="رقم المخالفة" value={violation.penalty_number} copyable />
@@ -343,7 +343,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
               {(violation.reason || violation.notes) && (
                 <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                   <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-coral-500" />
+                    <MessageCircle className="w-4 h-4 text-rose-500" />
                     التفاصيل
                   </h3>
                   {violation.reason && (
@@ -364,12 +364,12 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
               {/* Quick Actions */}
               <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-coral-500" />
+                  <CheckCircle className="w-4 h-4 text-rose-500" />
                   إجراءات سريعة
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
-                    className="bg-coral-500 hover:bg-coral-600 text-white rounded-xl"
+                    className="bg-rose-500 hover:bg-coral-600 text-white rounded-xl"
                     onClick={() => onAddPayment && onAddPayment(violation)}
                   >
                     <CreditCard className="w-4 h-4 ml-2" />
@@ -377,7 +377,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
                   </Button>
                   <Button
                     variant="outline"
-                    className="border-coral-200 text-coral-600 hover:bg-coral-50 rounded-xl"
+                    className="border-rose-200 text-coral-600 hover:bg-rose-50 rounded-xl"
                     onClick={handleSendWhatsAppToCustomer}
                     disabled={!violation.customers?.phone}
                   >
@@ -436,7 +436,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
             <TabsContent value="vehicle" className="m-0 space-y-4">
               <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                  <Car className="w-4 h-4 text-coral-500" />
+                  <Car className="w-4 h-4 text-rose-500" />
                   معلومات المركبة
                 </h3>
                 {violation.vehicles ? (
@@ -471,7 +471,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
               {violation.contracts && (
                 <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                   <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-coral-500" />
+                    <FileText className="w-4 h-4 text-rose-500" />
                     العقد المرتبط
                   </h3>
                   <InfoCard icon={FileText} label="رقم العقد" value={violation.contracts.contract_number} copyable />
@@ -494,13 +494,13 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
             <TabsContent value="customer" className="m-0 space-y-4">
               <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                  <User className="w-4 h-4 text-coral-500" />
+                  <User className="w-4 h-4 text-rose-500" />
                   معلومات العميل
                 </h3>
                 {violation.customers ? (
                   <>
                     <div className="bg-neutral-50 rounded-xl p-4 mb-3 text-center">
-                      <div className="w-16 h-16 bg-coral-100 rounded-full mx-auto mb-2 flex items-center justify-center">
+                      <div className="w-16 h-16 bg-rose-100 rounded-full mx-auto mb-2 flex items-center justify-center">
                         <User className="w-8 h-8 text-coral-600" />
                       </div>
                       <div className="font-bold text-neutral-800">
@@ -571,7 +571,7 @@ ${violation.location ? `• الموقع: ${violation.location}` : ''}
             <TabsContent value="history" className="m-0 space-y-4">
               <div className="bg-white rounded-[1.25rem] border border-neutral-100 p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-neutral-700 mb-3 flex items-center gap-2">
-                  <History className="w-4 h-4 text-coral-500" />
+                  <History className="w-4 h-4 text-rose-500" />
                   سجل المخالفة
                 </h3>
                 <InfoCard icon={Calendar} label="تاريخ الإنشاء" value={violation.created_at ? format(new Date(violation.created_at), 'dd/MM/yyyy HH:mm') : '-'} />

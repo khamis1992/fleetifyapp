@@ -145,7 +145,7 @@ export function CustomerDetailsDialog({
         <DialogContent className="max-w-4xl">
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="text-red-500 text-lg mb-4">⚠️ خطأ في تحميل البيانات</div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-slate-600 mb-4">
               {error?.message || 'لا يمكن العثور على بيانات العميل'}
             </p>
             <Button 

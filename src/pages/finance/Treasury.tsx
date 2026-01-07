@@ -71,7 +71,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -85,7 +85,7 @@ const StatCard: React.FC<StatCardProps> = ({
           "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
           trend === 'up' ? 'bg-green-100 text-green-600' :
           trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-gray-100 text-gray-600'
+          'bg-slate-100 text-slate-600'
         )}>
           {trend === 'up' && <TrendingUp className="w-3 h-3" />}
           {trend === 'down' && <TrendingDown className="w-3 h-3" />}
@@ -245,7 +245,7 @@ export default function Treasury() {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-10 h-10 animate-spin text-coral-500" />
+          <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
           <p className="text-neutral-500">جاري تحميل بيانات الخزينة...</p>
         </div>
       </div>
@@ -270,7 +270,7 @@ export default function Treasury() {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -362,7 +362,7 @@ export default function Treasury() {
                       className="mt-1"
                     />
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                     <Label htmlFor="isPrimary" className="cursor-pointer">حساب رئيسي</Label>
                     <Switch
                       id="isPrimary"
@@ -370,7 +370,7 @@ export default function Treasury() {
                       onCheckedChange={(checked) => setNewBank({ ...newBank, is_primary: checked })}
                     />
                   </div>
-                  <Button onClick={handleCreateBank} className="w-full bg-coral-500 hover:bg-coral-600" disabled={createBank.isPending}>
+                  <Button onClick={handleCreateBank} className="w-full bg-rose-500 hover:bg-coral-600" disabled={createBank.isPending}>
                     {createBank.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
                   </Button>
                 </div>
@@ -413,7 +413,7 @@ export default function Treasury() {
           value={formatCurrency(summary?.totalBalance || 0)}
           subtitle={`${summary?.totalBanks || 0} حساب مصرفي`}
           icon={Banknote}
-          iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
           delay={0.1}
         />
         <StatCard
@@ -458,14 +458,14 @@ export default function Treasury() {
           <TabsList className="bg-white/80 backdrop-blur-sm p-1.5 rounded-xl shadow-sm">
             <TabsTrigger
               value="banks"
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2"
             >
               <Building2 className="w-4 h-4" />
               الحسابات المصرفية
             </TabsTrigger>
             <TabsTrigger
               value="transactions"
-              className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2"
             >
               <ArrowRightLeft className="w-4 h-4" />
               المعاملات
@@ -481,7 +481,7 @@ export default function Treasury() {
             animate={{ opacity: 1, y: 0 }}
           >
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-4">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h3 className="font-semibold text-neutral-900">الحسابات المصرفية</h3>
                 <p className="text-sm text-neutral-500">قائمة جميع الحسابات المصرفية المسجلة</p>
@@ -493,7 +493,7 @@ export default function Treasury() {
                     placeholder="البحث في الحسابات..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10 w-64 h-10 rounded-xl border-gray-200"
+                    className="pr-10 w-64 h-10 rounded-xl border-slate-200"
                   />
                 </div>
               </div>
@@ -503,7 +503,7 @@ export default function Treasury() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50/50">
+                  <TableRow className="bg-slate-50/50">
                     <TableHead className="text-right font-semibold text-neutral-700">البنك</TableHead>
                     <TableHead className="text-right font-semibold text-neutral-700">رقم الحساب</TableHead>
                     <TableHead className="text-right font-semibold text-neutral-700">نوع الحساب</TableHead>
@@ -522,7 +522,7 @@ export default function Treasury() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ delay: index * 0.05 }}
-                        className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                        className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -532,7 +532,7 @@ export default function Treasury() {
                             <div>
                               <p className="font-medium text-neutral-900">{bank.bank_name}</p>
                               {bank.is_primary && (
-                                <Badge className="bg-coral-100 text-coral-700 text-xs mt-0.5">رئيسي</Badge>
+                                <Badge className="bg-rose-100 text-coral-700 text-xs mt-0.5">رئيسي</Badge>
                               )}
                             </div>
                           </div>
@@ -553,7 +553,7 @@ export default function Treasury() {
                           <Badge className={cn(
                             bank.is_active
                               ? "bg-green-100 text-green-700 border-green-200"
-                              : "bg-gray-100 text-gray-600 border-gray-200"
+                              : "bg-slate-100 text-slate-600 border-slate-200"
                           )}>
                             {bank.is_active ? "نشط" : "غير نشط"}
                           </Badge>
@@ -577,8 +577,8 @@ export default function Treasury() {
 
             {filteredBanks?.length === 0 && (
               <div className="text-center py-16">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="w-8 h-8 text-gray-400" />
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="w-8 h-8 text-slate-400" />
                 </div>
                 <p className="text-neutral-600 font-medium">لا توجد حسابات مصرفية</p>
                 <p className="text-sm text-neutral-400 mt-1">أضف حساب مصرفي جديد للبدء</p>
@@ -595,14 +595,14 @@ export default function Treasury() {
             animate={{ opacity: 1, y: 0 }}
           >
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-4">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h3 className="font-semibold text-neutral-900">المعاملات المصرفية</h3>
                 <p className="text-sm text-neutral-500">تاريخ جميع المعاملات المصرفية</p>
               </div>
               <Dialog open={isCreateTransactionDialogOpen} onOpenChange={setIsCreateTransactionDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-coral-500 hover:bg-coral-600 gap-2">
+                  <Button className="bg-rose-500 hover:bg-coral-600 gap-2">
                     <Plus className="h-4 w-4" />
                     معاملة جديدة
                   </Button>
@@ -698,7 +698,7 @@ export default function Treasury() {
                     </div>
                     <Button 
                       onClick={handleCreateTransaction} 
-                      className="w-full bg-coral-500 hover:bg-coral-600" 
+                      className="w-full bg-rose-500 hover:bg-coral-600" 
                       disabled={createTransaction.isPending}
                     >
                       {createTransaction.isPending ? "جاري الإنشاء..." : "إنشاء المعاملة"}
@@ -711,13 +711,13 @@ export default function Treasury() {
             {/* Table */}
             {transactionsLoading ? (
               <div className="flex items-center justify-center py-16">
-                <RefreshCw className="w-8 h-8 animate-spin text-coral-500" />
+                <RefreshCw className="w-8 h-8 animate-spin text-rose-500" />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gray-50/50">
+                    <TableRow className="bg-slate-50/50">
                       <TableHead className="text-right font-semibold text-neutral-700">رقم المعاملة</TableHead>
                       <TableHead className="text-right font-semibold text-neutral-700">التاريخ</TableHead>
                       <TableHead className="text-right font-semibold text-neutral-700">النوع</TableHead>
@@ -737,7 +737,7 @@ export default function Treasury() {
                           exit={{ opacity: 0, x: 20 }}
                           transition={{ delay: index * 0.05 }}
                           className={cn(
-                            "border-b border-gray-50 hover:bg-gray-50/50 transition-colors",
+                            "border-b border-slate-50 hover:bg-slate-50/50 transition-colors",
                             transaction.transaction_type === 'deposit' && 'bg-green-50/30',
                             transaction.transaction_type === 'withdrawal' && 'bg-red-50/30'
                           )}
@@ -812,8 +812,8 @@ export default function Treasury() {
 
             {transactions?.length === 0 && !transactionsLoading && (
               <div className="text-center py-16">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <ArrowRightLeft className="w-8 h-8 text-gray-400" />
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <ArrowRightLeft className="w-8 h-8 text-slate-400" />
                 </div>
                 <p className="text-neutral-600 font-medium">لا توجد معاملات</p>
                 <p className="text-sm text-neutral-400 mt-1">أضف معاملة جديدة للبدء</p>

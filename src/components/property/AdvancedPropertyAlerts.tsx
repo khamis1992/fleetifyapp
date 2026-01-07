@@ -146,7 +146,7 @@ export const AdvancedPropertyAlerts: React.FC = () => {
       case 'high': return 'border-red-200 bg-red-50';
       case 'medium': return 'border-orange-200 bg-orange-50';
       case 'low': return 'border-yellow-200 bg-yellow-50';
-      default: return 'border-gray-200 bg-gray-50';
+      default: return 'border-slate-200 bg-slate-50';
     }
   };
 

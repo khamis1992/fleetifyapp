@@ -100,7 +100,7 @@ export const CustomersPageHelpContent = () => (
           'القائمة السوداء',
         ]}
         />
-        <p className='mt-3 text-sm text-gray-600'>
+        <p className='mt-3 text-sm text-slate-600'>
           الفلاتر تعمل فوراً دون الحاجة للضغط على أي زر.
         </p>
       </HelpSection>
@@ -112,13 +112,13 @@ export const CustomersPageHelpContent = () => (
         <div className='space-y-4'>
           <div>
             <h4 className='font-semibold mb-2'>تصدير العملاء</h4>
-            <p className='text-sm text-gray-700'>
+            <p className='text-sm text-slate-700'>
               انقر على زر 'تصدير' لتحميل قائمة العملاء كملف CSV. يمكنك فتحه في Excel أو Google Sheets.
             </p>
           </div>
           <div>
             <h4 className='font-semibold mb-2'>استيراد العملاء</h4>
-            <p className='text-sm text-gray-700'>
+            <p className='text-sm text-slate-700'>
               يمكنك استيراد عملاء متعددين دفعة واحدة من ملف CSV. انقر على 'استيراد' واتبع التعليمات.
             </p>
           </div>

@@ -232,8 +232,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
               isParentItemActive
                 ? 'bg-gradient-to-l from-teal-500/10 to-teal-600/10 text-teal-600 border-r-2 border-teal-500'
                 : isExpanded
-                ? 'bg-gray-100 text-gray-900'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                ? 'bg-slate-100 text-slate-900'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
             )}
           >
             <item.icon className={cn(
@@ -273,12 +273,12 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                           'flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-200',
                           isChildActive
                             ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/20 font-medium'
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                         )}
                       >
                         <ChildIcon className={cn(
                           'w-4 h-4 flex-shrink-0',
-                          isChildActive ? 'text-white' : 'text-gray-400'
+                          isChildActive ? 'text-white' : 'text-slate-400'
                         )} />
                         <span>{child.label}</span>
                       </NavLink>
@@ -302,7 +302,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
           isDirectActive
             ? 'bg-gradient-to-l from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
         )}
       >
         <item.icon className={cn(
@@ -322,11 +322,11 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         // ✅ Fixed positioning - يبقى ثابتاً عند التمرير
         "fixed top-0 right-0 h-screen z-40",
         "bg-white flex flex-col shadow-sm",
-        isMobile ? "border-none" : "border-l border-gray-200"
+        isMobile ? "border-none" : "border-l border-slate-200"
       )}
     >
       {/* === Header: Logo & Collapse Button === */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 flex-shrink-0">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 flex-shrink-0">
         {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -336,13 +336,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             <div className="w-8 h-8 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-lg">F</span>
             </div>
-            <span className="font-bold text-gray-900">Fleetify</span>
+            <span className="font-bold text-slate-900">Fleetify</span>
           </motion.div>
         )}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
             title={collapsed ? 'توسيع' : 'تصغير'}
           >
             {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
@@ -357,7 +357,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             {/* Category Label */}
             {categoryLabels[category] && (!collapsed || isMobile) && (
               <div className="px-3 py-2 mb-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   {categoryLabels[category]}
                 </span>
               </div>
@@ -372,14 +372,14 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
 
             {/* Separator between categories */}
             {categoryIndex < Object.keys(groupedNavigation).length - 1 && (
-              <div className="mt-4 mx-3 border-b border-gray-100" />
+              <div className="mt-4 mx-3 border-b border-slate-100" />
             )}
           </div>
         ))}
       </nav>
 
       {/* === Compact User Profile === */}
-      <div className="p-2 border-t border-gray-100 flex-shrink-0 bg-gray-50/50">
+      <div className="p-2 border-t border-slate-100 flex-shrink-0 bg-slate-50/50">
         <div
           className={cn(
             'flex items-center gap-2 p-2 rounded-lg',
@@ -395,12 +395,12 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           {(!collapsed || isMobile) && (
             <div className="flex-1 flex items-center justify-between min-w-0">
               <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-800 truncate">{userName}</p>
-                <p className="text-[10px] text-gray-400 truncate">{user?.email}</p>
+                <p className="text-xs font-medium text-slate-800 truncate">{userName}</p>
+                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={handleSignOut}
-                className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
                 title="تسجيل الخروج"
               >
                 <LogOut className="w-4 h-4" />
@@ -412,7 +412,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           {collapsed && !isMobile && (
             <button
               onClick={handleSignOut}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               title="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />

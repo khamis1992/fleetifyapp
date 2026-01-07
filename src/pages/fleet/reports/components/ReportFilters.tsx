@@ -128,8 +128,8 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
         "rounded-2xl p-4",
         "backdrop-blur-xl border",
         isDark 
-          ? "bg-gray-900/60 border-gray-800/50" 
-          : "bg-white/80 border-gray-200/50",
+          ? "bg-slate-900/60 border-slate-800/50" 
+          : "bg-white/80 border-slate-200/50",
         "shadow-lg"
       )}
     >
@@ -138,7 +138,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
         <div className="flex items-center gap-2">
           <CalendarIcon className={cn(
             "w-4 h-4",
-            isDark ? "text-gray-400" : "text-gray-500"
+            isDark ? "text-slate-400" : "text-slate-500"
           )} />
           <Select
             value={filters.period}
@@ -147,8 +147,8 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
             <SelectTrigger className={cn(
               "w-[160px] h-9",
               isDark 
-                ? "bg-gray-800 border-gray-700 text-white" 
-                : "bg-white border-gray-200"
+                ? "bg-slate-800 border-slate-700 text-white" 
+                : "bg-white border-slate-200"
             )}>
               <SelectValue placeholder="اختر الفترة" />
             </SelectTrigger>
@@ -171,7 +171,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                 size="sm"
                 className={cn(
                   "h-9",
-                  isDark && "bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                  isDark && "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
                 )}
               >
                 {filters.startDate && filters.endDate ? (
@@ -212,7 +212,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           onClick={handleCompareToggle}
           className={cn(
             "h-9",
-            !filters.compareWithPrevious && isDark && "bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            !filters.compareWithPrevious && isDark && "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
           )}
         >
           {filters.compareWithPrevious && <Check className="w-3 h-3 ml-1" />}
@@ -226,7 +226,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           onClick={() => setShowAdvanced(!showAdvanced)}
           className={cn(
             "h-9",
-            isDark && "bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            isDark && "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
           )}
         >
           <SlidersHorizontal className="w-4 h-4 ml-1" />
@@ -251,7 +251,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           disabled={isLoading}
           className={cn(
             "h-9",
-            isDark && "bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            isDark && "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
           )}
         >
           <RefreshCw className={cn(
@@ -306,14 +306,14 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           >
             <div className={cn(
               "mt-4 pt-4 border-t",
-              isDark ? "border-gray-700" : "border-gray-200"
+              isDark ? "border-slate-700" : "border-slate-200"
             )}>
               <div className="flex flex-wrap items-center gap-3">
                 {/* Vehicle Status Filter */}
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "text-sm",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     حالة المركبة:
                   </span>

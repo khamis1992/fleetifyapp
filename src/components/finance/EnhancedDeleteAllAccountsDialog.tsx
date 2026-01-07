@@ -275,7 +275,7 @@ export const EnhancedDeleteAllAccountsDialog: React.FC<Props> = ({
         </AlertDescription>
       </Alert>
 
-      <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="bg-slate-50 p-4 rounded-lg">
         <h4 className="font-medium mb-2">ملخص العملية:</h4>
         <ul className="text-sm space-y-1">
           <li>• سيتم حذف الحسابات العادية: ✓</li>

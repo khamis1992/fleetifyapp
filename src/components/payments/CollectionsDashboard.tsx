@@ -255,7 +255,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-8 w-24 bg-gray-200 animate-pulse rounded" />
+          <div className="h-8 w-24 bg-slate-200 animate-pulse rounded" />
         ) : (
           <>
             <div className="text-2xl font-bold">{value}</div>

@@ -129,7 +129,7 @@ const QuickSummary: React.FC<{
 }> = ({ pendingCount, confirmedCount, cancelledCount, repeatedVehicles, repeatedCustomers }) => (
   <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
     <h3 className="text-sm font-bold text-neutral-700 mb-4 flex items-center gap-2">
-      <FileWarning className="w-4 h-4 text-coral-500" />
+      <FileWarning className="w-4 h-4 text-rose-500" />
       ملخص سريع
     </h3>
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -145,9 +145,9 @@ const QuickSummary: React.FC<{
         <div className="text-lg font-bold text-neutral-600">{cancelledCount.toLocaleString('en-US')}</div>
         <div className="text-[10px] text-neutral-500">ملغاة</div>
       </div>
-      <div className="text-center p-3 bg-coral-50 rounded-xl">
+      <div className="text-center p-3 bg-rose-50 rounded-xl">
         <div className="text-lg font-bold text-coral-600">{repeatedVehicles.toLocaleString('en-US')}</div>
-        <div className="text-[10px] text-coral-500">مركبات متكررة</div>
+        <div className="text-[10px] text-rose-500">مركبات متكررة</div>
       </div>
       <div className="text-center p-3 bg-purple-50 rounded-xl">
         <div className="text-lg font-bold text-purple-600">{repeatedCustomers.toLocaleString('en-US')}</div>
@@ -279,7 +279,7 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
           value={stats.totalViolations.toLocaleString('en-US')}
           subValue={formatCurrency(stats.totalAmount)}
           icon={FileWarning}
-          iconBg="bg-coral-50"
+          iconBg="bg-rose-50"
           iconColor="text-coral-600"
           trend={monthChange !== 0 ? {
             value: Math.abs(monthChange),

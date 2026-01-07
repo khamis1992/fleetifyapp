@@ -87,8 +87,8 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
       "rounded-2xl p-6",
       "backdrop-blur-xl border",
       isDark 
-        ? "bg-gray-900/60 border-gray-800/50" 
-        : "bg-white/80 border-gray-200/50",
+        ? "bg-slate-900/60 border-slate-800/50" 
+        : "bg-white/80 border-slate-200/50",
       "shadow-xl",
       className
     )}
@@ -97,14 +97,14 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
       <div>
         <h3 className={cn(
           "text-lg font-semibold",
-          isDark ? "text-white" : "text-gray-900"
+          isDark ? "text-white" : "text-slate-900"
         )}>
           {title}
         </h3>
         {subtitle && (
           <p className={cn(
             "text-sm",
-            isDark ? "text-gray-400" : "text-gray-600"
+            isDark ? "text-slate-400" : "text-slate-600"
           )}>
             {subtitle}
           </p>
@@ -117,7 +117,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
             "font-medium",
             badge.trend === 'up' && "text-emerald-500 border-emerald-500/30 bg-emerald-500/10",
             badge.trend === 'down' && "text-rose-500 border-rose-500/30 bg-rose-500/10",
-            badge.trend === 'neutral' && "text-gray-500 border-gray-500/30 bg-gray-500/10"
+            badge.trend === 'neutral' && "text-slate-500 border-slate-500/30 bg-slate-500/10"
           )}
         >
           {badge.trend === 'up' && <TrendingUp className="w-3 h-3 ml-1" />}
@@ -277,7 +277,7 @@ export const FleetStatusChart: React.FC<FleetStatusChartProps> = ({
               key={item.name}
               className={cn(
                 "flex items-center gap-2 p-2 rounded-lg",
-                isDark ? "bg-gray-800/50" : "bg-gray-100"
+                isDark ? "bg-slate-800/50" : "bg-slate-100"
               )}
             >
               <div 
@@ -287,13 +287,13 @@ export const FleetStatusChart: React.FC<FleetStatusChartProps> = ({
               <div className="flex-1">
                 <p className={cn(
                   "text-xs",
-                  isDark ? "text-gray-400" : "text-gray-500"
+                  isDark ? "text-slate-400" : "text-slate-500"
                 )}>
                   {item.name}
                 </p>
                 <p className={cn(
                   "text-sm font-bold",
-                  isDark ? "text-white" : "text-gray-900"
+                  isDark ? "text-white" : "text-slate-900"
                 )}>
                   {item.value}
                 </p>
@@ -378,7 +378,7 @@ export const UtilizationChart: React.FC<UtilizationChartProps> = ({
                 className="w-3 h-3 rounded-full" 
                 style={{ backgroundColor: item.fill }}
               />
-              <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-neutral-600'}`}>
+              <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-neutral-600'}`}>
                 {item.name}
               </span>
               <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-neutral-900'}`}>

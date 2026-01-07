@@ -183,7 +183,7 @@ export default function QuotationApproval() {
                       quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Company Header */}
         <Card className="mb-6">
@@ -212,7 +212,7 @@ export default function QuotationApproval() {
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
                     : isExpired 
-                      ? 'bg-gray-100 text-gray-800'
+                      ? 'bg-slate-100 text-slate-800'
                       : 'bg-yellow-100 text-yellow-800'
                 }
               >
@@ -296,14 +296,14 @@ export default function QuotationApproval() {
             {quotation.description && (
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">الوصف</Label>
-                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{quotation.description}</p>
+                <p className="text-slate-700 bg-slate-50 p-3 rounded-lg">{quotation.description}</p>
               </div>
             )}
 
             {quotation.terms && (
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">الشروط والأحكام</Label>
-                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg whitespace-pre-wrap">{quotation.terms}</p>
+                <p className="text-slate-700 bg-slate-50 p-3 rounded-lg whitespace-pre-wrap">{quotation.terms}</p>
               </div>
             )}
           </CardContent>
@@ -367,9 +367,9 @@ export default function QuotationApproval() {
                 تم معالجة عرض السعر بتاريخ {quotation.approved_at ? new Date(quotation.approved_at).toLocaleDateString('en-US') : 'غير محدد'}
               </p>
               {quotation.client_comments && (
-                <div className="mt-4 bg-gray-50 p-3 rounded-lg">
+                <div className="mt-4 bg-slate-50 p-3 rounded-lg">
                   <Label className="text-sm font-medium text-muted-foreground">التعليقات</Label>
-                  <p className="text-gray-700">{quotation.client_comments}</p>
+                  <p className="text-slate-700">{quotation.client_comments}</p>
                 </div>
               )}
             </CardContent>
@@ -380,8 +380,8 @@ export default function QuotationApproval() {
         {isExpired && !isProcessed && (
           <Card>
             <CardContent className="pt-6 text-center">
-              <Clock className="mx-auto h-12 w-12 text-gray-500 mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-gray-600">انتهت صلاحية العرض</h2>
+              <Clock className="mx-auto h-12 w-12 text-slate-500 mb-4" />
+              <h2 className="text-xl font-semibold mb-2 text-slate-600">انتهت صلاحية العرض</h2>
               <p className="text-muted-foreground">
                 انتهت صلاحية هذا العرض في {new Date(quotation.valid_until).toLocaleDateString('en-US')}
               </p>

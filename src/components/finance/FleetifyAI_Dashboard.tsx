@@ -266,7 +266,7 @@ export function FleetifyAI_Dashboard({
                 stage.status === 'completed' ? 'bg-green-100 text-green-600' :
                 stage.status === 'processing' ? 'bg-blue-100 text-blue-600' :
                 stage.status === 'error' ? 'bg-red-100 text-red-600' :
-                'bg-gray-100 text-gray-400'
+                'bg-slate-100 text-slate-400'
               }`}>
                 {stage.status === 'processing' ? (
                   <div className="animate-spin">{stage.icon}</div>

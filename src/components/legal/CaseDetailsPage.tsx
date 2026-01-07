@@ -62,7 +62,7 @@ interface CaseDetailsPageProps {
 }
 
 const priorityColors = {
-  low: 'bg-gray-500',
+  low: 'bg-slate-500',
   medium: 'bg-blue-500',
   high: 'bg-orange-500',
   urgent: 'bg-red-500',
@@ -78,7 +78,7 @@ const priorityLabels = {
 const statusColors = {
   active: 'bg-green-500',
   pending: 'bg-yellow-500',
-  closed: 'bg-gray-500',
+  closed: 'bg-slate-500',
 };
 
 const statusLabels = {
@@ -179,9 +179,9 @@ const CaseDetailsPage: React.FC<CaseDetailsPageProps> = ({
       case 'status_change':
         return 'bg-yellow-500';
       case 'note':
-        return 'bg-gray-500';
+        return 'bg-slate-500';
       default:
-        return 'bg-gray-500';
+        return 'bg-slate-500';
     }
   };
 
@@ -285,7 +285,7 @@ const CaseDetailsPage: React.FC<CaseDetailsPageProps> = ({
                             {getEventIcon(event.type)}
                           </div>
                           {index < timelineEvents.length - 1 && (
-                            <div className="w-0.5 h-full bg-gray-200 my-1" />
+                            <div className="w-0.5 h-full bg-slate-200 my-1" />
                           )}
                         </div>
 

@@ -62,7 +62,7 @@ export function RealTimeAlerts({
       case 'low':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       default:
-        return <Bell className="h-4 w-4 text-gray-600" />;
+        return <Bell className="h-4 w-4 text-slate-600" />;
     }
   };
 
@@ -77,7 +77,7 @@ export function RealTimeAlerts({
       case 'low':
         return 'border-green-200 bg-green-50';
       default:
-        return 'border-gray-200 bg-gray-50';
+        return 'border-slate-200 bg-slate-50';
     }
   };
 

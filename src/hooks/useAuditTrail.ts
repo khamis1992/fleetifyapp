@@ -238,6 +238,6 @@ export function getActionColor(action: string): string {
     'UPDATE': 'text-blue-600 bg-blue-100',
     'DELETE': 'text-red-600 bg-red-100'
   };
-  return actionColors[action] || 'text-gray-600 bg-gray-100';
+  return actionColors[action] || 'text-slate-600 bg-slate-100';
 }
 

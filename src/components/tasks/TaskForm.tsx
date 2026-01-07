@@ -75,14 +75,14 @@ interface TaskFormProps {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'منخفضة', color: 'bg-gray-500' },
+  { value: 'low', label: 'منخفضة', color: 'bg-slate-500' },
   { value: 'medium', label: 'متوسطة', color: 'bg-blue-500' },
   { value: 'high', label: 'عالية', color: 'bg-orange-500' },
   { value: 'urgent', label: 'عاجلة', color: 'bg-red-500' },
 ];
 
 const statusOptions = [
-  { value: 'pending', label: 'معلقة', color: 'bg-gray-500' },
+  { value: 'pending', label: 'معلقة', color: 'bg-slate-500' },
   { value: 'in_progress', label: 'قيد التنفيذ', color: 'bg-blue-500' },
   { value: 'completed', label: 'مكتملة', color: 'bg-green-500' },
   { value: 'on_hold', label: 'متوقفة', color: 'bg-yellow-500' },
@@ -214,7 +214,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader className="bg-gradient-to-l from-coral-500 to-orange-500 text-white p-4 -m-6 mb-4 rounded-t-lg">
+        <DialogHeader className="bg-gradient-to-l from-rose-500 to-orange-500 text-white p-4 -m-6 mb-4 rounded-t-lg">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Sparkles className="h-5 w-5" />
             {isEditing ? 'تعديل المهمة' : 'إضافة مهمة جديدة'}
@@ -230,7 +230,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-neutral-700 flex items-center gap-2">
-                    <CheckSquare className="h-4 w-4 text-coral-500" />
+                    <CheckSquare className="h-4 w-4 text-rose-500" />
                     عنوان المهمة *
                   </FormLabel>
                   <FormControl>
@@ -272,7 +272,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-neutral-700 flex items-center gap-2">
-                      <Flag className="h-4 w-4 text-coral-500" />
+                      <Flag className="h-4 w-4 text-rose-500" />
                       الأولوية
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -333,7 +333,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-neutral-700 flex items-center gap-2">
-                    <User className="h-4 w-4 text-coral-500" />
+                    <User className="h-4 w-4 text-rose-500" />
                     تعيين إلى
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -412,7 +412,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel className="text-neutral-700 flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-coral-500" />
+                      <Clock className="h-4 w-4 text-rose-500" />
                       تاريخ الاستحقاق
                     </FormLabel>
                     <Popover>
@@ -490,7 +490,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                     >
                       <Badge
                         variant="secondary"
-                        className="flex items-center gap-1 bg-coral-100 text-coral-700"
+                        className="flex items-center gap-1 bg-rose-100 text-coral-700"
                       >
                         {tag}
                         <X
@@ -526,7 +526,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               <Card className="border-dashed">
                 <CardHeader className="py-3">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <CheckSquare className="h-4 w-4 text-coral-500" />
+                    <CheckSquare className="h-4 w-4 text-rose-500" />
                     قائمة المهام الفرعية
                   </CardTitle>
                 </CardHeader>
@@ -581,7 +581,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               <Button
                 type="submit"
                 disabled={isPending}
-                className="bg-gradient-to-l from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
+                className="bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
               >
                 {isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'تحديث المهمة' : 'إنشاء المهمة'}

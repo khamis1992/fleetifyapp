@@ -169,7 +169,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
             <div className="flex justify-end">
               <Dialog open={showInsuranceForm} onOpenChange={setShowInsuranceForm}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-coral-500 hover:bg-coral-600">
+                  <Button size="sm" className="bg-rose-500 hover:bg-coral-600">
                     <Plus className="h-4 w-4 ml-2" />
                     إضافة تأمين
                   </Button>
@@ -177,7 +177,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                 <DialogContent className="max-w-xl bg-[#f8f7f5] border-0 shadow-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader className="pb-3 border-b border-neutral-200 sticky top-0 bg-[#f8f7f5] z-10">
                     <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-coral-500 to-orange-500 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
                         <Shield className="h-5 w-5 text-white" />
                       </div>
                       <div>
@@ -197,7 +197,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           <Input
                             id="insurance_company"
                             placeholder="اسم الشركة"
-                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-coral-500"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-rose-500"
                             {...insuranceForm.register("insurance_company")}
                           />
                         </div>
@@ -206,7 +206,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           <Input
                             id="policy_number"
                             placeholder="رقم البوليصة"
-                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-coral-500"
+                            className="h-9 text-sm bg-neutral-50 border-neutral-200 focus:border-rose-500"
                             {...insuranceForm.register("policy_number")}
                           />
                         </div>
@@ -214,7 +214,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                           <Label htmlFor="coverage_type" className="text-neutral-600 text-xs">نوع التأمين</Label>
                           <select
                             id="coverage_type"
-                            className="w-full h-9 px-2 text-sm rounded-md bg-neutral-50 border border-neutral-200 focus:border-coral-500 outline-none"
+                            className="w-full h-9 px-2 text-sm rounded-md bg-neutral-50 border border-neutral-200 focus:border-rose-500 outline-none"
                             {...insuranceForm.register("coverage_type")}
                           >
                             <option value="comprehensive">شامل</option>
@@ -317,7 +317,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
 
                     {/* Notes - smaller */}
                     <textarea
-                      className="w-full p-2 text-sm rounded-lg bg-white border border-neutral-200 focus:border-coral-500 outline-none resize-none"
+                      className="w-full p-2 text-sm rounded-lg bg-white border border-neutral-200 focus:border-rose-500 outline-none resize-none"
                       rows={2}
                       placeholder="ملاحظات (اختياري)..."
                       {...insuranceForm.register("notes")}
@@ -338,7 +338,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
                         type="submit" 
                         size="sm"
                         disabled={createInsurance.isPending}
-                        className="px-4 bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white"
+                        className="px-4 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white"
                       >
                         {createInsurance.isPending ? "جاري الحفظ..." : "حفظ"}
                       </Button>
@@ -463,7 +463,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
             <div className="flex justify-end">
               <Dialog open={showRegistrationForm} onOpenChange={setShowRegistrationForm}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-coral-500 hover:bg-coral-600">
+                  <Button size="sm" className="bg-rose-500 hover:bg-coral-600">
                     <Plus className="h-4 w-4 ml-2" />
                     إضافة استمارة
                   </Button>

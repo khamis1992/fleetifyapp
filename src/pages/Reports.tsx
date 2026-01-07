@@ -83,25 +83,25 @@ export default function Reports() {
   // Show loading state while fetching company data
   if (!currentCompany && !reportModules.length) {
     return (
-      <div className={cn("min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30", layout.containerPadding, "flex items-center justify-center min-h-[400px]")} dir="rtl">
+      <div className={cn("min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30", layout.containerPadding, "flex items-center justify-center min-h-[400px]")} dir="rtl">
         <div className="text-center space-y-2">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mx-auto"></div>
-          <p className="text-gray-600">جاري تحميل التقارير...</p>
+          <p className="text-slate-600">جاري تحميل التقارير...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={cn("min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30", layout.containerPadding, layout.itemSpacing)} dir="rtl">
+    <div className={cn("min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30", layout.containerPadding, layout.itemSpacing)} dir="rtl">
       {/* Enhanced Header */}
       <div className="flex items-center gap-3">
         <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-2xl">
           <BarChart3 className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h1 className={cn("font-bold text-gray-900", isMobile ? "text-xl" : "text-2xl")}>مركز التقارير الموحد</h1>
-          <p className={cn("text-gray-600", isMobile ? "text-sm" : "")}>
+          <h1 className={cn("font-bold text-slate-900", isMobile ? "text-xl" : "text-2xl")}>مركز التقارير الموحد</h1>
+          <p className={cn("text-slate-600", isMobile ? "text-sm" : "")}>
             تقارير شاملة خاصة بـ{currentCompany?.name || 'شركتك'}
             {currentCompany?.business_type && (
               <span className="text-teal-600 mr-2">
@@ -117,7 +117,7 @@ export default function Reports() {
         {/* Enhanced Tabs Navigation */}
         {isMobile ? (
           <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-            <TabsList className={`grid h-12 w-full min-w-max grid-cols-${reportModules.length} gap-1 p-1 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl`}>
+            <TabsList className={`grid h-12 w-full min-w-max grid-cols-${reportModules.length} gap-1 p-1 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl`}>
               {reportModules.map((module) => (
                 <TabsTrigger
                   key={module.id}
@@ -131,7 +131,7 @@ export default function Reports() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <TabsList className={`grid w-full grid-cols-${reportModules.length} lg:w-auto lg:inline-flex h-12 bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-1`}>
+            <TabsList className={`grid w-full grid-cols-${reportModules.length} lg:w-auto lg:inline-flex h-12 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-1`}>
               {reportModules.map((module) => (
                 <TabsTrigger
                   key={module.id}
@@ -151,7 +151,7 @@ export default function Reports() {
             <div className={cn("flex gap-6", isMobile ? "flex-col" : "lg:flex-row")}>
               {/* Filters Sidebar */}
               <div className={isMobile ? "w-full" : "lg:w-80"}>
-                <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                   <CardContent className={cn(isMobile ? "p-4" : "p-6")}>
                     {module.id === 'properties' ? (
                       <PropertyReportFilters
@@ -180,31 +180,31 @@ export default function Reports() {
 
               {/* Reports List */}
               <div className="flex-1">
-                <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                   <CardHeader className={cn(isMobile ? "p-4" : "p-6")}>
-                    <CardTitle className={cn(isMobile ? "text-lg" : "text-xl text-gray-900")}>{module.title}</CardTitle>
-                    <CardDescription className="text-gray-600">
+                    <CardTitle className={cn(isMobile ? "text-lg" : "text-xl text-slate-900")}>{module.title}</CardTitle>
+                    <CardDescription className="text-slate-600">
                       اختر التقرير المطلوب من القائمة أدناه
                     </CardDescription>
                   </CardHeader>
                   <CardContent className={cn(isMobile ? "p-4 pt-0" : "p-6 pt-0")}>
                     <div className={cn("grid gap-4", isMobile ? "grid-cols-1" : "md:grid-cols-2")}>
                       {module.reports.map((report) => (
-                        <Card key={report.id} className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 cursor-pointer">
+                        <Card key={report.id} className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 cursor-pointer">
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-xl">
                                   <FileText className="h-5 w-5 text-white" />
                                 </div>
-                                <span className={cn("font-medium text-gray-900", isMobile ? "text-sm" : "")}>{report.name}</span>
+                                <span className={cn("font-medium text-slate-900", isMobile ? "text-sm" : "")}>{report.name}</span>
                               </div>
                               <div className="flex gap-2">
                                 <Button
                                   size={isMobile ? "sm" : "sm"}
                                   variant="outline"
                                   onClick={() => setSelectedReport(report.id)}
-                                  className={cn(isMobile && "h-10 rounded-2xl shadow-sm border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-500/10")}
+                                  className={cn(isMobile && "h-10 rounded-2xl shadow-sm border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-500/10")}
                                 >
                                   عرض
                                 </Button>
@@ -225,7 +225,7 @@ export default function Reports() {
                                       title: report.name
                                     })}
                                     disabled={isExporting}
-                                    className={cn(isMobile && "h-10 w-10 p-0 rounded-2xl shadow-sm border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-500/10")}
+                                    className={cn(isMobile && "h-10 w-10 p-0 rounded-2xl shadow-sm border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-500/10")}
                                   >
                                     <Download className="h-4 w-4" />
                                   </Button>

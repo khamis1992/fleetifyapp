@@ -111,11 +111,11 @@ export const WhatsAppMonitor: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <MessageSquare className="h-6 w-6 text-purple-600" />
             نظام تنبيهات واتساب
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-slate-600 mt-1">
             مراقبة وإدارة إرسال التنبيهات عبر واتساب
           </p>
         </div>
@@ -140,10 +140,10 @@ export const WhatsAppMonitor: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <Clock className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-slate-900">
                 {stats?.total_queued || 0}
               </div>
-              <div className="text-sm text-gray-600 mt-1">في الانتظار</div>
+              <div className="text-sm text-slate-600 mt-1">في الانتظار</div>
             </div>
           </CardContent>
         </Card>
@@ -152,10 +152,10 @@ export const WhatsAppMonitor: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-slate-900">
                 {stats?.total_sent || 0}
               </div>
-              <div className="text-sm text-gray-600 mt-1">تم الإرسال (24 ساعة)</div>
+              <div className="text-sm text-slate-600 mt-1">تم الإرسال (24 ساعة)</div>
             </div>
           </CardContent>
         </Card>
@@ -164,10 +164,10 @@ export const WhatsAppMonitor: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <XCircle className="h-8 w-8 text-red-600 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-slate-900">
                 {stats?.total_failed || 0}
               </div>
-              <div className="text-sm text-gray-600 mt-1">فشل (24 ساعة)</div>
+              <div className="text-sm text-slate-600 mt-1">فشل (24 ساعة)</div>
             </div>
           </CardContent>
         </Card>
@@ -176,10 +176,10 @@ export const WhatsAppMonitor: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <TrendingUp className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-slate-900">
                 {stats?.success_rate?.toFixed(1) || 0}%
               </div>
-              <div className="text-sm text-gray-600 mt-1">معدل النجاح</div>
+              <div className="text-sm text-slate-600 mt-1">معدل النجاح</div>
             </div>
           </CardContent>
         </Card>
@@ -188,10 +188,10 @@ export const WhatsAppMonitor: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <Send className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-slate-900">
                 {stats?.avg_send_time?.toFixed(1) || 0}s
               </div>
-              <div className="text-sm text-gray-600 mt-1">متوسط وقت الإرسال</div>
+              <div className="text-sm text-slate-600 mt-1">متوسط وقت الإرسال</div>
             </div>
           </CardContent>
         </Card>
@@ -241,7 +241,7 @@ export const WhatsAppMonitor: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
                 رقم الهاتف
               </label>
               <Input
@@ -252,19 +252,19 @@ export const WhatsAppMonitor: React.FC = () => {
                 className="text-left"
                 dir="ltr"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 مثال: 97412345678 (بدون + أو 00)
               </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
                 الرسالة
               </label>
               <textarea
                 value={testMessage}
                 onChange={(e) => setTestMessage(e.target.value)}
-                className="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full min-h-[100px] p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 placeholder="اكتب رسالتك هنا..."
               />
             </div>
@@ -301,16 +301,16 @@ export const WhatsAppMonitor: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="bg-slate-50 rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">التنبيهات المنتظرة:</span>
+                <span className="text-sm text-slate-600">التنبيهات المنتظرة:</span>
                 <Badge variant="outline" className="text-lg font-bold">
                   {stats?.total_queued || 0}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">آخر تحديث:</span>
-                <span className="text-xs text-gray-500">
+                <span className="text-sm text-slate-600">آخر تحديث:</span>
+                <span className="text-xs text-slate-500">
                   {stats?.last_updated 
                     ? new Date(stats.last_updated).toLocaleTimeString('en-US')
                     : 'غير متوفر'}
@@ -345,7 +345,7 @@ export const WhatsAppMonitor: React.FC = () => {
             </Button>
 
             {stats?.total_queued === 0 && (
-              <p className="text-sm text-gray-500 text-center">
+              <p className="text-sm text-slate-500 text-center">
                 لا توجد تنبيهات في قائمة الانتظار
               </p>
             )}
@@ -392,7 +392,7 @@ const RecentReminders: React.FC = () => {
       sent: { color: 'bg-green-100 text-green-800', label: 'تم الإرسال' },
       queued: { color: 'bg-yellow-100 text-yellow-800', label: 'في الانتظار' },
       failed: { color: 'bg-red-100 text-red-800', label: 'فشل' },
-      cancelled: { color: 'bg-gray-100 text-gray-800', label: 'ملغي' },
+      cancelled: { color: 'bg-slate-100 text-slate-800', label: 'ملغي' },
       pending: { color: 'bg-blue-100 text-blue-800', label: 'معلق' },
     };
 
@@ -425,52 +425,52 @@ const RecentReminders: React.FC = () => {
       <CardContent>
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : !reminders || reminders.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-slate-500">
             لا توجد تنبيهات حتى الآن
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-slate-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                     العميل
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                     رقم الهاتف
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                     النوع
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                     الحالة
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">
                     التاريخ
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {reminders.map((reminder: any) => (
-                  <tr key={reminder.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                  <tr key={reminder.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-sm text-slate-900">
                       {reminder.customer_name || 'غير محدد'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 font-mono" dir="ltr">
+                    <td className="px-4 py-3 text-sm text-slate-600 font-mono" dir="ltr">
                       {reminder.phone_number}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <span className="text-gray-600">
+                      <span className="text-slate-600">
                         {getReminderTypeLabel(reminder.reminder_type)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       {getStatusBadge(reminder.status)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-slate-600">
                       {new Date(reminder.created_at).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',

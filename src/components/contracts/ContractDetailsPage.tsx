@@ -566,7 +566,7 @@ const ContractDetailsPage = () => {
       suspended: 'status-suspended',
       cancelled: 'status-cancelled',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-slate-100 text-slate-800';
   };
 
   const getStatusText = (status: string): string => {
@@ -587,7 +587,7 @@ const ContractDetailsPage = () => {
       partially_paid: 'payment-partial',
       overdue: 'payment-overdue',
     };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+    return colors[status] || 'bg-slate-100 text-slate-700';
   };
 
   const getPaymentStatusText = (status: string): string => {
@@ -619,12 +619,12 @@ const ContractDetailsPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
             <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">حدث خطأ</h3>
-            <p className="text-gray-600 mb-4">فشل في تحميل بيانات العقد</p>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">حدث خطأ</h3>
+            <p className="text-slate-600 mb-4">فشل في تحميل بيانات العقد</p>
             <Button onClick={() => navigate('/contracts')}>
               العودة لصفحة العقود
             </Button>
@@ -636,12 +636,12 @@ const ContractDetailsPage = () => {
 
   if (!contract) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">العقد غير موجود</h3>
-            <p className="text-gray-600 mb-4">لم يتم العثور على هذا العقد</p>
+            <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">العقد غير موجود</h3>
+            <p className="text-slate-600 mb-4">لم يتم العثور على هذا العقد</p>
             <Button onClick={() => navigate('/contracts')}>
               العودة لصفحة العقود
             </Button>
@@ -658,9 +658,9 @@ const ContractDetailsPage = () => {
   const plateNumber = contract.vehicle?.plate_number || '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* شريط التنقل العلوي */}
-      <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
+      <nav className="bg-white border-b border-slate-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* الجانب الأيمن - زر الرجوع والعنوان */}
@@ -674,8 +674,8 @@ const ContractDetailsPage = () => {
                 <ArrowRight className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">تفاصيل العقد</h1>
-                <p className="text-xs text-gray-500">إدارة ومتابعة تفاصيل العقد</p>
+                <h1 className="text-lg font-semibold text-slate-900">تفاصيل العقد</h1>
+                <p className="text-xs text-slate-500">إدارة ومتابعة تفاصيل العقد</p>
               </div>
             </div>
 
@@ -717,10 +717,10 @@ const ContractDetailsPage = () => {
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-bold text-slate-900">
                       عقد #{contract.contract_number}
                     </h2>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-600">
                       نوع العقد: {contract.contract_type === 'rental' ? 'إيجار' : contract.contract_type}
                     </p>
                   </div>
@@ -734,11 +734,11 @@ const ContractDetailsPage = () => {
               </div>
 
               {/* الصف الأوسط - معلومات العميل والسيارة */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-y border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 border-y border-slate-200">
                 <div className="flex items-center gap-3">
                   <User className="w-5 h-5 text-red-600" />
                   <div>
-                    <p className="text-xs text-gray-500">العميل</p>
+                    <p className="text-xs text-slate-500">العميل</p>
                     <button
                       onClick={() => contract.customer_id && navigate(`/customers/${contract.customer_id}`)}
                       className="font-semibold text-coral-600 hover:text-coral-700 hover:underline cursor-pointer transition-colors text-right"
@@ -751,8 +751,8 @@ const ContractDetailsPage = () => {
                 <div className="flex items-center gap-3">
                   <Car className="w-5 h-5 text-red-600" />
                   <div>
-                    <p className="text-xs text-gray-500">السيارة</p>
-                    <p className="font-semibold text-gray-900">
+                    <p className="text-xs text-slate-500">السيارة</p>
+                    <p className="font-semibold text-slate-900">
                       {vehicleName} {plateNumber && `• ${plateNumber}`}
                     </p>
                   </div>
@@ -763,21 +763,21 @@ const ContractDetailsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <CalendarCheck className="w-4 h-4 text-green-600" />
-                  <span className="text-gray-600">البداية:</span>
+                  <span className="text-slate-600">البداية:</span>
                   <span className="font-semibold">
                     {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CalendarX className="w-4 h-4 text-red-600" />
-                  <span className="text-gray-600">النهاية:</span>
+                  <span className="text-slate-600">النهاية:</span>
                   <span className="font-semibold">
                     {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-orange-600" />
-                  <span className="text-gray-600">المتبقي:</span>
+                  <span className="text-slate-600">المتبقي:</span>
                   <span className="font-semibold text-orange-600">
                     {contractStats?.daysRemaining || 0} يوماً ({contractStats?.progressPercentage || 0}%)
                   </span>
@@ -865,12 +865,12 @@ const ContractDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-red-600" />
                 </div>
-                <span className="text-xs text-gray-500">إجمالي القيمة</span>
+                <span className="text-xs text-slate-500">إجمالي القيمة</span>
               </div>
               <div className="text-3xl font-bold text-red-600 mb-1">
                 {formatCurrency(contractStats?.totalAmount || 0)}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-slate-600">
                 شهرياً: {formatCurrency(contractStats?.monthlyAmount || 0)}
               </div>
             </CardContent>
@@ -883,12 +883,12 @@ const ContractDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-green-600" />
                 </div>
-                <span className="text-xs text-gray-500">مدة العقد</span>
+                <span className="text-xs text-slate-500">مدة العقد</span>
               </div>
               <div className="text-3xl font-bold text-green-600 mb-1">
                 {contractStats?.totalMonths || 0} شهر
               </div>
-              <div className="text-sm text-gray-600 space-y-1">
+              <div className="text-sm text-slate-600 space-y-1">
                 <div className="flex justify-between">
                   <span>المنقضي:</span>
                   <span className="font-medium">{contractStats?.monthsElapsed || 0} شهر</span>
@@ -898,7 +898,7 @@ const ContractDetailsPage = () => {
                   <span className="font-medium">{contractStats?.monthsRemaining || 0} شهر ({contractStats?.daysRemaining || 0} يوم)</span>
                 </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="w-full bg-slate-200 rounded-full h-2 mt-3">
                 <div
                   className="bg-green-600 h-2 rounded-full transition-all"
                   style={{ width: `${contractStats?.progressPercentage || 0}%` }}
@@ -920,7 +920,7 @@ const ContractDetailsPage = () => {
                     contractStats?.paymentStatus === 'completed' ? 'text-green-600' : 'text-orange-600'
                   )} />
                 </div>
-                <span className="text-xs text-gray-500">حالة السداد</span>
+                <span className="text-xs text-slate-500">حالة السداد</span>
               </div>
               <div className={cn(
                 "text-3xl font-bold mb-1",
@@ -928,7 +928,7 @@ const ContractDetailsPage = () => {
               )}>
                 {contractStats?.paidPayments} / {contractStats?.totalPayments}
               </div>
-              <div className="text-sm text-gray-600 mb-1">
+              <div className="text-sm text-slate-600 mb-1">
                 {contractStats?.paymentStatus === 'completed' ? (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle className="w-4 h-4" />
@@ -944,7 +944,7 @@ const ContractDetailsPage = () => {
                   + {formatCurrency(contractStats?.extraPayments || 0)} مبالغ إضافية
                 </div>
               )}
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div className="w-full bg-slate-200 rounded-full h-2 mt-3">
                 <div
                   className={cn(
                     "h-2 rounded-full transition-all",
@@ -967,32 +967,32 @@ const ContractDetailsPage = () => {
                 <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
                   <ClipboardCheck className="w-5 h-5 text-orange-600" />
                 </div>
-                <span className="text-xs text-gray-500">حالة الفحص</span>
+                <span className="text-xs text-slate-500">حالة الفحص</span>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">استلام المركبة</span>
+                  <span className="text-sm text-slate-600">استلام المركبة</span>
                   {contractStats?.hasCheckIn ? (
                     <span className="text-green-600 flex items-center gap-1">
                       <CheckCircle className="w-4 h-4" />
                       مكتمل
                     </span>
                   ) : (
-                    <span className="text-gray-400 flex items-center gap-1">
+                    <span className="text-slate-400 flex items-center gap-1">
                       <Circle className="w-4 h-4" />
                       قادم
                     </span>
                   )}
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">تسليم المركبة</span>
+                  <span className="text-sm text-slate-600">تسليم المركبة</span>
                   {contractStats?.hasCheckOut ? (
                     <span className="text-green-600 flex items-center gap-1">
                       <CheckCircle className="w-4 h-4" />
                       مكتمل
                     </span>
                   ) : (
-                    <span className="text-gray-400 flex items-center gap-1">
+                    <span className="text-slate-400 flex items-center gap-1">
                       <Circle className="w-4 h-4" />
                       قادم
                     </span>
@@ -1006,7 +1006,7 @@ const ContractDetailsPage = () => {
         {/* قسم التبويبات */}
         <Card className="animate-in fade-in-50 duration-500">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b border-gray-200 overflow-x-auto">
+            <div className="border-b border-slate-200 overflow-x-auto">
               <TabsList className="w-full justify-start bg-transparent h-auto p-2 rounded-none flex gap-1">
                 <TabsTrigger
                   value="details"
@@ -1170,7 +1170,7 @@ const ContractDetailsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold">المخالفات المرورية</h3>
-                      <p className="text-sm text-gray-500">المخالفات المرورية المسجلة على هذا العقد</p>
+                      <p className="text-sm text-slate-500">المخالفات المرورية المسجلة على هذا العقد</p>
                     </div>
                     <Badge variant={trafficViolations.length > 0 ? "destructive" : "secondary"}>
                       {trafficViolations.length} مخالفة
@@ -1179,18 +1179,18 @@ const ContractDetailsPage = () => {
 
                   {loadingViolations ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                     </div>
                   ) : trafficViolations.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                      <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">لا توجد مخالفات مرورية مسجلة على هذا العقد</p>
+                    <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                      <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                      <p className="text-slate-500">لا توجد مخالفات مرورية مسجلة على هذا العقد</p>
                     </div>
                   ) : (
                     <div className="bg-white rounded-lg border overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50">
+                          <TableRow className="bg-slate-50">
                             <TableHead className="text-right">رقم المخالفة</TableHead>
                             <TableHead className="text-right">التاريخ</TableHead>
                             <TableHead className="text-right">نوع المخالفة</TableHead>
@@ -1201,12 +1201,12 @@ const ContractDetailsPage = () => {
                         </TableHeader>
                         <TableBody>
                           {trafficViolations.map((violation: any) => (
-                            <TableRow key={violation.id} className="hover:bg-gray-50">
+                            <TableRow key={violation.id} className="hover:bg-slate-50">
                               <TableCell className="font-mono text-sm">{violation.violation_number}</TableCell>
                               <TableCell>
                                 {violation.violation_date && format(new Date(violation.violation_date), 'dd/MM/yyyy', { locale: ar })}
                                 {violation.violation_time && (
-                                  <span className="text-xs text-gray-500 mr-2">
+                                  <span className="text-xs text-slate-500 mr-2">
                                     {violation.violation_time}
                                   </span>
                                 )}
@@ -1215,7 +1215,7 @@ const ContractDetailsPage = () => {
                                 <div>
                                   <span className="font-medium">{violation.violation_type}</span>
                                   {violation.violation_description && (
-                                    <p className="text-xs text-gray-500 mt-1">{violation.violation_description}</p>
+                                    <p className="text-xs text-slate-500 mt-1">{violation.violation_description}</p>
                                   )}
                                 </div>
                               </TableCell>
@@ -1248,9 +1248,9 @@ const ContractDetailsPage = () => {
                       </Table>
                       
                       {/* ملخص المخالفات */}
-                      <div className="bg-gray-50 p-4 border-t">
+                      <div className="bg-slate-50 p-4 border-t">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">إجمالي المخالفات غير المدفوعة:</span>
+                          <span className="text-sm text-slate-600">إجمالي المخالفات غير المدفوعة:</span>
                           <span className="font-bold text-red-600">
                             {formatCurrency(
                               trafficViolations
@@ -1418,7 +1418,7 @@ const ContractDetailsPage = () => {
               </div>
               
               {contract && (
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-2">
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
                   <p><strong>رقم العقد:</strong> {contract.contract_number}</p>
                   <p><strong>العميل:</strong> {customerName}</p>
                   <p><strong>المركبة:</strong> {vehicleName}</p>
@@ -1560,7 +1560,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* معلومات العقد */}
-      <Card className="bg-gray-50">
+      <Card className="bg-slate-50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-red-600" />
@@ -1577,7 +1577,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           <InfoRow
             label="الحالة"
             value={
-              <Badge className={contract.status === 'active' ? 'status-active' : 'bg-gray-100'}>
+              <Badge className={contract.status === 'active' ? 'status-active' : 'bg-slate-100'}>
                 {contract.status === 'active' ? 'نشط' : contract.status}
               </Badge>
             }
@@ -1594,7 +1594,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
       </Card>
 
       {/* معلومات العميل */}
-      <Card className="bg-gray-50">
+      <Card className="bg-slate-50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="w-5 h-5 text-green-600" />
@@ -1621,7 +1621,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
       </Card>
 
       {/* معلومات السيارة */}
-      <Card className="bg-gray-50">
+      <Card className="bg-slate-50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Car className="w-5 h-5 text-orange-600" />
@@ -1636,7 +1636,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
           <InfoRow
             label="الحالة"
             value={
-              <Badge className={contract.vehicle?.status === 'available' ? 'status-active' : 'bg-gray-100'}>
+              <Badge className={contract.vehicle?.status === 'available' ? 'status-active' : 'bg-slate-100'}>
                 {contract.vehicle?.status || '-'}
               </Badge>
             }
@@ -1645,7 +1645,7 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
       </Card>
 
       {/* المعلومات المالية */}
-      <Card className="bg-gray-50">
+      <Card className="bg-slate-50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-purple-600" />
@@ -1680,15 +1680,15 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
             />
           ) : (
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">حالة العقد</span>
+              <span className="text-slate-600">حالة العقد</span>
               <span className="flex items-center gap-1 text-green-600 font-semibold">
                 <CheckCircle className="w-4 h-4" />
                 تم سداد قيمة العقد بالكامل
               </span>
             </div>
           )}
-          <div className="flex justify-between pt-2 border-t border-gray-300">
-            <span className="text-gray-900 font-semibold">الحساب المحاسبي</span>
+          <div className="flex justify-between pt-2 border-t border-slate-300">
+            <span className="text-slate-900 font-semibold">الحساب المحاسبي</span>
             <span className="font-semibold text-red-600">
               {contract.account_id ? 'مربوط' : '-'}
             </span>
@@ -1739,13 +1739,13 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
               </div>
               <div className="border-t pt-4 mt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-semibold">إجمالي المدفوعات</span>
+                  <span className="text-slate-700 font-semibold">إجمالي المدفوعات</span>
                   <span className="text-xl font-bold text-green-600">
                     {formatCurrency(contract.total_paid || 0)}
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 💡 للاطلاع على تفاصيل كل دفعة، يرجى مراجعة تبويب "جدول الدفعات" أعلاه.
               </p>
             </div>
@@ -1766,7 +1766,7 @@ interface InfoRowProps {
 
 const InfoRow = ({ label, value, mono, dir }: InfoRowProps) => (
   <div className="flex justify-between items-center">
-    <span className="text-gray-600">{label}</span>
+    <span className="text-slate-600">{label}</span>
     <span className={cn('font-semibold', mono && 'font-mono')} dir={dir}>
       {value}
     </span>
@@ -1966,8 +1966,8 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">فواتير العقد</h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <h3 className="text-lg font-semibold text-slate-900">فواتير العقد</h3>
+            <p className="text-sm text-slate-500 mt-1">
               {invoices.length} من {expectedInvoicesCount} فاتورة متوقعة
               {hasMissingInvoices && (
                 <span className="text-orange-600 font-semibold mr-2">
@@ -1988,11 +1988,11 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
       </div>
 
       {invoices.length === 0 ? (
-        <Card className="border-2 border-dashed border-gray-300">
+        <Card className="border-2 border-dashed border-slate-300">
           <CardContent className="p-8 text-center">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-700 font-semibold mb-2">لا توجد فواتير لهذا العقد</p>
-            <p className="text-sm text-gray-500 mb-6">
+            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-700 font-semibold mb-2">لا توجد فواتير لهذا العقد</p>
+            <p className="text-sm text-slate-500 mb-6">
               يمكنك إنشاء الفواتير تلقائياً بناءً على جدول الدفعات المحسوب من بيانات العقد
             </p>
             <Button 
@@ -2040,7 +2040,7 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
                       </div>
                       <div>
                         <h4 className="font-semibold">فاتورة #{invoice.invoice_number}</h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-slate-600">
                           تاريخ الاستحقاق:{' '}
                           {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
                         </p>
@@ -2053,12 +2053,12 @@ const InvoicesTab = ({ invoices, contract, contractId, companyId, onPay, onPrevi
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-3">
                     <div>
-                      <div className="text-xs text-gray-500">المبلغ</div>
+                      <div className="text-xs text-slate-500">المبلغ</div>
                       <div className="font-semibold">{formatCurrency(invoice.total_amount || 0)}</div>
                     </div>
                     {invoice.payment_date && (
                       <div>
-                        <div className="text-xs text-gray-500">تاريخ الدفع</div>
+                        <div className="text-xs text-slate-500">تاريخ الدفع</div>
                         <div className="font-semibold">
                           {format(new Date(invoice.payment_date), 'dd/MM/yyyy')}
                         </div>
@@ -2123,7 +2123,7 @@ const getPaymentStatusColor = (status: string): string => {
     partially_paid: 'payment-partial',
     overdue: 'payment-overdue',
   };
-  return colors[status] || 'bg-gray-100 text-gray-700';
+  return colors[status] || 'bg-slate-100 text-slate-700';
 };
 
 const getPaymentStatusText = (status: string): string => {
@@ -2284,7 +2284,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       cancelled: 'bg-red-100 text-red-800',
       failed: 'bg-red-100 text-red-800'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-slate-100 text-slate-800';
   };
 
   const totalPaid = contract.total_paid || 0;
@@ -2360,13 +2360,13 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
         <CardContent className="p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">إجمالي القيمة</div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xs text-slate-500 mb-1">إجمالي القيمة</div>
+              <div className="text-xl font-bold text-slate-900">
                 {formatCurrency(totalAmount)}
               </div>
             </div>
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">المدفوع</div>
+              <div className="text-xs text-slate-500 mb-1">المدفوع</div>
               <div className="text-xl font-bold text-green-600">
                 {formatCurrency(totalPaid)}
               </div>
@@ -2375,7 +2375,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
               </div>
             </div>
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">المتبقي</div>
+              <div className="text-xs text-slate-500 mb-1">المتبقي</div>
               <div className="text-xl font-bold text-orange-600">
                 {formatCurrency(balanceDue)}
               </div>
@@ -2384,7 +2384,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
               </div>
             </div>
             <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">نسبة الإنجاز</div>
+              <div className="text-xs text-slate-500 mb-1">نسبة الإنجاز</div>
               <div className="text-xl font-bold text-blue-600">
                 {totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0}%
               </div>
@@ -2400,7 +2400,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
       {/* جدول الدفعات الموحد */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">جدول الدفعات</h3>
+          <h3 className="text-lg font-semibold text-slate-900">جدول الدفعات</h3>
           <div className="flex items-center gap-3 text-sm">
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-green-500"></span>
@@ -2415,23 +2415,23 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
               معلق ({unifiedPaymentSchedule.filter(p => p.status === 'pending').length})
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-gray-300"></span>
+              <span className="w-3 h-3 rounded-full bg-slate-300"></span>
               قادم ({unifiedPaymentSchedule.filter(p => p.status === 'upcoming').length})
             </span>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">تاريخ الاستحقاق</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">تاريخ الدفع</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">المبلغ</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">طريقة الدفع</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">الحالة</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">الإجراءات</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">#</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">تاريخ الاستحقاق</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">تاريخ الدفع</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">المبلغ</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">طريقة الدفع</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">الحالة</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -2439,11 +2439,11 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                 <tr
                   key={payment.number}
                   className={cn(
-                    'hover:bg-gray-50 transition-colors',
+                    'hover:bg-slate-50 transition-colors',
                     payment.status === 'paid' && 'bg-green-50/30',
                     payment.status === 'overdue' && 'bg-red-50/50',
                     payment.status === 'pending' && 'bg-yellow-50/50',
-                    payment.status === 'upcoming' && 'bg-gray-50/30'
+                    payment.status === 'upcoming' && 'bg-slate-50/30'
                   )}
                 >
                   <td className="px-4 py-3">
@@ -2452,12 +2452,12 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                       payment.status === 'paid' && 'bg-green-100 text-green-700',
                       payment.status === 'overdue' && 'bg-red-100 text-red-700',
                       payment.status === 'pending' && 'bg-yellow-100 text-yellow-700',
-                      payment.status === 'upcoming' && 'bg-gray-100 text-gray-600'
+                      payment.status === 'upcoming' && 'bg-slate-100 text-slate-600'
                     )}>
                       {payment.number}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
+                  <td className="px-4 py-3 text-sm text-slate-700">
                     {format(payment.dueDate, 'dd/MM/yyyy')}
                   </td>
                   <td className="px-4 py-3 text-sm">
@@ -2466,10 +2466,10 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                         {format(new Date(payment.paymentDate), 'dd/MM/yyyy')}
                       </span>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-slate-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                  <td className="px-4 py-3 text-sm font-semibold text-slate-900">
                     {formatCurrency(payment.amount)}
                   </td>
                   <td className="px-4 py-3 text-sm">
@@ -2478,7 +2478,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                         {getPaymentMethodLabel(payment.paymentMethod)}
                       </Badge>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-slate-400">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -2488,7 +2488,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                         payment.status === 'paid' && 'bg-green-100 text-green-700 border-green-200',
                         payment.status === 'overdue' && 'bg-red-100 text-red-700 border-red-200',
                         payment.status === 'pending' && 'bg-yellow-100 text-yellow-700 border-yellow-200',
-                        payment.status === 'upcoming' && 'bg-gray-100 text-gray-500 border-gray-200'
+                        payment.status === 'upcoming' && 'bg-slate-100 text-slate-500 border-slate-200'
                       )}
                     >
                       {payment.status === 'paid' ? '✓ مدفوع' : payment.status === 'overdue' ? '⚠ متأخر' : payment.status === 'pending' ? '⏳ معلق' : 'قادم'}
@@ -2544,7 +2544,7 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                           {payment.status === 'overdue' ? 'سداد المتأخر' : 'دفع الآن'}
                         </Button>
                       ) : (
-                        <span className="text-gray-300 text-sm">—</span>
+                        <span className="text-slate-300 text-sm">—</span>
                       )}
                     </div>
                   </td>
@@ -2667,7 +2667,7 @@ const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
 
   if (!contractStats) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-slate-500">
         جاري تحميل بيانات الجدول الزمني...
       </div>
     );
@@ -2675,7 +2675,7 @@ const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">المخطط الزمني للعقد</h3>
+      <h3 className="text-lg font-semibold text-slate-900 mb-6">المخطط الزمني للعقد</h3>
 
       <div className="relative">
         <div className="flex items-center justify-between">
@@ -2693,7 +2693,7 @@ const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
           {[1, 2, 3].map((num) => (
             <Fragment key={num}>
               <TimelineNode
-                icon={num <= paidPayments ? <Check className="w-6 h-6 text-green-600" /> : num === paidPayments + 1 ? <Clock className="w-6 h-6 text-blue-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
+                icon={num <= paidPayments ? <Check className="w-6 h-6 text-green-600" /> : num === paidPayments + 1 ? <Clock className="w-6 h-6 text-blue-600" /> : <Circle className="w-6 h-6 text-slate-400" />}
                 label={`الدفعة ${num}`}
                 date={num <= paidPayments ? `مدفوع` : num === paidPayments + 1 ? 'قريباً' : ''}
                 isCompleted={num <= paidPayments}
@@ -2705,7 +2705,7 @@ const TimelineTab = ({ contract, contractStats }: TimelineTabProps) => {
 
           {/* نقطة الانتهاء */}
           <TimelineNode
-            icon={<Circle className="w-6 h-6 text-gray-400" />}
+            icon={<Circle className="w-6 h-6 text-slate-400" />}
             label="الانتهاء"
             date={contract.end_date}
             isCompleted={false}
@@ -2732,13 +2732,13 @@ const TimelineNode = ({ icon, label, date, isCompleted, isCurrent }: TimelineNod
         'w-12 h-12 rounded-full border-4 flex items-center justify-center mx-auto mb-2',
         isCompleted && 'bg-green-100 border-green-500',
         isCurrent && 'bg-blue-100 border-blue-500 animate-pulse',
-        !isCompleted && !isCurrent && 'bg-gray-100 border-gray-300'
+        !isCompleted && !isCurrent && 'bg-slate-100 border-slate-300'
       )}
     >
       {icon}
     </div>
     <p className="font-semibold text-sm">{label}</p>
-    <p className="text-xs text-gray-500">
+    <p className="text-xs text-slate-500">
       {date && (typeof date === 'string' && date.includes('-') 
         ? format(new Date(date), 'yyyy-MM-dd')
         : date)}
@@ -2755,7 +2755,7 @@ const TimelineConnector = ({ isCompleted }: TimelineConnectorProps) => (
   <div
     className={cn(
       'flex-1 h-1',
-      isCompleted ? 'bg-green-500' : 'bg-gray-200'
+      isCompleted ? 'bg-green-500' : 'bg-slate-200'
     )}
   />
 );
@@ -2798,7 +2798,7 @@ const ActivityLogTab = ({ contractId }: ActivityLogTabProps) => {
   if (activities.length === 0) {
     return (
       <Card>
-        <CardContent className="p-8 text-center text-gray-500">
+        <CardContent className="p-8 text-center text-slate-500">
           لا توجد أنشطة مسجلة لهذا العقد
         </CardContent>
       </Card>
@@ -2807,23 +2807,23 @@ const ActivityLogTab = ({ contractId }: ActivityLogTabProps) => {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">سجل النشاط والتعديلات</h3>
+      <h3 className="text-lg font-semibold text-slate-900 mb-6">سجل النشاط والتعديلات</h3>
 
       <div className="space-y-4">
         {activities.map((activity) => (
-          <Card key={activity.id} className="bg-gray-50">
+          <Card key={activity.id} className="bg-slate-50">
             <CardContent className="p-4 flex gap-4">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                 <FilePlus className="w-5 h-5 text-blue-600" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900 mb-1">
+                <p className="font-semibold text-slate-900 mb-1">
                   {activity.action || 'نشاط'}
                 </p>
-                <p className="text-sm text-gray-600 mb-1">
+                <p className="text-sm text-slate-600 mb-1">
                   {activity.description || 'تم إجراء تعديل'}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500">
                   {activity.created_at && format(new Date(activity.created_at), 'yyyy-MM-dd HH:mm', { locale: ar })}
                   {activity.profile?.full_name && ` • بواسطة: ${activity.profile.full_name}`}
                 </p>

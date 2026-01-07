@@ -304,7 +304,7 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
             <div className="flex gap-2 items-end">
               {['upload', 'mapping', 'preview', 'duplicates', 'complete'].map((s, i) => (
                 <div key={s} className="flex-1">
-                  <div className={`h-2 rounded-full ${s === 'upload' ? 'bg-blue-500' : 'bg-gray-200'}`} />
+                  <div className={`h-2 rounded-full ${s === 'upload' ? 'bg-blue-500' : 'bg-slate-200'}`} />
                 </div>
               ))}
             </div>
@@ -334,9 +334,9 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
                 id="csv-file"
               />
               <label htmlFor="csv-file" className="cursor-pointer block">
-                <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400" />
                 <p className="font-medium">اختر ملف CSV</p>
-                <p className="text-sm text-gray-500">الحد الأقصى 100MB</p>
+                <p className="text-sm text-slate-500">الحد الأقصى 100MB</p>
               </label>
             </div>
 
@@ -345,7 +345,7 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <div>
                   <p className="font-medium">{csvFile.name}</p>
-                  <p className="text-sm text-gray-600">{csvData.length} صف</p>
+                  <p className="text-sm text-slate-600">{csvData.length} صف</p>
                 </div>
               </div>
             )}
@@ -385,7 +385,7 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
                 {mappings.map(m => (
                   <div key={m.csvColumn} className="flex items-center gap-2 p-3 border rounded">
                     <div className="flex-1 text-sm font-medium">{m.csvColumn}</div>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
                     <Select value={m.targetField} onValueChange={v => updateMapping(m.csvColumn, v)}>
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="اختر الحقل" />
@@ -436,26 +436,26 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-2xl font-bold text-blue-600">{csvData.length}</p>
-                  <p className="text-sm text-gray-600">إجمالي الصفوف</p>
+                  <p className="text-sm text-slate-600">إجمالي الصفوف</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-2xl font-bold text-green-600">{mappings.filter(m => m.targetField).length}</p>
-                  <p className="text-sm text-gray-600">أعمدة مربوطة</p>
+                  <p className="text-sm text-slate-600">أعمدة مربوطة</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-2xl font-bold text-orange-600">{mappings.filter(m => !m.targetField).length}</p>
-                  <p className="text-sm text-gray-600">أعمدة مهملة</p>
+                  <p className="text-sm text-slate-600">أعمدة مهملة</p>
                 </CardContent>
               </Card>
             </div>
 
             <ScrollArea className="h-64 border rounded-lg">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-slate-50 sticky top-0">
                   <tr>
                     {mappings.filter(m => m.targetField).map(m => (
                       <th key={m.targetField} className="px-4 py-2 text-right font-medium border-b">
@@ -466,7 +466,7 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
                 </thead>
                 <tbody>
                   {previewData.map((row, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50">
+                    <tr key={idx} className="border-b hover:bg-slate-50">
                       {Object.values(row).map((val, i) => (
                         <td key={i} className="px-4 py-2">{String(val || '-').substring(0, 20)}</td>
                       ))}
@@ -517,7 +517,7 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
                     <Card key={idx}>
                       <CardContent className="pt-4">
                         <p className="text-sm font-medium">الصف {dup.rowIndex}</p>
-                        <p className="text-sm text-gray-600">{dup.name} - {dup.phone}</p>
+                        <p className="text-sm text-slate-600">{dup.name} - {dup.phone}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -554,13 +554,13 @@ export const CustomerImportWizard: React.FC<CustomerImportWizardProps> = ({
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-2xl font-bold text-green-600">{importResult.successfulImports}</p>
-                  <p className="text-sm text-gray-600">تم بنجاح</p>
+                  <p className="text-sm text-slate-600">تم بنجاح</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-2xl font-bold text-red-600">{importResult.failedImports}</p>
-                  <p className="text-sm text-gray-600">فشل</p>
+                  <p className="text-sm text-slate-600">فشل</p>
                 </CardContent>
               </Card>
             </div>

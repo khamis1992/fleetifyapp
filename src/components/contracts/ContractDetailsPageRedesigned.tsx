@@ -661,7 +661,7 @@ const ContractDetailsPageRedesigned = () => {
                 <ArrowRight className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-200">
                   <FileSignature className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -706,7 +706,7 @@ const ContractDetailsPageRedesigned = () => {
           {/* Top Row - Number & Status */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
                 <FileText className="w-7 h-7 text-white" />
               </div>
               <div>

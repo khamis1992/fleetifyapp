@@ -135,22 +135,22 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ testResult, onSubmitFeedbac
             {aiRecommendation.action === 'reject' && 'رفض'}
           </Badge>
         </div>
-        <p className="text-xs text-gray-600">{aiRecommendation.reason}</p>
+        <p className="text-xs text-slate-600">{aiRecommendation.reason}</p>
       </div>
       {/* Extracted Data Display */}
-      <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="bg-slate-50 p-4 rounded-lg">
         <h5 className="font-medium mb-3">البيانات المستخرجة:</h5>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
           <div>
-            <span className="font-medium text-gray-600">اسم العميل:</span>
+            <span className="font-medium text-slate-600">اسم العميل:</span>
             <p className="mt-1">{testResult.ocr_result?.data?.customer_name || 'غير محدد'}</p>
           </div>
           <div>
-            <span className="font-medium text-gray-600">المبلغ:</span>
+            <span className="font-medium text-slate-600">المبلغ:</span>
             <p className="mt-1">{testResult.ocr_result?.data?.total_amount || 'غير محدد'}</p>
           </div>
           <div>
-            <span className="font-medium text-gray-600">رقم المركبة:</span>
+            <span className="font-medium text-slate-600">رقم المركبة:</span>
             <p className="mt-1">{testResult.ocr_result?.data?.car_number || 'غير محدد'}</p>
           </div>
         </div>
@@ -167,13 +167,13 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ testResult, onSubmitFeedbac
               className={`p-1 rounded transition-colors ${
                 value <= rating 
                   ? 'text-yellow-500 hover:text-yellow-600' 
-                  : 'text-gray-300 hover:text-gray-400'
+                  : 'text-slate-300 hover:text-slate-400'
               }`}
             >
               <Star className="h-6 w-6 fill-current" />
             </button>
           ))}
-          <span className="ml-2 text-sm text-gray-600">
+          <span className="ml-2 text-sm text-slate-600">
             {rating === 5 && 'ممتاز'}
             {rating === 4 && 'جيد جداً'}
             {rating === 3 && 'جيد'}
@@ -197,7 +197,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ testResult, onSubmitFeedbac
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               isCorrect === true 
                 ? 'bg-green-100 border-green-300 text-green-800' 
-                : 'bg-white border-gray-300 hover:bg-gray-50'
+                : 'bg-white border-slate-300 hover:bg-slate-50'
             }`}
           >
             <ThumbsUp className="h-4 w-4" />
@@ -211,7 +211,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ testResult, onSubmitFeedbac
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               isCorrect === false 
                 ? 'bg-red-100 border-red-300 text-red-800' 
-                : 'bg-white border-gray-300 hover:bg-gray-50'
+                : 'bg-white border-slate-300 hover:bg-slate-50'
             }`}
           >
             <ThumbsDown className="h-4 w-4" />

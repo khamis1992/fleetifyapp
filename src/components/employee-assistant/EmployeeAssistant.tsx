@@ -227,7 +227,7 @@ const PhaseSection: React.FC<{
         <div 
           className={cn(
             'flex items-center justify-between p-4 cursor-pointer rounded-lg transition-all border',
-            isActive && 'bg-coral-50 border-coral-200',
+            isActive && 'bg-rose-50 border-rose-200',
             isComplete && 'bg-green-50 border-green-200',
             hasBlockingIssue && 'bg-red-50 border-red-200',
             !isActive && !isComplete && !hasBlockingIssue && 'bg-neutral-50 border-neutral-200 hover:bg-neutral-100'
@@ -238,7 +238,7 @@ const PhaseSection: React.FC<{
               'w-8 h-8 rounded-full flex items-center justify-center text-lg',
               isComplete && 'bg-green-100',
               hasBlockingIssue && 'bg-red-100',
-              isActive && !isComplete && !hasBlockingIssue && 'bg-coral-100',
+              isActive && !isComplete && !hasBlockingIssue && 'bg-rose-100',
               !isActive && !isComplete && !hasBlockingIssue && 'bg-neutral-200'
             )}>
               {isComplete ? '✓' : phase.icon}
@@ -265,7 +265,7 @@ const PhaseSection: React.FC<{
                   'h-1.5 w-20',
                   isComplete && '[&>div]:bg-green-500',
                   hasBlockingIssue && '[&>div]:bg-red-500',
-                  !isComplete && !hasBlockingIssue && '[&>div]:bg-coral-500'
+                  !isComplete && !hasBlockingIssue && '[&>div]:bg-rose-500'
                 )}
               />
             </div>
@@ -421,7 +421,7 @@ export const EmployeeAssistant: React.FC<EmployeeAssistantProps> = ({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-coral-500" />
+            <Sparkles className="h-5 w-5 text-rose-500" />
             مساعد الموظف
           </CardTitle>
           <Badge 
@@ -446,7 +446,7 @@ export const EmployeeAssistant: React.FC<EmployeeAssistantProps> = ({
             'h-2',
             isComplete && '[&>div]:bg-green-500',
             hasBlockingIssues && '[&>div]:bg-red-500',
-            !isComplete && !hasBlockingIssues && '[&>div]:bg-coral-500'
+            !isComplete && !hasBlockingIssues && '[&>div]:bg-rose-500'
           )}
         />
         

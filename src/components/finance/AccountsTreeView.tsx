@@ -186,8 +186,8 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
       <div key={node.id} className="select-none">
         <div 
           className={`
-            flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 transition-colors
-            ${!node.isActive ? 'opacity-60 bg-gray-100' : ''}
+            flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-slate-50 transition-colors
+            ${!node.isActive ? 'opacity-60 bg-slate-100' : ''}
             ${node.isSystem ? 'bg-blue-50 border border-blue-200' : ''}
           `}
           style={{ paddingRight: `${indentLevel + 8}px` }}
@@ -197,9 +197,9 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
           <div className="w-4 h-4 flex items-center justify-center">
             {hasChildren ? (
               isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-gray-600" />
+                <ChevronDown className="h-4 w-4 text-slate-600" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-gray-600" />
+                <ChevronRight className="h-4 w-4 text-slate-600" />
               )
             ) : (
               <div className="w-4 h-4" />
@@ -215,7 +215,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 <Folder className="h-4 w-4 text-blue-600" />
               )
             ) : (
-              <FileText className="h-4 w-4 text-gray-600" />
+              <FileText className="h-4 w-4 text-slate-600" />
             )}
           </div>
 
@@ -231,7 +231,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 {node.accountNameAr || node.accountName}
               </span>
               {node.accountName && node.accountNameAr && (
-                <span className="text-sm text-gray-500 truncate">
+                <span className="text-sm text-slate-500 truncate">
                   ({node.accountName})
                 </span>
               )}
@@ -370,9 +370,9 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <Layers className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-600">لا توجد حسابات لعرضها</p>
-          <p className="text-sm text-gray-500">قم بإضافة حسابات جديدة لعرض الشجرة</p>
+          <Layers className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-lg font-medium text-slate-600">لا توجد حسابات لعرضها</p>
+          <p className="text-sm text-slate-500">قم بإضافة حسابات جديدة لعرض الشجرة</p>
         </CardContent>
       </Card>
     );
@@ -426,7 +426,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input
             type="text"
             placeholder="البحث في الحسابات (الاسم، الرمز، أو رقم الحساب)..."
@@ -445,7 +445,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
                 {treeData.map(node => renderNode(node))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-slate-500">
                 لا توجد حسابات صالحة لعرضها
               </div>
             )}
@@ -453,7 +453,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
         </div>
 
         {/* Legend */}
-        <div className="text-sm text-gray-600 space-y-1">
+        <div className="text-sm text-slate-600 space-y-1">
           <p className="font-medium">دليل الرموز:</p>
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-1">
@@ -461,7 +461,7 @@ export const AccountsTreeView: React.FC<AccountsTreeViewProps> = ({
               <span>حساب رئيسي</span>
             </div>
             <div className="flex items-center gap-1">
-              <FileText className="h-4 w-4 text-gray-600" />
+              <FileText className="h-4 w-4 text-slate-600" />
               <span>حساب فرعي</span>
             </div>
             <div className="flex items-center gap-1">

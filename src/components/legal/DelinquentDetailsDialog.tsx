@@ -200,7 +200,7 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
                     navigate(`/contracts/${customer.contract_number}`);
                   }
                 }}
-                className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded hover:bg-coral-100 hover:text-coral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded hover:bg-rose-100 hover:text-coral-700 cursor-pointer transition-colors"
                 title="عرض تفاصيل العقد"
               >
                 <FileText className="w-3 h-3 text-purple-500" />
@@ -234,7 +234,7 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
 
             {/* قائمة الفواتير - تصميم بطاقات بدلاً من جدول */}
             <div className="border rounded-lg overflow-hidden">
-              <div className="bg-gradient-to-l from-coral-500 to-orange-500 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+              <div className="bg-gradient-to-l from-rose-500 to-orange-500 text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
                 <Receipt className="w-4 h-4" />
                 الفواتير المتأخرة ({invoices.length})
               </div>

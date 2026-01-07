@@ -58,12 +58,12 @@ export function PageCustomizer({
         <div className="flex items-center justify-between">
           <div>
             {title && (
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
                 {title}
               </h1>
             )}
             {titleAr && (
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {titleAr}
               </p>
             )}

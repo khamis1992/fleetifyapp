@@ -498,7 +498,7 @@ export default function HelpHub() {
                   <p className="text-xs text-muted-foreground">انتهاء العقود والمدفوعات</p>
                 </div>
                 <div className="border rounded-lg p-3">
-                  <Printer className="h-5 w-5 text-gray-500 mb-2" />
+                  <Printer className="h-5 w-5 text-slate-500 mb-2" />
                   <h5 className="font-semibold text-sm">الطباعة والتصدير</h5>
                   <p className="text-xs text-muted-foreground">PDF, Excel, CSV</p>
                 </div>

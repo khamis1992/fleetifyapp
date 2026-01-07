@@ -200,25 +200,25 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
             <div className={`rounded-2xl p-4 border ${
               stats.overdueCount > 0 
                 ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800' 
-                : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800'
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  stats.overdueCount > 0 ? 'bg-red-500' : 'bg-gray-400'
+                  stats.overdueCount > 0 ? 'bg-red-500' : 'bg-slate-400'
                 }`}>
                   <AlertCircle className="w-4 h-4 text-white" />
                 </div>
                 <span className={`text-sm ${
-                  stats.overdueCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-gray-600'
+                  stats.overdueCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-slate-600'
                 }`}>متأخر</span>
               </div>
               <p className={`text-xl font-bold ${
-                stats.overdueCount > 0 ? 'text-red-900 dark:text-red-100' : 'text-gray-500'
+                stats.overdueCount > 0 ? 'text-red-900 dark:text-red-100' : 'text-slate-500'
               }`}>
                 {stats.overdueCount}
               </p>
               <p className={`text-xs mt-1 ${
-                stats.overdueCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'
+                stats.overdueCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'
               }`}>
                 {stats.overdueCount > 0 ? 'يجب الدفع فوراً' : 'لا يوجد متأخرات'}
               </p>
@@ -264,7 +264,7 @@ const VehicleInstallmentDetails = ({ installment, onBack }: VehicleInstallmentDe
                   }`}>
                     {stats.nextInstallment.status === 'overdue' ? '⚠️ قسط متأخر!' : 'القسط القادم'}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     القسط رقم {stats.nextInstallment.installment_number} - 
                     {format(new Date(stats.nextInstallment.due_date), ' dd MMM yyyy', { locale: ar })}
                   </p>

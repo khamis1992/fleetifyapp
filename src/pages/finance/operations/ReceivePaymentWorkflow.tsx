@@ -307,8 +307,8 @@ const ReceivePaymentWorkflow: React.FC = () => {
   // التحميل
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-coral-500" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
       </div>
     );
   }
@@ -322,7 +322,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -336,11 +336,11 @@ const ReceivePaymentWorkflow: React.FC = () => {
               <ArrowRight className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <Receipt className="h-6 w-6 text-green-600" />
                 تسجيل دفعة جديدة
               </h1>
-              <p className="text-sm text-gray-500">استلام دفعة من عميل</p>
+              <p className="text-sm text-slate-500">استلام دفعة من عميل</p>
             </div>
           </div>
 
@@ -354,7 +354,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                     ? 'bg-green-600 text-white scale-110'
                     : step < currentStep
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-400'
+                    : 'bg-slate-100 text-slate-400'
                 }`}
               >
                 {step < currentStep ? <Check className="h-4 w-4" /> : step}
@@ -432,31 +432,31 @@ const ReceivePaymentWorkflow: React.FC = () => {
 
               {/* تفاصيل العقد المختار */}
               {selectedContract && (
-                <div className="bg-gray-50 rounded-xl p-5 space-y-4 animate-in fade-in-50">
-                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <div className="bg-slate-50 rounded-xl p-5 space-y-4 animate-in fade-in-50">
+                  <h4 className="font-semibold text-slate-900 flex items-center gap-2">
                     <FileText className="h-4 w-4 text-green-600" />
                     تفاصيل العقد
                   </h4>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-gray-500 mb-1">العميل</div>
+                      <div className="text-xs text-slate-500 mb-1">العميل</div>
                       <div className="font-medium flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
+                        <User className="h-4 w-4 text-slate-400" />
                         {formData.customerName}
                       </div>
                     </div>
                     
                     <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-gray-500 mb-1">المركبة</div>
+                      <div className="text-xs text-slate-500 mb-1">المركبة</div>
                       <div className="font-medium flex items-center gap-2">
-                        <Car className="h-4 w-4 text-gray-400" />
+                        <Car className="h-4 w-4 text-slate-400" />
                         {(selectedContract.vehicles as any)?.plate_number || '-'}
                       </div>
                     </div>
                     
                     <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-gray-500 mb-1">إجمالي العقد</div>
+                      <div className="text-xs text-slate-500 mb-1">إجمالي العقد</div>
                       <div className="font-semibold text-lg">
                         {formatCurrency(selectedContract.contract_amount || 0)}
                       </div>
@@ -473,12 +473,12 @@ const ReceivePaymentWorkflow: React.FC = () => {
                   {/* شريط التقدم */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">نسبة السداد</span>
+                      <span className="text-slate-500">نسبة السداد</span>
                       <span className="font-medium">
                         {Math.round(((selectedContract.total_paid || 0) / (selectedContract.contract_amount || 1)) * 100)}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div className="w-full bg-slate-200 rounded-full h-2.5">
                       <div
                         className="bg-green-600 h-2.5 rounded-full transition-all"
                         style={{
@@ -522,7 +522,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                     min={0}
                     max={balanceDue}
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
                     QAR
                   </span>
                 </div>
@@ -576,10 +576,10 @@ const ReceivePaymentWorkflow: React.FC = () => {
                         className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                           isSelected
                             ? 'border-green-500 bg-green-50 text-green-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
                         }`}
                       >
-                        <Icon className={`h-6 w-6 ${isSelected ? 'text-green-600' : 'text-gray-400'}`} />
+                        <Icon className={`h-6 w-6 ${isSelected ? 'text-green-600' : 'text-slate-400'}`} />
                         <span className="text-sm font-medium">{method.label}</span>
                       </button>
                     );
@@ -640,37 +640,37 @@ const ReceivePaymentWorkflow: React.FC = () => {
               </div>
 
               {/* تفاصيل الدفعة */}
-              <div className="bg-gray-50 rounded-xl divide-y">
+              <div className="bg-slate-50 rounded-xl divide-y">
                 <div className="p-4 flex justify-between">
-                  <span className="text-gray-600">العقد</span>
+                  <span className="text-slate-600">العقد</span>
                   <span className="font-semibold">#{selectedContract?.contract_number}</span>
                 </div>
                 <div className="p-4 flex justify-between">
-                  <span className="text-gray-600">العميل</span>
+                  <span className="text-slate-600">العميل</span>
                   <span className="font-semibold">{formData.customerName}</span>
                 </div>
                 <div className="p-4 flex justify-between">
-                  <span className="text-gray-600">تاريخ الدفع</span>
+                  <span className="text-slate-600">تاريخ الدفع</span>
                   <span className="font-semibold">
                     {format(new Date(formData.paymentDate), 'dd MMMM yyyy', { locale: ar })}
                   </span>
                 </div>
                 <div className="p-4 flex justify-between">
-                  <span className="text-gray-600">طريقة الدفع</span>
+                  <span className="text-slate-600">طريقة الدفع</span>
                   <span className="font-semibold">
                     {paymentMethods.find(m => m.value === formData.paymentMethod)?.label}
                   </span>
                 </div>
                 {formData.referenceNumber && (
                   <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">رقم المرجع</span>
+                    <span className="text-slate-600">رقم المرجع</span>
                     <span className="font-semibold font-mono">{formData.referenceNumber}</span>
                   </div>
                 )}
                 {formData.notes && (
                   <div className="p-4">
-                    <span className="text-gray-600 block mb-1">ملاحظات</span>
-                    <span className="text-gray-900">{formData.notes}</span>
+                    <span className="text-slate-600 block mb-1">ملاحظات</span>
+                    <span className="text-slate-900">{formData.notes}</span>
                   </div>
                 )}
               </div>

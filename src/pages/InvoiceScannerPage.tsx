@@ -67,13 +67,13 @@ const InvoiceScannerPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
                 <Brain className="h-8 w-8 text-primary" />
                 ماسح الفواتير الذكي
                 <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
@@ -81,14 +81,14 @@ const InvoiceScannerPage: React.FC = () => {
                   AI-Powered
                 </Badge>
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-slate-600 mt-2">
                 نظام متقدم للتعرف الضوئي على النصوص والتطابق الذكي للعملاء باستخدام الذكاء الاصطناعي
               </p>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500">الإحصائيات الحالية</div>
+              <div className="text-sm text-slate-500">الإحصائيات الحالية</div>
               <div className="text-2xl font-bold text-primary">{statsData.totalScans}</div>
-              <div className="text-sm text-gray-500">مسح في هذه الجلسة</div>
+              <div className="text-sm text-slate-500">مسح في هذه الجلسة</div>
             </div>
           </div>
         </div>
@@ -136,7 +136,7 @@ const InvoiceScannerPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {recentScans.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-slate-500">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>لا توجد عمليات مسح حتى الآن</p>
                     <p className="text-sm">ابدأ بمسح أول فاتورة لترى النتائج هنا</p>
@@ -144,7 +144,7 @@ const InvoiceScannerPage: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {recentScans.map((scan, index) => (
-                      <div key={scan.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div key={scan.id} className="border rounded-lg p-4 bg-slate-50">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">مسح #{index + 1}</span>
@@ -169,7 +169,7 @@ const InvoiceScannerPage: React.FC = () => {
                                 مراجعة يدوية
                               </Badge>
                             )}
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-slate-500">
                               {scan.matching.total_confidence}% ثقة
                             </span>
                           </div>
@@ -178,15 +178,15 @@ const InvoiceScannerPage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
                             <span className="font-medium">العميل المستخرج:</span>
-                            <p className="text-gray-600">{scan.data.customer_name || 'غير محدد'}</p>
+                            <p className="text-slate-600">{scan.data.customer_name || 'غير محدد'}</p>
                           </div>
                           <div>
                             <span className="font-medium">أفضل تطابق:</span>
-                            <p className="text-gray-600">{scan.matching.best_match?.name || 'لا يوجد'}</p>
+                            <p className="text-slate-600">{scan.matching.best_match?.name || 'لا يوجد'}</p>
                           </div>
                           <div>
                             <span className="font-medium">دقة التعرف:</span>
-                            <p className="text-gray-600">{scan.processing_info.ocr_confidence}%</p>
+                            <p className="text-slate-600">{scan.processing_info.ocr_confidence}%</p>
                           </div>
                         </div>
                       </div>
@@ -235,7 +235,7 @@ const InvoiceScannerPage: React.FC = () => {
                       <span>متوسط دقة التعرف الضوئي:</span>
                       <span className="font-bold">{statsData.avgOcrConfidence}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-slate-200 rounded-full h-2">
                       <div 
                         className="bg-blue-500 h-2 rounded-full" 
                         style={{ width: `${statsData.avgOcrConfidence}%` }}
@@ -247,7 +247,7 @@ const InvoiceScannerPage: React.FC = () => {
                       <span>متوسط دقة التطابق:</span>
                       <span className="font-bold">{statsData.avgMatchConfidence}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-slate-200 rounded-full h-2">
                       <div 
                         className="bg-green-500 h-2 rounded-full" 
                         style={{ width: `${statsData.avgMatchConfidence}%` }}

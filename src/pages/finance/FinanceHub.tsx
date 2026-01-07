@@ -125,7 +125,7 @@ const StatCard: React.FC<StatCardProps> = ({
       whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all cursor-pointer h-full group"
+      className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all cursor-pointer h-full group"
     >
       <div className="flex items-start justify-between mb-4">
         <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20', styles.iconBg)}>
@@ -438,7 +438,7 @@ const FinanceHubRedesigned: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
       <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
         {/* Hero Header - Professional SaaS Style */}
@@ -587,7 +587,7 @@ const FinanceHubRedesigned: React.FC = () => {
           {/* Treasury Summary - Full Width */}
           <div className="col-span-12">
             <motion.div
-              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -787,7 +787,7 @@ const FinanceHubRedesigned: React.FC = () => {
 
             {/* Categorized Modules */}
             <motion.div
-              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
@@ -958,7 +958,7 @@ const FinanceHubRedesigned: React.FC = () => {
           {/* Invoice Status */}
           <div className="col-span-12 lg:col-span-6">
             <motion.div
-              className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all h-full"
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all h-full"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 }}

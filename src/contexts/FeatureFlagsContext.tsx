@@ -327,7 +327,7 @@ export function FeatureFlagsDeveloperTools() {
                   className={`text-xs px-2 py-1 rounded ${
                     enabled 
                       ? 'bg-green-500 text-white' 
-                      : 'bg-gray-300 text-gray-700'
+                      : 'bg-slate-300 text-slate-700'
                   }`}
                 >
                   {enabled ? 'ON' : 'OFF'}

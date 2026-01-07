@@ -196,7 +196,7 @@ export const ForecastingSection: React.FC = () => {
         className="glass-card rounded-3xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">توقعات الإيرادات</h3>
+          <h3 className="text-xl font-bold text-slate-900">توقعات الإيرادات</h3>
           <div className="p-2 bg-gradient-to-br from-red-100 to-orange-100 rounded-lg">
             <Brain className="w-5 h-5 text-red-600" />
           </div>
@@ -204,10 +204,10 @@ export const ForecastingSection: React.FC = () => {
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">الشهر الحالي</span>
-              <span className="text-lg font-bold text-gray-900">{formatCurrency(currentRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+              <span className="text-sm text-slate-600">الشهر الحالي</span>
+              <span className="text-lg font-bold text-slate-900">{formatCurrency(currentRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full" 
                 style={{ width: `${currentRevenuePercent}%` }}
@@ -216,10 +216,10 @@ export const ForecastingSection: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">توقع الشهر القادم</span>
+              <span className="text-sm text-slate-600">توقع الشهر القادم</span>
               <span className="text-lg font-bold text-emerald-600">{formatCurrency(forecastedRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full animate-pulse" 
                 style={{ width: `${forecastedRevenuePercent}%` }}
@@ -227,7 +227,7 @@ export const ForecastingSection: React.FC = () => {
             </div>
           </div>
           <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl">
-            <p className="text-sm font-semibold text-gray-900 mb-3">العوامل المؤثرة:</p>
+            <p className="text-sm font-semibold text-slate-900 mb-3">العوامل المؤثرة:</p>
             <div className="space-y-2">
               {growthFactors && (
                 <>
@@ -237,7 +237,7 @@ export const ForecastingSection: React.FC = () => {
                     ) : (
                       <ArrowDown className="w-4 h-4 text-red-500" />
                     )}
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-slate-700">
                       العامل الموسمي ({growthFactors.seasonal >= 0 ? '+' : ''}{growthFactors.seasonal}%)
                     </span>
                   </div>
@@ -247,7 +247,7 @@ export const ForecastingSection: React.FC = () => {
                     ) : (
                       <ArrowDown className="w-4 h-4 text-red-500" />
                     )}
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-slate-700">
                       عقود جديدة ({growthFactors.newContracts >= 0 ? '+' : ''}{growthFactors.newContracts}%)
                     </span>
                   </div>
@@ -257,7 +257,7 @@ export const ForecastingSection: React.FC = () => {
                     ) : (
                       <ArrowDown className="w-4 h-4 text-red-500" />
                     )}
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-slate-700">
                       تأثير الصيانة ({growthFactors.maintenance >= 0 ? '+' : ''}{growthFactors.maintenance}%)
                     </span>
                   </div>
@@ -270,7 +270,7 @@ export const ForecastingSection: React.FC = () => {
               <p className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                 {growthRate >= 0 ? '+' : ''}{growthRate.toFixed(0)}%
               </p>
-              <p className="text-xs text-gray-600">نمو متوقع (محسوب)</p>
+              <p className="text-xs text-slate-600">نمو متوقع (محسوب)</p>
             </div>
           </div>
         </div>
@@ -284,7 +284,7 @@ export const ForecastingSection: React.FC = () => {
         className="glass-card rounded-3xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">تقويم الحجوزات</h3>
+          <h3 className="text-xl font-bold text-slate-900">تقويم الحجوزات</h3>
           <button 
             onClick={() => navigate('/fleet/reservation-system')}
             className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors flex items-center gap-1"
@@ -297,14 +297,14 @@ export const ForecastingSection: React.FC = () => {
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-2 text-center mb-4">
           {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map((day) => (
-            <div key={day} className="text-xs font-semibold text-gray-500 py-2">{day}</div>
+            <div key={day} className="text-xs font-semibold text-slate-500 py-2">{day}</div>
           ))}
         </div>
         
         {!calendarData || calendarData.length === 0 ? (
           <div className="grid grid-cols-7 gap-2 mb-4">
             {[...Array(7)].map((_, i) => (
-              <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse"></div>
+              <div key={i} className="aspect-square rounded-lg bg-slate-100 animate-pulse"></div>
             ))}
           </div>
         ) : (
@@ -357,26 +357,26 @@ export const ForecastingSection: React.FC = () => {
         <div className="flex items-center justify-center gap-3 mt-4 flex-wrap text-xs">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-green-50 border border-green-300"></div>
-            <span className="text-gray-600">متاح (&lt;50%)</span>
+            <span className="text-slate-600">متاح (&lt;50%)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-yellow-50 border border-yellow-300"></div>
-            <span className="text-gray-600">متوسط (50-70%)</span>
+            <span className="text-slate-600">متوسط (50-70%)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-orange-50 border border-orange-300"></div>
-            <span className="text-gray-600">مشغول (70-90%)</span>
+            <span className="text-slate-600">مشغول (70-90%)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-red-50 border border-red-300"></div>
-            <span className="text-gray-600">ممتلئ (≥90%)</span>
+            <span className="text-slate-600">ممتلئ (≥90%)</span>
           </div>
         </div>
         
         <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-gray-900">ملخص الأسبوع</span>
-            <span className="text-xs text-gray-500">
+            <span className="text-sm font-semibold text-slate-900">ملخص الأسبوع</span>
+            <span className="text-xs text-slate-500">
               {calendarData?.[0]?.fullDate && calendarData?.[6]?.fullDate 
                 ? `${calendarData[0].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${calendarData[6].fullDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                 : 'جاري التحميل...'
@@ -386,11 +386,11 @@ export const ForecastingSection: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{weekSummary.avgOccupancy}%</p>
-              <p className="text-xs text-gray-600">متوسط الإشغال</p>
+              <p className="text-xs text-slate-600">متوسط الإشغال</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">{weekSummary.totalBookings}</p>
-              <p className="text-xs text-gray-600">عقود نشطة</p>
+              <p className="text-xs text-slate-600">عقود نشطة</p>
             </div>
           </div>
         </div>

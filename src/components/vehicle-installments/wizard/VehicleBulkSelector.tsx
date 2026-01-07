@@ -165,7 +165,7 @@ export function VehicleBulkSelector({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-coral-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -213,7 +213,7 @@ export function VehicleBulkSelector({
                 onClick={() => setSelectedMake("all")}
                 className={cn(
                   "h-7 text-xs",
-                  selectedMake === "all" && "bg-coral-500 hover:bg-coral-600"
+                  selectedMake === "all" && "bg-rose-500 hover:bg-coral-600"
                 )}
               >
                 الكل ({vehicles.length})
@@ -227,7 +227,7 @@ export function VehicleBulkSelector({
                   onClick={() => setSelectedMake(make)}
                   className={cn(
                     "h-7 text-xs gap-1",
-                    selectedMake === make && "bg-coral-500 hover:bg-coral-600"
+                    selectedMake === make && "bg-rose-500 hover:bg-coral-600"
                   )}
                 >
                   {make}
@@ -269,7 +269,7 @@ export function VehicleBulkSelector({
               variant="outline"
               size="sm"
               onClick={() => selectByMake(selectedMake)}
-              className="gap-2 h-8 text-coral-600 border-coral-200 hover:bg-coral-50"
+              className="gap-2 h-8 text-coral-600 border-rose-200 hover:bg-rose-50"
             >
               <Car className="w-4 h-4" />
               تحديد كل {selectedMake}
@@ -305,12 +305,12 @@ export function VehicleBulkSelector({
                       onClick={() => toggleVehicle(vehicle)}
                       className={cn(
                         "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors",
-                        isSelected ? "bg-coral-50 border border-coral-200" : "hover:bg-neutral-50"
+                        isSelected ? "bg-rose-50 border border-rose-200" : "hover:bg-neutral-50"
                       )}
                     >
                       <Checkbox
                         checked={isSelected}
-                        className="data-[state=checked]:bg-coral-500 data-[state=checked]:border-coral-500"
+                        className="data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">
@@ -321,7 +321,7 @@ export function VehicleBulkSelector({
                         </p>
                       </div>
                       {isSelected && (
-                        <Badge className="bg-coral-500 text-white text-[10px]">
+                        <Badge className="bg-rose-500 text-white text-[10px]">
                           محدد
                         </Badge>
                       )}
@@ -335,7 +335,7 @@ export function VehicleBulkSelector({
 
         {/* المركبات المختارة */}
         <div className="border rounded-xl overflow-hidden">
-          <div className="bg-coral-50 px-4 py-2 border-b border-coral-100">
+          <div className="bg-rose-50 px-4 py-2 border-b border-rose-100">
             <h4 className="font-semibold text-sm text-coral-700">
               المركبات المختارة ({selectedVehicles.length})
             </h4>

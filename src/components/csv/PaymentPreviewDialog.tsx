@@ -338,15 +338,15 @@ export function PaymentPreviewDialog({
           )}
 
           {zeroPayments > 0 && (
-            <Card className="border-gray-200 bg-gray-50">
+            <Card className="border-slate-200 bg-slate-50">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-gray-800 flex items-center gap-2">
+                <CardTitle className="text-sm text-slate-800 flex items-center gap-2">
                   <Info className="h-4 w-4" />
                   دفعات بمبلغ صفر
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 space-y-3">
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-slate-700">
                   يوجد {zeroPayments} صف يحتوي على مبلغ مدفوع = 0. 
                   هذه الصفوف مخفية افتراضياً.
                 </p>
@@ -356,7 +356,7 @@ export function PaymentPreviewDialog({
                     checked={!filterZeroPayments}
                     onCheckedChange={(checked) => setFilterZeroPayments(!checked)}
                   />
-                  <label htmlFor="showZero" className="text-sm text-gray-700">
+                  <label htmlFor="showZero" className="text-sm text-slate-700">
                     عرض الدفعات الصفرية
                   </label>
                 </div>
@@ -400,7 +400,7 @@ export function PaymentPreviewDialog({
                 </TableHeader>
                 <TableBody>
                   {filteredItems.map((item, index) => (
-                    <TableRow key={index} className={item.isZeroPayment ? "bg-gray-50" : ""}>
+                    <TableRow key={index} className={item.isZeroPayment ? "bg-slate-50" : ""}>
                       <TableCell>
                         <Checkbox
                           checked={selectedItems.has(index)}
@@ -411,7 +411,7 @@ export function PaymentPreviewDialog({
                       <TableCell>{item.rowNumber}</TableCell>
                       <TableCell>{item.data.customer_name || item.data.customer_phone || '-'}</TableCell>
                       <TableCell>
-                        <span className={item.isZeroPayment ? "text-gray-500" : "font-medium"}>
+                        <span className={item.isZeroPayment ? "text-slate-500" : "font-medium"}>
                           {formatNumber(item.paidAmount)}
                         </span>
                       </TableCell>
@@ -462,7 +462,7 @@ export function PaymentPreviewDialog({
                                 item.contractInfo.payment_status === 'paid' ? 'text-green-700 border-green-300' :
                                 item.contractInfo.payment_status === 'overdue' ? 'text-red-700 border-red-300' :
                                 item.contractInfo.payment_status === 'partial' ? 'text-orange-700 border-orange-300' :
-                                'text-gray-700 border-gray-300'
+                                'text-slate-700 border-slate-300'
                               }`}
                             >
                               {item.contractInfo.payment_status === 'paid' ? 'مسدد' :

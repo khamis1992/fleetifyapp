@@ -347,7 +347,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-coral-500 hover:bg-coral-600">
+          <Button className="bg-rose-500 hover:bg-coral-600">
             <Plus className="w-4 h-4 ml-2" />
             إنشاء عقد أقساط متعدد المركبات
           </Button>
@@ -424,9 +424,9 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
               {currentStep === 2 && (
                 <div className="space-y-4">
                   {/* عنوان الخطوة */}
-                  <div className="flex items-center justify-between p-3 bg-coral-50 rounded-lg border border-coral-100">
+                  <div className="flex items-center justify-between p-3 bg-rose-50 rounded-lg border border-rose-100">
                     <div className="flex items-center gap-2">
-                      <Car className="w-5 h-5 text-coral-500" />
+                      <Car className="w-5 h-5 text-rose-500" />
                       <span className="font-medium text-coral-700">اختيار المركبات للعقد</span>
                     </div>
                     <span className="text-sm text-coral-600">
@@ -598,7 +598,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
                       <Card>
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm flex items-center gap-2">
-                            <Car className="w-4 h-4 text-coral-500" />
+                            <Car className="w-4 h-4 text-rose-500" />
                             توزيع المبلغ على المركبات ({vehicleAllocations.length})
                           </CardTitle>
                         </CardHeader>
@@ -687,7 +687,7 @@ export default function MultiVehicleWizard({ trigger }: MultiVehicleWizardProps)
               type="button"
               onClick={nextStep}
               disabled={currentStep !== 3 && !canProceed()}
-              className="bg-coral-500 hover:bg-coral-600"
+              className="bg-rose-500 hover:bg-coral-600"
             >
               التالي
               <ArrowLeft className="w-4 h-4 mr-2" />

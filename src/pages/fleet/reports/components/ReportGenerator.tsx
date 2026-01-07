@@ -827,8 +827,8 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
         "rounded-2xl p-6",
         "backdrop-blur-xl border",
         isDark 
-          ? "bg-gray-900/60 border-gray-800/50" 
-          : "bg-white/80 border-gray-200/50",
+          ? "bg-slate-900/60 border-slate-800/50" 
+          : "bg-white/80 border-slate-200/50",
         "shadow-xl"
       )}
     >
@@ -840,13 +840,13 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
           <div>
             <h3 className={cn(
               "text-lg font-semibold",
-              isDark ? "text-white" : "text-gray-900"
+              isDark ? "text-white" : "text-slate-900"
             )}>
               التقارير المخصصة
             </h3>
             <p className={cn(
               "text-sm",
-              isDark ? "text-gray-400" : "text-gray-600"
+              isDark ? "text-slate-400" : "text-slate-600"
             )}>
               إنشاء وتصدير تقارير مفصلة عن أداء الأسطول
             </p>
@@ -869,8 +869,8 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
                 "p-4 rounded-xl border",
                 "transition-all duration-300",
                 isDark 
-                  ? "bg-gray-800/50 border-gray-700/50 hover:bg-gray-800" 
-                  : "bg-gray-50 border-gray-200 hover:bg-white hover:shadow-lg"
+                  ? "bg-slate-800/50 border-slate-700/50 hover:bg-slate-800" 
+                  : "bg-slate-50 border-slate-200 hover:bg-white hover:shadow-lg"
               )}
             >
               <div className="flex items-start gap-3 mb-3">
@@ -883,13 +883,13 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
                 <div className="flex-1 min-w-0">
                   <h4 className={cn(
                     "font-semibold text-sm",
-                    isDark ? "text-white" : "text-gray-900"
+                    isDark ? "text-white" : "text-slate-900"
                   )}>
                     {report.title}
                   </h4>
                   <p className={cn(
                     "text-xs mt-1 line-clamp-2",
-                    isDark ? "text-gray-400" : "text-gray-600"
+                    isDark ? "text-slate-400" : "text-slate-600"
                   )}>
                     {report.description}
                   </p>
@@ -902,7 +902,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
                   size="sm"
                   className={cn(
                     "flex-1 h-8 text-xs",
-                    isDark && "bg-gray-700 border-gray-600 hover:bg-gray-600"
+                    isDark && "bg-slate-700 border-slate-600 hover:bg-slate-600"
                   )}
                   onClick={() => generateReport(report.type)}
                 >

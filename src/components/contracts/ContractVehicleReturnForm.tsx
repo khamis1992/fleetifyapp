@@ -237,7 +237,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
       case 'minor': return 'bg-yellow-100 text-yellow-800';
       case 'moderate': return 'bg-orange-100 text-orange-800';
       case 'major': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-slate-100 text-slate-800';
     }
   };
 
@@ -351,8 +351,8 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
                 conditionReportId={contract.id}
               />
             ) : (
-              <div className="flex items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="text-center text-gray-500">
+              <div className="flex items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-lg">
+                <div className="text-center text-slate-500">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
                   جاري تحميل معلومات المركبة...
                 </div>
@@ -364,10 +364,10 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           {damagePoints.length > 0 && damages.length > 0 && (
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
+                <div className="w-full border-t border-slate-200" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">أو</span>
+                <span className="bg-white px-2 text-slate-500">أو</span>
               </div>
             </div>
           )}
@@ -375,7 +375,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           {/* Add New Damage */}
           <div>
             <h4 className="font-medium mb-4">إضافة أضرار يدوياً</h4>
-            <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
               <div>
                 <Label htmlFor="damage_type">نوع الضرر</Label>
                 <Input
@@ -431,7 +431,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
                     <div className="flex-1 grid grid-cols-3 gap-4">
                       <div>
                         <strong>{damage.type}</strong>
-                        <p className="text-sm text-gray-600">{damage.description}</p>
+                        <p className="text-sm text-slate-600">{damage.description}</p>
                       </div>
                       <div>
                         <Badge className={getSeverityColor(damage.severity)}>
@@ -460,7 +460,7 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           )}
 
           {damages.length === 0 && damagePoints.length === 0 && (
-            <p className="text-gray-500 text-center py-4">لا توجد أضرار مسجلة</p>
+            <p className="text-slate-500 text-center py-4">لا توجد أضرار مسجلة</p>
           )}
         </CardContent>
       </Card>

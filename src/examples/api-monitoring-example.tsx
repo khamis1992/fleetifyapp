@@ -147,7 +147,7 @@ export function APIMonitoringExample() {
       case 'unhealthy':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-slate-500" />;
     }
   };
 
@@ -197,7 +197,7 @@ export function APIMonitoringExample() {
                 {lastResult.success ? (
                   <div>
                     <strong>Data:</strong>{' '}
-                    <pre className="text-xs bg-gray-100 p-2 rounded mt-1 overflow-auto max-h-32">
+                    <pre className="text-xs bg-slate-100 p-2 rounded mt-1 overflow-auto max-h-32">
                       {JSON.stringify(lastResult.data, null, 2)}
                     </pre>
                   </div>

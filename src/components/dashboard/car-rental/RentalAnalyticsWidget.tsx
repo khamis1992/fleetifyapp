@@ -343,7 +343,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
                         variant="outline"
                         className={`w-6 h-6 flex items-center justify-center p-0 ${
                           index === 0 ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
-                          index === 1 ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                          index === 1 ? 'bg-slate-100 text-slate-700 border-slate-300' :
                           'bg-orange-100 text-orange-700 border-orange-300'
                         }`}
                       >

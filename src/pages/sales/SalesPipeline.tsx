@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { AddOpportunityForm } from "@/components/sales/AddOpportunityForm";
 
 const STAGES = [
-  { id: 'lead', name: 'عميل محتمل', color: 'bg-gray-100 border-gray-300' },
+  { id: 'lead', name: 'عميل محتمل', color: 'bg-slate-100 border-slate-300' },
   { id: 'qualified', name: 'مؤهل', color: 'bg-blue-100 border-blue-300' },
   { id: 'proposal', name: 'عرض سعر', color: 'bg-yellow-100 border-yellow-300' },
   { id: 'negotiation', name: 'تفاوض', color: 'bg-orange-100 border-orange-300' },

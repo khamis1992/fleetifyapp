@@ -108,7 +108,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             <div
               className={cn(
                 'p-2 rounded-lg',
-                isExpanded ? 'bg-coral-100 text-coral-600' : 'bg-neutral-200 text-neutral-500'
+                isExpanded ? 'bg-rose-100 text-coral-600' : 'bg-neutral-200 text-neutral-500'
               )}
             >
               <Icon className="h-4 w-4" />

@@ -191,7 +191,7 @@ const SuperAdminReports: React.FC = () => {
                   <div className="font-medium">{report.name}</div>
                   <div className="text-sm text-muted-foreground">{report.schedule}</div>
                 </div>
-                <Badge className={report.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                <Badge className={report.active ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-800"}>
                   {report.active ? 'نشط' : 'معطل'}
                 </Badge>
               </div>

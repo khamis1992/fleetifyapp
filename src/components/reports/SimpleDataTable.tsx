@@ -25,15 +25,15 @@ export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
 
   return (
     <section className="mb-6">
-      <h3 className="text-lg font-semibold text-gray-700 mb-4">{title}</h3>
+      <h3 className="text-lg font-semibold text-slate-700 mb-4">{title}</h3>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-200">
+        <table className="w-full border-collapse border border-slate-200">
           <thead>
-            <tr className="bg-gray-50">
+            <tr className="bg-slate-50">
               {columns.map((column) => (
                 <th 
                   key={column} 
-                  className="border border-gray-200 p-3 text-right font-semibold text-gray-700"
+                  className="border border-slate-200 p-3 text-right font-semibold text-slate-700"
                 >
                   {column}
                 </th>
@@ -42,11 +42,11 @@ export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
           </thead>
           <tbody>
             {data.slice(0, 10).map((item, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                 {columns.map((column) => (
                   <td 
                     key={column} 
-                    className="border border-gray-200 p-3 text-gray-600"
+                    className="border border-slate-200 p-3 text-slate-600"
                   >
                     {formatCellValue(item[column], column)}
                   </td>
@@ -56,7 +56,7 @@ export function SimpleDataTable({ data, title }: SimpleDataTableProps) {
           </tbody>
         </table>
         {data.length > 10 && (
-          <div className="mt-3 text-center text-sm text-gray-500">
+          <div className="mt-3 text-center text-sm text-slate-500">
             عرض 10 من أصل {data.length} عنصر
           </div>
         )}

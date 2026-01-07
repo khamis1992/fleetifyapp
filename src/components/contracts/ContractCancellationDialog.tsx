@@ -147,7 +147,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
       case 'rejected':
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="h-4 w-4 text-slate-600" />;
     }
   };
 
@@ -160,7 +160,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
       case 'rejected':
         return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 
@@ -196,32 +196,32 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
         </DialogHeader>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className={`flex items-center gap-2 ${currentStep === 'vehicle-return' ? 'text-primary font-semibold' : 'text-gray-600'}`}>
+        <div className="flex items-center justify-between mb-6 p-4 bg-slate-50 rounded-lg">
+          <div className={`flex items-center gap-2 ${currentStep === 'vehicle-return' ? 'text-primary font-semibold' : 'text-slate-600'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              vehicleReturn ? 'bg-green-500 text-white' : currentStep === 'vehicle-return' ? 'bg-primary text-white' : 'bg-gray-200'
+              vehicleReturn ? 'bg-green-500 text-white' : currentStep === 'vehicle-return' ? 'bg-primary text-white' : 'bg-slate-200'
             }`}>
               {vehicleReturn ? '✓' : '1'}
             </div>
             <span>إرجاع المركبة</span>
           </div>
           
-          <div className="h-px bg-gray-300 flex-1 mx-4"></div>
+          <div className="h-px bg-slate-300 flex-1 mx-4"></div>
           
-          <div className={`flex items-center gap-2 ${currentStep === 'approval' ? 'text-primary font-semibold' : 'text-gray-600'}`}>
+          <div className={`flex items-center gap-2 ${currentStep === 'approval' ? 'text-primary font-semibold' : 'text-slate-600'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              vehicleReturn?.status === 'approved' ? 'bg-green-500 text-white' : currentStep === 'approval' ? 'bg-primary text-white' : 'bg-gray-200'
+              vehicleReturn?.status === 'approved' ? 'bg-green-500 text-white' : currentStep === 'approval' ? 'bg-primary text-white' : 'bg-slate-200'
             }`}>
               {vehicleReturn?.status === 'approved' ? '✓' : '2'}
             </div>
             <span>الموافقة</span>
           </div>
           
-          <div className="h-px bg-gray-300 flex-1 mx-4"></div>
+          <div className="h-px bg-slate-300 flex-1 mx-4"></div>
           
-          <div className={`flex items-center gap-2 ${currentStep === 'cancellation' ? 'text-primary font-semibold' : 'text-gray-600'}`}>
+          <div className={`flex items-center gap-2 ${currentStep === 'cancellation' ? 'text-primary font-semibold' : 'text-slate-600'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              currentStep === 'cancellation' ? 'bg-primary text-white' : 'bg-gray-200'
+              currentStep === 'cancellation' ? 'bg-primary text-white' : 'bg-slate-200'
             }`}>
               3
             </div>
@@ -257,7 +257,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               </AlertDescription>
             </Alert>
 
-            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+            <div className="bg-slate-50 p-4 rounded-lg space-y-3">
               <div className="flex items-center gap-2">
                 <Badge className={getStatusColor(vehicleReturn.status)} variant="outline">
                   {getStatusIcon(vehicleReturn.status)}
@@ -334,7 +334,7 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
               </AlertDescription>
             </Alert>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-slate-50 p-4 rounded-lg">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold">تفاصيل إرجاع المركبة</h3>
                 <Badge className={getStatusColor(vehicleReturn.status)}>

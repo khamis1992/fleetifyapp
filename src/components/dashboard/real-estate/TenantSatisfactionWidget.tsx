@@ -166,7 +166,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.5 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -198,7 +198,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
           {/* Overall Satisfaction Score */}
           <div className={`rounded-lg p-4 ${getSatisfactionColor(satisfactionScore)}`}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">معدل الرضا العام</span>
+              <span className="text-sm text-slate-600">معدل الرضا العام</span>
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${getSatisfactionColor(satisfactionScore)}`}>
                 <TrendingUp className="w-3 h-3" />
                 {getSatisfactionLabel(satisfactionScore)}
@@ -221,7 +221,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
           {/* Response Time */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 flex items-center justify-between">
             <div className="text-right">
-              <div className="text-sm text-gray-600 mb-1">متوسط وقت الاستجابة</div>
+              <div className="text-sm text-slate-600 mb-1">متوسط وقت الاستجابة</div>
               <div className="text-3xl font-bold text-blue-700">{avgResponseTime}</div>
               <div className="text-xs text-blue-600">يوم</div>
             </div>
@@ -231,7 +231,7 @@ export const TenantSatisfactionWidget: React.FC = () => {
           {/* Satisfaction Trend */}
           {trendData.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">اتجاه الرضا (آخر 6 أشهر)</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">اتجاه الرضا (آخر 6 أشهر)</h4>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
@@ -271,15 +271,15 @@ export const TenantSatisfactionWidget: React.FC = () => {
           {/* Top Complaint Categories */}
           {topComplaints.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">أكثر الشكاوى شيوعاً</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">أكثر الشكاوى شيوعاً</h4>
               <div className="space-y-2">
                 {topComplaints.map(([type, count], index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">{count}</span>
-                      <MessageSquare className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium text-slate-700">{count}</span>
+                      <MessageSquare className="w-4 h-4 text-slate-400" />
                     </div>
-                    <span className="text-sm text-gray-600">{getComplaintNameAr(type)}</span>
+                    <span className="text-sm text-slate-600">{getComplaintNameAr(type)}</span>
                   </div>
                 ))}
               </div>
@@ -289,12 +289,12 @@ export const TenantSatisfactionWidget: React.FC = () => {
           {/* Properties with Issues */}
           {propertiesWithIssues.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">عقارات تحتاج اهتمام</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">عقارات تحتاج اهتمام</h4>
               <div className="space-y-2">
                 {propertiesWithIssues.map(([propertyId, count], index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-orange-50 rounded-lg border border-orange-200">
                     <span className="text-sm font-medium text-orange-700">{count} طلب</span>
-                    <span className="text-xs text-gray-500">عقار #{propertyId.slice(0, 8)}...</span>
+                    <span className="text-xs text-slate-500">عقار #{propertyId.slice(0, 8)}...</span>
                   </div>
                 ))}
               </div>

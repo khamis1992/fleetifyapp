@@ -125,7 +125,7 @@ export const LeaseExpiryWidget: React.FC = () => {
       transition={{ duration: 0.5, delay: 0.4 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -176,7 +176,7 @@ export const LeaseExpiryWidget: React.FC = () => {
           {/* Renewal Rate */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">معدل التجديد</span>
+              <span className="text-sm text-slate-600">معدل التجديد</span>
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
                 renewalRate >= 80
                   ? 'bg-green-100 text-green-700'
@@ -192,7 +192,7 @@ export const LeaseExpiryWidget: React.FC = () => {
                 {renewalRate}%
               </span>
             </div>
-            <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="relative h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="absolute top-0 right-0 h-full bg-gradient-to-l from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
                 style={{ width: `${renewalRate}%` }}
@@ -203,7 +203,7 @@ export const LeaseExpiryWidget: React.FC = () => {
           {/* Expiring Leases List */}
           {[...expiringThisMonth, ...expiringNext3Months].slice(0, 5).length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">العقود القريبة من الانتهاء</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">العقود القريبة من الانتهاء</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {[...expiringThisMonth, ...expiringNext3Months]
                   .slice(0, 5)
@@ -220,11 +220,11 @@ export const LeaseExpiryWidget: React.FC = () => {
                           <span className={`text-xs font-bold px-2 py-1 rounded-full ${urgencyColor}`}>
                             {daysUntil} يوم
                           </span>
-                          <span className="text-sm font-medium text-gray-800 text-right">
+                          <span className="text-sm font-medium text-slate-800 text-right">
                             {contract.properties?.property_name || 'عقار غير محدد'}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-gray-600">
+                        <div className="flex items-center justify-between text-xs text-slate-600">
                           <span>
                             {format(new Date(contract.end_date), 'dd MMM yyyy', { locale: ar })}
                           </span>
@@ -240,8 +240,8 @@ export const LeaseExpiryWidget: React.FC = () => {
           {/* Empty State */}
           {contracts.length === 0 && (
             <div className="text-center py-8">
-              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">لا توجد عقود نشطة</p>
+              <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 text-sm">لا توجد عقود نشطة</p>
             </div>
           )}
 

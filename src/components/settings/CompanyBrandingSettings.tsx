@@ -464,7 +464,7 @@ export const CompanyBrandingSettings = () => {
                   handleSettingChange('sidebar_border_color', '#e5e7eb');
                 }}
               >
-                <div className="w-8 h-6 rounded border bg-white border-gray-300"></div>
+                <div className="w-8 h-6 rounded border bg-white border-slate-300"></div>
                 <span className="text-xs">فاتح</span>
               </Button>
               <Button
@@ -477,7 +477,7 @@ export const CompanyBrandingSettings = () => {
                   handleSettingChange('sidebar_border_color', '#374151');
                 }}
               >
-                <div className="w-8 h-6 rounded bg-gray-800 border border-gray-600"></div>
+                <div className="w-8 h-6 rounded bg-slate-800 border border-slate-600"></div>
                 <span className="text-xs">داكن</span>
               </Button>
               <Button

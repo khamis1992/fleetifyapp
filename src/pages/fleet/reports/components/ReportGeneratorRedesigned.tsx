@@ -927,10 +927,10 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
             </div>
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-slate-900">
               التقارير المخصصة
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-slate-500 mt-0.5">
               إنشاء وتصدير تقارير مفصلة عن أداء الأسطول
             </p>
           </div>
@@ -945,7 +945,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
             "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
             selectedCategory === null
               ? "bg-rose-500 text-white shadow-lg shadow-rose-200"
-              : "bg-white text-gray-600 border border-gray-200 hover:border-rose-300 hover:text-rose-600"
+              : "bg-white text-slate-600 border border-slate-200 hover:border-rose-300 hover:text-rose-600"
           )}
         >
           الكل
@@ -960,7 +960,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                 "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2",
                 selectedCategory === category.id
                   ? "bg-rose-500 text-white shadow-lg shadow-rose-200"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-rose-300 hover:text-rose-600"
+                  : "bg-white text-slate-600 border border-slate-200 hover:border-rose-300 hover:text-rose-600"
               )}
             >
               <CategoryIcon className="w-4 h-4" />
@@ -977,7 +977,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
             <Badge className="bg-gradient-to-r from-rose-500 to-rose-600 text-white border-0">
               مميز
             </Badge>
-            <span className="text-sm font-medium text-gray-700">أكثر التقارير استخداماً</span>
+            <span className="text-sm font-medium text-slate-700">أكثر التقارير استخداماً</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {featuredReports.map((report, index) => {
@@ -1007,10 +1007,10 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h3 className="font-semibold text-gray-900 text-base">
+                          <h3 className="font-semibold text-slate-900 text-base">
                             {report.title}
                           </h3>
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
                             {report.description}
                           </p>
                         </div>
@@ -1022,7 +1022,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 gap-1.5 hover:bg-gray-50"
+                          className="flex-1 gap-1.5 hover:bg-slate-50"
                           onClick={() => generateReport(report.type)}
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -1080,7 +1080,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-gray-900 text-sm">
+                    <h4 className="font-semibold text-slate-900 text-sm">
                       {report.title}
                     </h4>
                     {report.popular && (
@@ -1090,7 +1090,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                     {report.description}
                   </p>
                 </div>
@@ -1100,7 +1100,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 h-8 text-xs hover:bg-gray-50"
+                  className="flex-1 h-8 text-xs hover:bg-slate-50"
                   onClick={() => generateReport(report.type)}
                 >
                   <Eye className="w-3 h-3 ml-1" />
@@ -1125,10 +1125,10 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
       {/* Empty State */}
       {filteredReports.length === 0 && (
         <div className="text-center py-12">
-          <div className="inline-flex p-4 bg-gray-50 rounded-full mb-4">
-            <Filter className="w-8 h-8 text-gray-400" />
+          <div className="inline-flex p-4 bg-slate-50 rounded-full mb-4">
+            <Filter className="w-8 h-8 text-slate-400" />
           </div>
-          <p className="text-gray-500">لا توجد تقارير في هذه الفئة</p>
+          <p className="text-slate-500">لا توجد تقارير في هذه الفئة</p>
           <Button
             variant="outline"
             className="mt-4"

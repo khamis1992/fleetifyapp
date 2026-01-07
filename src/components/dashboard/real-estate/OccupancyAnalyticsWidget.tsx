@@ -76,7 +76,7 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
       transition={{ duration: 0.5 }}
     >
       <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="border-b border-gray-100">
+        <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600">
@@ -110,7 +110,7 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
           {/* Overall Occupancy Rate */}
           <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">معدل الإشغال الإجمالي</span>
+              <span className="text-sm text-slate-600">معدل الإشغال الإجمالي</span>
               <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
                 occupancyDiff >= 0
                   ? 'bg-green-100 text-green-700'
@@ -124,10 +124,10 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
               <span className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
                 {occupancyRate.toFixed(1)}%
               </span>
-              <span className="text-sm text-gray-500 mb-2">من الهدف {targetOccupancy}%</span>
+              <span className="text-sm text-slate-500 mb-2">من الهدف {targetOccupancy}%</span>
             </div>
             {/* Progress Bar */}
-            <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="relative h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="absolute top-0 right-0 h-full bg-gradient-to-l from-emerald-500 to-green-600 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(occupancyRate, 100)}%` }}
@@ -157,16 +157,16 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
           {/* Occupancy by Property Type */}
           {propertyTypes.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">الإشغال حسب نوع العقار</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">الإشغال حسب نوع العقار</h4>
               {propertyTypes.map((pt, index) => {
                 const typeOccupancyRate = totalUnits > 0 ? (pt.count / totalUnits) * 100 : 0;
                 return (
                   <div key={index} className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-600">
+                    <div className="flex justify-between text-xs text-slate-600">
                       <span>{typeOccupancyRate.toFixed(0)}%</span>
                       <span>{pt.type}</span>
                     </div>
-                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className="absolute top-0 right-0 h-full bg-gradient-to-l from-emerald-400 to-green-500 rounded-full transition-all duration-500"
                         style={{ width: `${typeOccupancyRate}%` }}
@@ -181,7 +181,7 @@ export const OccupancyAnalyticsWidget: React.FC = () => {
           {/* Occupancy Trend Chart */}
           {trendData.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 text-right">اتجاه الإشغال (آخر 6 أشهر)</h4>
+              <h4 className="text-sm font-semibold text-slate-700 text-right">اتجاه الإشغال (آخر 6 أشهر)</h4>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trendData}>

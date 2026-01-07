@@ -183,14 +183,14 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       {/* Header with Controls */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800">Performance Monitor</h2>
+          <h2 className="text-2xl font-bold text-slate-800">Performance Monitor</h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setIsRealTimeEnabled(!isRealTimeEnabled)}
               className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                 isRealTimeEnabled 
                   ? 'bg-green-500 text-white hover:bg-green-600' 
-                  : 'bg-gray-500 text-white hover:bg-gray-600'
+                  : 'bg-slate-500 text-white hover:bg-slate-600'
               }`}
             >
               {isRealTimeEnabled ? '🟢 Live' : '⏸️ Paused'}
@@ -217,7 +217,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         </div>
 
         {/* Refresh Interval Control */}
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
+        <div className="flex items-center space-x-4 text-sm text-slate-600">
           <span>Refresh Interval:</span>
           <select
             value={refreshInterval}
@@ -239,8 +239,8 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{totalQueries}</div>
-              <div className="text-sm text-gray-600">Total Queries</div>
+              <div className="text-2xl font-bold text-slate-800">{totalQueries}</div>
+              <div className="text-sm text-slate-600">Total Queries</div>
             </div>
             <div className="text-3xl">🔍</div>
           </div>
@@ -249,8 +249,8 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{slowQueriesCount}</div>
-              <div className="text-sm text-gray-600">Slow Queries</div>
+              <div className="text-2xl font-bold text-slate-800">{slowQueriesCount}</div>
+              <div className="text-sm text-slate-600">Slow Queries</div>
             </div>
             <div className="text-3xl">🐌</div>
           </div>
@@ -259,8 +259,8 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{formatDuration(avgExecutionTime)}</div>
-              <div className="text-sm text-gray-600">Avg Execution</div>
+              <div className="text-2xl font-bold text-slate-800">{formatDuration(avgExecutionTime)}</div>
+              <div className="text-sm text-slate-600">Avg Execution</div>
             </div>
             <div className="text-3xl">⚡</div>
           </div>
@@ -269,8 +269,8 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{(cacheStats.hitRate * 100).toFixed(1)}%</div>
-              <div className="text-sm text-gray-600">Cache Hit Rate</div>
+              <div className="text-2xl font-bold text-slate-800">{(cacheStats.hitRate * 100).toFixed(1)}%</div>
+              <div className="text-sm text-slate-600">Cache Hit Rate</div>
             </div>
             <div className="text-3xl">💾</div>
           </div>
@@ -279,19 +279,19 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
 
       {/* Cache Statistics */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Cache Statistics</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-3">Cache Statistics</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-xl font-bold text-green-600">{cacheStats.totalHits.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Cache Hits</div>
+            <div className="text-sm text-slate-600">Cache Hits</div>
           </div>
           <div className="text-center">
             <div className="text-xl font-bold text-red-600">{cacheStats.totalMisses.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Cache Misses</div>
+            <div className="text-sm text-slate-600">Cache Misses</div>
           </div>
           <div className="text-center">
             <div className="text-xl font-bold text-blue-600">{cacheStats.totalOperations.toLocaleString()}</div>
-            <div className="text-sm text-gray-600">Total Operations</div>
+            <div className="text-sm text-slate-600">Total Operations</div>
           </div>
           <div className="text-center">
             <div className={`text-xl font-bold ${
@@ -301,7 +301,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
               {cacheStats.hitRate >= 0.8 ? 'Excellent' : 
                cacheStats.hitRate >= 0.5 ? 'Good' : 'Poor'}
             </div>
-            <div className="text-sm text-gray-600">Performance</div>
+            <div className="text-sm text-slate-600">Performance</div>
           </div>
         </div>
       </div>
@@ -309,7 +309,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       {/* Slow Operations Visual Indicators */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-800">Slow Operations</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Slow Operations</h3>
           <select
             value={selectedFilter}
             onChange={(e) => setSelectedFilter(e.target.value)}
@@ -325,7 +325,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
         </div>
 
         {slowOperations.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-slate-500">
             <div className="text-4xl mb-2">✅</div>
             <div>No slow operations detected</div>
           </div>
@@ -340,14 +340,14 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{getOperationIcon(operation.type)}</span>
                   <div>
-                    <div className="font-medium text-gray-800">{operation.operation}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="font-medium text-slate-800">{operation.operation}</div>
+                    <div className="text-sm text-slate-600">
                       {operation.type.charAt(0).toUpperCase() + operation.type.slice(1)} • {new Date(operation.timestamp).toLocaleTimeString()}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-gray-800">{formatDuration(operation.duration)}</div>
+                  <div className="text-lg font-bold text-slate-800">{formatDuration(operation.duration)}</div>
                   <div className={`text-xs px-2 py-1 rounded ${
                     operation.level === 'error' ? 'bg-red-100 text-red-700' :
                     operation.level === 'warn' ? 'bg-yellow-100 text-yellow-700' :
@@ -365,22 +365,22 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       {/* Detailed Logs */}
       {showDetailedLogs && (
         <div className="bg-white rounded-lg shadow-md p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">Recent Logs</h3>
+          <h3 className="text-lg font-semibold text-slate-800 mb-3">Recent Logs</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium text-gray-700">Time</th>
-                  <th className="px-4 py-2 text-left font-medium text-gray-700">Type</th>
-                  <th className="px-4 py-2 text-left font-medium text-gray-700">Operation</th>
-                  <th className="px-4 py-2 text-center font-medium text-gray-700">Duration</th>
-                  <th className="px-4 py-2 text-center font-medium text-gray-700">Level</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">Time</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">Type</th>
+                  <th className="px-4 py-2 text-left font-medium text-slate-700">Operation</th>
+                  <th className="px-4 py-2 text-center font-medium text-slate-700">Duration</th>
+                  <th className="px-4 py-2 text-center font-medium text-slate-700">Level</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.slice(-20).map((log, index) => (
-                  <tr key={`${log.timestamp}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-4 py-2 text-xs text-gray-600">
+                  <tr key={`${log.timestamp}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <td className="px-4 py-2 text-xs text-slate-600">
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </td>
                     <td className="px-4 py-2">
@@ -413,9 +413,9 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
       )}
 
       {/* Performance Summary */}
-      <div className="bg-gray-100 rounded-lg p-4 mt-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Performance Summary</h3>
-        <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+      <div className="bg-slate-100 rounded-lg p-4 mt-6">
+        <h3 className="text-lg font-semibold text-slate-800 mb-2">Performance Summary</h3>
+        <pre className="text-xs text-slate-700 whitespace-pre-wrap font-mono">
           {getPerformanceSummary()}
         </pre>
       </div>

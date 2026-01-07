@@ -141,8 +141,8 @@ function getContractPrintStyles(): string {
       --text-secondary: #4B5563;
       --text-muted: #6B7280;
       --bg-white: #FFFFFF;
-      --bg-gray-50: #F9FAFB;
-      --bg-gray-100: #F3F4F6;
+      --bg-slate-50: #F9FAFB;
+      --bg-slate-100: #F3F4F6;
       --border-light: #E5E7EB;
       --border-medium: #D1D5DB;
       --font-arabic: 'Noto Kufi Arabic', 'Cairo', sans-serif;

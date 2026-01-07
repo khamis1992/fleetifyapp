@@ -38,7 +38,7 @@ export const AccountTooltip: React.FC<AccountTooltipProps> = ({
       revenue: 'text-green-600 bg-green-50',
       expenses: 'text-orange-600 bg-orange-50',
     };
-    return colors[type as keyof typeof colors] || 'text-gray-600 bg-gray-50';
+    return colors[type as keyof typeof colors] || 'text-slate-600 bg-slate-50';
   };
   
   const getAccountTypeLabel = (type: string) => {
@@ -159,7 +159,7 @@ export const AccountTooltip: React.FC<AccountTooltipProps> = ({
                   ) : account.current_balance < 0 ? (
                     <TrendingDown className="h-3 w-3 text-red-600" />
                   ) : (
-                    <div className="w-3 h-3 rounded-full bg-gray-400" />
+                    <div className="w-3 h-3 rounded-full bg-slate-400" />
                   )}
                   <span className={`font-mono text-xs ${
                     account.current_balance > 0 ? 'text-green-600' : 

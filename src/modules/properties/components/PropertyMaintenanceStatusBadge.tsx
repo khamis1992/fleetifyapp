@@ -44,7 +44,7 @@ const statusConfig = {
     label: 'متوقف',
     variant: 'secondary' as const,
     icon: Pause,
-    className: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+    className: 'bg-slate-100 text-slate-800 hover:bg-slate-100',
   },
 };
 

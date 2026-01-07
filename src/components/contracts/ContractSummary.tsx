@@ -71,7 +71,7 @@ export const ContractSummary = React.memo<ContractSummaryProps>(({
       case 'completed': return 'bg-blue-500';
       case 'cancelled': return 'bg-red-500';
       case 'expired': return 'bg-orange-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-slate-500';
     }
   };
 

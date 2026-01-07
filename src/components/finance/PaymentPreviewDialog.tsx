@@ -282,7 +282,7 @@ export const PaymentPreviewDialog: React.FC<PaymentPreviewDialogProps> = ({
           </Button>
         </div>
 
-        <div ref={receiptRef} className="p-4 bg-gray-100 rounded-lg overflow-auto" style={{ maxHeight: '60vh' }}>
+        <div ref={receiptRef} className="p-4 bg-slate-100 rounded-lg overflow-auto" style={{ maxHeight: '60vh' }}>
           <PaymentReceipt
             receiptNumber={receiptData.receiptNumber}
             date={receiptData.date}

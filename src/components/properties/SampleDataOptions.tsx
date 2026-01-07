@@ -208,7 +208,7 @@ export const SampleDataOptions: React.FC<SampleDataOptionsProps> = ({
       key: 'warehouse', 
       label: 'مستودع', 
       icon: Warehouse, 
-      color: 'bg-gray-50 text-gray-700 border-gray-200',
+      color: 'bg-slate-50 text-slate-700 border-slate-200',
       description: '500 م²، المنطقة الصناعية'
     },
     { 

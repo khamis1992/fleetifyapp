@@ -55,7 +55,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -165,7 +165,7 @@ const Ledger = () => {
       <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
         {/* Hero Header */}
         <motion.div
-          className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+          className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -240,7 +240,7 @@ const Ledger = () => {
             value={stats.totalEntries}
             subtitle="جميع القيود"
             icon={FileText}
-            iconBg="bg-gradient-to-br from-coral-500 to-orange-500"
+            iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
             delay={0.1}
           />
           <StatCard
@@ -277,7 +277,7 @@ const Ledger = () => {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-5 w-5 text-coral-500" />
+            <Filter className="h-5 w-5 text-rose-500" />
             <h3 className="font-semibold text-neutral-900">البحث والفلترة</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -287,7 +287,7 @@ const Ledger = () => {
                 placeholder="البحث في القيود..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10 bg-gray-50 border-gray-200"
+                className="pr-10 bg-slate-50 border-slate-200"
               />
             </div>
             
@@ -296,7 +296,7 @@ const Ledger = () => {
               placeholder="من تاريخ"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="bg-gray-50 border-gray-200"
+              className="bg-slate-50 border-slate-200"
             />
             
             <Input
@@ -304,11 +304,11 @@ const Ledger = () => {
               placeholder="إلى تاريخ"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="bg-gray-50 border-gray-200"
+              className="bg-slate-50 border-slate-200"
             />
 
             <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-              <SelectTrigger className="bg-gray-50 border-gray-200">
+              <SelectTrigger className="bg-slate-50 border-slate-200">
                 <SelectValue placeholder="اختر الحساب" />
               </SelectTrigger>
               <SelectContent>
@@ -322,7 +322,7 @@ const Ledger = () => {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-gray-50 border-gray-200">
+              <SelectTrigger className="bg-slate-50 border-slate-200">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -344,17 +344,17 @@ const Ledger = () => {
         >
           {isLoadingEntries ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-              <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-coral-500" />
+              <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-rose-500" />
               <p className="text-neutral-500">جاري تحميل القيود المحاسبية...</p>
             </div>
           ) : !journalEntries || journalEntries.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-coral-100 flex items-center justify-center mx-auto mb-4">
-                <Receipt className="h-8 w-8 text-coral-500" />
+              <div className="w-16 h-16 rounded-2xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
+                <Receipt className="h-8 w-8 text-rose-500" />
               </div>
               <h3 className="text-lg font-semibold mb-2 text-neutral-900">لا توجد قيود محاسبية</h3>
               <p className="text-neutral-500 mb-4">لم يتم العثور على قيود محاسبية تطابق معايير البحث</p>
-              <Button asChild className="bg-coral-500 hover:bg-coral-600">
+              <Button asChild className="bg-rose-500 hover:bg-coral-600">
                 <Link to="/finance/new-entry">
                   <Plus className="h-4 w-4 ml-2" />
                   إنشاء قيد جديد
@@ -372,11 +372,11 @@ const Ledger = () => {
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm">
-                    <CardHeader className="bg-gradient-to-l from-gray-50 to-white border-b py-4">
+                    <CardHeader className="bg-gradient-to-l from-slate-50 to-white border-b py-4">
                       <div className="flex justify-between items-center">
                         <div className="space-y-1">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
                               <Receipt className="h-5 w-5 text-coral-600" />
                             </div>
                             <div>
@@ -423,7 +423,7 @@ const Ledger = () => {
                     
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-gray-50/50">
+                          <TableRow className="bg-slate-50/50">
                             <TableHead className="text-right font-semibold">رمز الحساب</TableHead>
                             <TableHead className="text-right font-semibold">اسم الحساب</TableHead>
                             <TableHead className="text-center font-semibold">البيان</TableHead>
@@ -433,7 +433,7 @@ const Ledger = () => {
                         </TableHeader>
                         <TableBody>
                           {entry.journal_entry_lines?.map((line, idx) => (
-                            <TableRow key={line.id || idx} className="hover:bg-gray-50/50">
+                            <TableRow key={line.id || idx} className="hover:bg-slate-50/50">
                               <TableCell className="font-mono text-center font-medium">
                                 {line.chart_of_accounts?.account_code}
                               </TableCell>
@@ -472,7 +472,7 @@ const Ledger = () => {
                       </Table>
                     
                       {/* Totals */}
-                      <div className="bg-gradient-to-l from-gray-100 to-gray-50 border-t">
+                      <div className="bg-gradient-to-l from-slate-100 to-slate-50 border-t">
                         <Table>
                           <TableBody>
                             <TableRow className="border-0">

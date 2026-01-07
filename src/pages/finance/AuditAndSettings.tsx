@@ -44,7 +44,7 @@ const TABS = [
     label: "الإعدادات",
     icon: Cog,
     description: "إعدادات النظام المالي",
-    gradient: "from-gray-600 to-slate-600",
+    gradient: "from-slate-600 to-slate-600",
   },
 ];
 
@@ -67,7 +67,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -103,7 +103,7 @@ const AuditAndSettings = () => {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-coral-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -206,8 +206,8 @@ const AuditAndSettings = () => {
             className={cn(
               "cursor-pointer transition-all hover:shadow-lg border-2",
               currentTab === tab.id 
-                ? "border-coral-500 bg-coral-50/50 shadow-md" 
-                : "border-transparent hover:border-gray-200"
+                ? "border-rose-500 bg-rose-50/50 shadow-md" 
+                : "border-transparent hover:border-slate-200"
             )}
             onClick={() => handleTabChange(tab.id)}
           >
@@ -223,7 +223,7 @@ const AuditAndSettings = () => {
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-lg text-neutral-900">{tab.label}</p>
                     {currentTab === tab.id && (
-                      <Badge className="bg-coral-500 text-white">نشط</Badge>
+                      <Badge className="bg-rose-500 text-white">نشط</Badge>
                     )}
                   </div>
                   <p className="text-sm text-neutral-500 mt-1">{tab.description}</p>
@@ -246,7 +246,7 @@ const AuditAndSettings = () => {
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="data-[state=active]:bg-coral-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2 transition-all"
+                className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 gap-2 transition-all"
               >
                 <tab.icon className="w-4 h-4" />
                 {tab.label}

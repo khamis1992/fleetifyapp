@@ -336,14 +336,14 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
                 "p-4 rounded-xl border transition-colors",
                 hasNumber && !isValid 
                   ? "bg-amber-50 border-amber-200" 
-                  : "bg-neutral-50 border-neutral-100 hover:border-coral-200"
+                  : "bg-neutral-50 border-neutral-100 hover:border-rose-200"
               )}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center",
-                    hasNumber && !isValid ? "bg-amber-100" : "bg-coral-100"
+                    hasNumber && !isValid ? "bg-amber-100" : "bg-rose-100"
                   )}>
                     <phone.icon className={cn(
                       "w-5 h-5",
@@ -408,7 +408,7 @@ const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], n
           <p className="text-xs text-neutral-500">{contracts.length} عقد</p>
         </div>
         <Button 
-          className="bg-coral-500 hover:bg-coral-600 text-white gap-2"
+          className="bg-rose-500 hover:bg-coral-600 text-white gap-2"
           onClick={() => navigate(`/contracts?customer=${customerId}`)}
         >
           <Plus className="w-4 h-4" />
@@ -436,7 +436,7 @@ const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], n
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-coral-500 to-coral-600 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-coral-600 flex items-center justify-center">
                       <Car className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -824,7 +824,7 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
             )}
             <Button 
               size="sm" 
-              className="gap-2 bg-coral-500 hover:bg-coral-600"
+              className="gap-2 bg-rose-500 hover:bg-coral-600"
               onClick={() => setIsAdding(!isAdding)}
             >
               <Plus className="w-4 h-4" />
@@ -847,7 +847,7 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                   variant={noteType === 'note' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNoteType('note')}
-                  className={noteType === 'note' ? 'bg-coral-500' : ''}
+                  className={noteType === 'note' ? 'bg-rose-500' : ''}
                 >
                   <FileText className="w-4 h-4 ml-1" />
                   ملاحظة
@@ -883,7 +883,7 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                 </Button>
                 <Button 
                   size="sm" 
-                  className="gap-2 bg-coral-500 hover:bg-coral-600"
+                  className="gap-2 bg-rose-500 hover:bg-coral-600"
                   onClick={handleAddNote}
                   disabled={!newNote.trim() || isAddingActivity}
                 >
@@ -920,7 +920,7 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                 <div className="absolute right-4 w-5 h-5 rounded-full bg-white border-2 border-coral-300 flex items-center justify-center shadow-sm">
                   {getActivityIcon(activity.note_type, activity.call_status)}
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 transition-colors">
+                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-rose-200 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
@@ -1192,7 +1192,7 @@ const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId
           </div>
           <Button 
             size="sm" 
-            className="gap-2 bg-coral-500 hover:bg-coral-600"
+            className="gap-2 bg-rose-500 hover:bg-coral-600"
             onClick={() => setIsAdding(!isAdding)}
           >
             <Plus className="w-4 h-4" />
@@ -1215,13 +1215,13 @@ const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId
                   value={newFollowup.title}
                   onChange={(e) => setNewFollowup(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="عنوان المتابعة..."
-                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500"
+                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
                 <input
                   type="datetime-local"
                   value={newFollowup.scheduled_date}
                   onChange={(e) => setNewFollowup(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-coral-500"
+                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
               <div className="flex gap-2">
@@ -1249,7 +1249,7 @@ const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId
                 </Button>
                 <Button 
                   size="sm" 
-                  className="gap-2 bg-coral-500 hover:bg-coral-600"
+                  className="gap-2 bg-rose-500 hover:bg-coral-600"
                   onClick={handleAddFollowup}
                   disabled={!newFollowup.title.trim() || !newFollowup.scheduled_date}
                 >
@@ -1275,12 +1275,12 @@ const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 transition-colors"
+              className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-rose-200 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Bell className="w-4 h-4 text-coral-500" />
+                    <Bell className="w-4 h-4 text-rose-500" />
                     <h5 className="font-medium text-neutral-900">{followup.title}</h5>
                     <Badge className={cn("text-xs", getPriorityColor(followup.priority))}>
                       {getPriorityLabel(followup.priority)}
@@ -1482,7 +1482,7 @@ const ActivityTab = ({ customerId, companyId, contracts, payments, violations }:
                 )}>
                   {getIcon(activity.type, activity.icon)}
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-coral-200 hover:shadow-sm transition-all">
+                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-rose-200 hover:shadow-sm transition-all">
                   <div className="flex items-start justify-between mb-1">
                     <Badge variant="outline" className={cn("text-xs", getColorClasses(activity.color))}>
                       {getTypeLabel(activity.type)}
@@ -1730,7 +1730,7 @@ const CustomerDetailsPageNew = () => {
           </div>
           <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
           <p className="text-neutral-500 mb-4">لم يتم العثور على هذا العميل</p>
-          <Button onClick={handleBack} className="bg-coral-500 hover:bg-coral-600">
+          <Button onClick={handleBack} className="bg-rose-500 hover:bg-coral-600">
             العودة للعملاء
           </Button>
         </div>
@@ -1903,7 +1903,7 @@ const CustomerDetailsPageNew = () => {
               </DropdownMenu>
               <Button 
                 onClick={handleEdit}
-                className="bg-coral-500 hover:bg-coral-600 text-white gap-2"
+                className="bg-rose-500 hover:bg-coral-600 text-white gap-2"
               >
                 <Edit3 className="w-4 h-4" />
                 تعديل
@@ -1925,8 +1925,8 @@ const CustomerDetailsPageNew = () => {
             {/* Avatar Section */}
             <div className="flex items-center gap-5">
               <div className="relative">
-                <Avatar className="w-24 h-24 rounded-full border-4 border-coral-100">
-                  <AvatarFallback className="bg-gradient-to-br from-coral-500 to-coral-600 text-white text-2xl font-bold">
+                <Avatar className="w-24 h-24 rounded-full border-4 border-rose-100">
+                  <AvatarFallback className="bg-gradient-to-br from-rose-500 to-coral-600 text-white text-2xl font-bold">
                     {getInitials(customerName)}
                   </AvatarFallback>
                 </Avatar>
@@ -2099,7 +2099,7 @@ const CustomerDetailsPageNew = () => {
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-coral-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5 text-coral-600" />
               </div>
               <div>
@@ -2139,7 +2139,7 @@ const CustomerDetailsPageNew = () => {
               )}
               <Button 
                 size="sm" 
-                className="gap-2 bg-coral-500 hover:bg-coral-600"
+                className="gap-2 bg-rose-500 hover:bg-coral-600"
                 onClick={() => setActiveTab('notes')}
               >
                 <Plus className="w-4 h-4" />
@@ -2184,7 +2184,7 @@ const CustomerDetailsPageNew = () => {
                   value={tab.value} 
                   className={cn(
                     "px-5 py-3.5 text-sm font-medium rounded-none border-b-2 transition-all gap-2 data-[state=active]:bg-white whitespace-nowrap",
-                    "data-[state=active]:border-coral-500 data-[state=active]:text-coral-600",
+                    "data-[state=active]:border-rose-500 data-[state=active]:text-coral-600",
                     "data-[state=inactive]:border-transparent data-[state=inactive]:text-neutral-500 hover:text-neutral-900"
                   )}
                 >
@@ -2372,7 +2372,7 @@ const CustomerDetailsPageNew = () => {
               {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
                 <div 
                   key={index}
-                  className="aspect-[4/3] bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-neutral-400 hover:border-coral-300 hover:text-coral-500 transition-colors cursor-pointer"
+                  className="aspect-[4/3] bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-neutral-400 hover:border-coral-300 hover:text-rose-500 transition-colors cursor-pointer"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FileImage className="w-8 h-8 mb-2" />

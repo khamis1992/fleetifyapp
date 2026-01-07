@@ -60,7 +60,7 @@ const IOSInstallInstructions: React.FC<{
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <Smartphone className="h-5 w-5 text-coral-500" />
+          <Smartphone className="h-5 w-5 text-rose-500" />
           تثبيت التطبيق
         </DialogTitle>
         <DialogDescription>
@@ -176,11 +176,11 @@ export const InstallPrompt: React.FC<InstallPromptProps> = ({
   }
 
   return (
-    <Card className="fixed bottom-20 left-4 right-4 z-50 md:hidden shadow-xl border-coral-200 animate-in slide-in-from-bottom duration-300">
+    <Card className="fixed bottom-20 left-4 right-4 z-50 md:hidden shadow-xl border-rose-200 animate-in slide-in-from-bottom duration-300">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {/* App Icon */}
-          <div className="shrink-0 w-12 h-12 rounded-xl bg-coral-100 flex items-center justify-center">
+          <div className="shrink-0 w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center">
             {appIcon ? (
               <img src={appIcon} alt={appName} className="w-8 h-8 rounded" />
             ) : (
@@ -218,7 +218,7 @@ export const InstallPrompt: React.FC<InstallPromptProps> = ({
           <Button
             size="sm"
             onClick={handleInstall}
-            className="flex-1 bg-coral-500 hover:bg-coral-600 gap-2"
+            className="flex-1 bg-rose-500 hover:bg-coral-600 gap-2"
           >
             <Download className="h-4 w-4" />
             تثبيت

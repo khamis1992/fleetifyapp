@@ -56,7 +56,7 @@ function StatCard({
   progressValue?: number;
 }) {
   const colorStyles = {
-    coral: { bg: 'bg-coral-100', text: 'text-coral-600', fill: 'bg-coral-500' },
+    coral: { bg: 'bg-rose-100', text: 'text-coral-600', fill: 'bg-rose-500' },
     blue: { bg: 'bg-blue-100', text: 'text-blue-600', fill: 'bg-blue-500' },
     green: { bg: 'bg-green-100', text: 'text-green-600', fill: 'bg-green-500' },
     amber: { bg: 'bg-amber-100', text: 'text-amber-600', fill: 'bg-amber-500' },
@@ -89,7 +89,7 @@ function StatCard({
             <motion.span
               className={cn(
                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold',
-                trend === 'up' ? 'bg-green-100 text-green-600' : 'bg-coral-100 text-coral-600'
+                trend === 'up' ? 'bg-green-100 text-green-600' : 'bg-rose-100 text-coral-600'
               )}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -131,7 +131,7 @@ function StatCard({
         initial={{ y: 5 }}
         animate={{ y: 0 }}
       >
-        <span className="text-[8px] text-coral-500 font-medium">انقر للتفاصيل ←</span>
+        <span className="text-[8px] text-rose-500 font-medium">انقر للتفاصيل ←</span>
       </motion.div>
     </motion.div>
   );
@@ -211,7 +211,7 @@ export function CustomersSmartDashboard({ onFilterChange, onCustomerClick }: Cus
         {/* ملخص سريع - بطاقة مجمعة */}
         <div className="lg:col-span-2 bg-white rounded-[1.25rem] p-5 shadow-sm">
           <h3 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2">
-            <Target className="w-4 h-4 text-coral-500" />
+            <Target className="w-4 h-4 text-rose-500" />
             ملخص سريع
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -275,10 +275,10 @@ export function CustomersSmartDashboard({ onFilterChange, onCustomerClick }: Cus
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-coral-50 border border-coral-200 rounded-xl p-4 flex items-center justify-between"
+          className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-coral-100 rounded-lg">
+            <div className="p-2 bg-rose-100 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-coral-600" />
             </div>
             <div>
@@ -290,7 +290,7 @@ export function CustomersSmartDashboard({ onFilterChange, onCustomerClick }: Cus
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onFilterChange?.('blacklisted')}
-            className="px-4 py-2 bg-coral-100 text-coral-700 rounded-lg text-sm font-medium hover:bg-coral-200 transition-colors"
+            className="px-4 py-2 bg-rose-100 text-coral-700 rounded-lg text-sm font-medium hover:bg-rose-200 transition-colors"
           >
             عرض
           </motion.button>

@@ -198,7 +198,7 @@ export const IntegrationHealthMonitor: React.FC = () => {
       case 'error':
         return <XCircle className="h-5 w-5 text-red-600" />;
       default:
-        return <Network className="h-5 w-5 text-gray-600" />;
+        return <Network className="h-5 w-5 text-slate-600" />;
     }
   };
 
@@ -244,7 +244,7 @@ export const IntegrationHealthMonitor: React.FC = () => {
                   ? 'bg-yellow-100'
                   : overallHealth === 'error'
                   ? 'bg-red-100'
-                  : 'bg-gray-100'
+                  : 'bg-slate-100'
               }`}
             >
               <Network
@@ -255,7 +255,7 @@ export const IntegrationHealthMonitor: React.FC = () => {
                     ? 'text-yellow-600'
                     : overallHealth === 'error'
                     ? 'text-red-600'
-                    : 'text-gray-600'
+                    : 'text-slate-600'
                 }`}
               />
             </div>

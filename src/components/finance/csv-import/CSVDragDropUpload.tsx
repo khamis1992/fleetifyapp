@@ -154,7 +154,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
               border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
               ${isDragActive && !isDragReject ? 'border-blue-500 bg-blue-50' : ''}
               ${isDragReject ? 'border-red-500 bg-red-50' : ''}
-              ${!isDragActive ? 'border-gray-300 hover:border-gray-400' : ''}
+              ${!isDragActive ? 'border-slate-300 hover:border-slate-400' : ''}
             `}
           >
             <input {...getInputProps()} />
@@ -167,7 +167,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
                 </>
               ) : (
                 <>
-                  <FileSpreadsheet className="h-12 w-12 text-gray-400" />
+                  <FileSpreadsheet className="h-12 w-12 text-slate-400" />
                   {isDragActive ? (
                     <p className="text-lg font-medium text-blue-600">
                       أفلت الملف هنا...
@@ -177,7 +177,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
                       <p className="text-lg font-medium">
                         اسحب وأفلت ملف CSV هنا
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-slate-500">
                         أو انقر لاختيار ملف من جهازك
                       </p>
                     </>
@@ -220,7 +220,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
         )}
 
         {/* File Requirements */}
-        <div className="space-y-2 text-sm text-gray-600">
+        <div className="space-y-2 text-sm text-slate-600">
           <p className="font-medium">متطلبات الملف:</p>
           <ul className="space-y-1 mr-4">
             <li>• الأعمدة المطلوبة: المستوى، رقم الحساب، الوصف، الوصف بالإنجليزي</li>
@@ -235,7 +235,7 @@ export const CSVDragDropUpload: React.FC<CSVDragDropUploadProps> = ({
           <FileText className="h-4 w-4" />
           <AlertDescription>
             <strong>مثال على تنسيق الملف:</strong>
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono">
+            <div className="mt-2 p-2 bg-slate-50 rounded text-xs font-mono">
               المستوى,رقم الحساب,الوصف,الوصف بالإنجليزي<br/>
               1,1,الأصول,Assets<br/>
               2,11,الأصول المتداولة,Current Assets<br/>

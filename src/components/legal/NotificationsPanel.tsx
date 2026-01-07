@@ -205,7 +205,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
       case 'medium':
         return 'text-blue-600 bg-blue-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-slate-600 bg-slate-50';
     }
   };
 

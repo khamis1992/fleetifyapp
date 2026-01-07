@@ -71,14 +71,14 @@ const statusConfig = {
   },
   cancelled: {
     label: "ملغى",
-    color: "bg-gray-500",
+    color: "bg-slate-500",
     icon: XCircle,
     variant: "secondary" as const
   }
 };
 
 const priorityConfig = {
-  low: { label: "منخفضة", color: "bg-gray-500" },
+  low: { label: "منخفضة", color: "bg-slate-500" },
   normal: { label: "عادية", color: "bg-blue-500" },
   high: { label: "عالية", color: "bg-orange-500" },
   urgent: { label: "عاجل", color: "bg-red-500" }

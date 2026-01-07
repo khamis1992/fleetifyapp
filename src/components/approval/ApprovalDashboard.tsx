@@ -131,7 +131,7 @@ export function ApprovalDashboard() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <Clock className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">جاري تحميل الموافقات المعلقة...</p>
+          <p className="text-slate-600">جاري تحميل الموافقات المعلقة...</p>
         </div>
       </div>
     );
@@ -141,7 +141,7 @@ export function ApprovalDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">لوحة الموافقات</h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-slate-600 mt-2">
           إدارة جميع الطلبات المعلقة التي تحتاج موافقتك
         </p>
       </div>
@@ -152,7 +152,7 @@ export function ApprovalDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">الموافقات المعلقة</p>
+                <p className="text-sm text-slate-600">الموافقات المعلقة</p>
                 <p className="text-2xl font-bold">{pendingApprovals?.length || 0}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
@@ -164,7 +164,7 @@ export function ApprovalDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">تحتاج إجراء عاجل</p>
+                <p className="text-sm text-slate-600">تحتاج إجراء عاجل</p>
                 <p className="text-2xl font-bold text-red-600">
                   {pendingApprovals?.filter(w => w.current_step > 0).length || 0}
                 </p>
@@ -178,7 +178,7 @@ export function ApprovalDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">اليوم</p>
+                <p className="text-sm text-slate-600">اليوم</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {pendingApprovals?.filter(w => {
                     const today = new Date().toISOString().split('T')[0];
@@ -201,8 +201,8 @@ export function ApprovalDashboard() {
             <CardContent className="pt-6">
               <div className="text-center py-8">
                 <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <p className="text-lg font-semibold text-gray-900">لا توجد موافقات معلقة</p>
-                <p className="text-sm text-gray-600 mt-2">جميع الطلبات تمت معالجتها</p>
+                <p className="text-lg font-semibold text-slate-900">لا توجد موافقات معلقة</p>
+                <p className="text-sm text-slate-600 mt-2">جميع الطلبات تمت معالجتها</p>
               </div>
             </CardContent>
           </Card>
@@ -238,14 +238,14 @@ export function ApprovalDashboard() {
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
                               step.status === 'approved' ? 'bg-green-600 text-white' :
                               index === workflow.current_step ? 'bg-blue-600 text-white' :
-                              'bg-gray-200 text-gray-600'
+                              'bg-slate-200 text-slate-600'
                             }`}
                           >
                             {step.status === 'approved' ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                           </div>
                           {index < workflow.steps.length - 1 && (
                             <div className={`w-12 h-1 ${
-                              step.status === 'approved' ? 'bg-green-600' : 'bg-gray-200'
+                              step.status === 'approved' ? 'bg-green-600' : 'bg-slate-200'
                             }`} />
                           )}
                         </div>

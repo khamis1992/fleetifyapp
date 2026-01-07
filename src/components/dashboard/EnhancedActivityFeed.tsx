@@ -69,7 +69,7 @@ const EnhancedActivityFeed: React.FC<EnhancedActivityFeedProps> = React.memo(({
       case 'vehicle': return 'from-green-500/10 to-green-600/5 border-green-200/20';
       case 'contract': return 'from-purple-500/10 to-purple-600/5 border-purple-200/20';
       case 'payment': return 'from-emerald-500/10 to-emerald-600/5 border-emerald-200/20';
-      default: return 'from-gray-500/10 to-gray-600/5 border-gray-200/20';
+      default: return 'from-slate-500/10 to-slate-600/5 border-slate-200/20';
     }
   };
 

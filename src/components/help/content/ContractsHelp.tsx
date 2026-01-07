@@ -216,9 +216,9 @@ export const ContractStatusHelp = () => (
           </p>
         </div>
         
-        <div className='p-3 bg-gray-50 rounded-lg'>
-          <h4 className='font-bold text-gray-900 mb-1'>منتهي (Expired)</h4>
-          <p className='text-sm text-gray-800'>
+        <div className='p-3 bg-slate-50 rounded-lg'>
+          <h4 className='font-bold text-slate-900 mb-1'>منتهي (Expired)</h4>
+          <p className='text-sm text-slate-800'>
             عقد انتهت مدته بشكل طبيعي. المركبة أصبحت متاحة.
           </p>
         </div>

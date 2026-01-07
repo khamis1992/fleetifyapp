@@ -254,7 +254,7 @@ export const UniversalSearch: React.FC = () => {
                   result.type === 'payment' && 'bg-green-100 text-green-600',
                   result.type === 'journal_entry' && 'bg-orange-100 text-orange-600',
                   result.type === 'customer' && 'bg-purple-100 text-purple-600',
-                  result.type === 'account' && 'bg-gray-100 text-gray-600',
+                  result.type === 'account' && 'bg-slate-100 text-slate-600',
                 )}>
                   <result.icon className="w-5 h-5" />
                 </div>

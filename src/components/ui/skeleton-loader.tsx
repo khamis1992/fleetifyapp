@@ -19,7 +19,7 @@ export const Skeleton = ({
   count = 1,
   ...props
 }: SkeletonProps) => {
-  const baseClasses = "animate-pulse bg-gray-200 dark:bg-gray-700";
+  const baseClasses = "animate-pulse bg-slate-200 dark:bg-slate-700";
   
   const variantClasses = {
     text: "h-4 rounded",

@@ -56,7 +56,7 @@ const PropertyMapView: React.FC = () => {
       case 'available': return 'bg-blue-500';
       case 'maintenance': return 'bg-orange-500';
       case 'for_sale': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-slate-500';
     }
   };
 

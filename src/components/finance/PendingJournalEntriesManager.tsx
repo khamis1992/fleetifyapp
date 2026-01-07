@@ -122,7 +122,7 @@ export const PendingJournalEntriesManager: React.FC = () => {
               <div className="text-sm text-muted-foreground">فشل</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">{stats.cancelled}</div>
+              <div className="text-2xl font-bold text-slate-600">{stats.cancelled}</div>
               <div className="text-sm text-muted-foreground">ملغى</div>
             </div>
           </div>

@@ -306,7 +306,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
               disabled={isExporting}
               className="cursor-pointer"
             >
-              <Printer className="h-4 w-4 ml-2 text-gray-500" />
+              <Printer className="h-4 w-4 ml-2 text-slate-500" />
               <span>طباعة</span>
               {exportingFormat === 'print' && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

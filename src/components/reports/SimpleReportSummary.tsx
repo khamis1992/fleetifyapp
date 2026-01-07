@@ -21,7 +21,7 @@ export function SimpleReportSummary({ cards }: SimpleReportSummaryProps) {
       case 'blue':
         return 'text-blue-800';
       default:
-        return 'text-gray-800';
+        return 'text-slate-800';
     }
   };
 
@@ -37,9 +37,9 @@ export function SimpleReportSummary({ cards }: SimpleReportSummaryProps) {
       {cards.map((card, index) => (
         <div 
           key={index}
-          className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm no-break"
+          className="bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm no-break"
         >
-          <h4 className="text-sm text-gray-500 mb-2">{card.title}</h4>
+          <h4 className="text-sm text-slate-500 mb-2">{card.title}</h4>
           <p className={`text-3xl font-bold ${getColorClasses(card.color)}`}>
             {formatValue(card.value, card.title)}
           </p>

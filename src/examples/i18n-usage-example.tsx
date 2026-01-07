@@ -50,7 +50,7 @@ export const AppWithI18n: React.FC = () => {
 // Example 2: Main App Component
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <Header />
       <main className="container mx-auto py-6">
         <DashboardContent />
@@ -65,18 +65,18 @@ const Header: React.FC = () => {
   const { getRTLClassName } = useRTLLayout();
 
   return (
-    <header className={getRTLClassName('bg-white shadow-sm border-b border-gray-200')}>
+    <header className={getRTLClassName('bg-white shadow-sm border-b border-slate-200')}>
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Car className="w-8 h-8 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-slate-900">
             {t('app.name')}
           </h1>
         </div>
 
         <div className="flex items-center space-x-4">
           {/* Date formatting example */}
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-slate-600">
             {formatLocalDate(new Date())}
           </span>
 
@@ -91,7 +91,7 @@ const Header: React.FC = () => {
           <MirroredIcon
             icon={ChevronLeft}
             name="chevron-left"
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-slate-600"
           />
         </div>
       </div>
@@ -154,7 +154,7 @@ const DashboardContent: React.FC = () => {
     <div className="space-y-6">
       {/* Page Title */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-slate-900">
           {t('fleet.title')}
         </h2>
 
@@ -163,13 +163,13 @@ const DashboardContent: React.FC = () => {
           <MirroredIcon
             icon={rtl ? ArrowForward : ArrowBack}
             name={rtl ? 'arrow-forward' : 'arrow-back'}
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-slate-600"
           />
 
           <MirroredIcon
             icon={rtl ? ArrowRight : ArrowLeft}
             name={rtl ? 'arrow-right' : 'arrow-left'}
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-slate-600"
           />
         </div>
       </div>
@@ -182,13 +182,13 @@ const DashboardContent: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <span className="font-medium">{t('hr.workingHours')}:</span>
-            <span className="text-gray-700">
+            <span className="text-slate-700">
               {workingHours?.start} - {workingHours?.end}
             </span>
           </div>
           <div>
             <span className="font-medium">{t('financial.paymentTerms')}:</span>
-            <span className="text-gray-700">
+            <span className="text-slate-700">
               {paymentTerms?.join(', ')} {t('time.days')}
             </span>
           </div>
@@ -217,46 +217,46 @@ const DashboardContent: React.FC = () => {
 
       {/* Vehicle Table with RTL Support */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+        <div className="px-6 py-4 border-b border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900">
             {t('fleet.vehicles')}
           </h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-slate-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t('vehicle.make')}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t('vehicle.model')}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t('vehicle.year')}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t('vehicle.vehicle_status')}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t('financial.daily_rate')}
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
                   {t('actions.title')}
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {vehicles.map((vehicle) => (
-                <tr key={vehicle.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <tr key={vehicle.id} className="hover:bg-slate-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                     {renderMixedContent(vehicle.make, { wrapperClassName: 'font-medium' })}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                     {vehicle.model}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                     {vehicle.year}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -268,7 +268,7 @@ const DashboardContent: React.FC = () => {
                       {t(`status.${vehicle.status}`)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                     {formatLocalCurrency(vehicle.dailyRate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -285,7 +285,7 @@ const DashboardContent: React.FC = () => {
 
       {/* Mixed Content Example */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">
           {t('fleet.maintenance.maintenance_reminder')}
         </h3>
 
@@ -296,19 +296,19 @@ const DashboardContent: React.FC = () => {
           ].map((item, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
             >
               <div className={rtl ? 'text-right' : 'text-left'}>
-                <div className="font-medium text-gray-900">
+                <div className="font-medium text-slate-900">
                   {renderMixedContent(item.vehicle)}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-600">
                   {t(`fleet.maintenance.maintenance_types.${item.service.replace(/\s+/g, '_').toLowerCase()}`)}
                 </div>
               </div>
 
               <div className={rtl ? 'text-left' : 'text-right'}>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-slate-500">
                   {formatLocalDate(new Date(item.date))}
                 </div>
               </div>
@@ -319,25 +319,25 @@ const DashboardContent: React.FC = () => {
 
       {/* Currency Information Display */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">
           {t('financial.currency')} {getCurrencyInfo().symbol}
         </h3>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <span className="text-gray-600">{t('financial.currency_code')}:</span>
+            <span className="text-slate-600">{t('financial.currency_code')}:</span>
             <div className="font-medium">{getCurrencyInfo().code}</div>
           </div>
           <div>
-            <span className="text-gray-600">{t('financial.decimals')}:</span>
+            <span className="text-slate-600">{t('financial.decimals')}:</span>
             <div className="font-medium">{getCurrencyInfo().decimals}</div>
           </div>
           <div>
-            <span className="text-gray-600">{t('financial.position')}:</span>
+            <span className="text-slate-600">{t('financial.position')}:</span>
             <div className="font-medium">{getCurrencyInfo().position}</div>
           </div>
           <div>
-            <span className="text-gray-600">{t('financial.locale')}:</span>
+            <span className="text-slate-600">{t('financial.locale')}:</span>
             <div className="font-medium">{currentLocale.locale}</div>
           </div>
         </div>
@@ -382,13 +382,13 @@ export const AdvancedI18nExample: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">
         Advanced I18N Features
       </h2>
 
       {/* Language Selection */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">
           Language Selection
         </h3>
 
@@ -405,14 +405,14 @@ export const AdvancedI18nExample: React.FC = () => {
                 p-4 rounded-lg border-2 transition-colors
                 ${lang.isCurrent
                   ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-300 hover:border-gray-400'
+                  : 'border-slate-300 hover:border-slate-400'
                 }
                 ${isChanging ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >
               <div className="text-2xl mb-2">{lang.flag}</div>
               <div className="font-medium">{lang.nativeName}</div>
-              <div className="text-sm text-gray-500">{lang.name}</div>
+              <div className="text-sm text-slate-500">{lang.name}</div>
               {lang.isCurrent && (
                 <div className="mt-2 text-xs text-blue-600">✓ Active</div>
               )}
@@ -423,47 +423,47 @@ export const AdvancedI18nExample: React.FC = () => {
 
       {/* Translation Examples */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">
           Translation Examples
         </h3>
 
         <div className="space-y-4">
           {/* Basic translation */}
           <div>
-            <h4 className="font-medium text-gray-700">Basic Translation:</h4>
-            <p className="text-gray-600">
+            <h4 className="font-medium text-slate-700">Basic Translation:</h4>
+            <p className="text-slate-600">
               {t('app.description')}
             </p>
           </div>
 
           {/* Safe translation with fallback */}
           <div>
-            <h4 className="font-medium text-gray-700">Safe Translation:</h4>
-            <p className="text-gray-600">
+            <h4 className="font-medium text-slate-700">Safe Translation:</h4>
+            <p className="text-slate-600">
               {safeTranslate('app.welcome', {}, 'Welcome to FleetifyApp')}
             </p>
           </div>
 
           {/* Rich text translation */}
           <div>
-            <h4 className="font-medium text-gray-700">Rich Text Translation:</h4>
-            <div className="text-gray-600">
+            <h4 className="font-medium text-slate-700">Rich Text Translation:</h4>
+            <div className="text-slate-600">
               {welcomeMessage}
             </div>
           </div>
 
           {/* Pluralization */}
           <div>
-            <h4 className="font-medium text-gray-700">Pluralization:</h4>
-            <p className="text-gray-600">
+            <h4 className="font-medium text-slate-700">Pluralization:</h4>
+            <p className="text-slate-600">
               {vehicleText}
             </p>
           </div>
 
           {/* Date/Time formatting */}
           <div>
-            <h4 className="font-medium text-gray-700">Date/Time Formatting:</h4>
-            <p className="text-gray-600">
+            <h4 className="font-medium text-slate-700">Date/Time Formatting:</h4>
+            <p className="text-slate-600">
               Current time: {formatLocalDateTime(new Date())}
             </p>
           </div>
@@ -472,7 +472,7 @@ export const AdvancedI18nExample: React.FC = () => {
 
       {/* Business Rules Integration */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">
           Business Rules Integration
         </h3>
 

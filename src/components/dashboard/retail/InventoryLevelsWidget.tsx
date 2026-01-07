@@ -185,10 +185,10 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
               <div className="flex items-center justify-between mb-2">
                 <DollarSign className="h-4 w-4 text-green-500" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-slate-900">
                 {formatCurrency(analytics.totalValue)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">قيمة المخزون</div>
+              <div className="text-xs text-slate-600 mt-1">قيمة المخزون</div>
             </div>
 
             {/* Low Stock */}
@@ -196,10 +196,10 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
               <div className="flex items-center justify-between mb-2">
                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-slate-900">
                 {analytics.lowStockCount}
               </div>
-              <div className="text-xs text-gray-600 mt-1">مخزون منخفض</div>
+              <div className="text-xs text-slate-600 mt-1">مخزون منخفض</div>
             </div>
 
             {/* Out of Stock */}
@@ -207,10 +207,10 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
               <div className="flex items-center justify-between mb-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-slate-900">
                 {analytics.outOfStockCount}
               </div>
-              <div className="text-xs text-gray-600 mt-1">نفذت الكمية</div>
+              <div className="text-xs text-slate-600 mt-1">نفذت الكمية</div>
             </div>
 
             {/* Turnover Rate */}
@@ -218,22 +218,22 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="h-4 w-4 text-blue-500" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-slate-900">
                 {analytics.turnoverRate.toFixed(2)}x
               </div>
-              <div className="text-xs text-gray-600 mt-1">معدل الدوران</div>
+              <div className="text-xs text-slate-600 mt-1">معدل الدوران</div>
             </div>
 
             {/* Dead Stock */}
-            <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-4 rounded-lg border border-gray-100">
+            <div className="bg-gradient-to-br from-slate-50 to-slate-50 p-4 rounded-lg border border-slate-100">
               <div className="flex items-center justify-between mb-2">
-                <Package className="h-4 w-4 text-gray-500" />
+                <Package className="h-4 w-4 text-slate-500" />
               </div>
-              <div className="text-xl font-bold text-gray-900">
+              <div className="text-xl font-bold text-slate-900">
                 {analytics.deadStockCount}
               </div>
-              <div className="text-xs text-gray-600 mt-1">مخزون راكد</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">مخزون راكد</div>
+              <div className="text-xs text-slate-500 mt-1">
                 90+ يوم بدون بيع
               </div>
             </div>
@@ -274,13 +274,13 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
                 {analytics.topLowStockItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-sm text-gray-900">
+                      <div className="font-medium text-sm text-slate-900">
                         {item.item_name_ar || item.item_name}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-slate-500 mt-1">
                         رمز: {item.item_code || item.sku || 'غير محدد'}
                       </div>
                     </div>
@@ -288,7 +288,7 @@ export const InventoryLevelsWidget: React.FC<InventoryLevelsWidgetProps> = ({ cl
                       <Badge variant="destructive" className="text-xs">
                         {item.min_stock_level || 0} متبقي
                       </Badge>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-slate-500 mt-1">
                         نقطة الطلب: {item.reorder_point || 0}
                       </div>
                     </div>

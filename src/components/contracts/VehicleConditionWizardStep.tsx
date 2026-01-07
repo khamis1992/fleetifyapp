@@ -151,7 +151,7 @@ export function VehicleConditionWizardStep({ vehicleId, contractId, onComplete }
       case 'good': return 'text-blue-600';
       case 'fair': return 'text-yellow-600';
       case 'poor': return 'text-red-600';
-      default: return 'text-gray-600';
+      default: return 'text-slate-600';
     }
   };
 

@@ -40,9 +40,10 @@ interface FinancialAlert {
 export const FinancialAlertsSystem = () => {
   const { user } = useAuth();
   const { formatCurrency } = useCurrencyFormatter();
+  const companyId = user?.profile?.company_id || user?.company?.id || '';
 
   const { data: budgetAlerts, isLoading: budgetLoading } = useQuery({
-    queryKey: ["budget-alerts", user?.user_metadata?.company_id],
+    queryKey: ["budget-alerts", companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budget_alerts")
@@ -53,14 +54,14 @@ export const FinancialAlertsSystem = () => {
             chart_of_accounts!inner(account_name)
           )
         `)
-        .eq("company_id", user?.user_metadata?.company_id)
+        .eq("company_id", companyId)
         .order("created_at", { ascending: false })
         .limit(10);
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.user_metadata?.company_id,
+    enabled: !!companyId,
   });
 
   const handleAcknowledgeAlert = async (alertId: string) => {

@@ -76,7 +76,7 @@ const NavItem: React.FC<{
       {isActive && (
         <motion.div
           layoutId="bottomNavIndicator"
-          className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-coral-500 rounded-full"
+          className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-rose-500 rounded-full"
           initial={false}
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         />
@@ -121,8 +121,8 @@ const FAB: React.FC<{
     className={cn(
       'absolute -top-6 left-1/2 -translate-x-1/2',
       'w-14 h-14 rounded-full',
-      'bg-coral-500 hover:bg-coral-600 text-white',
-      'shadow-lg shadow-coral-500/30',
+      'bg-rose-500 hover:bg-coral-600 text-white',
+      'shadow-lg shadow-rose-500/30',
       'flex items-center justify-center',
       'active:scale-95 transition-transform'
     )}

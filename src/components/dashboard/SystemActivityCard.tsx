@@ -39,13 +39,13 @@ const getCategoryIcon = (category: string) => {
     case 'authentication':
       return <Shield className="h-4 w-4 text-indigo-600" />;
     case 'system':
-      return <Database className="h-4 w-4 text-gray-600" />;
+      return <Database className="h-4 w-4 text-slate-600" />;
     case 'reports':
       return <BarChart3 className="h-4 w-4 text-cyan-600" />;
     case 'backup':
       return <Archive className="h-4 w-4 text-amber-600" />;
     default:
-      return <Activity className="h-4 w-4 text-gray-600" />;
+      return <Activity className="h-4 w-4 text-slate-600" />;
   }
 };
 

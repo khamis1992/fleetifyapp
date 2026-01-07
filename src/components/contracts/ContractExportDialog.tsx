@@ -334,7 +334,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div 
-                  className={`border rounded-lg p-4 cursor-pointer ${exportType === 'pdf' ? 'border-primary bg-primary/5' : 'border-gray-200'}`}
+                  className={`border rounded-lg p-4 cursor-pointer ${exportType === 'pdf' ? 'border-primary bg-primary/5' : 'border-slate-200'}`}
                   onClick={() => setExportType('pdf')}
                 >
                   <div className="flex items-center gap-3">
@@ -347,7 +347,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                 </div>
 
                 <div 
-                  className={`border rounded-lg p-4 cursor-pointer ${exportType === 'excel' ? 'border-primary bg-primary/5' : 'border-gray-200'}`}
+                  className={`border rounded-lg p-4 cursor-pointer ${exportType === 'excel' ? 'border-primary bg-primary/5' : 'border-slate-200'}`}
                   onClick={() => setExportType('excel')}
                 >
                   <div className="flex items-center gap-3">

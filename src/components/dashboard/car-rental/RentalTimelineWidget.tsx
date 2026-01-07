@@ -302,7 +302,7 @@ export const RentalTimelineWidget: React.FC = () => {
                       </div>
 
                       {/* Timeline Bar */}
-                      <div className="flex-1 relative h-10 bg-gray-100 rounded">
+                      <div className="flex-1 relative h-10 bg-slate-100 rounded">
                         {rentals.length === 0 ? (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-xs text-muted-foreground">متاح</span>

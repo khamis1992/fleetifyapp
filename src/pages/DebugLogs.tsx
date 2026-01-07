@@ -129,21 +129,21 @@ export default function DebugLogs() {
         <CardContent className="space-y-4">
           <div>
             <h3 className="font-bold mb-2">Device Info:</h3>
-            <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+            <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto">
               {JSON.stringify(deviceInfo, null, 2)}
             </pre>
           </div>
 
           <div>
             <h3 className="font-bold mb-2">User Info:</h3>
-            <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+            <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto">
               {JSON.stringify(userInfo, null, 2)}
             </pre>
           </div>
 
           <div>
             <h3 className="font-bold mb-2">Company Info:</h3>
-            <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+            <pre className="bg-slate-100 p-2 rounded text-xs overflow-auto">
               {JSON.stringify(companyInfo, null, 2)}
             </pre>
           </div>
@@ -172,7 +172,7 @@ export default function DebugLogs() {
         <CardContent>
           <div className="bg-black text-green-400 p-4 rounded font-mono text-xs h-96 overflow-auto">
             {logs.length === 0 ? (
-              <div className="text-gray-500">No logs yet. Navigate around the app to generate logs.</div>
+              <div className="text-slate-500">No logs yet. Navigate around the app to generate logs.</div>
             ) : (
               logs.map((log, index) => (
                 <div key={index} className="mb-1">

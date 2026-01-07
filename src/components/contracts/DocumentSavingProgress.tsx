@@ -44,7 +44,7 @@ export function DocumentSavingProgress({
       case 'processing':
         return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />
+        return <Clock className="h-4 w-4 text-slate-400" />
     }
   }
 

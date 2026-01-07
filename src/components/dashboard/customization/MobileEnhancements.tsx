@@ -45,9 +45,9 @@ const ConnectionIndicator: React.FC<{ isConnected: boolean; isOffline: boolean }
   isOffline 
 }) => {
   return (
-    <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white">
+    <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-white">
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-medium text-gray-900">لوحة التحكم</h2>
+        <h2 className="text-sm font-medium text-slate-900">لوحة التحكم</h2>
       </div>
       
       <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ const MobileTabBar: React.FC<{
   tabs: { id: string; label: string; icon: React.ElementType }[];
 }> = ({ activeTab, onTabChange, tabs }) => {
   return (
-    <div className="flex overflow-x-auto bg-white border-b border-gray-200 scrollbar-hide">
+    <div className="flex overflow-x-auto bg-white border-b border-slate-200 scrollbar-hide">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -87,8 +87,8 @@ const MobileTabBar: React.FC<{
           className={cn(
             "flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors",
             activeTab === tab.id
-              ? "border-b-2 border-coral-500 text-coral-600"
-              : "text-gray-600 hover:text-gray-900"
+              ? "border-b-2 border-rose-500 text-coral-600"
+              : "text-slate-600 hover:text-slate-900"
           )}
         >
           <tab.icon className="w-4 h-4" />
@@ -128,7 +128,7 @@ const EnhancedMobileMetricCard: React.FC<{
     <motion.div
       whileTap={{ scale: 0.95 }}
       className={cn(
-        "bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-pointer",
+        "bg-white border border-slate-200 rounded-xl p-4 shadow-sm cursor-pointer",
         isOffline && "opacity-60"
       )}
       onClick={onClick}
@@ -139,8 +139,8 @@ const EnhancedMobileMetricCard: React.FC<{
             <Icon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-xs font-medium text-gray-500">{title}</h3>
-            <p className="text-lg font-bold text-gray-900">{formatValue(value)}</p>
+            <h3 className="text-xs font-medium text-slate-500">{title}</h3>
+            <p className="text-lg font-bold text-slate-900">{formatValue(value)}</p>
           </div>
         </div>
         
@@ -170,12 +170,12 @@ const QuickActionMenu: React.FC<{
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-x-0 top-0 z-50 bg-white border-b border-gray-200 shadow-lg"
+          className="fixed inset-x-0 top-0 z-50 bg-white border-b border-slate-200 shadow-lg"
         >
           <div className="flex items-center justify-between p-4">
-            <h2 className="text-lg font-medium text-gray-900">الإجراءات السريعة</h2>
+            <h2 className="text-lg font-medium text-slate-900">الإجراءات السريعة</h2>
             <button onClick={onClose}>
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
           
@@ -188,7 +188,7 @@ const QuickActionMenu: React.FC<{
                   action.onClick();
                   onClose();
                 }}
-                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-gray-700 hover:bg-gray-100"
+                className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg text-slate-700 hover:bg-slate-100"
               >
                 <action.icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{action.label}</span>
@@ -318,7 +318,7 @@ export const MobileEnhancedDashboard: React.FC = () => {
               value={formatCurrency(stats?.monthlyRevenue || 0)}
               change={stats?.revenueChange || 0}
               icon={CreditCard}
-              color="bg-coral-500"
+              color="bg-rose-500"
               onClick={() => setActiveView('payments')}
               isOffline={isOffline}
             />
@@ -329,11 +329,11 @@ export const MobileEnhancedDashboard: React.FC = () => {
         return (
           <div className="p-4">
             <div className="mb-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">العقود الحديثة</h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-2">العقود الحديثة</h3>
             </div>
             {/* هنا سيتم عرض قائمة العقود مع التمرير السريع */}
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-center py-8 text-slate-500">
+              <FileText className="w-12 h-12 mx-auto mb-4 text-slate-400" />
               <p>قائمة العقود</p>
             </div>
           </div>
@@ -343,11 +343,11 @@ export const MobileEnhancedDashboard: React.FC = () => {
         return (
           <div className="p-4">
             <div className="mb-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">المركبات</h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-2">المركبات</h3>
             </div>
             {/* هنا سيتم عرض قائمة المركبات مع التمرير السريع */}
-            <div className="text-center py-8 text-gray-500">
-              <Car className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-center py-8 text-slate-500">
+              <Car className="w-12 h-12 mx-auto mb-4 text-slate-400" />
               <p>قائمة المركبات</p>
             </div>
           </div>
@@ -357,11 +357,11 @@ export const MobileEnhancedDashboard: React.FC = () => {
         return (
           <div className="p-4">
             <div className="mb-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">المدفوعات</h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-2">المدفوعات</h3>
             </div>
             {/* هنا سيتم عرض قائمة المدفوعات مع التمرير السريع */}
-            <div className="text-center py-8 text-gray-500">
-              <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-center py-8 text-slate-500">
+              <CreditCard className="w-12 h-12 mx-auto mb-4 text-slate-400" />
               <p>قائمة المدفوعات</p>
             </div>
           </div>
@@ -371,11 +371,11 @@ export const MobileEnhancedDashboard: React.FC = () => {
         return (
           <div className="p-4">
             <div className="mb-4">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">العملاء</h3>
+              <h3 className="text-lg font-medium text-slate-900 mb-2">العملاء</h3>
             </div>
             {/* هنا سيتم عرض قائمة العملاء مع التمرير السريع */}
-            <div className="text-center py-8 text-gray-500">
-              <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-center py-8 text-slate-500">
+              <Users className="w-12 h-12 mx-auto mb-4 text-slate-400" />
               <p>قائمة العملاء</p>
             </div>
           </div>
@@ -389,7 +389,7 @@ export const MobileEnhancedDashboard: React.FC = () => {
   // واجهة الجوال
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50 flex flex-col">
         {/* مؤشر الاتصال */}
         <ConnectionIndicator isConnected={connectionStatus === 'connected'} isOffline={isOffline} />
         
@@ -403,13 +403,13 @@ export const MobileEnhancedDashboard: React.FC = () => {
         {/* المحتوى */}
         <div className="flex-1 overflow-y-auto">
           {isOffline ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-slate-500">
               <WifiOff className="w-12 h-12 mb-4" />
               <h2 className="text-lg font-medium mb-2">غير متصل بالإنترنت</h2>
               <p className="text-sm">يتم عرض البيانات المخزنة مؤقتاً</p>
               <button 
                 onClick={() => window.location.reload()}
-                className="mt-4 px-4 py-2 bg-coral-500 text-white rounded-lg"
+                className="mt-4 px-4 py-2 bg-rose-500 text-white rounded-lg"
               >
                 إعادة المحاولة
               </button>
@@ -420,19 +420,19 @@ export const MobileEnhancedDashboard: React.FC = () => {
         </div>
         
         {/* شريط الأدوات السريع */}
-        <div className="bg-white border-t border-gray-200 p-4">
+        <div className="bg-white border-t border-slate-200 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setShowQuickActions(!showQuickActions)}
-                className="p-2 bg-gray-100 rounded-lg text-gray-700"
+                className="p-2 bg-slate-100 rounded-lg text-slate-700"
               >
                 <Menu className="w-5 h-5" />
               </button>
               
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="p-2 bg-gray-100 rounded-lg text-gray-700"
+                className="p-2 bg-slate-100 rounded-lg text-slate-700"
               >
                 <Filter className="w-5 h-5" />
               </button>
@@ -443,7 +443,7 @@ export const MobileEnhancedDashboard: React.FC = () => {
               
               <button
                 onClick={() => navigate('/settings')}
-                className="p-2 bg-gray-100 rounded-lg text-gray-700"
+                className="p-2 bg-slate-100 rounded-lg text-slate-700"
               >
                 <Settings className="w-5 h-5" />
               </button>
@@ -465,7 +465,7 @@ export const MobileEnhancedDashboard: React.FC = () => {
   // واجهة الأجهزة اللوحية
   if (isTablet) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50 flex flex-col">
         {/* مؤشر الاتصال */}
         <ConnectionIndicator isConnected={connectionStatus === 'connected'} isOffline={isOffline} />
         
@@ -486,9 +486,9 @@ export const MobileEnhancedDashboard: React.FC = () => {
   
   // واجهة سطح المكتب
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <div className="p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">لوحة التحكم</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-6">لوحة التحكم</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {/* بطاقات المقاييس */}
@@ -524,7 +524,7 @@ export const MobileEnhancedDashboard: React.FC = () => {
             value={formatCurrency(stats?.monthlyRevenue || 0)}
             change={stats?.revenueChange || 0}
             icon={CreditCard}
-            color="bg-coral-500"
+            color="bg-rose-500"
             onClick={() => navigate('/payments')}
             isOffline={isOffline}
           />

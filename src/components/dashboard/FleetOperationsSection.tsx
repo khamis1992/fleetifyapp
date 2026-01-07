@@ -174,8 +174,8 @@ export const FleetOperationsSection: React.FC = () => {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         {[1, 2, 3].map((i) => (
           <div key={i} className="glass-card rounded-3xl p-6 animate-pulse">
-            <div className="h-6 bg-gray-200 rounded mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-6 bg-slate-200 rounded mb-4"></div>
+            <div className="h-64 bg-slate-200 rounded"></div>
           </div>
         ))}
       </section>
@@ -192,8 +192,8 @@ export const FleetOperationsSection: React.FC = () => {
         className="glass-card rounded-3xl p-6"
       >
         <div className="mb-6">
-          <h3 className="text-lg font-bold text-gray-900">حالة الأسطول</h3>
-          <p className="text-sm text-gray-600">توزيع المركبات الحالي</p>
+          <h3 className="text-lg font-bold text-slate-900">حالة الأسطول</h3>
+          <p className="text-sm text-slate-600">توزيع المركبات الحالي</p>
         </div>
         <div style={{ height: '250px' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -232,19 +232,19 @@ export const FleetOperationsSection: React.FC = () => {
           <div className="text-center p-3 rounded-xl bg-emerald-50">
             <div className="w-3 h-3 bg-emerald-500 rounded-full mx-auto mb-2"></div>
             <p className="text-xl font-bold text-emerald-700">{fleetStatus?.available || 0}</p>
-            <p className="text-xs text-gray-600">متاح</p>
+            <p className="text-xs text-slate-600">متاح</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-red-50">
             <div className="w-3 h-3 bg-red-600 rounded-full mx-auto mb-2"></div>
             <p className="text-xl font-bold text-red-700">{fleetStatus?.rented || 0}</p>
-            <p className="text-xs text-gray-600">مؤجر</p>
+            <p className="text-xs text-slate-600">مؤجر</p>
           </div>
           <div className="text-center p-3 rounded-xl bg-orange-50">
             <div className="w-3 h-3 bg-orange-500 rounded-full mx-auto mb-2"></div>
             <p className="text-xl font-bold text-orange-700">
               {(fleetStatus?.maintenance || 0) + (fleetStatus?.out_of_service || 0)}
             </p>
-            <p className="text-xs text-gray-600">صيانة</p>
+            <p className="text-xs text-slate-600">صيانة</p>
           </div>
         </div>
       </motion.div>
@@ -257,7 +257,7 @@ export const FleetOperationsSection: React.FC = () => {
         className="glass-card rounded-3xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-gray-900">جدول الصيانة</h3>
+          <h3 className="text-lg font-bold text-slate-900">جدول الصيانة</h3>
           {totalMaintenanceCount && totalMaintenanceCount > 0 && (
             <span className="badge-premium badge-warning">
               <Clock className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export const FleetOperationsSection: React.FC = () => {
                     <Icon className={`w-5 h-5 ${iconColor}`} />
                     <div>
                       <p className="font-semibold text-sm">{maintenance.vehicles?.plate_number || 'غير محدد'}</p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-slate-600">
                         {maintenance.maintenance_type} - 
                         {isOverdue ? ` متأخر ${Math.abs(daysUntil)} ${Math.abs(daysUntil) === 1 ? 'يوم' : 'أيام'}` :
                          isUrgent ? ' غداً' :
@@ -294,7 +294,7 @@ export const FleetOperationsSection: React.FC = () => {
               );
             })
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-500">
               <Wrench className="w-12 h-12 mx-auto mb-2 opacity-30" />
               <p className="text-sm">لا توجد صيانات قادمة</p>
             </div>
@@ -315,7 +315,7 @@ export const FleetOperationsSection: React.FC = () => {
         className="glass-card rounded-3xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-gray-900">أداء المركبات</h3>
+          <h3 className="text-lg font-bold text-slate-900">أداء المركبات</h3>
           <TrendingUp className="w-5 h-5 text-emerald-600" />
         </div>
         <div style={{ height: '200px' }}>
@@ -353,20 +353,20 @@ export const FleetOperationsSection: React.FC = () => {
           </ResponsiveContainer>
         </div>
         <div className="space-y-3 mt-6">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">معدل الإشغال</span>
-            <span className="font-bold text-gray-900">{occupancyRate}%</span>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm text-slate-600">معدل الإشغال</span>
+            <span className="font-bold text-slate-900">{occupancyRate}%</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">المركبات المؤجرة</span>
-            <span className="font-bold text-gray-900">{fleetStatus?.rented || 0}</span>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm text-slate-600">المركبات المؤجرة</span>
+            <span className="font-bold text-slate-900">{fleetStatus?.rented || 0}</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <span className="text-sm text-gray-600">كفاءة الأسطول</span>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <span className="text-sm text-slate-600">كفاءة الأسطول</span>
             <span className={`font-bold ${
               occupancyRate >= 70 ? 'text-emerald-600' :
               occupancyRate >= 50 ? 'text-blue-600' :
-              occupancyRate >= 30 ? 'text-yellow-600' : 'text-gray-600'
+              occupancyRate >= 30 ? 'text-yellow-600' : 'text-slate-600'
             }`}>
               {occupancyRate >= 70 ? 'ممتاز' :
                occupancyRate >= 50 ? 'جيد' :

@@ -73,14 +73,14 @@ export const HelpIcon: React.FC<HelpIconProps> = ({
           <DialogDescription asChild>
             <div className="space-y-4 text-right">
               {/* Main Content */}
-              <div className="text-base text-gray-700 leading-relaxed">
+              <div className="text-base text-slate-700 leading-relaxed">
                 <p className="whitespace-pre-line">{helpData.content}</p>
               </div>
 
               {/* Examples Section */}
               {helpData.examples && helpData.examples.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-slate-900">
                     أمثلة عملية:
                   </h3>
                   <div className="space-y-3">
@@ -92,7 +92,7 @@ export const HelpIcon: React.FC<HelpIconProps> = ({
                         <h4 className="font-semibold text-blue-900 mb-2">
                           {example.title}
                         </h4>
-                        <p className="text-sm text-gray-700 whitespace-pre-line">
+                        <p className="text-sm text-slate-700 whitespace-pre-line">
                           {example.description}
                         </p>
                       </div>

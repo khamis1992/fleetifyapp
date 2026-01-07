@@ -723,7 +723,7 @@ export function CashFlowStatementReport() {
                                 {formatCurrency(cashFlowData.netCashFlow)}
                               </span>
                             </div>
-                            <div className="h-px bg-gray-300" />
+                            <div className="h-px bg-slate-300" />
                             <div className="flex justify-between items-center">
                               <span>رصيد النقد في بداية المدة</span>
                               <span className="font-semibold">{formatCurrency(cashFlowData.beginningCash)}</span>

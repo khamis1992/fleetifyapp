@@ -83,7 +83,7 @@ const WhatsAppReminders: React.FC = () => {
                 <div className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200">
                   <h3 className="font-bold text-xl mb-3 text-purple-900">⚡ البدء السريع (15 دقيقة)</h3>
                   <ol className="list-decimal list-inside space-y-3 text-sm">
-                    <li className="text-gray-700">
+                    <li className="text-slate-700">
                       <span className="font-semibold">التسجيل في Ultramsg:</span>
                       <a 
                         href="https://ultramsg.com/ar" 
@@ -102,7 +102,7 @@ const WhatsAppReminders: React.FC = () => {
                       </code>
                     </li>
                     
-                    <li className="text-gray-700">
+                    <li className="text-slate-700">
                       <span className="font-semibold">إضافة Secrets في Supabase:</span>
                       <code className="block mt-2 p-2 bg-white rounded text-xs">
                         Settings → Edge Functions → Add Secret<br/>
@@ -111,21 +111,21 @@ const WhatsAppReminders: React.FC = () => {
                       </code>
                     </li>
 
-                    <li className="text-gray-700">
+                    <li className="text-slate-700">
                       <span className="font-semibold">تطبيق Migration:</span>
-                      <code className="block mt-2 p-2 bg-gray-900 text-green-400 rounded text-xs">
+                      <code className="block mt-2 p-2 bg-slate-900 text-green-400 rounded text-xs">
                         npx supabase db push
                       </code>
                     </li>
 
-                    <li className="text-gray-700">
+                    <li className="text-slate-700">
                       <span className="font-semibold">Deploy Edge Function:</span>
-                      <code className="block mt-2 p-2 bg-gray-900 text-green-400 rounded text-xs">
+                      <code className="block mt-2 p-2 bg-slate-900 text-green-400 rounded text-xs">
                         npx supabase functions deploy send-whatsapp-reminders
                       </code>
                     </li>
 
-                    <li className="text-gray-700">
+                    <li className="text-slate-700">
                       <span className="font-semibold">إعداد Cron Job:</span>
                       <code className="block mt-2 p-2 bg-white rounded text-xs">
                         في Supabase SQL Editor، نفذ الكود من:<br/>
@@ -179,31 +179,31 @@ const WhatsAppReminders: React.FC = () => {
                 </div>
 
                 {/* Documentation Links */}
-                <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                  <h4 className="font-semibold text-gray-900 mb-4">📚 الأدلة والتوثيق</h4>
+                <div className="p-6 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border">
+                  <h4 className="font-semibold text-slate-900 mb-4">📚 الأدلة والتوثيق</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="p-3 bg-white rounded border">
-                      <div className="font-medium text-sm text-gray-900 mb-1">🚀 دليل البدء السريع</div>
-                      <code className="text-xs text-gray-600">.cursor/QUICK_START_GUIDE.md</code>
-                      <p className="text-xs text-gray-500 mt-1">خطوات سريعة في 15 دقيقة</p>
+                      <div className="font-medium text-sm text-slate-900 mb-1">🚀 دليل البدء السريع</div>
+                      <code className="text-xs text-slate-600">.cursor/QUICK_START_GUIDE.md</code>
+                      <p className="text-xs text-slate-500 mt-1">خطوات سريعة في 15 دقيقة</p>
                     </div>
 
                     <div className="p-3 bg-white rounded border">
-                      <div className="font-medium text-sm text-gray-900 mb-1">📖 دليل خطوة بخطوة</div>
-                      <code className="text-xs text-gray-600">.cursor/SETUP_WHATSAPP_STEP_BY_STEP.md</code>
-                      <p className="text-xs text-gray-500 mt-1">شرح مفصل مع screenshots</p>
+                      <div className="font-medium text-sm text-slate-900 mb-1">📖 دليل خطوة بخطوة</div>
+                      <code className="text-xs text-slate-600">.cursor/SETUP_WHATSAPP_STEP_BY_STEP.md</code>
+                      <p className="text-xs text-slate-500 mt-1">شرح مفصل مع screenshots</p>
                     </div>
 
                     <div className="p-3 bg-white rounded border">
-                      <div className="font-medium text-sm text-gray-900 mb-1">🎯 الخطة الكاملة</div>
-                      <code className="text-xs text-gray-600">.cursor/WHATSAPP_IMPLEMENTATION_PLAN.md</code>
-                      <p className="text-xs text-gray-500 mt-1">تحليل الحلول والتقنيات</p>
+                      <div className="font-medium text-sm text-slate-900 mb-1">🎯 الخطة الكاملة</div>
+                      <code className="text-xs text-slate-600">.cursor/WHATSAPP_IMPLEMENTATION_PLAN.md</code>
+                      <p className="text-xs text-slate-500 mt-1">تحليل الحلول والتقنيات</p>
                     </div>
 
                     <div className="p-3 bg-white rounded border">
-                      <div className="font-medium text-sm text-gray-900 mb-1">🔧 توثيق تقني</div>
-                      <code className="text-xs text-gray-600">supabase/functions/.../README.md</code>
-                      <p className="text-xs text-gray-500 mt-1">API reference وtroubleshooting</p>
+                      <div className="font-medium text-sm text-slate-900 mb-1">🔧 توثيق تقني</div>
+                      <code className="text-xs text-slate-600">supabase/functions/.../README.md</code>
+                      <p className="text-xs text-slate-500 mt-1">API reference وtroubleshooting</p>
                     </div>
                   </div>
                 </div>

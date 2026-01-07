@@ -37,10 +37,10 @@ interface StatCardProps {
 
 const colorClasses = {
   coral: {
-    bg: 'bg-coral-50',
-    icon: 'bg-coral-100 text-coral-600',
+    bg: 'bg-rose-50',
+    icon: 'bg-rose-100 text-coral-600',
     text: 'text-coral-600',
-    progress: 'bg-coral-500',
+    progress: 'bg-rose-500',
   },
   green: {
     bg: 'bg-green-50',
@@ -84,7 +84,7 @@ function StatCard({ title, value, icon: Icon, color, subtitle, progressValue, tr
       onClick={onClick}
       className={cn(
         "bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100 cursor-pointer transition-all duration-200",
-        onClick && "hover:border-coral-200"
+        onClick && "hover:border-rose-200"
       )}
     >
       <div className="flex items-start justify-between mb-3">
@@ -94,7 +94,7 @@ function StatCard({ title, value, icon: Icon, color, subtitle, progressValue, tr
         {trend && (
           <div className={cn(
             "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-            trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-coral-100 text-coral-700'
+            trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-coral-700'
           )}>
             <TrendingUp className={cn("w-3 h-3", trend === 'down' && "rotate-180")} />
             <span>{trendValue}</span>
@@ -230,7 +230,7 @@ export function MaintenanceSmartDashboard({ onFilterChange }: MaintenanceSmartDa
               </div>
             </div>
             <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-xl">
-              <AlertTriangle className="w-4 h-4 text-coral-500" />
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
               <div>
                 <span className="text-xs text-neutral-500 block">طوارئ</span>
                 <span className="text-sm font-semibold text-neutral-900">{stats?.emergencyCount || 0}</span>
@@ -265,7 +265,7 @@ export function MaintenanceSmartDashboard({ onFilterChange }: MaintenanceSmartDa
         {/* تنبيهات */}
         <div className="lg:col-span-1 bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-coral-100 rounded-lg">
+            <div className="p-2 bg-rose-100 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-coral-600" />
             </div>
             <span className="font-semibold text-neutral-900">التنبيهات</span>
@@ -276,11 +276,11 @@ export function MaintenanceSmartDashboard({ onFilterChange }: MaintenanceSmartDa
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center justify-between p-3 bg-coral-50 rounded-xl cursor-pointer hover:bg-coral-100 transition-colors"
+                className="flex items-center justify-between p-3 bg-rose-50 rounded-xl cursor-pointer hover:bg-rose-100 transition-colors"
                 onClick={() => onFilterChange?.('overdue')}
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-coral-500 rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
                   <span className="text-sm text-coral-800">صيانة متأخرة</span>
                 </div>
                 <span className="text-sm font-bold text-coral-700">{stats?.overdueCount}</span>

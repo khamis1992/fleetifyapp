@@ -222,10 +222,10 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 )}
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {formatCurrency(analytics.todayRevenue)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="text-xs text-slate-600 mt-1">
                 <EnhancedTooltip kpi={kpiDefinitions.averageRevenue}>
                   <span>مبيعات اليوم</span>
                 </EnhancedTooltip>
@@ -245,10 +245,10 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
                   <TrendingDown className="h-4 w-4 text-red-500" />
                 )}
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {analytics.todayCount}
               </div>
-              <div className="text-xs text-gray-600 mt-1">معاملات اليوم</div>
+              <div className="text-xs text-slate-600 mt-1">معاملات اليوم</div>
               <div className={`text-xs mt-1 ${analytics.countChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {analytics.countChange >= 0 ? '+' : ''}{analytics.countChange.toFixed(1)}% من الأمس
               </div>
@@ -259,11 +259,11 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
               <div className="flex items-center justify-between mb-2">
                 <Clock className="h-4 w-4 text-purple-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {formatCurrency(analytics.weekRevenue)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">مبيعات الأسبوع</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">مبيعات الأسبوع</div>
+              <div className="text-xs text-slate-500 mt-1">
                 {Math.floor(analytics.weekRevenue / 7)} متوسط/يوم
               </div>
             </div>
@@ -273,11 +273,11 @@ export const SalesAnalyticsWidget: React.FC<SalesAnalyticsWidgetProps> = ({ clas
               <div className="flex items-center justify-between mb-2">
                 <DollarSign className="h-4 w-4 text-green-500" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-slate-900">
                 {formatCurrency(analytics.monthRevenue)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">مبيعات الشهر</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-slate-600 mt-1">مبيعات الشهر</div>
+              <div className="text-xs text-slate-500 mt-1">
                 متوسط المعاملة: {formatCurrency(analytics.avgTransactionValue)}
               </div>
             </div>

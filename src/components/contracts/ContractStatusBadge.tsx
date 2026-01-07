@@ -49,7 +49,7 @@ export const ContractStatusBadge = ({ status, className, onClick, clickable = fa
       case 'cancelled':
         return {
           variant: 'outline' as const,
-          className: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+          className: 'bg-slate-100 text-slate-800 hover:bg-slate-100',
           icon: XCircle,
           label: 'ملغي'
         }
@@ -70,7 +70,7 @@ export const ContractStatusBadge = ({ status, className, onClick, clickable = fa
       default:
         return {
           variant: 'outline' as const,
-          className: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
+          className: 'bg-slate-100 text-slate-800 hover:bg-slate-100',
           icon: FileText,
           label: status
         }

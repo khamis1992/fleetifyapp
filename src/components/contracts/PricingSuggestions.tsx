@@ -83,7 +83,7 @@ const QuickPriceButton: React.FC<{
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 h-auto py-2 px-3',
-        isSelected && 'bg-coral-500 hover:bg-coral-600'
+        isSelected && 'bg-rose-500 hover:bg-coral-600'
       )}
     >
       <Icon className="h-4 w-4" />

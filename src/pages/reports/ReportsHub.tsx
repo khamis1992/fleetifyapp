@@ -59,7 +59,7 @@ export default function ReportsHub() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="container mx-auto p-6 space-y-6" dir="rtl">
         {/* Page Header */}
         <div className="flex items-center gap-3">
@@ -67,16 +67,16 @@ export default function ReportsHub() {
             <BarChart3 className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">مركز التقارير</h1>
-            <p className="text-gray-600">الوصول السريع للتقارير المفضلة والمستخدمة بكثرة</p>
+            <h1 className="text-3xl font-bold text-slate-900">مركز التقارير</h1>
+            <p className="text-slate-600">الوصول السريع للتقارير المفضلة والمستخدمة بكثرة</p>
           </div>
         </div>
 
         {/* Quick Reports Section */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
           <CardHeader>
-            <CardTitle className="text-gray-900">التقارير السريعة</CardTitle>
-            <CardDescription className="text-gray-600">تقارير جاهزة للاستخدام الفوري</CardDescription>
+            <CardTitle className="text-slate-900">التقارير السريعة</CardTitle>
+            <CardDescription className="text-slate-600">تقارير جاهزة للاستخدام الفوري</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -85,7 +85,7 @@ export default function ReportsHub() {
                 return (
                   <Card
                     key={report.id}
-                    className="cursor-pointer bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
+                    className="cursor-pointer bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
                     onClick={() => handleQuickReportClick(report.id, report.name)}
                   >
                     <CardHeader className="pb-3">
@@ -93,11 +93,11 @@ export default function ReportsHub() {
                         <div className="p-2 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-xl">
                           <Icon className="h-5 w-5 text-white" />
                         </div>
-                        <CardTitle className="text-base text-gray-900">{report.name}</CardTitle>
+                        <CardTitle className="text-base text-slate-900">{report.name}</CardTitle>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-gray-600">{report.description}</p>
+                      <p className="text-sm text-slate-600">{report.description}</p>
                     </CardContent>
                   </Card>
                 );
@@ -108,15 +108,15 @@ export default function ReportsHub() {
 
         {/* Favorites Section - Only show if user has favorites */}
         {!favoritesLoading && favorites.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-gray-900">
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
                     <Star className="h-5 w-5 text-yellow-500" />
                     التقارير المفضلة
                   </CardTitle>
-                  <CardDescription className="text-gray-600">التقارير التي قمت بحفظها للوصول السريع</CardDescription>
+                  <CardDescription className="text-slate-600">التقارير التي قمت بحفظها للوصول السريع</CardDescription>
                 </div>
                 <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 border-teal-500/20">{favorites.length}</Badge>
               </div>
@@ -124,9 +124,9 @@ export default function ReportsHub() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {favorites.map((favorite) => (
-                  <Card key={favorite.id} className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                  <Card key={favorite.id} className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base text-gray-900">{favorite.name}</CardTitle>
+                      <CardTitle className="text-base text-slate-900">{favorite.name}</CardTitle>
                       <CardDescription className="text-xs">
                         <Badge variant="outline" className="text-xs border-teal-500/20 text-teal-700 bg-teal-500/10">
                           {favorite.report_type}
@@ -146,7 +146,7 @@ export default function ReportsHub() {
                         size="sm"
                         variant="outline"
                         onClick={() => deleteFavorite(favorite.id)}
-                        className="border-gray-200/50 hover:border-teal-500/30 hover:bg-teal-500/10"
+                        className="border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-500/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -160,32 +160,32 @@ export default function ReportsHub() {
 
         {/* Recent Reports Section - Only show if user has recent reports */}
         {!recentLoading && recentReports.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-900">
+              <CardTitle className="flex items-center gap-2 text-slate-900">
                 <Clock className="h-5 w-5 text-teal-600" />
                 التقارير الأخيرة
               </CardTitle>
-              <CardDescription className="text-gray-600">التقارير التي تم إنشاؤها مؤخراً</CardDescription>
+              <CardDescription className="text-slate-600">التقارير التي تم إنشاؤها مؤخراً</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right text-gray-900">اسم التقرير</TableHead>
-                    <TableHead className="text-right text-gray-900">النوع</TableHead>
-                    <TableHead className="text-right text-gray-900">التاريخ</TableHead>
-                    <TableHead className="text-right text-gray-900">الإجراءات</TableHead>
+                    <TableHead className="text-right text-slate-900">اسم التقرير</TableHead>
+                    <TableHead className="text-right text-slate-900">النوع</TableHead>
+                    <TableHead className="text-right text-slate-900">التاريخ</TableHead>
+                    <TableHead className="text-right text-slate-900">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {recentReports.map((report) => (
                     <TableRow key={report.id} className="hover:bg-teal-500/5 transition-colors">
-                      <TableCell className="font-medium text-gray-900">{report.name}</TableCell>
+                      <TableCell className="font-medium text-slate-900">{report.name}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="border-teal-500/20 text-teal-700 bg-teal-500/10">{report.type}</Badge>
                       </TableCell>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-slate-600">
                         {format(new Date(report.generated_at), 'PPp', { locale: ar })}
                       </TableCell>
                       <TableCell>
@@ -215,9 +215,9 @@ export default function ReportsHub() {
 
         {/* Empty States */}
         {!favoritesLoading && favorites.length === 0 && !recentLoading && recentReports.length === 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl">
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
             <CardContent className="py-8">
-              <div className="text-center text-gray-600">
+              <div className="text-center text-slate-600">
                 <p>لا توجد تقارير مفضلة أو حديثة بعد</p>
                 <p className="text-sm mt-2">استخدم التقارير السريعة أعلاه للبدء</p>
               </div>

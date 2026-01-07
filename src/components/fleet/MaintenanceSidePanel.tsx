@@ -49,7 +49,7 @@ const statusColors: Record<string, string> = {
   pending: 'bg-green-100 text-green-700 border-green-200',
   in_progress: 'bg-amber-100 text-amber-700 border-amber-200',
   completed: 'bg-neutral-100 text-neutral-700 border-neutral-200',
-  cancelled: 'bg-coral-100 text-coral-700 border-coral-200',
+  cancelled: 'bg-rose-100 text-coral-700 border-rose-200',
 };
 
 const statusLabels: Record<string, string> = {
@@ -62,7 +62,7 @@ const statusLabels: Record<string, string> = {
 const priorityColors: Record<string, string> = {
   low: 'bg-blue-100 text-blue-700',
   medium: 'bg-amber-100 text-amber-700',
-  high: 'bg-coral-100 text-coral-700',
+  high: 'bg-rose-100 text-coral-700',
   urgent: 'bg-red-100 text-red-700',
 };
 
@@ -138,7 +138,7 @@ export function MaintenanceSidePanel({
           >
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-coral-500 border-t-transparent" />
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-rose-500 border-t-transparent" />
               </div>
             ) : maintenance ? (
               <>
@@ -146,7 +146,7 @@ export function MaintenanceSidePanel({
                 <div className="bg-white border-b border-neutral-200 p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-coral-100 rounded-xl">
+                      <div className="p-2.5 bg-rose-100 rounded-xl">
                         <TypeIcon className="w-6 h-6 text-coral-600" />
                       </div>
                       <div>
@@ -197,7 +197,7 @@ export function MaintenanceSidePanel({
                       className={cn(
                         "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
                         activeTab === tab.id
-                          ? "border-coral-500 text-coral-600"
+                          ? "border-rose-500 text-coral-600"
                           : "border-transparent text-neutral-500 hover:text-neutral-700"
                       )}
                     >
@@ -214,7 +214,7 @@ export function MaintenanceSidePanel({
                       {/* معلومات أساسية */}
                       <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
                         <h3 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-coral-500" />
+                          <FileText className="w-4 h-4 text-rose-500" />
                           معلومات الصيانة
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
@@ -350,7 +350,7 @@ export function MaintenanceSidePanel({
                         <div className="pt-4 border-t border-neutral-100">
                           <p className="text-xs text-neutral-500 mb-3">إحصائيات الصيانة للمركبة</p>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 bg-coral-50 rounded-xl text-center">
+                            <div className="p-3 bg-rose-50 rounded-xl text-center">
                               <p className="text-2xl font-bold text-coral-600">
                                 {maintenance.stats.totalMaintenanceForVehicle}
                               </p>
@@ -465,7 +465,7 @@ export function MaintenanceSidePanel({
                               className={cn(
                                 "p-3 rounded-xl border",
                                 record.id === maintenance.id 
-                                  ? "bg-coral-50 border-coral-200"
+                                  ? "bg-rose-50 border-rose-200"
                                   : "bg-neutral-50 border-neutral-100"
                               )}
                             >
@@ -598,7 +598,7 @@ export function MaintenanceSidePanel({
                 <div className="bg-white border-t border-neutral-200 p-4 flex gap-3">
                   <Button
                     onClick={() => onEdit?.(maintenance)}
-                    className="flex-1 bg-coral-500 hover:bg-coral-600 text-white rounded-xl py-3"
+                    className="flex-1 bg-rose-500 hover:bg-coral-600 text-white rounded-xl py-3"
                   >
                     <Edit className="w-4 h-4 ml-2" />
                     تعديل
@@ -619,7 +619,7 @@ export function MaintenanceSidePanel({
                   <Button
                     variant="outline"
                     onClick={() => onDelete?.(maintenance.id, maintenance.vehicle?.id)}
-                    className="px-4 py-3 rounded-xl border-coral-200 text-coral-600 hover:bg-coral-50"
+                    className="px-4 py-3 rounded-xl border-rose-200 text-coral-600 hover:bg-rose-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

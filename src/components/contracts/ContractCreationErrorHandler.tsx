@@ -102,8 +102,8 @@ export const ContractCreationErrorHandler: React.FC<ContractCreationErrorHandler
         return {
           title: 'خطأ في إنشاء العقد',
           description: 'حدث خطأ غير متوقع أثناء إنشاء العقد',
-          icon: <HelpCircle className="h-5 w-5 text-gray-500" />,
-          color: 'border-gray-200 bg-gray-50',
+          icon: <HelpCircle className="h-5 w-5 text-slate-500" />,
+          color: 'border-slate-200 bg-slate-50',
           solutions: [
             'أعد المحاولة',
             'تحقق من البيانات المدخلة',
@@ -147,7 +147,7 @@ export const ContractCreationErrorHandler: React.FC<ContractCreationErrorHandler
           <ul className="space-y-1 text-sm">
             {errorInfo.solutions.map((solution, index) => (
               <li key={index} className="flex items-start gap-2">
-                <span className="w-1 h-1 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                <span className="w-1 h-1 bg-slate-400 rounded-full mt-2 flex-shrink-0"></span>
                 <span>{solution}</span>
               </li>
             ))}

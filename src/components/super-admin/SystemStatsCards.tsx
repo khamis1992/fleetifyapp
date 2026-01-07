@@ -66,7 +66,7 @@ export const SystemStatsCards: React.FC<SystemStatsCardsProps> = ({ stats, loadi
     switch (trend) {
       case 'up': return 'text-green-600 bg-green-50';
       case 'down': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+      default: return 'text-slate-600 bg-slate-50';
     }
   };
 
