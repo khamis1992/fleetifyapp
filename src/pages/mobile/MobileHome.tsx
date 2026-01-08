@@ -6,7 +6,6 @@ import {
   Car,
   AlertTriangle,
   TrendingUp,
-  ChevronLeft,
   Bell,
   Smartphone,
 } from 'lucide-react';
@@ -41,7 +40,6 @@ export const MobileHome: React.FC = () => {
     monthlyTarget: 55000,
   });
   const [alerts, setAlerts] = useState<UrgentAlert[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
@@ -54,29 +52,27 @@ export const MobileHome: React.FC = () => {
       // استخدام company_id الصحيح من profile أو company
       const companyId = user?.profile?.company_id || user?.company?.id || '';
 
-      // Fetch active contracts count
-      const { count: activeCount } = await supabase
+      // Fetch all contracts count
+      const { count: allCount } = await supabase
+        .from('contracts')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
+
+      // Fetch rented vehicles from vehicles table
+      const { count: rentedCount } = await supabase
+        .from('vehicles')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', 'rented');
+
+      const rentedVehicles = rentedCount || 0;
+
+      // Fetch unpaid contracts
+      const { count: unpaidCount } = await supabase
         .from('contracts')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .eq('status', 'active');
-
-      // Fetch rented vehicles (vehicles with active contracts)
-      const { data: rentedData } = await supabase
-        .from('contracts')
-        .select('vehicle_id')
-        .eq('company_id', companyId)
-        .eq('status', 'active')
-        .not('vehicle_id', 'is', null);
-
-      const rentedVehicles = new Set(rentedData?.map(c => c.vehicle_id) || []).size;
-
-      // Fetch late payments (contracts with payment_status = 'late' or days_overdue > 0)
-      const { count: lateCount } = await supabase
-        .from('contracts')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .or('payment_status.eq.late,days_overdue.gt.0');
+        .eq('payment_status', 'unpaid');
 
       // Calculate monthly revenue (current month)
       const now = new Date();
@@ -92,9 +88,9 @@ export const MobileHome: React.FC = () => {
       const monthlyRevenue = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
       setStats({
-        activeContracts: activeCount || 0,
+        activeContracts: allCount || 0,
         rentedVehicles,
-        latePayments: lateCount || 0,
+        latePayments: unpaidCount || 0,
         monthlyRevenue,
         monthlyTarget: 55000,
       });
@@ -104,8 +100,6 @@ export const MobileHome: React.FC = () => {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -149,12 +143,13 @@ export const MobileHome: React.FC = () => {
       .limit(3);
 
     overdueContracts?.forEach(contract => {
+      const daysOverdue = contract.days_overdue || 0;
       alerts.push({
         id: contract.id,
         type: 'overdue',
         title: `تأخير في الدفع - ${contract.customers.first_name} ${contract.customers.last_name}`,
-        description: `${contract.days_overdue} يوم متأخر - QAR ${contract.balance_due?.toLocaleString()}`,
-        severity: contract.days_overdue > 30 ? 'high' : 'medium',
+        description: `${daysOverdue} يوم متأخر - QAR ${contract.balance_due?.toLocaleString()}`,
+        severity: daysOverdue > 30 ? 'high' : 'medium',
       });
     });
 
@@ -212,7 +207,7 @@ export const MobileHome: React.FC = () => {
         <StatCard
           icon={FileText}
           value={stats.activeContracts.toString()}
-          label="عقود نشطة"
+          label="العقود"
           color="from-teal-500 to-teal-600"
         />
         <StatCard

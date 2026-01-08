@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Fingerprint, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import fleetifyLogo from '@/assets/fleetify-logo.png';
 
 export const MobileLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -203,41 +202,6 @@ export const MobileLogin: React.FC = () => {
           transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
           className="flex flex-col items-center mb-10"
         >
-          <motion.div
-            animate={{ 
-              rotate: [0, 5, -5, 0],
-              y: [0, -5, 0]
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="relative mb-6"
-          >
-            {/* Glow Effect */}
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.4, 0.7, 0.4],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-              }}
-              className="absolute inset-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-3xl blur-2xl"
-            />
-            
-            {/* Logo Container */}
-            <div className="relative w-24 h-24 bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-4 border border-white/10 backdrop-blur-xl shadow-2xl">
-              <img
-                src={fleetifyLogo}
-                alt="Fleetify Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
