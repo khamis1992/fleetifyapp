@@ -134,13 +134,6 @@ export const useDashboardStats = () => {
         MobileDebugger.log('DASHBOARD', 'Found company_id from profiles table', { company_id });
         console.log('[useDashboardStats] Found company_id from profiles table:', company_id);
       }
-      
-      // Log that we're about to fetch data
-      MobileDebugger.log('DASHBOARD', 'Starting data fetch', { 
-        company_id, 
-        isVehiclesEnabled, 
-        isPropertiesEnabled 
-      });
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
       const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
@@ -169,7 +162,7 @@ export const useDashboardStats = () => {
       // Vehicles queries (if enabled)
       if (isVehiclesEnabled) {
         countQueries.push(
-          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
           supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
           supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()),
           supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
@@ -181,19 +174,34 @@ export const useDashboardStats = () => {
       // Properties queries (if enabled)
       if (isPropertiesEnabled) {
         countQueries.push(
-          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          supabase.from('property_owners').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true)
+          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+          supabase.from('property_owners').select('*', { count: 'exact', head: true }).eq('company_id', company_id)
         );
       }
-      
+
       // Customers queries (always run)
       countQueries.push(
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true).lte('created_at', lastDayPrevMonth.toISOString())
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString())
       );
       
       // Execute all count queries in parallel
-      const results = await Promise.all(countQueries);
+      let results;
+      try {
+        results = await Promise.all(countQueries);
+        console.log('[useDashboardStats] Query results:', {
+          vehiclesCount: results[0]?.count,
+          activeVehiclesCount: results[1]?.count,
+          previousMonthVehicles: results[2]?.count,
+          contractsCount: results[3]?.count,
+          totalContractsCount: results[4]?.count,
+          previousMonthContracts: results[5]?.count,
+          customersCount: results[6]?.count,
+        });
+      } catch (error) {
+        console.error('[useDashboardStats] Query error:', error);
+        throw error;
+      }
       
       // Parse results based on which modules are enabled
       let resultIndex = 0;
