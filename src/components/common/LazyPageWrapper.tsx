@@ -15,8 +15,8 @@ interface LazyPageWrapperProps {
 const DefaultFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="text-center space-y-4">
-      <LoadingSpinner size="lg" />
-      <p className="text-muted-foreground">جاري التحميل...</p>
+      <LoadingSpinner size="lg" className="text-teal-500" />
+      <p className="text-teal-600">جاري التحميل...</p>
     </div>
   </div>
 );

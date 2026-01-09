@@ -1064,7 +1064,7 @@ export default function CustomerCRMNew() {
           </button>
           <button
             onClick={handlePrintLateReport}
-            className="p-2.5 bg-rose-500 text-white rounded-2xl hover:bg-rose-600 transition hover:shadow-md flex items-center gap-2"
+            className="p-2.5 bg-teal-500 text-white rounded-2xl hover:bg-teal-600 transition hover:shadow-md flex items-center gap-2"
             title="طباعة تقرير المتأخرين"
           >
             <Printer size={18} />

@@ -32,7 +32,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { PageHelp } from "@/components/help";
 import { ReservationsCalendar } from "@/components/fleet/ReservationsCalendar";
-import { FloatingAssistant } from "@/components/employee-assistant";
 import { MobileQuickNav } from "@/components/dashboard/customization/MobileQuickNav";
 
 // Lazy load components
@@ -538,11 +537,10 @@ export default function Reservations() {
       </div>
       
       {/* Help and Assistant */}
-      <PageHelp 
+      <PageHelp
         content="دليل استخدام صفحة الحجوزات"
         title="مساعد صفحة الحجوزات"
       />
-      <FloatingAssistant />
     </div>
   );
 }

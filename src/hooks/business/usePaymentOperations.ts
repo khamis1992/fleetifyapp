@@ -56,7 +56,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
   // Create payment operation
   const createPayment = useMutation({
-    mutationFn: async (data: EnhancedPaymentData) => {
+    mutationFn: async (data: EnhancedPaymentData & { idempotencyKey?: string }) => {
       console.log('💰 [usePaymentOperations] Starting payment creation:', data);
 
       // Check company access
@@ -75,9 +75,62 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         throw new Error(errorMessage);
       }
 
+      // ========== DUPLICATE PREVENTION LAYER ==========
+      // 1. Check for existing idempotency key (retry detection)
+      if (data.idempotencyKey) {
+        const { data: existingPayment } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('idempotency_key', data.idempotencyKey)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (existingPayment) {
+          console.log('♻️ [usePaymentOperations] Idempotency key found, returning existing payment:', existingPayment.payment_number);
+          return existingPayment; // Return existing payment instead of creating duplicate
+        }
+      }
+
+      // 2. Pre-insert duplicate detection (within 1 hour window)
+      const duplicateCheckConditions = supabase
+        .from('payments')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('amount', validatedData.amount)
+        .eq('payment_date', validatedData.payment_date)
+        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString());
+
+      // Add customer filter if present
+      if (validatedData.customer_id) {
+        duplicateCheckConditions.eq('customer_id', validatedData.customer_id);
+      }
+
+      // Add contract filter if present (stricter check for contract payments)
+      if (validatedData.contract_id) {
+        duplicateCheckConditions.eq('contract_id', validatedData.contract_id);
+      } else {
+        duplicateCheckConditions.is('contract_id', null);
+      }
+
+      const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckConditions;
+
+      if (!duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
+        const duplicateInfo = potentialDuplicates.map((p: any) =>
+          `رقم الدفعة: ${p.payment_number} (${new Date(p.created_at).toLocaleTimeString('ar-SA')})`
+        ).join('، ');
+
+        throw new Error(
+          `⚠️ تم اكتشاف دفعة مكررة محتملة!\n\n` +
+          `توجد دفعة بنفس المبلغ (${validatedData.amount} ريال) والتاريخ (${validatedData.payment_date}) تم إنشاؤها خلال الساعة الماضية.\n\n` +
+          `الدفع الموجود: ${duplicateInfo}\n\n` +
+          `إذا كنت ترغب في إضافة دفعة جديدة، يرجى تغيير المبلغ أو التاريخ أو الانتظار لمدة ساعة.`
+        );
+      }
+      // ========== END DUPLICATE PREVENTION ==========
+
       // Generate payment number if not provided
-      const paymentNumber = validatedData.payment_number && validatedData.payment_number.length > 0 
-        ? validatedData.payment_number 
+      const paymentNumber = validatedData.payment_number && validatedData.payment_number.length > 0
+        ? validatedData.payment_number
         : await generatePaymentNumber(validatedData.type);
 
       // Determine transaction_type for database (must be 'payment' or 'receipt')
@@ -96,14 +149,19 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         company_id: companyId,
         created_by: user?.id,
       };
-      
+
+      // Add idempotency key if provided
+      if (data.idempotencyKey) {
+        paymentData.idempotency_key = data.idempotencyKey;
+      }
+
       console.log('📝 Prepared payment data:', paymentData);
 
       // Add optional fields only if they have valid values (non-empty strings for UUIDs)
       if (validatedData.reference_number) paymentData.reference_number = validatedData.reference_number;
       if (validatedData.check_number) paymentData.check_number = validatedData.check_number;
       if (validatedData.notes) paymentData.notes = validatedData.notes;
-      
+
       // UUID fields - only add if they're valid UUIDs (not empty strings)
       if (validatedData.customer_id && validatedData.customer_id !== '') {
         paymentData.customer_id = validatedData.customer_id;

@@ -78,6 +78,10 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [accountSearchOpen, setAccountSearchOpen] = useState(false);
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  // Double-submit protection: Track if form is currently being submitted
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Idempotency key: Prevent duplicate payment creation on retry
+  const [idempotencyKey] = useState(() => `payment_${Date.now()}_${Math.random().toString(36).substring(7)}`);
 
   // Business logic hook
   const { 
@@ -224,8 +228,16 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
     }
   };
 
-  // Form submission
+  // Form submission with double-submit protection
   const onSubmit = async (data: any) => {
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('⚠️ Form already submitting, ignoring duplicate submission');
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       let result;
       if (mode === 'edit' && initialData?.id) {
@@ -234,7 +246,11 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
           data
         });
       } else {
-        result = await createPayment.mutateAsync(data);
+        // Include idempotency key for new payments to prevent duplicates on retry
+        result = await createPayment.mutateAsync({
+          ...data,
+          idempotencyKey: idempotencyKey
+        });
       }
 
       if (onSuccess) {
@@ -245,6 +261,9 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
     } catch (error) {
       // Error handling is done in the business logic hook
       console.error('Form submission error:', error);
+    } finally {
+      // Reset submitting state after completion (or error)
+      setIsSubmitting(false);
     }
   };
 
@@ -890,14 +909,14 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
               </div>
               
               <div className="flex space-x-2">
-                <Button type="button" variant="outline" onClick={handleClose}>
+                <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                   إلغاء
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isCreating || isUpdating || !canCreatePayments}
+                <Button
+                  type="submit"
+                  disabled={isCreating || isUpdating || isSubmitting || !canCreatePayments}
                 >
-                  {isCreating || isUpdating ? "جاري الحفظ..." : mode === 'edit' ? "تحديث الدفعة" : "حفظ الإيصال"}
+                  {(isCreating || isUpdating || isSubmitting) ? "جاري الحفظ..." : mode === 'edit' ? "تحديث الدفعة" : "حفظ الإيصال"}
                 </Button>
               </div>
             </div>

@@ -1,7 +1,7 @@
 /**
- * صفحة تفاصيل العميل - التصميم الجديد (Bento Style)
- * مستوحى من تصميم الداشبورد مع ألوان متناسقة
- * 
+ * صفحة تفاصيل العميل - التصميم المحسّن (Modern Bento Style)
+ * تصميم عصري مع نظام ألوان التيل (Teal) وتأثيرات الزجاج
+ *
  * @component CustomerDetailsPageNew
  */
 
@@ -197,32 +197,41 @@ const MissingDataWarnings = ({ customer }: { customer: any }) => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "mb-4 p-4 rounded-xl border flex items-start gap-3",
-        hasIssues ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200"
+        "mb-6 p-5 rounded-2xl border flex items-start gap-4 backdrop-blur-sm shadow-sm",
+        hasIssues
+          ? "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 shadow-amber-500/10"
+          : "bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200 shadow-teal-500/10"
       )}
     >
-      <AlertTriangle className={cn(
-        "w-5 h-5 mt-0.5",
-        hasIssues ? "text-amber-500" : "text-blue-500"
-      )} />
+      <div className={cn(
+        "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
+        hasIssues ? "bg-amber-100" : "bg-teal-100"
+      )}>
+        <AlertTriangle className={cn(
+          "w-5 h-5",
+          hasIssues ? "text-amber-600" : "text-teal-600"
+        )} />
+      </div>
       <div className="flex-1">
         {missingFields.length > 0 && (
           <>
             <h4 className={cn(
-              "text-sm font-bold mb-1",
-              hasIssues ? "text-amber-800" : "text-blue-800"
+              "text-sm font-bold mb-3",
+              hasIssues ? "text-amber-900" : "text-teal-900"
             )}>
               بيانات ناقصة ({missingFields.length})
             </h4>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               {missingFields.map((field, idx) => (
                 <Badge
                   key={idx}
                   className={cn(
-                    "text-xs",
-                    field.priority === 'high' ? "bg-red-100 text-red-700" :
-                    field.priority === 'medium' ? "bg-amber-100 text-amber-700" :
-                    "bg-neutral-100 text-neutral-600"
+                    "text-xs px-3 py-1 rounded-lg border font-medium",
+                    field.priority === 'high'
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : field.priority === 'medium'
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : "bg-slate-50 text-slate-600 border-slate-200"
                   )}
                 >
                   {field.label}
@@ -233,12 +242,15 @@ const MissingDataWarnings = ({ customer }: { customer: any }) => {
         )}
         {invalidFields.length > 0 && (
           <>
-            <h4 className="text-sm font-bold mb-1 text-orange-800">
+            <h4 className="text-sm font-bold mb-3 text-orange-900">
               بيانات غير صحيحة ({invalidFields.length})
             </h4>
             <div className="flex flex-wrap gap-2">
               {invalidFields.map((field, idx) => (
-                <Badge key={idx} className="text-xs bg-orange-100 text-orange-700">
+                <Badge
+                  key={idx}
+                  className="text-xs bg-orange-50 text-orange-700 border border-orange-200 px-3 py-1 rounded-lg font-medium"
+                >
                   {field.label}
                 </Badge>
               ))}
@@ -275,32 +287,42 @@ const PersonalInfoTab = ({ customer }: { customer: any }) => {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="grid grid-cols-1 lg:grid-cols-2 gap-6"
     >
       {/* معلومات الموظف */}
-      <div className="bg-white rounded-2xl p-6 border border-neutral-200">
-        <h4 className="text-sm font-bold text-neutral-900 mb-4">معلومات العميل</h4>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <h4 className="text-sm font-bold text-teal-900">معلومات العميل</h4>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {infoItems.map((item, index) => (
-            <div key={index} className="space-y-1">
-              <p className="text-xs text-neutral-500">{item.label}</p>
-              <p className="text-sm font-semibold text-neutral-900">{item.value}</p>
+            <div key={index} className="space-y-1.5">
+              <p className="text-xs font-medium text-teal-600/70">{item.label}</p>
+              <p className="text-sm font-semibold text-slate-800">{item.value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* معلومات العنوان */}
-      <div className="bg-white rounded-2xl p-6 border border-neutral-200">
-        <h4 className="text-sm font-bold text-neutral-900 mb-4">معلومات العنوان</h4>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-white" />
+          </div>
+          <h4 className="text-sm font-bold text-teal-900">معلومات العنوان</h4>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {addressItems.map((item, index) => (
-            <div key={index} className="space-y-1">
-              <p className="text-xs text-neutral-500">{item.label}</p>
-              <p className="text-sm font-semibold text-neutral-900">{item.value}</p>
+            <div key={index} className="space-y-1.5">
+              <p className="text-xs font-medium text-teal-600/70">{item.label}</p>
+              <p className="text-sm font-semibold text-slate-800">{item.value}</p>
             </div>
           ))}
         </div>
@@ -319,69 +341,77 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-6 border border-neutral-200"
+      className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm"
     >
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+          <Phone className="w-5 h-5 text-white" />
+        </div>
+        <h4 className="text-sm font-bold text-teal-900">أرقام الهاتف</h4>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {phones.map((phone, index) => {
           const isValid = phone.number !== '-' && isValidQatarPhone(phone.number);
           const hasNumber = phone.number && phone.number !== '-';
-          
+
           return (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={cn(
-                "p-4 rounded-xl border transition-colors",
-                hasNumber && !isValid 
-                  ? "bg-amber-50 border-amber-200" 
-                  : "bg-neutral-50 border-neutral-100 hover:border-rose-200"
+                "p-4 rounded-xl border transition-all hover:shadow-md",
+                hasNumber && !isValid
+                  ? "bg-amber-50/80 border-amber-200"
+                  : "bg-gradient-to-br from-teal-50 to-cyan-50 border-teal-200/50 hover:border-teal-300"
               )}
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center",
-                    hasNumber && !isValid ? "bg-amber-100" : "bg-rose-100"
+                    hasNumber && !isValid ? "bg-amber-100" : "bg-teal-100"
                   )}>
                     <phone.icon className={cn(
                       "w-5 h-5",
-                      hasNumber && !isValid ? "text-amber-600" : "text-coral-600"
+                      hasNumber && !isValid ? "text-amber-600" : "text-teal-600"
                     )} />
                   </div>
-                  <span className="text-xs font-medium text-neutral-500">{phone.type}</span>
+                  <span className="text-xs font-medium text-teal-700">{phone.type}</span>
                 </div>
                 {hasNumber && (
                   <Badge className={cn(
-                    "text-[10px]",
-                    isValid ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                    "text-[10px] px-2 py-0.5 rounded-md font-medium",
+                    isValid
+                      ? "bg-teal-100 text-teal-700"
+                      : "bg-amber-100 text-amber-700"
                   )}>
                     {isValid ? 'صحيح' : 'غير قياسي'}
                   </Badge>
                 )}
               </div>
-              <p className="text-lg font-bold text-neutral-900 font-mono" dir="ltr">
+              <p className="text-lg font-bold text-slate-900 font-mono mb-3" dir="ltr">
                 {phone.number}
               </p>
               {phone.number !== '-' && (
-                <div className="flex gap-2 mt-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-coral-600 hover:text-coral-700 p-0 h-auto"
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 text-teal-600 hover:text-teal-700 hover:bg-teal-50 p-0 h-8"
                     onClick={() => window.open(`tel:${phone.number}`, '_self')}
                   >
-                    <PhoneCall className="w-4 h-4 mr-1" />
+                    <PhoneCall className="w-4 h-4 ml-1" />
                     اتصال
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-emerald-600 hover:text-emerald-700 p-0 h-auto"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-0 h-8"
                     onClick={() => window.open(`https://wa.me/${phone.number.replace(/[^0-9]/g, '')}`, '_blank')}
                   >
-                    <MessageSquare className="w-4 h-4 mr-1" />
+                    <MessageSquare className="w-4 h-4 ml-1" />
                     واتساب
                   </Button>
                 </div>
@@ -397,18 +427,23 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
 // تبويب العقود
 const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], navigate: any, customerId: string }) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-5"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h4 className="text-sm font-bold text-neutral-900">العقود النشطة</h4>
-          <p className="text-xs text-neutral-500">{contracts.length} عقد</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-teal-900">العقود النشطة</h4>
+            <p className="text-xs text-teal-600/70">{contracts.length} عقد</p>
+          </div>
         </div>
-        <Button 
-          className="bg-rose-500 hover:bg-coral-600 text-white gap-2"
+        <Button
+          className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
           onClick={() => navigate(`/contracts?customer=${customerId}`)}
         >
           <Plus className="w-4 h-4" />
@@ -431,43 +466,59 @@ const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], n
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-coral-300 hover:shadow-lg transition-all cursor-pointer"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer group"
                 onClick={() => navigate(`/contracts/${contract.contract_number}`)}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-coral-600 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Car className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h5 className="font-bold text-neutral-900">{vehicleName}</h5>
-                      <p className="text-xs text-neutral-500 font-mono">#{contract.contract_number}</p>
+                      <h5 className="font-bold text-slate-900">{vehicleName}</h5>
+                      <p className="text-xs text-teal-600 font-mono">#{contract.contract_number}</p>
                     </div>
                   </div>
                   <Badge className={cn(
-                    "text-xs",
-                    contract.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    "text-xs px-3 py-1 rounded-md font-medium border",
+                    contract.status === 'active'
+                      ? 'bg-teal-50 text-teal-700 border-teal-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
                   )}>
                     {contract.status === 'active' ? 'نشط' : 'معلق'}
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-2 bg-neutral-50 rounded-lg">
-                    <p className="text-xs text-neutral-500">الإيجار الشهري</p>
-                    <p className="text-sm font-bold text-coral-600">{contract.monthly_amount?.toLocaleString()} ر.ق</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl text-center">
+                    <p className="text-xs text-teal-600/70 mb-1">الإيجار الشهري</p>
+                    <p className="text-sm font-bold text-teal-700">{contract.monthly_amount?.toLocaleString()} ر.ق</p>
                   </div>
-                  <div className="p-2 bg-neutral-50 rounded-lg">
-                    <p className="text-xs text-neutral-500">ينتهي في</p>
-                    <p className="text-sm font-bold text-neutral-900">
+                  <div className="p-3 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl text-center">
+                    <p className="text-xs text-slate-600/70 mb-1">ينتهي في</p>
+                    <p className="text-sm font-bold text-slate-900">
                       {contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yy') : '-'}
                     </p>
                   </div>
-                  <div className="p-2 bg-neutral-50 rounded-lg">
-                    <p className="text-xs text-neutral-500">المتبقي</p>
+                  <div className={cn(
+                    "p-3 rounded-xl text-center",
+                    daysRemaining <= 30
+                      ? "bg-gradient-to-br from-red-50 to-rose-50"
+                      : daysRemaining <= 60
+                      ? "bg-gradient-to-br from-amber-50 to-yellow-50"
+                      : "bg-gradient-to-br from-emerald-50 to-green-50"
+                  )}>
+                    <p className={cn(
+                      "text-xs mb-1",
+                      daysRemaining <= 30
+                        ? "text-red-600/70"
+                        : daysRemaining <= 60
+                        ? "text-amber-600/70"
+                        : "text-emerald-600/70"
+                    )}>المتبقي</p>
                     <p className={cn(
                       "text-sm font-bold",
-                      daysRemaining <= 30 ? 'text-red-600' : daysRemaining <= 60 ? 'text-amber-600' : 'text-green-600'
+                      daysRemaining <= 30 ? 'text-red-700' : daysRemaining <= 60 ? 'text-amber-700' : 'text-emerald-700'
                     )}>
                       {daysRemaining} يوم
                     </p>
@@ -478,9 +529,10 @@ const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], n
           })}
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-500">لا توجد عقود لهذا العميل</p>
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
+          <FileText className="w-12 h-12 text-teal-300 mx-auto mb-3" />
+          <p className="text-teal-600 font-medium">لا توجد عقود لهذا العميل</p>
+          <p className="text-teal-500/70 text-sm mt-1">ابدأ بإنشاء عقد جديد</p>
         </div>
       )}
     </motion.div>
@@ -502,15 +554,20 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: any 
   }, [contracts]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-5"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h4 className="text-sm font-bold text-neutral-900">المركبات المستأجرة</h4>
-          <p className="text-xs text-neutral-500">{vehicles.length} مركبة</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <Car className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-teal-900">المركبات المستأجرة</h4>
+            <p className="text-xs text-teal-600/70">{vehicles.length} مركبة</p>
+          </div>
         </div>
       </div>
 
@@ -522,40 +579,41 @@ const VehiclesTab = ({ contracts, navigate }: { contracts: any[], navigate: any 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl p-5 border border-neutral-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer group"
               onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Car className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h5 className="font-bold text-neutral-900">{vehicle.make} {vehicle.model}</h5>
-                  <p className="text-xs text-neutral-500">{vehicle.year}</p>
+                  <h5 className="font-bold text-slate-900">{vehicle.make} {vehicle.model}</h5>
+                  <p className="text-xs text-teal-600">{vehicle.year}</p>
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500">رقم اللوحة</span>
-                  <span className="font-mono font-bold text-neutral-900">{vehicle.plate_number}</span>
+
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-sm p-2 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg">
+                  <span className="text-slate-600 font-medium">رقم اللوحة</span>
+                  <span className="font-mono font-bold text-slate-900">{vehicle.plate_number}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500">رقم العقد</span>
-                  <span className="font-mono text-blue-600">{vehicle.contractNumber}</span>
+                <div className="flex items-center justify-between text-sm p-2 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg">
+                  <span className="text-teal-600 font-medium">رقم العقد</span>
+                  <span className="font-mono font-bold text-teal-700">{vehicle.contractNumber}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500">الإيجار الشهري</span>
-                  <span className="font-bold text-coral-600">{vehicle.monthlyAmount?.toLocaleString()} ر.ق</span>
+                <div className="flex items-center justify-between text-sm p-2 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg">
+                  <span className="text-emerald-600 font-medium">الإيجار الشهري</span>
+                  <span className="font-bold text-emerald-700">{vehicle.monthlyAmount?.toLocaleString()} ر.ق</span>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <Car className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-500">لا توجد مركبات مستأجرة حالياً</p>
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
+          <Car className="w-12 h-12 text-teal-300 mx-auto mb-3" />
+          <p className="text-teal-600 font-medium">لا توجد مركبات مستأجرة حالياً</p>
+          <p className="text-teal-500/70 text-sm mt-1">لم يتم تعيين أي مركبة لهذا العميل</p>
         </div>
       )}
     </motion.div>
@@ -577,18 +635,23 @@ const InvoicesTab = ({
   }, [invoices]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-5"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h4 className="text-sm font-bold text-neutral-900">الفواتير</h4>
-          <p className="text-xs text-neutral-500">{invoices.length} فاتورة</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <Wallet className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-teal-900">الفواتير</h4>
+            <p className="text-xs text-teal-600/70">{invoices.length} فاتورة</p>
+          </div>
         </div>
         {totalOutstanding > 0 && (
-          <Badge className="bg-red-100 text-red-700">
+          <Badge className="bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg font-medium">
             مستحق: {totalOutstanding.toLocaleString()} ر.ق
           </Badge>
         )}
@@ -608,25 +671,29 @@ const InvoicesTab = ({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
-                  isPaid ? "bg-green-50 border-green-200" :
-                  isOverdue ? "bg-red-50 border-red-200" :
-                  "bg-white border-neutral-200"
+                  "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md backdrop-blur-sm",
+                  isPaid
+                    ? "bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200 hover:border-emerald-300"
+                    : isOverdue
+                    ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-200 hover:border-red-300"
+                    : "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 hover:border-amber-300"
                 )}
                 onClick={() => onInvoiceClick(invoice)}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-lg flex items-center justify-center",
-                    isPaid ? "bg-green-100 text-green-600" : 
-                    isOverdue ? "bg-red-100 text-red-600" : 
-                    "bg-amber-100 text-amber-600"
+                    isPaid
+                      ? "bg-emerald-100 text-emerald-600"
+                      : isOverdue
+                      ? "bg-red-100 text-red-600"
+                      : "bg-amber-100 text-amber-600"
                   )}>
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-neutral-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="font-bold text-slate-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
+                    <p className="text-xs text-slate-600">
                       {invoice.created_at ? format(new Date(invoice.created_at), 'dd/MM/yyyy') : '-'}
                     </p>
                   </div>
@@ -634,15 +701,17 @@ const InvoicesTab = ({
                 <div className="text-left">
                   <p className={cn(
                     "font-bold",
-                    isPaid ? "text-green-600" : isOverdue ? "text-red-600" : "text-amber-600"
+                    isPaid ? "text-emerald-600" : isOverdue ? "text-red-600" : "text-amber-600"
                   )}>
                     {invoice.total_amount?.toLocaleString()} ر.ق
                   </p>
                   <Badge className={cn(
-                    "text-[10px]",
-                    isPaid ? "bg-green-100 text-green-700" : 
-                    isOverdue ? "bg-red-100 text-red-700" : 
-                    "bg-amber-100 text-amber-700"
+                    "text-[10px] px-2 py-0.5 rounded-md font-medium border",
+                    isPaid
+                      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                      : isOverdue
+                      ? "bg-red-100 text-red-700 border-red-200"
+                      : "bg-amber-100 text-amber-700 border-amber-200"
                   )}>
                     {isPaid ? 'مسدد' : isOverdue ? 'متأخر' : 'مستحق'}
                   </Badge>
@@ -652,9 +721,9 @@ const InvoicesTab = ({
           })}
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <Wallet className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-500">لا توجد فواتير لهذا العميل</p>
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
+          <Wallet className="w-12 h-12 text-teal-300 mx-auto mb-3" />
+          <p className="text-teal-600 font-medium">لا توجد فواتير لهذا العميل</p>
         </div>
       )}
     </motion.div>
@@ -664,17 +733,22 @@ const InvoicesTab = ({
 // تبويب المدفوعات
 const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], navigate: any, onAddPayment: () => void }) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h4 className="text-sm font-bold text-neutral-900">سجل المدفوعات</h4>
-          <p className="text-xs text-neutral-500">{payments.length} عملية</p>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <CreditCard className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-teal-900">سجل المدفوعات</h4>
+            <p className="text-xs text-teal-600/70">{payments.length} عملية</p>
+          </div>
         </div>
-        <Button 
-          className="bg-green-500 hover:bg-green-600 text-white gap-2"
+        <Button
+          className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
           onClick={onAddPayment}
         >
           <Plus className="w-4 h-4" />
@@ -683,36 +757,38 @@ const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], na
       </div>
 
       {payments.length > 0 ? (
-        <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-teal-100 overflow-hidden">
           <table className="w-full">
-            <thead className="bg-neutral-50 border-b border-neutral-200">
+            <thead className="bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">رقم الدفعة</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">تاريخ السداد</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">المبلغ</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">الطريقة</th>
-                <th className="px-4 py-3 text-right text-xs font-bold text-neutral-600">الحالة</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">رقم الدفعة</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">تاريخ السداد</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">المبلغ</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">الطريقة</th>
+                <th className="px-4 py-3 text-right text-xs font-bold text-teal-900">الحالة</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-teal-50">
               {payments.slice(0, 5).map((payment, index) => (
-                <motion.tr 
+                <motion.tr
                   key={payment.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="hover:bg-neutral-50 transition-colors"
+                  className="hover:bg-teal-50/30 transition-colors"
                 >
-                  <td className="px-4 py-3 text-sm font-mono text-neutral-900">#{payment.payment_number || payment.id.substring(0, 8)}</td>
-                  <td className="px-4 py-3 text-sm text-neutral-600">
+                  <td className="px-4 py-3 text-sm font-mono text-slate-900">#{payment.payment_number || payment.id.substring(0, 8)}</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
                     {payment.payment_date ? format(new Date(payment.payment_date), 'dd/MM/yyyy') : '-'}
                   </td>
-                  <td className="px-4 py-3 text-sm font-bold text-green-600">{payment.amount?.toLocaleString()} ر.ق</td>
-                  <td className="px-4 py-3 text-sm text-neutral-600">{payment.payment_method || '-'}</td>
+                  <td className="px-4 py-3 text-sm font-bold text-emerald-600">{payment.amount?.toLocaleString()} ر.ق</td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{payment.payment_method || '-'}</td>
                   <td className="px-4 py-3">
                     <Badge className={cn(
-                      "text-xs",
-                      payment.payment_status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                      "text-xs px-3 py-1 rounded-md font-medium border",
+                      payment.payment_status === 'completed'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
                     )}>
                       {payment.payment_status === 'completed' ? 'مكتمل' : 'معلق'}
                     </Badge>
@@ -723,9 +799,9 @@ const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], na
           </table>
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <CreditCard className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-500">لا توجد مدفوعات مسجلة</p>
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
+          <CreditCard className="w-12 h-12 text-teal-300 mx-auto mb-3" />
+          <p className="text-teal-600 font-medium">لا توجد مدفوعات مسجلة</p>
         </div>
       )}
     </motion.div>
@@ -787,34 +863,39 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-5"
     >
       {/* Header with actions */}
-      <div className="bg-white rounded-2xl p-4 border border-neutral-200">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h4 className="text-sm font-bold text-neutral-900">سجل التواصل والملاحظات</h4>
-            <p className="text-xs text-neutral-500">{activities.length} تفاعل مسجل</p>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-teal-900">سجل التواصل والملاحظات</h4>
+              <p className="text-xs text-teal-600/70">{activities.length} تفاعل مسجل</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {customerPhone && (
               <>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
                   onClick={() => window.open(`tel:${customerPhone}`)}
                 >
                   <Phone className="w-4 h-4" />
                   اتصال
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
                   onClick={() => window.open(`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}`)}
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -822,9 +903,9 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                 </Button>
               </>
             )}
-            <Button 
-              size="sm" 
-              className="gap-2 bg-rose-500 hover:bg-coral-600"
+            <Button
+              size="sm"
+              className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20"
               onClick={() => setIsAdding(!isAdding)}
             >
               <Plus className="w-4 h-4" />
@@ -840,14 +921,19 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="border-t border-neutral-100 pt-4"
+              className="border-t border-teal-100 pt-5 space-y-4 bg-gradient-to-br from-teal-50/50 to-cyan-50/50 -mx-5 -mb-5 px-5 pb-5 rounded-b-2xl"
             >
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-2">
                 <Button
                   variant={noteType === 'note' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNoteType('note')}
-                  className={noteType === 'note' ? 'bg-rose-500' : ''}
+                  className={cn(
+                    "gap-2",
+                    noteType === 'note'
+                      ? "bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-teal-500/20"
+                      : "border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+                  )}
                 >
                   <FileText className="w-4 h-4 ml-1" />
                   ملاحظة
@@ -856,7 +942,12 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                   variant={noteType === 'phone' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNoteType('phone')}
-                  className={noteType === 'phone' ? 'bg-green-500' : ''}
+                  className={cn(
+                    "gap-2",
+                    noteType === 'phone'
+                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/20"
+                      : "border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
+                  )}
                 >
                   <Phone className="w-4 h-4 ml-1" />
                   مكالمة
@@ -865,7 +956,12 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                   variant={noteType === 'whatsapp' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNoteType('whatsapp')}
-                  className={noteType === 'whatsapp' ? 'bg-emerald-500' : ''}
+                  className={cn(
+                    "gap-2",
+                    noteType === 'whatsapp'
+                      ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-green-500/20"
+                      : "border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300"
+                  )}
                 >
                   <MessageSquare className="w-4 h-4 ml-1" />
                   واتساب
@@ -875,15 +971,20 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="اكتب ملاحظتك هنا..."
-                className="min-h-[100px] mb-3"
+                className="min-h-[100px] border-teal-200 focus:border-teal-500 focus:ring-teal-500/20 bg-white/80"
               />
               <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAdding(false)}
+                  className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
                   إلغاء
                 </Button>
-                <Button 
-                  size="sm" 
-                  className="gap-2 bg-rose-500 hover:bg-coral-600"
+                <Button
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20"
                   onClick={handleAddNote}
                   disabled={!newNote.trim() || isAddingActivity}
                 >
@@ -903,12 +1004,13 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
       {/* Activities List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+          <RefreshCw className="w-6 h-6 animate-spin text-teal-400" />
+          <span className="mr-3 text-teal-600">جاري تحميل النشاط...</span>
         </div>
       ) : activities.length > 0 ? (
         <div className="relative">
-          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-neutral-200" />
-          <div className="space-y-3">
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-200 via-cyan-200 to-transparent" />
+          <div className="space-y-4">
             {activities.map((activity, index) => (
               <motion.div
                 key={activity.id}
@@ -917,34 +1019,36 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
                 transition={{ delay: index * 0.05 }}
                 className="relative pr-14"
               >
-                <div className="absolute right-4 w-5 h-5 rounded-full bg-white border-2 border-coral-300 flex items-center justify-center shadow-sm">
+                <div className="absolute right-3 w-6 h-6 rounded-full bg-white border-2 border-teal-300 flex items-center justify-center shadow-sm">
                   {getActivityIcon(activity.note_type, activity.call_status)}
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-rose-200 transition-colors">
-                  <div className="flex items-start justify-between mb-2">
+                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-teal-100 hover:border-teal-300 hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-teal-200 text-teal-700 bg-teal-50/50">
                         {getActivityLabel(activity.note_type)}
                       </Badge>
                       {activity.is_important && (
-                        <Badge className="text-xs bg-amber-100 text-amber-700">مهم</Badge>
+                        <Badge className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
+                          مهم
+                        </Badge>
                       )}
                     </div>
-                    <span className="text-xs text-neutral-400">
+                    <span className="text-xs text-slate-400">
                       {format(new Date(activity.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
                     </span>
                   </div>
-                  <p className="text-sm text-neutral-700 whitespace-pre-wrap">{activity.content}</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{activity.content}</p>
                 </div>
               </motion.div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <MessageSquare className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-600 font-medium">لا توجد ملاحظات مسجلة</p>
-          <p className="text-neutral-400 text-sm mt-1">ابدأ بإضافة ملاحظة أو تسجيل مكالمة</p>
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 text-center border border-teal-100">
+          <MessageSquare className="w-12 h-12 text-teal-300 mx-auto mb-3" />
+          <p className="text-teal-600 font-medium">لا توجد ملاحظات مسجلة</p>
+          <p className="text-teal-500/70 text-sm mt-1">ابدأ بإضافة ملاحظة أو تسجيل مكالمة</p>
         </div>
       )}
     </motion.div>
@@ -1739,14 +1843,19 @@ const CustomerDetailsPageNew = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header Bar */}
       <TooltipProvider>
-        <header className="bg-white border-b border-neutral-200 sticky top-0 z-40">
+        <header className="bg-white/80 backdrop-blur-md border-b border-teal-100 sticky top-0 z-40 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-14">
+            <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={handleBack} className="gap-2 text-neutral-600 hover:text-neutral-900">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                  className="gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                >
                   <ArrowRight className="w-4 h-4" />
                   العودة للقائمة
                 </Button>
@@ -1763,16 +1872,16 @@ const CustomerDetailsPageNew = () => {
                           size="sm"
                           onClick={() => {
                             if (!customer?.phone) {
-                              toast({ 
-                                  title: 'رقم الهاتف غير متوفر', 
+                              toast({
+                                  title: 'رقم الهاتف غير متوفر',
                                   description: 'لا يوجد رقم هاتف مسجل لهذا العميل',
-                                  variant: 'destructive' 
+                                  variant: 'destructive'
                                 });
                               return;
                             }
                             window.open(`tel:${customer.phone}`, '_self');
                           }}
-                          className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          className="gap-1.5 text-teal-600 border-teal-200 hover:bg-teal-50 hover:border-teal-300"
                         >
                           <Phone className="w-4 h-4" />
                           اتصال
@@ -1789,26 +1898,26 @@ const CustomerDetailsPageNew = () => {
                           size="sm"
                           onClick={() => {
                             if (!customer?.phone) {
-                              toast({ 
-                                  title: 'رقم الهاتف غير متوفر', 
+                              toast({
+                                  title: 'رقم الهاتف غير متوفر',
                                   description: 'لا يوجد رقم هاتف مسجل لهذا العميل',
-                                  variant: 'destructive' 
+                                  variant: 'destructive'
                                 });
                               return;
                             }
                             const whatsappNumber = customer.whatsapp || customer.phone;
                             const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
                             if (!cleanedNumber || cleanedNumber.length < 7) {
-                              toast({ 
-                                  title: 'رقم الهاتف غير صالح', 
+                              toast({
+                                  title: 'رقم الهاتف غير صالح',
                                   description: 'رقم الهاتف لا يمكن استخدامه مع واتساب',
-                                  variant: 'destructive' 
+                                  variant: 'destructive'
                                 });
                               return;
                             }
                             window.open(`https://wa.me/${cleanedNumber}`, '_blank');
                           }}
-                          className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                          className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
                         >
                           <MessageSquare className="w-4 h-4" />
                           واتساب
@@ -1827,16 +1936,16 @@ const CustomerDetailsPageNew = () => {
                               size="sm"
                               onClick={() => {
                                 if (!customerId) {
-                                  toast({ 
-                                        title: 'خطأ', 
+                                  toast({
+                                        title: 'خطأ',
                                         description: 'معرف العميل غير متوفر',
-                                        variant: 'destructive' 
+                                        variant: 'destructive'
                                       });
                                   return;
                                 }
                                 navigate(`/customers/crm?customer=${customerId}`);
                               }}
-                              className="gap-1.5"
+                              className="gap-1.5 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:border-cyan-300"
                         >
                           <Activity className="w-4 h-4" />
                           CRM
@@ -1853,16 +1962,16 @@ const CustomerDetailsPageNew = () => {
                               size="sm"
                               onClick={() => {
                                 if (!customerId) {
-                                  toast({ 
-                                        title: 'خطأ', 
+                                  toast({
+                                        title: 'خطأ',
                                         description: 'معرف العميل غير متوفر',
-                                        variant: 'destructive' 
+                                        variant: 'destructive'
                                       });
                                   return;
                                 }
                                 navigate(`/contracts?customer=${customerId}`);
                               }}
-                              className="gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50"
+                              className="gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300"
                         >
                           <Plus className="w-4 h-4" />
                           عقد جديد
@@ -1872,11 +1981,11 @@ const CustomerDetailsPageNew = () => {
                       <p>إنشاء عقد جديد لهذا العميل</p>
                     </TooltipContent>
                   </Tooltip>
-              
-              <span className="text-sm text-neutral-500 mr-2">|</span>
+
+              <span className="text-sm text-slate-300 mr-2">|</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="outline" size="sm" className="gap-2 border-slate-200">
                     خيارات
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -1901,9 +2010,9 @@ const CustomerDetailsPageNew = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button 
+              <Button
                 onClick={handleEdit}
-                className="bg-rose-500 hover:bg-coral-600 text-white gap-2"
+                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
               >
                 <Edit3 className="w-4 h-4" />
                 تعديل
@@ -1916,68 +2025,68 @@ const CustomerDetailsPageNew = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Profile Card */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl p-6 mb-6 border border-neutral-200 shadow-sm"
+          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Avatar Section */}
             <div className="flex items-center gap-5">
               <div className="relative">
-                <Avatar className="w-24 h-24 rounded-full border-4 border-rose-100">
-                  <AvatarFallback className="bg-gradient-to-br from-rose-500 to-coral-600 text-white text-2xl font-bold">
+                <Avatar className="w-24 h-24 rounded-full border-4 border-teal-100 shadow-lg shadow-teal-500/10">
+                  <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white text-2xl font-bold">
                     {getInitials(customerName)}
                   </AvatarFallback>
                 </Avatar>
                 {customer.is_active && (
-                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white" />
+                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
                 )}
               </div>
 
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-neutral-900">{customerName}</h1>
+                  <h1 className="text-2xl font-bold text-slate-900">{customerName}</h1>
                   {customer.is_vip && (
-                    <Badge className="bg-amber-100 text-amber-700 gap-1">
-                      <Star className="w-3 h-3" />
+                    <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 border border-amber-200 gap-1 px-3 py-1 rounded-md font-medium">
+                      <Star className="w-3 h-3 fill-current" />
                       VIP
                     </Badge>
                   )}
                 </div>
-                <p className="text-neutral-500 text-sm">{customer.job_title || 'عميل'}</p>
+                <p className="text-slate-500 text-sm">{customer.job_title || 'عميل'}</p>
               </div>
             </div>
 
             {/* Quick Info */}
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 lg:pr-6 lg:border-r border-neutral-200">
-              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                  <Cake className="w-5 h-5 text-red-600" />
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 lg:pr-6 lg:border-r border-teal-100">
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl border border-rose-100">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-sm">
+                  <Cake className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500">تاريخ الميلاد</p>
-                  <p className="text-sm font-semibold text-neutral-900">{customer.date_of_birth || '-'}</p>
+                  <p className="text-xs text-rose-600/70">تاريخ الميلاد</p>
+                  <p className="text-sm font-semibold text-slate-900">{customer.date_of_birth || '-'}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-green-600" />
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-sm">
+                  <Phone className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500">رقم الهاتف</p>
-                  <p className="text-sm font-semibold text-neutral-900 font-mono" dir="ltr">{customer.phone || '-'}</p>
+                  <p className="text-xs text-teal-600/70">رقم الهاتف</p>
+                  <p className="text-sm font-semibold text-slate-900 font-mono" dir="ltr">{customer.phone || '-'}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+                  <Mail className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500">البريد الإلكتروني</p>
-                  <p className="text-sm font-semibold text-neutral-900 truncate max-w-[180px]">{customer.email || '-'}</p>
+                  <p className="text-xs text-blue-600/70">البريد الإلكتروني</p>
+                  <p className="text-sm font-semibold text-slate-900 truncate max-w-[180px]">{customer.email || '-'}</p>
                 </div>
               </div>
             </div>
@@ -1987,31 +2096,31 @@ const CustomerDetailsPageNew = () => {
         {/* تحذيرات البيانات الناقصة */}
         <MissingDataWarnings customer={customer} />
 
-        {/* Stats Cards - التصميم المحدث */}
+        {/* Stats Cards - التصميم المحسّن */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* بطاقة العقود النشطة */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-lg hover:shadow-teal-500/10 transition-all overflow-hidden group"
           >
             {/* الحد الملون على اليسار */}
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-blue-500 rounded-full" />
-            
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-teal-500 to-teal-600 rounded-full" />
+
             {/* الأيقونة في الأعلى يمين */}
             <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-7 h-7 text-blue-600" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-teal-100">
+                <FileText className="w-7 h-7 text-teal-600" />
               </div>
             </div>
-            
+
             {/* الرقم والوصف */}
             <div className="text-center">
-              <p className="text-4xl font-black text-blue-600 mb-2">
+              <p className="text-4xl font-black text-teal-600 mb-2">
                 {stats.activeContracts}
               </p>
-              <p className="text-sm font-medium text-neutral-600">العقود النشطة</p>
+              <p className="text-sm font-medium text-slate-600">العقود النشطة</p>
             </div>
           </motion.div>
 
@@ -2020,22 +2129,22 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-amber-100 shadow-sm hover:shadow-lg hover:shadow-amber-500/10 transition-all overflow-hidden group"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-amber-500 rounded-full" />
-            
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full" />
+
             <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-amber-100">
                 <Wallet className="w-7 h-7 text-amber-600" />
               </div>
             </div>
-            
+
             <div className="text-center">
               <p className="text-4xl font-black text-amber-600 mb-2">
                 {stats.outstandingAmount.toLocaleString()}
                 <span className="text-xl font-bold mr-1">ر.ق</span>
               </p>
-              <p className="text-sm font-medium text-neutral-600">المبلغ المستحق</p>
+              <p className="text-sm font-medium text-slate-600">المبلغ المستحق</p>
             </div>
           </motion.div>
 
@@ -2044,23 +2153,23 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-emerald-100 shadow-sm hover:shadow-lg hover:shadow-emerald-500/10 transition-all overflow-hidden group"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-green-500 rounded-full" />
-            
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full" />
+
             <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <TrendingUp className="w-7 h-7 text-green-600" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-emerald-100">
+                <TrendingUp className="w-7 h-7 text-emerald-600" />
               </div>
             </div>
-            
+
             <div className="text-center">
-              <p className={`text-4xl font-black mb-2 ${stats.commitmentRate !== null ? 'text-green-600' : 'text-neutral-400'}`}>
+              <p className={`text-4xl font-black mb-2 ${stats.commitmentRate !== null ? 'text-emerald-600' : 'text-slate-300'}`}>
                 {stats.commitmentRate !== null ? `${stats.commitmentRate}%` : '-'}
               </p>
-              <p className="text-sm font-medium text-neutral-600">نسبة الالتزام</p>
+              <p className="text-sm font-medium text-slate-600">نسبة الالتزام</p>
               {stats.commitmentRate === null && (
-                <p className="text-xs text-neutral-400 mt-1">لا توجد عقود</p>
+                <p className="text-xs text-slate-400 mt-1">لا توجد عقود</p>
               )}
             </div>
           </motion.div>
@@ -2070,22 +2179,22 @@ const CustomerDetailsPageNew = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="relative bg-white rounded-2xl p-6 border border-neutral-200 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100 shadow-sm hover:shadow-lg hover:shadow-indigo-500/10 transition-all overflow-hidden group"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-purple-500 rounded-full" />
-            
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full" />
+
             <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <CreditCard className="w-7 h-7 text-purple-600" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-indigo-100">
+                <CreditCard className="w-7 h-7 text-indigo-600" />
               </div>
             </div>
-            
+
             <div className="text-center">
-              <p className="text-4xl font-black text-purple-600 mb-2">
+              <p className="text-4xl font-black text-indigo-600 mb-2">
                 {stats.totalPayments.toLocaleString()}
                 <span className="text-xl font-bold mr-1">ر.ق</span>
               </p>
-              <p className="text-sm font-medium text-neutral-600">إجمالي المدفوعات</p>
+              <p className="text-sm font-medium text-slate-600">إجمالي المدفوعات</p>
             </div>
           </motion.div>
         </div>
@@ -2095,16 +2204,16 @@ const CustomerDetailsPageNew = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="mb-6 bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm"
+          className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-coral-600" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-sm shadow-teal-500/20">
+                <MessageSquare className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-neutral-900">مركز إدارة علاقات العملاء</h3>
-                <p className="text-xs text-neutral-500">
+                <h3 className="font-semibold text-teal-900">مركز إدارة علاقات العملاء</h3>
+                <p className="text-xs text-teal-600/70">
                   {crmActivitiesMain.length} ملاحظة • {scheduledFollowups.length} متابعة قادمة
                   {scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length > 0 && (
                     <span className="text-red-500 font-medium mr-2">
@@ -2117,19 +2226,19 @@ const CustomerDetailsPageNew = () => {
             <div className="flex items-center gap-2">
               {customer?.phone && (
                 <>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
                     onClick={() => window.open(`tel:${customer.phone}`)}
                   >
                     <Phone className="w-4 h-4" />
                     اتصال
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
                     onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}`)}
                   >
                     <MessageSquare className="w-4 h-4" />
@@ -2137,18 +2246,18 @@ const CustomerDetailsPageNew = () => {
                   </Button>
                 </>
               )}
-              <Button 
-                size="sm" 
-                className="gap-2 bg-rose-500 hover:bg-coral-600"
+              <Button
+                size="sm"
+                className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20"
                 onClick={() => setActiveTab('notes')}
               >
                 <Plus className="w-4 h-4" />
                 إضافة ملاحظة
               </Button>
-              <Button 
+              <Button
                 variant="outline"
-                size="sm" 
-                className="gap-2"
+                size="sm"
+                className="gap-2 border-cyan-200 text-cyan-600 hover:bg-cyan-50 hover:border-cyan-300"
                 onClick={() => setActiveTab('followups')}
               >
                 <Bell className="w-4 h-4" />
@@ -2163,10 +2272,10 @@ const CustomerDetailsPageNew = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl border border-neutral-200 overflow-hidden"
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-teal-100 overflow-hidden shadow-sm"
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start bg-neutral-50 border-b border-neutral-200 rounded-none h-auto p-0 gap-0 overflow-x-auto">
+            <TabsList className="w-full justify-start bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200 rounded-none h-auto p-0 gap-0 overflow-x-auto">
               {[
                 { value: 'info', label: 'معلومات العميل', icon: User },
                 { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
@@ -2179,19 +2288,19 @@ const CustomerDetailsPageNew = () => {
                 { value: 'followups', label: 'المتابعات', icon: Bell },
                 { value: 'activity', label: 'سجل النشاط', icon: Activity },
               ].map((tab) => (
-                <TabsTrigger 
+                <TabsTrigger
                   key={tab.value}
-                  value={tab.value} 
+                  value={tab.value}
                   className={cn(
                     "px-5 py-3.5 text-sm font-medium rounded-none border-b-2 transition-all gap-2 data-[state=active]:bg-white whitespace-nowrap",
-                    "data-[state=active]:border-rose-500 data-[state=active]:text-coral-600",
-                    "data-[state=inactive]:border-transparent data-[state=inactive]:text-neutral-500 hover:text-neutral-900"
+                    "data-[state=active]:border-teal-500 data-[state=active]:text-teal-700",
+                    "data-[state=inactive]:border-transparent data-[state=inactive]:text-teal-600/70 hover:text-teal-900 hover:bg-white/50"
                   )}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
                   {'badge' in tab && tab.badge && (
-                    <Badge variant="destructive" className="mr-1 text-xs h-5 min-w-[20px] px-1.5">
+                    <Badge className="mr-1 text-xs h-5 min-w-[20px] px-1.5 bg-red-100 text-red-700 border border-red-200 rounded-md font-medium">
                       {tab.badge}
                     </Badge>
                   )}
@@ -2305,14 +2414,19 @@ const CustomerDetailsPageNew = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-6 bg-white rounded-2xl p-6 border border-neutral-200"
+          className="mt-6 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-neutral-900">المرفقات</h3>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                <Folder className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-teal-900">المرفقات</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
@@ -2345,23 +2459,23 @@ const CustomerDetailsPageNew = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group relative bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden hover:border-coral-300 hover:shadow-md transition-all cursor-pointer"
+                  className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer"
                 >
-                  <div className="aspect-[4/3] bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
-                    <FileImage className="w-10 h-10 text-neutral-400" />
+                  <div className="aspect-[4/3] bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
+                    <FileImage className="w-10 h-10 text-teal-400" />
                   </div>
                   <div className="p-3">
-                    <p className="text-xs font-medium text-neutral-900 truncate">{doc.document_name}</p>
-                    <p className="text-[10px] text-neutral-500 mt-1">
+                    <p className="text-xs font-medium text-slate-900 truncate">{doc.document_name}</p>
+                    <p className="text-[10px] text-slate-500 mt-1">
                       {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
                     </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                      <Eye className="w-4 h-4" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-900/80 to-teal-800/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0">
+                      <Eye className="w-4 h-4 text-white" />
                     </Button>
-                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                      <Download className="w-4 h-4" />
+                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0">
+                      <Download className="w-4 h-4 text-white" />
                     </Button>
                   </div>
                 </motion.div>
@@ -2370,13 +2484,13 @@ const CustomerDetailsPageNew = () => {
           ) : (
             <div className="grid grid-cols-4 gap-4">
               {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
-                <div 
+                <div
                   key={index}
-                  className="aspect-[4/3] bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-neutral-400 hover:border-coral-300 hover:text-rose-500 transition-colors cursor-pointer"
+                  className="aspect-[4/3] bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl border-2 border-dashed border-teal-200 flex flex-col items-center justify-center text-teal-400 hover:border-teal-400 hover:text-teal-600 transition-all cursor-pointer hover:shadow-sm hover:shadow-teal-500/10"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <FileImage className="w-8 h-8 mb-2" />
-                  <p className="text-xs">{placeholder}</p>
+                  <p className="text-xs font-medium">{placeholder}</p>
                 </div>
               ))}
             </div>
@@ -2386,10 +2500,12 @@ const CustomerDetailsPageNew = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-teal-100">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-coral-600" />
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-teal-900">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                <Edit3 className="w-4 h-4 text-white" />
+              </div>
               تعديل بيانات العميل
             </DialogTitle>
           </DialogHeader>

@@ -33,7 +33,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { PageHelp } from "@/components/help";
 import { MaintenancePageHelpContent } from "@/components/help/content";
-import { FloatingAssistant } from "@/components/employee-assistant";
 import { MaintenanceSmartDashboard } from "@/components/fleet/MaintenanceSmartDashboard";
 import { MaintenanceAlertsPanel } from "@/components/fleet/MaintenanceAlertsPanel";
 import { MaintenanceSidePanel } from "@/components/fleet/MaintenanceSidePanel";
@@ -435,11 +434,10 @@ export default function Maintenance() {
       </div>
       
       {/* Help and Assistant */}
-      <PageHelp 
+      <PageHelp
         content={MaintenancePageHelpContent}
         title="مساعد صفحة الصيانة"
       />
-      <FloatingAssistant />
     </div>
   );
 }

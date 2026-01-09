@@ -165,8 +165,8 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             {isLoading ? (
               <CommandItem disabled>
                 <div className="flex items-center space-x-2 space-x-reverse">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  <span>جاري التحميل...</span>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-500"></div>
+                  <span className="text-teal-600">جاري التحميل...</span>
                 </div>
               </CommandItem>
             ) : (

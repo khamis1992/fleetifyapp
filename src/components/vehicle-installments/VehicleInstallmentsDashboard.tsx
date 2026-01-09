@@ -744,8 +744,8 @@ const VehicleInstallmentsDashboard = () => {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center py-16"
             >
-              <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mb-4" />
-              <p className="text-neutral-500 font-medium">جاري التحميل...</p>
+              <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-teal-600 font-medium">جاري التحميل...</p>
             </motion.div>
           ) : filteredInstallments.length === 0 ? (
             <motion.div

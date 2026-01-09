@@ -23,7 +23,6 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { differenceInHours, format, parseISO } from 'date-fns'
 import { ar } from 'date-fns/locale'
-import { FloatingAssistant } from '@/components/employee-assistant'
 
 interface Reservation {
   id: string
@@ -349,24 +348,6 @@ export function VehicleReservationSystem() {
           onClose={() => setSelectedReservation(null)}
         />
       )}
-
-      {/* مساعد الموظف للحجوزات */}
-      <FloatingAssistant 
-        workflowType="reservation" 
-        data={{
-          customer_id: selectedReservation?.customer_id,
-          customer: { name: selectedReservation?.customer_name },
-          phone: '',
-          pickup_date: selectedReservation?.start_date,
-          return_date: selectedReservation?.end_date,
-          vehicle_id: selectedReservation?.vehicle_id,
-          vehicle: {
-            plate_number: selectedReservation?.vehicle_plate,
-            make: selectedReservation?.vehicle_make,
-            model: selectedReservation?.vehicle_model,
-          },
-        }}
-      />
     </div>
   )
 }

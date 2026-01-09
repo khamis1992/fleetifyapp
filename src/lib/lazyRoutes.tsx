@@ -9,8 +9,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 // Fallback component for lazy loading
 export const LazyLoadFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
-    <LoadingSpinner size="lg" />
-    <span className="mr-3">جاري التحميل...</span>
+    <LoadingSpinner size="lg" className="text-teal-500" />
+    <span className="mr-3 text-teal-600">جاري التحميل...</span>
   </div>
 );
 

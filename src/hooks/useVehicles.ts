@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemLogger } from "@/hooks/useSystemLogger";
-import { useCompanyIdWithInit } from "./useUnifiedCompanyAccess";
+import { useCompanyIdWithInit, useCurrentCompanyId } from "./useUnifiedCompanyAccess";
 import { useMaintenanceJournalIntegration } from "@/hooks/useMaintenanceJournalIntegration";
 import { createAuditLog } from "@/hooks/useAuditLog";
 import { useVehicleStatusUpdate } from "@/hooks/useVehicleStatusIntegration";

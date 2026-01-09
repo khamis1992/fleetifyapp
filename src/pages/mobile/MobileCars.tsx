@@ -244,7 +244,7 @@ const MobileCars: React.FC = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm text-slate-500">جاري التحميل...</p>
+            <p className="text-sm text-teal-600">جاري التحميل...</p>
           </div>
         </div>
       ) : filteredVehicles.length === 0 ? (

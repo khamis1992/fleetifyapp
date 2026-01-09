@@ -422,7 +422,7 @@ const CustomersPageRedesigned: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-slate-500">جاري التحميل...</p>
+          <p className="text-sm text-teal-600">جاري التحميل...</p>
         </div>
       </div>
     );

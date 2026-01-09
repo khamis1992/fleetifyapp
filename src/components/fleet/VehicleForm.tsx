@@ -529,10 +529,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="text-right">
-          <DialogTitle className="text-right">
+          <DialogTitle className="text-right flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 shadow-lg shadow-teal-500/20 flex items-center justify-center">
+              <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </div>
             {vehicle ? "تعديل المركبة" : "إضافة مركبة جديدة"}
           </DialogTitle>
-          <DialogDescription className="text-right">
+          <DialogDescription className="text-right text-slate-500">
             {vehicle ? "تحديث معلومات المركبة" : "إضافة مركبة جديدة إلى الأسطول"}
           </DialogDescription>
         </DialogHeader>
@@ -540,33 +545,43 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 vehicle-form-content" dir="rtl">
             <Tabs defaultValue="basic" className="w-full" dir="rtl">
-              <TabsList className="grid w-full grid-cols-5" dir="rtl">
-                <TabsTrigger value="basic">الأساسية</TabsTrigger>
-                <TabsTrigger value="technical">التقنية</TabsTrigger>
-                <TabsTrigger value="financial">المالية</TabsTrigger>
-                <TabsTrigger value="operational">التشغيلية</TabsTrigger>
-                <TabsTrigger value="additional">إضافية</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5 gap-2 p-1 bg-gradient-to-br from-teal-50 to-teal-100/50 rounded-xl border border-teal-200 shadow-sm" dir="rtl">
+                <TabsTrigger value="basic" className="data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-teal-500/30 transition-all">الأساسية</TabsTrigger>
+                <TabsTrigger value="technical" className="data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-teal-500/30 transition-all">التقنية</TabsTrigger>
+                <TabsTrigger value="financial" className="data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-teal-500/30 transition-all">المالية</TabsTrigger>
+                <TabsTrigger value="operational" className="data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-teal-500/30 transition-all">التشغيلية</TabsTrigger>
+                <TabsTrigger value="additional" className="data-[state=active]:bg-gradient-to-l data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-teal-500/30 transition-all">إضافية</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4" dir="rtl">
-                <Card>
-                  <CardHeader className="text-right">
-                    <CardTitle className="text-right">المعلومات الأساسية للمركبة</CardTitle>
-                    <CardDescription className="text-right">التفاصيل الأساسية حول المركبة</CardDescription>
+                <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                  <CardHeader className="text-right bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                    <CardTitle className="text-right text-teal-700 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      المعلومات الأساسية للمركبة
+                    </CardTitle>
+                    <CardDescription className="text-right text-teal-600/70">التفاصيل الأساسية حول المركبة</CardDescription>
                   </CardHeader>
                    <CardContent className="space-y-4" dir="rtl">
                       {/* Fixed Asset Linking Section */}
-                      <div className="bg-muted/30 p-4 rounded-lg border-2 border-dashed border-primary/20">
-                        <h4 className="text-sm font-medium text-right mb-3 text-primary">ربط بالأصول الثابتة</h4>
+                      <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 p-4 rounded-xl border-2 border-dashed border-teal-300/50 shadow-sm">
+                        <h4 className="text-sm font-medium text-right mb-3 text-teal-700 flex items-center gap-2">
+                          <svg className="h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                          ربط بالأصول الثابتة
+                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="text-right">
-                            <label className="text-sm font-medium">رقم الأصل الثابت</label>
+                            <label className="text-sm font-medium text-slate-700">رقم الأصل الثابت</label>
                             <div className="relative mt-1">
                               <Input
                                 value={assetCodeInput}
                                 onChange={(e) => handleAssetCodeChange(e.target.value)}
                                 placeholder="أدخل رقم الأصل لجلب البيانات تلقائياً"
-                                className="text-right"
+                                className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                                 dir="rtl"
                               />
                               {assetLoading && (
@@ -576,12 +591,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               )}
                             </div>
                             {fixedAsset && (
-                              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-right">
-                                <p className="text-sm text-green-800">
-                                  ✓ تم العثور على: {fixedAsset.asset_name}
+                              <div className="mt-2 p-3 bg-gradient-to-br from-teal-50 to-teal-100/50 border border-teal-300 rounded-xl text-right shadow-sm">
+                                <p className="text-sm text-teal-800 flex items-center gap-2">
+                                  <svg className="h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  تم العثور على: {fixedAsset.asset_name}
                                 </p>
                                 {fixedAsset.location && (
-                                  <p className="text-xs text-green-600">الموقع: {fixedAsset.location}</p>
+                                  <p className="text-xs text-teal-600 mt-1">الموقع: {fixedAsset.location}</p>
                                 )}
                               </div>
                             )}
@@ -597,9 +615,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             name="asset_code"
                             render={({ field }) => (
                               <FormItem className="text-right">
-                                <FormLabel className="text-right">رمز الأصل (تلقائي)</FormLabel>
+                                <FormLabel className="text-right text-slate-700 font-medium">رمز الأصل (تلقائي)</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="سيتم ملؤه تلقائياً" className="text-right bg-muted" readOnly dir="rtl" />
+                                  <Input {...field} placeholder="سيتم ملؤه تلقائياً" className="text-right bg-gradient-to-br from-teal-50/50 to-teal-100/30 border-teal-200/50" readOnly dir="rtl" />
                                 </FormControl>
                                 <FormMessage className="text-right" />
                               </FormItem>
@@ -614,9 +632,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="make"
                           render={({ field }) => (
                              <FormItem className="text-right">
-                               <FormLabel className="text-right">الماركة/الشركة المصنعة *</FormLabel>
+                               <FormLabel className="text-right text-slate-700 font-medium">الماركة/الشركة المصنعة *</FormLabel>
                                <FormControl>
-                                 <Input {...field} placeholder="مثال: تويوتا" className="text-right" dir="rtl" />
+                                 <Input {...field} placeholder="مثال: تويوتا" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                                </FormControl>
                                <FormMessage className="text-right" />
                              </FormItem>
@@ -628,23 +646,25 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="model"
                           render={({ field }) => (
                              <FormItem className="text-right">
-                               <FormLabel className="text-right">الطراز *</FormLabel>
+                               <FormLabel className="text-right text-slate-700 font-medium">الطراز *</FormLabel>
                                <FormControl>
-                                 <Input {...field} placeholder="مثال: كامري" className="text-right" dir="rtl" />
+                                 <Input {...field} placeholder="مثال: كامري" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                                </FormControl>
                                <FormMessage className="text-right" />
                              </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name="year"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">السنة *</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">السنة *</FormLabel>
                               <FormControl>
-                                <NumberInput {...field} min="1990" max={new Date().getFullYear() + 1} />
+                                <div className="relative">
+                                  <NumberInput {...field} min="1990" max={new Date().getFullYear() + 1} className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all text-right" />
+                                </div>
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -658,24 +678,24 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                          name="purchase_source"
                          render={({ field }) => (
                            <FormItem>
-                             <FormLabel>مصدر الشراء</FormLabel>
+                             <FormLabel className="text-slate-700 font-medium">مصدر الشراء</FormLabel>
                              <FormControl>
-                               <Input {...field} placeholder="مثال: وكالة، معرض، مزاد" />
+                               <Input {...field} placeholder="مثال: وكالة، معرض، مزاد" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                              </FormControl>
                              <FormMessage />
                            </FormItem>
                          )}
                        />
-                       
+
                        <FormField
                          control={form.control}
                          name="financing_type"
                          render={({ field }) => (
                            <FormItem>
-                             <FormLabel>نوع التمويل</FormLabel>
+                             <FormLabel className="text-slate-700 font-medium">نوع التمويل</FormLabel>
                              <FormControl>
                                <Select onValueChange={field.onChange} value={field.value}>
-                                 <SelectTrigger>
+                                 <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                    <SelectValue placeholder="اختر نوع التمويل" />
                                  </SelectTrigger>
                                  <SelectContent>
@@ -707,9 +727,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="plate_number"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">رقم اللوحة *</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">رقم اللوحة *</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="أدخل رقم اللوحة" className="text-right" dir="rtl" />
+                                <Input {...field} placeholder="أدخل رقم اللوحة" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -721,9 +741,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="color"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">اللون</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">اللون</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="مثال: أبيض" className="text-right" dir="rtl" />
+                                <Input {...field} placeholder="مثال: أبيض" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -760,9 +780,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="vin"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">رقم الهيكل (VIN)</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">رقم الهيكل (VIN)</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="رقم تعريف المركبة" className="text-right" dir="rtl" />
+                                <Input {...field} placeholder="رقم تعريف المركبة" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -774,9 +794,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="engine_number"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">رقم المحرك</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">رقم المحرك</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="رقم المحرك" className="text-right" dir="rtl" />
+                                <Input {...field} placeholder="رقم المحرك" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -790,10 +810,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="transmission_type"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">ناقل الحركة</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">ناقل الحركة</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="text-right" dir="rtl">
+                                  <SelectTrigger className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl">
                                     <SelectValue placeholder="اختر ناقل الحركة" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -813,10 +833,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="fuel_type"
                           render={({ field }) => (
                             <FormItem className="text-right">
-                              <FormLabel className="text-right">نوع الوقود</FormLabel>
+                              <FormLabel className="text-right text-slate-700 font-medium">نوع الوقود</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="text-right" dir="rtl">
+                                  <SelectTrigger className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl">
                                     <SelectValue placeholder="اختر نوع الوقود" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -838,10 +858,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="vehicle_category"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>فئة المركبة</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">فئة المركبة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الفئة" />
                               </SelectTrigger>
                             </FormControl>
@@ -863,36 +883,12 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
 
                     <FormField
                       control={form.control}
-                      name="fuel_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>نوع الوقود</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="اختر نوع الوقود" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="gasoline">بنزين</SelectItem>
-                              <SelectItem value="diesel">ديزل</SelectItem>
-                              <SelectItem value="hybrid">هجين</SelectItem>
-                              <SelectItem value="electric">كهربائي</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="seating_capacity"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>عدد المقاعد</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">عدد المقاعد</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min="2" max="50" />
+                            <Input {...field} type="number" min="2" max="50" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -903,10 +899,16 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
 
               <TabsContent value="technical" className="space-y-4" dir="rtl">
-                <Card>
-                  <CardHeader className="text-right">
-                    <CardTitle className="text-right">المواصفات التقنية المتقدمة</CardTitle>
-                    <CardDescription className="text-right">تفاصيل تقنية وتسجيل المركبة</CardDescription>
+                <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                  <CardHeader className="text-right bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                    <CardTitle className="text-right text-teal-700 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      المواصفات التقنية المتقدمة
+                    </CardTitle>
+                    <CardDescription className="text-right text-teal-600/70">تفاصيل تقنية وتسجيل المركبة</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
                      <FormField
@@ -914,9 +916,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="fuel_capacity"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>سعة خزان الوقود (لتر)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">سعة خزان الوقود (لتر)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.1" placeholder="60" />
+                            <Input {...field} type="number" step="0.1" placeholder="60" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -928,10 +930,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="drive_type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>نوع الدفع</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">نوع الدفع</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر نوع الدفع" />
                               </SelectTrigger>
                             </FormControl>
@@ -952,10 +954,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="vehicle_condition"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>حالة المركبة</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">حالة المركبة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الحالة" />
                               </SelectTrigger>
                             </FormControl>
@@ -977,9 +979,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="registration_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>تاريخ التسجيل</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">تاريخ التسجيل</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" />
+                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -991,9 +993,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="registration_expiry"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>انتهاء صلاحية التسجيل</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">انتهاء صلاحية التسجيل</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" />
+                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1005,9 +1007,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="next_service_due"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>تاريخ الصيانة القادمة</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">تاريخ الصيانة القادمة</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" />
+                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1019,9 +1021,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="current_location"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>الموقع الحالي</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">الموقع الحالي</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="مثال: مواقف الشركة" />
+                            <Input {...field} placeholder="مثال: مواقف الشركة" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1033,9 +1035,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="gps_tracking_device"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>جهاز تتبع GPS</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">جهاز تتبع GPS</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="رقم/نوع جهاز التتبع" />
+                            <Input {...field} placeholder="رقم/نوع جهاز التتبع" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1047,10 +1049,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="ownership_status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>حالة الملكية</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">حالة الملكية</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر حالة الملكية" />
                               </SelectTrigger>
                             </FormControl>
@@ -1072,9 +1074,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="lease_company"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>شركة التأجير</FormLabel>
+                              <FormLabel className="text-slate-700 font-medium">شركة التأجير</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="اسم شركة التأجير" />
+                                <Input {...field} placeholder="اسم شركة التأجير" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1086,9 +1088,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="monthly_lease_amount"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>القسط الشهري (د.ك)</FormLabel>
+                              <FormLabel className="text-slate-700 font-medium">القسط الشهري (د.ك)</FormLabel>
                               <FormControl>
-                                <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                                <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1100,9 +1102,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="lease_start_date"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>بداية التأجير</FormLabel>
+                              <FormLabel className="text-slate-700 font-medium">بداية التأجير</FormLabel>
                               <FormControl>
-                                <Input {...field} type="date" />
+                                <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1114,9 +1116,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           name="lease_end_date"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>نهاية التأجير</FormLabel>
+                              <FormLabel className="text-slate-700 font-medium">نهاية التأجير</FormLabel>
                               <FormControl>
-                                <Input {...field} type="date" />
+                                <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1130,9 +1132,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="warranty_start_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>بداية الضمان</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">بداية الضمان</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" />
+                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1144,9 +1146,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="warranty_end_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>نهاية الضمان</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">نهاية الضمان</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" />
+                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1157,10 +1159,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
 
               <TabsContent value="financial" className="space-y-4" dir="rtl">
-                <Card>
-                  <CardHeader className="text-right">
-                    <CardTitle className="text-right">المعلومات المالية</CardTitle>
-                    <CardDescription className="text-right">تفاصيل الشراء ومعلومات الإهلاك</CardDescription>
+                <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                  <CardHeader className="text-right bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                    <CardTitle className="text-right text-teal-700 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      المعلومات المالية
+                    </CardTitle>
+                    <CardDescription className="text-right text-teal-600/70">تفاصيل الشراء ومعلومات الإهلاك</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
                     <FormField
@@ -1168,9 +1175,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="purchase_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>تاريخ الشراء</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">تاريخ الشراء</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" />
+                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1182,9 +1189,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="purchase_cost"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>تكلفة الشراء (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">تكلفة الشراء (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1196,9 +1203,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="useful_life_years"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>العمر الإنتاجي (بالسنوات)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">العمر الإنتاجي (بالسنوات)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min="1" max="50" />
+                            <Input {...field} type="number" min="1" max="50" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1210,9 +1217,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="residual_value"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>القيمة المتبقية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">القيمة المتبقية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1224,10 +1231,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="depreciation_method"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>طريقة الإهلاك</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">طريقة الإهلاك</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الطريقة" />
                               </SelectTrigger>
                             </FormControl>
@@ -1246,7 +1253,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="cost_center_id"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>مركز التكلفة</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">مركز التكلفة</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1254,7 +1261,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                   variant="outline"
                                   role="combobox"
                                   className={cn(
-                                    "w-full justify-between text-right",
+                                    "w-full justify-between text-right bg-white/80 backdrop-blur-sm border-teal-200/50 hover:border-teal-300 transition-all",
                                     !field.value && "text-muted-foreground"
                                   )}
                                 >
@@ -1309,108 +1316,111 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                 
                 {/* Enhanced Financial Integration Status */}
                 {vehicle && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        حالة التكامل المالي
+                  <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                    <CardHeader className="bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                      <CardTitle className="flex items-center justify-between text-teal-700">
+                        <span className="flex items-center gap-2">
+                          <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          حالة التكامل المالي
+                        </span>
                         {vehicle.fixed_asset_id && (
-                          <Badge variant="secondary" className="text-xs">
-                            مربوط بسجل الأصول الثابتة
-                          </Badge>
+                          <Badge className="bg-teal-500 text-white text-xs">مربوط بسجل الأصول الثابتة</Badge>
                         )}
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-teal-600/70">
                         حالة ربط المركبة مع الأنظمة المالية الأخرى
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
                         {/* Fixed Asset Integration */}
-                        <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                        <div className="flex items-center justify-between p-3 bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-lg border border-teal-200/50 shadow-sm">
                           <div className="flex items-center space-x-3">
                             {vehicle.fixed_asset_id ? (
-                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <div className="w-3 h-3 bg-teal-500 rounded-full shadow-lg shadow-teal-500/30"></div>
                             ) : (
                               <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
                             )}
                             <div>
-                              <p className="font-medium">سجل الأصول الثابتة</p>
-                              <p className="text-sm text-muted-foreground">
-                                {vehicle.fixed_asset_id 
-                                  ? "مربوط بسجل الأصول الثابتة" 
+                              <p className="font-medium text-slate-700">سجل الأصول الثابتة</p>
+                              <p className="text-sm text-slate-500">
+                                {vehicle.fixed_asset_id
+                                  ? "مربوط بسجل الأصول الثابتة"
                                   : "غير مربوط (أضف تكلفة الشراء للربط)"}
                               </p>
                             </div>
                           </div>
                           {vehicle.fixed_asset_id && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge className="bg-teal-100 text-teal-700 border-teal-300 text-xs">
                               ID: {vehicle.fixed_asset_id.slice(-8)}
                             </Badge>
                           )}
                         </div>
-                        
+
                         {/* Journal Entry Integration */}
-                        <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                        <div className="flex items-center justify-between p-3 bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-lg border border-teal-200/50 shadow-sm">
                           <div className="flex items-center space-x-3">
                             {vehicle.journal_entry_id ? (
-                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <div className="w-3 h-3 bg-teal-500 rounded-full shadow-lg shadow-teal-500/30"></div>
                             ) : (
                               <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
                             )}
                             <div>
-                              <p className="font-medium">دفتر اليومية العام</p>
-                              <p className="text-sm text-muted-foreground">
-                                {vehicle.journal_entry_id 
-                                  ? "مسجل قيد الشراء في دفتر اليومية" 
+                              <p className="font-medium text-slate-700">دفتر اليومية العام</p>
+                              <p className="text-sm text-slate-500">
+                                {vehicle.journal_entry_id
+                                  ? "مسجل قيد الشراء في دفتر اليومية"
                                   : "لم يتم تسجيل قيد الشراء"}
                               </p>
                             </div>
                           </div>
                           {vehicle.journal_entry_id && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge className="bg-teal-100 text-teal-700 border-teal-300 text-xs">
                               Entry: {vehicle.journal_entry_id.slice(-8)}
                             </Badge>
                           )}
                         </div>
-                        
+
                         {/* Cost Center Integration */}
-                        <div className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
+                        <div className="flex items-center justify-between p-3 bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-lg border border-teal-200/50 shadow-sm">
                           <div className="flex items-center space-x-3">
                             {vehicle.cost_center_id ? (
-                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <div className="w-3 h-3 bg-teal-500 rounded-full shadow-lg shadow-teal-500/30"></div>
                             ) : (
                               <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
                             )}
                             <div>
-                              <p className="font-medium">مركز التكلفة</p>
-                              <p className="text-sm text-muted-foreground">
-                                {vehicle.cost_center_id 
-                                  ? "مخصص لمركز تكلفة" 
+                              <p className="font-medium text-slate-700">مركز التكلفة</p>
+                              <p className="text-sm text-slate-500">
+                                {vehicle.cost_center_id
+                                  ? "مخصص لمركز تكلفة"
                                   : "غير مخصص لمركز تكلفة"}
                               </p>
                             </div>
                           </div>
                           {vehicle.cost_center_id && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge className="bg-teal-100 text-teal-700 border-teal-300 text-xs">
                               Cost Center
                             </Badge>
                           )}
                         </div>
-                        
+
                         {/* Depreciation Status */}
                         {vehicle.purchase_cost && vehicle.useful_life_years && (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="font-medium text-blue-900">معلومات الإهلاك</p>
+                          <div className="p-3 bg-gradient-to-br from-teal-50 to-teal-100/50 border border-teal-200 rounded-lg shadow-sm">
+                            <p className="font-medium text-teal-900">معلومات الإهلاك</p>
                             <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
                               <div>
-                                <span className="text-blue-700">الإهلاك الشهري:</span>
-                                <span className="font-medium"> {
+                                <span className="text-teal-700">الإهلاك الشهري:</span>
+                                <span className="font-medium text-teal-900"> {
                                   ((vehicle.purchase_cost - (vehicle.salvage_value || 0)) / (vehicle.useful_life_years * 12)).toFixed(3)
                                 } د.ك</span>
                               </div>
                               <div>
-                                <span className="text-blue-700">الإهلاك السنوي:</span>
-                                <span className="font-medium"> {
+                                <span className="text-teal-700">الإهلاك السنوي:</span>
+                                <span className="font-medium text-teal-900"> {
                                   ((vehicle.purchase_cost - (vehicle.salvage_value || 0)) / vehicle.useful_life_years).toFixed(3)
                                 } د.ك</span>
                               </div>
@@ -1424,10 +1434,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
 
               <TabsContent value="operational" className="space-y-4" dir="rtl">
-                <Card>
-                  <CardHeader className="text-right">
-                    <CardTitle className="text-right">المعلومات التشغيلية</CardTitle>
-                    <CardDescription className="text-right">المسافة المقطوعة والتسعير والحالة التشغيلية</CardDescription>
+                <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                  <CardHeader className="text-right bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                    <CardTitle className="text-right text-teal-700 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      المعلومات التشغيلية
+                    </CardTitle>
+                    <CardDescription className="text-right text-teal-600/70">المسافة المقطوعة والتسعير والحالة التشغيلية</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
                     <FormField
@@ -1435,9 +1450,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="current_mileage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>المسافة المقطوعة الحالية (كم)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">المسافة المقطوعة الحالية (كم)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.1" placeholder="0" />
+                            <Input {...field} type="number" step="0.1" placeholder="0" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1449,10 +1464,10 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>الحالة</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">الحالة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الحالة" />
                               </SelectTrigger>
                             </FormControl>
@@ -1478,9 +1493,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="daily_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>التعرفة اليومية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التعرفة اليومية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1492,9 +1507,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="weekly_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>التعرفة الأسبوعية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التعرفة الأسبوعية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1506,9 +1521,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="monthly_rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>التعرفة الشهرية (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التعرفة الشهرية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1520,9 +1535,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="deposit_amount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>التأمين (د.ك)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">التأمين (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1531,10 +1546,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader className="text-right">
-                    <CardTitle className="text-right">إعدادات الحد الأدنى للأسعار</CardTitle>
-                    <CardDescription className="text-right">تحديد الحد الأدنى للأسعار لكل فترة إيجار وإنفاذها</CardDescription>
+                <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                  <CardHeader className="text-right bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                    <CardTitle className="text-right text-teal-700 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      إعدادات الحد الأدنى للأسعار
+                    </CardTitle>
+                    <CardDescription className="text-right text-teal-600/70">تحديد الحد الأدنى للأسعار لكل فترة إيجار وإنفاذها</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4" dir="rtl">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1543,9 +1563,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_daily_rate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الحد الأدنى للسعر اليومي (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر اليومي (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1557,9 +1577,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_weekly_rate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الحد الأدنى للسعر الأسبوعي (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الأسبوعي (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1571,9 +1591,9 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_monthly_rate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الحد الأدنى للسعر الشهري (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الشهري (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1587,11 +1607,11 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         name="minimum_rental_price"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الحد الأدنى العام (د.ك)</FormLabel>
+                            <FormLabel className="text-slate-700 font-medium">الحد الأدنى العام (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-slate-500">
                               يُستخدم في حالة عدم تحديد حد أدنى للفترة المحددة
                             </div>
                             <FormMessage />
@@ -1603,12 +1623,12 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         control={form.control}
                         name="enforce_minimum_price"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border border-teal-200/50 p-4 bg-gradient-to-br from-teal-50/50 to-teal-100/30 shadow-sm">
                             <div className="space-y-0.5">
-                              <FormLabel className="text-base">
+                              <FormLabel className="text-base text-slate-700">
                                 فرض الحد الأدنى للأسعار
                               </FormLabel>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-sm text-slate-500">
                                 منع إنشاء عقود بسعر أقل من الحد الأدنى المحدد
                               </div>
                             </div>
@@ -1627,10 +1647,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
 
               <TabsContent value="additional" className="space-y-4" dir="rtl">
-                <Card>
-                  <CardHeader className="text-right">
-                    <CardTitle className="text-right">معلومات إضافية</CardTitle>
-                    <CardDescription className="text-right">ملاحظات وتفاصيل أخرى</CardDescription>
+                <Card className="border-teal-200/50 shadow-lg shadow-teal-500/10">
+                  <CardHeader className="text-right bg-gradient-to-br from-teal-50 to-teal-100/30 border-b border-teal-200/50">
+                    <CardTitle className="text-right text-teal-700 flex items-center gap-2">
+                      <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      معلومات إضافية
+                    </CardTitle>
+                    <CardDescription className="text-right text-teal-600/70">ملاحظات وتفاصيل أخرى</CardDescription>
                   </CardHeader>
                   <CardContent dir="rtl">
                     <FormField
@@ -1638,12 +1663,13 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       name="notes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>ملاحظات</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">ملاحظات</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              {...field} 
+                            <Textarea
+                              {...field}
                               placeholder="ملاحظات إضافية حول المركبة..."
                               rows={4}
+                              className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                             />
                           </FormControl>
                           <FormMessage />
@@ -1655,25 +1681,28 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-between items-center" dir="rtl">
+            <div className="flex justify-between items-center pt-4 border-t border-teal-200/50" dir="rtl">
               {/* Dummy data button - only show when adding new vehicle */}
               {!vehicle && (
-                <Button 
-                  type="button" 
-                  variant="secondary" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={fillDummyData}
                   disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-teal-200/50 text-slate-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-all"
                 >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
                   تعبئة بيانات تجريبية
                 </Button>
               )}
-              
+
               <div className="flex space-x-2 rtl:space-x-reverse">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
-                  className="min-w-[120px]"
+                  className="min-w-[120px] bg-gradient-to-l from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isSubmitting || createVehicle.isPending || updateVehicle.isPending ? (
                     <div className="flex items-center gap-2">
@@ -1681,14 +1710,20 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                       جاري الحفظ...
                     </div>
                   ) : (
-                    vehicle ? "حفظ التغييرات" : "حفظ المركبة"
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {vehicle ? "حفظ التغييرات" : "حفظ المركبة"}
+                    </div>
                   )}
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => onOpenChange(false)}
                   disabled={isSubmitting || createVehicle.isPending || updateVehicle.isPending}
+                  className="border-teal-200/50 text-slate-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-all"
                 >
                   إلغاء
                 </Button>

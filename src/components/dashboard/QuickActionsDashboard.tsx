@@ -325,24 +325,24 @@ const QuickActionsDashboard: React.FC = () => {
               </motion.div>
               
               {/* عميل جديد */}
-              <motion.div 
+              <motion.div
                 className="group relative"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
                 whileHover={{ y: -4 }}
               >
-                <button 
+                <button
                   onClick={() => handleActionClick(quickActions[0])}
-                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-red-50 to-rose-100 hover:from-red-400 hover:to-rose-500 border border-rose-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
+                  className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-500 hover:to-blue-600 border border-blue-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
-                      <Users className="w-7 h-7 text-rose-600 group-hover:text-rose-700" />
+                      <Users className="w-7 h-7 text-blue-600 group-hover:text-blue-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">عميل جديد</span>
                   </div>
-                  <div className="absolute inset-0 rounded-2xl ring-2 ring-rose-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
+                  <div className="absolute inset-0 rounded-2xl ring-2 ring-blue-500 ring-opacity-0 group-hover:ring-opacity-100 transition-all duration-300"></div>
                 </button>
               </motion.div>
               

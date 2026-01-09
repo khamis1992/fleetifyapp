@@ -217,7 +217,7 @@ export const MobileContractDetails: React.FC = () => {
         <div className="flex items-center justify-center" dir="rtl" style={{ minHeight: 'calc(100vh - 140px)' }}>
           <div className="text-center">
             <div className="inline-block w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm text-slate-500">جاري التحميل...</p>
+            <p className="text-sm text-teal-600">جاري التحميل...</p>
           </div>
         </div>
       </MobileDetailLayout>

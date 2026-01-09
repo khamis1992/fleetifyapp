@@ -1,7 +1,7 @@
 /**
  * Simple Contract Wizard - 3 Steps Version
- * Redesigned to match Dashboard color scheme (rose-500 theme)
- * 
+ * Redesigned to match Dashboard color scheme (teal-500 theme)
+ *
  * Steps:
  * 1. العميل والمركبة (Customer & Vehicle)
  * 2. التفاصيل والتسعير (Details & Pricing)
@@ -55,7 +55,6 @@ import { EnhancedCustomerDialog } from '@/components/customers/EnhancedCustomerF
 import { PricingSuggestions } from '@/components/contracts/PricingSuggestions';
 import { AdvancedOptions } from '@/components/ui/collapsible-section';
 import { FormField } from '@/components/ui/form-field';
-import { EmployeeAssistant } from '@/components/employee-assistant';
 
 // === Schema ===
 const contractSchema = z.object({
@@ -119,8 +118,8 @@ const StepIndicator: React.FC<{
       <div className="absolute top-5 left-0 right-0 h-1 bg-neutral-200 rounded-full mx-8" />
       
       {/* Progress bar fill */}
-      <motion.div 
-        className="absolute top-5 right-0 h-1 bg-gradient-to-l from-rose-500 to-orange-400 rounded-full mx-8"
+      <motion.div
+        className="absolute top-5 right-0 h-1 bg-gradient-to-l from-teal-500 to-teal-600 rounded-full mx-8"
         initial={{ width: '0%' }}
         animate={{ width: `${((currentStep) / (totalSteps - 1)) * 100}%` }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -137,8 +136,8 @@ const StepIndicator: React.FC<{
               <motion.div
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all',
-                  isCompleted && 'bg-gradient-to-br from-rose-500 to-orange-500 border-rose-500 text-white shadow-lg shadow-rose-500/30',
-                  isCurrent && 'bg-white border-rose-500 text-coral-600 shadow-lg shadow-rose-500/20',
+                  isCompleted && 'bg-gradient-to-br from-teal-500 to-teal-600 border-teal-500 text-white shadow-lg shadow-teal-500/30',
+                  isCurrent && 'bg-white border-teal-500 text-teal-600 shadow-lg shadow-teal-500/20',
                   !isCompleted && !isCurrent && 'bg-neutral-100 border-neutral-300 text-neutral-400'
                 )}
                 animate={{ scale: isCurrent ? 1.1 : 1 }}
@@ -148,7 +147,7 @@ const StepIndicator: React.FC<{
               </motion.div>
               <span className={cn(
                 'mt-2 text-xs font-medium',
-                isCurrent && 'text-coral-600',
+                isCurrent && 'text-teal-600',
                 isCompleted && 'text-neutral-700',
                 !isCompleted && !isCurrent && 'text-neutral-400'
               )}>
@@ -198,9 +197,9 @@ const Step1CustomerVehicle: React.FC<{
     >
       {/* Customer Selection Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-        <div className="bg-gradient-to-l from-rose-50 to-orange-50 px-5 py-4 border-b border-neutral-100">
+        <div className="bg-gradient-to-l from-teal-50 to-teal-100 px-5 py-4 border-b border-neutral-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
               <User className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -219,13 +218,13 @@ const Step1CustomerVehicle: React.FC<{
                 placeholder="ابحث بالاسم أو رقم الهاتف..."
                 value={customerSearch}
                 onChange={(e) => onCustomerSearchChange(e.target.value)}
-                className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-coral-400 focus:ring-coral-400/20"
+                className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-teal-400 focus:ring-teal-400/20"
               />
             </div>
             <Button
               type="button"
               onClick={() => setShowQuickCustomer(true)}
-              className="h-12 gap-2 bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 rounded-xl shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all"
+              className="h-12 gap-2 bg-gradient-to-l from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-xl shadow-lg shadow-teal-500/30 hover:shadow-teal-500/40 transition-all"
             >
               <Plus className="h-4 w-4" />
               عميل جديد
@@ -239,15 +238,15 @@ const Step1CustomerVehicle: React.FC<{
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="p-4 bg-gradient-to-l from-green-50 to-emerald-50 border border-green-200 rounded-xl flex items-center justify-between"
+                className="p-4 bg-gradient-to-l from-teal-50 to-teal-100 border border-teal-200 rounded-xl flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-green-600" />
+                  <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
+                    <User className="h-6 w-6 text-teal-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-green-900">{selectedCustomer.full_name}</p>
-                    <p className="text-sm text-green-700">{selectedCustomer.phone}</p>
+                    <p className="font-bold text-teal-900">{selectedCustomer.full_name}</p>
+                    <p className="text-sm text-teal-700">{selectedCustomer.phone}</p>
                   </div>
                 </div>
                 <Button
@@ -255,7 +254,7 @@ const Step1CustomerVehicle: React.FC<{
                   variant="ghost"
                   size="sm"
                   onClick={() => onUpdate({ customer_id: '' })}
-                  className="text-green-700 hover:text-green-900 hover:bg-green-100"
+                  className="text-teal-700 hover:text-teal-900 hover:bg-teal-100"
                 >
                   تغيير
                 </Button>
@@ -268,7 +267,7 @@ const Step1CustomerVehicle: React.FC<{
               >
                 {isLoadingCustomers ? (
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-rose-500 mb-2" />
+                    <Loader2 className="h-8 w-8 animate-spin text-teal-500 mb-2" />
                     <p className="text-neutral-500 text-sm">جاري تحميل العملاء...</p>
                   </div>
                 ) : filteredCustomers.length === 0 ? (
@@ -284,17 +283,17 @@ const Step1CustomerVehicle: React.FC<{
                       animate={{ opacity: 1, x: 0, transition: { delay: index * 0.05 } }}
                       type="button"
                       onClick={() => onUpdate({ customer_id: customer.id })}
-                      className="w-full p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-coral-300 hover:bg-rose-50/50 transition-all group"
+                      className="w-full p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-teal-300 hover:bg-teal-50/50 transition-all group"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-rose-100 flex items-center justify-center transition-colors">
-                          <User className="h-5 w-5 text-neutral-500 group-hover:text-coral-600" />
+                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-teal-100 flex items-center justify-center transition-colors">
+                          <User className="h-5 w-5 text-neutral-500 group-hover:text-teal-600" />
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-neutral-900">{customer.full_name}</p>
                           <p className="text-sm text-neutral-500">{customer.phone}</p>
                         </div>
-                        <ChevronLeft className="h-5 w-5 text-neutral-300 group-hover:text-rose-500 transition-colors" />
+                        <ChevronLeft className="h-5 w-5 text-neutral-300 group-hover:text-teal-500 transition-colors" />
                       </div>
                     </motion.button>
                   ))
@@ -307,10 +306,10 @@ const Step1CustomerVehicle: React.FC<{
 
       {/* Vehicle Selection Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-        <div className="bg-gradient-to-l from-blue-50 to-indigo-50 px-5 py-4 border-b border-neutral-100">
+        <div className="bg-gradient-to-l from-teal-50 to-teal-100 px-5 py-4 border-b border-neutral-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
                 <Car className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -318,7 +317,7 @@ const Step1CustomerVehicle: React.FC<{
                 <p className="text-sm text-neutral-500">اختر مركبة من الأسطول المتاح</p>
               </div>
             </div>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-0">
+            <Badge variant="secondary" className="bg-teal-100 text-teal-700 border-0">
               اختياري
             </Badge>
           </div>
@@ -332,7 +331,7 @@ const Step1CustomerVehicle: React.FC<{
               placeholder="ابحث برقم اللوحة أو الموديل..."
               value={vehicleSearch}
               onChange={(e) => setVehicleSearch(e.target.value)}
-              className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-blue-400 focus:ring-blue-400/20"
+              className="h-12 pr-11 rounded-xl border-neutral-200 focus:border-teal-400 focus:ring-teal-400/20"
             />
           </div>
 
@@ -343,17 +342,17 @@ const Step1CustomerVehicle: React.FC<{
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="p-4 bg-gradient-to-l from-blue-50 to-indigo-50 border border-blue-200 rounded-xl flex items-center justify-between"
+                className="p-4 bg-gradient-to-l from-teal-50 to-teal-100 border border-teal-200 rounded-xl flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <Car className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center">
+                    <Car className="h-6 w-6 text-teal-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-blue-900">
+                    <p className="font-bold text-teal-900">
                       {selectedVehicle.make} {selectedVehicle.model} ({selectedVehicle.year})
                     </p>
-                    <p className="text-sm text-blue-700">{selectedVehicle.plate_number}</p>
+                    <p className="text-sm text-teal-700">{selectedVehicle.plate_number}</p>
                   </div>
                 </div>
                 <Button
@@ -361,7 +360,7 @@ const Step1CustomerVehicle: React.FC<{
                   variant="ghost"
                   size="sm"
                   onClick={() => onUpdate({ vehicle_id: '' })}
-                  className="text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+                  className="text-teal-700 hover:text-teal-900 hover:bg-teal-100"
                 >
                   تغيير
                 </Button>
@@ -374,7 +373,7 @@ const Step1CustomerVehicle: React.FC<{
               >
                 {isLoadingVehicles ? (
                   <div className="col-span-2 flex flex-col items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                    <Loader2 className="h-8 w-8 animate-spin text-teal-500 mb-2" />
                     <p className="text-neutral-500 text-sm">جاري تحميل المركبات...</p>
                   </div>
                 ) : availableVehicles.length === 0 ? (
@@ -390,11 +389,11 @@ const Step1CustomerVehicle: React.FC<{
                       animate={{ opacity: 1, scale: 1, transition: { delay: index * 0.03 } }}
                       type="button"
                       onClick={() => onUpdate({ vehicle_id: vehicle.id })}
-                      className="p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                      className="p-4 text-right bg-neutral-50 border border-neutral-200 rounded-xl hover:border-teal-300 hover:bg-teal-50/50 transition-all group"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
-                          <Car className="h-5 w-5 text-neutral-500 group-hover:text-blue-600" />
+                        <div className="w-10 h-10 rounded-lg bg-neutral-200 group-hover:bg-teal-100 flex items-center justify-center transition-colors">
+                          <Car className="h-5 w-5 text-neutral-500 group-hover:text-teal-600" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-neutral-900 text-sm truncate">
@@ -404,7 +403,7 @@ const Step1CustomerVehicle: React.FC<{
                         </div>
                       </div>
                       {vehicle.daily_rate && (
-                        <Badge className="mt-2 bg-gradient-to-l from-rose-100 to-orange-100 text-coral-700 border-0">
+                        <Badge className="mt-2 bg-gradient-to-l from-teal-100 to-teal-200 text-teal-700 border-0">
                           {vehicle.daily_rate} ر.ق/يوم
                         </Badge>
                       )}
@@ -489,7 +488,7 @@ const Step2DetailsPricing: React.FC<{
       {/* Contract Type Selection */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-rose-500" />
+          <FileText className="h-5 w-5 text-teal-500" />
           نوع العقد
         </h3>
         <div className="grid grid-cols-5 gap-2">
@@ -501,14 +500,14 @@ const Step2DetailsPricing: React.FC<{
               className={cn(
                 'p-3 rounded-xl border-2 transition-all text-center',
                 formData.contract_type === type.value
-                  ? 'border-rose-500 bg-gradient-to-br from-rose-50 to-orange-50 shadow-lg shadow-rose-500/20'
-                  : 'border-neutral-200 bg-white hover:border-rose-200 hover:bg-rose-50/30'
+                  ? 'border-teal-500 bg-gradient-to-br from-teal-50 to-teal-100 shadow-lg shadow-teal-500/20'
+                  : 'border-neutral-200 bg-white hover:border-teal-200 hover:bg-teal-50/30'
               )}
             >
               <div className="text-2xl mb-1">{type.icon}</div>
               <div className={cn(
                 'text-sm font-medium',
-                formData.contract_type === type.value ? 'text-coral-700' : 'text-neutral-600'
+                formData.contract_type === type.value ? 'text-teal-700' : 'text-neutral-600'
               )}>
                 {type.label}
               </div>
@@ -520,7 +519,7 @@ const Step2DetailsPricing: React.FC<{
       {/* Dates Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-rose-500" />
+          <Calendar className="h-5 w-5 text-teal-500" />
           مدة العقد
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -530,7 +529,7 @@ const Step2DetailsPricing: React.FC<{
               type="date"
               value={formData.start_date || ''}
               onChange={(e) => onUpdate({ start_date: e.target.value })}
-              className="h-12 rounded-xl border-neutral-200 focus:border-coral-400"
+              className="h-12 rounded-xl border-neutral-200 focus:border-teal-400"
             />
           </div>
           <div>
@@ -540,7 +539,7 @@ const Step2DetailsPricing: React.FC<{
               value={formData.end_date || ''}
               onChange={(e) => onUpdate({ end_date: e.target.value })}
               min={formData.start_date}
-              className="h-12 rounded-xl border-neutral-200 focus:border-coral-400"
+              className="h-12 rounded-xl border-neutral-200 focus:border-teal-400"
             />
           </div>
         </div>
@@ -552,14 +551,14 @@ const Step2DetailsPricing: React.FC<{
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 p-4 bg-gradient-to-l from-rose-50 to-orange-50 rounded-xl flex items-center gap-3"
+              className="mt-4 p-4 bg-gradient-to-l from-teal-50 to-teal-100 rounded-xl flex items-center gap-3"
             >
               <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow">
-                <Clock className="h-6 w-6 text-rose-500" />
+                <Clock className="h-6 w-6 text-teal-500" />
               </div>
               <div>
                 <p className="text-neutral-600">مدة العقد</p>
-                <p className="text-2xl font-bold text-coral-600">{formData.rental_days} <span className="text-base font-normal">يوم</span></p>
+                <p className="text-2xl font-bold text-teal-600">{formData.rental_days} <span className="text-base font-normal">يوم</span></p>
               </div>
             </motion.div>
           )}
@@ -581,10 +580,10 @@ const Step2DetailsPricing: React.FC<{
       {/* Monthly Rent & Contract Amount Card */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm">
         <h3 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-rose-500" />
+          <DollarSign className="h-5 w-5 text-teal-500" />
           الإيجار الشهري
         </h3>
-        
+
         <div className="space-y-4">
           {/* Monthly Amount Input */}
           <div>
@@ -599,12 +598,12 @@ const Step2DetailsPricing: React.FC<{
                   // حساب عدد الأشهر من عدد الأيام
                   const months = formData.rental_days ? Math.ceil(formData.rental_days / 30) : 1;
                   const totalAmount = monthlyAmount * months;
-                  onUpdate({ 
+                  onUpdate({
                     monthly_amount: monthlyAmount,
-                    contract_amount: totalAmount 
+                    contract_amount: totalAmount
                   });
                 }}
-                className="h-14 pr-12 text-xl font-bold rounded-xl border-neutral-200 focus:border-coral-400"
+                className="h-14 pr-12 text-xl font-bold rounded-xl border-neutral-200 focus:border-teal-400"
                 placeholder="أدخل الإيجار الشهري"
               />
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">ر.ق/شهر</span>
@@ -616,12 +615,12 @@ const Step2DetailsPricing: React.FC<{
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-gradient-to-l from-rose-50 to-orange-50 rounded-xl"
+              className="p-4 bg-gradient-to-l from-teal-50 to-teal-100 rounded-xl"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow">
-                    <Sparkles className="h-5 w-5 text-rose-500" />
+                    <Sparkles className="h-5 w-5 text-teal-500" />
                   </div>
                   <div>
                     <p className="text-sm text-neutral-600">إجمالي قيمة العقد</p>
@@ -631,7 +630,7 @@ const Step2DetailsPricing: React.FC<{
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="text-2xl font-bold text-coral-600">{formatCurrency(formData.contract_amount || 0)}</p>
+                  <p className="text-2xl font-bold text-teal-600">{formatCurrency(formData.contract_amount || 0)}</p>
                   <p className="text-xs text-neutral-500">
                     ≈ {formatCurrency((formData.contract_amount || 0) / formData.rental_days)} / يوم
                   </p>
@@ -647,7 +646,7 @@ const Step2DetailsPricing: React.FC<{
               onChange={(e) => onUpdate({ notes: e.target.value })}
               placeholder="أي ملاحظات إضافية..."
               rows={3}
-              className="rounded-xl border-neutral-200 focus:border-coral-400"
+              className="rounded-xl border-neutral-200 focus:border-teal-400"
             />
           </div>
         </div>
@@ -673,7 +672,7 @@ const Step2DetailsPricing: React.FC<{
               id="late_fines_enabled"
               checked={formData.late_fines_enabled || false}
               onChange={(e) => onUpdate({ late_fines_enabled: e.target.checked })}
-              className="h-5 w-5 rounded text-rose-500 focus:ring-coral-400"
+              className="h-5 w-5 rounded text-teal-500 focus:ring-teal-400"
             />
             <Label htmlFor="late_fines_enabled" className="cursor-pointer">تفعيل غرامات التأخير</Label>
           </div>
@@ -740,16 +739,16 @@ const Step3Review: React.FC<{
       className="space-y-5"
     >
       {/* Success Header */}
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="text-center py-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200"
+        className="text-center py-6 bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl border border-teal-200"
       >
-        <motion.div 
+        <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: 'spring' }}
-          className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full mb-4 shadow-lg shadow-green-500/40"
+          className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full mb-4 shadow-lg shadow-teal-500/40"
         >
           <FileText className="h-10 w-10 text-white" />
         </motion.div>
@@ -758,7 +757,7 @@ const Step3Review: React.FC<{
       </motion.div>
 
       {/* Customer Info Card */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.1 }}
@@ -766,12 +765,12 @@ const Step3Review: React.FC<{
       >
         <div className="flex items-center justify-between">
           <span className="text-sm text-neutral-500">العميل</span>
-          <Badge className="bg-rose-100 text-coral-700 border-0">إلزامي</Badge>
+          <Badge className="bg-teal-100 text-teal-700 border-0">إلزامي</Badge>
         </div>
         {customer ? (
           <div className="flex items-center gap-4 mt-3">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-100 to-orange-100 flex items-center justify-center">
-              <User className="h-7 w-7 text-coral-600" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+              <User className="h-7 w-7 text-teal-600" />
             </div>
             <div>
               <p className="font-bold text-lg text-neutral-900">{customer.full_name}</p>
@@ -788,7 +787,7 @@ const Step3Review: React.FC<{
 
       {/* Vehicle Info Card */}
       {vehicle && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.15 }}
@@ -796,8 +795,8 @@ const Step3Review: React.FC<{
         >
           <span className="text-sm text-neutral-500">المركبة</span>
           <div className="flex items-center gap-4 mt-3">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-              <Car className="h-7 w-7 text-blue-600" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+              <Car className="h-7 w-7 text-teal-600" />
             </div>
             <div>
               <p className="font-bold text-lg text-neutral-900">{vehicle.make} {vehicle.model}</p>
@@ -834,14 +833,14 @@ const Step3Review: React.FC<{
           </div>
           <div className="flex justify-between items-center py-2 border-t border-neutral-100">
             <span className="text-neutral-500">المدة</span>
-            <Badge className="bg-rose-100 text-coral-700 border-0">
+            <Badge className="bg-teal-100 text-teal-700 border-0">
               {formData.rental_days} يوم
             </Badge>
           </div>
         </div>
-        
+
         {/* Monthly & Total Amount */}
-        <div className="bg-gradient-to-l from-rose-500 to-orange-500 p-5 space-y-3">
+        <div className="bg-gradient-to-l from-teal-500 to-teal-600 p-5 space-y-3">
           {formData.monthly_amount && (
             <div className="flex justify-between items-center text-white/90">
               <span className="font-medium">الإيجار الشهري</span>
@@ -1153,7 +1152,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between text-xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 إنشاء عقد جديد
@@ -1166,9 +1165,9 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
                   onClick={() => setIsAssistantOpen(!isAssistantOpen)}
                   className={cn(
                     "gap-2 rounded-xl transition-all",
-                    isAssistantOpen 
-                      ? "bg-gradient-to-l from-rose-500 to-orange-500 text-white shadow-lg shadow-rose-500/30" 
-                      : "border-rose-200 text-coral-600 hover:bg-rose-50"
+                    isAssistantOpen
+                      ? "bg-gradient-to-l from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30"
+                      : "border-teal-200 text-teal-600 hover:bg-teal-50"
                   )}
                 >
                   <Sparkles className="h-4 w-4" />
@@ -1199,29 +1198,6 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
               {renderStep()}
             </AnimatePresence>
           </div>
-          
-          {/* Employee Assistant Panel */}
-          <AnimatePresence>
-            {isAssistantOpen && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: "50%", opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="border-r border-neutral-200 overflow-y-auto bg-white"
-              >
-                <div className="p-4">
-                  <EmployeeAssistant
-                    workflowType="new_contract"
-                    data={assistantData}
-                    onComplete={() => {
-                      // يمكن إضافة منطق إضافي هنا
-                    }}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {/* Navigation Footer */}
@@ -1240,7 +1216,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             <Button
               onClick={handleSubmit}
               disabled={!canProceed() || isSubmitting}
-              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all"
+              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/30 hover:shadow-teal-500/40 transition-all"
             >
               {isSubmitting ? (
                 <>
@@ -1258,7 +1234,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             <Button
               onClick={handleNext}
               disabled={!canProceed()}
-              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all disabled:opacity-50 disabled:shadow-none"
+              className="gap-2 h-12 px-8 rounded-xl bg-gradient-to-l from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/30 hover:shadow-teal-500/40 transition-all disabled:opacity-50 disabled:shadow-none"
             >
               التالي
               <ChevronLeft className="h-5 w-5" />

@@ -230,8 +230,8 @@ export const VehicleSidePanel: React.FC<VehicleSidePanelProps> = ({
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-neutral-500 text-sm">جاري التحميل...</p>
+                  <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-teal-600 text-sm">جاري التحميل...</p>
                 </div>
               </div>
             ) : !data?.vehicle ? (

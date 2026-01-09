@@ -806,7 +806,7 @@ export default function CustomerCRMRedesigned() {
                 {/* Print Report */}
                 <Button
                   onClick={handlePrintLateReport}
-                  className="rounded-xl bg-rose-500 hover:bg-rose-600 gap-2"
+                  className="rounded-xl bg-teal-500 hover:bg-teal-600 gap-2"
                 >
                   <Printer size={18} />
                   <span className="hidden sm:inline">تقرير المتأخرين</span>
