@@ -5,8 +5,12 @@ import { MobileContracts } from './MobileContracts';
 import MobileCars from './MobileCars';
 import MobileOverdue from './MobileOverdue';
 
-export const MobileApp: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<'home' | 'contracts' | 'cars' | 'overdue'>('home');
+interface MobileAppProps {
+  initialTab?: 'home' | 'contracts' | 'cars' | 'overdue';
+}
+
+export const MobileApp: React.FC<MobileAppProps> = ({ initialTab = 'home' }) => {
+  const [currentTab, setCurrentTab] = useState<'home' | 'contracts' | 'cars' | 'overdue'>(initialTab);
 
   const renderContent = () => {
     switch (currentTab) {

@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { MobileDetailLayout } from '@/components/mobile/MobileDetailLayout';
 
 interface Payment {
   id: string;
@@ -96,6 +97,14 @@ export const MobileContractDetails: React.FC = () => {
       }
 
       // Fetch contract with customer details
+      // Check if contractId is a contract number (starts with 'c' and not a UUID format)
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 hex chars)
+      // Force HMR refresh
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId);
+      const isContractNumber = !isUUID && contractId.toLowerCase().startsWith('c');
+
+      console.log('[MobileContractDetails] Fetching contract:', { contractId, isUUID, isContractNumber });
+
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -119,18 +128,21 @@ export const MobileContractDetails: React.FC = () => {
             email
           )
         `)
-        .eq('id', contractId)
+        .eq(isContractNumber ? 'contract_number' : 'id', contractId)
         .eq('company_id', companyId)
         .single();
 
+      console.log('[MobileContractDetails] Contract query result:', { data, error, found: !!data });
+
       if (error) throw error;
 
+      const actualContractId = data.id;
       setContract({
         ...data,
         customer: data.customers || { first_name: '', last_name: '', phone: null, email: null },
       });
 
-      // Fetch payments for this contract
+      // Fetch payments for this contract using the actual contract ID (UUID)
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select(`
@@ -142,9 +154,17 @@ export const MobileContractDetails: React.FC = () => {
           reference_number,
           notes
         `)
-        .eq('contract_id', contractId)
+        .eq('contract_id', actualContractId)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false });
+
+      console.log('[MobileContractDetails] Payments query result:', {
+        contractId,
+        actualContractId,
+        paymentsCount: paymentsData?.length || 0,
+        paymentsError,
+        payments: paymentsData
+      });
 
       if (!paymentsError && paymentsData) {
         setPayments(paymentsData);
@@ -193,38 +213,39 @@ export const MobileContractDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center" dir="rtl">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-sm text-slate-500">جاري التحميل...</p>
+      <MobileDetailLayout currentTab="contracts">
+        <div className="flex items-center justify-center" dir="rtl" style={{ minHeight: 'calc(100vh - 140px)' }}>
+          <div className="text-center">
+            <div className="inline-block w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-sm text-slate-500">جاري التحميل...</p>
+          </div>
         </div>
-      </div>
+      </MobileDetailLayout>
     );
   }
 
   if (!contract) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center p-6" dir="rtl">
-        <div className="text-center">
-          <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">العقد غير موجود</h3>
-          <p className="text-sm text-slate-500 mb-6">لم يتم العثور على العقد المطلوب</p>
-          <button
-            onClick={() => navigate('/mobile/home')}
-            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold"
-          >
-            العودة للرئيسية
-          </button>
+      <MobileDetailLayout currentTab="contracts">
+        <div className="flex items-center justify-center p-6" dir="rtl" style={{ minHeight: 'calc(100vh - 140px)' }}>
+          <div className="text-center">
+            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">العقد غير موجود</h3>
+            <p className="text-sm text-slate-500 mb-6">لم يتم العثور على العقد المطلوب</p>
+            <button
+              onClick={() => navigate('/mobile/home')}
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold"
+            >
+              العودة للرئيسية
+            </button>
+          </div>
         </div>
-      </div>
+      </MobileDetailLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl" style={{
-      paddingTop: 'env(safe-area-inset-top)',
-      paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
-    }}>
+    <MobileDetailLayout currentTab="contracts">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
         <div className="flex items-center gap-3 p-4">
@@ -499,7 +520,7 @@ export const MobileContractDetails: React.FC = () => {
           </AnimatePresence>
         </motion.div>
       </div>
-    </div>
+    </MobileDetailLayout>
   );
 };
 

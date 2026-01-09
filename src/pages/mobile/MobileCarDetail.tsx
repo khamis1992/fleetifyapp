@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { MobileDetailLayout } from '@/components/mobile/MobileDetailLayout';
 
 interface Vehicle {
   id: string;
@@ -193,35 +194,39 @@ export const MobileCarDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-slate-600">جاري تحميل بيانات المركبة...</p>
+      <MobileDetailLayout currentTab="cars">
+        <div className="flex items-center justify-center p-6" style={{ minHeight: 'calc(100vh - 140px)' }}>
+          <div className="text-center">
+            <div className="inline-block w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-slate-600">جاري تحميل بيانات المركبة...</p>
+          </div>
         </div>
-      </div>
+      </MobileDetailLayout>
     );
   }
 
   if (error || !vehicle) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/30 flex items-center justify-center p-6" dir="rtl">
-        <div className="text-center max-w-md">
-          <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" strokeWidth={1.5} />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">حدث خطأ</h3>
-          <p className="text-slate-500 mb-6">{error || 'لم يتم العثور على المركبة'}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors"
-          >
-            العودة
-          </button>
+      <MobileDetailLayout currentTab="cars">
+        <div className="flex items-center justify-center p-6" dir="rtl" style={{ minHeight: 'calc(100vh - 140px)' }}>
+          <div className="text-center max-w-md">
+            <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" strokeWidth={1.5} />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">حدث خطأ</h3>
+            <p className="text-slate-500 mb-6">{error || 'لم يتم العثور على المركبة'}</p>
+            <button
+              onClick={() => navigate(-1)}
+              className="px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors"
+            >
+              العودة
+            </button>
+          </div>
         </div>
-      </div>
+      </MobileDetailLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 pb-8" dir="rtl">
+    <MobileDetailLayout currentTab="cars">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 px-4 py-4">
         <div className="flex items-center gap-4">
@@ -489,7 +494,7 @@ export const MobileCarDetail: React.FC = () => {
           </motion.div>
         )}
       </div>
-    </div>
+    </MobileDetailLayout>
   );
 };
 

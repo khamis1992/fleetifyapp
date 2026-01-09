@@ -93,7 +93,7 @@ const MobileOverdue: React.FC = () => {
 
       console.log('[MobileOverdue] Using company_id:', companyId);
 
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('contracts')
         .select(`
           id,
@@ -110,15 +110,21 @@ const MobileOverdue: React.FC = () => {
             last_name,
             phone
           )
-        `)
+        `, { count: 'exact' })
         .eq('company_id', companyId)
-        .gt('days_overdue', 0)
-        .order('days_overdue', { ascending: false });
+        .eq('payment_status', 'unpaid')
+        .order('days_overdue', { ascending: false, nullsFirst: false });
+
+      console.log('[MobileOverdue] Query result:', {
+        count,
+        dataLength: data?.length,
+        error,
+        firstRecord: data?.[0]
+      });
 
       if (error) throw error;
 
       const formattedData: OverdueContract[] = (data || [])
-        .filter((c: any) => c.days_overdue > 0)
         .map((c: any) => ({
           id: c.id,
           contract_id: c.id,
@@ -145,11 +151,14 @@ const MobileOverdue: React.FC = () => {
     let filtered = [...contracts];
 
     if (activeFilter === 'critical') {
-      filtered = filtered.filter(c => c.days_overdue > 30);
+      filtered = filtered.filter(c => (c.days_overdue || 0) > 30);
     } else if (activeFilter === 'moderate') {
-      filtered = filtered.filter(c => c.days_overdue >= 15 && c.days_overdue <= 30);
+      filtered = filtered.filter(c => {
+        const days = c.days_overdue || 0;
+        return days >= 15 && days <= 30;
+      });
     } else if (activeFilter === 'minor') {
-      filtered = filtered.filter(c => c.days_overdue < 15);
+      filtered = filtered.filter(c => (c.days_overdue || 0) < 15);
     }
 
     setFilteredContracts(filtered);
@@ -198,13 +207,15 @@ const MobileOverdue: React.FC = () => {
     }
   };
 
-  const getSeverityColor = (days: number) => {
+  const getSeverityColor = (days: number | null) => {
+    if (!days) return 'bg-slate-100 text-slate-600';
     if (days > 30) return 'bg-red-100 text-red-600';
     if (days >= 15) return 'bg-amber-100 text-amber-600';
     return 'bg-yellow-100 text-yellow-600';
   };
 
-  const getSeverityLabel = (days: number) => {
+  const getSeverityLabel = (days: number | null) => {
+    if (!days) return 'غير محسوب';
     if (days > 30) return 'خطير';
     if (days >= 15) return 'متوسط';
     return 'بسيط';
@@ -324,7 +335,7 @@ const MobileOverdue: React.FC = () => {
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-medium', getSeverityColor(contract.days_overdue))}>
-                        {getSeverityLabel(contract.days_overdue)} - {contract.days_overdue} يوم
+                        {getSeverityLabel(contract.days_overdue)} - {contract.days_overdue ?? 0} يوم
                       </span>
                     </div>
                   </div>

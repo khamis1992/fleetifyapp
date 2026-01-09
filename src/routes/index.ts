@@ -32,8 +32,12 @@ const MobileLogin = lazy(() => import('@/pages/mobile/MobileLogin'));
 import { MobileApp } from '@/pages/mobile/MobileApp';
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
 const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
-import { MobileOverduePage } from '@/pages/mobile/MobileOverduePage';
 import { MobileCarDetail } from '@/pages/mobile/MobileCarDetail';
+
+// Wrapper components for each tab
+const MobileAppCars: React.FC = () => React.createElement(MobileApp, { initialTab: 'cars' });
+const MobileAppContracts: React.FC = () => React.createElement(MobileApp, { initialTab: 'contracts' });
+const MobileAppOverdue: React.FC = () => React.createElement(MobileApp, { initialTab: 'overdue' });
 
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -329,6 +333,39 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
   },
   {
+    path: '/mobile/cars',
+    component: MobileAppCars,
+    lazy: false,
+    exact: true,
+    title: 'Mobile Cars',
+    description: 'Mobile cars list',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/contracts',
+    component: MobileAppContracts,
+    lazy: false,
+    exact: true,
+    title: 'Mobile Contracts',
+    description: 'Mobile contracts list',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/overdue',
+    component: MobileAppOverdue,
+    lazy: false,
+    exact: true,
+    title: 'Mobile Overdue',
+    description: 'Mobile overdue contracts',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
     path: '/mobile/contracts/new',
     component: MobileContractWizard,
     lazy: true,
@@ -357,17 +394,6 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'Mobile Vehicle Details',
     description: 'Mobile vehicle details',
-    group: 'mobile',
-    priority: 2,
-    protected: true,
-  },
-  {
-    path: '/mobile/overdue',
-    component: MobileOverduePage,
-    lazy: false,
-    exact: true,
-    title: 'Mobile Overdue',
-    description: 'Mobile overdue contracts',
     group: 'mobile',
     priority: 2,
     protected: true,
