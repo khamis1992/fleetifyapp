@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { 
-  FileWarning, 
-  DollarSign, 
-  CheckCircle, 
+import { useQuery } from '@tanstack/react-query';
+import {
+  FileWarning,
+  DollarSign,
+  CheckCircle,
   AlertCircle,
   Clock,
   TrendingUp,
@@ -17,6 +18,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useSendBulkViolationReminders } from '@/hooks/useTrafficViolationWhatsApp';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 // Import the TrafficViolation type
 import { TrafficViolation } from '@/hooks/useTrafficViolations';
@@ -24,6 +26,45 @@ import { TrafficViolation } from '@/hooks/useTrafficViolations';
 interface TrafficViolationsSmartDashboardProps {
   violations: TrafficViolation[];
 }
+
+// Hook to fetch ALL violations for accurate dashboard stats
+const useTrafficViolationsDashboardStats = () => {
+  return useQuery({
+    queryKey: ['traffic-violations-dashboard-stats'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
+
+      // Fetch ALL violations for stats (no limit)
+      const { data: violations, error } = await supabase
+        .from('penalties')
+        .select(`
+          id,
+          status,
+          payment_status,
+          amount,
+          penalty_date,
+          vehicle_id,
+          vehicle_plate,
+          customer_id
+        `)
+        .eq('company_id', profile.company_id);
+
+      if (error) throw error;
+
+      return violations as any[];
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+  });
+};
 
 // Health Score Display Component
 const HealthScoreDisplay: React.FC<{ score: number }> = ({ score }) => {
@@ -162,76 +203,82 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
   const { formatCurrency } = useCurrencyFormatter();
   const sendBulkReminders = useSendBulkViolationReminders();
 
-  // Calculate stats from filtered violations
+  // Fetch ALL violations for accurate dashboard stats
+  const { data: allViolations = [], isLoading: isLoadingStats } = useTrafficViolationsDashboardStats();
+
+  // Calculate stats from ALL violations (not just paginated ones)
   const stats = useMemo(() => {
-    const totalViolations = violations.length;
-    const totalAmount = violations.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
-    
-    const paidViolations = violations.filter(v => v.payment_status === 'paid');
-    const unpaidViolations = violations.filter(v => v.payment_status === 'unpaid');
-    const partiallyPaidViolations = violations.filter(v => v.payment_status === 'partially_paid');
-    
+    // Use allViolations for stats if available, otherwise fall back to props
+    const violationsData = allViolations.length > 0 ? allViolations : violations;
+
+    const totalViolations = violationsData.length;
+    const totalAmount = violationsData.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+
+    const paidViolations = violationsData.filter(v => v.payment_status === 'paid');
+    const unpaidViolations = violationsData.filter(v => v.payment_status === 'unpaid');
+    const partiallyPaidViolations = violationsData.filter(v => v.payment_status === 'partially_paid');
+
     const paidAmount = paidViolations.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
     const unpaidAmount = unpaidViolations.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
-    
-    const collectionRate = totalAmount > 0 
-      ? Math.round((paidAmount / totalAmount) * 100) 
+
+    const collectionRate = totalAmount > 0
+      ? Math.round((paidAmount / totalAmount) * 100)
       : 0;
-    
-    const averageViolationAmount = totalViolations > 0 
-      ? totalAmount / totalViolations 
+
+    const averageViolationAmount = totalViolations > 0
+      ? totalAmount / totalViolations
       : 0;
 
     // Calculate health score
-    const violationsHealthScore = totalViolations > 0 
+    const violationsHealthScore = totalViolations > 0
       ? Math.round((paidViolations.length / totalViolations) * 100)
       : 100;
 
     // Status counts
-    const pendingCount = violations.filter(v => v.status === 'pending').length;
-    const confirmedCount = violations.filter(v => v.status === 'confirmed').length;
-    const cancelledCount = violations.filter(v => v.status === 'cancelled').length;
+    const pendingCount = violationsData.filter(v => v.status === 'pending').length;
+    const confirmedCount = violationsData.filter(v => v.status === 'confirmed').length;
+    const cancelledCount = violationsData.filter(v => v.status === 'cancelled').length;
 
     // Repeated violations
-    const vehicleCounts = violations.reduce((acc, v) => {
+    const vehicleCounts = violationsData.reduce((acc, v) => {
       const key = v.vehicle_id || v.vehicle_plate || 'unknown';
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    
+
     const repeatedVehicles = Object.values(vehicleCounts).filter(count => count > 1).length;
 
-    const customerCounts = violations.reduce((acc, v) => {
+    const customerCounts = violationsData.reduce((acc, v) => {
       if (v.customer_id) {
         acc[v.customer_id] = (acc[v.customer_id] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
-    
+
     const repeatedCustomers = Object.values(customerCounts).filter(count => count > 1).length;
 
     // Overdue violations (more than 30 days old)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const overdueViolations = violations.filter(v => {
+    const overdueViolations = violationsData.filter(v => {
       const penaltyDate = v.penalty_date ? new Date(v.penalty_date) : null;
       return penaltyDate && penaltyDate < thirtyDaysAgo && v.payment_status !== 'paid';
     }).length;
 
     // High value violations (above 500 QAR)
-    const highValueViolations = violations.filter(v => Number(v.amount) > 500).length;
+    const highValueViolations = violationsData.filter(v => Number(v.amount) > 500).length;
 
     // Monthly data
     const today = new Date();
     const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    
-    const thisMonthCount = violations.filter(v => {
+
+    const thisMonthCount = violationsData.filter(v => {
       const penaltyDate = v.penalty_date ? new Date(v.penalty_date) : null;
       return penaltyDate && penaltyDate >= startOfThisMonth;
     }).length;
 
-    const lastMonthCount = violations.filter(v => {
+    const lastMonthCount = violationsData.filter(v => {
       const penaltyDate = v.penalty_date ? new Date(v.penalty_date) : null;
       return penaltyDate && penaltyDate >= startOfLastMonth && penaltyDate < startOfThisMonth;
     }).length;
@@ -256,7 +303,7 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
       thisMonthCount,
       lastMonthCount
     };
-  }, [violations]);
+  }, [allViolations, violations]);
 
   // Calculate month-over-month change
   const monthChange = stats.lastMonthCount > 0

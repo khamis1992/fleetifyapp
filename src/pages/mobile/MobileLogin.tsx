@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Fingerprint, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Fingerprint, Shield, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useBiometricAuth } from '@/hooks/useBiometricAuth';
 
 export const MobileLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -13,9 +14,22 @@ export const MobileLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [biometricSetupSuccess, setBiometricSetupSuccess] = useState(false);
+
+  // Biometric auth hook
+  const {
+    isAvailable: biometricAvailable,
+    hasSavedCredentials,
+    savedEmail,
+    isLoading: biometricLoading,
+    authenticateWithBiometrics,
+    registerBiometric,
+    saveCredentials
+  } = useBiometricAuth();
 
   // Floating particles state
-  const [particles] = useState(() => 
+  const [particles] = useState(() =>
     Array.from({ length: 20 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
@@ -25,6 +39,14 @@ export const MobileLogin: React.FC = () => {
       delay: Math.random() * 5,
     }))
   );
+
+  // Auto-fill saved email
+  useEffect(() => {
+    if (savedEmail && !email) {
+      setEmail(savedEmail);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +71,7 @@ export const MobileLogin: React.FC = () => {
 
       if (authError) {
         console.error('❌ [MobileLogin] Supabase error:', authError);
-        
+
         // Translate common errors to Arabic
         let errorMessage = authError.message;
         if (authError.message.includes('Invalid login credentials')) {
@@ -59,7 +81,7 @@ export const MobileLogin: React.FC = () => {
         } else if (authError.message.includes('Too many requests')) {
           errorMessage = 'محاولات كثيرة جداً، يرجى المحاولة لاحقاً';
         }
-        
+
         setError(errorMessage);
         setIsSubmitting(false);
         return;
@@ -67,9 +89,18 @@ export const MobileLogin: React.FC = () => {
 
       if (data.user) {
         console.log('✅ [MobileLogin] Login successful for user:', data.user.email);
-        setTimeout(() => {
-          navigate('/mobile/home', { replace: true });
-        }, 300);
+
+        // Save credentials for biometric login
+        await saveCredentials(email.trim());
+
+        // Show biometric setup prompt if biometric is available and not yet set up
+        if (biometricAvailable && !hasSavedCredentials) {
+          setShowBiometricPrompt(true);
+        } else {
+          setTimeout(() => {
+            navigate('/mobile/home', { replace: true });
+          }, 300);
+        }
       } else {
         setError('فشل تسجيل الدخول - يرجى المحاولة مرة أخرى');
         setIsSubmitting(false);
@@ -79,6 +110,58 @@ export const MobileLogin: React.FC = () => {
       setError(err.message || 'حدث خطأ غير متوقع');
       setIsSubmitting(false);
     }
+  };
+
+  const handleBiometricLogin = async () => {
+    setError('');
+
+    if (biometricLoading) return;
+
+    try {
+      const result = await authenticateWithBiometrics(savedEmail || email);
+
+      if (result.success) {
+        console.log('✅ [MobileLogin] Biometric login successful');
+        setTimeout(() => {
+          navigate('/mobile/home', { replace: true });
+        }, 300);
+      } else {
+        setError(result.error || 'فشلت المصادقة البيومترية');
+      }
+    } catch (err: any) {
+      console.error('❌ [MobileLogin] Biometric error:', err);
+      setError(err.message || 'حدث خطأ في المصادقة البيومترية');
+    }
+  };
+
+  const handleBiometricSetup = async () => {
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const result = await registerBiometric(email.trim());
+
+      if (result.success) {
+        setBiometricSetupSuccess(true);
+        setTimeout(() => {
+          navigate('/mobile/home', { replace: true });
+        }, 1500);
+      } else {
+        setError(result.error || 'فشل تسجيل البصمة');
+        setIsSubmitting(false);
+      }
+    } catch (err: any) {
+      console.error('❌ [MobileLogin] Biometric setup error:', err);
+      setError(err.message || 'حدث خطأ أثناء التسجيل');
+      setIsSubmitting(false);
+    }
+  };
+
+  const skipBiometricSetup = () => {
+    setShowBiometricPrompt(false);
+    setTimeout(() => {
+      navigate('/mobile/home', { replace: true });
+    }, 300);
   };
 
   return (
@@ -399,20 +482,69 @@ export const MobileLogin: React.FC = () => {
             </motion.button>
           </motion.div>
 
-          {/* Biometric Login Hint */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="flex items-center justify-center gap-3 py-4"
-          >
-            <div className="h-px flex-1 bg-white/10" />
-            <div className="flex items-center gap-2 text-white/40">
-              <Fingerprint className="w-4 h-4" />
-              <span className="text-xs">أو استخدم البصمة</span>
-            </div>
-            <div className="h-px flex-1 bg-white/10" />
-          </motion.div>
+          {/* Biometric Login Button - Show when credentials are saved */}
+          {hasSavedCredentials && biometricAvailable && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65 }}
+              className="pt-2"
+            >
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={handleBiometricLogin}
+                disabled={biometricLoading}
+                className={cn(
+                  'w-full py-4 rounded-2xl font-bold text-white text-base relative overflow-hidden',
+                  'bg-gradient-to-r from-purple-500 to-indigo-500',
+                  'shadow-xl shadow-purple-500/25',
+                  'disabled:opacity-60 disabled:cursor-not-allowed',
+                  'transition-all duration-300'
+                )}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-400"
+                  initial={{ x: '100%' }}
+                  whileHover={{ x: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+                <span className="relative flex items-center justify-center gap-2">
+                  {biometricLoading ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      <span>جاري المصادقة...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Fingerprint className="w-5 h-5" />
+                      <span>تسجيل الدخول بالبصمة</span>
+                    </>
+                  )}
+                </span>
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* Biometric Login Hint - Show only when no saved credentials */}
+          {!hasSavedCredentials && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="flex items-center justify-center gap-3 py-4"
+            >
+              <div className="h-px flex-1 bg-white/10" />
+              <div className="flex items-center gap-2 text-white/40">
+                <Fingerprint className="w-4 h-4" />
+                <span className="text-xs">أو استخدم البصمة</span>
+              </div>
+              <div className="h-px flex-1 bg-white/10" />
+            </motion.div>
+          )}
         </motion.form>
 
         {/* Footer */}
@@ -441,6 +573,131 @@ export const MobileLogin: React.FC = () => {
           الإصدار 2.0.0
         </motion.p>
       </motion.div>
+
+      {/* Biometric Setup Prompt Modal */}
+      <AnimatePresence>
+        {showBiometricPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+            style={{
+              paddingBottom: 'env(safe-area-inset-bottom)'
+            }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="bg-[#1a1a1a] w-full max-w-lg rounded-t-3xl p-6 border-t border-white/10"
+            >
+              {/* Handle bar */}
+              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6" />
+
+              {/* Success State */}
+              {biometricSetupSuccess ? (
+                <div className="text-center py-8">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                    className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                  >
+                    <Check className="w-10 h-10 text-green-400" />
+                  </motion.div>
+                  <h3 className="text-xl font-bold text-white mb-2">تم التسجيل بنجاح!</h3>
+                  <p className="text-white/60 text-sm">يمكنك الآن استخدام بصمتك لتسجيل الدخول بسرعة</p>
+                </div>
+              ) : (
+                <>
+                  {/* Icon */}
+                  <div className="flex justify-center mb-6">
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.1, 1],
+                        rotate: [0, 5, -5, 0],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                      className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-full flex items-center justify-center"
+                    >
+                      <Fingerprint className="w-10 h-10 text-purple-400" />
+                    </motion.div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold text-white mb-3">
+                      تفعيل تسجيل الدخول بالبصمة؟
+                    </h3>
+                    <p className="text-white/60 text-sm leading-relaxed">
+                      يمكنك تسجيل الدخول بسرعة وأمان باستخدام بصمتك أو Face ID في المرة القادمة
+                    </p>
+                  </div>
+
+                  {/* Error */}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-6"
+                    >
+                      <p className="text-sm text-red-300 text-center">{error}</p>
+                    </motion.div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="space-y-3">
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleBiometricSetup}
+                      disabled={isSubmitting}
+                      className={cn(
+                        'w-full py-4 rounded-2xl font-bold text-white',
+                        'bg-gradient-to-r from-purple-500 to-indigo-500',
+                        'shadow-xl shadow-purple-500/25',
+                        'disabled:opacity-60 disabled:cursor-not-allowed',
+                        'transition-all duration-300'
+                      )}
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                          />
+                          <span>جاري التسجيل...</span>
+                        </span>
+                      ) : (
+                        <span>تفعيل البصمة</span>
+                      )}
+                    </motion.button>
+
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={skipBiometricSetup}
+                      className={cn(
+                        'w-full py-4 rounded-2xl font-semibold',
+                        'bg-white/5 border border-white/10 text-white/70',
+                        'hover:bg-white/10 hover:text-white',
+                        'transition-all duration-300'
+                      )}
+                    >
+                      لاحقاً
+                    </motion.button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

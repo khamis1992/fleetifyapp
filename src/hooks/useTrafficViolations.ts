@@ -423,15 +423,28 @@ export function useUpdatePaymentStatus() {
   });
 }
 
-// Hook للحصول على إحصائيات المخالفات
+// Hook للحصول على إحصائيات المخالفات من جميع السجلات (بدون تحديد limit)
 export function useTrafficViolationsStats() {
   return useQuery({
     queryKey: ['traffic-violations-stats'],
     queryFn: async () => {
+      // الحصول على company_id من المستخدم الحالي
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
+
+      // Fetch ALL violations for accurate stats (without limit)
       const { data: violations, error } = await supabase
         .from('penalties')
-        .select('status, payment_status, amount')
-        .not('violation_type', 'is', null); // فقط المخالفات المرورية
+        .select('status, payment_status, amount, penalty_date')
+        .eq('company_id', profile.company_id);
 
       if (error) {
         console.error('Error fetching violations stats:', error);
@@ -446,10 +459,15 @@ export function useTrafficViolationsStats() {
         totalAmount: violations.reduce((sum, v) => sum + (v.amount || 0), 0),
         paidAmount: violations.filter(v => v.payment_status === 'paid').reduce((sum, v) => sum + (v.amount || 0), 0),
         unpaidAmount: violations.filter(v => v.payment_status === 'unpaid').reduce((sum, v) => sum + (v.amount || 0), 0),
-        partiallyPaidAmount: violations.filter(v => v.payment_status === 'partially_paid').reduce((sum, v) => sum + (v.amount || 0), 0)
+        partiallyPaidAmount: violations.filter(v => v.payment_status === 'partially_paid').reduce((sum, v) => sum + (v.amount || 0), 0),
+        paidCount: violations.filter(v => v.payment_status === 'paid').length,
+        unpaidCount: violations.filter(v => v.payment_status === 'unpaid').length,
+        partiallyPaidCount: violations.filter(v => v.payment_status === 'partially_paid').length,
+        violations: violations // Return raw data for dashboard calculations
       };
 
       return stats;
-    }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
   });
 }

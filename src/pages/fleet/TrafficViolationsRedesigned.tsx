@@ -80,6 +80,33 @@ export default function TrafficViolationsRedesigned() {
     offset: (currentPage - 1) * itemsPerPage
   });
   const { data: vehicles = [] } = useVehicles({ limit: 500 });
+
+  // Fetch total count for pagination
+  const { data: totalCount = 0 } = useQuery({
+    queryKey: ['traffic-violations-count'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return 0;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile?.company_id) return 0;
+
+      const { count } = await supabase
+        .from('penalties')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', profile.company_id);
+
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
   const deleteViolationMutation = useDeleteTrafficViolation();
   const updatePaymentStatusMutation = useUpdatePaymentStatus();
   const { formatCurrency } = useCurrencyFormatter();
@@ -592,6 +619,91 @@ export default function TrafficViolationsRedesigned() {
               {filteredViolations.length > 0 && (
                 <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 text-sm text-neutral-500 print:hidden">
                   عرض {filteredViolations.length.toLocaleString('en-US')} من {violations.length.toLocaleString('en-US')} مخالفة
+                  (الصفحة {currentPage} من {totalPages} - الإجمالي: {totalCount.toLocaleString('en-US')} مخالفة)
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between gap-4 print:hidden">
+                  <div className="text-sm text-neutral-600">
+                    <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)}</span>
+                    {' '}-{' '}
+                    <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span>
+                    {' '}من {' '}
+                    <span className="font-medium">{totalCount.toLocaleString('en-US')}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      الأولى
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      السابق
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`min-w-[40px] rounded-lg ${
+                              currentPage === pageNum
+                                ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/20'
+                                : 'border-slate-200/50 hover:bg-slate-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      التالي
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      الأخيرة
+                    </Button>
+                  </div>
                 </div>
               )}
             </TabsContent>

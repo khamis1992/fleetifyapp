@@ -33,6 +33,7 @@ import { MobileApp } from '@/pages/mobile/MobileApp';
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
 const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
 import { MobileOverduePage } from '@/pages/mobile/MobileOverduePage';
+import { MobileCarDetail } from '@/pages/mobile/MobileCarDetail';
 
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -351,8 +352,8 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/mobile/cars/:vehicleId',
-    component: MobileApp,
-    lazy: true,
+    component: MobileCarDetail,
+    lazy: false,
     exact: true,
     title: 'Mobile Vehicle Details',
     description: 'Mobile vehicle details',
