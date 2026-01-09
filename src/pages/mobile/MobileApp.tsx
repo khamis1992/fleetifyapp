@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { MobileLayout } from '@/components/mobile/MobileLayout';
 import { MobileHome } from './MobileHome';
 import { MobileContracts } from './MobileContracts';
@@ -26,9 +25,7 @@ export const MobileApp: React.FC = () => {
 
   return (
     <MobileLayout currentTab={currentTab} onTabChange={setCurrentTab}>
-      <AnimatePresence mode="wait">
-        {renderContent()}
-      </AnimatePresence>
+      {renderContent()}
     </MobileLayout>
   );
 };

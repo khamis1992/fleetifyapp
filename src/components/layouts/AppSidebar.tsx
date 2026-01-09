@@ -235,7 +235,6 @@ export function AppSidebar() {
   };
 
   return (
-    <TooltipProvider delayDuration={0}>
     <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
       {/* Header with Toggle Button */}
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -544,6 +543,5 @@ export function AppSidebar() {
         )}
       </SidebarFooter>
     </Sidebar>
-    </TooltipProvider>
   );
 }

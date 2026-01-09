@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -47,129 +46,125 @@ export const EnhancedTooltip: React.FC<EnhancedTooltipProps> = ({
   // If KPI definition is provided, render enhanced KPI tooltip
   if (kpi) {
     return (
-      <TooltipProvider delayDuration={300}>
-        <Tooltip open={isOpen} onOpenChange={setIsOpen}>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 cursor-help group"
-              onClick={(e) => {
-                if (interactive) {
-                  e.preventDefault();
-                  setIsOpen(!isOpen);
-                }
-              }}
-            >
-              {children}
-              {icon || (
-                <HelpCircle className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent
-            side={side}
-            align={align}
-            className={cn('max-w-sm p-0 overflow-hidden', className)}
-            sideOffset={8}
+      <Tooltip open={isOpen} onOpenChange={setIsOpen}>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 cursor-help group"
+            onClick={(e) => {
+              if (interactive) {
+                e.preventDefault();
+                setIsOpen(!isOpen);
+              }
+            }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="p-4 space-y-3"
-            >
-              {/* Title */}
-              <div className="flex items-start gap-2">
-                <div className="flex-shrink-0 mt-0.5">
-                  <Info className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-sm mb-1">{kpi.title}</h4>
-                  {kpi.description && (
-                    <p className="text-xs text-muted-foreground">{kpi.description}</p>
-                  )}
-                </div>
+            {children}
+            {icon || (
+              <HelpCircle className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side={side}
+          align={align}
+          className={cn('max-w-sm p-0 overflow-hidden', className)}
+          sideOffset={8}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="p-4 space-y-3"
+          >
+            {/* Title */}
+            <div className="flex items-start gap-2">
+              <div className="flex-shrink-0 mt-0.5">
+                <Info className="h-4 w-4 text-primary" />
               </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-sm mb-1">{kpi.title}</h4>
+                {kpi.description && (
+                  <p className="text-xs text-muted-foreground">{kpi.description}</p>
+                )}
+              </div>
+            </div>
 
-              {/* Formula */}
-              {kpi.formula && (
-                <>
-                  <Separator />
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">الصيغة:</p>
-                    <code className="block text-xs bg-muted/50 p-2 rounded-md font-mono text-foreground">
-                      {kpi.formula}
-                    </code>
-                  </div>
-                </>
-              )}
+            {/* Formula */}
+            {kpi.formula && (
+              <>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">الصيغة:</p>
+                  <code className="block text-xs bg-muted/50 p-2 rounded-md font-mono text-foreground">
+                    {kpi.formula}
+                  </code>
+                </div>
+              </>
+            )}
 
-              {/* Example */}
-              {kpi.example && (
-                <>
-                  <Separator />
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">مثال:</p>
-                    <p className="text-xs bg-muted/30 p-2 rounded-md text-foreground">
-                      {kpi.example}
-                    </p>
-                  </div>
-                </>
-              )}
+            {/* Example */}
+            {kpi.example && (
+              <>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">مثال:</p>
+                  <p className="text-xs bg-muted/30 p-2 rounded-md text-foreground">
+                    {kpi.example}
+                  </p>
+                </div>
+              </>
+            )}
 
-              {/* Learn More Link */}
-              {kpi.learnMoreUrl && (
-                <>
-                  <Separator />
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs"
-                    onClick={() => window.open(kpi.learnMoreUrl, '_blank')}
-                  >
-                    اعرف المزيد
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                  </Button>
-                </>
-              )}
-            </motion.div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+            {/* Learn More Link */}
+            {kpi.learnMoreUrl && (
+              <>
+                <Separator />
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => window.open(kpi.learnMoreUrl, '_blank')}
+                >
+                  اعرف المزيد
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                </Button>
+              </>
+            )}
+          </motion.div>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
   // Regular tooltip with optional title
   return (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent
-          side={side}
-          align={align}
-          className={cn('max-w-xs', className)}
-          sideOffset={5}
-        >
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.15 }}
-            >
-              {title && (
-                <>
-                  <p className="font-semibold text-sm mb-1">{title}</p>
-                  <Separator className="my-2" />
-                </>
-              )}
-              <div className="text-xs">{content}</div>
-            </motion.div>
-          </AnimatePresence>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent
+        side={side}
+        align={align}
+        className={cn('max-w-xs', className)}
+        sideOffset={5}
+      >
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15 }}
+          >
+            {title && (
+              <>
+                <p className="font-semibold text-sm mb-1">{title}</p>
+                <Separator className="my-2" />
+              </>
+            )}
+            <div className="text-xs">{content}</div>
+          </motion.div>
+        </AnimatePresence>
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

@@ -60,7 +60,37 @@ export const MobileContracts: React.FC = () => {
     if (!user) return;
 
     try {
-      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      // Fetch company_id from profiles table (same approach as dashboard and MobileHome)
+      let companyId: string;
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profileData?.company_id) {
+        console.warn('[MobileContracts] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+
+        // Try fallback to employees table
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (employeeError || !employeeData?.company_id) {
+          console.error('[MobileContracts] No company_id found', { employeeError, user_id: user.id });
+          return;
+        }
+
+        companyId = employeeData.company_id;
+      } else {
+        companyId = profileData.company_id;
+      }
+
+      console.log('[MobileContracts] Using company_id:', companyId);
 
       const { data, error } = await supabase
         .from('contracts')
@@ -72,12 +102,9 @@ export const MobileContracts: React.FC = () => {
           monthly_amount,
           status,
           days_overdue,
-          customer_id,
-          vehicles (
-            make,
-            model,
-            license_plate
-          ),
+          make,
+          model,
+          license_plate,
           customers (
             first_name,
             last_name
@@ -97,7 +124,11 @@ export const MobileContracts: React.FC = () => {
         status: c.status,
         days_overdue: c.days_overdue,
         customer: c.customers || { first_name: '', last_name: '' },
-        vehicle: c.vehicles,
+        vehicle: c.make || c.model || c.license_plate ? {
+          make: c.make,
+          model: c.model,
+          license_plate: c.license_plate,
+        } : null,
       }));
 
       setContracts(formattedData);

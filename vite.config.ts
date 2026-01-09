@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ['playwright', 'playwright-core', 'chromium-bidi'],
+    force: true, // Force optimization to clear any cached issues
     include: [
       'react',
       'react-dom',

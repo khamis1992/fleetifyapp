@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   FileText,
   Car,
@@ -49,14 +48,44 @@ export const MobileHome: React.FC = () => {
     if (!user) return;
 
     try {
-      // استخدام company_id الصحيح من profile أو company
-      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      // Fetch company_id from profiles table (same approach as dashboard)
+      let companyId: string;
 
-      // Fetch all contracts count
-      const { count: allCount } = await supabase
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profileData?.company_id) {
+        console.warn('[MobileHome] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+
+        // Try fallback to employees table
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (employeeError || !employeeData?.company_id) {
+          console.error('[MobileHome] No company_id found', { employeeError, user_id: user.id });
+          return; // Exit early - no valid company_id
+        }
+
+        companyId = employeeData.company_id;
+      } else {
+        companyId = profileData.company_id;
+      }
+
+      console.log('[MobileHome] Using company_id:', companyId);
+
+      // Fetch active contracts count only
+      const { count: activeCount } = await supabase
         .from('contracts')
         .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('status', 'active');
 
       // Fetch rented vehicles from vehicles table
       const { count: rentedCount } = await supabase
@@ -88,7 +117,7 @@ export const MobileHome: React.FC = () => {
       const monthlyRevenue = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
       setStats({
-        activeContracts: allCount || 0,
+        activeContracts: activeCount || 0,
         rentedVehicles,
         latePayments: unpaidCount || 0,
         monthlyRevenue,
@@ -158,33 +187,10 @@ export const MobileHome: React.FC = () => {
 
   const revenuePercentage = Math.min((stats.monthlyRevenue / stats.monthlyTarget) * 100, 100);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-    },
-  };
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="px-4 py-6 space-y-6"
-    >
+    <div className="px-4 py-6 space-y-6">
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">لوحة التحكم</h1>
           <p className="text-sm text-slate-500 mt-1">مرحباً بك في فليتفاي</p>
@@ -200,10 +206,10 @@ export const MobileHome: React.FC = () => {
             </span>
           )}
         </button>
-      </motion.div>
+      </div>
 
       {/* Stats Cards */}
-      <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <StatCard
           icon={FileText}
           value={stats.activeContracts.toString()}
@@ -222,11 +228,11 @@ export const MobileHome: React.FC = () => {
           label="متأخرات"
           color="from-red-500 to-red-600"
         />
-      </motion.div>
+      </div>
 
       {/* Urgent Alerts */}
       {alerts.length > 0 && (
-        <motion.div variants={itemVariants} className="space-y-3">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">⚠️ تنبيهات عاجلة</h2>
             <button className="text-sm text-teal-600">عرض الكل</button>
@@ -237,11 +243,11 @@ export const MobileHome: React.FC = () => {
               <AlertCard key={alert.id} alert={alert} />
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Monthly Revenue */}
-      <motion.div variants={itemVariants}>
+      <div>
         <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -268,11 +274,9 @@ export const MobileHome: React.FC = () => {
 
           {/* Progress Bar */}
           <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${revenuePercentage}%` }}
-              transition={{ duration: 1, delay: 0.5 }}
+            <div
               className="h-full bg-gradient-to-r from-teal-500 to-teal-600 rounded-full"
+              style={{ width: `${revenuePercentage}%` }}
             />
           </div>
 
@@ -283,10 +287,10 @@ export const MobileHome: React.FC = () => {
             </span>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Quick Actions */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <QuickActionButton
           icon={FileText}
           label="عقد جديد"
@@ -299,8 +303,8 @@ export const MobileHome: React.FC = () => {
           color="from-blue-500 to-blue-600"
           onClick={() => navigate('/mobile/overdue')}
         />
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 
@@ -356,8 +360,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   color,
   onClick,
 }) => (
-  <motion.button
-    whileTap={{ scale: 0.97 }}
+  <button
     onClick={onClick}
     className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 text-right"
   >
@@ -365,7 +368,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
       <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
     </div>
     <p className="text-sm font-semibold text-slate-900">{label}</p>
-  </motion.button>
+  </button>
 );
 
 export default MobileHome;

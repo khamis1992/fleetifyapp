@@ -16,16 +16,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface OverdueCustomer {
+interface OverdueContract {
   id: string;
+  contract_id: string;
+  contract_number: string;
   customer_id: string;
-  first_name: string;
-  last_name: string;
+  customer_name: string;
   phone: string | null;
   days_overdue: number;
   outstanding_amount: number;
-  contract_number: string;
-  contract_id: string;
+  make: string | null;
+  model: string | null;
+  license_plate: string | null;
 }
 
 type FilterType = 'all' | 'critical' | 'moderate' | 'minor';
@@ -34,11 +36,11 @@ const MobileOverdue: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [customers, setCustomers] = useState<OverdueCustomer[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<OverdueCustomer[]>([]);
+  const [contracts, setContracts] = useState<OverdueContract[]>([]);
+  const [filteredContracts, setFilteredContracts] = useState<OverdueContract[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [loading, setLoading] = useState(true);
-  const [selectedCustomer, setSelectedCustomer] = useState<OverdueCustomer | null>(null);
+  const [selectedContract, setSelectedContract] = useState<OverdueContract | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Payment form state
@@ -48,18 +50,48 @@ const MobileOverdue: React.FC = () => {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    fetchOverdueCustomers();
+    fetchOverdueContracts();
   }, [user]);
 
   useEffect(() => {
-    filterCustomers();
-  }, [customers, activeFilter]);
+    filterContracts();
+  }, [contracts, activeFilter]);
 
-  const fetchOverdueCustomers = async () => {
+  const fetchOverdueContracts = async () => {
     if (!user) return;
 
     try {
-      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      // Fetch company_id from profiles table
+      let companyId: string;
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profileData?.company_id) {
+        console.warn('[MobileOverdue] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+
+        // Try fallback to employees table
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (employeeError || !employeeData?.company_id) {
+          console.error('[MobileOverdue] No company_id found', { employeeError, user_id: user.id });
+          return;
+        }
+
+        companyId = employeeData.company_id;
+      } else {
+        companyId = profileData.company_id;
+      }
+
+      console.log('[MobileOverdue] Using company_id:', companyId);
 
       const { data, error } = await supabase
         .from('contracts')
@@ -69,6 +101,9 @@ const MobileOverdue: React.FC = () => {
           customer_id,
           days_overdue,
           balance_due,
+          make,
+          model,
+          license_plate,
           customers (
             id,
             first_name,
@@ -82,30 +117,32 @@ const MobileOverdue: React.FC = () => {
 
       if (error) throw error;
 
-      const formattedData: OverdueCustomer[] = (data || [])
+      const formattedData: OverdueContract[] = (data || [])
         .filter((c: any) => c.days_overdue > 0)
         .map((c: any) => ({
           id: c.id,
-          customer_id: c.customers.id,
-          first_name: c.customers.first_name,
-          last_name: c.customers.last_name,
-          phone: c.customers.phone,
+          contract_id: c.id,
+          contract_number: c.contract_number,
+          customer_id: c.customers?.id || '',
+          customer_name: `${c.customers?.first_name || ''} ${c.customers?.last_name || ''}`.trim(),
+          phone: c.customers?.phone,
           days_overdue: c.days_overdue,
           outstanding_amount: c.balance_due || 0,
-          contract_number: c.contract_number,
-          contract_id: c.id,
+          make: c.make,
+          model: c.model,
+          license_plate: c.license_plate,
         }));
 
-      setCustomers(formattedData);
+      setContracts(formattedData);
     } catch (error) {
-      console.error('Error fetching overdue customers:', error);
+      console.error('Error fetching overdue contracts:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterCustomers = () => {
-    let filtered = [...customers];
+  const filterContracts = () => {
+    let filtered = [...contracts];
 
     if (activeFilter === 'critical') {
       filtered = filtered.filter(c => c.days_overdue > 30);
@@ -115,11 +152,11 @@ const MobileOverdue: React.FC = () => {
       filtered = filtered.filter(c => c.days_overdue < 15);
     }
 
-    setFilteredCustomers(filtered);
+    setFilteredContracts(filtered);
   };
 
   const handleRecordPayment = async () => {
-    if (!selectedCustomer || !paymentAmount) return;
+    if (!selectedContract || !paymentAmount) return;
 
     setProcessing(true);
     try {
@@ -130,8 +167,8 @@ const MobileOverdue: React.FC = () => {
         .from('payments')
         .insert({
           company_id: companyId,
-          customer_id: selectedCustomer.customer_id,
-          contract_id: selectedCustomer.contract_id,
+          customer_id: selectedContract.customer_id,
+          contract_id: selectedContract.contract_id,
           amount: parseFloat(paymentAmount),
           payment_date: new Date().toISOString(),
           payment_method: paymentMethod,
@@ -146,10 +183,10 @@ const MobileOverdue: React.FC = () => {
       setShowPaymentModal(false);
       setPaymentAmount('');
       setPaymentReference('');
-      setSelectedCustomer(null);
+      setSelectedContract(null);
 
       // Refresh data
-      await fetchOverdueCustomers();
+      await fetchOverdueContracts();
 
       // Show success
       alert('تم تسجيل الدفعة بنجاح!');
@@ -173,7 +210,7 @@ const MobileOverdue: React.FC = () => {
     return 'بسيط';
   };
 
-  const totalOverdue = customers.reduce((sum, c) => sum + c.outstanding_amount, 0);
+  const totalOverdue = contracts.reduce((sum, c) => sum + c.outstanding_amount, 0);
 
   const handleCall = (phone: string) => {
     window.location.href = `tel:${phone}`;
@@ -191,7 +228,7 @@ const MobileOverdue: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">المتأخرات</h1>
           <p className="text-sm text-slate-500 mt-1">
-            {customers.length} عملاء متأخرين
+            {contracts.length} عقود متأخرة
           </p>
         </div>
       </div>
@@ -210,19 +247,19 @@ const MobileOverdue: React.FC = () => {
         <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xl font-bold text-red-600">
-              {customers.filter(c => c.days_overdue > 30).length}
+              {contracts.filter(c => c.days_overdue > 30).length}
             </p>
             <p className="text-xs text-slate-500">خطير (+30)</p>
           </div>
           <div>
             <p className="text-xl font-bold text-amber-600">
-              {customers.filter(c => c.days_overdue >= 15 && c.days_overdue <= 30).length}
+              {contracts.filter(c => c.days_overdue >= 15 && c.days_overdue <= 30).length}
             </p>
             <p className="text-xs text-slate-500">متوسط (15-30)</p>
           </div>
           <div>
             <p className="text-xl font-bold text-yellow-600">
-              {customers.filter(c => c.days_overdue < 15).length}
+              {contracts.filter(c => c.days_overdue < 15).length}
             </p>
             <p className="text-xs text-slate-500">بسيط (&lt;15)</p>
           </div>
@@ -261,7 +298,7 @@ const MobileOverdue: React.FC = () => {
             <p className="text-sm text-slate-500">جاري التحميل...</p>
           </div>
         </div>
-      ) : filteredCustomers.length === 0 ? (
+      ) : filteredContracts.length === 0 ? (
         <div className="text-center py-12">
           <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" strokeWidth={1.5} />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد متأخرات</h3>
@@ -269,9 +306,9 @@ const MobileOverdue: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredCustomers.map((customer) => (
+          {filteredContracts.map((contract) => (
             <motion.div
-              key={customer.id}
+              key={contract.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
@@ -279,15 +316,15 @@ const MobileOverdue: React.FC = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-rose-500/20">
-                    <User className="w-5 h-5 text-white" strokeWidth={2} />
+                    <AlertCircle className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">
-                      {customer.first_name} {customer.last_name}
+                      {contract.customer_name}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-medium', getSeverityColor(customer.days_overdue))}>
-                        {getSeverityLabel(customer.days_overdue)} - {customer.days_overdue} يوم
+                      <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-medium', getSeverityColor(contract.days_overdue))}>
+                        {getSeverityLabel(contract.days_overdue)} - {contract.days_overdue} يوم
                       </span>
                     </div>
                   </div>
@@ -297,33 +334,41 @@ const MobileOverdue: React.FC = () => {
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm">
                   <CreditCard className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-700">QAR {customer.outstanding_amount.toLocaleString()} متبقي</span>
+                  <span className="text-slate-700">QAR {contract.outstanding_amount.toLocaleString()} متبقي</span>
                 </div>
-                {customer.phone && (
+                {contract.phone && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-700" dir="ltr">{customer.phone}</span>
+                    <span className="text-slate-700" dir="ltr">{contract.phone}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-700">العقد: {customer.contract_number}</span>
+                  <span className="text-slate-700">العقد: {contract.contract_number}</span>
                 </div>
+                {(contract.make || contract.model || contract.license_plate) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <AlertCircle className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700">
+                      {contract.make} {contract.model} {contract.license_plate && `(${contract.license_plate})`}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-3 border-t border-slate-100">
-                {customer.phone && (
+                {contract.phone && (
                   <>
                     <button
-                      onClick={() => handleCall(customer.phone)}
+                      onClick={() => handleCall(contract.phone)}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-500 text-white text-sm font-medium"
                     >
                       <Phone className="w-4 h-4" />
                       اتصال
                     </button>
                     <button
-                      onClick={() => handleWhatsApp(customer.phone)}
+                      onClick={() => handleWhatsApp(contract.phone)}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-medium"
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -333,7 +378,7 @@ const MobileOverdue: React.FC = () => {
                 )}
                 <button
                   onClick={() => {
-                    setSelectedCustomer(customer);
+                    setSelectedContract(contract);
                     setShowPaymentModal(true);
                   }}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white text-sm font-medium shadow-lg shadow-teal-500/20"
@@ -348,7 +393,7 @@ const MobileOverdue: React.FC = () => {
       )}
 
       {/* Payment Modal */}
-      {showPaymentModal && selectedCustomer && (
+      {showPaymentModal && selectedContract && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
           <motion.div
             initial={{ y: '100%' }}
@@ -366,10 +411,10 @@ const MobileOverdue: React.FC = () => {
               <div className="text-center mb-6">
                 <p className="text-sm text-slate-500 mb-1">تسجيل دفعة من</p>
                 <p className="text-xl font-bold text-slate-900">
-                  {selectedCustomer.first_name} {selectedCustomer.last_name}
+                  {selectedContract.customer_name}
                 </p>
                 <p className="text-sm text-teal-600 mt-1">
-                  المتبقي: QAR {selectedCustomer.outstanding_amount.toLocaleString()}
+                  المتبقي: QAR {selectedContract.outstanding_amount.toLocaleString()}
                 </p>
               </div>
 

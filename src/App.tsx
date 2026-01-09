@@ -19,8 +19,8 @@ import { AIChatProvider } from '@/contexts/AIChatContext';
 
 // UI Components
 import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Routing System
 import { RouteProvider } from '@/components/router/RouteProvider';
@@ -139,6 +139,10 @@ const App: React.FC = () => {
   // Initialize query client with memoization
   const queryClient = useMemo(() => createQueryClient(), []);
 
+  // Debug: Check routes
+  console.log('🔍 [App] routeConfigs length:', routeConfigs.length);
+  console.log('🔍 [App] Mobile routes:', routeConfigs.filter(r => r.path.startsWith('/mobile')).map(r => r.path));
+
   // Initialize PWA and performance monitoring
   React.useEffect(() => {
     const initializeApp = async () => {
@@ -181,13 +185,15 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider
+          {/* Temporarily disabled ThemeProvider for debugging */}
+          {/* <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem={true}
-          >
-            <TooltipProvider>
-              <AuthProvider>
+          > */}
+          {/* Global TooltipProvider - single instance at root for all tooltips */}
+          <TooltipProvider delayDuration={200}>
+            <AuthProvider>
                 <AIChatProvider>
                   <CompanyContextProvider>
                   <FABProvider>
@@ -203,7 +209,8 @@ const App: React.FC = () => {
                               <RouteRenderer routes={routeConfigs} />
 
                               {/* Global UI Components */}
-                              {APP_CONFIG.ENABLE_COMMAND_PALETTE && (
+                              {/* Temporarily disabled CommandPalette for debugging */}
+                              {false && (
                                 <Suspense fallback={<Skeleton className="h-10 w-64" />}>
                                   <CommandPalette />
                                 </Suspense>
@@ -236,7 +243,7 @@ const App: React.FC = () => {
                 </AIChatProvider>
               </AuthProvider>
             </TooltipProvider>
-          </ThemeProvider>
+          {/* </ThemeProvider> */}
         </QueryClientProvider>
       </BrowserRouter>
     </ErrorBoundary>

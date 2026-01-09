@@ -3,7 +3,7 @@
  * Centralized route definitions to reduce App.tsx complexity and improve maintainability
  */
 
-import { lazy } from 'react';
+import React, { lazy } from 'react';
 import type { RouteConfig, RouteGroup, LazyRouteComponent } from './types';
 
 // === Lazy loaded components with proper typing ===
@@ -29,8 +29,10 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
 // Mobile app pages
 const MobileLogin = lazy(() => import('@/pages/mobile/MobileLogin'));
-const MobileApp = lazy(() => import('@/pages/mobile/MobileApp'));
+import { MobileApp } from '@/pages/mobile/MobileApp';
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
+const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
+import { MobileOverduePage } from '@/pages/mobile/MobileOverduePage';
 
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -317,12 +319,12 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/home',
     component: MobileApp,
-    lazy: true,
+    lazy: false,
     exact: true,
     title: 'Mobile App',
     description: 'Mobile app main interface',
     group: 'mobile',
-    priority: 1,
+    priority: 2,
     protected: true,
   },
   {
@@ -333,18 +335,40 @@ const routeConfigs: RouteConfig[] = [
     title: 'New Contract',
     description: 'Mobile contract creation wizard',
     group: 'mobile',
-    priority: 1,
+    priority: 2,
     protected: true,
   },
   {
-    path: '/mobile/*',
+    path: '/mobile/contracts/:contractId',
+    component: MobileContractDetails,
+    lazy: true,
+    exact: true,
+    title: 'Mobile Contract Details',
+    description: 'Mobile contract details',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/cars/:vehicleId',
     component: MobileApp,
     lazy: true,
-    exact: false,
-    title: 'Mobile App',
-    description: 'Mobile app with nested routes',
+    exact: true,
+    title: 'Mobile Vehicle Details',
+    description: 'Mobile vehicle details',
     group: 'mobile',
-    priority: 1,
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/overdue',
+    component: MobileOverduePage,
+    lazy: false,
+    exact: true,
+    title: 'Mobile Overdue',
+    description: 'Mobile overdue contracts',
+    group: 'mobile',
+    priority: 2,
     protected: true,
   },
 
@@ -1726,6 +1750,13 @@ export const routeGroups: RouteGroup[] = [
     description: 'Demo and trial pages',
     layout: 'none',
     priority: 2,
+  },
+  {
+    id: 'mobile',
+    name: 'Mobile',
+    description: 'Mobile app routes',
+    layout: 'none',
+    priority: 3,
   },
   {
     id: 'dashboard',

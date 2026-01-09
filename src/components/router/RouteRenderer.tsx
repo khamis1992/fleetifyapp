@@ -18,6 +18,9 @@ import { SuperAdminLayout } from '@/components/layouts/SuperAdminLayout';
 import { CompanyBrowserLayout } from '@/components/layouts/CompanyBrowserLayout';
 import { BentoLayout } from '@/components/layouts/BentoLayout';
 
+// Debug at file level
+console.log('🔍 [RouteRenderer] Module loaded');
+
 interface RouteRendererProps {
   routes: RouteConfig[];
   fallback?: React.ComponentType;
@@ -29,6 +32,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   fallback: FallbackComponent = PageSkeletonFallback,
   errorBoundary: ErrorBoundaryComponent = RouteErrorBoundary,
 }) => {
+  console.log('🔍 [RouteRenderer] Component rendered, routes:', routes.length);
   const location = useLocation();
   const [routeConfig, setRouteConfig] = useState<RouteConfig | undefined>();
 
@@ -46,101 +50,94 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 
   const renderRoute = (route: RouteConfig) => {
     const Component = route.component;
-    const isLazy = route.lazy;
     const isProtected = route.protected;
     const requiredRole = route.requiredRole;
     const layout = route.layout || 'none';
 
-    // Route protection wrapper
-    let ProtectedComponent = Component;
-    if (isProtected) {
-      if (requiredRole === 'super_admin') {
-        ProtectedComponent = () => (
-          <SuperAdminRoute>
-            <Component />
-          </SuperAdminRoute>
-        );
-      } else if (requiredRole === 'admin') {
-        ProtectedComponent = () => (
-          <AdminRoute>
-            <Component />
-          </AdminRoute>
-        );
-      } else {
-        ProtectedComponent = () => (
-          <ProtectedRoute>
-            <Component />
-          </ProtectedRoute>
-        );
-      }
+    // Create the protected component wrapper based on role
+    let protectedElement: React.ReactNode;
+    const componentElement = <Component />;
+
+    if (!isProtected) {
+      protectedElement = componentElement;
+    } else if (requiredRole === 'super_admin') {
+      protectedElement = <SuperAdminRoute>{componentElement}</SuperAdminRoute>;
+    } else if (requiredRole === 'admin') {
+      protectedElement = <AdminRoute>{componentElement}</AdminRoute>;
+    } else {
+      protectedElement = <ProtectedRoute>{componentElement}</ProtectedRoute>;
     }
 
-    // Layout wrapper
-    const WithLayout = () => {
-      switch (layout) {
-        case 'bento':
-          return (
-            <BentoLayout>
-              <LazyLoadErrorBoundary>
-                <Suspense fallback={<FallbackComponent />}>
-                  <RouteWrapper route={route}>
-                    <ProtectedComponent />
-                  </RouteWrapper>
-                </Suspense>
-              </LazyLoadErrorBoundary>
-            </BentoLayout>
-          );
-        case 'dashboard':
-          return (
-            <DashboardLayout>
-              <LazyLoadErrorBoundary>
-                <Suspense fallback={<FallbackComponent />}>
-                  <RouteWrapper route={route}>
-                    <ProtectedComponent />
-                  </RouteWrapper>
-                </Suspense>
-              </LazyLoadErrorBoundary>
-            </DashboardLayout>
-          );
-        case 'admin':
-          return (
-            <SuperAdminLayout>
-              <LazyLoadErrorBoundary>
-                <Suspense fallback={<FallbackComponent />}>
-                  <RouteWrapper route={route}>
-                    <ProtectedComponent />
-                  </RouteWrapper>
-                </Suspense>
-              </LazyLoadErrorBoundary>
-            </SuperAdminLayout>
-          );
-        case 'company':
-          return (
-            <CompanyBrowserLayout>
-              <LazyLoadErrorBoundary>
-                <Suspense fallback={<FallbackComponent />}>
-                  <RouteWrapper route={route}>
-                    <ProtectedComponent />
-                  </RouteWrapper>
-                </Suspense>
-              </LazyLoadErrorBoundary>
-            </CompanyBrowserLayout>
-          );
-        default:
-          return (
+    // Wrap with layout
+    switch (layout) {
+      case 'bento':
+        return (
+          <BentoLayout>
             <LazyLoadErrorBoundary>
               <Suspense fallback={<FallbackComponent />}>
                 <RouteWrapper route={route}>
-                  <ProtectedComponent />
+                  {protectedElement}
                 </RouteWrapper>
               </Suspense>
             </LazyLoadErrorBoundary>
-          );
-      }
-    };
-
-    return <WithLayout />;
+          </BentoLayout>
+        );
+      case 'dashboard':
+        return (
+          <DashboardLayout>
+            <LazyLoadErrorBoundary>
+              <Suspense fallback={<FallbackComponent />}>
+                <RouteWrapper route={route}>
+                  {protectedElement}
+                </RouteWrapper>
+              </Suspense>
+            </LazyLoadErrorBoundary>
+          </DashboardLayout>
+        );
+      case 'admin':
+        return (
+          <SuperAdminLayout>
+            <LazyLoadErrorBoundary>
+              <Suspense fallback={<FallbackComponent />}>
+                <RouteWrapper route={route}>
+                  {protectedElement}
+                </RouteWrapper>
+              </Suspense>
+            </LazyLoadErrorBoundary>
+          </SuperAdminLayout>
+        );
+      case 'company':
+        return (
+          <CompanyBrowserLayout>
+            <LazyLoadErrorBoundary>
+              <Suspense fallback={<FallbackComponent />}>
+                <RouteWrapper route={route}>
+                  {protectedElement}
+                </RouteWrapper>
+              </Suspense>
+            </LazyLoadErrorBoundary>
+          </CompanyBrowserLayout>
+        );
+      default:
+        return (
+          <LazyLoadErrorBoundary>
+            <Suspense fallback={<FallbackComponent />}>
+              <RouteWrapper route={route}>
+                {protectedElement}
+              </RouteWrapper>
+            </Suspense>
+          </LazyLoadErrorBoundary>
+        );
+    }
   };
+
+  // Debug: Log routes to verify they're loaded
+  React.useEffect(() => {
+    console.log('🔍 [RouteRenderer] Total routes:', routes.length);
+    console.log('🔍 [RouteRenderer] First 5 routes:', routes.slice(0, 5).map(r => ({ path: r.path, priority: r.priority })));
+    const mobileRoutes = routes.filter(r => r.path.startsWith('/mobile'));
+    console.log('🔍 [RouteRenderer] Mobile routes found:', mobileRoutes.map(r => ({ path: r.path, priority: r.priority, component: r.component?.name || 'lazy' })));
+  }, [routes]);
 
   return (
     <ErrorBoundaryComponent>
@@ -152,7 +149,6 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
               key={route.path}
               path={route.path}
               element={renderRoute(route)}
-              exact={route.exact}
             />
           ))}
 

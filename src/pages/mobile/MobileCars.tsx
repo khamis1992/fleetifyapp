@@ -10,7 +10,7 @@ interface Vehicle {
   id: string;
   make: string | null;
   model: string | null;
-  license_plate: string | null;
+  plate_number: string | null;
   year: number | null;
   status: string;
   daily_rate: number | null;
@@ -45,7 +45,37 @@ const MobileCars: React.FC = () => {
     if (!user) return;
 
     try {
-      const companyId = user?.profile?.company_id || user?.company?.id || '';
+      // Fetch company_id from profiles table (same approach as dashboard and MobileHome)
+      let companyId: string;
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profileData?.company_id) {
+        console.warn('[MobileCars] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+
+        // Try fallback to employees table
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (employeeError || !employeeData?.company_id) {
+          console.error('[MobileCars] No company_id found', { employeeError, user_id: user.id });
+          return;
+        }
+
+        companyId = employeeData.company_id;
+      } else {
+        companyId = profileData.company_id;
+      }
+
+      console.log('[MobileCars] Using company_id:', companyId);
 
       const { data, error } = await supabase
         .from('vehicles')
@@ -53,7 +83,7 @@ const MobileCars: React.FC = () => {
           id,
           make,
           model,
-          license_plate,
+          plate_number,
           year,
           status,
           daily_rate
@@ -89,7 +119,7 @@ const MobileCars: React.FC = () => {
         id: v.id,
         make: v.make,
         model: v.model,
-        license_plate: v.license_plate,
+        plate_number: v.plate_number,
         year: v.year,
         status: v.status,
         daily_rate: v.daily_rate,
@@ -239,10 +269,10 @@ const MobileCars: React.FC = () => {
                     <CarIcon className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-slate-900">{vehicle.plate_number}</p>
+                    <p className="text-sm text-slate-500">
                       {vehicle.make} {vehicle.model}
                     </p>
-                    <p className="text-sm text-slate-500">{vehicle.license_plate}</p>
                   </div>
                 </div>
                 <span className={cn('px-2 py-1 rounded-full text-xs font-medium', getStatusColor(vehicle.status))}>

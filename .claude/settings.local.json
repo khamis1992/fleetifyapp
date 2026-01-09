@@ -218,7 +218,11 @@
       "Bash(if [ -f \"C:\\\\Users\\\\khamis\\\\Desktop\\\\fleetifyapp\\\\IMPROVED_DASHBOARD_LAYOUT.ts\" ])",
       "Bash(then echo \"File exists\")",
       "Bash(else echo \"File not found\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(rm:*)",
+      "Bash(cmd /c \"taskkill /PID 37460 /F\")",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

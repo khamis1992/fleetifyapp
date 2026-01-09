@@ -44,8 +44,7 @@ export function EnhancedSidebar() {
       : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground";
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <Sidebar side="right" className={cn(
+    <Sidebar side="right" className={cn(
         "border-l border-sidebar-border bg-sidebar-background",
         // Make sidebar sticky and fill entire viewport height
         "fixed top-0 bottom-0 h-screen z-40"
@@ -287,6 +286,5 @@ export function EnhancedSidebar() {
           </div>
         </SidebarFooter>
       </Sidebar>
-    </TooltipProvider>
   );
 }
