@@ -6,7 +6,7 @@
 
 import { useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useCompanyContext } from '@/hooks/company/useCompanyContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 export interface PaymentValidationResult {
   isValid: boolean;
@@ -37,7 +37,7 @@ export function usePaymentValidation({
   amount,
   currency = 'QAR'
 }: UsePaymentValidationOptions) {
-  const { companyId } = useCompanyContext();
+  const { companyId } = useUnifiedCompanyAccess();
 
   const validationResult = useMemo((): PaymentValidationResult => {
     // Default: valid if no context
