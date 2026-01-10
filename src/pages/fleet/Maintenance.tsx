@@ -119,11 +119,14 @@ export default function Maintenance() {
     limit: 50,
     enabled: true // Only fetch what's needed
   });
-  
+
   const { data: maintenanceVehicles, isLoading: maintenanceVehiclesLoading } = useMaintenanceVehicles({
     limit: 20, // Reduced limit for better performance
     enabled: true // Only fetch what's needed
   });
+
+  // Only show loading on initial fetch, not on stale data revalidation
+  const isInitialLoading = maintenanceLoading && !maintenanceRecords;
   
   const { formatCurrency } = useCurrencyFormatter();
   const completeMaintenanceStatus = useCompleteMaintenanceStatus();
@@ -200,8 +203,9 @@ export default function Maintenance() {
   
   // Show smart dashboard for overview, detailed table for filtered views
   const showSmartDashboard = statusFilter === "all" && typeFilter === "all" && priorityFilter === "all" && !searchQuery;
-  
-  if (maintenanceLoading) {
+
+  // Show loading spinner only on initial load, not on refetch
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="text-center">

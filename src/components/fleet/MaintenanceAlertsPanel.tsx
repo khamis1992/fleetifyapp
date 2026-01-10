@@ -212,8 +212,9 @@ export function MaintenanceAlertsPanel({
       return alertsList.slice(0, maxItems);
     },
     enabled: !!companyId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Increased from 2min for better performance
+    gcTime: 10 * 60 * 1000, // Increased from 5min for better cache
+    refetchOnWindowFocus: false, // Disable refetch on window focus
   });
 
   const alertCounts = useMemo(() => {

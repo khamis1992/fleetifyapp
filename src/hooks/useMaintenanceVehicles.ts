@@ -50,8 +50,9 @@ export const useMaintenanceVehicles = (options?: { limit?: number; enabled?: boo
       return data || [];
     },
     enabled: enabled && !!companyId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - faster refresh for maintenance status
-    gcTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000, // 5 minutes - increased for better performance
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    refetchOnWindowFocus: false, // Disabled for better performance
   });
 };
 

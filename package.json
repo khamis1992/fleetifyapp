@@ -76,7 +76,10 @@
     "visual:test": "tsx scripts/visual-regression-helper.ts test",
     "visual:update": "tsx scripts/visual-regression-helper.ts update",
     "visual:report": "tsx scripts/visual-regression-helper.ts report",
-    "visual:help": "tsx scripts/visual-regression-helper.ts help"
+    "visual:help": "tsx scripts/visual-regression-helper.ts help",
+    "generate:payment-schedules": "tsx scripts/generate-payment-schedules-from-invoices.ts",
+    "generate:payment-schedules:dry": "tsx scripts/generate-payment-schedules-from-invoices.ts --all-contracts --dry-run",
+    "generate:payment-schedules:contract": "tsx scripts/generate-payment-schedules-from-invoices.ts"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.3",

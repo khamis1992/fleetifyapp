@@ -118,8 +118,9 @@ const createQueryClient = () => {
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
 
-        // Network mode
-        networkMode: 'online',
+        // Network mode - CRITICAL: Use 'always' to prevent infinite loading on navigation
+        // 'online' mode causes queries to pause when browser's online status check is slow
+        networkMode: 'always',
 
         // Performance monitoring - disabled to prevent errors
         // onSuccess and onError callbacks removed for stability

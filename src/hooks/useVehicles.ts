@@ -729,9 +729,9 @@ export const useVehicleMaintenance = (vehicleId?: string, options?: {
       return data as any[]
     },
     enabled: !!user?.profile?.company_id,
-    staleTime: priority ? 30 * 1000 : 2 * 60 * 1000, // 30s for priority, 2min otherwise
-    gcTime: 5 * 60 * 1000, // 5 minutes cache
-    refetchOnWindowFocus: priority, // Only auto-refocus for priority
+    staleTime: priority ? 30 * 1000 : 5 * 60 * 1000, // 30s for priority, 5min otherwise (increased)
+    gcTime: 10 * 60 * 1000, // 10 minutes cache (increased)
+    refetchOnWindowFocus: false, // Disabled for better performance
   })
 }
 

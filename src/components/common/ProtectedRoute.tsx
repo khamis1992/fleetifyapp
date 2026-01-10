@@ -6,6 +6,15 @@ import { useCompanyIdWithInit } from '@/hooks/useUnifiedCompanyAccess';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LazyLoadErrorBoundary } from './LazyLoadErrorBoundary';
 
+/**
+ * ProtectedRoute - Route protection with safety timeout
+ *
+ * CRITICAL FIX: Added 3-second timeout to prevent infinite loading
+ * when React Query or auth/company initialization hangs during navigation.
+ *
+ * @see App.tsx networkMode: 'always' - Primary fix for query hanging
+ */
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   permission?: string;
@@ -28,9 +37,28 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading } = useAuth();
   const { companyId, isInitializing } = useCompanyIdWithInit();
   const location = useLocation();
+  const [hasTimedOut, setHasTimedOut] = React.useState(false);
 
-  // Show loading while authenticating OR initializing company context
-  if (loading || isInitializing) {
+  // SAFETY TIMEOUT: Prevent infinite loading on navigation
+  // If auth/company init takes longer than 3 seconds, force render anyway
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading || isInitializing) {
+        console.warn('[ProtectedRoute] Initialization timeout - forcing render', {
+          loading,
+          isInitializing,
+          companyId,
+          path: location.pathname
+        });
+        setHasTimedOut(true);
+      }
+    }, 3000); // 3 second timeout
+
+    return () => clearTimeout(timer);
+  }, [loading, isInitializing, companyId, location.pathname]);
+
+  // Show loading while authenticating OR initializing company context (with safety timeout)
+  if ((loading || isInitializing) && !hasTimedOut) {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-1/3" />

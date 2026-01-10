@@ -24,6 +24,7 @@ import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useVendors } from "@/hooks/useFinance";
 import { enhancedPaymentSchema, PaymentJournalPreview } from "@/schemas/payment.schema";
+import { usePaymentValidation } from "@/hooks/finance/usePaymentValidation";
 import { toast } from 'sonner';
 
 interface UnifiedPaymentFormProps {
@@ -82,6 +83,9 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Idempotency key: Prevent duplicate payment creation on retry
   const [idempotencyKey] = useState(() => `payment_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+  // Payment validation state
+  const [paymentValidation, setPaymentValidation] = useState<any>(null);
+  const [isValidatingPayment, setIsValidatingPayment] = useState(false);
 
   // Business logic hook
   const { 
@@ -152,13 +156,41 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
   const watchedVendorId = form.watch('vendor_id');
   const watchedValues = form.watch();
   const paymentMethod = form.watch('payment_method');
-  
+  const watchedAmount = form.watch('amount');
+  const watchedContractId = form.watch('contract_id');
+  const watchedInvoiceId = form.watch('invoice_id');
+
+  // Payment validation hook
+  const { validationResult, validatePayment } = usePaymentValidation({
+    contractId: watchedContractId || contractId,
+    invoiceId: watchedInvoiceId || invoiceId,
+    amount: watchedAmount || 0,
+    currency: watchedValues.currency || companyCurrency || 'QAR'
+  });
+
+  // Validate payment when amount, contract, or invoice changes
+  React.useEffect(() => {
+    const validate = async () => {
+      if (watchedAmount > 0 && (watchedContractId || watchedInvoiceId || contractId || invoiceId)) {
+        setIsValidatingPayment(true);
+        const result = await validatePayment();
+        setPaymentValidation(result);
+        setIsValidatingPayment(false);
+      } else {
+        setPaymentValidation(null);
+      }
+    };
+
+    const timeoutId = setTimeout(validate, 500);
+    return () => clearTimeout(timeoutId);
+  }, [watchedAmount, watchedContractId, watchedInvoiceId, contractId, invoiceId, validatePayment]);
+
   // Use watched values or props for contracts - only fetch if we have a valid UUID
-  const effectiveCustomerId = (watchedCustomerId && watchedCustomerId !== 'none' && watchedCustomerId !== '') 
+  const effectiveCustomerId = (watchedCustomerId && watchedCustomerId !== 'none' && watchedCustomerId !== '')
     ? watchedCustomerId : customerId;
-  const effectiveVendorId = (watchedVendorId && watchedVendorId !== 'none' && watchedVendorId !== '') 
+  const effectiveVendorId = (watchedVendorId && watchedVendorId !== 'none' && watchedVendorId !== '')
     ? watchedVendorId : vendorId;
-  
+
   const { data: contracts } = useActiveContracts(effectiveCustomerId, effectiveVendorId);
 
   // Filter accounts based on search query
@@ -406,6 +438,47 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                             />
                           </FormControl>
                           <FormMessage />
+                          {/* Payment validation warning */}
+                          {paymentValidation && paymentValidation.message && (
+                            <div className={`mt-2 p-3 rounded-lg text-sm ${
+                              paymentValidation.isBlocked
+                                ? 'bg-red-50 border border-red-200 text-red-800'
+                                : paymentValidation.isWarning
+                                ? 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                                : 'bg-blue-50 border border-blue-200 text-blue-800'
+                            }`}>
+                              <div className="flex items-start gap-2">
+                                <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                                  paymentValidation.isBlocked ? 'text-red-600' : 'text-yellow-600'
+                                }`} />
+                                <div>
+                                  <p className="font-medium">
+                                    {paymentValidation.isBlocked ? 'تنبيه هام' : paymentValidation.isWarning ? 'تنبيه' : 'ملاحظة'}
+                                  </p>
+                                  <p className="text-xs mt-1">{paymentValidation.message}</p>
+                                  {paymentValidation.details && (
+                                    <div className="mt-2 text-xs space-y-1">
+                                      {paymentValidation.details.contractAmount > 0 && (
+                                        <p>مبلغ العقد: QAR {paymentValidation.details.contractAmount.toLocaleString()}</p>
+                                      )}
+                                      {paymentValidation.details.totalPaid > 0 && (
+                                        <p>المدفوع حتى الآن: QAR {paymentValidation.details.totalPaid.toLocaleString()}</p>
+                                      )}
+                                      {paymentValidation.details.newTotal > 0 && (
+                                        <p>الإجمالي بعد هذه الدفعة: QAR {paymentValidation.details.newTotal.toLocaleString()}</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {isValidatingPayment && (
+                            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                              <div className="w-3 h-3 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                              جاري التحقق من صحة المبلغ...
+                            </div>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -914,7 +987,14 @@ export const UnifiedPaymentForm: React.FC<UnifiedPaymentFormProps> = ({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isCreating || isUpdating || isSubmitting || !canCreatePayments}
+                  disabled={
+                    isCreating ||
+                    isUpdating ||
+                    isSubmitting ||
+                    !canCreatePayments ||
+                    paymentValidation?.isBlocked ||
+                    isValidatingPayment
+                  }
                 >
                   {(isCreating || isUpdating || isSubmitting) ? "جاري الحفظ..." : mode === 'edit' ? "تحديث الدفعة" : "حفظ الإيصال"}
                 </Button>

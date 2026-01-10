@@ -271,7 +271,8 @@ export const useMaintenanceStats = () => {
       };
     },
     enabled: !!companyId,
-    staleTime: 3 * 60 * 1000, // 3 دقائق
-    gcTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000, // 5 minutes - increased for better performance
+    gcTime: 10 * 60 * 1000, // 10 minutes cache - increased
+    refetchOnWindowFocus: false, // Disable refetch on window focus for better performance
   });
 };
