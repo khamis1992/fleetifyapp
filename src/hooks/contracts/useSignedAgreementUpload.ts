@@ -70,18 +70,11 @@ export function useSignedAgreementUpload() {
         // Step 1: Upload file to Supabase storage
         onProgress?.(10);
 
-        // Sanitize filename for Supabase storage:
-        // - Replace spaces with underscores
-        // - Remove any characters that might cause issues
-        // - Keep the file extension
+        // Use timestamp + random string for storage path (Supabase doesn't support Arabic in paths)
+        // Original filename is preserved in the database record
         const fileExtension = file.name.split('.').pop() || 'pdf';
-        const baseName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
-        const sanitizedBaseName = baseName
-          .replace(/\s+/g, '_') // Replace spaces with underscores
-          .replace(/[^\w\u0600-\u06FF_-]/g, '') // Keep alphanumeric, Arabic, underscores, hyphens
-          .substring(0, 100); // Limit length
-        
-        const fileName = `signed-agreements/${companyId}/${Date.now()}_${sanitizedBaseName}.${fileExtension}`;
+        const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        const fileName = `signed-agreements/${companyId}/${uniqueId}.${fileExtension}`;
 
         const { error: uploadError } = await supabase.storage
           .from('contract-documents')
