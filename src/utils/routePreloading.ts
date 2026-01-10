@@ -22,11 +22,11 @@ export const criticalRoutes: RoutePreloadConfig[] = [
   // High priority - Most frequently accessed
   { path: '/dashboard', importFn: () => import('@/pages/Dashboard'), priority: 'high' },
   { path: '/finance', importFn: () => import('@/pages/Finance'), priority: 'high' },
-  { path: '/customers', importFn: () => import('@/pages/customers/CustomersPageNew'), priority: 'high' },
-  { path: '/contracts', importFn: () => import('@/pages/Contracts'), priority: 'high' },
+  { path: '/customers', importFn: () => import('@/pages/customers/CustomersPageRedesigned'), priority: 'high' },
+  { path: '/contracts', importFn: () => import('@/pages/ContractsRedesigned'), priority: 'high' },
   
   // Medium priority - Frequently accessed
-  { path: '/fleet', importFn: () => import('@/pages/fleet/FleetPageNew'), priority: 'medium' },
+  { path: '/fleet', importFn: () => import('@/pages/fleet/FleetPageRedesigned'), priority: 'medium' },
   { path: '/reports', importFn: () => import('@/pages/Reports'), priority: 'medium' },
   { path: '/quotations', importFn: () => import('@/pages/Quotations'), priority: 'medium' },
   { path: '/profile', importFn: () => import('@/pages/Profile'), priority: 'medium' },

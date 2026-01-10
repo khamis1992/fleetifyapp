@@ -537,6 +537,14 @@ function ContractsRedesigned() {
                   <span className="hidden lg:inline">إرسال تنبيهات</span>
                 </Button>
                 <Button
+                  onClick={() => navigate('/contracts/signed-agreements')}
+                  variant="outline"
+                  className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-green-500/30 hover:bg-green-50/50 transition-all hover:shadow-xl hover:shadow-green-500/10"
+                >
+                  <FileSignature className="w-4 h-4 ml-2 text-green-500" />
+                  <span className="hidden lg:inline">العقود الموقعة</span>
+                </Button>
+                <Button
                   onClick={() => setShowExportDialog(true)}
                   variant="outline"
                   className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"

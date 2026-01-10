@@ -426,7 +426,7 @@ export default function SignedAgreementsUpload() {
                 </label>
               </div>
               <p className="text-xs text-slate-500">
-                يدعم رفع ملفات PDF فقط بحد أقصى 10 ملفات في المرة الواحدة
+                يدعم رفع ملفات PDF فقط بحد أقصى 500 ملف في المرة الواحدة
               </p>
             </div>
           </CardContent>
