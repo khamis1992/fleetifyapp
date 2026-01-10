@@ -956,7 +956,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           </span>
         </div>
 
-        {currentStep === STEPS.length - 1 ? (
+        {currentStep === STEPS.length - 1 || mode === 'edit' ? (
           <Button
             type="submit"
             disabled={createCustomer.isPending || updateCustomer.isPending || (hasDuplicates && !forceCreate)}
