@@ -52,6 +52,7 @@ import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
 import { ExpressContractForm } from "@/components/contracts";
 import { ContractAmendmentForm } from "@/components/contracts";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -121,8 +122,8 @@ function ContractsNew() {
   const [pageSize, setPageSize] = useState(100);
 
   // Hooks
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -457,6 +458,14 @@ function ContractsNew() {
             >
               <Zap className="w-5 h-5 text-amber-500" />
               <span>عقود ايجار</span>
+            </Button>
+            <Button
+              onClick={() => navigate('/contracts/signed-agreements')}
+              variant="outline"
+              className="px-5 py-3 rounded-xl font-medium border-slate-300 hover:border-green-500 transition-colors flex items-center gap-2"
+            >
+              <Upload className="w-5 h-5 text-green-500" />
+              <span className="hidden lg:inline">العقود الموقعة</span>
             </Button>
             {user?.roles?.includes('super_admin') && (
               <Button

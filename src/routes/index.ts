@@ -1736,6 +1736,18 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
     requiredRole: 'admin',
   },
+  {
+    path: '/contracts/signed-agreements',
+    component: lazy(() => import('@/pages/contracts/SignedAgreementsUpload')),
+    lazy: true,
+    exact: true,
+    title: 'العقود الموقعة',
+    description: 'Upload signed agreement PDFs with AI matching',
+    group: 'contracts',
+    priority: 132,
+    protected: true,
+    layout: 'bento',
+  },
 
   // === Fix and Diagnostic Routes ===
   {

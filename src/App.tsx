@@ -240,9 +240,9 @@ const App: React.FC = () => {
                       </MobileOptimizationProvider>
                     </FinanceProvider>
                   </FABProvider>
-                </CompanyContextProvider>
-                </AIChatProvider>
-              </AuthProvider>
+              </CompanyContextProvider>
+              {/* </AIChatProvider> */}
+            </AuthProvider>
             {/* </TooltipProvider> */}
           {/* </ThemeProvider> */}
         </QueryClientProvider>

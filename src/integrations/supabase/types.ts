@@ -2957,6 +2957,19 @@ export type Database = {
           updated_at: string | null
           uploaded_at: string | null
           uploaded_by: string | null
+          // AI Matching columns (added 2025-01-10)
+          ai_match_status: 'pending' | 'matched' | 'not_matched' | 'manual_override' | 'review_required' | null
+          ai_match_confidence: number | null
+          matched_by: 'ai' | 'manual' | 'bulk_import' | null
+          matched_at: string | null
+          verified_by: string | null
+          verified_at: string | null
+          match_notes: string | null
+          // Batch tracking columns (added 2025-01-10)
+          upload_batch_id: string | null
+          original_filename: string | null
+          processing_status: 'uploading' | 'parsing' | 'matching' | 'complete' | 'failed' | 'review_required' | null
+          processing_error: string | null
         }
         Insert: {
           company_id: string
@@ -2974,6 +2987,19 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+          // AI Matching columns
+          ai_match_status?: 'pending' | 'matched' | 'not_matched' | 'manual_override' | 'review_required' | null
+          ai_match_confidence?: number | null
+          matched_by?: 'ai' | 'manual' | 'bulk_import' | null
+          matched_at?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          match_notes?: string | null
+          // Batch tracking columns
+          upload_batch_id?: string | null
+          original_filename?: string | null
+          processing_status?: 'uploading' | 'parsing' | 'matching' | 'complete' | 'failed' | 'review_required' | null
+          processing_error?: string | null
         }
         Update: {
           company_id?: string
@@ -2991,6 +3017,19 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+          // AI Matching columns
+          ai_match_status?: 'pending' | 'matched' | 'not_matched' | 'manual_override' | 'review_required' | null
+          ai_match_confidence?: number | null
+          matched_by?: 'ai' | 'manual' | 'bulk_import' | null
+          matched_at?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          match_notes?: string | null
+          // Batch tracking columns
+          upload_batch_id?: string | null
+          original_filename?: string | null
+          processing_status?: 'uploading' | 'parsing' | 'matching' | 'complete' | 'failed' | 'review_required' | null
+          processing_error?: string | null
         }
         Relationships: [
           {
@@ -22435,6 +22474,39 @@ export type Database = {
         }
         Relationships: []
       }
+      // AI Matching Views (added 2025-01-10)
+      pending_contract_matches: {
+        Row: {
+          ai_match_confidence: number | null
+          ai_match_status: string | null
+          company_id: string
+          document_id: string
+          document_name: string
+          document_type: string
+          match_notes: string | null
+          processing_status: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+          uploader_name: string | null
+          contract_number: string | null
+          customer_name: string | null
+          vehicle_plate: string | null
+        }
+        Relationships: []
+      }
+      contract_match_statistics: {
+        Row: {
+          ai_matched_count: number | null
+          avg_confidence: number | null
+          company_id: string
+          manual_override_count: number | null
+          not_matched_count: number | null
+          pending_count: number | null
+          review_required_count: number | null
+          total_documents: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_vehicles_to_installment:
@@ -24597,6 +24669,25 @@ export type Database = {
           tags_param?: Json
         }
         Returns: string
+      }
+      // AI Matching Functions (added 2025-01-10)
+      record_ai_match_result: {
+        Args: {
+          p_confidence: number
+          p_contract_id: string
+          p_document_id: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      override_contract_match: {
+        Args: {
+          p_document_id: string
+          p_new_contract_id: string
+          p_notes?: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       redistribute_vehicles_to_contracts: {
         Args: { p_company_id: string }

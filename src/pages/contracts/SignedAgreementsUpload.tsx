@@ -14,7 +14,6 @@ import {
   AlertCircle,
   XCircle,
   Trash2,
-  Download,
   ExternalLink,
   RefreshCw,
   Search,
@@ -70,44 +69,9 @@ export default function SignedAgreementsUpload() {
   } = useSignedAgreementUpload();
 
   /**
-   * Handle file selection from input
-   */
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    const validFiles = Array.from(files).filter(file => {
-      if (file.type !== 'application/pdf') {
-        toast({
-          title: 'خطأ',
-          description: `الملف ${file.name} ليس ملف PDF. يُرجى رفع ملفات PDF فقط.`,
-        });
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length === 0) return;
-
-    // Add files to the list
-    const newFiles: UploadedFile[] = validFiles.map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file,
-      status: 'uploading',
-      progress: 0,
-    }));
-
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-
-    // Process each file
-    newFiles.forEach(uploadedFile => {
-      processFile(uploadedFile);
-    });
-  }, [toast, uploadSignedAgreement]);
-
-  /**
    * Process a single file: upload -> match
    */
-  const processFile = async (uploadedFile: UploadedFile) => {
+  const processFile = useCallback(async (uploadedFile: UploadedFile) => {
     try {
       // Step 1: Upload file
       setUploadedFiles(prev =>
@@ -128,7 +92,7 @@ export default function SignedAgreementsUpload() {
         );
       });
 
-      if (!uploadResult.success) {
+      if (!uploadResult.success || !uploadResult.documentId) {
         throw new Error(uploadResult.error || 'فشل في رفع الملف');
       }
 
@@ -141,7 +105,7 @@ export default function SignedAgreementsUpload() {
         )
       );
 
-      const matchResult = await matchAgreement(uploadResult.documentId!, uploadedFile.file.name, (progress) => {
+      const matchResult = await matchAgreement(uploadResult.documentId, uploadedFile.file.name, (progress) => {
         setUploadedFiles(prev =>
           prev.map(f =>
             f.id === uploadedFile.id
@@ -195,7 +159,42 @@ export default function SignedAgreementsUpload() {
         )
       );
     }
-  };
+  }, [uploadSignedAgreement, matchAgreement]);
+
+  /**
+   * Handle file selection from input
+   */
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const validFiles = Array.from(files).filter(file => {
+      if (file.type !== 'application/pdf') {
+        toast({
+          title: 'خطأ',
+          description: `الملف ${file.name} ليس ملف PDF. يُرجى رفع ملفات PDF فقط.`,
+        });
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Add files to the list
+    const newFiles: UploadedFile[] = validFiles.map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file,
+      status: 'uploading',
+      progress: 0,
+    }));
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+
+    // Process each file
+    newFiles.forEach(uploadedFile => {
+      processFile(uploadedFile);
+    });
+  }, [toast, processFile]);
 
   /**
    * Handle drag and drop events
@@ -521,7 +520,7 @@ export default function SignedAgreementsUpload() {
                                 العقد
                               </div>
                               <button
-                                onClick={() => handleViewContract(file.matchData!.contractNumber!)}
+                                onClick={() => file.matchData?.contractNumber && handleViewContract(file.matchData.contractNumber)}
                                 className="text-sm font-medium text-green-700 hover:text-green-800 flex items-center gap-1"
                               >
                                 {file.matchData.contractNumber}
@@ -538,7 +537,7 @@ export default function SignedAgreementsUpload() {
                                 العميل
                               </div>
                               <button
-                                onClick={() => handleViewCustomer(file.matchData!.customerId!)}
+                                onClick={() => file.matchData?.customerId && handleViewCustomer(file.matchData.customerId)}
                                 className="text-sm font-medium text-green-700 hover:text-green-800 flex items-center gap-1"
                               >
                                 {file.matchData.customerName}
@@ -555,7 +554,7 @@ export default function SignedAgreementsUpload() {
                                 المركبة
                               </div>
                               <button
-                                onClick={() => handleViewVehicle(file.matchData!.vehicleId!)}
+                                onClick={() => file.matchData?.vehicleId && handleViewVehicle(file.matchData.vehicleId)}
                                 className="text-sm font-medium text-green-700 hover:text-green-800 flex items-center gap-1"
                               >
                                 {file.matchData.vehiclePlate}

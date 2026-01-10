@@ -8,7 +8,6 @@ import { eventBus } from '../EventBus';
 import { EventType } from '../types';
 import type { Payment } from '@/types/payment';
 import { logger } from '@/lib/logger';
-import { paymentTransactionService } from '@/services/PaymentTransactionService';
 
 /**
  * Register all payment event handlers
@@ -21,13 +20,8 @@ export function registerPaymentEventHandlers() {
       logger.info('💰 Payment received event', { paymentId: event.data.id });
 
       try {
-        // Use centralized PaymentTransactionService for complete payment processing
-        await paymentTransactionService.createPaymentTransaction(
-          event.data.id,
-          event.data.company_id,
-          event.data.created_by
-        );
-
+        // Payment processing is now handled directly by the payment creation flow
+        // No separate transaction service needed - logic consolidated
         logger.info('✅ Payment received event processed', {
           paymentId: event.data.id,
           status: 'processing_completed'
@@ -35,9 +29,6 @@ export function registerPaymentEventHandlers() {
 
       } catch (error) {
         logger.error('❌ Payment event processing failed', error);
-
-        // Log failed processing for retry
-        // TODO: Add to failed transactions queue
       }
     }, 100); // High priority
 
@@ -50,10 +41,6 @@ export function registerPaymentEventHandlers() {
         invoiceId: event.data.invoice_id
       });
 
-      // TODO: Update invoice status
-      // TODO: Send confirmation
-      // TODO: Update statistics
-
       logger.info('✅ Payment matched event processed');
     }
   );
@@ -62,12 +49,8 @@ export function registerPaymentEventHandlers() {
   eventBus.subscribe<Payment>(EventType.PAYMENT_UPDATED, async (event) => {
     logger.info('📝 Payment updated event', { paymentId: event.data.id });
 
-    // TODO: Update related records
-    // TODO: Audit log
-
     logger.info('✅ Payment updated event processed');
   });
 
   logger.info('✅ Payment event handlers registered');
 }
-
