@@ -1,15 +1,15 @@
 import React, { ReactNode } from 'react';
-import { Home, FileText, Car, AlertCircle } from 'lucide-react';
+import { Home, FileText, Car, AlertCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MobileLayoutProps {
   children: ReactNode;
-  currentTab?: 'home' | 'contracts' | 'cars' | 'overdue';
-  onTabChange?: (tab: 'home' | 'contracts' | 'cars' | 'overdue') => void;
+  currentTab?: 'home' | 'contracts' | 'cars' | 'overdue' | 'customers';
+  onTabChange?: (tab: 'home' | 'contracts' | 'cars' | 'overdue' | 'customers') => void;
 }
 
 interface DockItem {
-  id: 'home' | 'contracts' | 'cars' | 'overdue';
+  id: 'home' | 'contracts' | 'cars' | 'overdue' | 'customers';
   icon: React.ElementType;
   label: string;
   labelAr: string;
@@ -19,6 +19,7 @@ const dockItems: DockItem[] = [
   { id: 'home', icon: Home, label: 'Home', labelAr: 'الرئيسية' },
   { id: 'contracts', icon: FileText, label: 'Contracts', labelAr: 'العقود' },
   { id: 'cars', icon: Car, label: 'Cars', labelAr: 'السيارات' },
+  { id: 'customers', icon: Users, label: 'Customers', labelAr: 'العملاء' },
   { id: 'overdue', icon: AlertCircle, label: 'Overdue', labelAr: 'المتأخرات' },
 ];
 

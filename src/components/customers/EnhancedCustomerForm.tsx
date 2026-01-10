@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { useCustomerOperations } from '@/hooks/business/useCustomerOperations';
-import { createCustomerSchema } from '@/schemas/customer.schema';
+import { createCustomerSchema, baseCustomerSchema } from '@/schemas/customer.schema';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -53,7 +53,7 @@ import { cn } from '@/lib/utils';
 import { CustomerFormWithDuplicateCheck } from './CustomerFormWithDuplicateCheck';
 
 // === Schema ===
-const customerSchema = createCustomerSchema;
+const customerSchema = baseCustomerSchema;
 type CustomerFormData = z.infer<typeof customerSchema>;
 
 // === Types ===
@@ -203,6 +203,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   });
 
   // Sanitize editingCustomer - keep null values as undefined to avoid validation issues
+  // Also handle date fields properly - convert string dates to Date objects
   const sanitizedEditingCustomer = editingCustomer ? {
     customer_type: editingCustomer.customer_type || 'individual',
     first_name: editingCustomer.first_name || undefined,
@@ -220,6 +221,10 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     address: editingCustomer.address || undefined,
     city: editingCustomer.city || undefined,
     country: editingCustomer.country || undefined,
+    // Handle date fields - convert string dates to Date objects for the form
+    date_of_birth: editingCustomer.date_of_birth ? new Date(editingCustomer.date_of_birth) : undefined,
+    national_id_expiry: editingCustomer.national_id_expiry ? new Date(editingCustomer.national_id_expiry) : undefined,
+    license_expiry: editingCustomer.license_expiry ? new Date(editingCustomer.license_expiry) : undefined,
   } : undefined;
 
   const form = useForm<CustomerFormData>({
@@ -238,6 +243,9 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       address: '',
       city: '',
       country: '',
+      date_of_birth: undefined,
+      national_id_expiry: undefined,
+      license_expiry: undefined,
       ...initialData,
       ...sanitizedEditingCustomer
     },
@@ -956,7 +964,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           </span>
         </div>
 
-        {currentStep === STEPS.length - 1 || mode === 'edit' ? (
+        {currentStep === STEPS.length - 1 ? (
           <Button
             type="submit"
             disabled={createCustomer.isPending || updateCustomer.isPending || (hasDuplicates && !forceCreate)}

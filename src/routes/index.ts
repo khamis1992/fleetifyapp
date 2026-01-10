@@ -33,10 +33,13 @@ import { MobileApp } from '@/pages/mobile/MobileApp';
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
 const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
 import { MobileCarDetail } from '@/pages/mobile/MobileCarDetail';
+const MobileCustomerDetails = lazy(() => import('@/pages/mobile/MobileCustomerDetails'));
+const MobileCustomerForm = lazy(() => import('@/pages/mobile/MobileCustomerForm'));
 
 // Wrapper components for each tab
 const MobileAppCars: React.FC = () => React.createElement(MobileApp, { initialTab: 'cars' });
 const MobileAppContracts: React.FC = () => React.createElement(MobileApp, { initialTab: 'contracts' });
+const MobileAppCustomers: React.FC = () => React.createElement(MobileApp, { initialTab: 'customers' });
 const MobileAppOverdue: React.FC = () => React.createElement(MobileApp, { initialTab: 'overdue' });
 
 // Core application pages - lazy loaded
@@ -366,6 +369,17 @@ const routeConfigs: RouteConfig[] = [
     protected: true,
   },
   {
+    path: '/mobile/customers',
+    component: MobileAppCustomers,
+    lazy: false,
+    exact: true,
+    title: 'Mobile Customers',
+    description: 'Mobile customers list',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
     path: '/mobile/contracts/new',
     component: MobileContractWizard,
     lazy: true,
@@ -394,6 +408,39 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'Mobile Vehicle Details',
     description: 'Mobile vehicle details',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/customers/new',
+    component: MobileCustomerForm,
+    lazy: true,
+    exact: true,
+    title: 'New Customer',
+    description: 'Mobile customer creation form',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/customers/:customerId',
+    component: MobileCustomerDetails,
+    lazy: true,
+    exact: true,
+    title: 'Mobile Customer Details',
+    description: 'Mobile customer details',
+    group: 'mobile',
+    priority: 2,
+    protected: true,
+  },
+  {
+    path: '/mobile/customers/:customerId/edit',
+    component: MobileCustomerForm,
+    lazy: true,
+    exact: true,
+    title: 'Edit Customer',
+    description: 'Mobile customer edit form',
     group: 'mobile',
     priority: 2,
     protected: true,

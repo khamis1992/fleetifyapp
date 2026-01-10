@@ -4,13 +4,14 @@ import { MobileHome } from './MobileHome';
 import { MobileContracts } from './MobileContracts';
 import MobileCars from './MobileCars';
 import MobileOverdue from './MobileOverdue';
+import { MobileCustomers } from './MobileCustomers';
 
 interface MobileAppProps {
-  initialTab?: 'home' | 'contracts' | 'cars' | 'overdue';
+  initialTab?: 'home' | 'contracts' | 'cars' | 'overdue' | 'customers';
 }
 
 export const MobileApp: React.FC<MobileAppProps> = ({ initialTab = 'home' }) => {
-  const [currentTab, setCurrentTab] = useState<'home' | 'contracts' | 'cars' | 'overdue'>(initialTab);
+  const [currentTab, setCurrentTab] = useState<'home' | 'contracts' | 'cars' | 'overdue' | 'customers'>(initialTab);
 
   const renderContent = () => {
     switch (currentTab) {
@@ -20,6 +21,8 @@ export const MobileApp: React.FC<MobileAppProps> = ({ initialTab = 'home' }) => 
         return <MobileContracts key="contracts" />;
       case 'cars':
         return <MobileCars key="cars" />;
+      case 'customers':
+        return <MobileCustomers key="customers" />;
       case 'overdue':
         return <MobileOverdue key="overdue" />;
       default:

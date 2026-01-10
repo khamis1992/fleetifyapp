@@ -223,7 +223,8 @@
       "Bash(cmd /c \"taskkill /PID 37460 /F\")",
       "Bash(cmd /c \"taskkill /F /IM node.exe\")",
       "Bash(xargs kill:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(./gradlew assembleDebug:*)"
     ],
     "deny": [],
     "ask": []
