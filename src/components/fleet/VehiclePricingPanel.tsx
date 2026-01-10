@@ -75,7 +75,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
           </div>
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" className="bg-[#00A896] hover:bg-[#007D6D]">
                 <Plus className="h-4 w-4 mr-2" />
                 إضافة تسعير
               </Button>
@@ -146,7 +146,7 @@ export function VehiclePricingPanel({ vehicleId }: VehiclePricingPanelProps) {
                   <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                     إلغاء
                   </Button>
-                  <Button type="submit" disabled={createPricing.isPending}>
+                  <Button type="submit" disabled={createPricing.isPending} className="bg-[#00A896] hover:bg-[#007D6D]">
                     {createPricing.isPending ? "جاري الحفظ..." : "حفظ التسعير"}
                   </Button>
                 </div>

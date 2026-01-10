@@ -162,7 +162,7 @@ export const useUnifiedCompanyAccess = () => {
       isInitializing: false,
       authError: null
     };
-  }, [user?.id, user?.company?.id, session?.access_token, loading, isBrowsingMode, browsedCompany?.id]);
+  }, [user?.id, loading, isBrowsingMode, browsedCompany?.id]);
 
   return result;
 };

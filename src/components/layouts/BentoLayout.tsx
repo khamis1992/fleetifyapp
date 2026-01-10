@@ -26,6 +26,12 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  // Track mount state to avoid unnecessary loading spinners during navigation
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -43,7 +49,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (loading) {
+  // CRITICAL FIX: Only show loading on initial mount, not during navigation
+  // This prevents loading spinners from appearing when navigating between pages
+  if (loading && !hasMounted && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <LoadingSpinner size="lg" />
@@ -51,7 +59,8 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
+  // Only redirect if we're not loading and don't have a user
+  if (!loading && !user) {
     return <Navigate to="/auth" replace />;
   }
 

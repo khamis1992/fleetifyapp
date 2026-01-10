@@ -85,7 +85,6 @@ import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
 import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
-import { VehicleSidePanel } from '@/components/fleet/VehicleSidePanel';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 
 // ===== Status Config =====
@@ -347,8 +346,6 @@ const FleetPageRedesigned: React.FC = () => {
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
-  const [sidePanelOpen, setSidePanelOpen] = useState(false);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set());
 
@@ -438,13 +435,7 @@ const FleetPageRedesigned: React.FC = () => {
   };
 
   const handleViewVehicle = (vehicleId: string) => {
-    setSelectedVehicleId(vehicleId);
-    setSidePanelOpen(true);
-  };
-
-  const handleCloseSidePanel = () => {
-    setSidePanelOpen(false);
-    setSelectedVehicleId(null);
+    navigate(`/fleet/vehicles/${vehicleId}`);
   };
 
   const handleStatusChange = async (vehicle: Vehicle) => {
@@ -610,7 +601,7 @@ const FleetPageRedesigned: React.FC = () => {
 
         {/* Alerts Panel */}
         <VehicleAlertPanel
-          onViewVehicle={handleViewVehicle}
+          onViewVehicle={(vehicleId) => navigate(`/fleet/vehicles/${vehicleId}`)}
           maxAlerts={3}
         />
 
@@ -965,30 +956,6 @@ const FleetPageRedesigned: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Vehicle Side Panel */}
-      <VehicleSidePanel
-        vehicleId={selectedVehicleId}
-        isOpen={sidePanelOpen}
-        onClose={handleCloseSidePanel}
-        onEdit={(id) => {
-          handleCloseSidePanel();
-          const vehicle = vehiclesData?.data?.find(v => v.id === id);
-          if (vehicle) handleEditVehicle(vehicle);
-        }}
-        onDelete={(id) => {
-          handleCloseSidePanel();
-          const vehicle = vehiclesData?.data?.find(v => v.id === id);
-          if (vehicle) setVehicleToDelete(vehicle);
-        }}
-        onNewContract={(id) => {
-          handleCloseSidePanel();
-          navigate(`/contracts?vehicle=${id}`);
-        }}
-        onNewMaintenance={(id) => {
-          handleCloseSidePanel();
-          navigate(`/fleet/maintenance?vehicle=${id}`);
-        }}
-      />
     </div>
   );
 };

@@ -291,15 +291,33 @@ export function DocumentUploadDialog({
             {!selectedFile ? (
               <div
                 className={cn(
-                  "relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer",
+                  "relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200",
                   isDragging
                     ? "border-teal-500 bg-teal-50"
                     : "border-slate-300 hover:border-teal-400 hover:bg-slate-50"
                 )}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'copy';
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(e);
+                }}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
               >
                 <input
                   ref={fileInputRef}

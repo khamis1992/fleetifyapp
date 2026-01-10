@@ -266,45 +266,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Safety timeout to prevent infinite loading (reduced to 2 seconds since we load basic user immediately)
+  // Safety timeout to prevent infinite loading - FIXED: Ensure loading state is always cleared
   React.useEffect(() => {
     mountedRef.current = true;
-    
+
     console.log('📝 [AUTH_CONTEXT] Component mounted, initializing auth...');
-    
+
     // In development mode (HMR), reset initialization flag to allow re-initialization
     // This prevents issues where HMR reloads the component but isInitialized stays true
     if (import.meta.env.DEV && isInitialized.current) {
       console.log('📝 [AUTH_CONTEXT] HMR detected - resetting initialization flag');
       isInitialized.current = false;
     }
-    
+
     // Only initialize if not already done (prevents HMR issues)
     if (!isInitialized.current) {
       initializeAuth();
-      
-      // Safety timeout - if still loading after 10 seconds, force loading to false
-      // This should rarely trigger since we unblock UI immediately with basic user
-      // Increased from 6s to 10s to accommodate slower networks
-      initTimeoutRef.current = setTimeout(() => {
-        if (mountedRef.current && loading) {
-          console.warn('⚠️ [AUTH_CONTEXT] Auth initialization timeout (10s) - forcing loading to false');
-          console.warn('⚠️ [AUTH_CONTEXT] This timeout should rarely occur. If you see this often, check network connectivity.');
+
+      // CRITICAL FIX: Always clear loading state after a timeout, regardless of init state
+      // This prevents infinite loading during navigation
+      const forceLoadingTimeout = setTimeout(() => {
+        if (mountedRef.current) {
+          console.warn('⚠️ [AUTH_CONTEXT] Force clearing loading state after 5s to prevent navigation hang');
           setLoading(false);
         }
-      }, 10000); // Increased from 6s to 10s
+      }, 5000);
+
+      initTimeoutRef.current = forceLoadingTimeout;
     } else {
       console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
-      // If already initialized but still loading, force it to false
-      if (loading) {
-        console.warn('⚠️ [AUTH_CONTEXT] Already initialized but still loading - forcing to false');
-        setLoading(false);
-      }
+      // CRITICAL FIX: Always clear loading if we're in a potentially stuck state
+      const currentLoadingState = loading; // Capture current value
+      const checkStuckTimeout = setTimeout(() => {
+        if (mountedRef.current && loading) {
+          console.warn('⚠️ [AUTH_CONTEXT] Stuck loading state detected - forcing to false');
+          setLoading(false);
+        }
+      }, 1000);
+
+      initTimeoutRef.current = checkStuckTimeout;
     }
 
     return () => {
       mountedRef.current = false;
-      
+
       // In development, allow re-initialization on HMR
       // In production, keep initialization flag to prevent unnecessary re-initialization
       if (import.meta.env.DEV) {

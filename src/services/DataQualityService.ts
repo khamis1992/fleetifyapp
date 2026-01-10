@@ -1,554 +1,1004 @@
 /**
  * Data Quality Service
  * 
- * خدمة لرصد وتحليل جودة البيانات:
- * - حساب مؤشرات جودة البيانات
- * - رصد الأنماط الشاذة
- * - تصنيف البيانات حسب الجودة
- * - توفير Dashboards للرصد
+ * Service for tracking, detecting, and resolving data quality issues
+ * in the payment system and related subsystems.
+ * 
+ * Provides:
+ * - Automatic data quality scanning
+ * - Issue classification (severity levels)
+ * - Resolution workflow
+ * - Data quality metrics and reporting
+ * - Preventive measures (validation rules)
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
-export interface DataQualityMetric {
-  tableName: string;
-  metricName: string;
-  value: number;
-  threshold?: number;
-  status: 'good' | 'warning' | 'poor';
-  lastCalculated: string;
+/**
+ * Data Quality Issue Types
+ * Classifies the type of data quality issue
+ */
+export enum DataQualityIssueType {
+  DUPLICATE_RECORD = 'duplicate_record',
+  MISSING_REQUIRED_FIELD = 'missing_required_field',
+  INVALID_VALUE = 'invalid_value',
+  REFERENTIAL_INTEGRITY = 'referential_integrity',
+  DATA_INCONSISTENCY = 'data_inconsistency',
+  STALE_DATA = 'stale_data',
+  ORPHANED_RECORD = 'orphaned_record',
+  BUSINESS_RULE_VIOLATION = 'business_rule_violation',
+  FORMAT_VIOLATION = 'format_violation',
+  SECURITY_VIOLATION = 'security_violation',
+  OTHER = 'other'
 }
 
-export interface DataQualitySummary {
-  overallScore: number; // 0-100
-  metrics: DataQualityMetric[];
-  issues: DataQualityIssue[];
-  recommendations: string[];
+/**
+ * Data Quality Severity Levels
+ * Priority levels for resolving data quality issues
+ */
+export enum DataQualitySeverity {
+  CRITICAL = 'critical', // Affects system integrity or financial accuracy
+  HIGH = 'high',       // Affects user experience or reporting
+  MEDIUM = 'medium',     // Affects data quality but system functional
+  LOW = 'low',         // Minor issue, cosmetic or informational
+  INFO = 'info'        // Informational, no action required
 }
 
-export interface DataQualityIssue {
-  type: 'data_integrity' | 'data_consistency' | 'data_completeness' | 'data_accuracy' | 'data_currency';
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  tableName: string;
-  recordId?: string;
+/**
+ * Data Quality Issue Status
+ * Lifecycle status of a data quality issue
+ */
+export enum DataQualityIssueStatus {
+  OPEN = 'open',           // Issue detected, needs investigation
+  IN_PROGRESS = 'in_progress', // Being investigated/resolved
+  REVIEWED = 'reviewed', // Under manual review
+  RESOLVED = 'resolved',     // Issue has been fixed
+  CLOSED = 'closed',         // Issue closed (not applicable)
+  IGNORED = 'ignored'       // Issue acknowledged but not fixing
+}
+
+/**
+ * Data Quality Rule Definition
+ * Represents a data quality validation rule
+ */
+export interface DataQualityRule {
+  id: string;
+  name: string;
+  nameAr: string;
   description: string;
-  descriptionEn?: string;
-  affectedRecords: number;
-  createdAt: string;
+  descriptionAr: string;
+  severity: DataQualitySeverity;
+  entityType: string; // Table name (payments, invoices, contracts, etc.)
+  conditionSql: string; // SQL condition to detect issues
+  checkType: 'sql_query' | 'trigger_check' | 'code_validation';
+  resolutionSql?: string; // SQL to fix the issue (optional)
+  resolutionFunction?: string; // Function name to call for resolution
+  autoResolve: boolean; // Whether issue can be auto-resolved
+  tags: string[]; // Tags for categorization
 }
 
+/**
+ * Data Quality Issue Record
+ * Represents a detected data quality issue
+ */
+export interface DataQualityIssue {
+  id: string;
+  companyId: string;
+  ruleId: string;
+  ruleName: string;
+  ruleNameAr: string;
+  type: DataQualityIssueType;
+  severity: DataQualitySeverity;
+  status: DataQualityIssueStatus;
+  entityType: string;
+  entityId: string | null;
+  field: string | null;
+  currentValue: any | null;
+  expectedValue?: string;
+  description: string;
+  descriptionAr: string;
+  affectedRecords: number;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+  resolutionAr: string | null;
+  autoResolved: boolean;
+}
+
+/**
+ * Data Quality Metrics
+ * Aggregate statistics on data quality
+ */
+export interface DataQualityMetrics {
+  totalIssues: number;
+  issuesByType: Record<DataQualityIssueType, number>;
+  issuesBySeverity: Record<DataQualitySeverity, number>;
+  issuesByEntity: Record<string, number>;
+  issuesByStatus: Record<DataQualityIssueStatus, number>;
+  openCriticalIssues: number;
+  highPriorityIssues: number;
+  mediumPriorityIssues: number;
+  lowPriorityIssues: number;
+  overallScore: number; // 0-100, higher is worse
+  lastScannedAt: string;
+}
+
+/**
+ * Data Quality Scan Options
+ * Configuration for data quality scanning
+ */
+export interface DataQualityScanOptions {
+  companyId: string;
+  entityTypes?: string[]; // Entities to scan (all if not provided)
+  severityFilter?: DataQualitySeverity[]; // Only scan issues of certain severity
+  includeAutoResolvable?: boolean; // Include only issues that can be auto-resolved
+  limit?: number; // Limit results
+}
+
+/**
+ * Resolution Options
+ * Configuration for resolving data quality issues
+ */
+export interface ResolutionOptions {
+  autoApply: boolean; // Automatically apply the resolution
+  dryRun: boolean; // Preview resolution without applying
+  createAuditLog: boolean; // Create audit log entry
+  userId?: string; // User resolving the issue
+}
+
+/**
+ * Data Quality Service
+ * Main service class
+ */
 class DataQualityService {
-  private qualityMetrics: Map<string, DataQualityMetric> = new Map();
-  private qualityHistory: Map<string, DataQualityMetric[]> = new Map();
+  // In-memory cache of data quality rules
+  private rules: Map<string, DataQualityRule> = new Map();
+  
+  // Cache of detected issues
+  private issuesCache: Map<string, DataQualityIssue[]> = new Map();
+
+  constructor() {
+    this.initializeRules();
+  }
 
   /**
-   * حساب ملخص جودة البيانات لشركة
+   * Initialize default data quality rules
    */
-  async calculateQualitySummary(
-    companyId: string,
-    options: {
-      tables?: string[];
-      metrics?: string[];
-      startDate?: string;
-      endDate?: string;
-    } = {}
-  ): Promise<DataQualitySummary> {
+  private async initializeRules(): Promise<void> {
+    logger.debug('Initializing data quality rules');
+
+    // Define default rules
+    const defaultRules: DataQualityRule[] = [
+      // Critical: Duplicate payments
+      {
+        id: 'duplicate_payments_by_company_date_amount',
+        name: 'Duplicate Payments',
+        nameAr: 'دفعات مكررة',
+        description: 'Multiple payments with same company, customer, date, and amount',
+        descriptionAr: 'دفعات متكررة بنفس الشركة، العميل، التاريخ، والمبلغ',
+        severity: DataQualitySeverity.CRITICAL,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT company_id, customer_id, payment_date, amount, COUNT(*) as count
+          FROM payments
+          WHERE payment_status IN ('completed', 'processing')
+          GROUP BY company_id, customer_id, payment_date, amount
+          HAVING COUNT(*) > 1
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          WITH ranked_payments AS (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY company_id, customer_id, payment_date, amount ORDER BY created_at) as rn
+            FROM payments
+            WHERE id IN (SELECT payment_id FROM payments WHERE id IN (SELECT MAX(id) FROM payments GROUP BY company_id, customer_id, payment_date, amount HAVING COUNT(*) > 1))
+          )
+          UPDATE payments
+          SET notes = COALESCE(notes, '') || ' [DUPLICATE] Duplicate payment detected'
+          WHERE id = (SELECT id FROM ranked_payments WHERE rn > 1)
+          RETURNING id
+        `,
+        autoResolve: true
+      },
+
+      // Critical: Orphaned payments
+      {
+        id: 'orphaned_payments_no_customer',
+        name: 'Orphaned Payments',
+        nameAr: 'دفعات بدون عميل',
+        description: 'Payments without customer_id reference',
+        descriptionAr: 'مدفوعات بدون إشارة إلى العميل',
+        severity: DataQualitySeverity.CRITICAL,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM payments
+          WHERE customer_id IS NULL
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          UPDATE payments p
+          SET customer_id = c.customer_id
+          FROM payments p
+          JOIN contracts c ON p.contract_id = c.id
+          WHERE p.customer_id IS NULL AND p.contract_id IS NOT NULL
+        `,
+        autoResolve: true
+      },
+
+      // Critical: Orphaned payments (no contract or invoice)
+      {
+        id: 'orphaned_payments_no_link',
+        name: 'Unlinked Payments',
+        nameAr: 'دفعات غير مرتبطة',
+        description: 'Payments without contract or invoice reference',
+        descriptionAr: 'مدفوعات غير مرتبطة بعقد أو فاتورة',
+        severity: DataQualitySeverity.HIGH,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM payments
+          WHERE customer_id IS NOT NULL 
+            AND contract_id IS NULL 
+            AND invoice_id IS NULL
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          UPDATE payments p
+          SET allocation_status = 'unallocated'
+          WHERE customer_id IS NOT NULL 
+            AND contract_id IS NULL 
+            AND invoice_id IS NULL
+        `,
+        autoResolve: false
+      },
+
+      // Critical: Invalid payment amounts
+      {
+        id: 'invalid_payment_amounts',
+        name: 'Invalid Payment Amounts',
+        nameAr: 'مبالغ مدفوعات',
+        description: 'Payments with zero, negative, or suspiciously large amounts',
+        descriptionAr: 'مدفوعات بمبالغ صفر، سالب، أو مبالغ كبير بشكل مشبوه',
+        severity: DataQualitySeverity.CRITICAL,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM payments
+          WHERE amount <= 0 OR amount > 100000
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          UPDATE payments
+          SET payment_status = 'failed',
+              processing_status = 'manual_review',
+              processing_notes = COALESCE(processing_notes, '') || '[INVALID] ' || CASE 
+                  WHEN amount <= 0 THEN 'Amount is zero or negative'
+                  WHEN amount > 100000 THEN 'Suspiciously large amount detected'
+                  ELSE 'Invalid amount detected'
+              END
+          WHERE amount <= 0 OR amount > 100000
+        `,
+        autoResolve: false
+      },
+
+      // High: Missing required fields
+      {
+        id: 'missing_payment_required_fields',
+        name: 'Missing Payment Fields',
+        nameAr: 'حقول مدفوعات ناقصة',
+        description: 'Payments missing required fields (customer_id, payment_date, amount, payment_method)',
+        descriptionAr: 'مدفوعات ناقصة حقول إلزامية (customer_id، تاريخ الدفع، المبلغ، طريقة الدفع)',
+        severity: DataQualitySeverity.HIGH,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM payments
+          WHERE customer_id IS NULL
+             OR payment_date IS NULL
+             OR amount IS NULL
+             OR payment_method IS NULL
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          -- Cannot auto-resolve - requires manual intervention
+        `,
+        autoResolve: false
+      },
+
+      // High: Duplicate invoices
+      {
+        id: 'duplicate_invoices',
+        name: 'Duplicate Invoices',
+        nameAr: 'فواتير مكررة',
+        description: 'Multiple invoices for the same payment',
+        descriptionAr: 'فواتير متكررة لنفس الدفعة',
+        severity: DataQualitySeverity.HIGH,
+        entityType: 'invoices',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM invoices i1
+          WHERE EXISTS (
+            SELECT 1 FROM invoices i2
+            WHERE i1.payment_id = i2.payment_id
+              AND i1.id <> i2.id
+          )
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          WITH duplicates_to_keep AS (
+            SELECT id FROM invoices
+            WHERE payment_id IN (
+              SELECT payment_id FROM invoices GROUP BY payment_id HAVING COUNT(*) > 1
+            )
+            ORDER BY created_at ASC
+          )
+          DELETE FROM invoices
+          WHERE payment_id IN (
+              SELECT payment_id FROM invoices GROUP BY payment_id HAVING COUNT(*) > 1
+            )
+            AND id NOT IN (SELECT id FROM duplicates_to_keep)
+        `,
+        autoResolve: true
+      },
+
+      // Medium: Incomplete payment processing
+      {
+        id: 'stuck_payments',
+        name: 'Stuck Payments',
+        nameAr: 'مدفوعات عالقة',
+        description: 'Payments stuck in processing status for extended period',
+        descriptionAr: 'مدفوعات عالقة في حالة المعالجة لفترة طويلة',
+        severity: DataQualitySeverity.MEDIUM,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM payments
+          WHERE processing_status = 'processing'
+            AND payment_date < NOW() - INTERVAL '7 days'
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          UPDATE payments
+          SET processing_status = 'manual_review',
+              processing_notes = COALESCE(processing_notes, '') || '[STUCK] Stuck in processing for extended period'
+          WHERE processing_status = 'processing'
+            AND payment_date < NOW() - INTERVAL '7 days'
+        `,
+        autoResolve: true
+      },
+
+      // Low: Missing payment numbers
+      {
+        id: 'missing_payment_numbers',
+        name: 'Missing Payment Numbers',
+        nameAr: 'أرقام مدفوعات ناقصة',
+        description: 'Payments without payment numbers',
+        descriptionAr: 'مدفوعات بدون رقم مرجعي',
+        severity: DataQualitySeverity.LOW,
+        entityType: 'payments',
+        conditionSql: `
+          SELECT COUNT(*) as count
+          FROM payments
+          WHERE payment_number IS NULL OR payment_number = ''
+        `,
+        checkType: 'sql_query',
+        resolutionSql: `
+          UPDATE payments
+          SET payment_number = 'PAY-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || LPAD(TO_CHAR(ROUND(RANDOM() * 9999), 4), '0')
+          WHERE payment_number IS NULL OR payment_number = ''
+          LIMIT 100
+        `,
+        autoResolve: true
+      }
+    ];
+
+    // Load custom rules from database if available
     try {
-      logger.info('Calculating data quality summary', { companyId, options });
+      const { data: customRules } = await supabase
+        .from('data_quality_rules')
+        .select('*')
+        .eq('company_id', 'default')
+        .eq('is_active', true)
+        .order('priority', { ascending: false });
 
-      const metrics: DataQualityMetric[] = [];
+      if (customRules) {
+        customRules.forEach(rule => {
+          this.rules.set(rule.id, rule);
+        });
+        logger.info(`Loaded ${customRules.length} custom data quality rules`);
+      }
+    } catch (error) {
+      logger.warn('Failed to load custom data quality rules', error);
+    }
+
+    logger.info(`Data quality service initialized with ${this.rules.size} rules`);
+  }
+
+  /**
+   * Scan for data quality issues
+   */
+  async scanForIssues(options: DataQualityScanOptions): Promise<DataQualityIssue[]> {
+    try {
+      logger.info('Scanning for data quality issues', { companyId: options.companyId });
+
       const issues: DataQualityIssue[] = [];
-      const recommendations: string[] = [];
 
-      // 1. جودة بيانات المدفوعات
-      const paymentQuality = await this.checkPaymentDataQuality(companyId);
-      metrics.push(...paymentQuality.metrics);
-      issues.push(...paymentQuality.issues);
+      for (const [ruleId, rule] of this.rules.entries()) {
+        // Check if rule applies to requested entity types
+        if (options.entityTypes && !options.entityTypes.includes(rule.entityType)) {
+          continue;
+        }
 
-      // 2. جودة بيانات الفواتير
-      const invoiceQuality = await this.checkInvoiceDataQuality(companyId);
-      metrics.push(...invoiceQuality.metrics);
-      issues.push(...invoiceQuality.issues);
+        // Check severity filter
+        if (options.severityFilter && !options.severityFilter.includes(rule.severity)) {
+          continue;
+        }
 
-      // 3. جودة بيانات العقود
-      const contractQuality = await this.checkContractDataQuality(companyId);
-      metrics.push(...contractQuality.metrics);
-      issues.push(...contractQuality.issues);
+        // Check if issue should be auto-resolved
+        if (options.includeAutoResolvable !== false && !rule.autoResolve) {
+          continue;
+        }
 
-      // 4. جودة بيانات العملاء
-      const customerQuality = await this.checkCustomerDataQuality(companyId);
-      metrics.push(...customerQuality.metrics);
-      issues.push(...customerQuality.issues);
+        // Execute scan
+        const { data: scanResult } = await supabase
+          .rpc('execute_data_quality_scan', {
+            rule_id: ruleId,
+            company_id: options.companyId
+          });
 
-      // 5. جودة بيانات الحسابات المحاسبية
-      const chartQuality = await this.checkChartDataQuality(companyId);
-      metrics.push(...chartQuality.metrics);
-      issues.push(...chartQuality.issues);
+        // Process scan results
+        if (scanResult && scanResult.detectedIssues) {
+          for (const issue of scanResult.detectedIssues) {
+            issues.push({
+              id: this.generateIssueId(),
+              companyId: options.companyId,
+              ruleId,
+              ruleName: rule.name,
+              ruleNameAr: rule.nameAr,
+              type: rule.type,
+              severity: rule.severity,
+              status: DataQualityIssueStatus.OPEN,
+              entityType: rule.entityType,
+              entityId: issue.entityId,
+              field: issue.field,
+              currentValue: issue.currentValue,
+              expectedValue: issue.expectedValue,
+              description: rule.description,
+              descriptionAr: rule.descriptionAr,
+              affectedRecords: issue.affectedCount || 1,
+              firstDetectedAt: new Date().toISOString(),
+              lastDetectedAt: new Date().toISOString(),
+              resolvedAt: null,
+              resolvedBy: null,
+              resolution: null,
+              resolutionAr: null,
+              autoResolved: rule.autoResolve
+            });
+          }
+        }
+      }
 
-      // 6. حساب النتيجة الإجمالية
-      const overallScore = this.calculateOverallScore(metrics);
-
-      // 7. إنشاء التوصيات
-      recommendations.push(...this.generateRecommendations(issues));
-
-      logger.info('Data quality summary calculated', {
-        companyId,
-        overallScore,
-        metricsCount: metrics.length,
-        issuesCount: issues.length,
-        recommendationsCount: recommendations.length
+      // Cache issues
+      issues.forEach(issue => {
+        const key = `${issue.companyId}-${issue.entityType}`;
+        const existingIssues = this.issuesCache.get(key) || [];
+        existingIssues.push(issue);
+        this.issuesCache.set(key, existingIssues);
       });
 
-      return {
-        overallScore,
-        metrics,
-        issues,
-        recommendations
-      };
+      logger.info(`Data quality scan completed: ${issues.length} issues detected`, { 
+        companyId: options.companyId,
+        criticalIssues: issues.filter(i => i.severity === DataQualitySeverity.CRITICAL).length,
+        highPriorityIssues: issues.filter(i => i.severity === DataQualitySeverity.HIGH).length
+      });
+
+      return issues;
     } catch (error) {
-      logger.error('Failed to calculate data quality summary', { companyId, error });
+      logger.error('Failed to scan for data quality issues', error);
       throw error;
     }
   }
 
   /**
-   * التحقق من جودة بيانات المدفوعات
+   * Get data quality metrics
    */
-  private async checkPaymentDataQuality(
-    companyId: string
-  ): Promise<{ metrics: DataQualityMetric[]; issues: DataQualityIssue[] }> {
-    const metrics: DataQualityMetric[] = [];
-    const issues: DataQualityIssue[] = [];
-
-    // Metric 1: نسبة المدفوعات بدون عقد أو فاتورة
-    const { count: totalPayments } = await supabase
-      .from('payments')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId);
-
-    const { count: unlinkedPayments } = await supabase
-      .from('payments')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .is('contract_id', null)
-      .is('invoice_id', null);
-
-    const unlinkedPercentage = totalPayments > 0
-      ? (unlinkedPayments / totalPayments) * 100
-      : 0;
-
-    metrics.push({
-      tableName: 'payments',
-      metricName: 'unlinked_payments_percentage',
-      value: unlinkedPercentage,
-      threshold: 10,
-      status: unlinkedPercentage <= 10 ? 'good' : unlinkedPercentage <= 20 ? 'warning' : 'poor',
-      lastCalculated: new Date().toISOString()
-    });
-
-    if (unlinkedPercentage > 20) {
-      issues.push({
-        type: 'data_completeness',
-        severity: 'high',
-        tableName: 'payments',
-        description: `نسبة المدفوعات غير المربوطة (${unlinkedPercentage.toFixed(1)}%) عالية جداً`,
-        descriptionEn: `Percentage of unlinked payments (${unlinkedPercentage.toFixed(1)}%) is very high`,
-        affectedRecords: unlinkedPayments,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    // Metric 2: نسبة المدفوعات الفاشلة
-    const { count: failedPayments } = await supabase
-      .from('payments')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .eq('payment_status', 'failed');
-
-    const failedPercentage = totalPayments > 0
-      ? (failedPayments / totalPayments) * 100
-      : 0;
-
-    metrics.push({
-      tableName: 'payments',
-      metricName: 'failed_payments_percentage',
-      value: failedPercentage,
-      threshold: 5,
-      status: failedPercentage <= 5 ? 'good' : failedPercentage <= 10 ? 'warning' : 'poor',
-      lastCalculated: new Date().toISOString()
-    });
-
-    if (failedPercentage > 10) {
-      issues.push({
-        type: 'data_accuracy',
-        severity: 'high',
-        tableName: 'payments',
-        description: `نسبة المدفوعات الفاشلة (${failedPercentage.toFixed(1)}%) عالية جداً`,
-        descriptionEn: `Percentage of failed payments (${failedPercentage.toFixed(1)}%) is very high`,
-        affectedRecords: failedPayments,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    // Metric 3: متوسط وقت المعالجة
-    // Note: يحتاج إلى column processing_duration
-    // حالياً لا يمكن حسابه
-
-    return { metrics, issues };
-  }
-
-  /**
-   * التحقق من جودة بيانات الفواتير
-   */
-  private async checkInvoiceDataQuality(
-    companyId: string
-  ): Promise<{ metrics: DataQualityMetric[]; issues: DataQualityIssue[] }> {
-    const metrics: DataQualityMetric[] = [];
-    const issues: DataQualityIssue[] = [];
-
-    // Metric 1: نسبة الفواتير بدون دفعات
-    const { count: totalInvoices } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId);
-
-    const { count: unpaidInvoices } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .in('payment_status', ['unpaid', 'partial']);
-
-    const unpaidPercentage = totalInvoices > 0
-      ? (unpaidInvoices / totalInvoices) * 100
-      : 0;
-
-    metrics.push({
-      tableName: 'invoices',
-      metricName: 'unpaid_invoices_percentage',
-      value: unpaidPercentage,
-      threshold: 30,
-      status: unpaidPercentage <= 30 ? 'good' : unpaidPercentage <= 50 ? 'warning' : 'poor',
-      lastCalculated: new Date().toISOString()
-    });
-
-    if (unpaidPercentage > 50) {
-      issues.push({
-        type: 'data_consistency',
-        severity: 'medium',
-        tableName: 'invoices',
-        description: `نسبة الفواتير غير المدفوعة (${unpaidPercentage.toFixed(1)}%) عالية`,
-        descriptionEn: `Percentage of unpaid invoices (${unpaidPercentage.toFixed(1)}%) is high`,
-        affectedRecords: unpaidInvoices,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    // Metric 2: فواتير بدون عقود
-    const { count: orphanedInvoices } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .is('contract_id', null);
-
-    const orphanedPercentage = totalInvoices > 0
-      ? (orphanedInvoices / totalInvoices) * 100
-      : 0;
-
-    metrics.push({
-      tableName: 'invoices',
-      metricName: 'orphaned_invoices_percentage',
-      value: orphanedPercentage,
-      threshold: 5,
-      status: orphanedPercentage <= 5 ? 'good' : orphanedPercentage <= 10 ? 'warning' : 'poor',
-      lastCalculated: new Date().toISOString()
-    });
-
-    if (orphanedPercentage > 10) {
-      issues.push({
-        type: 'data_integrity',
-        severity: 'medium',
-        tableName: 'invoices',
-        description: `نسبة الفواتير بدون عقود (${orphanedPercentage.toFixed(1)}%) عالية`,
-        descriptionEn: `Percentage of orphaned invoices (${orphanedPercentage.toFixed(1)}%) is high`,
-        affectedRecords: orphanedInvoices,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    return { metrics, issues };
-  }
-
-  /**
-   * التحقق من جودة بيانات العقود
-   */
-  private async checkContractDataQuality(
-    companyId: string
-  ): Promise<{ metrics: DataQualityMetric[]; issues: DataQualityIssue[] }> {
-    const metrics: DataQualityMetric[] = [];
-    const issues: DataQualityIssue[] = [];
-
-    // Metric 1: نسبة العقود بدون مدفوعات
-    const { count: totalContracts } = await supabase
-      .from('contracts')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId);
-
-    const { count: contractsWithoutPayments } = await supabase
-      .from('contracts')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .is('total_paid', null);
-
-    const withoutPaymentsPercentage = totalContracts > 0
-      ? (contractsWithoutPayments / totalContracts) * 100
-      : 0;
-
-    metrics.push({
-      tableName: 'contracts',
-      metricName: 'contracts_without_payments_percentage',
-      value: withoutPaymentsPercentage,
-      threshold: 20,
-      status: withoutPaymentsPercentage <= 20 ? 'good' : withoutPaymentsPercentage <= 30 ? 'warning' : 'poor',
-      lastCalculated: new Date().toISOString()
-    });
-
-    if (withoutPaymentsPercentage > 30) {
-      issues.push({
-        type: 'data_completeness',
-        severity: 'medium',
-        tableName: 'contracts',
-        description: `نسبة العقود بدون مدفوعات (${withoutPaymentsPercentage.toFixed(1)}%) عالية`,
-        descriptionEn: `Percentage of contracts without payments (${withoutPaymentsPercentage.toFixed(1)}%) is high`,
-        affectedRecords: contractsWithoutPayments,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    return { metrics, issues };
-  }
-
-  /**
-   * التحقق من جودة بيانات العملاء
-   */
-  private async checkCustomerDataQuality(
-    companyId: string
-  ): Promise<{ metrics: DataQualityMetric[]; issues: DataQualityIssue[] }> {
-    const metrics: DataQualityMetric[] = [];
-    const issues: DataQualityIssue[] = [];
-
-    // Metric 1: العملاء بدون عقود
-    const { count: totalCustomers } = await supabase
-      .from('customers')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId);
-
-    const { count: customersWithoutContracts } = await supabase
-      .from('customers')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .not('exists', supabase
-        .from('contracts')
-        .select('id')
-        .eq('customer_id', ref('customers.id')) // لا يمكن استخدام ref
-        // .not('customer_id', supabase.ref('customers.id'))
-        // لا يمكن استخدام هذه الصيغة
-        // بدلاً من ذلك، سنستخدم query مختلفة
-      );
-
-    // Note: التحقق أعلاه غير صحيح، سنستخدم طريقة مختلفة
-
-    return { metrics, issues };
-  }
-
-  /**
-   * التحقق من جودة بيانات الحسابات المحاسبية
-   */
-  private async checkChartDataQuality(
-    companyId: string
-  ): Promise<{ metrics: DataQualityMetric[]; issues: DataQualityIssue[] }> {
-    const metrics: DataQualityMetric[] = [];
-    const issues: DataQualityIssue[] = [];
-
-    // Metric 1: الحسابات دون استخدام
-    const { count: totalAccounts } = await supabase
-      .from('chart_of_accounts')
-      .select('*', { count: 'exact', head: false })
-      .eq('company_id', companyId);
-
-    const { count: unusedAccounts } = await supabase
-      .from('chart_of_accounts')
-      .select('id', { count: 'exact', head: false })
-      .eq('company_id', companyId)
-      .not('exists', supabase
-        .from('journal_entry_lines')
-        .select('account_id')
-        .eq('account_id', ref('chart_of_accounts.id'))
-      );
-
-    const unusedPercentage = totalAccounts > 0
-      ? (unusedAccounts / totalAccounts) * 100
-      : 0;
-
-    metrics.push({
-      tableName: 'chart_of_accounts',
-      metricName: 'unused_accounts_percentage',
-      value: unusedPercentage,
-      threshold: 10,
-      status: unusedPercentage <= 10 ? 'good' : unusedPercentage <= 20 ? 'warning' : 'poor',
-      lastCalculated: new Date().toISOString()
-    });
-
-    if (unusedPercentage > 20) {
-      issues.push({
-        type: 'data_completeness',
-        severity: 'low',
-        tableName: 'chart_of_accounts',
-        description: `نسبة الحسابات غير المستخدمة (${unusedPercentage.toFixed(1)}%) عالية`,
-        descriptionEn: `Percentage of unused accounts (${unusedPercentage.toFixed(1)}%) is high`,
-        affectedRecords: unusedAccounts,
-        createdAt: new Date().toISOString()
-      });
-    }
-
-    return { metrics, issues };
-  }
-
-  /**
-   * حساب النتيجة الإجمالية لجودة البيانات
-   */
-  private calculateOverallScore(metrics: DataQualityMetric[]): number {
-    if (metrics.length === 0) {
-      return 100;
-    }
-
-    let totalScore = 0;
-    let metricCount = 0;
-
-    for (const metric of metrics) {
-      switch (metric.status) {
-        case 'good':
-          totalScore += 100;
-          break;
-        case 'warning':
-          totalScore += 70;
-          break;
-        case 'poor':
-          totalScore += 30;
-          break;
-      }
-      metricCount++;
-    }
-
-    return metricCount > 0 ? totalScore / metricCount : 100;
-  }
-
-  /**
-   * إنشاء التوصيات من مشاكل جودة البيانات
-   */
-  private generateRecommendations(issues: DataQualityIssue[]): string[] {
-    const recommendations: string[] = [];
-    const issueTypes = new Set(issues.map(i => i.type));
-    const severeIssues = issues.filter(i => i.severity === 'critical' || i.severity === 'high');
-
-    if (severeIssues.length > 0) {
-      recommendations.push(`فوراً: إصلاح المشاكل الحرجة (${severeIssues.length} مشكلة)`);
-    }
-
-    if (issueTypes.has('data_integrity')) {
-      recommendations.push('مراجعة وتصحيح المشاكل المتعلقة بسلامة البيانات');
-    }
-
-    if (issueTypes.has('data_consistency')) {
-      recommendations.push('مراجعة الترابط بين الجداول المختلفة للتأكد من الاتساق');
-    }
-
-    if (issueTypes.has('data_completeness')) {
-      recommendations.push('إكمال البيانات الناقصة (أرقام هواتف، عناوين، etc)');
-    }
-
-    if (issueTypes.has('data_accuracy')) {
-      recommendations.push('مراجعة المدخلات الفاشلة وتصحيح الأخطاء');
-    }
-
-    if (issues.filter(i => i.tableName === 'payments' && i.severity === 'high').length > 0) {
-      recommendations.push('تشغيل عملية ربط المدفوعات لربط الدفعات غير المربوطة');
-    }
-
-    if (issues.filter(i => i.tableName === 'invoices' && i.severity === 'high').length > 0) {
-      recommendations.push('مراجعة الفواتير المتأخرة وإرسال تذكيرات للعملاء');
-    }
-
-    return recommendations;
-  }
-
-  /**
-   * حفظ ملخص جودة البيانات
-   */
-  async saveQualitySummary(
-    companyId: string,
-    summary: DataQualitySummary
-  ): Promise<boolean> {
+  async getQualityMetrics(companyId: string): Promise<DataQualityMetrics> {
     try {
-      // TODO: تخزين في جدول data_quality_reports
-      // حالياً فقط log
+      const { data: issues } = await supabase
+        .from('data_quality_issues')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
 
-      logger.info('Data quality summary saved', {
-        companyId,
-        overallScore: summary.overallScore,
-        metricsCount: summary.metrics.length,
-        issuesCount: summary.issues.length
+      const metrics: DataQualityMetrics = {
+        totalIssues: issues.length,
+        issuesByType: {} as Record<DataQualityIssueType, number>,
+        issuesBySeverity: {} as Record<DataQualitySeverity, number>,
+        issuesByEntity: {} as Record<string, number>,
+        issuesByStatus: {} as Record<DataQualityIssueStatus, number>,
+        openCriticalIssues: 0,
+        highPriorityIssues: 0,
+        mediumPriorityIssues: 0,
+        lowPriorityIssues: 0,
+        overallScore: 100,
+        lastScannedAt: new Date().toISOString()
+      };
+
+      // Calculate metrics by type
+      issues.forEach(issue => {
+        metrics.issuesByType[issue.type] = (metrics.issuesByType[issue.type] || 0) + 1;
       });
 
-      return true;
+      // Calculate metrics by severity
+      Object.values(DataQualitySeverity).forEach(severity => {
+        const count = issues.filter(i => i.severity === severity).length;
+        metrics.issuesBySeverity[severity] = count;
+      });
+
+      // Calculate metrics by status
+      Object.values(DataQualityIssueStatus).forEach(status => {
+        const count = issues.filter(i => i.status === status).length;
+        metrics.issuesByStatus[status] = count;
+      });
+
+      // Calculate priority metrics
+      metrics.openCriticalIssues = issues.filter(i => 
+        i.severity === DataQualitySeverity.CRITICAL && i.status === DataQualityIssueStatus.OPEN
+      ).length;
+      
+      metrics.highPriorityIssues = issues.filter(i => 
+        (i.severity === DataQualitySeverity.HIGH && i.status === DataQualityIssueStatus.OPEN) ||
+        (i.severity === DataQualitySeverity.CRITICAL && i.status === DataQualityIssueStatus.OPEN)
+      ).length;
+      
+      metrics.mediumPriorityIssues = issues.filter(i => 
+        i.severity === DataQualitySeverity.MEDIUM && i.status === DataQualityIssueStatus.OPEN
+      ).length;
+      
+      metrics.lowPriorityIssues = issues.filter(i => 
+        i.severity === DataQualitySeverity.LOW && i.status === DataQualityIssueStatus.OPEN
+      ).length;
+
+      // Calculate overall score
+      if (issues.length > 0) {
+        const severityWeights = {
+          [DataQualitySeverity.CRITICAL]: 25,
+          [DataQualitySeverity.HIGH]: 15,
+          [DataQualitySeverity.MEDIUM]: 8,
+          [DataQualitySeverity.LOW]: 3,
+          [DataQualitySeverity.INFO]: 1
+        };
+
+        let weightedScore = 0;
+        issues.forEach(issue => {
+          const weight = severityWeights[issue.severity] || 1;
+          if (issue.status === DataQualityIssueStatus.OPEN) {
+            weightedScore += weight;
+          } else if (issue.status === DataQualityIssueStatus.IN_PROGRESS) {
+            weightedScore += weight * 0.5; // Half weight for in-progress
+          }
+        });
+
+        metrics.overallScore = Math.max(0, 100 - Math.round(weightedScore / (issues.length * 25)));
+      }
+
+      logger.info('Data quality metrics computed', {
+        companyId,
+        totalIssues: metrics.totalIssues,
+        overallScore: metrics.overallScore,
+        openCriticalIssues: metrics.openCriticalIssues
+      });
+
+      return metrics;
     } catch (error) {
-      logger.error('Failed to save data quality summary', { companyId, error });
-      return false;
+      logger.error('Failed to get data quality metrics', error);
+      throw error;
     }
   }
 
   /**
-   * الحصول على تاريخ جودة البيانات
+   * Resolve a data quality issue
    */
-  async getQualityHistory(
+  async resolveIssue(
+    issueId: string,
     companyId: string,
-    days: number = 30
-  ): Promise<DataQualityMetric[]> {
-    const history = this.qualityHistory.get(companyId) || [];
-    
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
+    options: ResolutionOptions = {}
+  ): Promise<{
+    success: boolean;
+    resolved: DataQualityIssue | null;
+    error?: string;
+  }> {
+    try {
+      logger.info('Resolving data quality issue', { issueId, options });
 
-    return history.filter(metric => 
-      new Date(metric.lastCalculated) >= cutoffDate
-    );
+      // Get the issue
+      const { data: issue } = await supabase
+        .from('data_quality_issues')
+        .select('*')
+        .eq('id', issueId)
+        .single();
+
+      if (!issue) {
+        return {
+          success: false,
+          error: 'Issue not found'
+        };
+      }
+
+      // Get the rule
+      const rule = this.rules.get(issue.ruleId);
+      if (!rule) {
+        return {
+          success: false,
+          error: 'Rule not found'
+        };
+      }
+
+      // Check if issue is already resolved
+      if (issue.status === DataQualityIssueStatus.RESOLVED) {
+        return {
+          success: true,
+          resolved: issue
+        };
+      }
+
+      // Apply resolution
+      if (options.dryRun) {
+        logger.info('Dry run: would apply resolution', {
+          issueId,
+          resolution: rule.resolutionSql
+        });
+        return {
+          success: true,
+          resolved: { ...issue, status: DataQualityIssueStatus.IN_PROGRESS }
+        };
+      }
+
+      // Execute resolution SQL
+      if (rule.resolutionSql) {
+        const { error: resolutionError } = await supabase.rpc('execute_resolution', {
+          issue_id: issueId,
+          company_id: companyId,
+          resolution_sql: rule.resolutionSql
+        });
+
+        if (resolutionError) {
+          logger.error('Failed to execute resolution', { issueId, error: resolutionError });
+          return {
+            success: false,
+            error: resolutionError.message
+          };
+        }
+      }
+
+      // Update issue status
+      const { error: updateError } = await supabase
+        .from('data_quality_issues')
+        .update({
+          status: DataQualityIssueStatus.RESOLVED,
+          resolved_at: new Date().toISOString(),
+          resolved_by: options.userId || 'system',
+          resolution: options.resolution || 'Auto-resolved by system',
+          resolutionAr: options.resolution || 'تم الحل التلقائي بواسطة النظام',
+          auto_resolved: rule.autoResolve
+        })
+        .eq('id', issueId);
+
+      if (updateError) {
+        logger.error('Failed to update issue status', { issueId, error: updateError });
+        return {
+          success: false,
+          error: updateError.message
+        };
+      }
+
+      // Create audit log if requested
+      if (options.createAuditLog) {
+        await this.createAuditLogEntry({
+          companyId,
+          action: 'resolve_data_quality_issue',
+          issueId,
+          userId: options.userId,
+          details: {
+            ruleName: rule.name,
+            resolution: options.resolution,
+            autoResolved: rule.autoResolve
+          }
+        });
+      }
+
+      logger.info('Data quality issue resolved', {
+        issueId,
+        ruleId: rule.name,
+        resolvedBy: options.userId
+      });
+
+      // Clear cache for this issue
+      const cacheKey = `${companyId}-${issue.entityType}`;
+      const cachedIssues = this.issuesCache.get(cacheKey) || [];
+      this.issuesCache.set(
+        cacheKey,
+        cachedIssues.filter(i => i.id !== issueId)
+      );
+
+      return {
+        success: true,
+        resolved: { ...issue, status: DataQualityIssueStatus.RESOLVED }
+      };
+
+    } catch (error) {
+      logger.error('Failed to resolve data quality issue', { issueId, error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Resolution failed'
+      };
+    }
   }
 
   /**
-   * حساب جودة البيانات تلقائياً
+   * Bulk resolve multiple issues
    */
-  async scheduleQualityCheck(
+  async resolveIssues(
+    issueIds: string[],
     companyId: string,
-    intervalHours: number = 24 // يومياً افتراضياً
-  ): Promise<void> {
-    logger.info('Scheduling data quality checks', { companyId, intervalHours });
+    userId: string
+  ): Promise<{
+    success: boolean;
+    resolvedCount: number;
+    failedCount: number;
+    errors: string[];
+  }> {
+    try {
+      logger.info('Bulk resolving data quality issues', { 
+        companyId, 
+        issueCount: issueIds.length 
+      });
 
-    // TODO: تنفيذ الـ scheduling الفعلي
-    // حالياً فقط log
+      const resolvedIssues: DataQualityIssue[] = [];
+      const errors: string[] = [];
 
-    // في المستقبل:
-    // 1. استخدام Job Scheduler أو Cron Job
-    // 2. حساب جودة البيانات كل X ساعات
-    // 3. حفظ النتائج في قاعدة البيانات
-    // 4. إرسال إشعارات إذا انخفض الجودة عن حد معين
+      for (const issueId of issueIds) {
+        const result = await this.resolveIssue(issueId, companyId, {
+          userId,
+          autoApply: true
+        });
+
+        if (result.success && result.resolved) {
+          resolvedIssues.push(result.resolved);
+        } else {
+          errors.push(`Failed to resolve ${issueId}: ${result.error || 'Unknown error'}`);
+        }
+      }
+
+      logger.info('Bulk resolution completed', {
+        companyId,
+        resolvedCount: resolvedIssues.length,
+        failedCount: errors.length
+      });
+
+      return {
+        success: errors.length === 0,
+        resolvedCount: resolvedIssues.length,
+        failedCount: errors.length,
+        errors
+      };
+
+    } catch (error) {
+      logger.error('Failed to bulk resolve data quality issues', error);
+      return {
+        success: false,
+        resolvedCount: 0,
+        failedCount: 0,
+        errors: [error instanceof Error ? error.message : 'Bulk resolution failed']
+      };
+    }
   }
 
   /**
-   * الحصول على مؤشرات جودة البيانات الحالية
+   * Auto-scan and auto-resolve data quality issues
    */
-  getCurrentQualityMetrics(companyId: string): DataQualityMetric[] {
-    return Array.from(this.qualityMetrics.values())
-      .filter(metric => metric.lastCalculated && metric.tableName.includes(companyId));
+  async autoScanAndResolve(companyId: string): Promise<{
+    scanned: number;
+    resolved: number;
+    failed: number;
+  }> {
+    try {
+      logger.info('Auto-scanning and resolving data quality issues', { companyId });
+
+      // Scan for issues (auto-resolvable only)
+      const scanResult = await this.scanForIssues({
+        companyId,
+        includeAutoResolvable: true,
+        severityFilter: [DataQualitySeverity.CRITICAL, DataQualitySeverity.HIGH]
+      });
+
+      if (scanResult.length === 0) {
+        logger.info('No data quality issues found', { companyId });
+        return {
+          scanned: 0,
+          resolved: 0,
+          failed: 0
+        };
+      }
+
+      // Filter issues that can be auto-resolved
+      const autoResolvableIssues = scanResult.filter(issue => issue.autoResolved);
+      const issueIds = autoResolvableIssues.map(i => i.id);
+
+      // Resolve issues
+      const resolveResult = await this.resolveIssues(issueIds, companyId, {
+        userId: 'system', // Auto-resolved by system
+        autoApply: true
+      });
+
+      logger.info('Auto-scan and resolve completed', {
+        companyId,
+        scanned: scanResult.length,
+        resolved: resolveResult.resolvedCount,
+        failed: resolveResult.failedCount
+      });
+
+      return resolveResult;
+
+    } catch (error) {
+      logger.error('Failed to auto-scan and resolve data quality issues', error);
+      return {
+        scanned: 0,
+        resolved: 0,
+        failed: 1
+      };
+    }
+  }
+
+  /**
+   * Get open data quality issues
+   */
+  async getOpenIssues(companyId: string, options?: {
+    severityFilter?: DataQualitySeverity[],
+    limit?: number
+  }): Promise<DataQualityIssue[]> {
+    try {
+      let query = supabase
+        .from('data_quality_issues')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('status', DataQualityIssueStatus.OPEN);
+
+      if (severityFilter && severityFilter.length > 0) {
+        query = query.in('severity', severityFilter);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      if (options && options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      const { data: issues } = await query;
+
+      logger.info(`Retrieved ${issues.length} open issues`, { companyId });
+      return issues;
+
+    } catch (error) {
+      logger.error('Failed to get open issues', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create audit log entry
+   */
+  private async createAuditLogEntry(params: any): Promise<void> {
+    try {
+      await supabase.from('data_quality_audit_log').insert({
+        company_id: params.companyId,
+        action: params.action,
+        issue_id: params.issueId,
+        user_id: params.userId || 'system',
+        details: params.details,
+        created_at: new Date().toISOString()
+      });
+    } catch (error) {
+      logger.error('Failed to create audit log entry', error);
+    }
+  }
+
+  /**
+   * Generate issue ID
+   */
+  private generateIssueId(): string {
+    return `dq-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+  }
+
+  /**
+   * Get all data quality rules
+   */
+  getAllRules(): DataQualityRule[] {
+    return Array.from(this.rules.values());
+  }
+
+  /**
+   * Add custom data quality rule
+   */
+  async addCustomRule(rule: Omit<DataQualityRule, 'id'>): Promise<DataQualityRule> {
+    try {
+      const newRule = {
+        id: this.generateIssueId(),
+        ...rule,
+        is_active: true
+      };
+
+      const { data } = await supabase
+        .from('data_quality_rules')
+        .insert(newRule)
+        .select()
+        .single();
+
+      // Cache rule
+      this.rules.set(newRule.id, newRule);
+
+      logger.info('Custom data quality rule added', { ruleId: newRule.id });
+      return data;
+
+    } catch (error) {
+      logger.error('Failed to add custom data quality rule', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update data quality rule
+   */
+  async updateCustomRule(ruleId: string, updates: Partial<DataQualityRule>): Promise<DataQualityRule> {
+    try {
+      const { data } = await supabase
+        .from('data_quality_rules')
+        .update(updates)
+        .eq('id', ruleId)
+        .select()
+        .single();
+
+      if (!data) {
+        throw new Error('Rule not found');
+      }
+
+      // Update cache
+      this.rules.set(ruleId, data);
+
+      logger.info('Data quality rule updated', { ruleId });
+      return data;
+
+    } catch (error) {
+      logger.error('Failed to update data quality rule', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete custom data quality rule
+   */
+  async deleteCustomRule(ruleId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('data_quality_rules')
+        .delete()
+        .eq('id', ruleId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Remove from cache
+      this.rules.delete(ruleId);
+
+      logger.info('Data quality rule deleted', { ruleId });
+    } catch (error) {
+      logger.error('Failed to delete data quality rule', error);
+      throw error;
+    }
   }
 }
 

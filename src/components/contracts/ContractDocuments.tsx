@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
@@ -155,6 +156,13 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   };
 
   const handlePreviewDocument = async (document: any) => {
+    // تقرير حالة المركبة - نتعامل معه بشكل مختلف
+    if (document.document_type === 'condition_report' && document.condition_report_id) {
+      handleViewConditionReport(document.condition_report_id);
+      return;
+    }
+
+    // للمستندات الأخرى، نحتاج file_path
     if (!document.file_path) {
       toast.error('لا يمكن معاينة هذا المستند');
       return;

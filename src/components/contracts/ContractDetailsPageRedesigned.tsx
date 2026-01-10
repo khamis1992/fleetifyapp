@@ -706,7 +706,7 @@ const DocumentsTab = ({
 
 // === Main Component ===
 const ContractDetailsPageRedesigned = () => {
-  const { contractId: contractNumber } = useParams<{ contractId: string }>();
+  const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -870,8 +870,8 @@ const ContractDetailsPageRedesigned = () => {
   const vehicleName = useMemo(() => {
     if (!contract?.vehicle) return 'غير محدد';
     const vehicle = contract.vehicle;
-    const make = vehicle.make_ar || vehicle.make || '';
-    const model = vehicle.model_ar || vehicle.model || '';
+    const make = vehicle.make || '';
+    const model = vehicle.model || '';
     const year = vehicle.year || '';
     return `${make} ${model} ${year}`.trim();
   }, [contract?.vehicle]);

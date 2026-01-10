@@ -29,6 +29,12 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [hasMounted, setHasMounted] = React.useState(false);
+
+  // Track mount state to avoid unnecessary loading spinners during navigation
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -38,7 +44,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     }
   };
 
-  if (loading) {
+  // CRITICAL FIX: Only show loading on initial mount, not during navigation
+  if (loading && !hasMounted && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
@@ -46,7 +53,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     );
   }
 
-  if (!user) {
+  if (!loading && !user) {
     return <Navigate to="/auth" replace />;
   }
 

@@ -416,6 +416,9 @@ export class PaymentService extends BaseService<Payment> {
   private async validatePaymentData(data: PaymentCreationData): Promise<{ isValid: boolean; errors?: string[] }> {
     const errors: string[] = [];
 
+    // CRITICAL: customer_id is required
+    if (!data.customer_id) errors.push('customer_id is required for payment creation');
+    
     if (!data.payment_date) errors.push('تاريخ الدفعة مطلوب');
     if (!data.amount || data.amount <= 0) errors.push('مبلغ الدفعة يجب أن يكون أكبر من صفر');
     if (!data.payment_method) errors.push('طريقة الدفع مطلوبة');

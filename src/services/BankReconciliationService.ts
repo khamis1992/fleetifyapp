@@ -1,424 +1,476 @@
 /**
  * Bank Reconciliation Service
  * 
- * إدارة عملية التسوية البنكية:
- * - استيراد سجلات البنوك (CSV/Excel/Manual)
- * - مطابقة المدفوعات مع السجلات
- * - تحديث reconciliation_status
- * - إدارة الفروقات (discrepancies)
+ * Service for reconciling bank statements with payments:
+ * - Auto-reconciliation using smart matching algorithms
+ * - Manual reconciliation for difficult cases
+ * - Reconciliation status tracking
+ * - Bank statement import and processing
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { ReconciliationStatus } from '@/types/payment-enums';
 
-export interface BankTransaction {
+/**
+ * Bank Transaction Type
+ * Types of bank transactions
+ */
+export enum BankTransactionType {
+  CREDIT = 'credit',
+  DEBIT = 'debit',
+  TRANSFER = 'transfer'
+}
+
+/**
+ * Bank Statement Entry
+ * A single entry from a bank statement
+ */
+export interface BankStatementEntry {
   id: string;
   companyId: string;
   transactionDate: string;
+  transactionType: BankTransactionType;
   amount: number;
   currency: string;
+  description: string;
   referenceNumber?: string;
-  description?: string;
   accountNumber?: string;
-  accountName?: string;
-  transactionType: 'credit' | 'debit'; // وديت/مدين
-  status: 'pending' | 'matched' | 'discrepancy' | 'cancelled';
-  uploadedAt: string;
-  uploadedBy?: string;
-}
-
-export interface ReconciliationMatch {
-  bankTransactionId: string;
-  paymentId: string;
-  matchType: 'exact' | 'partial' | 'manual';
-  confidence: number; // 0-100
-  amountDifference: number;
+  customerName?: string;
+  customerReference?: string;
+  paymentId?: string;
+  invoiceId?: string;
+  contractId?: string;
+  bankId?: string;
+  
+  // Status
+  reconciliationStatus: ReconciliationStatus;
+  reconciliationConfidence: number; // 0-100, higher means more confident
+  matchedPaymentId?: string;
+  reconciledAt?: string;
+  reconciledBy?: string;
   notes?: string;
-  matchedAt: string;
-  matchedBy?: string;
+  
+  // Metadata
+  importedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface ReconciliationSummary {
+/**
+ * Reconciliation Match Result
+ * Result of a reconciliation attempt
+ */
+export interface ReconciliationMatchResult {
+  bankStatementId: string;
+  paymentId?: string;
+  confidence: number;
+  matchScore: number;
+  matchReasons: string[];
+  warnings?: string[];
+  isAutoMatched: boolean;
+  requiresManualReview: boolean;
+}
+
+/**
+ * Reconciliation Options
+ * Configuration for reconciliation process
+ */
+export interface ReconciliationOptions {
   companyId: string;
-  period: {
-    startDate: string;
-    endDate: string;
-  };
-  totalBankTransactions: number;
-  totalPayments: number;
-  matchedTransactions: number;
-  unmatchedBankTransactions: number;
-  unmatchedPayments: number;
-  discrepancies: number;
-  totalAmountMatched: number;
-  averageConfidence: number;
+  amountTolerancePercent?: number; // Default: 1%
+  dateToleranceDays?: number; // Default: 3 days
+  requireExactMatch?: boolean; // If true, only match exact amounts
+  requireCustomerMatch?: boolean; // If true, require customer reference
+  requireDateMatch?: boolean; // If true, require date match within tolerance
+  maxMatchesPerBankEntry?: number; // Limit matches per entry
+  userId?: string;
+  dryRun?: boolean; // Preview without applying
 }
 
-class BankReconciliationService {
+/**
+ * Manual Reconciliation Input
+ * Input for manual reconciliation
+ */
+export interface ManualReconciliationInput {
+  bankStatementId: string;
+  paymentId: string;
+  confidence?: number;
+  notes?: string;
+  userId?: string;
+}
+
+/**
+ * Bank Reconciliation Statistics
+ * Aggregated reconciliation metrics
+ */
+export interface ReconciliationStats {
+  companyId: string;
+  totalBankTransactions: number;
+  reconciledTransactions: number;
+  pendingTransactions: number;
+  unmatchedTransactions: number;
+  autoMatchedRate: number; // Percentage
+  averageMatchConfidence: number;
+  totalAmount: number;
+  reconciledAmount: number;
+  unmatchedAmount: number;
+  lastReconciledAt: string;
+}
+
+/**
+ * Bank Reconciliation Service
+ * Main service class
+ */
+export class BankReconciliationService {
+  
   /**
-   * استيراد معاملات بنكية من CSV
+   * Import bank statement entries
    */
-  async importFromCSV(
+  async importBankStatement(
     companyId: string,
-    csvData: string,
-    options: {
-      skipFirstRow?: boolean;
-      dateColumn?: string;
-      amountColumn?: string;
-      referenceColumn?: string;
-      accountColumn?: string;
-    } = {}
+    entries: Array<{
+      transactionDate: string;
+      transactionType: BankTransactionType;
+      amount: number;
+      currency?: string;
+      description: string;
+      referenceNumber?: string;
+      accountNumber?: string;
+      customerName?: string;
+      customerReference?: string;
+    }>,
+    userId?: string
   ): Promise<{
-    success: boolean;
-    importedCount: number;
+    imported: number;
+    failed: number;
     errors: string[];
-    transactions: BankTransaction[];
   }> {
     try {
-      logger.info('Starting bank transactions CSV import', {
+      logger.info('Importing bank statement', {
         companyId,
-        csvLength: csvData.length
+        entriesCount: entries.length
       });
 
-      const lines = csvData.split('\n');
+      const imported: number[] = [];
       const errors: string[] = [];
-      const transactions: BankTransaction[] = [];
+      const currency = 'QAR'; // Default currency
 
-      const skipFirst = options.skipFirstRow !== false; // افتراضياً يتخطأ الصف الأول
-      const dateCol = options.dateColumn || 'date';
-      const amountCol = options.amountColumn || 'amount';
-      const refCol = options.referenceColumn || 'reference';
-      const acctCol = options.accountColumn || 'account';
-
-      // تحليل الصف الأول للحصول على الأعمدة
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-
-      logger.info('CSV headers detected', { headers });
-
-      for (let i = skipFirst ? 0 : 1; i < lines.length; i++) {
+      for (const entry of entries) {
         try {
-          const line = lines[i].trim();
-          if (!line) continue;
+          const { error } = await supabase.from('bank_statement_entries').insert({
+            company_id: companyId,
+            transaction_date: entry.transactionDate,
+            transaction_type: entry.transactionType,
+            amount: Math.abs(entry.amount),
+            currency: entry.currency || currency,
+            description: entry.description || '',
+            reference_number: entry.referenceNumber || '',
+            account_number: entry.accountNumber || '',
+            customer_name: entry.customerName || '',
+            customer_reference: entry.customerReference || '',
+            reconciliation_status: 'unreconciled',
+            reconciliation_confidence: 0,
+            imported_at: new Date().toISOString(),
+            created_by: userId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
 
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-
-          if (values.length < headers.length) {
-            errors.push(`السطر ${i + 1}: عدد الأعمدة غير كاف`);
-            continue;
+          if (error) {
+            errors.push(`Failed to import entry: ${error.message}`);
+          } else {
+            imported.push(1);
           }
-
-          // إنشاء كائن المعاملة
-          const dateStr = this.getValue(headers, values, dateCol);
-          const amountStr = this.getValue(headers, values, amountCol);
-          const referenceStr = this.getValue(headers, values, refCol);
-          const accountStr = this.getValue(headers, values, acctCol);
-
-          // التحقق من البيانات
-          const amount = parseFloat(amountStr);
-          const transactionDate = this.parseDate(dateStr);
-
-          if (!amount || isNaN(amount)) {
-            errors.push(`السطر ${i + 1}: المبلغ غير صحيح (${amountStr})`);
-            continue;
-          }
-
-          if (!transactionDate) {
-            errors.push(`السطر ${i + 1}: التاريخ غير صحيح (${dateStr})`);
-            continue;
-          }
-
-          const transaction: Omit<BankTransaction, 'id' | 'companyId' | 'uploadedAt' | 'status'> = {
-            transactionDate: transactionDate.toISOString(),
-            amount,
-            currency: 'QAR',
-            referenceNumber: referenceStr || undefined,
-            description: values[headers.indexOf('description')]?.trim(),
-            accountNumber: accountStr || undefined,
-            accountName: values[headers.indexOf('account_name')]?.trim(),
-            transactionType: amount >= 0 ? 'credit' : 'debit',
-            uploadedBy: undefined // سيتم تعيينه لاحقاً
-          };
-
-          transactions.push(transaction);
-
-        } catch (lineError) {
-          errors.push(`السطر ${i + 1}: ${lineError instanceof Error ? lineError.message : 'خطأ غير معروف'}`);
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : 'Unknown error');
         }
       }
 
-      if (errors.length > 0) {
-        logger.warn('Bank import has errors', { errorCount: errors.length });
-        return {
-          success: false,
-          importedCount: 0,
-          errors,
-          transactions: []
-        };
-      }
+      logger.info('Bank statement import completed', {
+        companyId,
+        importedCount: imported.length,
+        failedCount: errors.length
+      });
 
-      // حفظ المعاملات
-      if (transactions.length > 0) {
-        const { data: savedTransactions } = await supabase
-          .from('bank_transactions')
-          .insert(transactions.map(t => ({
-            company_id: companyId,
-            ...t,
-            uploaded_at: new Date().toISOString(),
-            status: 'pending'
-          })))
-          .select('id');
-
-        logger.info('Bank transactions imported', {
-          companyId,
-          count: savedTransactions.length,
-          firstId: savedTransactions[0].id,
-          lastId: savedTransactions[savedTransactions.length - 1].id
-        });
-
-        return {
-          success: true,
-          importedCount: savedTransactions.length,
-          errors: [],
-          transactions: savedTransactions
-        };
-      }
-
-      logger.warn('No valid bank transactions to import', { companyId });
       return {
-        success: true,
-        importedCount: 0,
-        errors: [],
-        transactions: []
+        imported: imported.length,
+        failed: errors.length,
+        errors
       };
+
     } catch (error) {
-      logger.error('Failed to import bank transactions', { companyId, error });
-      return {
-        success: false,
-        importedCount: 0,
-        errors: [error instanceof Error ? error.message : 'خطأ غير معروف'],
-        transactions: []
-      };
+      logger.error('Exception importing bank statement', { companyId, error });
+      throw error;
     }
   }
 
   /**
-   * مطابقة المعاملات البنكية بالمدفوعات تلقائياً
+   * Auto-reconcile bank statements with payments
+   * Matches using: amount ±1%, customer reference, date ±3 days
    */
-  async autoMatch(
-    companyId: string,
-    options: {
-      minConfidence?: number; // 0-100
-      maxAgeDays?: number; // لا تطابق معاملات أقدم من X يوم
-      matchBy?: 'amount' | 'reference' | 'date' | 'combined'; // طريقة المطابقة
-    } = {}
-  ): Promise<{
-    matches: ReconciliationMatch[];
-    errors: string[];
+  async autoReconcile(options: ReconciliationOptions): Promise<{
+    matches: ReconciliationMatchResult[];
+    stats: ReconciliationStats;
   }> {
     try {
-      logger.info('Starting automatic bank reconciliation', { companyId, options });
+      logger.info('Starting auto-reconciliation', {
+        companyId: options.companyId,
+        amountTolerance: options.amountTolerancePercent,
+        dateTolerance: options.dateToleranceDays
+      });
 
-      const minConfidence = options.minConfidence || 70;
-      const maxAgeDate = options.maxAgeDays 
-        ? new Date(Date.now() - options.maxAgeDays * 24 * 60 * 60 * 1000)
-        : undefined;
-
-      // جلب المعاملات البنكية المعلقة
-      const { data: bankTransactions } = await supabase
-        .from('bank_transactions')
+      // 1. Get unreconciled bank statements
+      const { data: bankStatements, error: bankError } = await supabase
+        .from('bank_statement_entries')
         .select('*')
-        .eq('company_id', companyId)
-        .eq('status', 'pending')
-        .order('transaction_date', { ascending: false });
+        .eq('company_id', options.companyId)
+        .eq('reconciliation_status', 'unreconciled')
+        .order('transaction_date', { ascending: false })
+        .limit(1000); // Limit for performance
 
-      if (!bankTransactions || bankTransactions.length === 0) {
-        logger.info('No pending bank transactions to match', { companyId });
+      if (bankError) {
+        throw new Error(`Failed to fetch bank statements: ${bankError.message}`);
+      }
+
+      if (!bankStatements || bankStatements.length === 0) {
+        logger.info('No unreconciled bank statements found', { companyId: options.companyId });
         return {
           matches: [],
-          errors: ['لا توجد معاملات بنكية معلقة']
+          stats: await this.getReconciliationStats(options.companyId)
         };
       }
 
-      // تطبيق فilters التاريخ
-      const filteredBankTransactions = maxAgeDate
-        ? bankTransactions.filter(bt => new Date(bt.transactionDate) >= maxAgeDate)
-        : bankTransactions;
-
-      logger.info('Bank transactions loaded', {
-        companyId,
-        total: bankTransactions.length,
-        filtered: filteredBankTransactions.length
-      });
-
-      // جلب المدفوعات
-      const { data: payments } = await supabase
+      // 2. Get payments for matching
+      const { data: payments, error: paymentsError } = await supabase
         .from('payments')
-        .select('id, payment_number, payment_date, amount, invoice_id, contract_id, customer_id')
-        .eq('company_id', companyId)
-        .eq('payment_status', 'completed')
-        .order('payment_date', { ascending: false });
+        .select(`
+          id,
+          payment_number,
+          payment_date,
+          amount,
+          customer_id,
+          contract_id,
+          invoice_id,
+          payment_status,
+          agreement_number
+        `)
+        .eq('company_id', options.companyId)
+        .in('payment_status', ['completed', 'processing'])
+        .order('payment_date', { ascending: false })
+        .limit(1000);
 
-      const matches: ReconciliationMatch[] = [];
+      if (paymentsError) {
+        throw new Error(`Failed to fetch payments: ${paymentsError.message}`);
+      }
 
-      // مطابقة حسب الاستراتيجية
-      for (const bankTx of filteredBankTransactions) {
-        const paymentMatches = this.findMatchingPayments(
-          bankTx,
-          payments,
-          options.matchBy || 'combined'
+      // 3. Perform matching for each bank statement
+      const matches: ReconciliationMatchResult[] = [];
+      const matchLimit = options.maxMatchesPerBankEntry || 1;
+
+      for (const bankStmt of bankStatements) {
+        // Find matching payments
+        const matchingPayments = await this.findMatchingPayments(
+          bankStmt,
+          payments || [],
+          options
         );
 
-        for (const paymentMatch of paymentMatches) {
-          if (paymentMatch.confidence >= minConfidence) {
-            matches.push({
-              bankTransactionId: bankTx.id,
-              paymentId: paymentMatch.paymentId,
-              matchType: paymentMatch.matchType,
-              confidence: paymentMatch.confidence,
-              amountDifference: paymentMatch.amountDifference,
-              matchedAt: new Date().toISOString()
-            });
+        // Apply matches (limit by matchLimit)
+        const limitedMatches = matchingPayments.slice(0, matchLimit);
+
+        if (limitedMatches.length > 0) {
+          for (const match of limitedMatches) {
+            const matchResult: ReconciliationMatchResult = {
+              bankStatementId: bankStmt.id,
+              paymentId: match.paymentId,
+              confidence: match.confidence,
+              matchScore: match.score,
+              matchReasons: match.reasons,
+              warnings: match.warnings,
+              isAutoMatched: match.confidence >= 80,
+              requiresManualReview: match.confidence < 80
+            };
+
+            matches.push(matchResult);
+
+            // Apply reconciliation if confidence is high enough and not dry run
+            if (!options.dryRun && matchResult.isAutoMatched) {
+              await this.applyReconciliation(
+                bankStmt.id,
+                match.paymentId,
+                matchResult.confidence,
+                options.userId
+              );
+            }
           }
         }
       }
 
-      logger.info('Automatic reconciliation completed', {
-        companyId,
+      logger.info('Auto-reconciliation completed', {
+        companyId: options.companyId,
         matchesCount: matches.length,
-        strategy: options.matchBy
+        autoMatchedCount: matches.filter(m => m.isAutoMatched).length,
+        manualReviewCount: matches.filter(m => m.requiresManualReview).length
       });
+
+      // 4. Get updated stats
+      const stats = await this.getReconciliationStats(options.companyId);
 
       return {
         matches,
-        errors: []
+        stats
       };
+
     } catch (error) {
-      logger.error('Failed automatic reconciliation', { companyId, error });
-      return {
-        matches: [],
-        errors: [error instanceof Error ? error.message : 'خطأ غير معروف']
-      };
+      logger.error('Exception during auto-reconciliation', {
+        companyId: options.companyId,
+        error
+      });
+      throw error;
     }
   }
 
   /**
-   * البحث عن مدفوعات مطابقة لمعاملة بنكية
+   * Find matching payments for a bank statement entry
+   * Uses multi-factor matching algorithm
    */
-  private findMatchingPayments(
-    bankTx: BankTransaction,
+  private async findMatchingPayments(
+    bankStmt: BankStatementEntry,
     payments: any[],
-    matchBy: string
-  ): Array<{
+    options: ReconciliationOptions
+  ): Promise<Array<{
     paymentId: string;
-    matchType: 'exact' | 'partial' | 'manual';
     confidence: number;
-    amountDifference: number;
-  }> {
-    const matches = [];
+    score: number;
+    reasons: string[];
+    warnings?: string[];
+  }>> {
+    const matches: Array<{
+      paymentId: string;
+      confidence: number;
+      score: number;
+      reasons: string[];
+      warnings?: string[];
+    }> = [];
 
-    if (matchBy === 'reference' || matchBy === 'combined') {
-      // مطابقة بالرقم المرجع
-      if (bankTx.referenceNumber) {
-        for (const payment of payments) {
-          const paymentRef = payment.reference_number || payment.agreement_number;
-          
-          if (paymentRef) {
-            const confidence = paymentRef.toLowerCase() === bankTx.referenceNumber.toLowerCase() ? 100 : 80;
-            matches.push({
-              paymentId: payment.id,
-              matchType: confidence === 100 ? 'exact' : 'manual',
-              confidence,
-              amountDifference: payment.amount - bankTx.amount
-            });
-          }
-        }
-      }
-    }
+    const amountTolerance = (options.amountTolerancePercent || 1) / 100;
+    const dateToleranceDays = options.dateToleranceDays || 3;
+    const minAmount = bankStmt.amount * (1 - amountTolerance);
+    const maxAmount = bankStmt.amount * (1 + amountTolerance);
 
-    if (matchBy === 'amount' || matchBy === 'combined') {
-      // مطابقة بالمبلغ (تسامح ±5%)
-      const amountTolerance = Math.abs(bankTx.amount) * 0.05;
+    for (const payment of payments) {
+      let score = 0;
+      let reasons: string[] = [];
+      let warnings: string[] = [];
+      let confidence = 0;
 
-      for (const payment of payments) {
-        const amountDiff = Math.abs(payment.amount - bankTx.amount);
+      // Factor 1: Amount match (highest weight: 40)
+      if (payment.amount >= minAmount && payment.amount <= maxAmount) {
+        const amountDiff = Math.abs(payment.amount - bankStmt.amount);
+        const amountDiffPercent = (amountDiff / bankStmt.amount) * 100;
         
-        if (amountDiff <= amountTolerance) {
-          const confidence = amountDiff === 0 ? 100 : 90;
-          matches.push({
-            paymentId: payment.id,
-            matchType: confidence === 100 ? 'exact' : 'manual',
-            confidence,
-            amountDifference: payment.amount - bankTx.amount
-          });
+        score += 40 * (1 - amountDiffPercent / 100);
+        reasons.push(`Amount match: ${amountDiffPercent.toFixed(2)}% difference`);
+        
+        if (amountDiffPercent > 0.5) {
+          warnings.push('Amount difference > 0.5%');
         }
+      } else if (options.requireExactMatch) {
+        // Skip if amount doesn't match exactly
+        continue;
       }
-    }
 
-    if (matchBy === 'date' || matchBy === 'combined') {
-      // مطابقة بالتاريخ (خلال 3 أيام)
-      const bankDate = new Date(bankTx.transactionDate);
-      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-
-      for (const payment of payments) {
+      // Factor 2: Date match (weight: 30)
+      if (options.requireDateMatch !== false) {
         const paymentDate = new Date(payment.payment_date);
-        const dateDiff = Math.abs(bankDate.getTime() - paymentDate.getTime());
+        const bankDate = new Date(bankStmt.transactionDate);
+        const daysDiff = Math.abs((paymentDate.getTime() - bankDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (dateDiff <= threeDaysMs) {
-          // فقط إذا كانت هناك أيضاً تطابق بالمرجع أو المبلغ
-          const existingMatch = matches.find(m => m.paymentId === payment.id);
-          
-          if (!existingMatch) {
-            const confidence = 60; // ثقة منخفضة للمطابقة بالتاريخ فقط
-            matches.push({
-              paymentId: payment.id,
-              matchType: 'manual',
-              confidence,
-              amountDifference: payment.amount - bankTx.amount
-            });
-          }
+        if (daysDiff <= dateToleranceDays) {
+          score += 30 * (1 - daysDiff / dateToleranceDays);
+          reasons.push(`Date match: ${daysDiff} days difference`);
+        } else {
+          warnings.push(`Date difference: ${daysDiff} days (outside ${dateToleranceDays} days tolerance)`);
+          score -= 20; // Penalty for date mismatch
         }
       }
+
+      // Factor 3: Reference number match (weight: 20)
+      if (bankStmt.referenceNumber && payment.agreement_number) {
+        const normalizedBankRef = bankStmt.referenceNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalizedPaymentRef = payment.agreement_number.toLowerCase().replace(/[^a-z0-9]/g, '');
+        
+        if (normalizedBankRef === normalizedPaymentRef) {
+          score += 20;
+          reasons.push('Reference number exact match');
+        } else if (normalizedBankRef.includes(normalizedPaymentRef) || 
+                   normalizedPaymentRef.includes(normalizedBankRef)) {
+          score += 10;
+          reasons.push('Reference number partial match');
+        }
+      }
+
+      // Factor 4: Customer reference match (weight: 10)
+      if (bankStmt.customerReference && bankStmt.customerReference.length > 0) {
+        // This would need payment.customer lookup
+        // For now, just note it
+        reasons.push('Customer reference present');
+      }
+
+      // Calculate confidence (0-100)
+      confidence = Math.min(100, Math.max(0, score));
+
+      // Add to matches if score > 50 (minimum threshold)
+      if (score > 50) {
+        matches.push({
+          paymentId: payment.id,
+          confidence,
+          score,
+          reasons,
+          warnings: warnings.length > 0 ? warnings : undefined
+        });
+      }
     }
+
+    // Sort by confidence (highest first)
+    matches.sort((a, b) => b.confidence - a.confidence);
 
     return matches;
   }
 
   /**
-   * تأكيد مطابقة يدوياً
+   * Apply reconciliation to database
    */
-  async confirmMatch(
-    bankTransactionId: string,
+  private async applyReconciliation(
+    bankStatementId: string,
     paymentId: string,
+    confidence: number,
     userId?: string
-  ): Promise<{
-    success: boolean;
-    error?: string;
-  }> {
+  ): Promise<void> {
     try {
-      logger.info('Confirming bank reconciliation match', {
-        bankTransactionId,
-        paymentId
-      });
-
-      // تحديث حالة المعاملة البنكية
+      // Update bank statement entry
       const { error: bankError } = await supabase
-        .from('bank_transactions')
+        .from('bank_statement_entries')
         .update({
-          status: 'matched',
+          reconciliation_status: 'reconciled',
+          payment_id: paymentId,
+          reconciliation_confidence: confidence,
+          reconciled_at: new Date().toISOString(),
+          reconciled_by: userId,
           updated_at: new Date().toISOString()
         })
-        .eq('id', bankTransactionId);
+        .eq('id', bankStatementId);
 
       if (bankError) {
         throw bankError;
       }
 
-      // تحديث حالة الدفعة
+      // Update payment reconciliation status
       const { error: paymentError } = await supabase
         .from('payments')
         .update({
-          reconciliation_status: 'matched',
-          linked_confidence: 100,
+          reconciliation_status: 'reconciled',
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentId);
@@ -427,305 +479,351 @@ class BankReconciliationService {
         throw paymentError;
       }
 
-      // إنشاء سجل المطابقة
-      await supabase
-        .from('reconciliation_matches')
-        .insert({
-          company_id: userId ? await this.getCompanyId(userId) : 'unknown',
-          bank_transaction_id: bankTransactionId,
-          payment_id: paymentId,
-          match_type: 'manual',
-          confidence: 100,
-          matched_at: new Date().toISOString(),
-          matched_by: userId
-        });
-
-      logger.info('Bank reconciliation match confirmed', {
-        bankTransactionId,
-        paymentId
+      logger.info('Reconciliation applied', {
+        bankStatementId,
+        paymentId,
+        confidence
       });
 
-      return { success: true };
     } catch (error) {
-      logger.error('Failed to confirm match', {
-        bankTransactionId,
+      logger.error('Failed to apply reconciliation', {
+        bankStatementId,
         paymentId,
         error
       });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
-    }
-  }
-
-  /**
-   * إنشاء فروق (discrepancy)
-   */
-  async createDiscrepancy(
-    bankTransactionId: string,
-    paymentId: string,
-    options: {
-      notes?: string;
-      resolvedAs?: 'bank_correct' | 'payment_correct' | 'adjustment';
-      userId?: string;
-    } = {}
-  ): Promise<{
-    success: boolean;
-    discrepancyId?: string;
-    error?: string;
-  }> {
-    try {
-      logger.info('Creating bank reconciliation discrepancy', {
-        bankTransactionId,
-        paymentId,
-        options
-      });
-
-      // الحصول على تفاصيل المعاملة والدفعة
-      const { data: bankTx } = await supabase
-        .from('bank_transactions')
-        .select('*')
-        .eq('id', bankTransactionId)
-        .single();
-
-      const { data: payment } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('id', paymentId)
-        .single();
-
-      if (!bankTx || !payment) {
-        return {
-          success: false,
-          error: 'المعاملة أو الدفعة غير موجودة'
-        };
-      }
-
-      // تحديث الحالات إلى discrepancy
-      await supabase
-        .from('bank_transactions')
-        .update({ status: 'discrepancy' })
-        .eq('id', bankTransactionId);
-
-      await supabase
-        .from('payments')
-        .update({ reconciliation_status: 'discrepancy' })
-        .eq('id', paymentId);
-
-      // إنشاء سجل الفرق
-      const { data: discrepancy } = await supabase
-        .from('reconciliation_discrepancies')
-        .insert({
-          company_id: bankTx.company_id,
-          bank_transaction_id: bankTransactionId,
-          payment_id: paymentId,
-          amount_difference: payment.amount - bankTx.amount,
-          bank_amount: bankTx.amount,
-          payment_amount: payment.amount,
-          notes: options.notes || 'فروق في المبلغ',
-          resolved_as: options.resolvedAs,
-          status: 'open',
-          created_by: options.userId,
-          created_at: new Date().toISOString()
-        })
-        .select('id')
-        .single();
-
-      logger.info('Bank discrepancy created', {
-        discrepancyId: discrepancy.id,
-        amountDifference: payment.amount - bankTx.amount
-      });
-
-      return {
-        success: true,
-        discrepancyId: discrepancy.id
-      };
-    } catch (error) {
-      logger.error('Failed to create discrepancy', {
-        bankTransactionId,
-        paymentId,
-        error
-      });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
-    }
-  }
-
-  /**
-   * الحصول على ملخص التسوية
-   */
-  async getReconciliationSummary(
-    companyId: string,
-    options: {
-      startDate?: string;
-      endDate?: string;
-    } = {}
-  ): Promise<ReconciliationSummary> {
-    try {
-      logger.info('Calculating reconciliation summary', { companyId, options });
-
-      // تعيين نطاق التاريخ
-      const startDate = options.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const endDate = options.endDate || new Date().toISOString();
-
-      // جلب المعاملات البنكية
-      const { data: bankTransactions } = await supabase
-        .from('bank_transactions')
-        .select('id, transaction_date, amount, status')
-        .eq('company_id', companyId)
-        .gte('transaction_date', startDate)
-        .lte('transaction_date', endDate);
-
-      // جلب المدفوعات
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('id, payment_date, amount, reconciliation_status, linked_confidence')
-        .eq('company_id', companyId)
-        .gte('payment_date', startDate)
-        .lte('payment_date', endDate)
-        .eq('payment_status', 'completed');
-
-      // جلب المطابقات
-      const { data: matches } = await supabase
-        .from('reconciliation_matches')
-        .select('id, matched_at')
-        .eq('company_id', companyId)
-        .gte('matched_at', startDate)
-        .lte('matched_at', endDate);
-
-      const matchedCount = matches?.length || 0;
-      const totalMatchedAmount = matches?.reduce((sum, m) => {
-        // لا يمكن الحصول على المبلغ من matches بدون join
-        return sum; // يلزم تحديث الاستعلام
-      }, 0) || 0;
-
-      // الفروقات
-      const { data: discrepancies } = await supabase
-        .from('reconciliation_discrepancies')
-        .select('id')
-        .eq('company_id', companyId)
-        .gte('created_at', startDate)
-        .lte('created_at', endDate);
-
-      const summary: ReconciliationSummary = {
-        companyId,
-        period: { startDate, endDate },
-        totalBankTransactions: bankTransactions?.length || 0,
-        totalPayments: payments?.length || 0,
-        matchedTransactions: matchedCount,
-        unmatchedBankTransactions: bankTransactions?.filter(bt => bt.status === 'pending').length || 0,
-        unmatchedPayments: payments?.filter(p => p.reconciliation_status === 'unmatched').length || 0,
-        discrepancies: discrepancies?.length || 0,
-        totalAmountMatched: totalMatchedAmount,
-        averageConfidence: matches?.length > 0 
-          ? matches.reduce((sum, m) => sum + (m.confidence || 0), 0) / matches.length 
-          : 0
-      };
-
-      logger.info('Reconciliation summary calculated', {
-        companyId,
-        ...summary
-      });
-
-      return summary;
-    } catch (error) {
-      logger.error('Failed to calculate reconciliation summary', { companyId, error });
       throw error;
     }
   }
 
   /**
-   * حل الفروق (resolve discrepancy)
+   * Manual reconciliation
+   * Allows manual matching of bank statement to payment
    */
-  async resolveDiscrepancy(
-    discrepancyId: string,
-    options: {
-      resolution?: string;
-      correctedBankAmount?: number;
-      correctedPaymentAmount?: number;
-      userId?: string;
-    } = {}
-  ): Promise<{ success: boolean; error?: string }> {
+  async manualReconcile(
+    input: ManualReconciliationInput
+  ): Promise<{
+    success: boolean;
+    warnings?: string[];
+  }> {
     try {
-      logger.info('Resolving reconciliation discrepancy', { discrepancyId, options });
+      logger.info('Manual reconciliation', {
+        bankStatementId: input.bankStatementId,
+        paymentId: input.paymentId
+      });
 
-      // تحديث حالة الفرق إلى resolved
-      const { error: updateError } = await supabase
-        .from('reconciliation_discrepancies')
-        .update({
-          status: 'resolved',
-          resolution: options.resolution || 'تم الحل',
-          corrected_bank_amount: options.correctedBankAmount,
-          corrected_payment_amount: options.correctedPaymentAmount,
-          resolved_at: new Date().toISOString(),
-          resolved_by: options.userId
-        })
-        .eq('id', discrepancyId);
+      const warnings: string[] = [];
 
-      if (updateError) {
-        throw updateError;
+      // Validate bank statement exists
+      const { data: bankStmt, error: bankError } = await supabase
+        .from('bank_statement_entries')
+        .select('*')
+        .eq('id', input.bankStatementId)
+        .single();
+
+      if (bankError || !bankStmt) {
+        throw new Error('Bank statement entry not found');
       }
 
-      logger.info('Discrepancy resolved', { discrepancyId });
-      return { success: true };
-    } catch (error) {
-      logger.error('Failed to resolve discrepancy', { discrepancyId, error });
+      // Validate payment exists
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('id', input.paymentId)
+        .single();
+
+      if (paymentError || !payment) {
+        throw new Error('Payment not found');
+      }
+
+      // Check if amounts match (within tolerance)
+      const amountTolerance = 0.01; // 1% tolerance for manual too
+      const amountDiff = Math.abs(payment.amount - bankStmt.amount);
+      const amountDiffPercent = (amountDiff / bankStmt.amount) * 100;
+
+      if (amountDiffPercent > amountTolerance) {
+        warnings.push(`Amount difference: ${amountDiffPercent.toFixed(2)}%`);
+      }
+
+      // Check for duplicate reconciliation
+      if (bankStmt.reconciliationStatus === 'reconciled') {
+        throw new Error('Bank statement already reconciled');
+      }
+
+      if (payment.reconciliationStatus === 'reconciled') {
+        throw new Error('Payment already reconciled');
+      }
+
+      // Apply reconciliation
+      const confidence = input.confidence || (
+        amountDiffPercent <= 0.5 ? 100 : // Very close amounts
+        amountDiffPercent <= 1 ? 80 :   // Close amounts
+        50                                   // Different amounts
+      );
+
+      await this.applyReconciliation(
+        input.bankStatementId,
+        input.paymentId,
+        confidence,
+        input.userId
+      );
+
+      logger.info('Manual reconciliation completed', {
+        bankStatementId: input.bankStatementId,
+        paymentId: input.paymentId,
+        confidence,
+        warnings: warnings.length
+      });
+
       return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+        success: true,
+        warnings: warnings.length > 0 ? warnings : undefined
       };
+
+    } catch (error) {
+      logger.error('Exception during manual reconciliation', {
+        bankStatementId: input.bankStatementId,
+        paymentId: input.paymentId,
+        error
+      });
+      throw error;
     }
   }
 
   /**
-   * Helper: استخراج قيمة من CSV
+   * Undo reconciliation
+   * Remove reconciliation link
    */
-  private getValue(headers: string[], values: string[], columnName: string): string {
-    const index = headers.findIndex(h => 
-      h.toLowerCase().replace(/\s/g, '') === columnName.toLowerCase().replace(/\s/g, '')
-    );
-    return index >= 0 && index < values.length ? values[index] : '';
-  }
+  async undoReconciliation(
+    bankStatementId: string,
+    reason: string,
+    userId?: string
+  ): Promise<void> {
+    try {
+      logger.info('Undoing reconciliation', { bankStatementId });
 
-  /**
-   * Helper: تحليل تاريخ
-   */
-  private parseDate(dateStr: string): Date | null {
-    if (!dateStr) return null;
+      // Update bank statement entry
+      const { error: bankError, data: bankStmt } = await supabase
+        .from('bank_statement_entries')
+        .update({
+          reconciliation_status: 'unreconciled',
+          payment_id: null,
+          reconciliation_confidence: 0,
+          notes: `Reconciliation undone: ${reason}`,
+          reconciled_at: null,
+          reconciled_by: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', bankStatementId)
+        .select()
+        .single();
 
-    // دعم تنسيقات مختلفة
-    const formats = [
-      /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
-      /^\d{2}\/\d{2}\/\d{4}$/, // DD/MM/YYYY
-      /^\d{4}-\d{2}$/, // YYYYMMDD
-    ];
+      if (bankError) {
+        throw bankError;
+      }
 
-    for (const format of formats) {
-      if (format.test(dateStr)) {
-        const date = new Date(dateStr);
-        if (!isNaN(date.getTime())) {
-          return date;
+      // Update payment reconciliation status
+      if (bankStmt && bankStmt.payment_id) {
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .update({
+            reconciliation_status: 'unreconciled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bankStmt.payment_id);
+
+        if (paymentError) {
+          throw paymentError;
         }
       }
-    }
 
-    return null;
+      logger.info('Reconciliation undone successfully', {
+        bankStatementId,
+        reason
+      });
+
+    } catch (error) {
+      logger.error('Exception undoing reconciliation', { bankStatementId, error });
+      throw error;
+    }
   }
 
   /**
-   * Helper: الحصول على company_id من user
+   * Get reconciliation statistics
    */
-  private async getCompanyId(userId: string): Promise<string> {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', userId)
-      .single();
+  async getReconciliationStats(companyId: string): Promise<ReconciliationStats> {
+    try {
+      // Get all bank statements for company
+      const { data: bankStatements, error: statsError } = await supabase
+        .from('bank_statement_entries')
+        .select('*')
+        .eq('company_id', companyId);
 
-    return profile?.company_id || '';
+      if (statsError) {
+        throw new Error(`Failed to fetch reconciliation stats: ${statsError.message}`);
+      }
+
+      if (!bankStatements) {
+        return {
+          companyId,
+          totalBankTransactions: 0,
+          reconciledTransactions: 0,
+          pendingTransactions: 0,
+          unmatchedTransactions: 0,
+          autoMatchedRate: 0,
+          averageMatchConfidence: 0,
+          totalAmount: 0,
+          reconciledAmount: 0,
+          unmatchedAmount: 0,
+          lastReconciledAt: new Date().toISOString()
+        };
+      }
+
+      // Calculate statistics
+      const totalBankTransactions = bankStatements.length;
+      const reconciledTransactions = bankStatements.filter(s => 
+        s.reconciliationStatus === 'reconciled'
+      ).length;
+      const pendingTransactions = bankStatements.filter(s => 
+        s.reconciliationStatus === 'unreconciled'
+      ).length;
+      const unmatchedTransactions = bankStatements.filter(s => 
+        s.reconciliationStatus === 'unreconciled' && 
+        s.payment_id === null
+      ).length;
+
+      const totalAmount = bankStatements.reduce((sum, s) => sum + s.amount, 0);
+      const reconciledAmount = bankStatements
+        .filter(s => s.reconciliationStatus === 'reconciled')
+        .reduce((sum, s) => sum + s.amount, 0);
+      const unmatchedAmount = totalAmount - reconciledAmount;
+
+      const autoMatchedRate = totalBankTransactions > 0
+        ? (reconciledTransactions / totalBankTransactions) * 100
+        : 0;
+
+      const averageMatchConfidence = bankStatements
+        .filter(s => s.reconciliationStatus === 'reconciled')
+        .reduce((sum, s) => sum + (s.reconciliation_confidence || 0), 0) / 
+        (reconciledTransactions || 1);
+
+      const lastReconciledAt = bankStatements
+        .filter(s => s.reconciliation_status === 'reconciled' && s.reconciled_at)
+        .sort((a, b) => new Date(b.reconciled_at!).getTime() - new Date(a.reconciled_at!).getTime())[0]
+        ?.reconciled_at || new Date().toISOString();
+
+      return {
+        companyId,
+        totalBankTransactions,
+        reconciledTransactions,
+        pendingTransactions,
+        unmatchedTransactions,
+        autoMatchedRate,
+        averageMatchConfidence,
+        totalAmount,
+        reconciledAmount,
+        unmatchedAmount,
+        lastReconciledAt
+      };
+
+    } catch (error) {
+      logger.error('Exception getting reconciliation stats', { companyId, error });
+      throw error;
+    }
+  }
+
+  /**
+   * Get unreconciled bank statements
+   */
+  async getUnreconciledStatements(
+    companyId: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<BankStatementEntry[]> {
+    try {
+      let query = supabase
+        .from('bank_statement_entries')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('reconciliation_status', 'unreconciled')
+        .order('transaction_date', { ascending: false });
+
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      }
+
+      if (options?.offset) {
+        query = query.range(options.offset, options.offset + (options.limit || 100) - 1);
+      }
+
+      const { data: statements, error } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch unreconciled statements: ${error.message}`);
+      }
+
+      return statements || [];
+
+    } catch (error) {
+      logger.error('Exception fetching unreconciled statements', { companyId, error });
+      throw error;
+    }
+  }
+
+  /**
+   * Create reconciliation report
+   */
+  async createReconciliationReport(
+    companyId: string,
+    userId?: string
+  ): Promise<{
+    reportId: string;
+    stats: ReconciliationStats;
+  }> {
+    try {
+      logger.info('Creating reconciliation report', { companyId });
+
+      const stats = await this.getReconciliationStats(companyId);
+
+      const { data: report, error } = await supabase
+        .from('reconciliation_reports')
+        .insert({
+          company_id: companyId,
+          report_date: new Date().toISOString(),
+          total_transactions: stats.totalBankTransactions,
+          reconciled_transactions: stats.reconciledTransactions,
+          pending_transactions: stats.pendingTransactions,
+          unmatched_transactions: stats.unmatchedTransactions,
+          auto_matched_rate: stats.autoMatchedRate,
+          average_confidence: stats.averageMatchConfidence,
+          total_amount: stats.totalAmount,
+          reconciled_amount: stats.reconciledAmount,
+          unmatched_amount: stats.unmatchedAmount,
+          created_by: userId,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to create reconciliation report: ${error.message}`);
+      }
+
+      logger.info('Reconciliation report created', {
+        companyId,
+        reportId: report.id
+      });
+
+      return {
+        reportId: report.id,
+        stats
+      };
+
+    } catch (error) {
+      logger.error('Exception creating reconciliation report', { companyId, error });
+      throw error;
+    }
   }
 }
 

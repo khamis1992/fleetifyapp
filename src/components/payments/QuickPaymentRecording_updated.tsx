@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown, Filter, Calendar, MoreVertical } from 'lucide-react';
 import { startOfMonth, endOfMonth, addMonths, isBefore, isWithinInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ interface Invoice {
     } | null;
   } | null;
 }
+}
 
 interface PaymentSuccess {
   paymentId: string;
@@ -76,7 +77,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     const phone = params.get('phone');
 
     if (customerId && customerName) {
-      // Auto-select the customer from URL
+      // Auto-select customer from URL
       const customerFromUrl: Customer = {
         id: customerId,
         first_name: customerName.split(' ')[0] || customerName,
@@ -85,7 +86,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         customer_type: 'individual',
         company_id: companyId || '',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       setSelectedCustomer(customerFromUrl);
@@ -93,8 +94,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       selectCustomer(customerFromUrl);
     }
   }, [location.search, companyId]);
+  
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([]);
+  
+  // Filter states
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [paymentAmount, setPaymentAmount] = useState('');
   const [amountError, setAmountError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -104,11 +112,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [showReceipt, setShowReceipt] = useState(false);
   const [readyToPay, setReadyToPay] = useState(false);
   const [showAllInvoices, setShowAllInvoices] = useState(false);
-  
-  // Filter states
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Report step changes to parent
   useEffect(() => {
@@ -126,6 +129,81 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       onStepChange(0); // Initial state
     }
   }, [paymentSuccess, readyToPay, selectedInvoices.length, selectedCustomer, onStepChange]);
+
+  // Filter invoices based on date range and status
+  const getFilteredInvoices = useMemo(() => {
+    return getFilteredInvoicesHelper(invoices, dateRange, paymentStatusFilter);
+  }, [invoices, dateRange, paymentStatusFilter]);
+
+  // Helper function to get filtered invoices
+  const getFilteredInvoicesHelper = (invoiceList: Invoice[], filters: any, statusFilter: any) => {
+    let result = invoiceList;
+
+    // Apply date range filter
+    if (filters.dateRange && filters.dateRange.start) {
+      const startDate = new Date(filters.dateRange.start);
+      result = result.filter(inv => new Date(inv.invoice_date) >= startDate);
+    }
+
+    if (filters.dateRange && filters.dateRange.end) {
+      const endDate = new Date(filters.dateRange.end);
+      result = result.filter(inv => new Date(inv.invoice_date) <= endDate);
+    }
+
+    // Apply payment status filter
+    if (statusFilter && statusFilter.paymentStatusFilter && statusFilter.paymentStatusFilter !== 'all') {
+      const statusMap: Record<string, string[]> = {
+        'completed': ['paid', 'partial_paid'],
+        'pending': ['unpaid', 'pending'],
+        'failed': ['cancelled', 'voided']
+      };
+      
+      const applicableStatuses = statusMap[statusFilter.paymentStatusFilter] || [];
+      result = result.filter(inv => applicableStatuses.includes(inv.status));
+    }
+
+    return result;
+  };
+
+  // Check for overdue invoices (past due date)
+  const overdueInvoices = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+    
+    return invoices.filter(invoice => {
+      if (!invoice.due_date) return false;
+      const dueDate = new Date(invoice.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    });
+  }, [invoices]);
+
+  // Check if user selected a future invoice while there are overdue ones
+  const hasFutureSelectionWithOverdue = useMemo(() => {
+    if (overdueInvoices.length === 0) return false;
+    if (selectedInvoices.length === 0) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check if any selected invoice is NOT overdue (i.e., future or current)
+    const selectedFutureOrCurrent = selectedInvoices.some(inv => {
+      if (!inv.due_date) return false;
+      const dueDate = new Date(inv.due_date);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate >= today; // Due date is today or in future
+    });
+    
+    // Check if there are unselected overdue invoices
+    const hasUnselectedOverdue = overdueInvoices.some(overdue => 
+      !selectedInvoices.some(sel => sel.id === overdue.id)
+    );
+    
+    return selectedFutureOrCurrent && hasUnselectedOverdue;
+  }, [selectedInvoices, overdueInvoices]);
+
+  // Count hidden invoices
+  const hiddenInvoicesCount = invoices.length - getFilteredInvoices.length;
 
   // Export functionality
   const exportSelectedInvoices = async () => {
@@ -193,76 +271,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     }
   };
 
-  // Filter invoices based on date range and status
-  const getFilteredInvoices = useMemo(() => {
-    let result = invoices;
-
-    // Filter by date range
-    if (dateRange.start) {
-      const startDate = new Date(dateRange.start);
-      result = result.filter(inv => new Date(inv.invoice_date) >= startDate);
-    }
-
-    if (dateRange.end) {
-      const endDate = new Date(dateRange.end);
-      result = result.filter(inv => new Date(inv.invoice_date) <= endDate);
-    }
-
-    // Filter by payment status
-    if (paymentStatusFilter !== 'all') {
-      const statusMap: Record<string, string[]> = {
-        'completed': ['paid', 'partial_paid'],
-        'pending': ['unpaid', 'pending'],
-        'failed': ['cancelled', 'voided']
-      };
-      
-      const applicableStatuses = statusMap[paymentStatusFilter] || [];
-      result = result.filter(inv => applicableStatuses.includes(inv.status));
-    }
-
-    return result;
-  }, [invoices, dateRange, paymentStatusFilter]);
-
-  // Check for overdue invoices (past due date)
-  const overdueInvoices = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
-    
-    return invoices.filter(invoice => {
-      if (!invoice.due_date) return false;
-      const dueDate = new Date(invoice.due_date);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate < today;
-    });
-  }, [invoices]);
-
-  // Check if user selected a future invoice while there are overdue ones
-  const hasFutureSelectionWithOverdue = useMemo(() => {
-    if (overdueInvoices.length === 0) return false;
-    if (selectedInvoices.length === 0) return false;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Check if any selected invoice is NOT overdue (i.e., future or current)
-    const selectedFutureOrCurrent = selectedInvoices.some(inv => {
-      if (!inv.due_date) return false;
-      const dueDate = new Date(inv.due_date);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate >= today; // Due date is today or in the future
-    });
-    
-    // Check if there are unselected overdue invoices
-    const hasUnselectedOverdue = overdueInvoices.some(overdue => 
-      !selectedInvoices.some(sel => sel.id === overdue.id)
-    );
-    
-    return selectedFutureOrCurrent && hasUnselectedOverdue;
-  }, [selectedInvoices, overdueInvoices]);
-
-  // Count hidden invoices
-  const hiddenInvoicesCount = invoices.length - filteredInvoices.length;
-
   const searchCustomers = async () => {
     if (!searchTerm.trim()) return;
 
@@ -273,7 +281,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         .select('id, first_name, last_name, phone')
         .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
       
-      // فلترة حسب الشركة الحالية
+      // Filter by current company
       if (companyId) {
         query = query.eq('company_id', companyId);
       }
@@ -283,11 +291,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       if (error) throw error;
 
       setCustomers(data || []);
+      
       if (data && data.length === 0) {
         toast({
           title: 'لم يتم العثور على عملاء',
           description: 'جرب البحث باسم أو رقم هاتف مختلف',
-          variant: 'destructive',
+          variant: 'destructive'
         });
       }
     } catch (error) {
@@ -295,7 +304,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       toast({
         title: 'خطأ في البحث',
         description: 'حدث خطأ أثناء البحث عن العملاء',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setSearching(false);
@@ -336,13 +345,20 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       if (error) throw error;
 
       setInvoices(data || []);
-      // لا نعرض رسالة خطأ إذا لم تكن هناك فواتير - قد يكون هناك عقد بدون فواتير
+      // Show message if no invoices - might be contract without invoices
+      if (data && data.length === 0) {
+        toast({
+          title: 'لا توجد فواتير مستحقة',
+          description: 'قد يكون هناك عقد بدون فواتير',
+          variant: 'info'
+        });
+      }
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
         title: 'خطأ',
         description: 'حدث خطأ أثناء جلب الفواتير',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   };
@@ -360,7 +376,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         const newSelection = [...prev, invoice];
         // Update payment amount
         const totalAmount = newSelection.reduce((sum, inv) => sum + (inv.balance_due ?? inv.total_amount), 0);
-        setPaymentAmount(totalAmount.toString());
+        setPaymentAmount(totalAmount > 0 ? totalAmount.toString() : '');
         return newSelection;
       }
     });
@@ -382,30 +398,35 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   };
 
   const processPayment = async () => {
+    // Validate all fields
     if (!selectedCustomer || !paymentAmount || !companyId) {
       toast({
         title: 'بيانات ناقصة',
         description: 'يرجى التأكد من اختيار العميل وإدخال المبلغ',
-        variant: 'destructive',
+        variant: 'destructive'
       });
       return;
     }
 
+    // Validate payment amount
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
+      setAmountError('المبلغ غير صحيح');
       toast({
         title: 'مبلغ غير صحيح',
         description: 'يرجى إدخال مبلغ صحيح',
-        variant: 'destructive',
+        variant: 'destructive'
       });
       return;
     }
+
+    setAmountError('');
 
     setProcessing(true);
     try {
       const paymentDate = new Date().toISOString().split('T')[0];
       const paymentNumber = `PAY-${Date.now()}`;
-      
+
       console.log('Processing payment with:', {
         companyId,
         customerId: selectedCustomer.id,
@@ -413,7 +434,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         amount,
         paymentMethod
       });
-      
+
       const paymentTypeMap: Record<string, string> = {
         'cash': 'cash',
         'bank_transfer': 'bank_transfer',
@@ -421,73 +442,13 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         'other': 'cash'
       };
 
-      // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
-      if (selectedInvoices.length === 0) {
-        // البحث عن عقد نشط للعميل
-        const { data: activeContracts, error: contractError } = await supabase
-          .from('contracts')
-          .select('id, contract_number, monthly_amount')
-          .eq('customer_id', selectedCustomer.id)
-          .eq('company_id', companyId)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (contractError || !activeContracts || activeContracts.length === 0) {
-          throw new Error('لا يوجد عقد نشط للعميل. يرجى إنشاء فاتورة أولاً.');
-        }
-
-        const activeContract = activeContracts[0];
-        
-        // إنشاء فاتورة تلقائياً للدفعة
-        const { generateInvoiceNumber } = await import('@/utils/createInvoiceForPayment');
-        const invoiceNumber = await generateInvoiceNumber(companyId);
-        
-        const { data: newInvoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert({
-            company_id: companyId,
-            customer_id: selectedCustomer.id,
-            contract_id: activeContract.id,
-            invoice_number: invoiceNumber,
-            invoice_date: paymentDate,
-            due_date: paymentDate,
-            total_amount: amount,
-            balance_due: 0, // مدفوعة بالكامل
-            payment_status: 'paid',
-            status: 'draft',
-            invoice_type: 'rental',
-            description: `فاتورة تلقائية للدفعة - عقد ${activeContract.contract_number}`,
-            notes: 'تم إنشاء هذه الفاتورة تلقائياً عند تسجيل دفعة بدون فاتورة',
-          })
-          .select()
-          .single();
-
-        if (invoiceError) {
-          throw new Error(`فشل في إنشاء الفاتورة: ${invoiceError.message}`);
-        }
-
-        // إضافة الفاتورة الجديدة إلى القائمة المحددة
-        selectedInvoices.push(newInvoice as any);
-        console.log('✅ تم إنشاء فاتورة تلقائياً:', invoiceNumber);
-      }
-
-      // Group invoices by contract
-      const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter((id): id is string => id !== null))];
-      const invoiceNumbers = selectedInvoices.map(inv => inv.invoice_number).join(', ');
-      const contractNumbers = selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ');
-
-      console.log('Processing payment for invoices:', invoiceNumbers);
-
-      // ✅ إنشاء دفعة منفصلة لكل فاتورة (الحل الصحيح)
-      let remainingAmount = amount;
-      let firstPaymentId: string | null = null;
+      // Process payment - create payments for each invoice
       let paymentsCreated = 0;
 
-      for (let i = 0; i < selectedInvoices.length && remainingAmount > 0; i++) {
+      for (let i = 0; i < selectedInvoices.length && amount > 0; i++) {
         const invoice = selectedInvoices[i];
         const invoiceBalance = invoice.balance_due ?? invoice.total_amount;
-        const amountToApply = Math.min(remainingAmount, invoiceBalance);
+        const amountToApply = Math.min(amount, invoiceBalance);
         
         if (amountToApply <= 0) continue;
 
@@ -504,67 +465,61 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           payment_status: 'completed' as const,
           transaction_type: 'receipt' as const,
           currency: 'QAR',
-          notes: `دفعة لفاتورة ${invoice.invoice_number}`,
+          notes: `دفعة لفاتورة ${invoice.invoice_number}`
         };
-        
-        console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);
-        
-        const { data: payment, error: paymentError } = await supabase
+
+        const { error: paymentError } = await supabase
           .from('payments')
           .insert(paymentInsertData)
-          .select()
-          .single();
+          .select();
 
         if (paymentError) {
           console.error('Payment insert error:', JSON.stringify(paymentError, null, 2));
+          
+          // Log warning for duplicate constraint violation
           if (paymentError.code === '23505' && paymentError.message?.includes('idx_payments_unique_transaction')) {
-            console.warn(`تخطي الفاتورة ${invoice.invoice_number} - الدفعة مسجلة بالفعل`);
-            continue; // تخطي هذه الفاتورة والمتابعة مع الباقي
+            console.warn(`تخطأ الفاتورة ${invoice.invoice_number} - الدفعة مسجلة بالفعل`);
           }
+
           throw new Error(`خطأ في إنشاء الدفعة: ${paymentError.message}`);
         }
-        
-        if (!firstPaymentId) firstPaymentId = payment.id;
+
+        if (!firstPaymentId) firstPaymentId = payment.insertId;
         paymentsCreated++;
 
-        // تحديث الفاتورة
+        // Update invoice status
         const newBalance = Math.max(0, invoiceBalance - amountToApply);
         const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
-        
+
         await supabase
           .from('invoices')
-          .update({ 
+          .update({
             payment_status: newPaymentStatus,
             paid_amount: (invoice.total_amount - newBalance),
             balance_due: newBalance
           })
           .eq('id', invoice.id);
-
-        remainingAmount -= amountToApply;
       }
 
       if (paymentsCreated === 0) {
         throw new Error('لم يتم تسجيل أي دفعة. قد تكون جميع الدفعات مسجلة بالفعل.');
       }
 
-      console.log(`Successfully created ${paymentsCreated} payment(s)`);
-
-      // ✅ تحديث last_payment_date فقط - الـ trigger يحسب total_paid تلقائياً
+      // Update contract last payment dates
+      const contractIds = [...new Set(selectedInvoices.map(inv => inv.contract_id).filter((id): id is string => id !== null))];
+      
       for (const contractId of contractIds) {
         await supabase
           .from('contracts')
           .update({
-            last_payment_date: paymentDate,
+            last_payment_date: paymentDate
           })
           .eq('id', contractId);
       }
-      
-      // للتوافق مع الكود التالي
-      const payment = { id: firstPaymentId };
 
-      // استخراج رقم المركبة من أول فاتورة
-      const vehicleNumber = selectedInvoices[0]?.contracts?.vehicle_number || 
-                           selectedInvoices[0]?.contracts?.vehicles?.plate_number || '';
+      console.log(`Successfully created ${paymentsCreated} payment(s)`);
+
+      const payment = { id: firstPaymentId };
 
       // Show success screen
       setPaymentSuccess({
@@ -576,12 +531,13 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           : selectedInvoices[0].invoice_number,
         customerName: `${selectedCustomer.first_name} ${selectedCustomer.last_name || ''}`.trim(),
         customerPhone: selectedCustomer.phone,
-        paymentMethod: paymentMethod,
-        paymentDate: paymentDate,
+        paymentMethod,
+        paymentDate,
         description: selectedInvoices.length > 1 
-          ? `دفعة مجمعة لـ ${selectedInvoices.length} فاتورة - عقود: ${contractNumbers}`
-          : `دفعة إيجار - عقد رقم ${contractNumbers} - فاتورة ${invoiceNumbers}`,
-        vehicleNumber: vehicleNumber,
+          ? `دفعة مجمعة لـ ${selectedInvoices.length} فواتير - عقود: ${selectedInvoices.map(inv => inv.contracts?.contract_number).filter(Boolean).join(', ')}`
+          : `دفعة إيجار - عقد رقم ${selectedInvoices[0].contracts?.contract_number || ''} - فاتورة ${selectedInvoices[0].invoice_number}`,
+        vehicleNumber: selectedInvoices[0]?.contracts?.vehicles?.plate_number || 
+                         selectedInvoices[0]?.contracts?.vehicle_number || ''
       });
 
       toast({
@@ -589,19 +545,21 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق لـ ${selectedInvoices.length} فاتورة`,
       });
 
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Error processing payment:', JSON.stringify(error, null, 2));
       let errorMessage = 'حدث خطأ غير معروف';
+      
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
         const errObj = error as { message?: string; code?: string; details?: string };
         errorMessage = errObj.message || errObj.details || errObj.code || JSON.stringify(error);
       }
+
       toast({
         title: 'خطأ في معالجة الدفعة',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setProcessing(false);
@@ -610,11 +568,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
   const handleDownloadReceipt = async () => {
     if (!receiptRef.current || !paymentSuccess) return;
-    
+
     setGeneratingPDF(true);
     try {
       const html = await generateReceiptHTML(receiptRef.current);
       downloadHTML(html, `سند-قبض-${paymentSuccess.receiptNumber}.html`);
+      
       toast({
         title: 'تم تحميل السند ✅',
         description: 'تم حفظ سند القبض بصيغة HTML - يمكن طباعته مباشرة',
@@ -624,7 +583,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       toast({
         title: 'خطأ في إنشاء الملف',
         description: 'حدث خطأ أثناء إنشاء الملف',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setGeneratingPDF(false);
@@ -636,16 +595,16 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       toast({
         title: 'لا يوجد رقم هاتف',
         description: 'لا يمكن إرسال الإيصال لعدم وجود رقم هاتف للعميل',
-        variant: 'destructive',
+        variant: 'destructive'
       });
       return;
     }
 
-    // Show the receipt for PDF generation
+    // Show receipt for PDF generation
     setShowReceipt(true);
     setGeneratingPDF(true);
 
-    // Wait for the receipt to render and images to load
+    // Wait for receipt to render and images to load
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
@@ -654,7 +613,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         paymentSuccess.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : 
         paymentSuccess.paymentMethod === 'check' ? 'شيك' : 'أخرى';
 
-      // رسالة واتساب
       const message = `سند قبض رقم: ${paymentSuccess.receiptNumber}
 
 عزيزي/عزيزتي ${paymentSuccess.customerName}،
@@ -669,8 +627,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 - تاريخ الدفع: ${formatReceiptDate(paymentSuccess.paymentDate)}
 - طريقة الدفع: ${paymentMethodLabel}
 
-شكرا لتعاملكم معنا
-
+شكراً لتعاملكم معنا
 شركة العراف لتأجير السيارات`;
 
       // Format phone number
@@ -694,14 +651,14 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       toast({
         title: 'تم فتح واتساب ويب',
-        description: 'تم تحميل سند القبض HTML، أرفقه في المحادثة ثم اضغط إرسال',
+        description: 'تم تحميل سند القبض HTML، أرفقه في المحادثة ثم إضغط إرسال',
       });
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: 'خطأ',
         description: 'حدث خطأ أثناء إنشاء السند',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setGeneratingPDF(false);
@@ -713,33 +670,37 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setSelectedInvoices([]);
     setInvoices([]);
     setPaymentAmount('');
+    setAmountError('');
     setPaymentMethod('cash');
-    setSearchTerm('');
-    setCustomers([]);
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
+    setShowFilters(false);
+    setDateRange({ start: '', end: '' });
+    setPaymentStatusFilter('all');
+    setSearchTerm('');
+    setCustomers([]);
   };
 
-  // دالة جديدة: إعادة تعيين النموذج مع الإبقاء على نفس العميل
   const newPaymentSameCustomer = async () => {
     if (!selectedCustomer) {
       resetForm();
       return;
     }
 
-    // حفظ بيانات العميل
+    // Preserve customer, reset everything else
     const currentCustomer = selectedCustomer;
     
-    // إعادة تعيين حالة الدفعة
+    // Reset payment-related state
     setSelectedInvoices([]);
     setPaymentAmount('');
+    setAmountError('');
     setPaymentMethod('cash');
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
 
-    // إعادة جلب الفواتير للعميل الحالي
+    // Re-fetch invoices for current customer
     try {
       const { data, error } = await supabase
         .from('invoices')
@@ -768,77 +729,70 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       if (error) throw error;
 
       setInvoices(data || []);
-      if (data && data.length === 0) {
-        toast({
-          title: 'لا توجد فواتير مستحقة',
-          description: 'لم يتبقى فواتير غير مدفوعة لهذا العميل',
-        });
-      } else {
-        toast({
-          title: 'تم تحديث الفواتير',
-          description: `تم تحميل ${data?.length || 0} فاتورة للعميل ${currentCustomer.first_name}`,
-        });
-      }
+      toast({
+        title: 'تم تحديث الفواتير',
+        description: `تم تحميل ${data?.length || 0} فاتورة للعميل ${currentCustomer.first_name}`,
+      });
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
         title: 'خطأ',
         description: 'حدث خطأ أثناء جلب الفواتير',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Payment Success Screen */}
       {paymentSuccess && (
         <Card className="border-green-200 bg-green-50/50">
           <CardContent className="pt-6">
             <div className="text-center space-y-6">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="h-10 w-10 text-green-600" />
               </div>
               
               <div>
                 <h3 className="text-2xl font-bold text-green-800">تم تسجيل الدفعة بنجاح!</h3>
-                <p className="text-green-600 mt-1">تم حفظ الدفعة في النظام</p>
+                <p className="text-green-600 mt-2">تم حفظ الدفعة في النظام</p>
               </div>
-
-              <div className="bg-white rounded-xl p-4 space-y-3 text-right border border-green-200">
+              
+              <div className="bg-white rounded-xl p-6 space-y-4 text-right border border-green-200">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-lg">{paymentSuccess.amount.toFixed(2)} ر.ق</span>
                   <span className="text-muted-foreground">المبلغ المدفوع</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center">
                   <span className="font-mono">{paymentSuccess.receiptNumber}</span>
                   <span className="text-muted-foreground">رقم السند</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center">
                   <span>{paymentSuccess.invoiceNumber}</span>
                   <span className="text-muted-foreground">رقم الفاتورة</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center">
                   <span>{paymentSuccess.customerName}</span>
                   <span className="text-muted-foreground">العميل</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center">
                   <span>{formatReceiptDate(paymentSuccess.paymentDate)}</span>
                   <span className="text-muted-foreground">التاريخ</span>
                 </div>
               </div>
-
-              <div className="space-y-3">
+              
+              <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">هل تريد إرسال سند القبض للعميل؟</p>
                 
                 <div className="flex gap-3 justify-center flex-wrap">
                   <Button 
                     onClick={sendReceiptViaWhatsApp} 
                     disabled={!paymentSuccess.customerPhone || generatingPDF}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     {generatingPDF ? (
-                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 ml-2 animate-spin text-white" />
                     ) : (
                       <MessageCircle className="h-4 w-4 ml-2" />
                     )}
@@ -852,49 +806,26 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                     <FileText className="h-4 w-4 ml-2" />
                     {showReceipt ? 'إخفاء السند' : 'معاينة السند'}
                   </Button>
-
-                  <Button 
-                    variant="outline" 
-                    onClick={handleDownloadReceipt}
-                    disabled={generatingPDF || !showReceipt}
-                  >
+                  
+                  <Button variant="outline" onClick={handleDownloadReceipt} disabled={generatingPDF || !showReceipt}>
                     <Download className="h-4 w-4 ml-2" />
                     تحميل السند
                   </Button>
                   
-                  <Button variant="outline" onClick={newPaymentSameCustomer}>
+                  <Button variant="ghost" onClick={newPaymentSameCustomer}>
                     دفعة جديدة (نفس العميل)
                   </Button>
                   <Button variant="ghost" onClick={resetForm}>
                     عميل آخر
                   </Button>
                 </div>
-
+                
                 {!paymentSuccess.customerPhone && (
-                  <p className="text-xs text-amber-600">
+                  <p className="text-xs text-amber-600 mt-2">
                     ⚠️ لا يوجد رقم هاتف للعميل
                   </p>
                 )}
               </div>
-
-              {/* Receipt Preview */}
-              {showReceipt && (
-                <div className="mt-6 border rounded-lg overflow-auto bg-slate-100 p-2 sm:p-4" style={{ maxHeight: '80vh' }}>
-                  <div className="w-full">
-                    <PaymentReceipt
-                      ref={receiptRef}
-                      receiptNumber={paymentSuccess.receiptNumber}
-                      date={formatReceiptDate(paymentSuccess.paymentDate)}
-                      customerName={paymentSuccess.customerName}
-                      amountInWords={numberToArabicWords(paymentSuccess.amount)}
-                      amount={paymentSuccess.amount}
-                      description={paymentSuccess.description}
-                      paymentMethod={paymentSuccess.paymentMethod as 'cash' | 'check' | 'bank_transfer' | 'other'}
-                      vehicleNumber={paymentSuccess.vehicleNumber}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -902,244 +833,285 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
       {/* Main Payment Form */}
       {!paymentSuccess && (
-      <Card>
-        <CardHeader>
-          <CardTitle>تسجيل دفعة سريع</CardTitle>
-          <CardDescription>
-            ابحث عن العميل، اختر الفاتورة، وسجل الدفعة في أقل من دقيقة
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Step 1: Search Customer */}
-          {!selectedCustomer && (
-            <div className="space-y-4">
-              <Label>ابحث عن العميل</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="اسم العميل أو رقم الهاتف..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchCustomers()}
-                />
-                <Button onClick={searchCustomers} disabled={searching}>
-                  {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </Button>
-              </div>
-
-              {customers.length > 0 && (
-                <div className="border rounded-lg divide-y">
-                  {customers.map((customer) => (
-                    <div
-                      key={customer.id}
-                      className="p-3 hover:bg-accent cursor-pointer"
-                      onClick={() => selectCustomer(customer)}
-                    >
-                      <div className="font-medium">
-                        {customer.first_name} {customer.last_name}
-                      </div>
-                      <div className="text-sm text-muted-foreground">{customer.phone}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Show Selected Customer and Invoices */}
-          {selectedCustomer && !readyToPay && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>العميل المختار</Label>
-                  <div className="text-lg font-medium">
-                    {selectedCustomer.first_name} {selectedCustomer.last_name}
-                  </div>
-                  <div className="text-sm text-muted-foreground">{selectedCustomer.phone}</div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={resetForm}>
+        <Card>
+          <CardHeader>
+            <CardTitle>تسجيل دفعة سريعة</CardTitle>
+            <CardDescription>
+              ابحث عن العميل، اختر الفواتير، وسجل الدفعة في أقل من دقيقة
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            
+            {/* Filter and View Options */}
+            <div className="flex items-center gap-2 mb-4 p-3 bg-slate-50 rounded-lg border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2"
+              >
+                {showFilters ? (
                   <X className="h-4 w-4" />
-                </Button>
-              </div>
+                ) : (
+                  <>
+                    <Filter className="h-4 w-4" />
+                    تصفية
+                  </>
+                )}
+              </Button>
+              
+              {/* Export Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportSelectedInvoices}
+                disabled={selectedInvoices.length === 0 || processing}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                تصدير الفواتير
+              </Button>
+            </div>
 
-              <div className="space-y-2">
+            {/* Filters Panel */}
+            {showFilters && (
+              <div className="bg-white border rounded-lg p-4 space-y-4 shadow-lg">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  تصفية متقدمة
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm">تاريخ البداية</Label>
+                    <Input
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">تاريخ النهاية</Label>
+                    <Input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm">حالة الدفعة</Label>
+                  <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                    <SelectTrigger id="payment_status_filter">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      <SelectItem value="completed">مدفوعة</SelectItem>
+                      <SelectItem value="pending">معلقة</SelectItem>
+                      <SelectItem value="failed">فاشلة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* Filtered Invoices Count */}
+            {getFilteredInvoices.length !== invoices.length && (
+              <div className="bg-blue-50 text-blue-700 text-sm px-3 py-2 rounded-lg">
+                عرض {getFilteredInvoices.length} من {invoices.length} فاتورة (أظهرت {invoices.length - getFilteredInvoices.length})
+              </div>
+            )}
+
+            {/* Step 1: Search Customer */}
+            {!selectedCustomer && (
+              <div className="space-y-4">
+                <Label className="text-base font-medium">البحث عن العميل</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="اسم العميل أو رقم الهاتف..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                    onKeyPress={(e) => e.key === 'Enter' && searchCustomers()}
+                  />
+                  <Button onClick={searchCustomers} disabled={searching} className="bg-green-600 hover:bg-green-700">
+                    {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    بحث
+                  </Button>
+                </div>
+                
+                {customers.length > 0 && (
+                  <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                    {customers.map((customer) => (
+                      <div
+                        key={customer.id}
+                        className="p-3 hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => selectCustomer(customer)}
+                      >
+                        <div className="font-medium">
+                          {customer.first_name} {customer.last_name}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {customer.phone}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Show Selected Customer and Invoices */}
+            {selectedCustomer && !readyToPay && (
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label>اختر الفواتير المراد دفعها (يمكنك تحديد أكثر من فاتورة)</Label>
+                  <div>
+                    <Label className="text-base font-medium">العميل المختار</Label>
+                    <div className="text-lg font-medium">
+                      {selectedCustomer.first_name} {selectedCustomer.last_name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedCustomer.phone}
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={resetForm}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">اختر الفواتير المراد دفعها</Label>
                   {invoices.length > 0 && (
                     <Button variant="outline" size="sm" onClick={selectAllInvoices}>
-                      {selectedInvoices.length === invoices.length ? 'إلغاء الكل' : 'تحديد الكل'}
+                      {selectedInvoices.length === invoices.length ? 'إلغاء التحديد' : 'تحديد الكل'}
                     </Button>
                   )}
                 </div>
-
-                {/* Warning for selecting future invoices while overdue exist */}
-                {hasFutureSelectionWithOverdue && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-amber-800 font-medium text-sm">تنبيه: توجد فواتير سابقة مستحقة</p>
-                      <p className="text-amber-700 text-xs mt-1">
-                        يوجد {overdueInvoices.length} فاتورة متأخرة. يُفضل دفع الفواتير المتأخرة أولاً.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
+                
                 {invoices.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     لا توجد فواتير غير مدفوعة لهذا العميل
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="border rounded-lg divide-y max-h-80 overflow-y-auto">
-                    {filteredInvoices.map((invoice) => {
-                      const isOverdue = invoice.due_date ? new Date(invoice.due_date) < new Date() : false;
-                      const isSelected = selectedInvoices.some(i => i.id === invoice.id);
-                      const balanceDue = invoice.balance_due ?? invoice.total_amount;
-                      return (
-                        <div
-                          key={invoice.id}
-                          className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-green-50 border-r-4 border-r-green-500' : 'hover:bg-accent'}`}
-                          onClick={() => toggleInvoiceSelection(invoice)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="h-5 w-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <div>
+                    <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
+                      {getFilteredInvoices.map((invoice) => {
+                        const isOverdue = invoice.due_date ? new Date(invoice.due_date) < new Date() : false;
+                        const isSelected = selectedInvoices.some(i => i.id === invoice.id);
+                        const balanceDue = invoice.balance_due ?? invoice.total_amount;
+                        
+                        return (
+                          <div
+                            key={invoice.id}
+                            className={`p-3 cursor-pointer transition-colors ${isSelected ? 'bg-green-50 border-r-2 border-green-500' : 'hover:bg-accent'}`}
+                            onClick={() => toggleInvoiceSelection(invoice)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}}
+                                className="h-5 w-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
                                   <div className="font-medium">{invoice.invoice_number}</div>
                                   <div className="text-sm text-muted-foreground">
                                     عقد: {invoice.contracts?.contract_number || '-'}
                                   </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    تاريخ الاستحقاق: {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('ar-EG') : '-'}
-                                  </div>
-                                </div>
-                                <div className="text-left">
-                                  <div className="text-lg font-bold">{balanceDue.toFixed(2)} ريال</div>
-                                  {isOverdue && (
-                                    <Badge variant="destructive" className="mt-1">
-                                      متأخر
-                                    </Badge>
-                                  )}
                                 </div>
                               </div>
+                              {isOverdue && (
+                                <Badge variant="destructive" className="ml-2">
+                                  متأخر
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-right text-lg font-bold text-green-700">
+                              {balanceDue.toFixed(2)} ريال
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                     </div>
-                    
-                    {/* Show more invoices button */}
-                    {!showAllInvoices && hiddenInvoicesCount > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => setShowAllInvoices(true)}
-                      >
-                        <ChevronDown className="h-4 w-4 ml-1" />
-                        عرض {hiddenInvoicesCount} فاتورة إضافية
-                      </Button>
-                    )}
-                    {showAllInvoices && hiddenInvoicesCount > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-slate-600 hover:text-slate-700"
-                        onClick={() => setShowAllInvoices(false)}
-                      >
-                        إخفاء الفواتير المستقبلية
-                      </Button>
-                    )}
                   </div>
                 )}
+              </div>
+            )}
 
-                {/* Show proceed button when invoices are selected */}
-                {selectedInvoices.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    {/* Warning before payment if selecting future invoice with overdue ones */}
-                    {hasFutureSelectionWithOverdue && (
-                      <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 flex items-start gap-3 animate-pulse">
-                        <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0" />
-                        <div>
-                          <p className="text-amber-800 font-bold">⚠️ تنبيه هام!</p>
-                          <p className="text-amber-700 text-sm mt-1">
-                            لديك {overdueInvoices.length} فاتورة متأخرة غير مدفوعة. 
-                            يُنصح بدفع الفواتير المتأخرة أولاً قبل دفع الفواتير المستقبلية.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="font-medium text-green-800">
-                          تم تحديد {selectedInvoices.length} فاتورة
-                        </span>
-                        <span className="text-xl font-bold text-green-700">
-                          {getTotalSelectedAmount().toFixed(2)} ر.ق
-                        </span>
-                      </div>
-                      <Button 
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        onClick={() => setReadyToPay(true)}
-                      >
-                        <Check className="h-4 w-4 ml-2" />
-                        متابعة للدفع ({selectedInvoices.length} فاتورة)
-                      </Button>
-                    </div>
-                  </div>
-                )}
+            {/* Warning for selecting future invoices while overdue exist */}
+            {hasFutureSelectionWithOverdue && (
+              <div className="bg-amber-50 border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-amber-800 font-medium text-sm">تنبيه: توجد فواتير سابقة مستحقة</p>
+                  <p className="text-amber-700 text-xs mt-2">
+                    يوجد {overdueInvoices.length} فاتورة متأخرة. يُفضل دفع الفواتير المتأخرة أولاً.
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 3: Payment Details */}
+      {selectedCustomer && readyToPay && selectedInvoices.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>تفاصيل الدفعة</CardTitle>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {selectedInvoices.length} فاتورة
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setReadyToPay(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            
+            {/* Summary of selected invoices */}
+            <div className="bg-slate-50 rounded-lg p-4 space-y-3 max-h-40 overflow-y-auto">
+              {selectedInvoices.map((invoice) => (
+                <div key={invoice.id} className="flex justify-between items-center text-sm">
+                  <span>{invoice.invoice_number}</span>
+                  <span className="font-medium text-green-600">{(invoice.balance_due ?? invoice.total_amount).toFixed(2)} ر.ق</span>
+                </div>
+              ))}
+              <div className="border-t pt-2 flex justify-between items-center font-bold">
+                <span>المجموع</span>
+                <span className="text-green-600">{getTotalSelectedAmount().toFixed(2)} ر.ق</span>
               </div>
             </div>
-          )}
 
-          {/* Step 3: Payment Details */}
-          {selectedCustomer && readyToPay && selectedInvoices.length > 0 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>الفواتير المختارة ({selectedInvoices.length})</Label>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {selectedInvoices.map(inv => inv.invoice_number).join(' - ')}
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setReadyToPay(false)}>
-                  <X className="h-4 w-4" />
-                  <span className="mr-1">تعديل الاختيار</span>
-                </Button>
-              </div>
-
-              {/* Summary of selected invoices */}
-              <div className="bg-slate-50 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
-                {selectedInvoices.map((invoice) => (
-                  <div key={invoice.id} className="flex justify-between items-center text-sm">
-                    <span>{invoice.invoice_number}</span>
-                    <span className="font-medium">{(invoice.balance_due ?? invoice.total_amount).toFixed(2)} ر.ق</span>
-                  </div>
-                ))}
-                <div className="border-t pt-2 flex justify-between items-center font-bold">
-                  <span>المجموع</span>
-                  <span className="text-green-600">{getTotalSelectedAmount().toFixed(2)} ر.ق</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="amount">المبلغ المدفوع</Label>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
+                  min="0"
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  onChange={(e) => {
+                    setPaymentAmount(e.target.value);
+                    if (parseFloat(e.target.value) > 0) {
+                      setAmountError('');
+                    }
+                  }}
                   placeholder="0.00"
+                  className="text-lg"
                 />
+                {amountError && (
+                  <p className="text-destructive text-sm mt-1">{amountError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1158,13 +1130,13 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button onClick={processPayment} disabled={processing} className="flex-1">
+                <Button onClick={processPayment} disabled={processing} className="flex-1 bg-green-600 hover:bg-green-700">
                   {processing ? (
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 ml-2" />
+                    <Check className="h-4 w-4" />
                   )}
-                  تأكيد الدفعة ({selectedInvoices.length} فاتورة)
+                  تأكيد الدفعة ({selectedInvoices.length} فواتير)
                 </Button>
                 <Button variant="outline" onClick={() => setReadyToPay(false)}>
                   رجوع
@@ -1174,9 +1146,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                 </Button>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

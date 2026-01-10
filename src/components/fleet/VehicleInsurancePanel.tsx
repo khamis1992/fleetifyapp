@@ -169,7 +169,7 @@ export function VehicleInsurancePanel({ vehicleId }: VehicleInsurancePanelProps)
             <div className="flex justify-end">
               <Dialog open={showInsuranceForm} onOpenChange={setShowInsuranceForm}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-rose-500 hover:bg-coral-600">
+                  <Button size="sm" className="bg-[#00A896] hover:bg-[#007D6D]">
                     <Plus className="h-4 w-4 ml-2" />
                     إضافة تأمين
                   </Button>

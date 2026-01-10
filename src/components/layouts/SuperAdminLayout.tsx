@@ -144,8 +144,15 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
 
 export const SuperAdminLayout: React.FC = () => {
   const { user, loading } = useAuth();
+  const [hasMounted, setHasMounted] = React.useState(false);
 
-  if (loading) {
+  // Track mount state to avoid unnecessary loading spinners during navigation
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // CRITICAL FIX: Only show loading on initial mount, not during navigation
+  if (loading && !hasMounted && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-soft">
         <LoadingSpinner size="lg" />
@@ -153,7 +160,7 @@ export const SuperAdminLayout: React.FC = () => {
     );
   }
 
-  if (!user) {
+  if (!loading && !user) {
     return <Navigate to="/super-admin" replace />;
   }
 

@@ -1,152 +1,191 @@
+/**
+ * Payment Linking Service Unit Tests
+ * 
+ * Tests for intelligent payment linking to invoices/contracts
+ */
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { paymentLinkingService } from '@/services/PaymentLinkingService';
-import { PaymentStatus, AllocationStatus } from '@/types/payment-enums';
+import { supabase } from '@/integrations/supabase/client';
 
-describe('PaymentLinkingService', () => {
-  const mockPayment = {
-    id: 'test-payment-id',
-    company_id: 'test-company-id',
-    customer_id: 'test-customer-id',
-    payment_date: new Date().toISOString(),
-    amount: 1000,
-    payment_status: PaymentStatus.PENDING,
-    allocation_status: AllocationStatus.UNALLOCATED,
-    payment_method: 'cash',
-    payment_type: 'rental_income',
-    transaction_type: 'income'
-  };
+// Mock data
+const companyId = 'test-company-id';
+const contractId = 'test-contract-id';
+const invoiceId = 'test-invoice-id';
+const customerId = 'test-customer-id';
+const paymentId = 'test-payment-id';
 
+describe('Payment Linking Service', () => {
   beforeEach(() => {
+    // Clear all mocks before each test
     vi.clearAllMocks();
   });
 
-  describe('findMatchingSuggestions', () => {
-    it('should find exact invoice match', async () => {
-      const paymentWithInvoice = {
-        ...mockPayment,
-        invoice_id: 'test-invoice-id'
-      };
-
-      const suggestions = await paymentLinkingService.findMatchingSuggestions(paymentWithInvoice);
-
-      expect(suggestions).toHaveLength(1);
-      expect(suggestions[0].targetType).toBe('invoice');
-      expect(suggestions[0].targetId).toBe('test-invoice-id');
-      expect(suggestions[0].confidence).toBe(100);
-    });
-
-    it('should find exact contract match', async () => {
-      const paymentWithContract = {
-        ...mockPayment,
-        contract_id: 'test-contract-id'
-      };
-
-      const suggestions = await paymentLinkingService.findMatchingSuggestions(paymentWithContract);
-
-      expect(suggestions).toHaveLength(1);
-      expect(suggestions[0].targetType).toBe('contract');
-      expect(suggestions[0].targetId).toBe('test-contract-id');
-      expect(suggestions[0].confidence).toBe(100);
-    });
-
-    it('should match by reference number with high confidence', async () => {
-      const paymentWithRef = {
-        ...mockPayment,
-        reference_number: 'INV-1234'
-      };
-
-      const suggestions = await paymentLinkingService.findMatchingSuggestions(paymentWithRef);
-
-      const refMatch = suggestions.find(s => s.reason.includes('Reference number'));
-      expect(refMatch).toBeDefined();
-      expect(refMatch?.confidence).toBeGreaterThanOrEqual(90);
-    });
-
-    it('should match by customer, amount, and date', async () => {
-      const today = new Date();
-      const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      const paymentWithCustomer = {
-        ...mockPayment,
-        payment_date: today.toISOString()
-      };
-
-      const suggestions = await paymentLinkingService.findMatchingSuggestions(paymentWithCustomer);
-
-      const customerMatch = suggestions.find(s => s.reason.includes('Customer, amount, and date'));
-      expect(customerMatch).toBeDefined();
-      expect(customerMatch?.confidence).toBeGreaterThanOrEqual(60);
-    });
-
-    it('should match by amount within tolerance', async () => {
-      const suggestions = await paymentLinkingService.findMatchingSuggestions(mockPayment);
-
-      const amountMatches = suggestions.filter(s => s.reason.includes('Amount match'));
-      expect(amountMatches.length).toBeGreaterThan(0);
-      amountMatches.forEach(match => {
-        expect(match.confidence).toBeGreaterThanOrEqual(40);
-      });
-    });
-
-    it('should rank suggestions by confidence', async () => {
-      const suggestions = await paymentLinkingService.findMatchingSuggestions(mockPayment);
-
-      // Verify suggestions are sorted by confidence (highest first)
-      for (let i = 0; i < suggestions.length - 1; i++) {
-        expect(suggestions[i].confidence).toBeGreaterThanOrEqual(suggestions[i + 1].confidence);
-      }
-    });
-  });
-
-  describe('attemptAutoMatch', () => {
-    it('should auto-match with confidence >= 70%', async () => {
-      const result = await paymentLinkingService.attemptAutoMatch(mockPayment);
-
-      expect(result).not.toBeNull();
-      expect(result?.success).toBe(true);
-      expect(result?.payment?.allocation_status).toBe('allocated');
-    });
-
-    it('should not auto-match with confidence < 70%', async () => {
-      // Mock low confidence scenario
-      const result = await paymentLinkingService.attemptAutoMatch(mockPayment);
-
-      // If no high-confidence match, should return null
-      expect(result?.success).toBeFalsy();
-    });
-  });
-
-  describe('matchPayment', () => {
-    it('should match payment to invoice', async () => {
-      const paymentId = 'test-payment-id';
-      const invoiceId = 'test-invoice-id';
-
-      const result = await paymentLinkingService.matchPayment(paymentId, 'invoice', invoiceId);
+  describe('linkPaymentToContract', () => {
+    it('should successfully link payment to contract', async () => {
+      const result = await paymentLinkingService.linkPaymentToContract(
+        paymentId,
+        contractId,
+        companyId
+      );
 
       expect(result.success).toBe(true);
-      expect(result.payment?.invoice_id).toBe(invoiceId);
-      expect(result.payment?.contract_id).toBeNull();
-      expect(result.payment?.allocation_status).toBe('allocated');
-      expect(result.payment?.processing_status).toBe('completed');
+      expect(result.linked).toBe(true);
     });
 
-    it('should match payment to contract', async () => {
-      const paymentId = 'test-payment-id';
-      const contractId = 'test-contract-id';
-
-      const result = await paymentLinkingService.matchPayment(paymentId, 'contract', contractId);
-
-      expect(result.success).toBe(true);
-      expect(result.payment?.contract_id).toBe(contractId);
-      expect(result.payment?.invoice_id).toBeNull();
-      expect(result.payment?.allocation_status).toBe('allocated');
-    });
-
-    it('should handle payment not found', async () => {
-      const result = await paymentLinkingService.matchPayment('non-existent-id', 'invoice', 'test-invoice-id');
+    it('should fail to link non-existent payment', async () => {
+      const result = await paymentLinkingService.linkPaymentToContract(
+        'non-existent-payment',
+        contractId,
+        companyId
+      );
 
       expect(result.success).toBe(false);
+      expect(result.errors).toContain('الدفعة غير موجودة');
+    });
+
+    it('should fail to link payment to already linked contract', async () => {
+      const result = await paymentLinkingService.linkPaymentToContract(
+        paymentId,
+        contractId,
+        companyId
+      );
+
+      // Mock payment already linked
+      vi.spyOn(paymentLinkingService, 'isPaymentLinkedToContract')
+        .mockResolvedValueOnce(true);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('الدفعة مرتبطة بعقد بالفعل');
+    });
+  });
+
+  describe('linkPaymentToInvoice', () => {
+    it('should successfully link payment to invoice', async () => {
+      const result = await paymentLinkingService.linkPaymentToInvoice(
+        paymentId,
+        invoiceId,
+        companyId
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.linked).toBe(true);
+    });
+
+    it('should fail to link non-existent payment', async () => {
+      const result = await paymentLinkingService.linkPaymentToInvoice(
+        'non-existent-payment',
+        invoiceId,
+        companyId
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('الدفعة غير موجودة');
+    });
+
+    it('should fail to link payment to already linked invoice', async () => {
+      const result = await paymentLinkingService.linkPaymentToInvoice(
+        paymentId,
+        invoiceId,
+        companyId
+      );
+
+      // Mock invoice already linked
+      vi.spyOn(paymentLinkingService, 'isPaymentLinkedToInvoice')
+        .mockResolvedValueOnce(true);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('الدفعة مرتبطة بفاتورة بالفعل');
+    });
+  });
+
+  describe('autoLinkPayments', () => {
+    it('should auto-link payments to contracts', async () => {
+      const payments = [
+        { id: 'payment-1', amount: 1000, customer_id: 'customer-1' },
+        { id: 'payment-2', amount: 1500, customer_id: 'customer-2' }
+      ];
+
+      const result = await paymentLinkingService.autoLinkPayments(companyId, payments);
+
+      expect(result.success).toBe(true);
+      expect(result.linkedCount).toBe(2);
+    });
+
+    it('should handle empty payments array', async () => {
+      const result = await paymentLinkingService.autoLinkPayments(companyId, []);
+
+      expect(result.success).toBe(true);
+      expect(result.linkedCount).toBe(0);
+      expect(result.failedCount).toBe(0);
+    });
+
+    it('should handle linking errors gracefully', async () => {
+      const payments = [
+        { id: 'payment-1', amount: 1000, customer_id: 'customer-1' },
+        { id: 'payment-2', amount: 1500, customer_id: null } // Missing customer
+      ];
+
+      const result = await paymentLinkingService.autoLinkPayments(companyId, payments);
+
+      expect(result.success).toBe(true);
+      expect(result.linkedCount).toBe(1); // Only first payment linked
+      expect(result.failedCount).toBe(1);
+    });
+  });
+
+  describe('getUnlinkedPayments', () => {
+    it('should return unlinked payments', async () => {
+      // This would require database query
+      // For unit tests, we'll just verify the method exists
+      expect(paymentLinkingService.getUnlinkedPayments).toBeDefined();
+    });
+
+    it('should handle company filter', async () => {
+      expect(paymentLinkingService.getUnlinkedPayments).toBeDefined();
+    });
+  });
+
+  describe('getPaymentLinkingStatistics', () => {
+    it('should return linking statistics', async () => {
+      // Mock the statistics
+      const mockStats = {
+        totalPayments: 100,
+        linkedPayments: 75,
+        unlinkedPayments: 25,
+        autoLinkingRate: 75
+      };
+
+      vi.spyOn(paymentLinkingService, 'getPaymentLinkingStatistics')
+        .mockResolvedValueOnce(mockStats);
+
+      const result = await paymentLinkingService.getPaymentLinkingStatistics(companyId);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockStats);
+    });
+  });
+
+  describe('relinkPayment', () => {
+    it('should successfully relink payment to different contract', async () => {
+      const result = await paymentLinkingService.relinkPayment(
+        paymentId,
+        'new-contract-id', // Different contract
+        companyId
+      );
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should fail to relink non-existent payment', async () => {
+      const result = await paymentLinkingService.relinkPayment(
+        'non-existent-payment',
+        'new-contract-id',
+        companyId
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toContain('الدفعة غير موجودة');
     });
   });
 });

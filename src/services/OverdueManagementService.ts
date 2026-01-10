@@ -1,189 +1,232 @@
 /**
  * Overdue Management Service
  * 
- * إدارة نظام المتأخرات:
- * - إرسال تذكيرات تلقائية (7 يوم، 15 يوم، 30 يوم)
- * - إدارة SOPs للتعامل مع المتأخرات
- * - تتبع استجابة العملاء
- * - تصعيد التذكيرات حسب الاستجابة
+ * Service for managing overdue contracts and payments:
+ * - Calculate overdue amounts
+ * - Track overdue days
+ * - Send overdue reminders (escalation: 7, 15, 30 days)
+ * - Generate overdue reports
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
-import { notificationService } from './NotificationService';
-import { lateFeeCalculator } from './lateFeeCalculator';
+import { lateFeeCalculator, OverdueContractInfo } from './lateFeeCalculator';
 
-export interface OverdueReminderRule {
-  id?: string;
-  companyId: string;
-  name: string;
-  nameEn?: string;
-  description: string;
-  descriptionEn?: string;
-  
-  // قواعد التذكير
-  reminderDays: number; // عدد الأيام قبل تاريخ الاستحقاق
-  escalationRule: 'single' | 'escalate' | 'stop_reminders'; // ماذاذا يحدث عند استمرار المتأخرة
-  
-  // القنوات
-  channels: Array<'whatsapp' | 'sms' | 'email' | 'in_app'>;
-  
-  // الـ SOP المرتبط
-  sopId?: string; // المرجع إلى Standard Operating Procedure
-  
-  // الإعدادات
-  enabled: boolean;
-  priority: number; // ترتيب الأولوية (قواعد ذات أولوية أعلى تُنفذ أولاً)
-  
-  created_at: string;
-  updated_at: string;
-}
-
+/**
+ * Overdue Contract
+ * Contract that is past due date
+ */
 export interface OverdueContract {
-  contractId: string;
-  contractNumber: string;
+  id: string;
+  companyId: string;
   customerId: string;
   customerName: string;
-  customerPhone?: string;
-  vehicleNumber?: string;
-  monthlyAmount: number;
+  customerNameAr: string;
+  customerPhone: string;
+  contractNumber: string;
+  vehiclePlateNumber?: string;
+  
+  // Dates
+  contractDate: string;
   dueDate: string;
   daysOverdue: number;
-  totalPaid: number;
-  remainingBalance: number;
-  overdueAmount: number; // متضمن رسوم التأخير
-  lastPaymentDate: string | null;
   
-  // التذكير
-  remindersSent: {
-    days7: boolean;
-    days15: boolean;
-    days30: boolean;
-  };
+  // Amounts
+  monthlyAmount: number;
+  paidAmount: number;
+  overdueAmount: number;
+  lateFeeAmount: number;
+  totalDue: number;
   
-  // الإجراءات
-  actions: Array<{
-    action: string;
-    actionDate: string;
-    performedBy: string;
-    notes?: string;
-  }>;
+  // Payment status
+  paymentStatus: string;
+  lastPaymentDate?: string;
+  paymentsCount: number;
   
-  // الاستجابة
-  customerResponse: {
-    lastContactDate: string | null;
-    contactMethod: string | null; // whatsapp, call, email
-    response: string | null; // promised_payment, disputed, no_response
-    notes: string | null;
-  };
+  // Risk level
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
   
-  status: 'active' | 'warning' | 'critical' | 'suspended' | 'resolved' | 'written_off';
-  escalatedAt: string | null;
-  resolvedAt: string | null;
-  resolvedBy: string | null;
-  resolutionNotes?: string;
+  // Reminder status
+  lastReminderSentAt?: string;
+  reminderCount: number;
+  reminderLevel: 'none' | 'level1' | 'level2' | 'level3'; // 7, 15, 30 days
   
+  // Metadata
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface OverdueSummary {
+/**
+ * Overdue Reminder
+ * Sent reminder to customer
+ */
+export interface OverdueReminder {
+  id: string;
   companyId: string;
-  period: {
-    startDate: string;
-    endDate: string;
-  };
+  customerId: string;
+  contractId: string;
   
-  // الإحصائيات
+  // Reminder details
+  reminderLevel: 'level1' | 'level2' | 'level3';
+  daysOverdue: number;
+  sentAt: string;
+  sentBy?: string;
+  
+  // Channel
+  channel: 'whatsapp' | 'sms' | 'email';
+  status: 'sent' | 'delivered' | 'read' | 'failed';
+  failedReason?: string;
+  
+  // Content
+  message: string;
+  messageAr: string;
+  
+  // Response
+  responseReceivedAt?: string;
+  customerAction?: string;
+  
+  // Metadata
+  notes?: string;
+  createdAt: string;
+}
+
+/**
+ * Overdue Statistics
+ * Aggregate overdue metrics
+ */
+export interface OverdueStatistics {
+  companyId: string;
+  
+  // Contract counts
   totalContracts: number;
-  totalOverdue: number;
-  totalValueOverdue: number;
+  overdueContracts: number;
+  overduePercentage: number;
   
-  // التفصيل
-  statusBreakdown: {
-    active: number;
-    warning: number;
-    critical: number;
-    suspended: number;
-  };
+  // Amount breakdown
+  totalOverdueAmount: number;
+  totalLateFees: number;
+  totalDue: number;
   
-  // الإجراءات المطبقة
-  actionsTaken: {
-    remindersSent7Days: number;
-    remindersSent15Days: number;
-    remindersSent30Days: number;
-    remindersEscalated: number;
-    contractsEscalated: number;
-    contractsSuspended: number;
-  };
+  // Risk breakdown
+  criticalContracts: number; // 30+ days overdue
+  highRiskContracts: number;  // 15-30 days overdue
+  mediumRiskContracts: number; // 7-15 days overdue
+  lowRiskContracts: number; // 1-7 days overdue
   
-  // التوقعات
-  estimatedCollectionRate: number; // نسبة التحصيل المتوقعة
-  predictedCollectionAmount: number; // المبلغ المتوقع تحصيله
+  // Average metrics
+  averageDaysOverdue: number;
+  averageAmountPerContract: number;
+  
+  // Reminders
+  remindersSent: number;
+  remindersDelivered: number;
+  remindersRead: number;
+  
+  // Trends
+  overdueTrend: 'increasing' | 'decreasing' | 'stable';
+  changeFromLastMonth: number; // Percentage change
   
   calculatedAt: string;
 }
 
-export interface CustomerEscalationRule {
-  customerId: string;
-  escalationLevel: number; // 0: normal, 1: warning, 2: high, 3: critical
-  lastEscalationDate: string;
-  escalationCount: number;
-  notes?: string;
-}
-
-export interface SOP {
-  id: string;
-  companyId: string;
-  name: string;
-  nameEn?: string;
-  type: 'communication' | 'collection' | 'legal' | 'dispute';
+/**
+ * Escalation Level
+ * Reminder escalation levels
+ */
+export interface EscalationLevel {
+  level: 'level1' | 'level2' | 'level3';
+  daysOverdue: number;
   description: string;
-  descriptionEn?: string;
-  steps: Array<{
-    step: number;
-    description: string;
-    descriptionEn?: string;
-    actions: string[];
-  }>;
-  requiredActions: string[]; // required escalation steps
-  escalationCondition?: string;
-  enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
+  descriptionAr: string;
+  
+  // Channels
+  channels: Array<'whatsapp' | 'sms' | 'email'>;
+  primaryChannel: 'whatsapp' | 'sms' | 'email';
+  
+  // Priority
+  priority: 'high' | 'medium' | 'low';
 }
 
-class OverdueManagementService {
+/**
+ * Reminder Options
+ * Configuration for sending reminders
+ */
+export interface ReminderOptions {
+  companyId: string;
+  contractIds?: string[]; // Specific contracts to remind
+  daysOverdueThreshold?: number; // Minimum days overdue to remind
+  maxReminders?: number; // Maximum reminders per contract (default: 3)
+  skipWeekends?: boolean; // Don't send on weekends (default: false)
+  includeLowPriority?: boolean; // Include low-risk contracts (default: false)
+  userId?: string;
+  dryRun?: boolean; // Preview without sending
+}
+
+/**
+ * Overdue Management Service
+ * Main service class
+ */
+export class OverdueManagementService {
+  
+  // Escalation levels configuration
+  private escalationLevels: EscalationLevel[] = [
+    {
+      level: 'level1',
+      daysOverdue: 7,
+      description: '7 days overdue - First reminder',
+      descriptionAr: '7 أيام متأخيرة - التذكير الأول',
+      channels: ['whatsapp', 'sms', 'email'],
+      primaryChannel: 'whatsapp',
+      priority: 'medium'
+    },
+    {
+      level: 'level2',
+      daysOverdue: 15,
+      description: '15 days overdue - Second reminder (escalation)',
+      descriptionAr: '15 أيام متأخيرة - التذكير الثاني (تصعيد)',
+      channels: ['whatsapp', 'sms', 'email'],
+      primaryChannel: 'whatsapp',
+      priority: 'high'
+    },
+    {
+      level: 'level3',
+      daysOverdue: 30,
+      description: '30 days overdue - Final warning (critical)',
+      descriptionAr: '30 أيام متأخيرة - تحذير نهائي (حرج)',
+      channels: ['whatsapp', 'sms', 'email'],
+      primaryChannel: 'whatsapp',
+      priority: 'high'
+    }
+  ];
+
   /**
-   * حساب المتأخرات للعقود
+   * Get overdue contracts
    */
-  async calculateOverdueContracts(
+  async getOverdueContracts(
     companyId: string,
-    options: {
-      asOfDate?: string;
+    options?: {
       minDaysOverdue?: number;
-      includeInactiveContracts?: boolean;
-    } = {}
-  ): Promise<{
-    contracts: OverdueContract[];
-    summary: {
-      totalOverdue: number;
-      totalValueOverdue: number;
-      statusBreakdown: any;
-    };
-  }> {
+      maxDaysOverdue?: number;
+      riskLevel?: 'low' | 'medium' | 'high' | 'critical';
+      includeInactive?: boolean;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<OverdueContract[]> {
     try {
-      logger.info('Calculating overdue contracts', { companyId, options });
+      logger.info('Fetching overdue contracts', {
+        companyId,
+        options
+      });
 
-      const asOfDate = options.asOfDate || new Date().toISOString();
-
-      // جلب العقود مع المدفوعات
-      const { data: contracts } = await supabase
+      let query = supabase
         .from('contracts')
         .select(`
-          c.*,
+          id,
+          company_id,
+          customer_id,
           customers!contracts_customer_id_fkey (
-            id as customer_id,
             first_name,
             last_name,
             first_name_ar,
@@ -192,653 +235,890 @@ class OverdueManagementService {
             company_name_ar,
             phone
           ),
+          contract_number,
           vehicles!contracts_vehicles_fkey (
             plate_number
           ),
-          (
-            SELECT 
-              MAX(p.payment_date) as last_payment_date,
-              SUM(CASE WHEN p.payment_status = 'completed' THEN p.amount ELSE 0 END) as total_paid
-            FROM payments p
-            WHERE p.contract_id = c.id
-              AND p.payment_date <= DATE(:as_of_date)
-          ) as payments
+          contract_date,
+          monthly_amount,
+          start_date,
+          end_date,
+          status,
+          total_paid,
+          balance_due,
+          last_payment_date,
+          payment_status,
+          days_overdue,
+          late_fine_amount
         `)
-        .eq('c.company_id', companyId)
-        .in('c.status', ['active', 'under_review', 'suspended'] || options.includeInactiveContracts !== false ? ['active', 'under_review', 'suspended', 'cancelled'] : ['active', 'under_review', 'suspended'])
-        .order('c.start_date', { ascending: false })
-        .range(0, 500); // أقصى 500 عقد
+        .eq('company_id', companyId);
+
+      // Filter by status
+      if (!options?.includeInactive) {
+        query = query.in('status', ['active', 'expiring_soon']);
+      }
+
+      // Apply date filter for overdue
+      query = query.gt('days_overdue', 0);
+
+      // Filter by days overdue range
+      if (options?.minDaysOverdue) {
+        query = query.gte('days_overdue', options.minDaysOverdue);
+      }
+
+      if (options?.maxDaysOverdue) {
+        query = query.lte('days_overdue', options.maxDaysOverdue);
+      }
+
+      // Apply pagination
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      }
+
+      if (options?.offset) {
+        query = query.range(options.offset, options.offset + (options.limit || 100) - 1);
+      }
+
+      // Order by risk level (most critical first)
+      query = query.order('days_overdue', { ascending: false });
+
+      // Execute query
+      const { data: contracts, error } = await query;
+
+      if (error) {
+        logger.error('Failed to fetch overdue contracts', {
+          companyId,
+          error
+        });
+        throw error;
+      }
 
       if (!contracts || contracts.length === 0) {
-        return {
-          contracts: [],
-          summary: {
-            totalOverdue: 0,
-            totalValueOverdue: 0,
-            statusBreakdown: {
-              active: 0,
-              warning: 0,
-              critical: 0,
-              suspended: 0
-            }
-          }
-        };
+        logger.info('No overdue contracts found', { companyId });
+        return [];
       }
 
-      // حساب المتأخرات
-      const overdueContracts: OverdueContract[] = [];
-      let totalOverdue = 0;
-      let totalValueOverdue = 0;
+      // Enrich with calculated data
+      const enrichedContracts: OverdueContract[] = [];
 
       for (const contract of contracts) {
-        const lastPaymentDate = contract.payments?.last_payment_date;
-        const totalPaid = contract.payments?.total_paid || 0;
-
-        // التحقق من تاريخ الاستحقاق
-        if (!contract.end_date) {
-          continue;
+        // Calculate risk level
+        let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
+        if (contract.days_overdue >= 30) {
+          riskLevel = 'critical';
+        } else if (contract.days_overdue >= 15) {
+          riskLevel = 'high';
+        } else if (contract.days_overdue >= 7) {
+          riskLevel = 'medium';
         }
 
-        const today = new Date();
-        const dueDate = new Date(contract.end_date);
-        
-        // حساب الأيام المتأخرة
-        let daysOverdue = 0;
-        
-        // إذا لم يوجد مدفوعات، استخدم تاريخ اليوم
-        const referenceDate = lastPaymentDate ? new Date(lastPaymentDate) : today;
-        
-        // حساب الأيام من تاريخ الاستحقاق
-        if (dueDate < referenceDate) {
-          const diffTime = referenceDate.getTime() - dueDate.getTime();
-          daysOverdue = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        } else {
-          // العقد لم يُحن بعد تاريخ الاستحقاق (أقل من شهر مثلاً)
-          // نحتاج لمنطق أكثر تعقيداً
-          daysOverdue = 0;
-        }
+        // Get reminder level
+        const escalation = this.escalationLevels.find(e => contract.days_overdue >= e.daysOverdue);
+        const reminderLevel = escalation?.level || 'none';
 
-        // تطبيق فلتر الحد الأدنى
-        if (options.minDaysOverdue && daysOverdue < options.minDaysOverdue) {
-          continue;
-        }
+        // Get last reminder
+        const { data: lastReminder } = await supabase
+          .from('overdue_reminders')
+          .select('*')
+          .eq('contract_id', contract.id)
+          .eq('customer_id', contract.customer_id)
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-        const remainingBalance = contract.contract_amount - totalPaid;
-        const overdueAmount = daysOverdue > 0 ? remainingBalance : 0;
+        // Get reminder count
+        const { count: reminderCount } = await supabase
+          .from('overdue_reminders')
+          .select('*', { count: 'exact', head: false })
+          .eq('contract_id', contract.id)
+          .eq('customer_id', contract.customer_id);
 
-        // تحديد الحالة
-        let status: any;
-        if (daysOverdue === 0) {
-          status = 'active';
-        } else if (daysOverdue <= 7) {
-          status = 'warning';
-        } else if (daysOverdue <= 15) {
-          status = 'warning';
-        } else if (daysOverdue <= 30) {
-          status = 'critical';
-        } else {
-          status = 'critical'; // over 30 days is also critical
-        }
+        // Calculate totals
+        const overdueAmount = contract.balance_due || contract.monthly_amount - (contract.total_paid || 0);
+        const totalDue = overdueAmount + (contract.late_fine_amount || 0);
 
-        const overdueContract: OverdueContract = {
-          contractId: contract.id,
+        enrichedContracts.push({
+          id: contract.id,
+          companyId: contract.company_id,
+          customerId: contract.customer_id,
+          customerName: contract.customers?.company_name || contract.customers?.company_name_ar || 
+                         `${contract.customers?.first_name_ar || contract.customers?.first_name} ${contract.customers?.last_name_ar || contract.customers?.last_name}` ||
+                         `${contract.customers?.first_name || ''} ${contract.customers?.last_name || ''}`,
+          customerNameAr: contract.customers?.company_name_ar || 
+                         `${contract.customers?.first_name_ar || ''} ${contract.customers?.last_name_ar || ''}`,
+          customerPhone: contract.customers?.phone || '',
           contractNumber: contract.contract_number,
-          customerId: contract.customers.customer_id,
-          customerName: contract.customers.company_name_ar || contract.customers.company_name ||
-            `${contract.customers.first_name_ar || contract.customers.first_name} ${contract.customers.last_name_ar || contract.customers.last_name}`,
-          customerPhone: contract.customers.phone,
-          vehicleNumber: contract.vehicles?.plate_number,
-          monthlyAmount: contract.monthly_amount,
-          dueDate: contract.end_date,
-          daysOverdue,
-          totalPaid,
-          remainingBalance,
+          vehiclePlateNumber: contract.vehicles?.plate_number,
+          
+          contractDate: contract.contract_date,
+          dueDate: contract.contract_date,
+          daysOverdue: contract.days_overdue || 0,
+          
+          monthlyAmount: contract.monthly_amount || 0,
+          paidAmount: contract.total_paid || 0,
           overdueAmount,
-          lastPaymentDate: lastPaymentDate || null,
-          remindersSent: {
-            days7: false,
-            days15: false,
-            days30: false
-          },
-          actions: [],
-          customerResponse: {
-            lastContactDate: null,
-            contactMethod: null,
-            response: null,
-            notes: null
-          },
-          status,
-          escalatedAt: null,
-          resolvedAt: null,
-          resolvedBy: null,
-          createdAt: contract.created_at,
+          lateFeeAmount: contract.late_fine_amount || 0,
+          totalDue,
+          
+          paymentStatus: contract.payment_status || 'pending',
+          lastPaymentDate: contract.last_payment_date,
+          paymentsCount: reminderCount || 0,
+          
+          riskLevel,
+          reminderLevel,
+          lastReminderSentAt: lastReminder?.sent_at,
+          reminderCount: reminderCount || 0,
+          
+          notes: contract.notes,
+          createdAt: contract.contract_date,
           updatedAt: contract.updated_at
-        };
-
-        if (daysOverdue >= (options.minDaysOverdue || 0)) {
-          overdueContracts.push(overdueContract);
-          totalOverdue++;
-          totalValueOverdue += overdueAmount;
-        }
+        });
       }
 
-      // حساب تفصيل الحالات
-      const statusBreakdown = {
-        active: overdueContracts.filter(c => c.status === 'active').length,
-        warning: overdueContracts.filter(c => c.status === 'warning').length,
-        critical: overdueContracts.filter(c => c.status === 'critical').length,
-        suspended: contracts.filter(c => c.status === 'suspended').length
-      };
-
-      const summary = {
-        totalOverdue,
-        totalValueOverdue,
-        statusBreakdown
-      };
-
-      logger.info('Overdue contracts calculated', {
+      logger.info('Overdue contracts fetched', {
         companyId,
-        overdueCount: overdueContracts.length,
-        totalOverdue,
-        totalValueOverdue
+        count: enrichedContracts.length,
+        criticalCount: enrichedContracts.filter(c => c.riskLevel === 'critical').length,
+        highRiskCount: enrichedContracts.filter(c => c.riskLevel === 'high').length
       });
 
-      return {
-        contracts: overdueContracts,
-        summary
-      };
+      return enrichedContracts;
+
     } catch (error) {
-      logger.error('Failed to calculate overdue contracts', { companyId, error });
-      return {
-        contracts: [],
-        summary: {
-          totalOverdue: 0,
-          totalValueOverdue: 0,
-          statusBreakdown: {
-            active: 0,
-            warning: 0,
-            critical: 0,
-            suspended: 0
-          }
-        }
-      };
-    }
-  }
-
-  /**
-   * إرسال تذكيرات المتأخرات
-   */
-  async sendOverdueReminders(
-    companyId: string,
-    options: {
-      contracts?: string[];
-      channels?: Array<'whatsapp' | 'sms' | 'email'>;
-      force?: boolean; // إرسال فوري حتى لو لم يحين الأوان
-    } = {}
-  ): Promise<{
-    sentCount: number;
-    errors: string[];
-  }> {
-    try {
-      logger.info('Sending overdue reminders', { companyId, options });
-
-      // الحصول على العقود المتأخرة إذا لم يتم تحديدها
-      let overdueContracts: OverdueContract[];
-      
-      if (options.contracts && options.contracts.length > 0) {
-        // جلب العقود المحددة
-        const { data: contracts } = await supabase
-          .from('contracts')
-          .select(`
-            c.*,
-            customers!contracts_customer_id_fkey (
-              id as customer_id,
-              first_name,
-              last_name,
-              first_name_ar,
-              last_name_ar,
-              company_name,
-              company_name_ar,
-              phone
-            ),
-            vehicles!contracts_vehicles_fkey (
-              plate_number
-            )
-          `)
-          .in('c.id', options.contracts);
-
-        if (!contracts || contracts.length === 0) {
-          return {
-            sentCount: 0,
-            errors: ['لا توجد عقود محددة']
-          };
-        }
-
-        // تحويل بياناتهم
-        overdueContracts = contracts.map(c => ({
-          ...c,
-          customerId: c.customers.customer_id,
-          customerName: c.customers.company_name_ar || c.customers.company_name ||
-            `${c.customers.first_name_ar || c.customers.first_name} ${c.customers.last_name_ar || c.customers.last_name}`,
-          customerPhone: c.customers.phone,
-          vehicleNumber: c.vehicles?.plate_number
-        }));
-
-      } else {
-        // استخدام البيانات المحسوبة مسبقاً
-        const calculated = await this.calculateOverdueContracts(companyId, { asOfDate: new Date().toISOString() });
-        overdueContracts = calculated.contracts;
-      }
-
-      const channelsToUse = options.channels || ['whatsapp', 'in_app'];
-
-      let sentCount = 0;
-      const errors: string[] = [];
-
-      // الحصول على قواعد التذكير النشطة
-      const reminderRules = await this.getActiveReminderRules(companyId);
-
-      // إرسال التذكيرات
-      for (const contract of overdueContracts) {
-        const applicableRule = this.findApplicableReminderRule(reminderRules, contract.daysOverdue);
-
-        if (!applicableRule) {
-          logger.warn('No applicable reminder rule', { contractId: contract.contractId, daysOverdue: contract.daysOverdue });
-          continue;
-        }
-
-        try {
-          // إرسال عبر كل قناة
-          for (const channel of channelsToUse) {
-            if (!applicableRule.channels.includes(channel)) {
-              continue;
-            }
-
-            const reminderSent = await notificationService.sendPaymentReceipt(
-              contractId,
-              companyId,
-              {
-                channels: [channel],
-                autoSend: false
-              }
-            );
-
-            if (reminderSent.success) {
-              sentCount++;
-              
-              // تسجيل إرسال التذكير
-              await this.recordReminderSent(contractId, channel, contract.daysOverdue);
-
-              logger.info('Overdue reminder sent', {
-                contractId: contract.contractNumber,
-                channel,
-                daysOverdue: contract.daysOverdue
-              });
-            } else {
-              errors.push(`فشل إرسال ${channel} للعقد ${contract.contractNumber}: ${reminderSent.errors.join(', ')}`);
-            }
-          }
-
-          // تحديث عدد التذكيرات المرسلة
-          if (sentCount > 0) {
-            await this.updateReminderCounts(contractId, {
-              days7: contract.daysOverdue >= 7,
-              days15: contract.daysOverdue >= 15,
-              days30: contract.daysOverdue >= 30
-            });
-          }
-
-        } catch (contractError) {
-          errors.push(`خطأ في عقد ${contract.contractNumber}: ${contractError instanceof Error ? contractError.message : 'خطأ غير معروف'}`);
-        }
-      }
-
-      logger.info('Overdue reminders completed', {
+      logger.error('Exception fetching overdue contracts', {
         companyId,
-        contractsProcessed: overdueContracts.length,
-        sentCount,
-        errorsCount: errors.length
+        error
       });
-
-      return {
-        sentCount,
-        errors
-      };
-    } catch (error) {
-      logger.error('Failed to send overdue reminders', { companyId, error });
-      return {
-        sentCount: 0,
-        errors: [error instanceof Error ? error.message : 'خطأ غير معروف']
-      };
-    }
-  }
-
-  /**
-   * الحصول على قواعد التذكير النشطة
-   */
-  private async getActiveReminderRules(companyId: string): Promise<OverdueReminderRule[]> {
-    const { data: rules } = await supabase
-      .from('overdue_reminder_rules')
-      .select('*')
-      .eq('company_id', companyId)
-      .eq('enabled', true)
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    return rules || [];
-  }
-
-  /**
-   * البحث عن قاعدة تذكير مناسبة
-   */
-  private findApplicableReminderRule(
-    rules: OverdueReminderRule[],
-    daysOverdue: number
-  ): OverdueReminderRule | null {
-    // البحث عن أول قاعدة تطابق
-    for (const rule of rules) {
-      if (daysOverdue >= rule.reminderDays) {
-        return rule;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * تسجيل إرسال تذكير
-   */
-  private async recordReminderSent(
-    contractId: string,
-    channel: 'whatsapp' | 'sms' | 'email',
-    daysOverdue: number
-  ): Promise<boolean> {
-    try {
-      await supabase.from('overdue_reminders').insert({
-        company_id: await this.getCompanyId(contractId),
-        contract_id: contractId,
-        channel,
-        days_overdue: daysOverdue,
-        sent_at: new Date().toISOString()
-      });
-
-      return true;
-    } catch (error) {
-      logger.error('Failed to record reminder', { contractId, channel, error });
-      return false;
-    }
-  }
-
-  /**
-   * تحديث أعداد التذكيرات
-   */
-  private async updateReminderCounts(
-    contractId: string,
-    counts: {
-      days7?: boolean;
-      days15?: boolean;
-      days30?: boolean;
-    }
-  ): Promise<boolean> {
-    try {
-      await supabase
-        .from('overdue_contracts')
-        .update({
-          reminders_sent_7_days: counts.days7 || false,
-          reminders_sent_15_days: counts.days15 || false,
-          reminders_sent_30_days: counts.days30 || false
-        })
-        .eq('id', contractId);
-
-      return true;
-    } catch (error) {
-      logger.error('Failed to update reminder counts', { contractId, error });
-      return false;
-    }
-  }
-
-  /**
-   * تصعيد العقد المتأخر
-   */
-  async escalateContract(
-    contractId: string,
-    escalationNotes: string,
-    userId?: string
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      logger.info('Escalating overdue contract', { contractId, escalationNotes });
-
-      const now = new Date().toISOString();
-
-      // تحديث حالة العقد
-      await supabase
-        .from('overdue_contracts')
-        .update({
-          status: 'critical',
-          escalated_at: now,
-          escalated_by: userId,
-          resolution_notes: escalationNotes,
-          updated_at: now
-        })
-        .eq('id', contractId);
-
-      // إرسال إشعار داخلي
-      await notificationService.sendStaffNotification(
-        await this.getCompanyId(contractId),
-        {
-          type: 'overdue_alert',
-          title: 'تصعيد عقد متأخر',
-          message: `تم تصعيد العقد ${contractId} - ${escalationNotes}`,
-          priority: 'high',
-          data: {
-            contractId,
-            escalationNotes,
-            userId
-          }
-        },
-        {
-          channels: ['in_app']
-        }
-      );
-
-      logger.info('Contract escalated', { contractId });
-      return { success: true };
-    } catch (error) {
-      logger.error('Failed to escalate contract', { contractId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
-    }
-  }
-
-  /**
-   * تسجيل استجابة العميل
-   */
-  async recordCustomerResponse(
-    contractId: string,
-    response: {
-      contactMethod?: 'whatsapp' | 'call' | 'email';
-      responseText?: string;
-      promisedPaymentDate?: string;
-      disputeReason?: string;
-    },
-    userId?: string
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      logger.info('Recording customer response', { contractId, response });
-
-      const now = new Date().toISOString();
-      const customerId = await this.getCustomerId(contractId);
-
-      // تحديث العقد
-      await supabase
-        .from('overdue_contracts')
-        .update({
-          customer_response: {
-            last_contact_date: now,
-            contact_method: response.contactMethod,
-            response: response.responseText || response.promisedPaymentDate || response.disputeReason,
-            notes: response.promisedPaymentDate ? `وعد دفع ${response.promisedPaymentDate}` :
-                     response.disputeReason ? `سبب النزاع: ${response.disputeReason}` :
-                     response.responseText
-          },
-          updated_at: now
-        })
-        .eq('id', contractId);
-
-      // تسجيل في escalation log
-      await supabase.from('customer_escalations').insert({
-        company_id: await this.getCompanyId(contractId),
-        customer_id: customerId,
-        escalation_level: response.contactMethod && response.disputeReason ? 2 : 1, // warning if dispute, else normal
-        last_escalation_date: now,
-        escalation_count: 1, // increment
-        notes: response.promisedPaymentDate || response.disputeReason || response.responseText,
-        created_by: userId
-      });
-
-      logger.info('Customer response recorded', { contractId });
-      return { success: true };
-    } catch (error) {
-      logger.error('Failed to record customer response', { contractId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
-    }
-  }
-
-  /**
-   * إلغاء عقد متأخر (write-off)
-   */
-  async writeOffContract(
-    contractId: string,
-    writeOffReason: string,
-    writeOffAmount?: number,
-    userId?: string
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      logger.info('Writing off overdue contract', { contractId, writeOffReason });
-
-      const now = new Date().toISOString();
-
-      // تحديث العقد إلى حالة resolved
-      await supabase
-        .from('overdue_contracts')
-        .update({
-          status: 'resolved',
-          resolved_at: now,
-          resolved_by: userId,
-          resolution_notes: `إلغاء العقد: ${writeOffReason}`,
-          updated_at: now
-        })
-        .eq('id', contractId);
-
-      // تسجيل في escalation log
-      await supabase.from('customer_escalations').insert({
-        company_id: await this.getCompanyId(contractId),
-        customer_id: await this.getCustomerId(contractId),
-        escalation_level: 3, // critical
-        last_escalation_date: now,
-        escalation_count: 1,
-        notes: `إلغاء العقد: ${writeOffReason}${writeOffAmount ? ` - المبلغ: ${writeOffAmount}` : ''}`,
-        created_by: userId
-      });
-
-      logger.info('Contract written off', { contractId, writeOffAmount });
-      return { success: true };
-    } catch (error) {
-      logger.error('Failed to write off contract', { contractId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
-    }
-  }
-
-  /**
-   * الحصول على ملخص المتأخرات
-   */
-  async getOverdueSummary(
-    companyId: string,
-    options: {
-      startDate?: string;
-      endDate?: string;
-    } = {}
-  ): Promise<OverdueSummary> {
-    try {
-      logger.info('Calculating overdue summary', { companyId, options });
-
-      const calculated = await this.calculateOverdueContracts(companyId, options);
-
-      const summary: OverdueSummary = {
-        companyId,
-        period: {
-          startDate: options.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: options.endDate || new Date().toISOString()
-        },
-        totalContracts: calculated.contracts.length,
-        totalOverdue: calculated.summary.totalOverdue,
-        totalValueOverdue: calculated.summary.totalValueOverdue,
-        statusBreakdown: calculated.summary.statusBreakdown,
-        actionsTaken: {
-          remindersSent7Days: 0, // TODO: حساب من التاريخ
-          remindersSent15Days: 0, // TODO: حساب من التاريخ
-          remindersSent30Days: 0, // TODO: حساب من التاريخ
-          remindersEscalated: 0, // TODO: حساب من التاريخ
-          contractsEscalated: calculated.summary.statusBreakdown.critical || 0,
-          contractsSuspended: calculated.summary.statusBreakdown.suspended || 0
-        },
-        estimatedCollectionRate: 0.75, // افتراضياً 75%
-        predictedCollectionAmount: calculated.summary.totalValueOverdue * 0.75
-      };
-
-      logger.info('Overdue summary calculated', {
-        companyId,
-        ...summary
-      });
-
-      return summary;
-    } catch (error) {
-      logger.error('Failed to calculate overdue summary', { companyId, error });
       throw error;
     }
   }
 
   /**
-   * Helper: الحصول على company_id من معاملة أو عقد
+   * Send overdue reminders
    */
-  private async getCompanyId(contractId: string): Promise<string> {
+  async sendOverdueReminders(
+    options: ReminderOptions
+  ): Promise<{
+    sent: number;
+    failed: number;
+    skipped: number;
+    details: Array<{
+      contractId: string;
+      customerName: string;
+      daysOverdue: number;
+      level: string;
+      channel: string;
+      status: 'sent' | 'failed' | 'skipped';
+      error?: string;
+    }>;
+  }> {
     try {
-      const { data: contract } = await supabase
-        .from('contracts')
-        .select('company_id')
-        .eq('id', contractId)
-        .single();
+      logger.info('Starting overdue reminders campaign', {
+        companyId: options.companyId,
+        contractIds: options.contractIds
+      });
 
-      return contract?.company_id || '';
+      // Get overdue contracts
+      let overdueContracts: OverdueContract[] = [];
+      
+      if (options.contractIds && options.contractIds.length > 0) {
+        // Specific contracts
+        for (const contractId of options.contractIds) {
+          const contracts = await this.getOverdueContracts(options.companyId, {
+            limit: 1,
+            offset: undefined // We'll query each contract separately
+          });
+          overdueContracts.push(...contracts);
+        }
+      } else {
+        // All contracts meeting threshold
+        overdueContracts = await this.getOverdueContracts(options.companyId, {
+          minDaysOverdue: options.daysOverdueThreshold || 1,
+          includeInactive: false
+        });
+      }
+
+      // Filter by risk level
+      const filteredContracts = options.includeLowPriority 
+        ? overdueContracts
+        : overdueContracts.filter(c => c.riskLevel === 'high' || c.riskLevel === 'critical');
+
+      if (filteredContracts.length === 0) {
+        logger.info('No contracts eligible for reminders', {
+          companyId: options.companyId
+        });
+        return {
+          sent: 0,
+          failed: 0,
+          skipped: 0,
+          details: []
+        };
+      }
+
+      // Send reminders
+      const results: Array<{
+        contractId: string;
+        customerName: string;
+        daysOverdue: number;
+        level: string;
+        channel: string;
+        status: 'sent' | 'failed' | 'skipped';
+        error?: string;
+      }> = [];
+
+      let sentCount = 0;
+      let failedCount = 0;
+      let skippedCount = 0;
+
+      for (const contract of filteredContracts) {
+        // Check max reminders
+        if (options.maxReminders && contract.reminderCount >= options.maxReminders) {
+          results.push({
+            contractId: contract.id,
+            customerName: contract.customerNameAr,
+            daysOverdue: contract.daysOverdue,
+            level: 'maxed',
+            channel: 'none',
+            status: 'skipped',
+            error: `Maximum ${options.maxReminders} reminders already sent`
+          });
+          skippedCount++;
+          continue;
+        }
+
+        // Check if already reminded at this level
+        const escalation = this.escalationLevels.find(e => e.daysOverdue <= contract.daysOverdue);
+        if (!escalation) {
+          continue;
+        }
+
+        // Skip weekends if configured
+        if (options.skipWeekends) {
+          const today = new Date();
+          const dayOfWeek = today.getDay();
+          if (dayOfWeek === 0 || dayOfWeek === 6) { // Saturday or Sunday
+            results.push({
+              contractId: contract.id,
+              customerName: contract.customerNameAr,
+              daysOverdue: contract.daysOverdue,
+              level: escalation.level,
+              channel: escalation.primaryChannel,
+              status: 'skipped',
+              error: 'Weekend - sending on next business day'
+            });
+            skippedCount++;
+            continue;
+          }
+        }
+
+        // Get customer phone
+        if (!contract.customerPhone) {
+          results.push({
+            contractId: contract.id,
+            customerName: contract.customerNameAr,
+            daysOverdue: contract.daysOverdue,
+            level: escalation.level,
+            channel: escalation.primaryChannel,
+            status: 'failed',
+            error: 'No customer phone number'
+          });
+          failedCount++;
+          continue;
+        }
+
+        // Prepare message
+        const message = this.prepareReminderMessage(contract, escalation);
+        const messageAr = this.prepareReminderMessageAr(contract, escalation);
+
+        // Dry run mode - don't actually send
+        if (options.dryRun) {
+          results.push({
+            contractId: contract.id,
+            customerName: contract.customerNameAr,
+            daysOverdue: contract.daysOverdue,
+            level: escalation.level,
+            channel: escalation.primaryChannel,
+            status: 'skipped',
+            error: 'Dry run mode - not sent'
+          });
+          skippedCount++;
+          continue;
+        }
+
+        // Send reminder (mock for now - TODO: integrate with actual notification service)
+        try {
+          const sentAt = new Date().toISOString();
+
+          // Create reminder record
+          const { error: insertError } = await supabase
+            .from('overdue_reminders')
+            .insert({
+              company_id: contract.companyId,
+              customer_id: contract.customerId,
+              contract_id: contract.id,
+              
+              reminder_level: escalation.level,
+              days_overdue: contract.daysOverdue,
+              
+              channel: escalation.primaryChannel,
+              status: 'sent',
+              
+              message,
+              message_ar: messageAr,
+              
+              sent_at: sentAt,
+              sent_by: options.userId,
+              
+              created_at: sentAt
+            });
+
+          if (insertError) {
+            throw insertError;
+          }
+
+          // Update contract reminder count
+          await supabase
+            .from('contracts')
+            .update({
+              last_reminder_sent_at: sentAt,
+              reminder_count: contract.reminderCount + 1
+            })
+            .eq('id', contract.id);
+
+          results.push({
+            contractId: contract.id,
+            customerName: contract.customerNameAr,
+            daysOverdue: contract.daysOverdue,
+            level: escalation.level,
+            channel: escalation.primaryChannel,
+            status: 'sent'
+          });
+
+          sentCount++;
+
+          logger.info('Overdue reminder sent', {
+            contractId: contract.id,
+            customerPhone: contract.customerPhone,
+            daysOverdue: contract.daysOverdue,
+            level: escalation.level,
+            channel: escalation.primaryChannel
+          });
+
+        } catch (error) {
+          results.push({
+            contractId: contract.id,
+            customerName: contract.customerNameAr,
+            daysOverdue: contract.daysOverdue,
+            level: escalation.level,
+            channel: escalation.primaryChannel,
+            status: 'failed',
+            error: error instanceof Error ? error.message : String(error)
+          });
+          failedCount++;
+        }
+      }
+
+      logger.info('Overdue reminders campaign completed', {
+        companyId: options.companyId,
+        sent: sentCount,
+        failed: failedCount,
+        skipped: skippedCount
+      });
+
+      return {
+        sent: sentCount,
+        failed: failedCount,
+        skipped: skippedCount,
+        details: results
+      };
+
     } catch (error) {
-      logger.error('Failed to get company_id from contract', { contractId, error });
-      return '';
+      logger.error('Exception sending overdue reminders', {
+        companyId: options.companyId,
+        error
+      });
+      throw error;
     }
   }
 
   /**
-   * Helper: الحصول على customer_id من عقد
+   * Prepare reminder message
    */
-  private async getCustomerId(contractId: string): Promise<string> {
-    try {
-      const { data: contract } = await supabase
-        .from('contracts')
-        .select('customer_id')
-        .eq('id', contractId)
-        .single();
+  private prepareReminderMessage(contract: OverdueContract, escalation: EscalationLevel): string {
+    const customerName = contract.customerName;
+    const contractNumber = contract.contractNumber;
+    const daysOverdue = contract.daysOverdue;
+    const overdueAmount = contract.totalDue.toFixed(2);
+    const lateFee = contract.lateFeeAmount.toFixed(2);
 
-      return contract?.customer_id || '';
+    return `
+Dear ${customerName},
+
+This is a friendly reminder that your payment for contract #${contractNumber} is ${daysOverdue} days overdue.
+
+Payment Details:
+- Outstanding Amount: QAR ${overdueAmount}
+- Days Overdue: ${daysOverdue}
+- Late Fees: QAR ${lateFee}
+- Total Due: QAR ${contract.totalDue.toFixed(2)}
+
+${escalation.priority === 'high' ? '⚠️ IMPORTANT: Please settle this payment immediately to avoid further late fees and account restrictions.' : ''}
+
+${escalation.priority === 'high' && escalation.level === 'level3' ? 'URGENT: Your account may be suspended if payment is not received within 3 days.' : ''}
+
+Please contact us at your earliest convenience to arrange payment.
+
+Thank you for your understanding.
+Best regards,
+Al-Araf Car Rental
+`.trim();
+  }
+
+  /**
+   * Prepare Arabic reminder message
+   */
+  private prepareReminderMessageAr(contract: OverdueContract, escalation: EscalationLevel): string {
+    const customerName = contract.customerNameAr;
+    const contractNumber = contract.contractNumber;
+    const daysOverdue = contract.daysOverdue;
+    const overdueAmount = contract.totalDue.toFixed(2);
+    const lateFee = contract.lateFeeAmount.toFixed(2);
+
+    return `
+عميل ${customerName} الكريم،
+
+هذه رسالة تذكير وديعة بأن دفعة عقد رقم #${contractNumber} متأخيرة بمقدار ${daysOverdue} يوم.
+
+تفاصيل الدفعة:
+- المبلغ المتبقي: ${overdueAmount} ريال قطري
+- الأيام المتأخيرة: ${daysOverdue} يوم
+- غرامة التأخير: ${lateFee} ريال قطري
+- الإجمالي المستحق: ${contract.totalDue.toFixed(2)} ريال قطري
+
+${escalation.priority === 'high' ? '⚠️ هام: يرجى تسوية الدفعة فوراً لتجنب رسوم إضافية وحساب حسابك.' : ''}
+
+${escalation.priority === 'high' && escalation.level === 'level3' ? 'عاجل: قد يتم تعليق حسابك إذا لم يتم استلام الدفعة خلال 3 أيام.' : ''}
+
+يرجى التواصل معنا في أقرب وقت ممكن لترتيب الدفع.
+
+شكراً لتفهمكم.
+مع تحيات،
+شركة العراف لتأجير السيارات
+`.trim();
+  }
+
+  /**
+   * Get overdue statistics
+   */
+  async getOverdueStatistics(
+    companyId: string
+  ): Promise<OverdueStatistics> {
+    try {
+      logger.info('Calculating overdue statistics', { companyId });
+
+      // Get all contracts
+      const { data: contracts, error } = await supabase
+        .from('contracts')
+        .select('id, company_id, days_overdue, monthly_amount, total_paid, balance_due, late_fine_amount, status, contract_date')
+        .eq('company_id', companyId)
+        .in('status', ['active', 'expiring_soon']);
+
+      if (error) {
+        logger.error('Failed to fetch contracts for statistics', {
+          companyId,
+          error
+        });
+        throw error;
+      }
+
+      const totalContracts = contracts.length;
+      
+      // Get overdue contracts
+      const overdueContracts = contracts.filter(c => (c.days_overdue || 0) > 0);
+      const overdueContractsCount = overdueContracts.length;
+      const overduePercentage = totalContracts > 0 
+        ? (overdueContractsCount / totalContracts) * 100 
+        : 0;
+
+      // Calculate amounts
+      const totalOverdueAmount = overdueContracts.reduce((sum, c) => sum + (c.balance_due || c.monthly_amount - (c.total_paid || 0)), 0);
+      const totalLateFees = overdueContracts.reduce((sum, c) => sum + (c.late_fine_amount || 0), 0);
+      const totalDue = totalOverdueAmount + totalLateFees;
+
+      // Risk breakdown
+      const criticalContracts = overdueContracts.filter(c => c.days_overdue >= 30).length;
+      const highRiskContracts = overdueContracts.filter(c => c.days_overdue >= 15 && c.days_overdue < 30).length;
+      const mediumRiskContracts = overdueContracts.filter(c => c.days_overdue >= 7 && c.days_overdue < 15).length;
+      const lowRiskContracts = overdueContracts.filter(c => c.days_overdue > 0 && c.days_overdue < 7).length;
+
+      // Average metrics
+      const totalDaysOverdue = overdueContracts.reduce((sum, c) => sum + (c.days_overdue || 0), 0);
+      const averageDaysOverdue = overdueContractsCount > 0 
+        ? totalDaysOverdue / overdueContractsCount 
+        : 0;
+      
+      const totalAmount = contracts.reduce((sum, c) => sum + (c.monthly_amount || 0), 0);
+      const averageAmountPerContract = totalContracts > 0 ? totalAmount / totalContracts : 0;
+
+      // Reminders sent
+      const { count: remindersSent } = await supabase
+        .from('overdue_reminders')
+        .select('*', { count: 'exact', head: false })
+        .eq('company_id', companyId);
+
+      // Trend calculation (compare with last month)
+      const lastMonthDate = new Date();
+      lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+      
+      const currentMonthOverdue = overdueContracts.filter(c => 
+        new Date(c.contract_date) >= new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1)
+      ).length;
+      
+      const lastMonthOverdue = overdueContracts.filter(c => {
+        const contractDate = new Date(c.contract_date);
+        return contractDate.getFullYear() === lastMonthDate.getFullYear() &&
+               contractDate.getMonth() === lastMonthDate.getMonth();
+      }).length;
+
+      const overdueTrend = currentMonthOverdue > lastMonthOverdue ? 'increasing' 
+                        : currentMonthOverdue < lastMonthOverdue ? 'decreasing' 
+                        : 'stable';
+
+      const changeFromLastMonth = lastMonthOverdue > 0
+        ? ((currentMonthOverdue - lastMonthOverdue) / lastMonthOverdue) * 100
+        : 0;
+
+      const stats: OverdueStatistics = {
+        companyId,
+        
+        totalContracts,
+        overdueContracts: overdueContractsCount,
+        overduePercentage: Math.round(overduePercentage * 10) / 10, // Round to 1 decimal
+        
+        totalOverdueAmount,
+        totalLateFees,
+        totalDue,
+        
+        criticalContracts,
+        highRiskContracts,
+        mediumRiskContracts,
+        lowRiskContracts,
+        
+        averageDaysOverdue: Math.round(averageDaysOverdue * 10) / 10,
+        averageAmountPerContract: Math.round(averageAmountPerContract * 100) / 100,
+        
+        remindersSent: remindersSent || 0,
+        remindersDelivered: 0, // TODO: Track actual delivery
+        remindersRead: 0, // TODO: Track actual reads
+        
+        overdueTrend,
+        changeFromLastMonth,
+        
+        calculatedAt: new Date().toISOString()
+      };
+
+      logger.info('Overdue statistics calculated', {
+        companyId,
+        totalContracts,
+        overdueContracts: overdueContractsCount,
+        overduePercentage
+      });
+
+      return stats;
+
     } catch (error) {
-      logger.error('Failed to get customer_id from contract', { contractId, error });
-      return '';
+      logger.error('Exception calculating overdue statistics', {
+        companyId,
+        error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Apply late fees to overdue contracts
+   */
+  async applyLateFeesToOverduePayments(
+    companyId: string,
+    options?: {
+      dryRun?: boolean;
+      userId?: string;
+    }
+  ): Promise<{
+    processed: number;
+    applied: number;
+    skipped: number;
+    failed: number;
+    totalLateFeesApplied: number;
+  }> {
+    try {
+      logger.info('Applying late fees to overdue contracts', {
+        companyId,
+        dryRun: options?.dryRun
+      });
+
+      // Get overdue contracts
+      const overdueContracts = await this.getOverdueContracts(companyId, {
+        minDaysOverdue: 1,
+        includeInactive: false
+      });
+
+      if (!overdueContracts || overdueContracts.length === 0) {
+        logger.info('No overdue contracts found', { companyId });
+        return {
+          processed: 0,
+          applied: 0,
+          skipped: 0,
+          failed: 0,
+          totalLateFeesApplied: 0
+        };
+      }
+
+      let processedCount = 0;
+      let appliedCount = 0;
+      let skippedCount = 0;
+      let failedCount = 0;
+      let totalLateFeesApplied = 0;
+
+      for (const contract of overdueContracts) {
+        processedCount++;
+
+        // Check if already has late fee applied recently
+        const lastWeekDate = new Date();
+        lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+
+        const { data: existingLateFees } = await supabase
+          .from('late_fees')
+          .select('id, created_at')
+          .eq('contract_id', contract.id)
+          .gte('created_at', lastWeekDate.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (existingLateFees && existingLateFees.length > 0) {
+          // Already has late fee applied this week, skip
+          skippedCount++;
+          continue;
+        }
+
+        // Get company late fee rule (simplified - using existing late_fees table structure)
+        // For now, we'll use a simple calculation
+        const daysOverdue = contract.daysOverdue || 0;
+        const monthlyAmount = contract.monthlyAmount || 0;
+        
+        // Calculate late fee: 1% per month for payments over 7 days
+        let lateFeeAmount = 0;
+        if (daysOverdue > 7) {
+          const monthsOverdue = Math.floor(daysOverdue / 30);
+          lateFeeAmount = monthlyAmount * 0.01 * monthsOverdue; // 1% per month
+          
+          // Cap at 500
+          if (lateFeeAmount > 500) {
+            lateFeeAmount = 500;
+          }
+        }
+
+        if (lateFeeAmount <= 0) {
+          skippedCount++;
+          continue;
+        }
+
+        // Dry run mode
+        if (options?.dryRun) {
+          continue;
+        }
+
+        // Apply late fee
+        try {
+          const { error: insertError } = await supabase
+            .from('late_fees')
+            .insert({
+              company_id: contract.companyId,
+              customer_id: contract.customerId,
+              contract_id: contract.id,
+              payment_id: null, // Late fees don't have payment yet
+              
+              original_amount: monthlyAmount,
+              due_date: contract.dueDate,
+              payment_date: null, // Not yet paid
+              days_late: daysOverdue,
+              
+              base_fee: lateFeeAmount,
+              penalty_amount: 0,
+              total_late_fee: lateFeeAmount,
+              
+              breakdown: JSON.stringify({
+                calculation_method: 'percentage',
+                rate: 0.01,
+                months_overdue: Math.floor(daysOverdue / 30)
+              }),
+              
+              rule_id: 'default-rule', // Will reference actual rule ID
+              rule_name: 'Standard Late Fee Rule',
+              status: 'pending',
+              
+              created_by: options.userId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) {
+            throw insertError;
+          }
+
+          // Update contract late fee amount
+          await supabase
+            .from('contracts')
+            .update({
+              late_fine_amount: (contract.late_fine_amount || 0) + lateFeeAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', contract.id);
+
+          appliedCount++;
+          totalLateFeesApplied += lateFeeAmount;
+
+          logger.debug('Late fee applied', {
+            contractId: contract.id,
+            daysOverdue,
+            lateFeeAmount
+          });
+
+        } catch (error) {
+          failedCount++;
+          logger.error('Failed to apply late fee', {
+            contractId: contract.id,
+            error
+          });
+        }
+      }
+
+      logger.info('Late fees applied to overdue contracts', {
+        companyId,
+        processed: processedCount,
+        applied: appliedCount,
+        skipped: skippedCount,
+        failed: failedCount,
+        totalLateFeesApplied
+      });
+
+      return {
+        processed: processedCount,
+        applied: appliedCount,
+        skipped: skippedCount,
+        failed: failedCount,
+        totalLateFeesApplied
+      };
+
+    } catch (error) {
+      logger.error('Exception applying late fees', {
+        companyId,
+        error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get overdue customers report
+   */
+  async getOverdueCustomersReport(
+    companyId: string,
+    options?: {
+      minDaysOverdue?: number;
+      includeDetails?: boolean;
+    }
+  ): Promise<{
+    totalCustomers: number;
+    overdueCustomers: number;
+    customers: Array<{
+      customerId: string;
+      customerName: string;
+      customerNameAr: string;
+      customerPhone: string;
+      overdueAmount: number;
+      overdueContractsCount: number;
+      totalLateFees: number;
+      daysSinceLastPayment?: number;
+    }>;
+  }> {
+    try {
+      logger.info('Generating overdue customers report', {
+        companyId,
+        options
+      });
+
+      // Get overdue contracts
+      const overdueContracts = await this.getOverdueContracts(companyId, {
+        minDaysOverdue: options?.minDaysOverdue || 1,
+        includeInactive: false
+      });
+
+      if (!overdueContracts || overdueContracts.length === 0) {
+        return {
+          totalCustomers: 0,
+          overdueCustomers: 0,
+          customers: []
+        };
+      }
+
+      // Group by customer
+      const customerMap = new Map<string, {
+        customerId: string;
+        customerName: string;
+        customerNameAr: string;
+        customerPhone: string;
+        overdueAmount: number;
+        overdueContractsCount: number;
+        totalLateFees: number;
+        daysSinceLastPayment?: number;
+      }>();
+
+      for (const contract of overdueContracts) {
+        const existing = customerMap.get(contract.customerId);
+        
+        if (existing) {
+          existing.overdueAmount += contract.totalDue;
+          existing.overdueContractsCount += 1;
+          existing.totalLateFees += contract.lateFeeAmount;
+        } else {
+          customerMap.set(contract.customerId, {
+            customerId: contract.customerId,
+            customerName: contract.customerName,
+            customerNameAr: contract.customerNameAr,
+            customerPhone: contract.customerPhone,
+            overdueAmount: contract.totalDue,
+            overdueContractsCount: 1,
+            totalLateFees: contract.lateFeeAmount,
+            daysSinceLastPayment: contract.lastPaymentDate 
+              ? Math.floor((new Date().getTime() - new Date(contract.lastPaymentDate).getTime()) / (1000 * 60 * 60 * 24))
+              : undefined
+          });
+        }
+      }
+
+      // Convert to array and sort by amount (highest first)
+      const customers = Array.from(customerMap.values())
+        .sort((a, b) => b.overdueAmount - a.overdueAmount);
+
+      logger.info('Overdue customers report generated', {
+        companyId,
+        totalCustomers: customers.length,
+        overdueCustomers: customers.filter(c => c.overdueContractsCount > 0).length
+      });
+
+      return {
+        totalCustomers: customers.length,
+        overdueCustomers: customers.filter(c => c.overdueContractsCount > 0).length,
+        customers
+      };
+
+    } catch (error) {
+      logger.error('Exception generating overdue customers report', {
+        companyId,
+        error
+      });
+      throw error;
     }
   }
 }

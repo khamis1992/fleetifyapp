@@ -1,688 +1,624 @@
 /**
  * Late Fee Rules Service
  * 
- * إدارة قواعد رسوم التأخير لكل شركة:
- * - CRUD للقواعد
- * - فصل القواعد الافتراضية
- * - التحقق من صحة القواعد
- * - تطبيق القواعد على الحسابات
+ * Service for managing late fee rules:
+ * - CRUD operations on late fee rules
+ * - Rule validation and testing
+ * - Default rules for companies
+ * - Rule versioning and history
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
-import type { LateFeeRule } from './lateFeeCalculator';
-import { lateFeeCalculator, LateFeeCalculator as LateFeeCalc } from './lateFeeCalculator';
+import { LateFeeType, LateFeeFrequency, LateFeeCalculationMethod } from '@/types/payment-enums';
+import { lateFeeCalculator, LateFeeRule } from './lateFeeCalculator';
 
-export interface RuleValidationError {
-  field: string;
-  message: string;
-  messageEn?: string;
+/**
+ * Late Fee Rule Create Input
+ * Input for creating a new late fee rule
+ */
+export interface CreateLateFeeRuleInput {
+  companyId: string;
+  contractId?: string;
+  ruleName: string;
+  ruleNameAr?: string;
+  description?: string;
+  descriptionAr?: string;
+  feeType: LateFeeType;
+  calculationMethod: LateFeeCalculationMethod;
+  fixedAmount?: number;
+  percentageRate?: number;
+  maxAmount?: number;
+  frequency: LateFeeFrequency;
+  gracePeriodDays: number;
+  maxLateDays?: number;
+  escalateAfterDays?: number;
+  escalationMultiplier?: number;
+  escalationCap?: number;
+  isActive?: boolean;
+  effectiveFrom?: string;
+  effectiveTo?: string;
 }
 
-export interface RuleTestResult {
-  isValid: boolean;
-  errors: RuleValidationError[];
-  testCases: Array<{
-    scenario: string;
-    input: any;
-    expectedOutput: number;
-    actualOutput: number;
-    passed: boolean;
-  }>;
+/**
+ * Late Fee Rule Update Input
+ * Input for updating an existing late fee rule
+ */
+export interface UpdateLateFeeRuleInput extends Partial<CreateLateFeeRuleInput> {
+  // All fields from create input are optional for updates
 }
 
+/**
+ * Rule History Entry
+ * Historical record of rule changes
+ */
+export interface LateFeeRuleHistory {
+  id: string;
+  ruleId: string;
+  companyId: string;
+  action: 'created' | 'updated' | 'deleted' | 'activated' | 'deactivated';
+  previousValues?: Record<string, any>;
+  newValues?: Record<string, any>;
+  changedBy?: string;
+  changedAt: string;
+  changeReason?: string;
+}
+
+/**
+ * Late Fee Rules Service
+ * Main service class
+ */
 class LateFeeRulesService {
   /**
-   * الحصول على جميع قواعد الشركة
+   * Get all late fee rules for a company
    */
-  async getRules(companyId: string): Promise<LateFeeRule[]> {
+  async getCompanyRules(companyId: string, options?: {
+    includeInactive?: boolean;
+    contractId?: string;
+  }): Promise<LateFeeRule[]> {
     try {
-      const { data: rules } = await supabase
+      let query = supabase
         .from('late_fee_rules')
         .select('*')
-        .eq('company_id', companyId)
-        .eq('enabled', true)
-        .order('created_at', { ascending: false });
+        .eq('company_id', companyId);
 
-      return rules || [];
+      if (!options?.includeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      if (options?.contractId) {
+        query = query.eq('contract_id', options.contractId);
+      }
+
+      const { data: rules, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        logger.error('Failed to fetch company late fee rules', { companyId, error });
+        throw error;
+      }
+
+      logger.debug('Fetched company late fee rules', { companyId, count: rules.length });
+      return rules;
+
     } catch (error) {
-      logger.error('Failed to get late fee rules', { companyId, error });
-      return [];
+      logger.error('Exception fetching company late fee rules', { companyId, error });
+      throw error;
     }
   }
 
   /**
-   * الحصول على قاعدة واحدة
+   * Get a specific late fee rule
    */
   async getRule(ruleId: string): Promise<LateFeeRule | null> {
     try {
-      const { data: rule } = await supabase
+      const { data: rule, error } = await supabase
         .from('late_fee_rules')
         .select('*')
         .eq('id', ruleId)
-        .maybeSingle();
+        .single();
 
-      return rule || null;
+      if (error) {
+        logger.error('Failed to fetch late fee rule', { ruleId, error });
+        return null;
+      }
+
+      logger.debug('Fetched late fee rule', { ruleId });
+      return rule;
+
     } catch (error) {
-      logger.error('Failed to get late fee rule', { ruleId, error });
+      logger.error('Exception fetching late fee rule', { ruleId, error });
       return null;
     }
   }
 
   /**
-   * إنشاء قاعدة جديدة
+   * Create a new late fee rule
    */
-  async createRule(
-    companyId: string,
-    rule: Omit<LateFeeRule, 'id' | 'companyId' | 'createdAt'>
-  ): Promise<{ success: boolean; rule?: LateFeeRule; error?: string }> {
+  async createRule(input: CreateLateFeeRuleInput, userId?: string): Promise<LateFeeRule> {
     try {
-      logger.info('Creating late fee rule', { companyId, ruleName: rule.name });
+      logger.info('Creating late fee rule', {
+        companyId: input.companyId,
+        ruleName: input.ruleName
+      });
 
-      // التحقق من صحة القاعدة
-      const validation = this.validateRule(companyId, rule);
+      // Validate input
+      const validation = lateFeeCalculator.validateRule(input);
       if (!validation.isValid) {
-        return {
-          success: false,
-          error: validation.errors.map(e => e.message).join(', ')
-        };
+        const error = new Error(`Invalid late fee rule: ${validation.errors.join(', ')}`);
+        logger.error('Late fee rule validation failed', {
+          companyId: input.companyId,
+          errors: validation.errors
+        });
+        throw error;
       }
 
-      // إنشاء القاعدة
-      const { data: newRule, error: insertError } = await supabase
+      // Create rule
+      const { data: rule, error: createError } = await supabase
         .from('late_fee_rules')
         .insert({
-          company_id: companyId,
-          ...rule,
+          company_id: input.companyId,
+          contract_id: input.contractId || null,
+          rule_name: input.ruleName,
+          rule_name_ar: input.ruleNameAr || input.ruleName,
+          description: input.description || null,
+          description_ar: input.descriptionAr || input.description,
+          fee_type: input.feeType,
+          calculation_method: input.calculationMethod,
+          fixed_amount: input.fixedAmount || null,
+          percentage_rate: input.percentageRate || null,
+          max_amount: input.maxAmount || null,
+          frequency: input.frequency,
+          grace_period_days: input.gracePeriodDays || 0,
+          max_late_days: input.maxLateDays || null,
+          escalate_after_days: input.escalateAfterDays || null,
+          escalation_multiplier: input.escalationMultiplier || null,
+          escalation_cap: input.escalationCap || null,
+          is_active: input.isActive !== undefined ? true : input.isActive,
+          effective_from: input.effectiveFrom || new Date().toISOString(),
+          effective_to: input.effectiveTo || null,
+          created_by: userId || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .select('id')
+        .select()
         .single();
 
-      if (insertError || !newRule) {
-        throw insertError || new Error('فشل في إنشاء القاعدة');
+      if (createError) {
+        logger.error('Failed to create late fee rule', {
+          companyId: input.companyId,
+          error: createError
+        });
+        throw createError;
       }
 
-      // مسح الـ cache
-      lateFeeCalculator.clearCache(companyId);
+      // Create history entry
+      await this.createHistoryEntry(rule.id, input.companyId, 'created', null, rule, userId);
 
-      logger.info('Late fee rule created', {
-        companyId,
-        ruleId: newRule.id,
-        ruleName: rule.name
+      logger.info('Late fee rule created successfully', {
+        ruleId: rule.id,
+        companyId: input.companyId,
+        ruleName: input.ruleName
       });
 
-      return {
-        success: true,
-        rule: { ...rule, id: newRule.id, companyId }
-      };
+      return rule;
+
     } catch (error) {
-      logger.error('Failed to create late fee rule', { companyId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
+      logger.error('Exception creating late fee rule', {
+        companyId: input.companyId,
+        error
+      });
+      throw error;
     }
   }
 
   /**
-   * تحديث قاعدة موجودة
+   * Update an existing late fee rule
    */
-  async updateRule(
-    ruleId: string,
-    updates: Partial<LateFeeRule>
-  ): Promise<{ success: boolean; rule?: LateFeeRule; error?: string }> {
+  async updateRule(ruleId: string, updates: UpdateLateFeeRuleInput, userId?: string): Promise<LateFeeRule> {
     try {
       logger.info('Updating late fee rule', { ruleId, updates });
 
-      // التحقق من صحة التحديثات
+      // Get current rule for history
       const currentRule = await this.getRule(ruleId);
       if (!currentRule) {
-        return {
-          success: false,
-          error: 'القاعدة غير موجودة'
-        };
+        throw new Error('Late fee rule not found');
       }
 
-      const mergedRule = { ...currentRule, ...updates };
-      const validation = this.validateRule(
-        currentRule.companyId,
-        mergedRule as LateFeeRule
-      );
-
+      // Validate updates
+      const validation = lateFeeCalculator.validateRule(updates);
       if (!validation.isValid) {
-        return {
-          success: false,
-          error: validation.errors.map(e => e.message).join(', ')
-        };
+        const error = new Error(`Invalid late fee rule update: ${validation.errors.join(', ')}`);
+        logger.error('Late fee rule validation failed', {
+          ruleId,
+          errors: validation.errors
+        });
+        throw error;
       }
 
-      // تحديث القاعدة
-      const { data: updatedRule, error: updateError } = await supabase
+      // Prepare update data
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.ruleName !== undefined) {
+        updateData.rule_name = updates.ruleName;
+        updateData.rule_name_ar = updates.ruleNameAr || updates.ruleName;
+      }
+
+      if (updates.description !== undefined) {
+        updateData.description = updates.description;
+        updateData.description_ar = updates.descriptionAr || updates.description;
+      }
+
+      if (updates.feeType !== undefined) {
+        updateData.fee_type = updates.feeType;
+      }
+
+      if (updates.calculationMethod !== undefined) {
+        updateData.calculation_method = updates.calculationMethod;
+      }
+
+      if (updates.fixedAmount !== undefined) {
+        updateData.fixed_amount = updates.fixedAmount;
+      }
+
+      if (updates.percentageRate !== undefined) {
+        updateData.percentage_rate = updates.percentageRate;
+      }
+
+      if (updates.maxAmount !== undefined) {
+        updateData.max_amount = updates.maxAmount;
+      }
+
+      if (updates.frequency !== undefined) {
+        updateData.frequency = updates.frequency;
+      }
+
+      if (updates.gracePeriodDays !== undefined) {
+        updateData.grace_period_days = updates.gracePeriodDays;
+      }
+
+      if (updates.maxLateDays !== undefined) {
+        updateData.max_late_days = updates.maxLateDays;
+      }
+
+      if (updates.escalateAfterDays !== undefined) {
+        updateData.escalate_after_days = updates.escalateAfterDays;
+      }
+
+      if (updates.escalationMultiplier !== undefined) {
+        updateData.escalation_multiplier = updates.escalationMultiplier;
+      }
+
+      if (updates.escalationCap !== undefined) {
+        updateData.escalation_cap = updates.escalationCap;
+      }
+
+      if (updates.isActive !== undefined) {
+        updateData.is_active = updates.isActive;
+      }
+
+      if (updates.effectiveFrom !== undefined) {
+        updateData.effective_from = updates.effectiveFrom;
+      }
+
+      if (updates.effectiveTo !== undefined) {
+        updateData.effective_to = updates.effectiveTo;
+      }
+
+      // Update rule
+      const { data: rule, error: updateError } = await supabase
         .from('late_fee_rules')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', ruleId)
-        .select('id')
-        .maybeSingle();
+        .select()
+        .single();
 
       if (updateError) {
+        logger.error('Failed to update late fee rule', { ruleId, error: updateError });
         throw updateError;
       }
 
-      // مسح الـ cache
-      lateFeeCalculator.clearCache(currentRule.companyId);
+      // Create history entry
+      await this.createHistoryEntry(ruleId, currentRule.companyId, 'updated', currentRule, rule, userId);
 
-      logger.info('Late fee rule updated', { ruleId });
+      logger.info('Late fee rule updated successfully', {
+        ruleId,
+        companyId: currentRule.companyId,
+        updates: Object.keys(updateData).length
+      });
 
-      return {
-        success: true,
-        rule: updatedRule ? { ...currentRule, ...updates, id: ruleId } : undefined
-      };
+      return rule;
+
     } catch (error) {
-      logger.error('Failed to update late fee rule', { ruleId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
+      logger.error('Exception updating late fee rule', { ruleId, error });
+      throw error;
     }
   }
 
   /**
-   * حذف قاعدة
+   * Delete a late fee rule
    */
-  async deleteRule(ruleId: string): Promise<{ success: boolean; error?: string }> {
+  async deleteRule(ruleId: string, userId?: string): Promise<void> {
     try {
       logger.info('Deleting late fee rule', { ruleId });
 
+      // Get current rule for history
       const currentRule = await this.getRule(ruleId);
       if (!currentRule) {
-        return {
-          success: false,
-          error: 'القاعدة غير موجودة'
-        };
+        throw new Error('Late fee rule not found');
       }
 
-      // حذف القاعدة
+      // Delete rule
       const { error: deleteError } = await supabase
         .from('late_fee_rules')
         .delete()
         .eq('id', ruleId);
 
       if (deleteError) {
+        logger.error('Failed to delete late fee rule', { ruleId, error: deleteError });
         throw deleteError;
       }
 
-      // مسح الـ cache
-      lateFeeCalculator.clearCache(currentRule.companyId);
+      // Create history entry
+      await this.createHistoryEntry(ruleId, currentRule.companyId, 'deleted', currentRule, null, userId);
 
-      logger.info('Late fee rule deleted', { ruleId });
+      logger.info('Late fee rule deleted successfully', { ruleId });
 
-      return { success: true };
     } catch (error) {
-      logger.error('Failed to delete late fee rule', { ruleId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
+      logger.error('Exception deleting late fee rule', { ruleId, error });
+      throw error;
     }
   }
 
   /**
-   * تفعيل/تعطيل قاعدة
+   * Activate a late fee rule
    */
-  async setRuleEnabled(ruleId: string, enabled: boolean): Promise<{ success: boolean; error?: string }> {
-    return this.updateRule(ruleId, { enabled });
+  async activateRule(ruleId: string, userId?: string): Promise<LateFeeRule> {
+    return this.updateRule(ruleId, { isActive: true }, userId);
   }
 
   /**
-   * التحقق من صحة قاعدة
+   * Deactivate a late fee rule
    */
-  validateRule(companyId: string, rule: Omit<LateFeeRule, 'id' | 'companyId' | 'createdAt'>): {
-    isValid: boolean;
-    errors: RuleValidationError[];
-  } {
-    const errors: RuleValidationError[] = [];
+  async deactivateRule(ruleId: string, userId?: string): Promise<LateFeeRule> {
+    return this.updateRule(ruleId, { isActive: false }, userId);
+  }
 
-    // التحقق 1: اسم القاعدة مطلوب
-    if (!rule.name || rule.name.trim().length === 0) {
-      errors.push({
-        field: 'name',
-        message: 'اسم القاعدة مطلوب',
-        messageEn: 'Rule name is required'
-      });
+  /**
+   * Get rule history
+   */
+  async getRuleHistory(ruleId: string): Promise<LateFeeRuleHistory[]> {
+    try {
+      const { data: history, error } = await supabase
+        .from('late_fee_rule_history')
+        .select('*')
+        .eq('rule_id', ruleId)
+        .order('changed_at', { ascending: false });
+
+      if (error) {
+        logger.error('Failed to fetch rule history', { ruleId, error });
+        throw error;
+      }
+
+      return history;
+
+    } catch (error) {
+      logger.error('Exception fetching rule history', { ruleId, error });
+      throw error;
     }
+  }
 
-    // التحقق 2: نوع القاعدة مطلوب
-    if (!rule.ruleType || !['percentage', 'fixed', 'tiered'].includes(rule.ruleType)) {
-      errors.push({
-        field: 'ruleType',
-        message: 'نوع القاعدة غير صحيح',
-        messageEn: 'Invalid rule type'
-      });
-    }
-
-    // التحقق 3: فترة السماح مطلوبة
-    if (!rule.gracePeriodDays || rule.gracePeriodDays < 0) {
-      errors.push({
-        field: 'gracePeriodDays',
-        message: 'فترة السماح يجب أن تكون موجبة و>= 0',
-        messageEn: 'Grace period must be positive'
-      });
-    }
-
-    // التحقق 4: حد الأدنى للتأخير مطلوب
-    if (!rule.minimumOverdueDays || rule.minimumOverdueDays < 0) {
-      errors.push({
-        field: 'minimumOverdueDays',
-        message: 'حد الأدنى للتأخير يجب أن يكون >= 0',
-        messageEn: 'Minimum overdue days must be >= 0'
-      });
-    }
-
-    // التحقق 5: يجب أن يكون قاعدة واحدة على الأقل مفعلة
-    if (!rule.isAppliesToInvoices && !rule.isAppliesToContracts && !rule.isAppliesToPayments) {
-      errors.push({
-        field: 'appliesTo',
-        message: 'يجب تفعيل قاعدة واحدة على الأقل (فواتير، عقود، أو مدفوعات)',
-        messageEn: 'At least one target type must be enabled'
-      });
-    }
-
-    // التحقق 6: تحقق من البنية حسب النوع
-    if (rule.ruleType === 'percentage') {
-      if (!rule.feeStructure.dailyRate || rule.feeStructure.dailyRate <= 0) {
-        errors.push({
-          field: 'feeStructure.dailyRate',
-          message: 'النسبة المئوية اليومية مطلوبة و> 0',
-          messageEn: 'Daily rate is required and must be > 0'
-        });
-      }
-
-      if (rule.feeStructure.maxPercentage && rule.feeStructure.maxPercentage <= 0) {
-        errors.push({
-          field: 'feeStructure.maxPercentage',
-          message: 'الحد الأقصى للنسبة يجب أن يكون > 0',
-          messageEn: 'Max percentage must be > 0'
-        });
-      }
-
-      if (rule.feeStructure.maxPercentage && rule.feeStructure.maxPercentage > 100) {
-        errors.push({
-          field: 'feeStructure.maxPercentage',
-          message: 'الحد الأقصى للنسبة لا يمكن أن يتجاوز 100%',
-          messageEn: 'Max percentage cannot exceed 100%'
-        });
-      }
-    } else if (rule.ruleType === 'fixed') {
-      if (!rule.feeStructure.dailyAmount || rule.feeStructure.dailyAmount <= 0) {
-        errors.push({
-          field: 'feeStructure.dailyAmount',
-          message: 'المبلغ اليومي الثابت مطلوب و> 0',
-          messageEn: 'Daily amount is required and must be > 0'
-        });
-      }
-
-      if (rule.feeStructure.maxAmount && rule.feeStructure.maxAmount <= 0) {
-        errors.push({
-          field: 'feeStructure.maxAmount',
-          message: 'الحد الأقصى للمبلغ يجب أن يكون > 0',
-          messageEn: 'Max amount must be > 0'
-        });
-      }
-    } else if (rule.ruleType === 'tiered') {
-      if (!rule.feeStructure.tiers || rule.feeStructure.tiers.length === 0) {
-        errors.push({
-          field: 'feeStructure.tiers',
-          message: 'المستويات مطلوبة',
-          messageEn: 'Tiers are required'
-        });
-      }
-
-      // التحقق من كل مستوى
-      if (rule.feeStructure.tiers) {
-        let previousMaxDays = 0;
-
-        for (const [index, tier] of rule.feeStructure.tiers.entries()) {
-          if (!tier.daysRange || tier.daysRange.length !== 2) {
-            errors.push({
-              field: `feeStructure.tiers[${index}].daysRange`,
-              message: 'المدى الزمني للمستوى مطلوب ويجب أن يحتوي على عنصرين',
-              messageEn: 'Days range must have 2 elements'
-            });
-          } else {
-            const [minDays, maxDays] = tier.daysRange;
-
-            if (minDays < 0 || maxDays <= 0) {
-              errors.push({
-                field: `feeStructure.tiers[${index}].daysRange`,
-                message: 'الأيام يجب أن تكون موجبة',
-                messageEn: 'Days must be positive'
-              });
-            }
-
-            if (maxDays <= minDays) {
-              errors.push({
-                field: `feeStructure.tiers[${index}].daysRange`,
-                message: 'الحد الأقصى يجب أن يكون أكبر من الحد الأدنى',
-                messageEn: 'Max days must be greater than min days'
-              });
-            }
-
-            // التحقق من التسلسل الصحيح
-            if (index > 0 && minDays < previousMaxDays) {
-              errors.push({
-                field: `feeStructure.tiers[${index}].daysRange`,
-                message: 'المستويات يجب أن تكون متسلسلة بالترتيب الصحيح',
-                messageEn: 'Tiers must be in correct order'
-              });
-            }
-
-            previousMaxDays = maxDays;
-          }
-
-          if (!tier.dailyRate || tier.dailyRate <= 0) {
-            errors.push({
-              field: `feeStructure.tiers[${index}].dailyRate`,
-              message: 'النسبة المئوية اليومية مطلوبة و> 0',
-              messageEn: 'Daily rate is required and must be > 0'
-            });
-          }
-
-          if (tier.maxAmount && tier.maxAmount <= 0) {
-            errors.push({
-              field: `feeStructure.tiers[${index}].maxAmount`,
-              message: 'الحد الأقصى للمبلغ يجب أن يكون > 0',
-              messageEn: 'Max amount must be > 0'
-            });
-          }
-        }
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
+  /**
+   * Test a late fee rule
+   * Simulates calculation for a given scenario
+   */
+  async testRule(
+    rule: LateFeeRule,
+    testScenarios: Array<{
+      amount: number;
+      daysLate: number;
+      expectedFee?: number;
+    }>
+  ): Promise<Array<{
+    scenario: {
+      amount: number;
+      daysLate: number;
     };
-  }
-
-  /**
-   * اختبار قاعدة
-   */
-  async testRule(ruleId: string): Promise<RuleTestResult> {
-    const rule = await this.getRule(ruleId);
-    if (!rule) {
-      return {
-        isValid: false,
-        errors: [{
-          field: 'id',
-          message: 'القاعدة غير موجودة',
-          messageEn: 'Rule not found'
-        }],
-        testCases: []
-      };
-    }
-
-    const testCases = this.generateTestCases(rule);
-
-    const results = testCases.map(testCase => {
-      const expectedOutput = testCase.expectedOutput;
-      let actualOutput = 0;
-
-      if (rule.ruleType === 'percentage') {
-        const daysOverdue = testCase.input.daysOverdue;
-        const amount = testCase.input.amount;
-        const rate = rule.feeStructure.dailyRate!;
-        actualOutput = amount * (rate / 100) * daysOverdue;
-
-        if (rule.feeStructure.maxPercentage) {
-          const maxAmount = amount * (rule.feeStructure.maxPercentage / 100);
-          actualOutput = Math.min(actualOutput, maxAmount);
-        }
-      } else if (rule.ruleType === 'fixed') {
-        const daysOverdue = testCase.input.daysOverdue;
-        const dailyAmount = rule.feeStructure.dailyAmount!;
-        actualOutput = dailyAmount * daysOverdue;
-
-        if (rule.feeStructure.maxAmount) {
-          actualOutput = Math.min(actualOutput, rule.feeStructure.maxAmount);
-        }
-      } else if (rule.ruleType === 'tiered') {
-        const daysOverdue = testCase.input.daysOverdue;
-        const amount = testCase.input.amount;
-        const tiers = rule.feeStructure.tiers!;
-
-        for (const tier of tiers) {
-          const [minDays, maxDays] = tier.daysRange;
-
-          if (daysOverdue >= minDays && daysOverdue < maxDays) {
-            actualOutput = amount * (tier.dailyRate / 100);
-
-            if (tier.maxAmount) {
-              actualOutput = Math.min(actualOutput, tier.maxAmount);
-            }
-
-            break;
-          }
-        }
-      }
-
-      return {
-        ...testCase,
-        actualOutput,
-        passed: Math.abs(actualOutput - expectedOutput) < 0.01
-      };
-    });
-
-    const allPassed = results.every(r => r.passed);
-
-    logger.info('Late fee rule tested', {
-      ruleId,
-      ruleName: rule.name,
-      testCasesCount: testCases.length,
-      passedCount: results.filter(r => r.passed).length,
-      allPassed
-    });
-
-    return {
-      isValid: allPassed,
-      errors: allPassed ? [] : [{
-        field: 'test',
-        message: 'بعض اختبارات فشلت',
-        messageEn: 'Some tests failed'
-      }],
-      testCases: results
-    };
-  }
-
-  /**
-   * إنشاء اختبارات لقاعدة
-   */
-  private generateTestCases(rule: LateFeeRule): Array<{
-    scenario: string;
-    input: any;
-    expectedOutput: number;
-  }> {
-    const testCases = [];
-
-    if (rule.ruleType === 'percentage') {
-      const rate = rule.feeStructure.dailyRate || 0;
-      const maxPercent = rule.feeStructure.maxPercentage || 100;
-
-      testCases.push({
-        scenario: 'تأخير 10 أيام، مبلغ 1000 ر.ق',
-        input: { daysOverdue: 10, amount: 1000 },
-        expectedOutput: Math.min(1000 * (maxPercent / 100), 1000 * (rate / 100) * 10)
-      });
-
-      testCases.push({
-        scenario: 'تأخير 30 يوماً، مبلغ 1000 ر.ق',
-        input: { daysOverdue: 30, amount: 1000 },
-        expectedOutput: Math.min(1000 * (maxPercent / 100), 1000 * (rate / 100) * 30)
-      });
-    } else if (rule.ruleType === 'fixed') {
-      const dailyAmount = rule.feeStructure.dailyAmount || 0;
-      const maxAmount = rule.feeStructure.maxAmount || 100000;
-
-      testCases.push({
-        scenario: 'تأخير 10 أيام، مبلغ 1000 ر.ق',
-        input: { daysOverdue: 10, amount: 1000 },
-        expectedOutput: Math.min(dailyAmount * 10, maxAmount)
-      });
-
-      testCases.push({
-        scenario: 'تأخير 30 يوماً، مبلغ 1000 ر.ق',
-        input: { daysOverdue: 30, amount: 1000 },
-        expectedOutput: Math.min(dailyAmount * 30, maxAmount)
-      });
-    } else if (rule.ruleType === 'tiered') {
-      const tiers = rule.feeStructure.tiers || [];
-
-      for (const tier of tiers) {
-        const [minDays, maxDays] = tier.daysRange;
-        const dailyRate = tier.dailyRate;
-        const maxAmount = tier.maxAmount || 100000;
-
-        testCases.push({
-          scenario: `تأخير ${minDays}-${maxDays} يوماً، مبلغ 1000 ر.ق`,
-          input: { daysOverdue: (minDays + maxDays) / 2, amount: 1000 },
-          expectedOutput: Math.min(1000 * (dailyRate / 100), maxAmount)
-        });
-      }
-    }
-
-    return testCases;
-  }
-
-  /**
-   * نسخ القواعد الافتراضية لشركة
-   */
-  async createDefaultRules(companyId: string): Promise<{ success: boolean; error?: string }> {
+    calculatedFee: number;
+    matchesExpected?: boolean;
+    error?: string;
+  }>> {
     try {
-      logger.info('Creating default late fee rules', { companyId });
+      logger.info('Testing late fee rule', {
+        ruleId: rule.id,
+        scenariosCount: testScenarios.length
+      });
 
-      const defaultRule = LateFeeCalc.createDefaultRule(companyId);
-      
-      const { success } = await this.createRule(companyId, defaultRule);
+      const results = [];
 
-      if (!success) {
-        return {
-          success: false,
-          error: 'فشل في إنشاء القاعدة الافتراضية'
-        };
+      for (const scenario of testScenarios) {
+        try {
+          const contractInfo = {
+            contractId: 'test-contract',
+            customerId: 'test-customer',
+            companyId: rule.companyId,
+            contractNumber: 'TEST-001',
+            monthlyAmount: scenario.amount,
+            dueDate: new Date().toISOString(),
+            daysLate: scenario.daysLate,
+            paidAmount: 0,
+            remainingBalance: scenario.amount
+          };
+
+          const result = await lateFeeCalculator.calculateLateFee(contractInfo, rule);
+
+          results.push({
+            scenario,
+            calculatedFee: result.totalLateFee,
+            matchesExpected: scenario.expectedFee !== undefined
+              ? Math.abs(result.totalLateFee - scenario.expectedFee) < 0.01
+              : undefined,
+            error: undefined
+          });
+
+        } catch (error) {
+          results.push({
+            scenario,
+            calculatedFee: 0,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
       }
 
-      logger.info('Default late fee rules created', { companyId });
-      return { success: true };
+      logger.info('Late fee rule test completed', {
+        ruleId: rule.id,
+        passedCount: results.filter(r => !r.error).length
+      });
+
+      return results;
+
     } catch (error) {
-      logger.error('Failed to create default rules', { companyId, error });
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
+      logger.error('Exception testing late fee rule', { ruleId, error });
+      throw error;
     }
   }
 
   /**
-   * نسخ قواعد من شركة أخرى
+   * Create default late fee rules for a company
    */
-  async copyRules(
-    fromCompanyId: string,
-    toCompanyId: string
-  ): Promise<{ success: boolean; rulesCopied: number; error?: string }> {
+  async createDefaultRules(companyId: string, userId?: string): Promise<LateFeeRule[]> {
     try {
-      logger.info('Copying late fee rules', { fromCompanyId, toCompanyId });
+      logger.info('Creating default late fee rules for company', { companyId });
 
-      // جلب القواعد من الشركة المصدر
-      const sourceRules = await this.getRules(fromCompanyId);
-
-      if (sourceRules.length === 0) {
-        return {
-          success: true,
-          rulesCopied: 0
-        };
-      }
-
-      // نسخ القواعد للشركة الهدف
-      let copiedCount = 0;
-      for (const rule of sourceRules) {
-        const { success } = await this.createRule(toCompanyId, rule);
-        if (success) {
-          copiedCount++;
+      const defaultRules = [
+        // Standard rental late fee
+        {
+          companyId,
+          ruleName: 'Standard Rental Late Fee',
+          ruleNameAr: 'غرامة التأخير القياسية',
+          description: '1% per month after 7-day grace period',
+          descriptionAr: '1% شهرياً بعد فترة السماح 7 أيام',
+          feeType: LateFeeType.LATE_FEE,
+          calculationMethod: LateFeeCalculationMethod.PERCENTAGE,
+          percentageRate: 1,
+          frequency: LateFeeFrequency.MONTHLY,
+          gracePeriodDays: 7,
+          maxAmount: 500,
+          escalateAfterDays: 30,
+          escalationMultiplier: 1.5,
+          escalationCap: 3,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        
+        // Security deposit late fee
+        {
+          companyId,
+          ruleName: 'Security Deposit Late Fee',
+          ruleNameAr: 'غرامة التأخير للتأمين',
+          description: 'Fixed QAR 10 per day for security deposit delays',
+          descriptionAr: 'قيمة ثابتة 10 ر.ق يومياً لتأخير التأمين',
+          feeType: LateFeeType.PENALTY,
+          calculationMethod: LateFeeCalculationMethod.FIXED,
+          fixedAmount: 10,
+          frequency: LateFeeFrequency.DAILY,
+          gracePeriodDays: 0,
+          maxAmount: 1000,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }
+      ];
+
+      const createdRules: LateFeeRule[] = [];
+
+      for (const rule of defaultRules) {
+        const created = await this.createRule(rule, userId);
+        createdRules.push(created);
       }
 
-      logger.info('Late fee rules copied', {
-        fromCompanyId,
-        toCompanyId,
-        rulesCopied: copiedCount
+      logger.info('Default late fee rules created', {
+        companyId,
+        count: createdRules.length
       });
 
-      return {
-        success: true,
-        rulesCopied: copiedCount
-      };
+      return createdRules;
+
     } catch (error) {
-      logger.error('Failed to copy rules', { fromCompanyId, toCompanyId, error });
-      return {
-        success: false,
-        rulesCopied: 0,
-        error: error instanceof Error ? error.message : 'خطأ غير معروف'
-      };
+      logger.error('Exception creating default late fee rules', { companyId, error });
+      throw error;
     }
   }
 
   /**
-   * الحصول على ملخص القواعد
+   * Get active rule for a contract
    */
-  async getRulesSummary(companyId: string): Promise<{
-    total: number;
-    enabled: number;
-    disabled: number;
-    byType: Record<string, number>;
-  }> {
+  async getActiveRuleForContract(companyId: string, contractId: string): Promise<LateFeeRule | null> {
     try {
-      const { data: rules } = await supabase
+      // Try to find contract-specific rule
+      const { data: contractSpecificRule } = await supabase
         .from('late_fee_rules')
-        .select('rule_type, enabled', { count: 'exact' })
-        .eq('company_id', companyId);
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('contract_id', contractId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-      const summary = {
-        total: rules?.length || 0,
-        enabled: rules?.filter(r => r.enabled).length || 0,
-        disabled: rules?.filter(r => !r.enabled).length || 0,
-        byType: {
-          percentage: 0,
-          fixed: 0,
-          tiered: 0
-        }
-      };
-
-      if (rules) {
-        for (const rule of rules) {
-          if (summary.byType[rule.rule_type] !== undefined) {
-            summary.byType[rule.rule_type]++;
-          }
-        }
+      if (contractSpecificRule) {
+        return contractSpecificRule;
       }
 
-      logger.info('Late fee rules summary', { companyId, summary });
+      // Fall back to company-wide rule
+      const { data: companyWideRule } = await supabase
+        .from('late_fee_rules')
+        .select('*')
+        .eq('company_id', companyId)
+        .is('contract_id', null) // Company-wide rule
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      return summary;
+      return companyWideRule;
+
     } catch (error) {
-      logger.error('Failed to get rules summary', { companyId, error });
-      return {
-        total: 0,
-        enabled: 0,
-        disabled: 0,
-        byType: { percentage: 0, fixed: 0, tiered: 0 }
-      };
+      logger.error('Exception fetching active rule for contract', { companyId, contractId, error });
+      return null;
+    }
+  }
+
+  /**
+   * Create history entry
+   */
+  private async createHistoryEntry(
+    ruleId: string,
+    companyId: string,
+    action: 'created' | 'updated' | 'deleted' | 'activated' | 'deactivated',
+    previousValues: Record<string, any> | null,
+    newValues: Record<string, any> | null,
+    userId?: string
+  ): Promise<void> {
+    try {
+      await supabase.from('late_fee_rule_history').insert({
+        rule_id: ruleId,
+        company_id: companyId,
+        action,
+        previous_values: previousValues,
+        new_values: newValues,
+        changed_by: userId || 'system',
+        changed_at: new Date().toISOString()
+      });
+    } catch (error) {
+      // Non-critical: log and continue
+      logger.warn('Failed to create rule history entry', { ruleId, action, error });
     }
   }
 }
 
 // Export singleton instance
 export const lateFeeRulesService = new LateFeeRulesService();
+

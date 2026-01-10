@@ -38,9 +38,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { companyId, isInitializing } = useCompanyIdWithInit();
   const location = useLocation();
   const [hasTimedOut, setHasTimedOut] = React.useState(false);
+  const hasMountedRef = React.useRef(false);
 
-  // SAFETY TIMEOUT: Prevent infinite loading on navigation
-  // If auth/company init takes longer than 3 seconds, force render anyway
+  // Mark that component has mounted at least once
+  React.useEffect(() => {
+    hasMountedRef.current = true;
+  }, []);
+
+  // CRITICAL FIX: Reduce timeout to 1.5s and improve the timeout logic
+  // This prevents navigation from hanging when loading state gets stuck
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (loading || isInitializing) {
@@ -52,13 +58,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         });
         setHasTimedOut(true);
       }
-    }, 3000); // 3 second timeout
+    }, 1500); // Reduced from 3000ms to 1500ms for faster response
 
     return () => clearTimeout(timer);
   }, [loading, isInitializing, companyId, location.pathname]);
 
-  // Show loading while authenticating OR initializing company context (with safety timeout)
-  if ((loading || isInitializing) && !hasTimedOut) {
+  // CRITICAL FIX: Don't show loading if we already have a user
+  // This prevents unnecessary loading spinners during navigation
+  const shouldShowLoading = (loading || isInitializing) && !hasTimedOut && !user && !hasMountedRef.current;
+
+  if (shouldShowLoading) {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-1/3" />

@@ -335,7 +335,7 @@ const VehicleDetailsPage = () => {
                 type="button"
                 onClick={handleEdit} 
                 disabled={!vehicle || loadingVehicle}
-                className="gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="gap-2 bg-[#00A896] hover:bg-[#007D6D] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Edit3 className="w-4 h-4" />
                 تعديل
@@ -448,12 +448,12 @@ const VehicleDetailsPage = () => {
           <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-red-600" />
+                <div className="w-10 h-10 rounded-lg bg-[#E6F7F4] flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-[#00A896]" />
                 </div>
                 <span className="text-xs text-slate-500">العقود</span>
               </div>
-              <div className="text-2xl font-bold text-red-600 mb-1">
+              <div className="text-2xl font-bold text-[#00A896] mb-1">
                 {vehicleStats?.activeContracts || 0}
               </div>
               <div className="text-sm text-slate-600">عقد نشط</div>
@@ -500,63 +500,63 @@ const VehicleDetailsPage = () => {
               <TabsList className="w-full justify-start bg-transparent h-auto p-2 rounded-none flex gap-1">
                 <TabsTrigger
                   value="overview"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <Info className="w-4 h-4" />
                   نظرة عامة
                 </TabsTrigger>
                 <TabsTrigger
                   value="technical"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <Settings className="w-4 h-4" />
                   تقنية
                 </TabsTrigger>
                 <TabsTrigger
                   value="financial"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <DollarSign className="w-4 h-4" />
                   مالية
                 </TabsTrigger>
                 <TabsTrigger
                   value="pricing"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <Tag className="w-4 h-4" />
                   التسعير
                 </TabsTrigger>
                 <TabsTrigger
                   value="contracts"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <FileText className="w-4 h-4" />
                   العقود
                 </TabsTrigger>
                 <TabsTrigger
                   value="maintenance"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <Wrench className="w-4 h-4" />
                   الصيانة
                 </TabsTrigger>
                 <TabsTrigger
                   value="violations"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <AlertTriangle className="w-4 h-4" />
                   المخالفات
                 </TabsTrigger>
                 <TabsTrigger
                   value="insurance"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <DollarSign className="w-4 h-4" />
                   التأمين
                 </TabsTrigger>
                 <TabsTrigger
                   value="documents"
-                  className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600 data-[state=active]:border-b-2 data-[state=active]:border-red-600 rounded-t-lg gap-2"
+                  className="data-[state=active]:bg-[#E6F7F4] data-[state=active]:text-[#00A896] data-[state=active]:border-b-2 data-[state=active]:border-[#00A896] rounded-t-lg gap-2"
                 >
                   <Folder className="w-4 h-4" />
                   الوثائق
@@ -676,7 +676,7 @@ const OverviewTab = ({ vehicle, formatCurrency }: OverviewTabProps) => (
     <Card className="bg-slate-50">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Car className="w-5 h-5 text-red-600" />
+          <Car className="w-5 h-5 text-[#00A896]" />
           المعلومات الأساسية
         </CardTitle>
       </CardHeader>
@@ -878,7 +878,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
     <div>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-slate-900">العقود المرتبطة بالمركبة</h3>
-        <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={handleClick}>
+        <Button className="gap-2 bg-[#00A896] hover:bg-[#007D6D]" onClick={handleClick}>
           <Plus className="w-4 h-4" />
           عقد جديد
         </Button>
@@ -915,7 +915,7 @@ const ContractsTab = ({ contracts, getCustomerName, formatCurrency, vehicleId, o
                       <p className="text-sm text-slate-600">العميل: {customerName}</p>
                     </div>
                     <Badge className={contract.status === 'active' ? 'status-available' : 'bg-slate-100'}>
-                      {contract.status === 'active' ? 'نشط' : contract.status}
+                      {contract.status === 'active' ? 'نشط' : contract.status === 'completed' ? 'مكتمل' : contract.status === 'cancelled' ? 'ملغي' : contract.status === 'pending' ? 'قيد الانتظار' : contract.status === 'expired' ? 'منتهي' : contract.status}
                     </Badge>
                   </div>
 
@@ -980,7 +980,7 @@ const MaintenanceTab = ({ maintenanceRecords, formatCurrency, vehicleId, onNewMa
         <h3 className="text-lg font-semibold">سجل الصيانة</h3>
         <Button 
           onClick={handleNewMaintenance}
-          className="gap-2 bg-red-600 hover:bg-red-700"
+          className="gap-2 bg-[#00A896] hover:bg-[#007D6D]"
         >
           <Plus className="w-4 h-4" />
           تسجيل صيانة
@@ -1066,7 +1066,7 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
         <div className="flex gap-2">
           <Button 
             onClick={handleNewViolation}
-            className="gap-2 bg-red-600 hover:bg-red-700"
+            className="gap-2 bg-[#00A896] hover:bg-[#007D6D]"
           >
             <Plus className="w-4 h-4" />
             تسجيل مخالفة
@@ -1104,7 +1104,7 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
                       رقم المخالفة: #{violation.violation_number || violation.id.substring(0, 8)}
                     </p>
                   </div>
-                  <Badge className={violation.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                  <Badge className={violation.payment_status === 'paid' ? 'bg-[#E6F7F4] text-[#00A896]' : 'bg-[#E6F7F4] text-[#00A896]'}>
                     {violation.payment_status === 'paid' ? 'مدفوعة' : 'معلقة'}
                   </Badge>
                 </div>
@@ -1118,7 +1118,7 @@ const ViolationsTab = ({ violations, formatCurrency, onNewViolation, vehicleId }
                   </div>
                   <div>
                     <div className="text-slate-500">المبلغ</div>
-                    <div className="font-semibold text-red-600">
+                    <div className="font-semibold text-[#00A896]">
                       {formatCurrency(violation.fine_amount || 0)}
                     </div>
                   </div>

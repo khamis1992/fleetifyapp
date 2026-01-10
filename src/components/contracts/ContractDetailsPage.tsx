@@ -131,10 +131,14 @@ const ContractDetailsPage = () => {
     queryKey: ['contract-details', contractNumber, companyId],
     queryFn: async () => {
       if (!contractNumber || !companyId) {
+        console.error('❌ [CONTRACT_DETAILS] Missing params:', { contractNumber, companyId });
         throw new Error('رقم العقد أو الشركة مفقود');
       }
 
-      const { data, error } = await supabase
+      console.log('🔍 [CONTRACT_DETAILS] Fetching contract:', { contractNumber, companyId });
+
+      // First, try to get the contract for the current company
+      let { data, error } = await supabase
         .from('contracts')
         .select(`
           *,
@@ -166,7 +170,71 @@ const ContractDetailsPage = () => {
         .eq('company_id', companyId)
         .single();
 
-      if (error) throw error;
+      // If not found and user has global access, try searching all companies
+      if (!data && (error?.code === 'PGRST116' || error?.message?.includes('rows'))) {
+        console.warn('⚠️ [CONTRACT_DETAILS] Contract not found in current company, searching all companies...');
+
+        const { data: globalData, error: globalError } = await supabase
+          .from('contracts')
+          .select(`
+            *,
+            customer:customers!customer_id(
+              id,
+              customer_code,
+              first_name,
+              last_name,
+              first_name_ar,
+              last_name_ar,
+              company_name,
+              company_name_ar,
+              customer_type,
+              phone,
+              email,
+              national_id
+            ),
+            vehicle:vehicles!vehicle_id(
+              id,
+              plate_number,
+              make,
+              model,
+              year,
+              color,
+              status
+            )
+          `)
+          .eq('contract_number', contractNumber)
+          .single();
+
+        if (globalData) {
+          console.log('✅ [CONTRACT_DETAILS] Contract found in different company:', {
+            contract_number: globalData.contract_number,
+            company_id: globalData.company_id,
+            current_company_id: companyId
+          });
+
+          // Warn the user that they're viewing a contract from a different company
+          if (globalData.company_id !== companyId) {
+            console.warn('⚠️ [CONTRACT_DETAILS] Accessing contract from different company!');
+          }
+
+          return globalData as Contract;
+        }
+
+        // If still not found, use the original error
+        error = globalError || error;
+      }
+
+      if (error) {
+        console.error('❌ [CONTRACT_DETAILS] Query error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error('❌ [CONTRACT_DETAILS] No data found for:', { contractNumber, companyId });
+        throw new Error(`العقد ${contractNumber} غير موجود`);
+      }
+
+      console.log('✅ [CONTRACT_DETAILS] Contract found:', data.contract_number);
       return data as Contract;
     },
     enabled: !!contractNumber && !!companyId,
@@ -623,7 +691,14 @@ const ContractDetailsPage = () => {
           <CardContent className="p-6 text-center">
             <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">حدث خطأ</h3>
-            <p className="text-slate-600 mb-4">فشل في تحميل بيانات العقد</p>
+            <p className="text-slate-600 mb-2">فشل في تحميل بيانات العقد</p>
+            {error.message && (
+              <p className="text-sm text-red-600 mb-4 font-mono text-right">{error.message}</p>
+            )}
+            <div className="bg-slate-100 rounded-lg p-3 mb-4 text-right text-sm">
+              <p className="font-semibold mb-1">رقم العقد:</p>
+              <p className="font-mono text-slate-700">{contractNumber}</p>
+            </div>
             <Button onClick={() => navigate('/contracts')}>
               العودة لصفحة العقود
             </Button>
@@ -641,6 +716,17 @@ const ContractDetailsPage = () => {
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">العقد غير موجود</h3>
             <p className="text-slate-600 mb-4">لم يتم العثور على هذا العقد</p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-right text-sm">
+              <p className="text-amber-800">
+                قد يكون العقد موجوداً تحت شركة أخرى، أو قد يكون هناك خطأ في رقم العقد.
+              </p>
+            </div>
+            <div className="bg-slate-100 rounded-lg p-3 mb-4 text-right text-sm">
+              <p className="font-semibold mb-1">رقم العقد:</p>
+              <p className="font-mono text-slate-700">{contractNumber}</p>
+              <p className="font-semibold mb-1 mt-2">معرف الشركة:</p>
+              <p className="font-mono text-slate-700">{companyId}</p>
+            </div>
             <Button onClick={() => navigate('/contracts')}>
               العودة لصفحة العقود
             </Button>
