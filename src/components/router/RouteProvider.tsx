@@ -197,20 +197,38 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({
   }, [location.search]);
 
   // Update state when route changes
+  // CRITICAL FIX: Use refs to track previous state and avoid infinite loops
+  const prevRouteRef = React.useRef<RouteConfig | undefined>(undefined);
+  const historyRef = React.useRef<RouteConfig[]>([]);
+  
   React.useEffect(() => {
-    const previousRoute = state.currentRoute;
-
-    updateState({
+    // Only update if the route actually changed
+    if (prevRouteRef.current?.path === currentRoute?.path) {
+      // Route is the same, just update params/query if needed
+      return;
+    }
+    
+    // Add previous route to history
+    if (prevRouteRef.current) {
+      historyRef.current = [...historyRef.current, prevRouteRef.current];
+    }
+    
+    // Update ref to track current route
+    prevRouteRef.current = currentRoute;
+    
+    // Update state once with all changes
+    setState(prevState => ({
+      ...prevState,
       currentRoute,
       params: routeParams,
       query: queryParams,
-      history: previousRoute ? [...state.history, previousRoute] : [],
+      history: historyRef.current,
       navigation: {
-        ...state.navigation,
-        canGoBack: state.history.length > 0,
-        depth: state.history.length + 1,
+        canGoBack: historyRef.current.length > 0,
+        canGoForward: false,
+        depth: historyRef.current.length + 1,
       },
-    });
+    }));
   }, [currentRoute, routeParams, queryParams]);
 
   // Update document metadata when route changes

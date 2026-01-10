@@ -3,8 +3,8 @@
  * Handles route rendering with lazy loading, error boundaries, and layout management
  */
 
-import React, { Suspense, useEffect, useState } from 'react';
-import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import React, { Suspense } from 'react';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { RouteConfig } from '@/routes/types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { LazyLoadErrorBoundary } from '@/components/common/LazyLoadErrorBoundary';
@@ -18,8 +18,10 @@ import { SuperAdminLayout } from '@/components/layouts/SuperAdminLayout';
 import { CompanyBrowserLayout } from '@/components/layouts/CompanyBrowserLayout';
 import { BentoLayout } from '@/components/layouts/BentoLayout';
 
-// Debug at file level
-console.log('🔍 [RouteRenderer] Module loaded');
+// Debug at file level - only in development
+if (import.meta.env.DEV) {
+  console.log('🔍 [RouteRenderer] Module loaded');
+}
 
 interface RouteRendererProps {
   routes: RouteConfig[];
@@ -32,21 +34,11 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   fallback: FallbackComponent = PageSkeletonFallback,
   errorBoundary: ErrorBoundaryComponent = RouteErrorBoundary,
 }) => {
-  console.log('🔍 [RouteRenderer] Component rendered, routes:', routes.length);
+  // Only log in development
+  if (import.meta.env.DEV) {
+    console.log('🔍 [RouteRenderer] Component rendered, routes:', routes.length);
+  }
   const location = useLocation();
-  const [routeConfig, setRouteConfig] = useState<RouteConfig | undefined>();
-
-  // Find current route configuration
-  useEffect(() => {
-    const currentRoute = routes.find(route => {
-      // Handle wildcard route (404)
-      if (route.path === '*') return false;
-      const pathPattern = route.path.replace(/:[^/]+/g, '[^/]+');
-      const regex = new RegExp(`^${pathPattern}$`);
-      return regex.test(location.pathname);
-    });
-    setRouteConfig(currentRoute);
-  }, [location.pathname, routes]);
 
   const renderRoute = (route: RouteConfig) => {
     const Component = route.component;
@@ -69,13 +61,14 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     }
 
     // Wrap with layout
+    // CRITICAL FIX: Pass correct props to RouteWrapper (routeName instead of route)
     switch (layout) {
       case 'bento':
         return (
           <BentoLayout>
             <LazyLoadErrorBoundary>
               <Suspense fallback={<FallbackComponent />}>
-                <RouteWrapper route={route}>
+                <RouteWrapper routeName={route.title || route.path}>
                   {protectedElement}
                 </RouteWrapper>
               </Suspense>
@@ -87,7 +80,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
           <DashboardLayout>
             <LazyLoadErrorBoundary>
               <Suspense fallback={<FallbackComponent />}>
-                <RouteWrapper route={route}>
+                <RouteWrapper routeName={route.title || route.path}>
                   {protectedElement}
                 </RouteWrapper>
               </Suspense>
@@ -99,7 +92,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
           <SuperAdminLayout>
             <LazyLoadErrorBoundary>
               <Suspense fallback={<FallbackComponent />}>
-                <RouteWrapper route={route}>
+                <RouteWrapper routeName={route.title || route.path}>
                   {protectedElement}
                 </RouteWrapper>
               </Suspense>
@@ -111,7 +104,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
           <CompanyBrowserLayout>
             <LazyLoadErrorBoundary>
               <Suspense fallback={<FallbackComponent />}>
-                <RouteWrapper route={route}>
+                <RouteWrapper routeName={route.title || route.path}>
                   {protectedElement}
                 </RouteWrapper>
               </Suspense>
@@ -122,7 +115,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
         return (
           <LazyLoadErrorBoundary>
             <Suspense fallback={<FallbackComponent />}>
-              <RouteWrapper route={route}>
+              <RouteWrapper routeName={route.title || route.path}>
                 {protectedElement}
               </RouteWrapper>
             </Suspense>
@@ -131,17 +124,17 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     }
   };
 
-  // Debug: Log routes to verify they're loaded
+  // Debug: Log routes to verify they're loaded - only in development
   React.useEffect(() => {
-    console.log('🔍 [RouteRenderer] Total routes:', routes.length);
-    console.log('🔍 [RouteRenderer] First 5 routes:', routes.slice(0, 5).map(r => ({ path: r.path, priority: r.priority })));
-    const mobileRoutes = routes.filter(r => r.path.startsWith('/mobile'));
-    console.log('🔍 [RouteRenderer] Mobile routes found:', mobileRoutes.map(r => ({ path: r.path, priority: r.priority, component: r.component?.name || 'lazy' })));
+    if (import.meta.env.DEV) {
+      console.log('🔍 [RouteRenderer] Total routes:', routes.length);
+    }
   }, [routes]);
 
   return (
     <ErrorBoundaryComponent>
-      <Routes>
+      {/* CRITICAL FIX: Use location.key to help React Router track navigation changes */}
+      <Routes key={location.key}>
         {routes
           .sort((a, b) => a.priority - b.priority)
           .map((route) => (
@@ -161,16 +154,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
           element={
             <LazyLoadErrorBoundary>
               <Suspense fallback={<FallbackComponent />}>
-                <RouteWrapper route={{
-                  path: '*',
-                  component: () => React.createElement('div'),
-                  lazy: false,
-                  exact: false,
-                  title: 'Not Found',
-                  description: 'Page not found',
-                  group: 'public',
-                  priority: 999,
-                }}>
+                <RouteWrapper routeName="Not Found">
                   <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
                       <h1 className="text-4xl font-bold text-slate-900 mb-4">404</h1>

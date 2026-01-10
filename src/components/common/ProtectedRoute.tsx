@@ -38,36 +38,39 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { companyId, isInitializing } = useCompanyIdWithInit();
   const location = useLocation();
   const [hasTimedOut, setHasTimedOut] = React.useState(false);
-  const hasMountedRef = React.useRef(false);
 
-  // Mark that component has mounted at least once
+  // CRITICAL FIX: Simplified timeout logic
+  // Only start timeout if actually loading and no user
   React.useEffect(() => {
-    hasMountedRef.current = true;
-  }, []);
-
-  // CRITICAL FIX: Reduce timeout to 1.5s and improve the timeout logic
-  // This prevents navigation from hanging when loading state gets stuck
-  React.useEffect(() => {
+    // Don't set timeout if we already have a user - navigation should be instant
+    if (user) {
+      setHasTimedOut(false);
+      return;
+    }
+    
+    // Only set timeout for initial auth loading, not during navigation
+    if (!loading && !isInitializing) {
+      return;
+    }
+    
     const timer = setTimeout(() => {
-      if (loading || isInitializing) {
-        console.warn('[ProtectedRoute] Initialization timeout - forcing render', {
-          loading,
-          isInitializing,
-          companyId,
-          path: location.pathname
-        });
-        setHasTimedOut(true);
-      }
-    }, 1500); // Reduced from 3000ms to 1500ms for faster response
+      console.warn('[ProtectedRoute] Initialization timeout - forcing render', {
+        loading,
+        isInitializing,
+        path: location.pathname
+      });
+      setHasTimedOut(true);
+    }, 1500);
 
     return () => clearTimeout(timer);
-  }, [loading, isInitializing, companyId, location.pathname]);
+  }, [loading, isInitializing, user, location.pathname]);
 
-  // CRITICAL FIX: Don't show loading if we already have a user
-  // This prevents unnecessary loading spinners during navigation
-  const shouldShowLoading = (loading || isInitializing) && !hasTimedOut && !user && !hasMountedRef.current;
-
-  if (shouldShowLoading) {
+  // CRITICAL FIX: Simplified loading check
+  // If we have a user, NEVER show loading - this is the key fix for navigation
+  if (user) {
+    // User exists - proceed immediately, don't wait for anything
+  } else if ((loading || isInitializing) && !hasTimedOut) {
+    // Only show loading if no user AND auth is still loading
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-1/3" />
@@ -76,10 +79,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <Skeleton className="h-32 w-full" />
       </div>
     );
-  }
-
-  // Redirect to auth if not logged in
-  if (!user) {
+  } else if (!user) {
+    // Not loading, no user - redirect to auth
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

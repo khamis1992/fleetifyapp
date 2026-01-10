@@ -1,71 +1,66 @@
-# إصلاح مشكلة تطبيق الجوال - البيانات تظهر كـ 0
+# Navigation Infinite Loading Issue - Audit & Fix Plan
 
-## المشكلة
-بعد تسجيل الدخول في تطبيق الجوال (APK)، جميع المعلومات تظهر كـ 0.
-نفس المشكلة موجودة في التطبيق الرئيسي.
+## Problem Description
+Pages keep loading forever when navigating between them, requiring hard refresh to work.
 
-## السبب
-في عدة ملفات يتم استخدام:
-```javascript
-const companyId = user?.user_metadata?.company_id || '';
-// أو
-company_id_param: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id
-```
-هذا خطأ! الـ `company_id` الصحيح موجود في `user.profile.company_id` أو `user.company.id`.
+## Root Cause Analysis
 
-## المهام
+### Identified Issues:
 
-- [x] إصلاح صفحات Mobile:
-  - [x] `MobileHome.tsx` - تم إصلاح واستبدال `gray-*` بـ `slate-*`
-  - [x] `MobileContractWizard.tsx` - تم إصلاح واستبدال `gray-*` بـ `slate-*`
-  - [x] `MobileOverdue.tsx` - تم إصلاح واستبدال الألوان
-  - [x] `MobileCars.tsx` - تم إصلاح
-  - [x] `MobileContracts.tsx` - تم إصلاح واستبدال `gray-*` بـ `slate-*`
-- [x] إصلاح الملفات الأخرى:
-  - [x] `useEnhancedCustomerFinancials.ts` - 4 دوال
-  - [x] `MaintenanceForm.tsx`
-  - [x] `FinancialAlertsSystem.tsx`
-  - [x] `AdvancedFinancialReports.tsx`
-  - [x] `LegalCasesTrackingV2Final.tsx`
+1. **RouteProvider Infinite Loop** (CRITICAL)
+   - `useEffect` at line 200-214 had missing dependencies
+   - Referenced `state.currentRoute`, `state.history`, `state.navigation` but didn't include them in deps
+   - `updateState` triggered re-render → effect ran again → infinite loop
 
-## الملفات المعدلة
+2. **RouteWrapper Type Mismatch** (MEDIUM)
+   - RouteRenderer passed `route={route}` but RouteWrapper expected `routeName: string`
+   - Caused improper prop handling
 
-### صفحات Mobile (5 ملفات)
-1. `src/pages/mobile/MobileHome.tsx`
-2. `src/pages/mobile/MobileContractWizard.tsx`
-3. `src/pages/mobile/MobileOverdue.tsx`
-4. `src/pages/mobile/MobileCars.tsx`
-5. `src/pages/mobile/MobileContracts.tsx`
+3. **ProtectedRoute Loading Logic** (LOW-MEDIUM)
+   - Complex loading logic with timeout didn't handle all edge cases
+   - `hasMountedRef.current` check was flawed
 
-### ملفات أخرى (5 ملفات)
-1. `src/hooks/useEnhancedCustomerFinancials.ts`
-2. `src/components/fleet/MaintenanceForm.tsx`
-3. `src/components/finance/FinancialAlertsSystem.tsx`
-4. `src/components/finance/AdvancedFinancialReports.tsx`
-5. `src/pages/legal/LegalCasesTrackingV2Final.tsx`
+4. **Missing Key for Route Changes** (MEDIUM)
+   - Routes didn't have a unique key that changed with navigation
+   - Suspense didn't re-trigger properly
 
-## التغييرات
+## Fix Plan
 
-**من:**
-```javascript
-const companyId = user?.user_metadata?.company_id || '';
-// أو
-company_id_param: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id
-```
+- [x] 1. Fix RouteProvider useEffect infinite loop
+- [x] 2. Fix RouteWrapper type mismatch in RouteRenderer
+- [x] 3. Simplify ProtectedRoute loading logic
+- [x] 4. Add proper route keys for navigation
+- [x] 5. Test navigation on production
 
-**إلى:**
-```javascript
-const companyId = user?.profile?.company_id || user?.company?.id || '';
-```
+## Review
 
-## الخطوات القادمة
-لإعادة بناء التطبيق:
-```bash
-npm run build:ci
-npm run build:mobile
-npm run mobile:sync
-npm run android:build
-```
+### Changes Made:
 
-## المراجعة
-تم إصلاح 10 ملفات في المجموع. جميع التعديلات تستخدم المصدر الصحيح لـ `company_id`.
+1. **RouteProvider.tsx**:
+   - Added `prevRouteRef` and `historyRef` to track previous state with refs instead of state
+   - Changed useEffect to only update state when route path actually changes
+   - Use `setState` directly instead of `updateState` to avoid stale closures
+
+2. **RouteRenderer.tsx**:
+   - Fixed prop mismatch: Changed `route={route}` to `routeName={route.title || route.path}`
+   - Added `key={location.key}` to Routes component to force proper updates on navigation
+   - Cleaned up debug console logs (only show in development)
+   - Removed unused imports (`useEffect`, `useState`, `Navigate`)
+
+3. **ProtectedRoute.tsx**:
+   - Simplified loading logic: If user exists, never show loading spinner
+   - Cleaner timeout logic that only applies when no user and auth is loading
+   - Removed complex `hasMountedRef` pattern that was causing edge cases
+
+### Testing Results:
+- ✅ Login works correctly
+- ✅ Navigation from Dashboard → Customers: Instant
+- ✅ Navigation from Customers → Fleet: Instant
+- ✅ Navigation from Fleet → Dashboard: Instant
+- ✅ Navigation from Dashboard → Settings: Instant
+- ✅ Build passes successfully
+
+### Files Modified:
+- `src/components/router/RouteProvider.tsx`
+- `src/components/router/RouteRenderer.tsx`
+- `src/components/common/ProtectedRoute.tsx`
