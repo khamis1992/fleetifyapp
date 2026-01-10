@@ -6,7 +6,7 @@ import { PageCustomizer } from "@/components/PageCustomizer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/useDebounce";
+import { Input } from "@/components/ui/input";
 import {
   RefreshCw,
   Filter,
@@ -90,8 +90,7 @@ function ContractsRedesigned() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
-  const [searchInput, setSearchInput] = useState<string>("");
-  const debouncedSearch = useDebounce(searchInput, 500);
+  const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -114,11 +113,11 @@ function ContractsRedesigned() {
   const { formatCurrency: formatCurrencyAmount, currency } = useCurrencyFormatter();
   const currencyConfig = getCurrencyConfig(currency);
 
-  // Filters
+  // Filters - استخدام searchTerm مباشرة مثل صفحة العملاء
   const filters = useMemo(() => {
     const newFilters: any = {};
-    if (debouncedSearch && debouncedSearch.trim()) {
-      newFilters.search = debouncedSearch.trim();
+    if (searchTerm && searchTerm.trim()) {
+      newFilters.search = searchTerm.trim();
     }
     if (activeTab === "active") {
       newFilters.status = "active";
@@ -128,7 +127,7 @@ function ContractsRedesigned() {
       newFilters.status = "expiring_soon";
     }
     return newFilters;
-  }, [debouncedSearch, activeTab]);
+  }, [searchTerm, activeTab]);
 
   const filtersWithPagination = useMemo(() => ({
     ...filters,
@@ -693,34 +692,31 @@ function ContractsRedesigned() {
                   exit={{ height: 0, opacity: 0 }}
                   className="px-6 pb-6 space-y-4"
                 >
-                  {/* Search Input */}
-                  <div className="relative">
-                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input
-                      type="text"
+                  {/* Search Input - نفس أسلوب صفحة العملاء */}
+                  <div className="flex-1 relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
                       placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
-                      className="w-full pr-12 pl-12 py-3 border border-slate-200/50 rounded-3xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none bg-white/50"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setPage(1);
+                      }}
+                      className="h-10 pr-10 text-sm bg-white/50 border-slate-200/50 focus:border-teal-500/50"
                     />
-                    {searchInput && !isFetching && (
+                    {searchTerm && (
                       <button
                         type="button"
-                        onClick={() => setSearchInput("")}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors"
+                        onClick={() => setSearchTerm("")}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                       >
-                        <X className="w-4 h-4 text-slate-400" />
+                        <X className="w-4 h-4" />
                       </button>
-                    )}
-                    {((searchInput && searchInput !== debouncedSearch) || (isFetching && !isInitialLoading)) && (
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                        <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
                     )}
                   </div>
 
                   {/* Search Results Count */}
-                  {debouncedSearch && !isFetching && (
+                  {searchTerm && !isFetching && (
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-slate-500">
                         {safeFilteredContracts.length > 0 ? (
@@ -737,7 +733,7 @@ function ContractsRedesigned() {
                     variant="outline"
                     className="px-4 py-2 rounded-3xl font-medium hover:bg-slate-50/50 transition-colors"
                     onClick={() => {
-                      setSearchInput("");
+                      setSearchTerm("");
                       setActiveTab("all");
                     }}
                   >
@@ -793,10 +789,10 @@ function ContractsRedesigned() {
                         <FileText className="w-8 h-8 text-slate-400" />
                       </div>
                       <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عقود</h3>
-                      {debouncedSearch ? (
+                      {searchTerm ? (
                         <>
-                          <p className="text-slate-500 mb-4">لم يتم العثور على نتائج للبحث: "{debouncedSearch}"</p>
-                          <Button variant="outline" onClick={() => setSearchInput("")}>
+                          <p className="text-slate-500 mb-4">لم يتم العثور على نتائج للبحث: "{searchTerm}"</p>
+                          <Button variant="outline" onClick={() => setSearchTerm("")}>
                             <XCircle className="w-4 h-4 ml-2" />
                             مسح البحث
                           </Button>
