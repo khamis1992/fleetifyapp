@@ -117,6 +117,7 @@ export default function LawsuitPreparationPage() {
   const [isGeneratingViolations, setIsGeneratingViolations] = useState(false);
   const [contractFileUrl, setContractFileUrl] = useState<string | null>(null);
   const [isUploadingContract, setIsUploadingContract] = useState(false);
+  const [existingContractDoc, setExistingContractDoc] = useState<{ file_path: string; document_name: string } | null>(null);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -198,6 +199,55 @@ export default function LawsuitPreparationPage() {
     queryFn: () => lawsuitService.getCompanyLegalDocuments(companyId!),
     enabled: !!companyId,
   });
+
+  // جلب ملف العقد الموقع من جدول contract_documents
+  const { data: contractDocument } = useQuery({
+    queryKey: ['contract-document', contractId, companyId],
+    queryFn: async () => {
+      if (!contractId || !companyId) return null;
+      
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('id, file_path, document_name, document_type, mime_type')
+        .eq('contract_id', contractId)
+        .eq('company_id', companyId)
+        .eq('document_type', 'signed_contract')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching contract document:', error);
+        return null;
+      }
+
+      if (data?.file_path) {
+        // الحصول على الرابط العام للملف
+        const { data: urlData } = supabase.storage
+          .from('contract-documents')
+          .getPublicUrl(data.file_path);
+        
+        return {
+          ...data,
+          publicUrl: urlData?.publicUrl || null
+        };
+      }
+
+      return data;
+    },
+    enabled: !!contractId && !!companyId,
+  });
+
+  // تحديث رابط العقد عند وجود مستند محفوظ
+  useEffect(() => {
+    if (contractDocument?.publicUrl && !contractFileUrl) {
+      setContractFileUrl(contractDocument.publicUrl);
+      setExistingContractDoc({
+        file_path: contractDocument.file_path,
+        document_name: contractDocument.document_name || 'العقد الموقع'
+      });
+    }
+  }, [contractDocument, contractFileUrl]);
 
   // حساب المبالغ - باستخدام الدالة الموحدة
   // غرامة التأخير: 120 ر.ق × أيام التأخير لكل فاتورة
@@ -689,16 +739,18 @@ export default function LawsuitPreparationPage() {
         category: 'company',
         url: repId?.file_url,
       },
-      // عقد الإيجار (إلزامي)
+      // عقد الإيجار (إلزامي) - يتم جلبه تلقائياً من تفاصيل العقد إذا كان موجوداً
       {
         id: 'contract',
         name: 'عقد الإيجار',
-        description: contractFileUrl ? '✅ مرفوع' : `رقم ${contract?.contract_number || '-'}`,
+        description: contractFileUrl 
+          ? (existingContractDoc ? `✅ ${existingContractDoc.document_name || 'موجود في النظام'}` : '✅ مرفوع')
+          : `رقم ${contract?.contract_number || '-'} - يرجى رفع نسخة`,
         status: contractFileUrl ? 'ready' : 'pending',
         type: 'mandatory',
         category: 'contract',
         url: contractFileUrl,
-        onUpload: uploadContractFile,
+        onUpload: existingContractDoc ? undefined : uploadContractFile, // لا تظهر خيار الرفع إذا كان موجوداً
         isGenerating: isUploadingContract,
       },
       // المخالفات المرورية (اختياري)
@@ -718,7 +770,7 @@ export default function LawsuitPreparationPage() {
     memoUrl, claimsStatementUrl, docsListUrl, violationsListUrl, contractFileUrl,
     legalDocs, calculations, contract, overdueInvoices,
     isGeneratingMemo, isGeneratingClaims, isGeneratingDocsList, isUploadingContract,
-    isGeneratingViolations, generateViolationsList,
+    isGeneratingViolations, generateViolationsList, existingContractDoc, uploadContractFile,
   ]);
 
   // حساب التقدم
@@ -1221,6 +1273,14 @@ export default function LawsuitPreparationPage() {
                           )}
                         </Button>
                       </div>
+                    )}
+
+                    {/* إذا كان عقد وموجود من النظام - عرض تسمية توضيحية */}
+                    {doc.id === 'contract' && doc.status === 'ready' && !doc.onUpload && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Check className="h-3 w-3 ml-1" />
+                        محفوظ في النظام
+                      </Badge>
                     )}
                     
                     {doc.status === 'missing' && (
