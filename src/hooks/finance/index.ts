@@ -13,8 +13,12 @@ export * from './useJournalEntries';
 // Invoices
 export * from './useInvoices';
 
-// Payments
-export * from './usePayments';
+// Payment Validation
+export * from './usePaymentValidation';
+
+// Payments - Use unified hook from main hooks directory
+// NOTE: usePayments is exported from @/hooks/usePayments.unified
+// Do NOT add usePayments here to avoid circular dependencies
 
 // Re-export types for backward compatibility
 export type {

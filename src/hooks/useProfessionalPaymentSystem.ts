@@ -5,7 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Sentry from '@sentry/react';
-import { smartPaymentLinker, type SmartLinkingResult } from '@/utils/smartPaymentLinker';
+// Consolidated payment linking - uses professionalPaymentLinking with backward-compatible smartPaymentLinker alias
+import { professionalPaymentLinking, smartPaymentLinker, type SmartLinkingResult } from '@/utils/professionalPaymentLinking';
 import { paymentAllocationEngine, type AllocationResult } from '@/utils/paymentAllocationEngine';
 import { accountingIntegration, type JournalEntryData } from '@/utils/accountingIntegration';
 import { auditTrailSystem } from '@/utils/auditTrailSystem';
@@ -544,7 +545,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           
           if (linkingResult.success && linkingResult.suggested_contract_id) {
             // Use professional payment linking to ensure invoices are created
-            const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+            // Using static import - professionalPaymentLinking already imported at top
             const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
               paymentId, 
               linkingResult.suggested_contract_id
@@ -786,7 +787,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           
           if (result.success && result.suggested_contract_id) {
             // Use professional payment linking to ensure invoices are created
-            const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+            // Using static import - professionalPaymentLinking already imported at top
             const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
               payment.id, 
               result.suggested_contract_id
@@ -900,7 +901,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
       
       if (linkingResult.success && linkingResult.suggested_contract_id) {
         // Use professional payment linking to ensure invoices are created
-        const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+        // Using static import - professionalPaymentLinking already imported at top
         const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
           paymentId, 
           linkingResult.suggested_contract_id
@@ -989,7 +990,7 @@ export const useProfessionalPaymentSystem = (companyId: string) => {
           
           if (linkingResult.success && linkingResult.suggested_contract_id) {
             // Use professional payment linking to ensure invoices are created
-            const { professionalPaymentLinking } = await import('@/utils/professionalPaymentLinking');
+            // Using static import - professionalPaymentLinking already imported at top
             const linkSuccess = await professionalPaymentLinking.linkPaymentToContract(
               payment.id, 
               linkingResult.suggested_contract_id

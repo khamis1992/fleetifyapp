@@ -636,7 +636,7 @@ function ContractsNew() {
             </div>
 
             {showFilters && (
-              <div className="p-6 space-y-4">
+              <form className="p-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
                 {/* Search Input - محسّن للأداء */}
                 <div className="relative">
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -683,7 +683,7 @@ function ContractsNew() {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-slate-200 transition-colors flex items-center gap-2" onClick={() => {
+                  <Button type="button" variant="outline" className="px-6 py-2.5 rounded-lg font-medium hover:bg-slate-200 transition-colors flex items-center gap-2" onClick={() => {
                     setSearchInput("");
                     setActiveTab("all");
                   }}>
@@ -691,7 +691,7 @@ function ContractsNew() {
                     <span>مسح الفلاتر</span>
                   </Button>
                 </div>
-              </div>
+              </form>
             )}
           </div>
 

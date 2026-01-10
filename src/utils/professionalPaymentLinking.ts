@@ -1,8 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
+// SmartLinkingResult interface - compatible with smartPaymentLinker
 export interface SmartLinkingResult {
   success: boolean;
+  suggested_contract_id?: string;
+  confidence: number;
   linkedContracts: Array<{
     contractId: string;
     contractNumber: string;
@@ -10,8 +13,10 @@ export interface SmartLinkingResult {
     confidence: number;
   }>;
   suggestions: Array<{
-    type: 'invoice' | 'contract' | 'customer';
-    id: string;
+    type?: 'invoice' | 'contract' | 'customer';
+    contract_id?: string;
+    contract_number?: string;
+    id?: string;
     reason: string;
     confidence: number;
   }>;
@@ -423,6 +428,150 @@ class ProfessionalPaymentLinking {
       return false;
     }
   }
+
+  /**
+   * Find best matching contract for a payment (migrated from smartPaymentLinker)
+   * Used by useProfessionalPaymentSystem for smart linking
+   */
+  async findBestContract(payment: any): Promise<SmartLinkingResult> {
+    try {
+      logger.debug('Finding best contract for payment', { paymentId: payment.id });
+
+      // Get all possible contracts for the company
+      const { data: contracts, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('company_id', payment.company_id)
+        .eq('status', 'active');
+
+      if (error) {
+        logger.error('Failed to fetch contracts', error);
+        throw error;
+      }
+
+      if (!contracts || contracts.length === 0) {
+        return {
+          success: false,
+          confidence: 0,
+          linkedContracts: [],
+          suggestions: []
+        };
+      }
+
+      // Calculate confidence for each contract
+      const matches = contracts.map(contract => ({
+        contract_id: contract.id,
+        contract_number: contract.contract_number,
+        confidence: this.calculatePaymentContractConfidence(payment, contract),
+        reason: this.getPaymentMatchReason(payment, contract)
+      }));
+
+      // Sort by confidence
+      matches.sort((a, b) => b.confidence - a.confidence);
+
+      const bestMatch = matches[0];
+
+      return {
+        success: bestMatch.confidence > 0.4,
+        suggested_contract_id: bestMatch.confidence > 0.4 ? bestMatch.contract_id : undefined,
+        confidence: bestMatch.confidence,
+        linkedContracts: bestMatch.confidence > 0.4 ? [{
+          contractId: bestMatch.contract_id,
+          contractNumber: bestMatch.contract_number,
+          amount: payment.amount || 0,
+          confidence: bestMatch.confidence
+        }] : [],
+        suggestions: matches.slice(0, 5) // Top 5 suggestions
+      };
+    } catch (error) {
+      logger.error('Error in smart linking', error);
+      return {
+        success: false,
+        confidence: 0,
+        linkedContracts: [],
+        suggestions: []
+      };
+    }
+  }
+
+  /**
+   * Calculate linking confidence between payment and contract
+   */
+  private calculatePaymentContractConfidence(payment: any, contract: any): number {
+    let confidence = 0.30; // Base confidence
+    let bonusPoints = 0;
+
+    // Agreement number match (high weight)
+    if (payment.agreement_number && contract.contract_number) {
+      const agreementMatch = payment.agreement_number.toLowerCase().includes(contract.contract_number.toLowerCase()) ||
+                           contract.contract_number.toLowerCase().includes(payment.agreement_number.toLowerCase());
+      if (agreementMatch) bonusPoints += 0.40;
+    }
+
+    // Amount match (medium-high weight)
+    if (payment.amount && contract.monthly_amount) {
+      const amountDiff = Math.abs(payment.amount - contract.monthly_amount) / contract.monthly_amount;
+      if (amountDiff <= 0.02) bonusPoints += 0.30;
+      else if (amountDiff <= 0.05) bonusPoints += 0.25;
+      else if (amountDiff <= 0.1) bonusPoints += 0.15;
+      else if (amountDiff <= 0.2) bonusPoints += 0.08;
+    }
+
+    // Customer match (medium weight)
+    if (payment.customer_id && contract.customer_id && payment.customer_id === contract.customer_id) {
+      bonusPoints += 0.20;
+    }
+
+    // Date proximity (lower weight)
+    if (payment.payment_date && contract.start_date) {
+      const paymentDate = new Date(payment.payment_date);
+      const contractDate = new Date(contract.start_date);
+      const daysDiff = Math.abs(paymentDate.getTime() - contractDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (daysDiff <= 3) bonusPoints += 0.10;
+      else if (daysDiff <= 7) bonusPoints += 0.08;
+      else if (daysDiff <= 30) bonusPoints += 0.05;
+    }
+
+    // Reference number match
+    if (payment.reference_number && contract.reference_number) {
+      if (payment.reference_number === contract.reference_number) bonusPoints += 0.15;
+    }
+
+    return Math.min(Math.max(confidence + bonusPoints, 0), 1.0);
+  }
+
+  /**
+   * Get human-readable match reason
+   */
+  private getPaymentMatchReason(payment: any, contract: any): string {
+    const reasons = [];
+
+    if (payment.agreement_number && contract.contract_number) {
+      const agreementMatch = payment.agreement_number.toLowerCase().includes(contract.contract_number.toLowerCase()) ||
+                           contract.contract_number.toLowerCase().includes(payment.agreement_number.toLowerCase());
+      if (agreementMatch) reasons.push('تطابق رقم الاتفاقية');
+    }
+
+    if (payment.amount && contract.monthly_amount) {
+      const amountDiff = Math.abs(payment.amount - contract.monthly_amount) / contract.monthly_amount;
+      if (amountDiff <= 0.05) reasons.push('تطابق المبلغ');
+      else if (amountDiff <= 0.2) reasons.push('مبلغ مشابه');
+    }
+
+    if (payment.customer_id && contract.customer_id && payment.customer_id === contract.customer_id) {
+      reasons.push('نفس العميل');
+    }
+
+    return reasons.length > 0 ? reasons.join(' + ') : 'مطابقة عامة';
+  }
 }
 
 export const professionalPaymentLinking = new ProfessionalPaymentLinking();
+
+// Backward compatibility alias - use professionalPaymentLinking.findBestContract instead
+export const smartPaymentLinker = {
+  findBestContract: (payment: any) => professionalPaymentLinking.findBestContract(payment),
+  calculateLinkingConfidence: (payment: any, contract: any) => 
+    (professionalPaymentLinking as any).calculatePaymentContractConfidence(payment, contract)
+};

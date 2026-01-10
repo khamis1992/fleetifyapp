@@ -15,7 +15,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { FABProvider } from '@/contexts/FABContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
-import { AIChatProvider } from '@/contexts/AIChatContext';
+// import { AIChatProvider } from '@/contexts/AIChatContext';
 
 // UI Components
 import { Toaster } from '@/components/ui/sonner';
@@ -195,7 +195,7 @@ const App: React.FC = () => {
           {/* Global TooltipProvider temporarily disabled due to @radix-ui/react-tooltip useRef error */}
           {/* <TooltipProvider delayDuration={200}> */}
             <AuthProvider>
-                <AIChatProvider>
+                {/* <AIChatProvider> */}
                   <CompanyContextProvider>
                   <FABProvider>
                     <FinanceProvider>
