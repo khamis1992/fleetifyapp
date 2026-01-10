@@ -169,7 +169,22 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     }
 
     try {
-      // إذا كان المستند عقد موقع أو مسودة عقد، اجلب بيانات العقد لعرضه كـ HTML
+      // إذا كان الملف PDF مرفوع (من صفحة رفع العقود الموقعة)، افتحه مباشرة
+      if (document.file_path.startsWith('signed-agreements/') || document.mime_type === 'application/pdf') {
+        const { data: signedUrl } = await supabase.storage
+          .from('contract-documents')
+          .createSignedUrl(document.file_path, 3600); // 1 hour
+        
+        if (signedUrl?.signedUrl) {
+          window.open(signedUrl.signedUrl, '_blank');
+          return;
+        } else {
+          toast.error('فشل في إنشاء رابط المعاينة');
+          return;
+        }
+      }
+
+      // إذا كان المستند عقد موقع أو مسودة عقد (مُنشأ من النظام)، اجلب بيانات العقد لعرضه كـ HTML
       if (document.document_type === 'signed_contract' || document.document_type === 'draft_contract') {
         const { data: contractData, error } = await supabase
           .from('contracts')
@@ -404,17 +419,32 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                     </Button>
                   )}
                    {document.file_path && (
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handlePreviewDocument(document);
-                       }}
-                       className="text-blue-600 hover:text-blue-700"
-                     >
-                       <Eye className="h-4 w-4" />
-                     </Button>
+                     <>
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handlePreviewDocument(document);
+                         }}
+                         className="text-blue-600 hover:text-blue-700"
+                         title="معاينة"
+                       >
+                         <Eye className="h-4 w-4" />
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleDownload(document.file_path, document.document_name);
+                         }}
+                         className="text-green-600 hover:text-green-700"
+                         title="تحميل"
+                       >
+                         <Download className="h-4 w-4" />
+                       </Button>
+                     </>
                    )}
                   
                   <Button
@@ -426,6 +456,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                     }}
                     disabled={deleteDocument.isPending}
                     className="text-destructive hover:text-destructive"
+                    title="حذف"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
