@@ -1,0 +1,314 @@
+-- ================================================================
+-- Migration: Enhance Server-Side Payment Validation
+-- Created: 2026-01-10
+-- Description: Update server payment validation with additional checks
+-- Impact: HIGH - Ensures data integrity and prevents invalid payments
+-- ================================================================
+
+-- ============================================================================
+-- Step 1: Drop existing validation trigger
+-- ============================================================================
+
+DROP TRIGGER IF EXISTS validate_payment_before_insert_trigger ON payments;
+DROP TRIGGER IF EXISTS validate_payment_before_update_trigger ON payments;
+
+COMMENT ON TRIGGER validate_payment_before_insert_trigger ON payments IS
+'Dropped - will be recreated with enhanced validation.';
+
+COMMENT ON TRIGGER validate_payment_before_update_trigger ON payments IS
+'Dropped - will be recreated with enhanced validation.';
+
+-- ============================================================================
+-- Step 2: Enhanced validation function
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION validate_payment_before_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+DECLARE
+    v_contract RECORD;
+    v_invoice RECORD;
+    v_current_total_paid NUMERIC;
+    v_new_total_paid NUMERIC;
+    v_max_payment_threshold NUMERIC;
+    v_overpayment_threshold NUMERIC;
+    v_invoice_difference NUMERIC;
+    v_warning_message TEXT;
+    v_duplicate_payment_count INTEGER;
+BEGIN
+    -- =========================================
+    -- Validation 1: Contract link validation
+    -- =========================================
+    IF NEW.contract_id IS NOT NULL THEN
+        -- Get contract details
+        SELECT * INTO v_contract
+        FROM contracts
+        WHERE id = NEW.contract_id;
+
+        IF FOUND THEN
+            -- Check contract is active
+            IF v_contract.status NOT IN ('active', 'under_review', 'draft') THEN
+                RAISE EXCEPTION USING
+                    ERRCODE = 'CHECK_VIOLATION',
+                    MESSAGE = 'Contract must be in active, under_review, or draft status',
+                    HINT = 'Contract status is: ' || v_contract.status || '. Please verify the contract is still active.';
+            END IF;
+
+            -- Calculate current total paid for this contract
+            SELECT COALESCE(SUM(amount), 0)
+            INTO v_current_total_paid
+            FROM payments
+            WHERE contract_id = NEW.contract_id
+              AND payment_status = 'completed'
+              AND company_id = NEW.company_id
+              AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-0000-0000');
+
+            v_new_total_paid := v_current_total_paid + NEW.amount;
+            v_contract_amount := COALESCE(v_contract.contract_amount, 0);
+
+            -- Check overpayment (10% buffer)
+            IF v_contract_amount > 0 THEN
+                v_overpayment_threshold := v_contract_amount * 1.10; -- 110%
+
+                IF v_new_total_paid > v_overpayment_threshold THEN
+                    RAISE EXCEPTION USING
+                        ERRCODE = 'CHECK_VIOLATION',
+                        MESSAGE = 'Payment would cause contract to be overpaid beyond reasonable limit',
+                        HINT = format(
+                            'Current total paid: QAR %.2f, New total after this payment: QAR %.2f, Contract amount: QAR %.2f. Maximum allowed: QAR %.2f (110%% of contract amount). Please review existing payments before adding more.',
+                            v_current_total_paid,
+                            v_new_total_paid,
+                            v_contract_amount,
+                            v_overpayment_threshold
+                        );
+                END IF;
+            END IF;
+
+            -- Check single payment doesn't exceed monthly amount significantly
+            v_monthly_amount := COALESCE(v_contract.monthly_amount, 0);
+
+            IF v_monthly_amount > 0 THEN
+                -- Threshold: Payment shouldn't exceed 10x monthly amount or QAR 50,000
+                v_max_payment_threshold := GREATEST(
+                    v_monthly_amount * 10,
+                    50000
+                );
+
+                IF NEW.amount > v_max_payment_threshold THEN
+                    RAISE EXCEPTION USING
+                        ERRCODE = 'CHECK_VIOLATION',
+                        MESSAGE = 'Payment amount is suspiciously large for this contract',
+                        HINT = format(
+                            'Payment amount (QAR %.2f) exceeds maximum allowed for this contract. Maximum is the higher of: 10x monthly amount (QAR %.2f) or QAR 50,000.',
+                            NEW.amount,
+                            v_monthly_amount,
+                            v_max_payment_threshold
+                        );
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+
+    -- =========================================
+    -- Validation 2: Invoice link validation
+    -- =========================================
+    IF NEW.invoice_id IS NOT NULL THEN
+        -- Get invoice details
+        SELECT * INTO v_invoice
+        FROM invoices
+        WHERE id = NEW.invoice_id;
+
+        IF FOUND THEN
+            -- Check invoice status allows payments
+            IF v_invoice.payment_status IN ('cancelled', 'voided') THEN
+                RAISE EXCEPTION USING
+                    ERRCODE = 'CHECK_VIOLATION',
+                    MESSAGE = 'Cannot link payment to a cancelled or voided invoice',
+                    HINT = format(
+                        'Invoice % is in status: %s. Payments can only be linked to invoices in unpaid, partial, or pending status.',
+                        v_invoice.invoice_number,
+                        v_invoice.payment_status
+                    );
+            END IF;
+
+            -- Check payment amount doesn't exceed remaining balance
+            IF v_invoice.total_amount > 0 THEN
+                v_invoice_difference := NEW.amount - v_invoice.balance_due;
+
+                -- If this is the first payment for this invoice, balance_due should equal total_amount
+                IF v_invoice.balance_due IS NULL OR v_invoice.balance_due = v_invoice.total_amount THEN
+                    IF NEW.amount > v_invoice.total_amount THEN
+                        RAISE EXCEPTION USING
+                            ERRCODE = 'CHECK_VIOLATION',
+                            MESSAGE = 'Payment amount exceeds total invoice amount',
+                            HINT = format(
+                                'Payment amount (QAR %.2f) exceeds invoice total (QAR %.2f). Please verify the payment amount is correct.',
+                                NEW.amount,
+                                v_invoice.total_amount
+                            );
+                    END IF;
+                ELSE
+                    -- For subsequent payments, check we're not overpaying too much
+                    IF NEW.amount > v_invoice.balance_due THEN
+                        RAISE EXCEPTION USING
+                            ERRCODE = 'CHECK_VIOLATION',
+                            MESSAGE = 'Payment amount exceeds remaining invoice balance',
+                            HINT = format(
+                                'Payment amount (QAR %.2f) exceeds remaining invoice balance (QAR %.2f). Invoice total: QAR %.2f, Already paid: QAR %.2f. Please verify the payment amount.',
+                                NEW.amount,
+                                v_invoice.balance_due,
+                                v_invoice.total_amount,
+                                v_invoice.total_amount - v_invoice.balance_due
+                            );
+                    END IF;
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+
+    -- =========================================
+    -- Validation 3: Idempotency key validation
+    -- =========================================
+    IF NEW.idempotency_key IS NOT NULL THEN
+        -- Check for duplicate idempotency key within last 30 days
+        SELECT COUNT(*) INTO v_duplicate_payment_count
+        FROM payments
+        WHERE idempotency_key = NEW.idempotency_key
+          AND company_id = NEW.company_id
+          AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-0000-0000')
+          AND created_at > NOW() - INTERVAL '30 days';
+
+        IF v_duplicate_payment_count > 0 THEN
+            RAISE EXCEPTION USING
+                ERRCODE = 'UNIQUE_VIOLATION',
+                MESSAGE = 'A payment with this idempotency key has already been processed recently',
+                HINT = format(
+                    'Idempotency key "%s" was already used for a payment in the last 30 days. This may be a duplicate request or a retry that should not have happened. If this is intentional, please use a different idempotency key.',
+                    NEW.idempotency_key
+                );
+        END IF;
+    END IF;
+
+    -- =========================================
+    -- Validation 4: Payment date sanity check
+    -- =========================================
+    IF NEW.payment_date > CURRENT_DATE + INTERVAL '30 days' THEN
+        RAISE EXCEPTION USING
+            ERRCODE = 'CHECK_VIOLATION',
+            MESSAGE = 'Payment date cannot be more than 30 days in the future',
+            HINT = format(
+                'Payment date is %s, which is more than 30 days in the future (current date: %s). Please check the payment date.',
+                NEW.payment_date,
+                CURRENT_DATE
+            );
+    END IF;
+
+    -- =========================================
+    -- Validation 5: Contract and invoice consistency
+    -- =========================================
+    IF NEW.contract_id IS NOT NULL AND NEW.invoice_id IS NOT NULL THEN
+        -- Check invoice belongs to the same contract
+        SELECT * INTO v_invoice
+        FROM invoices
+        WHERE id = NEW.invoice_id;
+
+        IF FOUND THEN
+            IF v_invoice.contract_id != NEW.contract_id THEN
+                RAISE EXCEPTION USING
+                    ERRCODE = 'CHECK_VIOLATION',
+                    MESSAGE = 'Invoice and contract must belong together',
+                    HINT = format(
+                        'Payment links to both contract (%s) and invoice (%s), but the invoice belongs to a different contract (%s). Please verify the linking.',
+                        NEW.contract_id,
+                        NEW.invoice_id,
+                        v_invoice.contract_id
+                    );
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+-- ============================================================================
+-- Step 3: Create enhanced triggers
+-- ============================================================================
+
+CREATE TRIGGER validate_payment_before_insert_trigger
+    BEFORE INSERT ON payments
+    FOR EACH ROW
+    EXECUTE FUNCTION validate_payment_before_insert();
+
+CREATE TRIGGER validate_payment_before_update_trigger
+    BEFORE UPDATE ON payments
+    FOR EACH ROW
+    WHEN (
+        OLD.amount != NEW.amount OR
+          OLD.contract_id != NEW.contract_id OR
+          OLD.invoice_id != NEW.invoice_id OR
+          OLD.payment_date != NEW.payment_date OR
+          OLD.idempotency_key IS DISTINCT FROM NEW.idempotency_key
+    )
+    EXECUTE FUNCTION validate_payment_before_insert();
+
+-- ============================================================================
+-- Comments
+-- ============================================================================
+
+COMMENT ON FUNCTION validate_payment_before_insert IS
+'Enhanced server-side validation for payments. Checks for:
+1. Contract status (must be active/under_review/draft)
+2. Contract overpayment prevention (110%% limit)
+3. Single payment size limits (10x monthly or QAR 50,000 max)
+4. Invoice status (must not be cancelled/voided)
+5. Invoice balance validation (cannot exceed remaining balance)
+6. Idempotency key uniqueness (no duplicates within 30 days)
+7. Payment date sanity check (max 30 days in future)
+8. Contract-invoice consistency (invoice must belong to linked contract)
+
+Triggers are created for both INSERT and UPDATE operations on critical fields.';
+
+COMMENT ON TRIGGER validate_payment_before_insert_trigger ON payments IS
+'Executes enhanced validation before any payment is inserted into the database. Prevents invalid payments at the server level.';
+
+COMMENT ON TRIGGER validate_payment_before_update_trigger ON payments IS
+'Executes enhanced validation before any payment critical fields are updated. Prevents invalid modifications at the server level.';
+
+-- ============================================================================
+-- Verification Queries (for testing - do not run in production)
+-- ============================================================================
+
+-- Test 1: Try to insert payment for inactive contract - should fail
+-- INSERT INTO payments (company_id, contract_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
+-- VALUES ('test-company', 'inactive-contract-id', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
+
+-- Test 2: Try to insert overpayment for contract - should fail
+-- INSERT INTO payments (company_id, contract_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
+-- VALUES ('test-company', 'test-contract-id', '2026-01-10', 999999, 'cash', 'receipt', 'receipt', 'completed');
+
+-- Test 3: Try to insert payment for cancelled invoice - should fail
+-- INSERT INTO payments (company_id, invoice_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
+-- VALUES ('test-company', 'cancelled-invoice-id', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
+
+-- Test 4: Try duplicate idempotency key - should fail (if first payment succeeded)
+-- INSERT INTO payments (company_id, idempotency_key, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
+-- VALUES ('test-company', 'unique-key-123', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
+
+-- Test 5: Verify trigger exists
+-- SELECT tgname, tgrel::regclass, tgenabled, tgisinternal 
+-- FROM pg_trigger 
+-- WHERE tgrel::regclass::oid = (SELECT oid FROM pg_class WHERE relname = 'payments')
+--   AND tgname = 'validate_payment_before_insert_trigger';
+
+-- ============================================================================
+-- Rollback (in case issues)
+-- ============================================================================
+
+-- To rollback this migration:
+-- DROP TRIGGER IF EXISTS validate_payment_before_insert_trigger ON payments;
+-- DROP TRIGGER IF EXISTS validate_payment_before_update_trigger ON payments;
+-- DROP FUNCTION IF EXISTS validate_payment_before_insert;

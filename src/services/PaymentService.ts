@@ -96,7 +96,22 @@ export class PaymentService extends BaseService<Payment> {
       // Try auto-matching if not already linked
       if (!payment.invoice_id && !payment.contract_id) {
         try {
-          await this.attemptAutoMatch(payment);
+          // Use centralized PaymentLinkingService
+          const { paymentLinkingService } = await import('./PaymentLinkingService');
+          const result = await paymentLinkingService.linkPayment(payment.id, { autoLink: true });
+          
+          if (result.success) {
+            this.log('createPayment', 'Auto-linked payment successfully', {
+              paymentId: payment.id,
+              linkedTo: result.linkedTo,
+              confidence: result.confidence
+            });
+          } else {
+            this.log('createPayment', 'Auto-linking failed', {
+              paymentId: payment.id,
+              reason: result.reason
+            });
+          }
         } catch (error) {
           logger.warn('Auto-match failed, manual matching may be required', error);
         }

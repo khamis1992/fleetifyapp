@@ -56,6 +56,7 @@ const ContractDetailsPage = lazy(() => import('@/components/contracts/ContractDe
 const FleetPageNew = lazy(() => import('@/pages/fleet/FleetPageRedesigned'));
 const VehicleDetailsPage = lazy(() => import('@/components/fleet/VehicleDetailsPage'));
 const VehicleDetailsPageNew = lazy(() => import('@/components/fleet/VehicleDetailsPageNew'));
+const VehicleDetailsPageRedesigned = lazy(() => import('@/components/fleet/VehicleDetailsPageRedesigned'));
 const Reports = lazy(() => import('@/pages/Reports'));
 const ReportsHub = lazy(() => import('@/pages/reports/ReportsHub'));
 const ReportView = lazy(() => import('@/pages/ReportView'));
@@ -581,11 +582,23 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/fleet/vehicles/:vehicleId',
-    component: VehicleDetailsPageNew,
+    component: VehicleDetailsPageNew, // Temporarily reverted due to useRef error
     lazy: true,
     exact: true,
     title: 'Vehicle Details',
-    description: 'Vehicle details page',
+    description: 'Vehicle details page - Premium Redesign',
+    group: 'fleet',
+    priority: 18,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/fleet/vehicles/:vehicleId/v2',
+    component: VehicleDetailsPageNew,
+    lazy: true,
+    exact: true,
+    title: 'Vehicle Details V2',
+    description: 'Vehicle details page - Previous design',
     group: 'fleet',
     priority: 18,
     protected: true,

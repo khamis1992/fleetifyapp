@@ -224,7 +224,8 @@
       "Bash(cmd /c \"taskkill /F /IM node.exe\")",
       "Bash(xargs kill:*)",
       "Bash(cd:*)",
-      "Bash(./gradlew assembleDebug:*)"
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

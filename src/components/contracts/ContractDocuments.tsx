@@ -1,22 +1,18 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
+import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
 import { formatDateForContract } from '@/utils/dateFormatter';
 import { DocumentSavingProgress } from './DocumentSavingProgress';
 import { useContractDocumentSaving } from '@/hooks/useContractDocumentSaving';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,14 +21,6 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 interface ContractDocumentsProps {
   contractId: string;
-}
-
-interface DocumentFormData {
-  document_type: string;
-  document_name: string;
-  file?: FileList;
-  notes?: string;
-  is_required: boolean;
 }
 
 const documentTypes = [
@@ -112,28 +100,19 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     enabled: !!selectedReportId
   });
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm<DocumentFormData>({
-    defaultValues: {
-      document_type: 'general',
-      is_required: false
-    }
-  });
-
-  const onSubmit = async (data: DocumentFormData) => {
+  const handleDocumentUpload = async (data: DocumentUploadData) => {
     try {
       await createDocument.mutateAsync({
         contract_id: contractId,
         document_type: data.document_type,
         document_name: data.document_name,
-        file: data.file?.[0],
+        file: data.file,
         notes: data.notes,
         is_required: data.is_required
       });
-      
-      reset();
-      setIsDialogOpen(false);
     } catch (error) {
       console.error('Error creating document:', error);
+      throw error;
     }
   };
 
@@ -373,96 +352,13 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
               <FileText className="h-5 w-5" />
               مستندات العقد
             </CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                إضافة مستند
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>إضافة مستند جديد</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <Label htmlFor="document_type">نوع المستند</Label>
-                  <Select onValueChange={(value) => setValue('document_type', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر نوع المستند" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {documentTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="document_name">اسم المستند</Label>
-                  <Input
-                    id="document_name"
-                    {...register('document_name', { required: true })}
-                    placeholder="أدخل اسم المستند"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="file">الملف</Label>
-                  <Input
-                    id="file"
-                    type="file"
-                    {...register('file')}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.csv,.xlsx,.xls,.json,.txt,.zip,.rar"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">ملاحظات</Label>
-                  <Textarea
-                    id="notes"
-                    {...register('notes')}
-                    placeholder="ملاحظات إضافية (اختياري)"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="is_required"
-                    {...register('is_required')}
-                    className="rounded"
-                  />
-                  <Label htmlFor="is_required">مستند مطلوب</Label>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    type="submit" 
-                    disabled={createDocument.isPending}
-                    className="flex-1"
-                  >
-                    {createDocument.isPending ? 'جاري الحفظ...' : 'حفظ'}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    إلغاء
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent>
+            <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              إضافة مستند
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
         {documents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -868,6 +764,14 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document Upload Dialog */}
+      <DocumentUploadDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={handleDocumentUpload}
+        isSubmitting={createDocument.isPending}
+      />
       </Card>
     </div>
   );

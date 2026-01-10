@@ -6,10 +6,9 @@
 
 import { eventBus } from '../EventBus';
 import { EventType } from '../types';
-import type { Event } from '../types';
 import type { Payment } from '@/types/payment';
 import { logger } from '@/lib/logger';
-import { paymentService } from '@/services';
+import { paymentTransactionService } from '@/services/PaymentTransactionService';
 
 /**
  * Register all payment event handlers
@@ -17,42 +16,30 @@ import { paymentService } from '@/services';
 export function registerPaymentEventHandlers() {
   logger.info('Registering payment event handlers');
 
-  // Payment Received
-  eventBus.subscribe<Payment>(EventType.PAYMENT_RECEIVED, async (event) => {
-    logger.info('💰 Payment received event', { paymentId: event.data.id });
+    // Payment Received
+    eventBus.subscribe<Payment>(EventType.PAYMENT_RECEIVED, async (event) => {
+      logger.info('💰 Payment received event', { paymentId: event.data.id });
 
-    try {
-      // Attempt automatic matching
-      const suggestions = await paymentService.findMatchingSuggestions(event.data);
-      
-      if (suggestions.length > 0 && suggestions[0].confidence >= 85) {
-        // Auto-match with high confidence
-        await paymentService.matchPayment(
-          event.data.id, 
-          'invoice', 
-          suggestions[0].invoice_id
+      try {
+        // Use centralized PaymentTransactionService for complete payment processing
+        await paymentTransactionService.createPaymentTransaction(
+          event.data.id,
+          event.data.company_id,
+          event.data.created_by
         );
 
-        logger.info('✅ Payment auto-matched', {
+        logger.info('✅ Payment received event processed', {
           paymentId: event.data.id,
-          invoiceId: suggestions[0].invoice_id,
-          confidence: suggestions[0].confidence
+          status: 'processing_completed'
         });
-      } else {
-        logger.info('⚠️ Payment requires manual matching', {
-          paymentId: event.data.id,
-          suggestionsCount: suggestions.length
-        });
+
+      } catch (error) {
+        logger.error('❌ Payment event processing failed', error);
+
+        // Log failed processing for retry
+        // TODO: Add to failed transactions queue
       }
-
-      // TODO: Send receipt to customer
-      // TODO: Update account balance
-      // TODO: Create journal entry
-
-    } catch (error) {
-      logger.error('❌ Payment event processing failed', error);
-    }
-  }, 100); // High priority
+    }, 100); // High priority
 
   // Payment Matched
   eventBus.subscribe<{ payment: Payment; invoice_id: string }>(

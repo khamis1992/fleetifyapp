@@ -192,8 +192,8 @@ const App: React.FC = () => {
             defaultTheme="system"
             enableSystem={true}
           > */}
-          {/* Global TooltipProvider - single instance at root for all tooltips */}
-          <TooltipProvider delayDuration={200}>
+          {/* Global TooltipProvider temporarily disabled due to @radix-ui/react-tooltip useRef error */}
+          {/* <TooltipProvider delayDuration={200}> */}
             <AuthProvider>
                 <AIChatProvider>
                   <CompanyContextProvider>
@@ -243,7 +243,7 @@ const App: React.FC = () => {
                 </CompanyContextProvider>
                 </AIChatProvider>
               </AuthProvider>
-            </TooltipProvider>
+            {/* </TooltipProvider> */}
           {/* </ThemeProvider> */}
         </QueryClientProvider>
       </BrowserRouter>

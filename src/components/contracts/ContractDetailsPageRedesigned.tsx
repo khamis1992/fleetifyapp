@@ -674,7 +674,7 @@ const DocumentsTab = ({
     </TabsList>
 
     <TabsContent value="documents" className="mt-6">
-      <ContractDocuments contract={contract} />
+      <ContractDocuments contractId={contract.id} />
     </TabsContent>
 
     <TabsContent value="timeline" className="mt-6">
@@ -706,7 +706,7 @@ const DocumentsTab = ({
 
 // === Main Component ===
 const ContractDetailsPageRedesigned = () => {
-  const { contractNumber } = useParams<{ contractNumber: string }>();
+  const { contractId: contractNumber } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();

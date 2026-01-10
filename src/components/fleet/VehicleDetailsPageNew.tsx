@@ -82,7 +82,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
@@ -499,39 +498,35 @@ const VehicleDetailsPageNew = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="rounded-xl hover:bg-neutral-100"
-                      onClick={() => setIsFavorite(!isFavorite)}
-                    >
-                      <Heart className={cn("w-5 h-5", isFavorite ? "fill-red-500 text-red-500" : "text-neutral-600")} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      onClick={handleEdit}
-                      className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      تعديل
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>تعديل بيانات المركبة</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl hover:bg-neutral-100"
+                    onClick={() => setIsFavorite(!isFavorite)}
+                  >
+                    <Heart className={cn("w-5 h-5", isFavorite ? "fill-red-500 text-red-500" : "text-neutral-600")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleEdit}
+                    className="gap-2 bg-rose-500 hover:bg-coral-600 rounded-xl"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    تعديل
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>تعديل بيانات المركبة</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
