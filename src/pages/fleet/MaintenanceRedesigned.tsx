@@ -845,26 +845,22 @@ export default function MaintenanceRedesigned() {
       <MaintenanceAlertsPanel />
 
       {/* Maintenance Form Modal */}
-      {showMaintenanceForm && (
-        <Suspense fallback={
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          </div>
-        }>
-          <MaintenanceForm
-            vehicleId={selectedVehicleId}
-            onClose={() => {
-              setShowMaintenanceForm(false);
+      <Suspense fallback={
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
+        <MaintenanceForm
+          vehicleId={selectedVehicleId}
+          open={showMaintenanceForm}
+          onOpenChange={(open) => {
+            setShowMaintenanceForm(open);
+            if (!open) {
               setSelectedVehicleId(undefined);
-            }}
-            onSuccess={() => {
-              setShowMaintenanceForm(false);
-              setSelectedVehicleId(undefined);
-              refetch();
-            }}
-          />
-        </Suspense>
-      )}
+            }
+          }}
+        />
+      </Suspense>
     </div>
   );
 }

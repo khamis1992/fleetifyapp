@@ -202,21 +202,24 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     sendWelcomeEmail: false
   });
 
-  // Sanitize editingCustomer to convert null values to empty strings
+  // Sanitize editingCustomer - keep null values as undefined to avoid validation issues
   const sanitizedEditingCustomer = editingCustomer ? {
-    ...editingCustomer,
-    first_name: editingCustomer.first_name || '',
-    last_name: editingCustomer.last_name || '',
-    company_name: editingCustomer.company_name || '',
+    customer_type: editingCustomer.customer_type || 'individual',
+    first_name: editingCustomer.first_name || undefined,
+    last_name: editingCustomer.last_name || undefined,
+    first_name_ar: editingCustomer.first_name_ar || undefined,
+    last_name_ar: editingCustomer.last_name_ar || undefined,
+    company_name: editingCustomer.company_name || undefined,
+    company_name_ar: editingCustomer.company_name_ar || undefined,
     phone: editingCustomer.phone || '',
-    email: editingCustomer.email || '',
-    national_id: editingCustomer.national_id || '',
-    passport_number: editingCustomer.passport_number || '',
-    license_number: editingCustomer.license_number || '',
-    notes: editingCustomer.notes || '',
-    address: editingCustomer.address || '',
-    city: editingCustomer.city || '',
-    country: editingCustomer.country || '',
+    email: editingCustomer.email || undefined,
+    national_id: editingCustomer.national_id || undefined,
+    passport_number: editingCustomer.passport_number || undefined,
+    license_number: editingCustomer.license_number || undefined,
+    notes: editingCustomer.notes || undefined,
+    address: editingCustomer.address || undefined,
+    city: editingCustomer.city || undefined,
+    country: editingCustomer.country || undefined,
   } : undefined;
 
   const form = useForm<CustomerFormData>({
@@ -243,6 +246,13 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   const watchedValues = form.watch();
   const customerType = form.watch('customer_type');
   const nationalId = form.watch('national_id');
+
+  // Update form when editingCustomer changes (e.g., when dialog opens)
+  React.useEffect(() => {
+    if (mode === 'edit' && sanitizedEditingCustomer) {
+      form.reset(sanitizedEditingCustomer);
+    }
+  }, [mode, sanitizedEditingCustomer, form]);
 
   // Auto-fill license number when national ID changes
   React.useEffect(() => {

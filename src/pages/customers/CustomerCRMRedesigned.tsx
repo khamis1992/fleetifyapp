@@ -150,7 +150,162 @@ const StatCard = ({
   );
 };
 
-// Customer Card Component
+// Customer Table Row Component (New Modern Design)
+const CustomerTableRow = ({
+  customer,
+  contract,
+  lastContact,
+  paymentStatus,
+  index,
+  onCall,
+  onNote,
+  onWhatsApp,
+  onViewDetails,
+}: {
+  customer: Customer;
+  contract?: Contract;
+  lastContact: number | null;
+  paymentStatus: string;
+  index: number;
+  onCall: () => void;
+  onNote: () => void;
+  onWhatsApp: () => void;
+  onViewDetails: () => void;
+}) => {
+  const getNameAr = () => {
+    if (customer.first_name_ar || customer.last_name_ar) {
+      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
+    }
+    if (customer.first_name || customer.last_name) {
+      return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    }
+    return customer.customer_code || 'عميل غير معرف';
+  };
+
+  const nameAr = getNameAr();
+  const isNew = lastContact === null;
+  const daysSinceContact = lastContact ?? 0;
+  const initials = customer.first_name_ar?.substring(0, 2) || customer.first_name?.substring(0, 2).toUpperCase() || 'ع';
+
+  return (
+    <motion.tr
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03, duration: 0.4 }}
+      className="group hover:bg-gradient-to-l hover:from-teal-50/50 hover:to-transparent transition-all duration-300 border-b border-slate-100 last:border-0"
+    >
+      {/* Customer Info */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "relative w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ring-2 ring-offset-2 transition-all duration-300",
+            isNew
+              ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white ring-amber-200 group-hover:ring-amber-400 group-hover:scale-110'
+              : 'bg-gradient-to-br from-teal-400 to-teal-600 text-white ring-teal-200 group-hover:ring-teal-400 group-hover:scale-110'
+          )}>
+            {initials}
+            {isNew && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white flex items-center justify-center">
+                <span className="text-white text-[8px]">!</span>
+              </span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h3 className="font-semibold text-slate-900 text-sm truncate">{nameAr}</h3>
+              {isNew && (
+                <span className="px-2 py-0.5 bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 text-[10px] rounded-full font-medium border border-amber-200 whitespace-nowrap">
+                  جديد
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="font-mono bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                {customer.customer_code}
+              </span>
+            </div>
+          </div>
+        </div>
+      </td>
+
+      {/* Phone */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2 text-sm text-slate-700">
+          <Phone size={14} className="text-slate-400" />
+          <span dir="ltr">{customer.phone}</span>
+        </div>
+      </td>
+
+      {/* Contract */}
+      <td className="py-4 px-4">
+        {contract ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+            <FileText size={12} className="text-slate-400" />
+            <span className="text-sm font-medium text-slate-700">{contract.contract_number}</span>
+          </div>
+        ) : (
+          <span className="text-sm text-slate-400">-</span>
+        )}
+      </td>
+
+      {/* Payment Status */}
+      <td className="py-4 px-4">
+        <StatusBadge status={paymentStatus} />
+      </td>
+
+      {/* Last Contact */}
+      <td className="py-4 px-4">
+        <div className={cn(
+          "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-300",
+          isNew
+            ? 'bg-gradient-to-r from-rose-50 to-rose-100/50 text-rose-700 border-rose-200'
+            : daysSinceContact > 7
+              ? 'bg-gradient-to-r from-amber-50 to-amber-100/50 text-amber-700 border-amber-200'
+              : 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200'
+        )}>
+          <Clock size={12} />
+          {isNew ? 'لم يتم' : `${daysSinceContact} يوم`}
+        </div>
+      </td>
+
+      {/* Actions */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+          <Button
+            size="sm"
+            onClick={onCall}
+            className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md shadow-emerald-200 hover:shadow-lg hover:shadow-emerald-300 transition-all duration-300 hover:scale-105"
+          >
+            <Phone size={14} />
+          </Button>
+          <Button
+            size="sm"
+            onClick={onWhatsApp}
+            className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-md shadow-teal-200 hover:shadow-lg hover:shadow-teal-300 transition-all duration-300 hover:scale-105"
+          >
+            <MessageCircle size={14} />
+          </Button>
+          <Button
+            size="sm"
+            onClick={onNote}
+            className="h-8 w-8 p-0 rounded-lg bg-white border-2 border-slate-200 hover:border-teal-300 hover:bg-teal-50 text-slate-600 hover:text-teal-700 transition-all duration-300 hover:scale-105"
+          >
+            <Plus size={14} />
+          </Button>
+          <Button
+            size="sm"
+            onClick={onViewDetails}
+            className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-md shadow-rose-200 hover:shadow-lg hover:shadow-rose-300 transition-all duration-300 hover:scale-105"
+          >
+            <ChevronDown size={14} className="transform -rotate-90" />
+          </Button>
+        </div>
+      </td>
+    </motion.tr>
+  );
+};
+
+// Customer Card Component (for Grid View)
 const CustomerCard = ({
   customer,
   contract,
@@ -889,38 +1044,99 @@ export default function CustomerCRMRedesigned() {
             </div>
 
             {/* Customer List/Grid */}
-            <div className={cn(
-              "min-h-[400px]",
-              viewMode === 'grid' ? "p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" : "divide-y divide-slate-100"
-            )}>
-              {paginatedCustomers.length === 0 ? (
-                <div className={cn("text-center py-20", viewMode === 'grid' && "col-span-full")}>
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Search className="text-slate-400" size={24} />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
-                  <p className="text-slate-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
-                </div>
-              ) : (
-                paginatedCustomers.map(customer => {
-                  const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+            {viewMode === 'list' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  {/* Table Header */}
+                  <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200">
+                    <tr>
+                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        العميل
+                      </th>
+                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        الهاتف
+                      </th>
+                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        العقد
+                      </th>
+                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        حالة الدفع
+                      </th>
+                      <th className="py-3.5 px-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        آخر تواصل
+                      </th>
+                      <th className="py-3.5 px-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        الإجراءات
+                      </th>
+                    </tr>
+                  </thead>
 
-                  return (
-                    <CustomerCard
-                      key={customer.id}
-                      customer={customer}
-                      contract={getCustomerContract(customer.id)}
-                      lastContact={crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null}
-                      paymentStatus={crmCustomer ? getPaymentStatusOptimized(crmCustomer) : 'none'}
-                      onCall={() => handleCall(customer)}
-                      onNote={() => openDialog('note', customer.id)}
-                      onWhatsApp={() => handleWhatsApp(customer.phone)}
-                      onViewDetails={() => handleOpenCustomerPanel(customer.id)}
-                    />
-                  );
-                })
-              )}
-            </div>
+                  {/* Table Body */}
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {paginatedCustomers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-20">
+                          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <Search className="text-slate-400" size={24} />
+                          </div>
+                          <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
+                          <p className="text-slate-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedCustomers.map((customer, index) => {
+                        const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+
+                        return (
+                          <CustomerTableRow
+                            key={customer.id}
+                            index={index}
+                            customer={customer}
+                            contract={getCustomerContract(customer.id)}
+                            lastContact={crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null}
+                            paymentStatus={crmCustomer ? getPaymentStatusOptimized(crmCustomer) : 'none'}
+                            onCall={() => handleCall(customer)}
+                            onNote={() => openDialog('note', customer.id)}
+                            onWhatsApp={() => handleWhatsApp(customer.phone)}
+                            onViewDetails={() => handleOpenCustomerPanel(customer.id)}
+                          />
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {paginatedCustomers.length === 0 ? (
+                  <div className="col-span-full text-center py-20">
+                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Search className="text-slate-400" size={24} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
+                    <p className="text-slate-500">لا يوجد عملاء يطابقون معايير البحث أو الفلتر الحالي.</p>
+                  </div>
+                ) : (
+                  paginatedCustomers.map(customer => {
+                    const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
+
+                    return (
+                      <CustomerCard
+                        key={customer.id}
+                        customer={customer}
+                        contract={getCustomerContract(customer.id)}
+                        lastContact={crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null}
+                        paymentStatus={crmCustomer ? getPaymentStatusOptimized(crmCustomer) : 'none'}
+                        onCall={() => handleCall(customer)}
+                        onNote={() => openDialog('note', customer.id)}
+                        onWhatsApp={() => handleWhatsApp(customer.phone)}
+                        onViewDetails={() => handleOpenCustomerPanel(customer.id)}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            )}
 
             {/* Pagination */}
             {filteredData.length > 0 && (

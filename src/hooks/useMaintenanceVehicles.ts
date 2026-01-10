@@ -64,6 +64,8 @@ export const useAvailableVehiclesForMaintenance = () => {
     queryFn: async () => {
       if (!companyId) return [];
 
+      // Get ALL active vehicles for maintenance scheduling, not just available/reserved
+      // Users should be able to create maintenance for any vehicle regardless of current status
       const { data, error } = await supabase
         .from('vehicles')
         .select(`
@@ -77,8 +79,7 @@ export const useAvailableVehiclesForMaintenance = () => {
           last_maintenance_date
         `)
         .eq('company_id', companyId)
-        .in('status', ['available', 'reserved']) // Only available and reserved vehicles can be scheduled for maintenance
-        .eq('is_active', true)
+        .eq('is_active', true) // Only active vehicles
         .order('plate_number');
 
       if (error) {
