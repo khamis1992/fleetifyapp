@@ -44,17 +44,26 @@ export function useSignedAgreementUpload() {
    * Upload signed agreement PDF to Supabase storage
    * and create contract_documents record
    */
-  const uploadSignedAgreement = useMutation({
-    mutationFn: async (
-      file: File,
-      onProgress?: (progress: number) => void
-    ): Promise<UploadResult> => {
+  const uploadSignedAgreementMutation = useMutation({
+    mutationFn: async ({
+      file,
+      onProgress,
+    }: {
+      file: File;
+      onProgress?: (progress: number) => void;
+    }): Promise<UploadResult> => {
       if (!user || !companyId) {
-        throw new Error('User not authenticated or no company selected');
+        return {
+          success: false,
+          error: 'المستخدم غير مسجل أو لم يتم اختيار شركة',
+        };
       }
 
       if (file.type !== 'application/pdf') {
-        throw new Error('Only PDF files are supported');
+        return {
+          success: false,
+          error: 'يُسمح فقط بملفات PDF',
+        };
       }
 
       try {
@@ -72,7 +81,10 @@ export function useSignedAgreementUpload() {
 
         if (uploadError) {
           console.error('Storage upload error:', uploadError);
-          throw new Error(`فشل في رفع الملف: ${uploadError.message}`);
+          return {
+            success: false,
+            error: `فشل في رفع الملف: ${uploadError.message}`,
+          };
         }
 
         onProgress?.(60);
@@ -101,7 +113,10 @@ export function useSignedAgreementUpload() {
           // Rollback: Delete uploaded file
           await supabase.storage.from('contract-documents').remove([fileName]);
 
-          throw new Error(`فشل في إنشاء سجل المستند: ${dbError.message}`);
+          return {
+            success: false,
+            error: `فشل في إنشاء سجل المستند: ${dbError.message}`,
+          };
         }
 
         onProgress?.(100);
@@ -128,14 +143,21 @@ export function useSignedAgreementUpload() {
   /**
    * Match uploaded agreement to contract/customer/vehicle using AI
    */
-  const matchAgreement = useMutation({
-    mutationFn: async (
-      documentId: string,
-      fileName: string,
-      onProgress?: (progress: number) => void
-    ): Promise<MatchResult> => {
+  const matchAgreementMutation = useMutation({
+    mutationFn: async ({
+      documentId,
+      fileName,
+      onProgress,
+    }: {
+      documentId: string;
+      fileName: string;
+      onProgress?: (progress: number) => void;
+    }): Promise<MatchResult> => {
       if (!companyId) {
-        throw new Error('No company selected');
+        return {
+          success: false,
+          error: 'لم يتم اختيار شركة',
+        };
       }
 
       try {
@@ -340,11 +362,27 @@ export function useSignedAgreementUpload() {
     },
   });
 
+  // Wrapper functions for easier API
+  const uploadSignedAgreement = async (
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<UploadResult> => {
+    return uploadSignedAgreementMutation.mutateAsync({ file, onProgress });
+  };
+
+  const matchAgreement = async (
+    documentId: string,
+    fileName: string,
+    onProgress?: (progress: number) => void
+  ): Promise<MatchResult> => {
+    return matchAgreementMutation.mutateAsync({ documentId, fileName, onProgress });
+  };
+
   return {
-    uploadSignedAgreement: uploadSignedAgreement.mutateAsync,
-    isUploading: uploadSignedAgreement.isPending,
-    matchAgreement: matchAgreement.mutateAsync,
-    isMatching: matchAgreement.isPending,
+    uploadSignedAgreement,
+    isUploading: uploadSignedAgreementMutation.isPending,
+    matchAgreement,
+    isMatching: matchAgreementMutation.isPending,
     deleteAgreement: deleteAgreement.mutateAsync,
     isDeleting: deleteAgreement.isPending,
   };

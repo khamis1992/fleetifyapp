@@ -151,8 +151,8 @@ export default function SignedAgreementsUpload() {
         prev.map(f =>
           f.id === uploadedFile.id
             ? {
-                f,
-                status: 'error',
+                ...f,
+                status: 'error' as const,
                 error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
               }
             : f

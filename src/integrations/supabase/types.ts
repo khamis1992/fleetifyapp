@@ -2944,7 +2944,7 @@ export type Database = {
         Row: {
           company_id: string
           condition_report_id: string | null
-          contract_id: string
+          contract_id: string | null
           created_at: string | null
           document_name: string
           document_type: string
@@ -2974,7 +2974,7 @@ export type Database = {
         Insert: {
           company_id: string
           condition_report_id?: string | null
-          contract_id: string
+          contract_id?: string | null
           created_at?: string | null
           document_name: string
           document_type?: string
@@ -3004,7 +3004,7 @@ export type Database = {
         Update: {
           company_id?: string
           condition_report_id?: string | null
-          contract_id?: string
+          contract_id?: string | null
           created_at?: string | null
           document_name?: string
           document_type?: string
