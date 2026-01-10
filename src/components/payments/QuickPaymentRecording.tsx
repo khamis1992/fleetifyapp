@@ -194,7 +194,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   };
 
   // Filter invoices based on date range and status
-  const getFilteredInvoices = useMemo(() => {
+  const filteredInvoices = useMemo(() => {
     let result = invoices;
 
     // Filter by date range

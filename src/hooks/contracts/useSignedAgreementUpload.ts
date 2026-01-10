@@ -221,16 +221,24 @@ export function useSignedAgreementUpload() {
 
         onProgress?.(60);
 
-        // If no contract match, try searching by customer name
+        // If no contract match, try searching by customer name using AI fuzzy matching
         if (!contractMatch && filenameAnalysis.customerName) {
-          const { data: customers } = await supabase
-            .from('customers')
-            .select('id, first_name_ar, first_name, last_name_ar, last_name, company_name_ar, company_name')
-            .eq('company_id', companyId)
-            .or(`first_name_ar.ilike.%${filenameAnalysis.customerName}%,first_name.ilike.%${filenameAnalysis.customerName}%,company_name_ar.ilike.%${filenameAnalysis.customerName}%,company_name.ilike.%${filenameAnalysis.customerName}%`)
-            .limit(5);
+          // Use PostgreSQL fuzzy matching function with Arabic normalization
+          const { data: fuzzyResults } = await supabase.rpc('find_customer_by_name_fuzzy', {
+            p_company_id: companyId,
+            p_search_name: filenameAnalysis.customerName,
+            p_min_similarity: 0.4, // 40% minimum similarity threshold
+          });
+
+          const customers = fuzzyResults?.map((r: { customer_id: string; customer_name: string; similarity_score: number }) => ({
+            id: r.customer_id,
+            name: r.customer_name,
+            confidence: r.similarity_score,
+          })) || [];
 
           if (customers && customers.length > 0) {
+            const bestMatch = customers[0];
+            
             // Get contracts for this customer
             const { data: customerContracts } = await supabase
               .from('contracts')
@@ -240,7 +248,7 @@ export function useSignedAgreementUpload() {
                 vehicle_id,
                 vehicle:vehicles!inner(id, plate_number)
               `)
-              .eq('customer_id', customers[0].id)
+              .eq('customer_id', bestMatch.id)
               .eq('status', 'active')
               .order('created_at', { ascending: false })
               .limit(1);
@@ -249,11 +257,18 @@ export function useSignedAgreementUpload() {
               contractMatch = {
                 contractId: customerContracts[0].id,
                 contractNumber: customerContracts[0].contract_number,
-                customerId: customers[0].id,
-                customerName: getCustomerName(customers[0]),
+                customerId: bestMatch.id,
+                customerName: bestMatch.name,
                 vehicleId: customerContracts[0].vehicle_id,
                 vehiclePlate: customerContracts[0].vehicle?.plate_number,
-                confidence: 0.75,
+                confidence: bestMatch.confidence, // Use actual AI similarity score
+              };
+            } else {
+              // Customer found but no active contract - still return customer match
+              contractMatch = {
+                customerId: bestMatch.id,
+                customerName: bestMatch.name,
+                confidence: bestMatch.confidence,
               };
             }
           }
@@ -459,3 +474,4 @@ function getCustomerName(customer: {
 
   return `${firstName} ${lastName}`.trim() || 'عميل غير محدد';
 }
+
