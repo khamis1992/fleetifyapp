@@ -603,9 +603,105 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     try {
       console.log('📝 Creating journal entry for payment:', payment.id);
 
-      // For now, just log the creation - implement actual journal entry logic later
-      // when the necessary database functions are available
-      console.log('Journal entry creation placeholder for payment:', payment.payment_number);
+      if (!companyId || !payment.amount) {
+        console.warn('⚠️ Missing required data for journal entry');
+        return;
+      }
+
+      // جلب حسابات القيد المحاسبي
+      // حساب النقدية/البنك (مدين) - حساب 11151
+      const { data: cashAccount } = await supabase
+        .from('chart_of_accounts')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('account_code', '11151')
+        .eq('is_header', false)
+        .single();
+
+      // حساب الذمم المدينة (دائن) - حساب 12101 أو إيرادات 41101
+      const { data: receivableAccount } = await supabase
+        .from('chart_of_accounts')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('account_code', '12101')
+        .eq('is_header', false)
+        .single();
+
+      if (!cashAccount || !receivableAccount) {
+        console.warn('⚠️ Required accounts not found for journal entry (11151, 12101)');
+        return;
+      }
+
+      const entryNumber = `JE-PAY-${payment.payment_number}`;
+      const entryDate = (payment as any).payment_date || new Date().toISOString().split('T')[0];
+
+      // إنشاء القيد الرئيسي
+      const { data: journalEntry, error: entryError } = await supabase
+        .from('journal_entries')
+        .insert({
+          company_id: companyId,
+          entry_number: entryNumber,
+          entry_date: entryDate,
+          entry_type: 'standard',
+          status: 'posted',
+          description: `قيد دفعة رقم ${payment.payment_number}`,
+          reference_type: 'payment',
+          reference_id: payment.id,
+          total_debit: payment.amount,
+          total_credit: payment.amount,
+          created_by: user?.id,
+          notes: 'تم الإنشاء تلقائياً من نظام الدفعات'
+        })
+        .select()
+        .single();
+
+      if (entryError) {
+        console.error('❌ Error creating journal entry:', entryError);
+        return;
+      }
+
+      // إنشاء سطور القيد
+      const lines = [
+        {
+          journal_entry_id: journalEntry.id,
+          account_id: cashAccount.id,
+          line_number: 1,
+          line_description: `استلام دفعة - ${payment.payment_number}`,
+          debit_amount: payment.amount,
+          credit_amount: 0,
+          reference_type: 'payment',
+          reference_id: payment.id
+        },
+        {
+          journal_entry_id: journalEntry.id,
+          account_id: receivableAccount.id,
+          line_number: 2,
+          line_description: `تسديد ذمم - دفعة ${payment.payment_number}`,
+          debit_amount: 0,
+          credit_amount: payment.amount,
+          reference_type: 'payment',
+          reference_id: payment.id
+        }
+      ];
+
+      const { error: linesError } = await supabase
+        .from('journal_entry_lines')
+        .insert(lines);
+
+      if (linesError) {
+        console.error('❌ Error creating journal entry lines:', linesError);
+        // حذف القيد الرئيسي في حالة فشل السطور
+        await supabase.from('journal_entries').delete().eq('id', journalEntry.id);
+        return;
+      }
+
+      // تحديث الدفعة بربط القيد المحاسبي
+      await supabase
+        .from('payments')
+        .update({ journal_entry_id: journalEntry.id })
+        .eq('id', payment.id);
+
+      console.log('✅ Journal entry created successfully:', entryNumber);
     } catch (error) {
       console.error('Error in createJournalEntry:', error);
     }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageCustomizer } from '@/components/PageCustomizer';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useSignedAgreementUpload } from '@/hooks/contracts/useSignedAgreementUpload';
 import { useToast } from '@/hooks/use-toast-mock';
+
+// Configuration for batch processing
+const BATCH_SIZE = 3; // Process 3 files at a time
 import {
   Upload,
   FileText,
@@ -59,6 +62,10 @@ export default function SignedAgreementsUpload() {
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Queue management for batch processing
+  const processingQueueRef = useRef<UploadedFile[]>([]);
+  const isProcessingRef = useRef(false);
 
   const {
     uploadSignedAgreement,
@@ -162,6 +169,24 @@ export default function SignedAgreementsUpload() {
   }, [uploadSignedAgreement, matchAgreement]);
 
   /**
+   * Process files from queue in batches
+   */
+  const processQueue = useCallback(async () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
+    while (processingQueueRef.current.length > 0) {
+      // Get next batch of files
+      const batch = processingQueueRef.current.splice(0, BATCH_SIZE);
+      
+      // Process batch concurrently
+      await Promise.all(batch.map(file => processFile(file)));
+    }
+
+    isProcessingRef.current = false;
+  }, [processFile]);
+
+  /**
    * Handle file selection from input
    */
   const handleFileSelect = useCallback((files: FileList | null) => {
@@ -180,21 +205,28 @@ export default function SignedAgreementsUpload() {
 
     if (validFiles.length === 0) return;
 
-    // Add files to the list
-    const newFiles: UploadedFile[] = validFiles.map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    // Show toast for large batches
+    if (validFiles.length > 10) {
+      toast({
+        title: 'جاري الرفع',
+        description: `سيتم رفع ${validFiles.length} ملف على دفعات (${BATCH_SIZE} ملفات في وقت واحد)`,
+      });
+    }
+
+    // Add files to the list with 'pending' status initially
+    const newFiles: UploadedFile[] = validFiles.map((file, index) => ({
+      id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
       file,
-      status: 'uploading',
+      status: 'uploading' as const,
       progress: 0,
     }));
 
     setUploadedFiles(prev => [...prev, ...newFiles]);
 
-    // Process each file
-    newFiles.forEach(uploadedFile => {
-      processFile(uploadedFile);
-    });
-  }, [toast, processFile]);
+    // Add all files to the queue and start processing
+    processingQueueRef.current.push(...newFiles);
+    processQueue();
+  }, [toast, processQueue]);
 
   /**
    * Handle drag and drop events

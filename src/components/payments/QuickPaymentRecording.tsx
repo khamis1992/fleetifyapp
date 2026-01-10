@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { usePaymentOperations } from '@/hooks/business/usePaymentOperations';
 import { PaymentReceipt } from './PaymentReceipt';
 import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML, numberToArabicWords, generateReceiptNumber, formatReceiptDate } from '@/utils/receiptGenerator';
 
@@ -61,6 +62,13 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
   const receiptRef = useRef<HTMLDivElement>(null);
+  
+  // استخدام hook الدفعات الموحد لإنشاء القيود المحاسبية تلقائياً
+  const { createPayment, isCreating } = usePaymentOperations({
+    autoCreateJournalEntry: true, // ✅ إنشاء قيد محاسبي تلقائياً
+    autoUpdateBankBalance: true,  // ✅ تحديث رصيد البنك
+    enableNotifications: false,   // عدم إرسال إشعارات من هنا
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -491,33 +499,32 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         
         if (amountToApply <= 0) continue;
 
-        const paymentInsertData = {
-          company_id: companyId,
+        // ✅ استخدام usePaymentOperations بدلاً من الإدراج المباشر
+        // هذا ينشئ القيود المحاسبية تلقائياً
+        const paymentData = {
           customer_id: selectedCustomer.id,
-          contract_id: invoice.contract_id || null,
+          contract_id: invoice.contract_id || undefined,
           invoice_id: invoice.id,
           amount: amountToApply,
           payment_date: paymentDate,
-          payment_method: 'received' as const,
+          payment_method: paymentMethod as 'cash' | 'bank_transfer' | 'check' | 'credit_card',
           payment_number: `${paymentNumber}-${i + 1}`,
           payment_type: paymentTypeMap[paymentMethod] || 'cash',
-          payment_status: 'completed' as const,
           transaction_type: 'receipt' as const,
           currency: 'QAR',
           notes: `دفعة لفاتورة ${invoice.invoice_number}`,
+          idempotencyKey: `${selectedCustomer.id}-${invoice.id}-${paymentDate}-${amountToApply}`,
         };
         
         console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);
         
-        const { data: payment, error: paymentError } = await supabase
-          .from('payments')
-          .insert(paymentInsertData)
-          .select()
-          .single();
-
-        if (paymentError) {
-          console.error('Payment insert error:', JSON.stringify(paymentError, null, 2));
-          if (paymentError.code === '23505' && paymentError.message?.includes('idx_payments_unique_transaction')) {
+        let payment: any;
+        try {
+          // استخدام الـ hook لإنشاء الدفعة مع القيود المحاسبية
+          payment = await createPayment.mutateAsync(paymentData);
+        } catch (paymentError: any) {
+          console.error('Payment insert error:', paymentError);
+          if (paymentError.message?.includes('موجود مسبقاً') || paymentError.message?.includes('duplicate')) {
             console.warn(`تخطي الفاتورة ${invoice.invoice_number} - الدفعة مسجلة بالفعل`);
             continue; // تخطي هذه الفاتورة والمتابعة مع الباقي
           }
@@ -985,8 +992,107 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                 )}
 
                 {invoices.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    لا توجد فواتير غير مدفوعة لهذا العميل
+                  <div className="text-center py-8 space-y-4">
+                    <div className="text-muted-foreground">
+                      لا توجد فواتير غير مدفوعة لهذا العميل
+                    </div>
+                    <Button
+                      variant="default"
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      onClick={async () => {
+                        if (!selectedCustomer || !companyId) return;
+                        
+                        try {
+                          // البحث عن عقد نشط للعميل
+                          const { data: activeContracts, error: contractError } = await supabase
+                            .from('contracts')
+                            .select('id, contract_number, monthly_amount')
+                            .eq('customer_id', selectedCustomer.id)
+                            .eq('company_id', companyId)
+                            .eq('status', 'active')
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+
+                          if (contractError || !activeContracts || activeContracts.length === 0) {
+                            toast({
+                              title: 'لا يوجد عقد نشط',
+                              description: 'يجب أن يكون للعميل عقد نشط لإنشاء فاتورة',
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+
+                          const activeContract = activeContracts[0];
+                          const today = new Date().toISOString().split('T')[0];
+                          
+                          // إنشاء رقم فاتورة
+                          const { data: lastInvoice } = await supabase
+                            .from('invoices')
+                            .select('invoice_number')
+                            .eq('company_id', companyId)
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+
+                          const lastNum = lastInvoice?.[0]?.invoice_number?.match(/\d+$/)?.[0] || '0';
+                          const newNum = (parseInt(lastNum) + 1).toString().padStart(6, '0');
+                          const invoiceNumber = `INV-${new Date().getFullYear()}-${newNum}`;
+
+                          // إنشاء الفاتورة
+                          const { data: newInvoice, error: invoiceError } = await supabase
+                            .from('invoices')
+                            .insert({
+                              company_id: companyId,
+                              customer_id: selectedCustomer.id,
+                              contract_id: activeContract.id,
+                              invoice_number: invoiceNumber,
+                              invoice_date: today,
+                              due_date: today,
+                              total_amount: activeContract.monthly_amount || 0,
+                              balance_due: activeContract.monthly_amount || 0,
+                              payment_status: 'unpaid',
+                              status: 'draft',
+                              invoice_type: 'rental',
+                              description: `فاتورة شهرية - عقد ${activeContract.contract_number}`,
+                            })
+                            .select(`
+                              *,
+                              contracts:contract_id (
+                                contract_number,
+                                vehicle_number,
+                                vehicles:vehicle_id (
+                                  plate_number
+                                )
+                              )
+                            `)
+                            .single();
+
+                          if (invoiceError) {
+                            throw invoiceError;
+                          }
+
+                          toast({
+                            title: 'تم إنشاء الفاتورة',
+                            description: `تم إنشاء الفاتورة ${invoiceNumber} بنجاح`,
+                          });
+
+                          // تحديث قائمة الفواتير
+                          setInvoices([newInvoice as any]);
+                        } catch (error: any) {
+                          console.error('Error creating invoice:', error);
+                          toast({
+                            title: 'خطأ في إنشاء الفاتورة',
+                            description: error.message || 'حدث خطأ أثناء إنشاء الفاتورة',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      <FileText className="h-4 w-4 ml-2" />
+                      إنشاء فاتورة جديدة
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      سيتم إنشاء فاتورة بناءً على العقد النشط للعميل
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
