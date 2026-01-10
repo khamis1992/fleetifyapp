@@ -3,8 +3,8 @@
  * Professional SaaS Design
  */
 
-import FleetReportsPageRedesigned from './reports/FleetReportsPageRedesigned';
+import FleetReportsPage from './reports/FleetReportsPage';
 
 export default function FleetReports() {
-  return <FleetReportsPageRedesigned />;
+  return <FleetReportsPage />;
 }
