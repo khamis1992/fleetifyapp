@@ -31,6 +31,10 @@ import { TrafficViolationStats } from './TrafficViolationStats';
 import { ViolationImportReport } from './ViolationImportReport';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// تهيئة PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface ExtractedViolation {
   id: string;
@@ -68,104 +72,239 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const { companyId } = useUnifiedCompanyAccess();
   const { data: vehicles = [] } = useVehicles();
 
-  // استخراج البيانات الفعلي من PDF باستخدام OpenAI Vision API
+  // استخراج النص من PDF باستخدام pdf.js
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    
+    console.log(`📄 استخراج النص من PDF: ${pdf.numPages} صفحة`);
+    
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      fullText += pageText + '\n\n';
+      console.log(`✅ صفحة ${pageNum}: ${pageText.length} حرف`);
+    }
+    
+    return fullText.trim();
+  };
+
+  // تحويل PDF إلى صور (fallback إذا فشل استخراج النص)
+  const convertPDFToImages = async (file: File): Promise<File[]> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const images: File[] = [];
+    
+    console.log(`📄 تحويل PDF إلى صور: ${pdf.numPages} صفحة`);
+    
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const scale = 2;
+      const viewport = page.getViewport({ scale });
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) continue;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+      
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/png', 0.95);
+      });
+      
+      const imageFile = new File(
+        [blob], 
+        `${file.name.replace('.pdf', '')}_page_${pageNum}.png`,
+        { type: 'image/png' }
+      );
+      images.push(imageFile);
+    }
+    
+    return images;
+  };
+
+  // استخراج البيانات من الملف
   const extractDataFromPDF = async (file: File): Promise<ExtractedViolation[]> => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
-        body: formData
-      });
-
-      if (error) {
-        console.error('Error calling extract-traffic-violations function:', error);
-        
-        // Check for specific error types
-        if (error.message?.includes('OpenAI API key')) {
-          throw new Error('مفتاح OpenAI API غير مكون. يرجى التحقق من إعدادات النظام.');
-        } else if (error.message?.includes('model')) {
-          throw new Error('خطأ في نموذج الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.');
-        } else if (error.message?.includes('PDF')) {
-          throw new Error('فشل في معالجة ملف PDF. تأكد من أن الملف صالح وواضح.');
-        }
-        
-        throw new Error(error.message || 'فشل في استخراج البيانات من الملف');
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'فشل في استخراج البيانات من الملف');
-      }
-
-      // تحويل البيانات المستخرجة إلى التنسيق المطلوب
-      const extractedViolations: ExtractedViolation[] = data.violations.map((violation: any, index: number) => ({
-        id: `extracted_${index + 1}`,
-        violationNumber: violation.violation_number || '',
-        date: violation.date || '',
-        time: violation.time || '',
-        plateNumber: violation.plate_number || '',
-        location: violation.location || '',
-        authority: violation.issuing_authority || '',
-        fineAmount: violation.fine_amount || 0,
-        points: 0, // سيتم تحديده لاحقاً حسب نوع المخالفة
-        violationType: violation.violation_type || '',
-        status: 'extracted' as const,
-        errors: []
-      }));
-
-      // محاولة ربط المخالفات بالمركبات
-      const processedViolations = extractedViolations.map(violation => {
-        if (!violation.plateNumber) {
-          return {
-            ...violation,
-            status: 'error' as const,
-            errors: ['رقم اللوحة غير موجود']
-          };
-        }
-
-        // البحث عن المركبة بأرقام اللوحة المختلفة
-        const plateNumbers = violation.plateNumber.split(/[\/\-\s]+/);
-        const matchedVehicle = vehicles.find(v => {
-          if (!v.plate_number) return false;
-          
-          // البحث في أجزاء رقم اللوحة
-          return plateNumbers.some(part => 
-            part.trim() && (
-              v.plate_number?.includes(part.trim()) || 
-              v.plate_number?.toLowerCase().includes(part.trim().toLowerCase())
-            )
-          ) || v.plate_number === violation.plateNumber;
+      const allViolations: ExtractedViolation[] = [];
+      
+      // إذا كان الملف PDF
+      if (file.type === 'application/pdf') {
+        toast({
+          title: '📄 قراءة ملف PDF...',
+          description: 'يتم استخراج النص من الملف',
         });
-
-        if (matchedVehicle) {
-          return {
-            ...violation,
-            vehicleId: matchedVehicle.id,
-            status: 'matched' as const
-          };
-        } else {
-          return {
-            ...violation,
-            status: 'error' as const,
-            errors: ['لم يتم العثور على مركبة مطابقة لرقم اللوحة: ' + violation.plateNumber]
-          };
+        
+        // محاولة استخراج النص أولاً (أسرع وأرخص)
+        let pdfText = '';
+        try {
+          pdfText = await extractTextFromPDF(file);
+          console.log(`📝 تم استخراج ${pdfText.length} حرف من PDF`);
+        } catch (textError) {
+          console.error('Error extracting text from PDF:', textError);
         }
-      });
+        
+        // إذا وجدنا نص كافٍ، نرسله مباشرة للتحليل
+        if (pdfText.length > 50) {
+          toast({
+            title: '✅ تم قراءة النص',
+            description: `تم استخراج ${pdfText.length} حرف - جاري التحليل...`,
+          });
+          
+          console.log('📤 إرسال النص للتحليل...');
+          const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
+            body: { 
+              text: pdfText,
+              source: file.name
+            }
+          });
+          
+          if (error) {
+            console.error('Error from text analysis:', error);
+            // إذا فشل، نحاول الطريقة البديلة (صور)
+            throw new Error('FALLBACK_TO_IMAGES');
+          }
+          
+          if (!data?.success) {
+            if (data?.error === 'PDF_NO_TEXT') {
+              throw new Error('FALLBACK_TO_IMAGES');
+            }
+            throw new Error(data?.details || 'فشل في تحليل النص');
+          }
+          
+          // تحويل البيانات المستخرجة
+          const violations = processViolationsData(data.violations, allViolations.length);
+          return matchViolationsWithVehicles(violations);
+          
+        } else {
+          // النص غير كافٍ، نستخدم الصور
+          console.log('⚠️ النص غير كافٍ، التحويل للصور...');
+          throw new Error('FALLBACK_TO_IMAGES');
+        }
+        
+      } else {
+        // ملف صورة - إرسال مباشر
+        const formData = new FormData();
+        formData.append('file', file);
 
-      return processedViolations;
+        const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
+          body: formData
+        });
+        
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.details || 'فشل في استخراج البيانات');
+        
+        const violations = processViolationsData(data.violations, 0);
+        return matchViolationsWithVehicles(violations);
+      }
+      
+    } catch (err: any) {
+      // Fallback: تحويل PDF لصور إذا فشل استخراج النص
+      if (err.message === 'FALLBACK_TO_IMAGES' && file.type === 'application/pdf') {
+        toast({
+          title: '📸 تحويل PDF إلى صور...',
+          description: 'يتم تحويل الملف لصور للتحليل البصري',
+        });
+        
+        const images = await convertPDFToImages(file);
+        toast({
+          title: '✅ تم التحويل',
+          description: `تم تحويل ${images.length} صفحة`,
+        });
+        
+        const allViolations: ExtractedViolation[] = [];
+        
+        for (const imageFile of images) {
+          const formData = new FormData();
+          formData.append('file', imageFile);
 
-    } catch (error: unknown) {
-      console.error('Error extracting data from PDF:', error);
-      throw error;
+          const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
+            body: formData
+          });
+          
+          if (error || !data?.success) {
+            console.warn('Error processing image:', error || data?.details);
+            continue;
+          }
+          
+          const violations = processViolationsData(data.violations, allViolations.length);
+          allViolations.push(...violations);
+        }
+        
+        return matchViolationsWithVehicles(allViolations);
+      }
+      
+      throw err;
     }
   };
+  
+  // تحويل بيانات المخالفات للتنسيق المطلوب
+  const processViolationsData = (violations: any[], startIndex: number): ExtractedViolation[] => {
+    return violations.map((violation: any, index: number) => ({
+      id: `extracted_${startIndex + index + 1}`,
+      violationNumber: violation.violation_number || '',
+      date: violation.date || '',
+      time: violation.time || '',
+      plateNumber: violation.plate_number || '',
+      location: violation.location || '',
+      authority: violation.issuing_authority || '',
+      fineAmount: violation.fine_amount || 0,
+      points: 0,
+      violationType: violation.violation_type || '',
+      status: 'extracted' as const,
+      errors: []
+    }));
+  };
+  
+  // ربط المخالفات بالمركبات
+  const matchViolationsWithVehicles = (violations: ExtractedViolation[]): ExtractedViolation[] => {
+    return violations.map(violation => {
+      if (!violation.plateNumber) {
+        return {
+          ...violation,
+          status: 'error' as const,
+          errors: ['رقم اللوحة غير موجود']
+        };
+      }
+
+      const matchedVehicle = vehicles.find(v => 
+        v.plate_number?.replace(/\s/g, '').toLowerCase() === 
+        violation.plateNumber.replace(/\s/g, '').toLowerCase()
+      );
+
+      if (matchedVehicle) {
+        return {
+          ...violation,
+          vehicleId: matchedVehicle.id,
+          status: 'matched' as const
+        };
+      }
+
+      return {
+        ...violation,
+        status: 'error' as const,
+        errors: ['لم يتم العثور على المركبة في النظام']
+      };
+    });
+  };
+
 
   // معالجة الملفات المرفوعة
   const processFiles = async () => {
     if (uploadedFiles.length === 0) {
       toast({
         title: "خطأ",
-        description: "يرجى رفع ملف PDF أولاً",
+        description: "يرجى رفع ملف (صورة أو PDF) أولاً",
         variant: "destructive"
       });
       return;
@@ -283,23 +422,27 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
   // إعداد منطقة السحب والإفلات
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const pdfFiles = acceptedFiles.filter(file => file.type === 'application/pdf');
+    const supportedFiles = acceptedFiles.filter(file => 
+      file.type === 'application/pdf' || 
+      file.type.startsWith('image/')
+    );
     
-    if (pdfFiles.length !== acceptedFiles.length) {
+    if (supportedFiles.length !== acceptedFiles.length) {
       toast({
         title: "تحذير",
-        description: "تم قبول ملفات PDF فقط",
+        description: "تم قبول ملفات PDF والصور فقط (JPG, PNG, GIF, WEBP)",
         variant: "destructive"
       });
     }
 
-    setUploadedFiles(prev => [...prev, ...pdfFiles]);
+    setUploadedFiles(prev => [...prev, ...supportedFiles]);
   }, [toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf']
+      'application/pdf': ['.pdf'],
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp']
     },
     multiple: true
   });
@@ -340,13 +483,13 @@ export const TrafficViolationPDFImport: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-6 w-6" />
-            استيراد المخالفات المرورية من PDF
+            استيراد المخالفات المرورية
           </CardTitle>
           <CardDescription>
-            رفع ومعالجة ملفات PDF للمخالفات المرورية واستخراج البيانات تلقائياً
+            رفع ومعالجة ملفات الصور أو PDF للمخالفات المرورية واستخراج البيانات تلقائياً
             <br />
             <span className="text-green-600 text-sm font-medium">
-              ✅ تم تحديث النظام لتحسين استخراج البيانات من ملفات PDF
+              ✅ يُفضل رفع صور (JPG, PNG) للحصول على أفضل النتائج
             </span>
           </CardDescription>
         </CardHeader>
@@ -380,8 +523,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
                   <p className="text-blue-600">اسحب الملفات هنا...</p>
                 ) : (
                   <div>
-                    <p className="text-lg font-medium mb-2">اسحب ملفات PDF هنا أو اضغط للاختيار</p>
-                    <p className="text-sm text-slate-500">يدعم ملفات PDF فقط</p>
+                    <p className="text-lg font-medium mb-2">اسحب الملفات هنا أو اضغط للاختيار</p>
+                    <p className="text-sm text-slate-500">يدعم ملفات PDF والصور (JPG, PNG, GIF, WEBP)</p>
                   </div>
                 )}
               </div>
@@ -433,8 +576,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  سيتم استخراج البيانات من ملفات PDF ومحاولة ربطها بالمركبات المسجلة في النظام.
-                  هذه العملية قد تستغرق بضع دقائق حسب حجم الملفات.
+                  سيتم استخراج البيانات من الملفات ومحاولة ربطها بالمركبات المسجلة في النظام.
+                  يُفضل استخدام الصور (JPG, PNG) للحصول على أفضل النتائج. ملفات PDF قد لا تعمل بشكل صحيح.
                 </AlertDescription>
               </Alert>
 
@@ -456,7 +599,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
               {isProcessing && (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                  <p className="text-lg font-medium">جاري استخراج البيانات من PDF...</p>
+                  <p className="text-lg font-medium">جاري استخراج البيانات من الملفات...</p>
                   <p className="text-sm text-slate-500 mt-2">يرجى الانتظار، هذا قد يستغرق بضع دقائق</p>
                 </div>
               )}
