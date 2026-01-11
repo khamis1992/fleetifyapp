@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { unstable_batchedUpdates } from "react-dom";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { PageCustomizer } from "@/components/PageCustomizer";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import {
   FileEdit,
   Clock,
   Trash2,
-  ChevronDown,
   Calendar,
   User,
   CheckCircle,
@@ -31,7 +30,6 @@ import {
   Upload,
   Download,
   XOctagon,
-  X,
   MessageSquare,
   FileSignature,
 } from "lucide-react";
@@ -91,16 +89,24 @@ function ContractsRedesigned() {
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
 
   // Refs to track processed parameters
   const processedCustomerRef = useRef(false);
   const processedVehicleRef = useRef(false);
+
+  // Debounce search term - تأخير البحث لمنع الاستعلام المتكرر
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Hooks
   const location = useLocation();
@@ -113,11 +119,11 @@ function ContractsRedesigned() {
   const { formatCurrency: formatCurrencyAmount, currency } = useCurrencyFormatter();
   const currencyConfig = getCurrencyConfig(currency);
 
-  // Filters - استخدام searchTerm مباشرة مثل صفحة العملاء
+  // Filters - استخدام debouncedSearchTerm لمنع الاستعلام المتكرر
   const filters = useMemo(() => {
     const newFilters: any = {};
-    if (searchTerm && searchTerm.trim()) {
-      newFilters.search = searchTerm.trim();
+    if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
+      newFilters.search = debouncedSearchTerm.trim();
     }
     if (activeTab === "active") {
       newFilters.status = "active";
@@ -127,7 +133,7 @@ function ContractsRedesigned() {
       newFilters.status = "expiring_soon";
     }
     return newFilters;
-  }, [searchTerm, activeTab]);
+  }, [debouncedSearchTerm, activeTab]);
 
   const filtersWithPagination = useMemo(() => ({
     ...filters,
@@ -667,83 +673,33 @@ function ContractsRedesigned() {
             </motion.div>
           )}
 
-          {/* Search & Filters */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 overflow-hidden"
-          >
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="w-full p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Search className="w-5 h-5 text-slate-500" />
-                <span className="font-semibold text-slate-900">البحث والفلاتر</span>
-              </div>
-              <ChevronDown className={cn("w-5 h-5 text-slate-500 transition-transform", showFilters && "rotate-180")} />
-            </button>
-
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="px-6 pb-6 space-y-4"
-                >
-                  {/* Search Input - نفس أسلوب صفحة العملاء */}
-                  <div className="flex-1 relative">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input
-                      placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setPage(1);
-                      }}
-                      className="h-10 pr-10 text-sm bg-white/50 border-slate-200/50 focus:border-teal-500/50"
-                    />
-                    {searchTerm && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchTerm("")}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Search Results Count */}
-                  {searchTerm && !isFetching && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-slate-500">
-                        {safeFilteredContracts.length > 0 ? (
-                          <>تم العثور على <span className="font-semibold text-slate-900">{safeFilteredContracts.length}</span> عقد</>
-                        ) : (
-                          <span className="text-amber-600">لم يتم العثور على نتائج</span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Clear Filters */}
-                  <Button
-                    variant="outline"
-                    className="px-4 py-2 rounded-3xl font-medium hover:bg-slate-50/50 transition-colors"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setActiveTab("all");
-                    }}
+          {/* Search Bar - نفس أسلوب صفحة العملاء */}
+          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 shadow-sm hover:border-teal-500/30 transition-all duration-300">
+            <div className="flex flex-col lg:flex-row gap-3">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  className="h-10 pr-10 text-sm bg-white/50 border-slate-200/50 focus:border-teal-500/50"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded"
                   >
-                    <XCircle className="w-4 h-4 ml-2" />
-                    مسح الفلاتر
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+                    <Plus className="w-3 h-3 text-slate-400 rotate-45" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Tabs & Contracts List */}
           <motion.div

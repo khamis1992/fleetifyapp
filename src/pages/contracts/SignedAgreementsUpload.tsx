@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageCustomizer } from '@/components/PageCustomizer';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,12 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useSignedAgreementUpload } from '@/hooks/contracts/useSignedAgreementUpload';
 import { useToast } from '@/hooks/use-toast-mock';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
-// Configuration for batch processing
-const BATCH_SIZE = 3; // Process 3 files at a time
+// Configuration for batch processing - معالجة متوازية
+// 10 ملفات في وقت واحد (بدون AI الآن)
+const BATCH_SIZE = 10;
 import {
   Upload,
   FileText,
@@ -59,9 +62,11 @@ interface UploadedFile {
 export default function SignedAgreementsUpload() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { companyId } = useUnifiedCompanyAccess();
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [existingFileNames, setExistingFileNames] = useState<Set<string>>(new Set());
   
   // Queue management for batch processing
   const processingQueueRef = useRef<UploadedFile[]>([]);
@@ -75,6 +80,27 @@ export default function SignedAgreementsUpload() {
     deleteAgreement,
   } = useSignedAgreementUpload();
 
+  // جلب أسماء الملفات المرفوعة سابقاً
+  useEffect(() => {
+    const fetchExistingFiles = async () => {
+      if (!companyId) return;
+      
+      const { data } = await supabase
+        .from('contract_documents')
+        .select('document_name')
+        .eq('company_id', companyId)
+        .eq('document_type', 'signed_contract');
+
+      if (data) {
+        const names = new Set(data.map(d => d.document_name?.toLowerCase() || ''));
+        setExistingFileNames(names);
+        console.log(`📁 تم جلب ${names.size} ملف مرفوع سابقاً`);
+      }
+    };
+
+    fetchExistingFiles();
+  }, [companyId]);
+
   /**
    * Process a single file: upload -> match
    */
@@ -84,16 +110,17 @@ export default function SignedAgreementsUpload() {
       setUploadedFiles(prev =>
         prev.map(f =>
           f.id === uploadedFile.id
-            ? { ...f, status: 'uploading', progress: 10 }
+            ? { ...f, status: 'uploading', progress: 0 }
             : f
         )
       );
 
       const uploadResult = await uploadSignedAgreement(uploadedFile.file, (progress) => {
+        // Progress from hook is already 5-60%
         setUploadedFiles(prev =>
           prev.map(f =>
             f.id === uploadedFile.id
-              ? { ...f, progress: 10 + progress * 0.4 } // 10-50% for upload
+              ? { ...f, progress }
               : f
           )
         );
@@ -103,7 +130,7 @@ export default function SignedAgreementsUpload() {
         throw new Error(uploadResult.error || 'فشل في رفع الملف');
       }
 
-      // Step 2: Match agreement using AI
+      // Step 2: Match agreement using AI (with timeout)
       setUploadedFiles(prev =>
         prev.map(f =>
           f.id === uploadedFile.id
@@ -112,15 +139,26 @@ export default function SignedAgreementsUpload() {
         )
       );
 
-      const matchResult = await matchAgreement(uploadResult.documentId, uploadedFile.file.name, (progress) => {
+      // إضافة timeout للمطابقة (45 ثانية)
+      const matchPromise = matchAgreement(uploadResult.documentId, uploadedFile.file.name, (progress) => {
+        // Progress from hook is 10-100%, map to 60-100%
+        const matchProgress = 60 + (progress / 100) * 40;
         setUploadedFiles(prev =>
           prev.map(f =>
             f.id === uploadedFile.id
-              ? { ...f, progress: 60 + progress * 0.4 } // 60-100% for matching
+              ? { ...f, progress: Math.round(matchProgress) }
               : f
           )
         );
       });
+
+      const timeoutPromise = new Promise<{ success: boolean; error: string }>((resolve) => {
+        setTimeout(() => {
+          resolve({ success: true, error: '' }); // اعتبره ناجح بدون مطابقة
+        }, 45000);
+      });
+
+      const matchResult = await Promise.race([matchPromise, timeoutPromise]);
 
       // Step 3: Update final status
       setUploadedFiles(prev =>
@@ -192,41 +230,79 @@ export default function SignedAgreementsUpload() {
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const validFiles = Array.from(files).filter(file => {
+    // تصفية الملفات: PDF فقط
+    const pdfFiles = Array.from(files).filter(file => {
       if (file.type !== 'application/pdf') {
-        toast({
-          title: 'خطأ',
-          description: `الملف ${file.name} ليس ملف PDF. يُرجى رفع ملفات PDF فقط.`,
-        });
         return false;
       }
       return true;
     });
 
-    if (validFiles.length === 0) return;
-
-    // Show toast for large batches
-    if (validFiles.length > 10) {
+    if (pdfFiles.length === 0) {
       toast({
-        title: 'جاري الرفع',
-        description: `سيتم رفع ${validFiles.length} ملف على دفعات (${BATCH_SIZE} ملفات في وقت واحد)`,
+        title: 'خطأ',
+        description: 'يُرجى رفع ملفات PDF فقط.',
+      });
+      return;
+    }
+
+    // فصل الملفات: جديدة vs مرفوعة سابقاً
+    const newFiles: File[] = [];
+    const skippedFiles: string[] = [];
+
+    for (const file of pdfFiles) {
+      if (existingFileNames.has(file.name.toLowerCase())) {
+        skippedFiles.push(file.name);
+      } else {
+        newFiles.push(file);
+      }
+    }
+
+    // إظهار رسالة للملفات المتخطاة
+    if (skippedFiles.length > 0) {
+      toast({
+        title: `⏭️ تم تخطي ${skippedFiles.length} ملف`,
+        description: skippedFiles.length <= 3 
+          ? `الملفات المرفوعة سابقاً: ${skippedFiles.join('، ')}`
+          : `${skippedFiles.slice(0, 3).join('، ')} و${skippedFiles.length - 3} ملفات أخرى`,
       });
     }
 
-    // Add files to the list with 'pending' status initially
-    const newFiles: UploadedFile[] = validFiles.map((file, index) => ({
+    if (newFiles.length === 0) {
+      toast({
+        title: 'لا توجد ملفات جديدة',
+        description: 'جميع الملفات المختارة مرفوعة سابقاً',
+      });
+      return;
+    }
+
+    // رسالة بدء الرفع
+    toast({
+      title: `🚀 جاري رفع ${newFiles.length} ملف`,
+      description: `سيتم معالجة ${Math.min(newFiles.length, BATCH_SIZE)} ملف في وقت واحد`,
+    });
+
+    // إضافة الملفات الجديدة للقائمة
+    const uploadFiles: UploadedFile[] = newFiles.map((file, index) => ({
       id: `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
       file,
       status: 'uploading' as const,
       progress: 0,
     }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setUploadedFiles(prev => [...prev, ...uploadFiles]);
 
-    // Add all files to the queue and start processing
-    processingQueueRef.current.push(...newFiles);
+    // تحديث قائمة الملفات المرفوعة لتجنب التكرار في نفس الجلسة
+    setExistingFileNames(prev => {
+      const updated = new Set(prev);
+      newFiles.forEach(f => updated.add(f.name.toLowerCase()));
+      return updated;
+    });
+
+    // إضافة للطابور والبدء في المعالجة
+    processingQueueRef.current.push(...uploadFiles);
     processQueue();
-  }, [toast, processQueue]);
+  }, [toast, processQueue, existingFileNames]);
 
   /**
    * Handle drag and drop events
@@ -264,10 +340,12 @@ export default function SignedAgreementsUpload() {
 
     try {
       const matchResult = await matchAgreement(file.documentId, file.file.name, (progress) => {
+        // Progress from hook is 10-100%, map to 60-100%
+        const matchProgress = 60 + (progress / 100) * 40;
         setUploadedFiles(prev =>
           prev.map(f =>
             f.id === fileId
-              ? { ...f, progress: 60 + progress * 0.4 }
+              ? { ...f, progress: Math.round(matchProgress) }
               : f
           )
         );

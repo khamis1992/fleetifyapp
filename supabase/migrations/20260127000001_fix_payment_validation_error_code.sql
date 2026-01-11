@@ -1,27 +1,11 @@
 -- ================================================================
--- Migration: Enhance Server-Side Payment Validation
--- Created: 2026-01-10
--- Description: Update server payment validation with additional checks
--- Impact: HIGH - Ensures data integrity and prevents invalid payments
+-- Migration: Fix Payment Validation Error Code
+-- Created: 2026-01-27
+-- Description: Fix invalid ERRCODE 'CHECK_VIOLATION' to use correct PostgreSQL error code '23514'
+-- Impact: MEDIUM - Fixes payment insertion errors
 -- ================================================================
 
--- ============================================================================
--- Step 1: Drop existing validation trigger
--- ============================================================================
-
-DROP TRIGGER IF EXISTS validate_payment_before_insert_trigger ON payments;
-DROP TRIGGER IF EXISTS validate_payment_before_update_trigger ON payments;
-
-COMMENT ON TRIGGER validate_payment_before_insert_trigger ON payments IS
-'Dropped - will be recreated with enhanced validation.';
-
-COMMENT ON TRIGGER validate_payment_before_update_trigger ON payments IS
-'Dropped - will be recreated with enhanced validation.';
-
--- ============================================================================
--- Step 2: Enhanced validation function
--- ============================================================================
-
+-- Drop and recreate the function with correct error codes
 CREATE OR REPLACE FUNCTION validate_payment_before_insert()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -130,7 +114,7 @@ BEGIN
                     ERRCODE = '23514',
                     MESSAGE = 'Cannot link payment to a cancelled or voided invoice',
                     HINT = format(
-                        'Invoice % is in status: %s. Payments can only be linked to invoices in unpaid, partial, or pending status.',
+                        'Invoice %s is in status: %s. Payments can only be linked to invoices in unpaid, partial, or pending status.',
                         v_invoice.invoice_number,
                         v_invoice.payment_status
                     );
@@ -236,35 +220,10 @@ BEGIN
 END;
 $$;
 
--- ============================================================================
--- Step 3: Create enhanced triggers
--- ============================================================================
-
-CREATE TRIGGER validate_payment_before_insert_trigger
-    BEFORE INSERT ON payments
-    FOR EACH ROW
-    EXECUTE FUNCTION validate_payment_before_insert();
-
-CREATE TRIGGER validate_payment_before_update_trigger
-    BEFORE UPDATE ON payments
-    FOR EACH ROW
-    WHEN (
-        OLD.amount != NEW.amount OR
-          OLD.contract_id != NEW.contract_id OR
-          OLD.invoice_id != NEW.invoice_id OR
-          OLD.payment_date != NEW.payment_date OR
-          OLD.idempotency_key IS DISTINCT FROM NEW.idempotency_key
-    )
-    EXECUTE FUNCTION validate_payment_before_insert();
-
--- ============================================================================
--- Comments
--- ============================================================================
-
 COMMENT ON FUNCTION validate_payment_before_insert IS
 'Enhanced server-side validation for payments. Checks for:
 1. Contract status (must be active/under_review/draft)
-2. Contract overpayment prevention (110%% limit)
+2. Contract overpayment prevention (110% limit)
 3. Single payment size limits (10x monthly or QAR 50,000 max)
 4. Invoice status (must not be cancelled/voided)
 5. Invoice balance validation (cannot exceed remaining balance)
@@ -272,45 +231,4 @@ COMMENT ON FUNCTION validate_payment_before_insert IS
 7. Payment date sanity check (max 30 days in future)
 8. Contract-invoice consistency (invoice must belong to linked contract)
 
-Triggers are created for both INSERT and UPDATE operations on critical fields.';
-
-COMMENT ON TRIGGER validate_payment_before_insert_trigger ON payments IS
-'Executes enhanced validation before any payment is inserted into the database. Prevents invalid payments at the server level.';
-
-COMMENT ON TRIGGER validate_payment_before_update_trigger ON payments IS
-'Executes enhanced validation before any payment critical fields are updated. Prevents invalid modifications at the server level.';
-
--- ============================================================================
--- Verification Queries (for testing - do not run in production)
--- ============================================================================
-
--- Test 1: Try to insert payment for inactive contract - should fail
--- INSERT INTO payments (company_id, contract_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'inactive-contract-id', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 2: Try to insert overpayment for contract - should fail
--- INSERT INTO payments (company_id, contract_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'test-contract-id', '2026-01-10', 999999, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 3: Try to insert payment for cancelled invoice - should fail
--- INSERT INTO payments (company_id, invoice_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'cancelled-invoice-id', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 4: Try duplicate idempotency key - should fail (if first payment succeeded)
--- INSERT INTO payments (company_id, idempotency_key, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'unique-key-123', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 5: Verify trigger exists
--- SELECT tgname, tgrel::regclass, tgenabled, tgisinternal 
--- FROM pg_trigger 
--- WHERE tgrel::regclass::oid = (SELECT oid FROM pg_class WHERE relname = 'payments')
---   AND tgname = 'validate_payment_before_insert_trigger';
-
--- ============================================================================
--- Rollback (in case issues)
--- ============================================================================
-
--- To rollback this migration:
--- DROP TRIGGER IF EXISTS validate_payment_before_insert_trigger ON payments;
--- DROP TRIGGER IF EXISTS validate_payment_before_update_trigger ON payments;
--- DROP FUNCTION IF EXISTS validate_payment_before_insert;
+Fixed: Uses correct PostgreSQL error code 23514 for check constraint violations.';

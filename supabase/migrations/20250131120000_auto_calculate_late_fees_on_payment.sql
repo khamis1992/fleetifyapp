@@ -26,11 +26,16 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Get invoice details including due_date
+    -- Get invoice details (remove payment_date as it doesn't exist in invoices table)
     SELECT 
-        i.*,
+        i.id,
+        i.company_id,
+        i.invoice_number,
+        i.customer_id,
+        i.contract_id,
         i.due_date,
-        i.payment_date,
+        i.total_amount,
+        i.invoice_type,
         i.payment_status,
         i.status
     INTO v_invoice
@@ -50,9 +55,9 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Use payment_date from payment, fallback to invoice payment_date, then NEW.created_at
-    DECLARE
-        v_payment_date DATE := COALESCE(NEW.payment_date::DATE, v_invoice.payment_date::DATE, NEW.created_at::DATE);
+    -- Use payment_date from payment, fallback to NEW.created_at
+    v_payment_date := COALESCE(NEW.payment_date::DATE, NEW.created_at::DATE);
+
     BEGIN
         -- Calculate days overdue based on payment date vs due date
         IF v_payment_date <= v_invoice.due_date THEN
@@ -80,7 +85,7 @@ BEGIN
         SELECT * INTO v_rule
         FROM late_fee_rules
         WHERE company_id = NEW.company_id
-          AND is_active = true
+          AND is_enabled = true
           AND (apply_to_invoice_types IS NULL OR v_invoice.invoice_type = ANY(apply_to_invoice_types))
         ORDER BY created_at DESC
         LIMIT 1;

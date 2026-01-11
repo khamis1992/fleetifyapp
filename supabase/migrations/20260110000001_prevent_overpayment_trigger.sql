@@ -279,7 +279,7 @@ SELECT
         ELSE false
     END AS needs_review
 FROM contracts c
-WHERE c.is_active = true
+WHERE c.status = 'active'
 ORDER BY
     CASE
         WHEN c.contract_amount = 0 AND c.total_paid > 10000 THEN 1  -- Review first

@@ -1,26 +1,9 @@
 -- ================================================================
--- Migration: Enhance Server-Side Payment Validation
--- Created: 2026-01-10
--- Description: Update server payment validation with additional checks
--- Impact: HIGH - Ensures data integrity and prevents invalid payments
+-- Migration: Fix Payment Validation UUID Comparison
+-- Created: 2026-01-27
+-- Description: Fix invalid UUID comparison in payment validation function
+-- Impact: HIGH - Fixes payment insertion errors
 -- ================================================================
-
--- ============================================================================
--- Step 1: Drop existing validation trigger
--- ============================================================================
-
-DROP TRIGGER IF EXISTS validate_payment_before_insert_trigger ON payments;
-DROP TRIGGER IF EXISTS validate_payment_before_update_trigger ON payments;
-
-COMMENT ON TRIGGER validate_payment_before_insert_trigger ON payments IS
-'Dropped - will be recreated with enhanced validation.';
-
-COMMENT ON TRIGGER validate_payment_before_update_trigger ON payments IS
-'Dropped - will be recreated with enhanced validation.';
-
--- ============================================================================
--- Step 2: Enhanced validation function
--- ============================================================================
 
 CREATE OR REPLACE FUNCTION validate_payment_before_insert()
 RETURNS TRIGGER
@@ -51,22 +34,23 @@ BEGIN
         WHERE id = NEW.contract_id;
 
         IF FOUND THEN
-            -- Check contract is active
-            IF v_contract.status NOT IN ('active', 'under_review', 'draft') THEN
+            -- Check contract is in a status that allows payments
+            IF v_contract.status NOT IN ('active', 'under_review', 'draft', 'under_legal_procedure') THEN
                 RAISE EXCEPTION USING
                     ERRCODE = '23514',
-                    MESSAGE = 'Contract must be in active, under_review, or draft status',
-                    HINT = 'Contract status is: ' || v_contract.status || '. Please verify the contract is still active.';
+                    MESSAGE = 'Contract must be in active, under_review, draft, or under_legal_procedure status',
+                    HINT = 'Contract status is: ' || v_contract.status || '. Please verify the contract is still active or under legal procedure.';
             END IF;
 
             -- Calculate current total paid for this contract
+            -- Fixed: Use proper NULL check instead of invalid UUID
             SELECT COALESCE(SUM(amount), 0)
             INTO v_current_total_paid
             FROM payments
             WHERE contract_id = NEW.contract_id
               AND payment_status = 'completed'
               AND company_id = NEW.company_id
-              AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-0000-0000');
+              AND (NEW.id IS NULL OR id != NEW.id);
 
             v_new_total_paid := v_current_total_paid + NEW.amount;
             v_contract_amount := COALESCE(v_contract.contract_amount, 0);
@@ -130,7 +114,7 @@ BEGIN
                     ERRCODE = '23514',
                     MESSAGE = 'Cannot link payment to a cancelled or voided invoice',
                     HINT = format(
-                        'Invoice % is in status: %s. Payments can only be linked to invoices in unpaid, partial, or pending status.',
+                        'Invoice %s is in status: %s. Payments can only be linked to invoices in unpaid, partial, or pending status.',
                         v_invoice.invoice_number,
                         v_invoice.payment_status
                     );
@@ -176,11 +160,12 @@ BEGIN
     -- =========================================
     IF NEW.idempotency_key IS NOT NULL THEN
         -- Check for duplicate idempotency key within last 30 days
+        -- Fixed: Use proper NULL check instead of invalid UUID
         SELECT COUNT(*) INTO v_duplicate_payment_count
         FROM payments
         WHERE idempotency_key = NEW.idempotency_key
           AND company_id = NEW.company_id
-          AND id != COALESCE(NEW.id, '00000000-0000-0000-0000-0000-0000')
+          AND (NEW.id IS NULL OR id != NEW.id)
           AND created_at > NOW() - INTERVAL '30 days';
 
         IF v_duplicate_payment_count > 0 THEN
@@ -236,35 +221,10 @@ BEGIN
 END;
 $$;
 
--- ============================================================================
--- Step 3: Create enhanced triggers
--- ============================================================================
-
-CREATE TRIGGER validate_payment_before_insert_trigger
-    BEFORE INSERT ON payments
-    FOR EACH ROW
-    EXECUTE FUNCTION validate_payment_before_insert();
-
-CREATE TRIGGER validate_payment_before_update_trigger
-    BEFORE UPDATE ON payments
-    FOR EACH ROW
-    WHEN (
-        OLD.amount != NEW.amount OR
-          OLD.contract_id != NEW.contract_id OR
-          OLD.invoice_id != NEW.invoice_id OR
-          OLD.payment_date != NEW.payment_date OR
-          OLD.idempotency_key IS DISTINCT FROM NEW.idempotency_key
-    )
-    EXECUTE FUNCTION validate_payment_before_insert();
-
--- ============================================================================
--- Comments
--- ============================================================================
-
 COMMENT ON FUNCTION validate_payment_before_insert IS
 'Enhanced server-side validation for payments. Checks for:
-1. Contract status (must be active/under_review/draft)
-2. Contract overpayment prevention (110%% limit)
+1. Contract status (must be active/under_review/draft/under_legal_procedure)
+2. Contract overpayment prevention (110% limit)
 3. Single payment size limits (10x monthly or QAR 50,000 max)
 4. Invoice status (must not be cancelled/voided)
 5. Invoice balance validation (cannot exceed remaining balance)
@@ -272,45 +232,4 @@ COMMENT ON FUNCTION validate_payment_before_insert IS
 7. Payment date sanity check (max 30 days in future)
 8. Contract-invoice consistency (invoice must belong to linked contract)
 
-Triggers are created for both INSERT and UPDATE operations on critical fields.';
-
-COMMENT ON TRIGGER validate_payment_before_insert_trigger ON payments IS
-'Executes enhanced validation before any payment is inserted into the database. Prevents invalid payments at the server level.';
-
-COMMENT ON TRIGGER validate_payment_before_update_trigger ON payments IS
-'Executes enhanced validation before any payment critical fields are updated. Prevents invalid modifications at the server level.';
-
--- ============================================================================
--- Verification Queries (for testing - do not run in production)
--- ============================================================================
-
--- Test 1: Try to insert payment for inactive contract - should fail
--- INSERT INTO payments (company_id, contract_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'inactive-contract-id', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 2: Try to insert overpayment for contract - should fail
--- INSERT INTO payments (company_id, contract_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'test-contract-id', '2026-01-10', 999999, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 3: Try to insert payment for cancelled invoice - should fail
--- INSERT INTO payments (company_id, invoice_id, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'cancelled-invoice-id', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 4: Try duplicate idempotency key - should fail (if first payment succeeded)
--- INSERT INTO payments (company_id, idempotency_key, payment_date, amount, payment_method, payment_type, transaction_type, payment_status)
--- VALUES ('test-company', 'unique-key-123', '2026-01-10', 1000, 'cash', 'receipt', 'receipt', 'completed');
-
--- Test 5: Verify trigger exists
--- SELECT tgname, tgrel::regclass, tgenabled, tgisinternal 
--- FROM pg_trigger 
--- WHERE tgrel::regclass::oid = (SELECT oid FROM pg_class WHERE relname = 'payments')
---   AND tgname = 'validate_payment_before_insert_trigger';
-
--- ============================================================================
--- Rollback (in case issues)
--- ============================================================================
-
--- To rollback this migration:
--- DROP TRIGGER IF EXISTS validate_payment_before_insert_trigger ON payments;
--- DROP TRIGGER IF EXISTS validate_payment_before_update_trigger ON payments;
--- DROP FUNCTION IF EXISTS validate_payment_before_insert;
+Fixed: Uses proper NULL checks instead of invalid UUID default values.';

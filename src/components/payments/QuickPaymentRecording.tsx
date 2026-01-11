@@ -421,13 +421,6 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         amount,
         paymentMethod
       });
-      
-      const paymentTypeMap: Record<string, string> = {
-        'cash': 'cash',
-        'bank_transfer': 'bank_transfer',
-        'check': 'check',
-        'other': 'cash'
-      };
 
       // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
       if (selectedInvoices.length === 0) {
@@ -501,20 +494,23 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
         // ✅ استخدام usePaymentOperations بدلاً من الإدراج المباشر
         // هذا ينشئ القيود المحاسبية تلقائياً
-        const paymentData = {
+        const paymentData: any = {
           customer_id: selectedCustomer.id,
-          contract_id: invoice.contract_id || undefined,
           invoice_id: invoice.id,
           amount: amountToApply,
           payment_date: paymentDate,
           payment_method: paymentMethod as 'cash' | 'bank_transfer' | 'check' | 'credit_card',
           payment_number: `${paymentNumber}-${i + 1}`,
-          payment_type: paymentTypeMap[paymentMethod] || 'cash',
-          transaction_type: 'receipt' as const,
+          type: 'receipt' as const, // ✅ إصلاح: الـ schema يتوقع 'type' وليس 'payment_type'
           currency: 'QAR',
           notes: `دفعة لفاتورة ${invoice.invoice_number}`,
           idempotencyKey: `${selectedCustomer.id}-${invoice.id}-${paymentDate}-${amountToApply}`,
         };
+        
+        // Only include contract_id if it exists and is a valid UUID
+        if (invoice.contract_id && invoice.contract_id !== '' && invoice.contract_id !== 'null' && invoice.contract_id !== 'undefined') {
+          paymentData.contract_id = invoice.contract_id;
+        }
         
         console.log(`Creating payment ${i + 1} for invoice ${invoice.invoice_number}:`, amountToApply);
         

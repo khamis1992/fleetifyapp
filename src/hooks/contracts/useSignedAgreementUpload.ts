@@ -52,12 +52,38 @@ export function useSignedAgreementUpload() {
       file: File;
       onProgress?: (progress: number) => void;
     }): Promise<UploadResult> => {
-      if (!user || !companyId) {
+      // إعادة المحاولة للحصول على companyId إذا لم يكن متاحاً
+      let currentCompanyId = companyId;
+      let currentUser = user;
+      
+      // انتظار قليل إذا لم تكن البيانات جاهزة
+      if (!currentUser || !currentCompanyId) {
+        console.log('⏳ Waiting for auth context...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // جلب الجلسة مباشرة من Supabase
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          currentUser = sessionData.session.user as any;
+          // جلب companyId من profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('id', sessionData.session.user.id)
+            .single();
+          currentCompanyId = profile?.company_id || null;
+        }
+      }
+
+      if (!currentUser || !currentCompanyId) {
+        console.error('❌ Auth check failed:', { hasUser: !!currentUser, hasCompanyId: !!currentCompanyId });
         return {
           success: false,
           error: 'المستخدم غير مسجل أو لم يتم اختيار شركة',
         };
       }
+      
+      console.log('✅ Auth verified:', { userId: currentUser.id, companyId: currentCompanyId });
 
       if (file.type !== 'application/pdf') {
         return {
@@ -67,27 +93,96 @@ export function useSignedAgreementUpload() {
       }
 
       try {
-        // Step 1: Upload file to Supabase storage
-        onProgress?.(10);
+        // Step 1: Upload file to Supabase storage with progress tracking
+        onProgress?.(5);
 
         // Use timestamp + random string for storage path (Supabase doesn't support Arabic in paths)
         // Original filename is preserved in the database record
         const fileExtension = file.name.split('.').pop() || 'pdf';
         const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-        const fileName = `signed-agreements/${companyId}/${uniqueId}.${fileExtension}`;
+        const fileName = `signed-agreements/${currentCompanyId}/${uniqueId}.${fileExtension}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('contract-documents')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
+        // Helper function for upload with retry
+        const uploadWithRetry = async (maxRetries = 3): Promise<{ success: boolean; error?: string }> => {
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`📤 Upload attempt ${attempt}/${maxRetries} for ${file.name}`);
+            
+            // Get fresh session for each attempt
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData?.session?.access_token;
 
-        if (uploadError) {
-          console.error('Storage upload error:', uploadError);
+            if (!accessToken) {
+              return { success: false, error: 'جلسة المستخدم غير صالحة، يرجى إعادة تسجيل الدخول' };
+            }
+
+            const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/contract-documents/${fileName}`;
+            
+            const result = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+              const xhr = new XMLHttpRequest();
+              
+              xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                  // Map upload progress from 5% to 55%
+                  const uploadProgress = 5 + (event.loaded / event.total) * 50;
+                  onProgress?.(Math.round(uploadProgress));
+                }
+              });
+
+              xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  resolve({ success: true });
+                } else {
+                  let errorMessage = 'فشل في رفع الملف';
+                  try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.error || response.message || errorMessage;
+                  } catch {
+                    // Ignore JSON parse error
+                  }
+                  resolve({ success: false, error: errorMessage });
+                }
+              });
+
+              xhr.addEventListener('error', () => {
+                resolve({ success: false, error: 'فشل الاتصال بالخادم' });
+              });
+
+              xhr.addEventListener('timeout', () => {
+                resolve({ success: false, error: 'انتهت مهلة الرفع' });
+              });
+
+              xhr.open('POST', uploadUrl, true);
+              xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+              xhr.setRequestHeader('x-upsert', 'false');
+              xhr.setRequestHeader('Cache-Control', '3600');
+              // 5 minutes timeout for large files
+              xhr.timeout = 300000;
+              xhr.send(file);
+            });
+
+            if (result.success) {
+              return result;
+            }
+
+            // إذا فشل وليس آخر محاولة، انتظر ثم أعد المحاولة
+            if (attempt < maxRetries) {
+              console.warn(`⚠️ Retry ${attempt}/${maxRetries} failed: ${result.error}`);
+              await new Promise(r => setTimeout(r, 2000 * attempt)); // تأخير متزايد
+              onProgress?.(5); // إعادة ضبط التقدم
+            } else {
+              return result;
+            }
+          }
+          return { success: false, error: 'فشلت جميع المحاولات' };
+        };
+
+        const uploadResult = await uploadWithRetry(3);
+
+        if (!uploadResult.success) {
+          console.error('Storage upload error after retries:', uploadResult.error);
           return {
             success: false,
-            error: `فشل في رفع الملف: ${uploadError.message}`,
+            error: `فشل في رفع الملف: ${uploadResult.error}`,
           };
         }
 
@@ -97,14 +192,14 @@ export function useSignedAgreementUpload() {
         const { data: document, error: dbError } = await supabase
           .from('contract_documents')
           .insert({
-            company_id: companyId,
+            company_id: currentCompanyId,
             contract_id: null, // Will be linked after matching
             document_type: 'signed_contract',
             document_name: file.name,
             file_path: fileName,
             file_size: file.size,
             mime_type: 'application/pdf',
-            uploaded_by: user.id,
+            uploaded_by: currentUser.id,
             is_required: false,
             notes: 'Uploaded via signed agreement upload page',
           })
@@ -145,7 +240,7 @@ export function useSignedAgreementUpload() {
   });
 
   /**
-   * Match uploaded agreement to contract/customer/vehicle using AI
+   * Match uploaded agreement to contract/customer/vehicle using GLM-4.6 AI
    */
   const matchAgreementMutation = useMutation({
     mutationFn: async ({
@@ -157,30 +252,52 @@ export function useSignedAgreementUpload() {
       fileName: string;
       onProgress?: (progress: number) => void;
     }): Promise<MatchResult> => {
-      if (!companyId) {
+      // إعادة المحاولة للحصول على companyId إذا لم يكن متاحاً
+      let currentCompanyId = companyId;
+      
+      if (!currentCompanyId) {
+        console.log('⏳ [MATCH] Waiting for company context...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // جلب الجلسة مباشرة من Supabase
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('id', sessionData.session.user.id)
+            .single();
+          currentCompanyId = profile?.company_id || null;
+        }
+      }
+
+      if (!currentCompanyId) {
+        console.error('❌ [MATCH] Company ID not found');
         return {
           success: false,
           error: 'لم يتم اختيار شركة',
         };
       }
 
+      console.log('✅ [MATCH] Company verified:', currentCompanyId);
+
       try {
         onProgress?.(10);
 
-        // Extract potential identifiers from filename
-        // Format examples:
-        // - "CONTRACT-123-Ahmed Ali.pdf"
-        // - "Ahmed Ali CONTRACT-123.pdf"
-        // - "12345 Toyota Camry.pdf" (plate number)
-        const filenameAnalysis = analyzeFilename(fileName);
+        // Use GLM-4.6 AI to analyze filename
+        console.log('🤖 [MATCH] Starting AI-powered filename analysis...');
+        const filenameAnalysis = await analyzeFilenameWithAI(fileName);
+        console.log('🤖 [MATCH] AI analysis result:', filenameAnalysis);
 
         onProgress?.(30);
 
         // Search for matching contract
         let contractMatch: MatchData | null = null;
 
+        // Strategy 1: Search by contract number (exact match)
         if (filenameAnalysis.contractNumber) {
-          // Search by contract number
+          console.log('🔍 [MATCH] Searching by contract number:', filenameAnalysis.contractNumber);
+          
           const { data: contract } = await supabase
             .from('contracts')
             .select(`
@@ -202,11 +319,12 @@ export function useSignedAgreementUpload() {
                 plate_number
               )
             `)
-            .eq('company_id', companyId)
+            .eq('company_id', currentCompanyId)
             .eq('contract_number', filenameAnalysis.contractNumber)
             .single();
 
           if (contract) {
+            console.log('✅ [MATCH] Found contract by number:', contract.contract_number);
             contractMatch = {
               contractId: contract.id,
               contractNumber: contract.contract_number,
@@ -214,7 +332,52 @@ export function useSignedAgreementUpload() {
               customerName: getCustomerName(contract.customer),
               vehicleId: contract.vehicle_id,
               vehiclePlate: contract.vehicle?.plate_number,
-              confidence: 0.95,
+              confidence: filenameAnalysis.confidence,
+            };
+          }
+        }
+
+        // Strategy 2: Search by agreement number pattern in contract_number or description
+        if (!contractMatch && filenameAnalysis.agreementNumber) {
+          console.log('🔍 [MATCH] Searching by agreement number:', filenameAnalysis.agreementNumber);
+          
+          const { data: contracts } = await supabase
+            .from('contracts')
+            .select(`
+              id,
+              contract_number,
+              description,
+              customer_id,
+              customer:customers!inner(
+                id,
+                first_name_ar,
+                first_name,
+                last_name_ar,
+                last_name,
+                company_name_ar,
+                company_name
+              ),
+              vehicle_id,
+              vehicle:vehicles!inner(
+                id,
+                plate_number
+              )
+            `)
+            .eq('company_id', currentCompanyId)
+            .or(`contract_number.ilike.%${filenameAnalysis.agreementNumber}%,description.ilike.%${filenameAnalysis.agreementNumber}%`)
+            .limit(1);
+
+          if (contracts && contracts.length > 0) {
+            const contract = contracts[0];
+            console.log('✅ [MATCH] Found contract by agreement number:', contract.contract_number);
+            contractMatch = {
+              contractId: contract.id,
+              contractNumber: contract.contract_number,
+              customerId: contract.customer_id,
+              customerName: getCustomerName(contract.customer),
+              vehicleId: contract.vehicle_id,
+              vehiclePlate: contract.vehicle?.plate_number,
+              confidence: filenameAnalysis.confidence * 0.9,
             };
           }
         }
@@ -296,7 +459,7 @@ export function useSignedAgreementUpload() {
               vehicle_id,
               vehicle:vehicles!inner(id, plate_number)
             `)
-            .eq('company_id', companyId)
+            .eq('company_id', currentCompanyId)
             .eq('vehicles.plate_number', filenameAnalysis.plateNumber)
             .eq('status', 'active')
             .order('created_at', { ascending: false })
@@ -407,36 +570,161 @@ export function useSignedAgreementUpload() {
   };
 }
 
+// Z.AI API Configuration - Using GLM-4.6 Model (same as AI Chat Assistant)
+const ZAI_API_URL = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
+const ZAI_API_KEY = '136e9f29ddd445c0a5287440f6ab13e0.DSO2qKJ4AiP1SRrH';
+const MODEL = 'glm-4.6';
+
 /**
- * Analyze filename to extract potential identifiers
+ * Use GLM-4.6 AI to analyze filename and extract identifiers
  */
-function analyzeFilename(fileName: string): {
+async function analyzeFilenameWithAI(fileName: string): Promise<{
   contractNumber?: string;
   customerName?: string;
   plateNumber?: string;
+  agreementNumber?: string;
+  confidence: number;
+}> {
+  // ⚡ استخدام التحليل المحلي مباشرة بدون AI لتجنب التوقف
+  // يمكن تفعيل AI لاحقاً عندما يكون API مستقر
+  console.log('🔍 [LOCAL] Analyzing filename locally:', fileName);
+  return analyzeFilenameFallback(fileName);
+
+  /* --- AI DISABLED TEMPORARILY ---
+  try {
+    console.log('🤖 [AI] Analyzing filename with GLM-4.6:', fileName);
+    
+    const systemPrompt = `أنت نظام ذكي لتحليل أسماء ملفات العقود الموقعة في شركة تأجير سيارات.
+مهمتك استخراج المعلومات التالية من اسم الملف:
+1. رقم العقد (contract_number): عادة يكون رقم من 3-6 أرقام
+2. رقم الاتفاقية (agreement_number): قد يكون بصيغة LTO أو AGR متبوع برقم
+3. اسم العميل (customer_name): إذا كان موجوداً
+4. رقم اللوحة (plate_number): رقم من 5-7 أرقام
+
+أمثلة:
+- "2767 - LTO202429.pdf" → contract_number: "2767", agreement_number: "LTO202429"
+- "CONTRACT-123-Ahmed Ali.pdf" → contract_number: "123", customer_name: "Ahmed Ali"
+- "12345 Toyota Camry.pdf" → plate_number: "12345"
+- "محمد أحمد - عقد 456.pdf" → contract_number: "456", customer_name: "محمد أحمد"
+
+أجب بصيغة JSON فقط بدون أي نص إضافي:
+{"contract_number": "...", "agreement_number": "...", "customer_name": "...", "plate_number": "...", "confidence": 0.0-1.0}
+إذا لم تجد قيمة، اتركها null.`;
+
+    // استخدام AbortController للتحكم في timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+
+    try {
+      const response = await fetch(ZAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ZAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `حلل اسم الملف التالي: "${fileName}"` }
+          ],
+          temperature: 0.1,
+          max_tokens: 256,
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn('⚠️ [AI] API returned error:', response.status);
+        return analyzeFilenameFallback(fileName);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        console.warn('⚠️ [AI] No content in response');
+        return analyzeFilenameFallback(fileName);
+      }
+
+      console.log('🤖 [AI] Raw response:', content);
+
+      // Parse JSON from response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        console.log('✅ [AI] Parsed result:', parsed);
+        
+        return {
+          contractNumber: parsed.contract_number || undefined,
+          agreementNumber: parsed.agreement_number || undefined,
+          customerName: parsed.customer_name || undefined,
+          plateNumber: parsed.plate_number || undefined,
+          confidence: parsed.confidence || 0.8,
+        };
+      }
+
+      return analyzeFilenameFallback(fileName);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if ((fetchError as Error).name === 'AbortError') {
+        console.warn('⚠️ [AI] Request timed out, using fallback');
+      } else {
+        console.warn('⚠️ [AI] Fetch error:', fetchError);
+      }
+      return analyzeFilenameFallback(fileName);
+    }
+  } catch (error) {
+    console.error('❌ [AI] Error analyzing filename:', error);
+    return analyzeFilenameFallback(fileName);
+  }
+  --- AI DISABLED TEMPORARILY --- */
+}
+
+/**
+ * Fallback: Analyze filename without AI
+ */
+function analyzeFilenameFallback(fileName: string): {
+  contractNumber?: string;
+  customerName?: string;
+  plateNumber?: string;
+  agreementNumber?: string;
+  confidence: number;
 } {
   const result: {
     contractNumber?: string;
     customerName?: string;
     plateNumber?: string;
-  } = {};
+    agreementNumber?: string;
+    confidence: number;
+  } = { confidence: 0.5 };
 
   // Remove extension and normalize
   const name = fileName.replace(/\.pdf$/i, '').trim();
 
+  // Extract agreement number (LTO, AGR patterns)
+  const agreementMatch = name.match(/(?:LTO|AGR|AGMT)\d{4,}/i);
+  if (agreementMatch) {
+    result.agreementNumber = agreementMatch[0].toUpperCase();
+  }
+
   // Extract contract number (e.g., CONTRACT-123, C123, 12345)
-  const contractMatch = name.match(/(?:contract|عقد|c)?[^\w]?\d{3,}/i);
+  const contractMatch = name.match(/(?:contract|عقد|c)?[^\w]?\d{3,6}(?!\d)/i);
   if (contractMatch) {
-    result.contractNumber = contractMatch[0].replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+    const num = contractMatch[0].replace(/[^0-9]/g, '');
+    if (num.length <= 6) {
+      result.contractNumber = num;
+    }
   }
 
   // Extract potential customer name (Arabic or English words)
-  // Look for patterns like "Ahmed Ali", "محمد أحمد", etc.
   const words = name.split(/[\s_-]+/).filter(w => w.length > 2);
   const nameWords = words.filter(w =>
-    /^[\u0600-\u06FFa-zA-Z]+$/.test(w) && // Only letters
-    !/\d/.test(w) && // No numbers
-    !w.match(/^contract$/i) &&
+    /^[\u0600-\u06FFa-zA-Z]+$/.test(w) &&
+    !/\d/.test(w) &&
+    !w.match(/^(contract|lto|agr|agmt)$/i) &&
     !w.match(/^عقد$/)
   );
 

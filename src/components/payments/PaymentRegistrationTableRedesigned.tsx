@@ -134,14 +134,14 @@ export function PaymentRegistrationTableRedesigned({ searchTerm, showFilters }: 
           amount,
           payment_date,
           payment_method,
-          status,
+          payment_status,
           created_at,
           notes,
           customer_id,
           invoice_id,
           contract_id,
           customers!inner(first_name, last_name, phone),
-          invoices!inner(invoice_number),
+          invoices!payments_invoice_id_fkey(invoice_number),
           contracts!inner(contract_number)
         `)
         .eq('company_id', companyId)
@@ -149,7 +149,7 @@ export function PaymentRegistrationTableRedesigned({ searchTerm, showFilters }: 
 
       // Apply filters
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        query = query.eq('payment_status', statusFilter);
       }
 
       if (methodFilter !== 'all') {
@@ -186,12 +186,12 @@ export function PaymentRegistrationTableRedesigned({ searchTerm, showFilters }: 
         id: payment.id,
         customer_name: `${payment.customers.first_name} ${payment.customers.last_name}`,
         phone: payment.customers.phone,
-        invoice_number: payment.invoices.invoice_number,
+        invoice_number: payment.invoices?.invoice_number || '-',
         contract_number: payment.contracts.contract_number,
         payment_amount: payment.amount,
         payment_date: payment.payment_date,
         payment_method: payment.payment_method,
-        status: payment.status as any,
+        status: payment.payment_status as any,
         created_at: payment.created_at,
         notes: payment.notes
       }));

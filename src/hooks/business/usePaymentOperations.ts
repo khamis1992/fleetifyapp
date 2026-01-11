@@ -92,7 +92,8 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       }
 
       // 2. Pre-insert duplicate detection (within 1 hour window)
-      const duplicateCheckConditions = supabase
+      // Build query dynamically to ensure all filters are applied
+      let duplicateCheckQuery = supabase
         .from('payments')
         .select('*')
         .eq('company_id', companyId)
@@ -102,17 +103,23 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       // Add customer filter if present
       if (validatedData.customer_id) {
-        duplicateCheckConditions.eq('customer_id', validatedData.customer_id);
+        duplicateCheckQuery = duplicateCheckQuery.eq('customer_id', validatedData.customer_id);
       }
 
       // Add contract filter if present (stricter check for contract payments)
       if (validatedData.contract_id) {
-        duplicateCheckConditions.eq('contract_id', validatedData.contract_id);
+        duplicateCheckQuery = duplicateCheckQuery.eq('contract_id', validatedData.contract_id);
       } else {
-        duplicateCheckConditions.is('contract_id', null);
+        duplicateCheckQuery = duplicateCheckQuery.is('contract_id', null);
       }
 
-      const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckConditions;
+      // Add invoice filter if present (critical for batch payments)
+      // This is essential to allow multiple payments for different invoices with same amount
+      if (validatedData.invoice_id) {
+        duplicateCheckQuery = duplicateCheckQuery.eq('invoice_id', validatedData.invoice_id);
+      }
+
+      const { data: potentialDuplicates, error: duplicateCheckError } = await duplicateCheckQuery;
 
       if (!duplicateCheckError && potentialDuplicates && potentialDuplicates.length > 0) {
         const duplicateInfo = potentialDuplicates.map((p: any) =>
@@ -135,6 +142,19 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       // Determine transaction_type for database (must be 'payment' or 'receipt')
       const dbTransactionType = validatedData.type === 'receipt' ? 'receipt' : 'payment';
+      
+      // Map payment_method to payment_type (payment_type must be one of: cash, check, bank_transfer, credit_card, online_transfer)
+      // payment_method values: cash, bank_transfer, check, credit_card
+      let dbPaymentType = validatedData.payment_method;
+      if (dbPaymentType === 'bank_transfer') {
+        dbPaymentType = 'bank_transfer'; // Keep as is
+      } else if (dbPaymentType === 'credit_card') {
+        dbPaymentType = 'credit_card'; // Keep as is
+      } else if (dbPaymentType === 'check') {
+        dbPaymentType = 'check'; // Keep as is
+      } else {
+        dbPaymentType = 'cash'; // Default to cash
+      }
 
       // Prepare payment data for database - only include non-empty optional fields
       const paymentData: Record<string, any> = {
@@ -143,12 +163,16 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         payment_date: validatedData.payment_date,
         payment_method: validatedData.payment_method,
         currency: validatedData.currency || 'QAR',
-        payment_type: validatedData.type,
+        payment_type: dbPaymentType, // Fixed: use payment_method value, not type
         transaction_type: dbTransactionType,
         payment_status: requireApproval ? 'pending' : 'completed',
         company_id: companyId,
-        created_by: user?.id,
       };
+      
+      // Only add created_by if user.id exists and is a valid UUID
+      if (user?.id && user.id !== '' && !user.id.match(/^0{8}-0{4}-0{4}-0{4}-0{4,12}$/)) {
+        paymentData.created_by = user.id;
+      }
 
       // Add idempotency key if provided
       if (data.idempotencyKey) {
@@ -162,30 +186,88 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
       if (validatedData.check_number) paymentData.check_number = validatedData.check_number;
       if (validatedData.notes) paymentData.notes = validatedData.notes;
 
-      // UUID fields - only add if they're valid UUIDs (not empty strings)
-      if (validatedData.customer_id && validatedData.customer_id !== '') {
+      // UUID fields - only add if they're valid UUIDs (not empty strings or undefined)
+      // Convert undefined/null to null for PostgreSQL compatibility
+      if (validatedData.customer_id && validatedData.customer_id !== '' && validatedData.customer_id !== 'undefined') {
         paymentData.customer_id = validatedData.customer_id;
       }
-      if (validatedData.vendor_id && validatedData.vendor_id !== '') {
+      if (validatedData.vendor_id && validatedData.vendor_id !== '' && validatedData.vendor_id !== 'undefined') {
         paymentData.vendor_id = validatedData.vendor_id;
       }
-      if (validatedData.invoice_id && validatedData.invoice_id !== '') {
+      if (validatedData.invoice_id && validatedData.invoice_id !== '' && validatedData.invoice_id !== 'undefined') {
         paymentData.invoice_id = validatedData.invoice_id;
       }
-      if (validatedData.contract_id && validatedData.contract_id !== '') {
+      if (validatedData.contract_id && validatedData.contract_id !== '' && validatedData.contract_id !== 'undefined') {
         paymentData.contract_id = validatedData.contract_id;
       }
-      if (validatedData.cost_center_id && validatedData.cost_center_id !== '') {
+      if (validatedData.cost_center_id && validatedData.cost_center_id !== '' && validatedData.cost_center_id !== 'undefined') {
         paymentData.cost_center_id = validatedData.cost_center_id;
       }
-      if (validatedData.bank_id && validatedData.bank_id !== '') {
+      if (validatedData.bank_id && validatedData.bank_id !== '' && validatedData.bank_id !== 'undefined') {
         paymentData.bank_id = validatedData.bank_id;
       }
-      if (validatedData.account_id && validatedData.account_id !== '') {
+      if (validatedData.account_id && validatedData.account_id !== '' && validatedData.account_id !== 'undefined') {
         paymentData.account_id = validatedData.account_id;
       }
+      
+      // Clean up: Remove any undefined values and invalid UUIDs from paymentData to prevent PostgreSQL errors
+      // Pattern matches UUIDs that are all zeros (invalid UUIDs)
+      // Note: The problematic value is "00000000-0000-0000-0000-0000-0000" (36 chars with 6 zeros at end)
+      const invalidUuidValues = [
+        '00000000-0000-0000-0000-0000-0000',
+        '00000000-0000-0000-0000-000000000000',
+        '00000000-0000-0000-0000-00000000'
+      ];
+      
+      // More flexible pattern: matches UUIDs that start with zeros and have mostly zeros
+      const isInvalidUuid = (val: string): boolean => {
+        if (!val || typeof val !== 'string') return false;
+        // Check exact matches first
+        if (invalidUuidValues.includes(val)) return true;
+        // Check if it's a UUID-like string that's all zeros
+        if (val.includes('-') && val.length >= 30) {
+          // Remove dashes and check if all zeros
+          const withoutDashes = val.replace(/-/g, '');
+          return /^0+$/.test(withoutDashes);
+        }
+        return false;
+      };
+      
+      console.log('🔍 [usePaymentOperations] Before cleanup:', JSON.stringify(paymentData, null, 2));
+      
+      Object.keys(paymentData).forEach(key => {
+        const value = paymentData[key];
+        
+        // Remove undefined values
+        if (value === undefined || value === 'undefined') {
+          console.warn(`⚠️ Removing undefined from ${key}`);
+          delete paymentData[key];
+          return;
+        }
+        
+        // Remove null values for UUID fields
+        if (value === null && (key.includes('_id') || key === 'id')) {
+          console.warn(`⚠️ Removing null UUID from ${key}`);
+          delete paymentData[key];
+          return;
+        }
+        
+        // Remove invalid UUID values (all zeros)
+        if (typeof value === 'string' && isInvalidUuid(value)) {
+          console.warn(`⚠️ Removing invalid UUID from ${key}: ${value}`);
+          delete paymentData[key];
+          return;
+        }
+        
+        // Remove empty strings for UUID fields
+        if (typeof value === 'string' && value === '' && (key.includes('_id') || key === 'id')) {
+          console.warn(`⚠️ Removing empty UUID from ${key}`);
+          delete paymentData[key];
+          return;
+        }
+      });
 
-      console.log('📝 Final payment data for insert:', paymentData);
+      console.log('📝 Final payment data for insert:', JSON.stringify(paymentData, null, 2));
 
       // Insert payment with timeout protection
       const { data: insertedPayment, error } = await supabase
@@ -196,15 +278,33 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       if (error) {
         console.error('❌ [usePaymentOperations] Database error:', error);
+        console.error('❌ [usePaymentOperations] Error details:', {
+          code: error.code,
+          message: error.message,
+          hint: error.hint,
+          details: error.details,
+          paymentData: paymentData
+        });
+        
         // Provide more descriptive error messages
         if (error.code === '23505') {
           throw new Error('رقم الدفعة موجود مسبقاً');
         } else if (error.code === '23503') {
           throw new Error('خطأ في ربط البيانات - تحقق من العميل أو المورد أو العقد');
         } else if (error.code === '22P02') {
-          throw new Error('خطأ في تنسيق البيانات');
+          // Invalid input syntax - show detailed error
+          const errorDetails = error.message || error.hint || error.details || '';
+          const fieldMatch = errorDetails.match(/column "(\w+)"/i);
+          const fieldName = fieldMatch ? fieldMatch[1] : 'غير محدد';
+          throw new Error(`خطأ في تنسيق البيانات - الحقل "${fieldName}": ${errorDetails || 'تنسيق غير صحيح'}`);
+        } else if (error.code === '23514') {
+          // Check constraint violation - use the detailed message from database
+          const errorMsg = error.message || error.hint || 'تم رفض الدفعة بسبب عدم استيفاء شروط التحقق';
+          throw new Error(errorMsg);
         }
-        throw new Error(error.message || 'فشل حفظ الدفعة في قاعدة البيانات');
+        // Use hint if available (contains detailed validation message)
+        const errorMessage = error.hint || error.message || 'فشل حفظ الدفعة في قاعدة البيانات';
+        throw new Error(errorMessage);
       }
 
       console.log('✅ [usePaymentOperations] Payment created successfully:', insertedPayment);

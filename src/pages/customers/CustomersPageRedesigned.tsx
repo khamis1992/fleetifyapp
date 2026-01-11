@@ -39,6 +39,7 @@ import {
   Eye,
   Edit3,
   Trash2,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -281,6 +282,142 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
   );
 };
 
+// ===== CSV Export Helper =====
+const exportCustomersToCSV = async (
+  customers: Customer[],
+  companyId: string,
+  filters: CustomerFilters,
+  supabaseClient: any
+) => {
+  if (!companyId) {
+    toast.error('لا يمكن تصدير البيانات - لا يوجد معرف الشركة');
+    return;
+  }
+
+  try {
+    toast.loading('جاري تحضير البيانات للتصدير...');
+
+    // Build query to fetch ALL customers matching filters (no pagination)
+    let query = supabaseClient
+      .from('customers')
+      .select('*')
+      .eq('company_id', companyId);
+
+    // Apply filters
+    if (!filters.includeInactive) {
+      query = query.eq('is_active', true);
+    }
+
+    if (filters.customer_type && filters.customer_type !== 'all') {
+      query = query.eq('customer_type', filters.customer_type);
+    }
+
+    // Search filter
+    const searchText = filters.search || filters.searchTerm;
+    if (searchText) {
+      const searchWords = searchText.trim().split(/\s+/).filter((w: string) => w.length > 0);
+      const primarySearchWord = searchWords[searchWords.length - 1];
+
+      query = query.or(
+        `first_name.ilike.%${primarySearchWord}%,` +
+        `last_name.ilike.%${primarySearchWord}%,` +
+        `first_name_ar.ilike.%${primarySearchWord}%,` +
+        `last_name_ar.ilike.%${primarySearchWord}%,` +
+        `company_name.ilike.%${searchText}%,` +
+        `phone.ilike.%${searchText}%,` +
+        `email.ilike.%${searchText}%,` +
+        `customer_code.ilike.%${searchText}%`
+      );
+    }
+
+    // Order results
+    query = query.order('created_at', { ascending: false });
+
+    const { data: allCustomers, error } = await query;
+
+    if (error) throw error;
+
+    const customersToExport = allCustomers || [];
+
+    if (!customersToExport.length) {
+      toast.dismiss();
+      toast.error('لا يوجد عملاء لتصديرهم');
+      return;
+    }
+
+    // Define CSV headers in Arabic
+    const headers = [
+      'كود العميل',
+      'الاسم (عربي)',
+      'الاسم (إنجليزي)',
+      'اسم الشركة (عربي)',
+      'اسم الشركة (إنجليزي)',
+      'نوع العميل',
+      'الهاتف',
+      'البريد الإلكتروني',
+      'رقم الهوية',
+      'العنوان',
+      'الحالة',
+      'عميل VIP',
+      'تاريخ الإنشاء',
+    ];
+
+    // Convert customers data to CSV rows
+    const rows = customersToExport.map((customer: Customer) => [
+      customer.customer_code || '',
+      customer.customer_type === 'individual'
+        ? `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim()
+        : '',
+      customer.customer_type === 'individual'
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+        : '',
+      customer.company_name_ar || '',
+      customer.company_name || '',
+      customer.customer_type === 'individual' ? 'فرد' : 'شركة',
+      customer.phone || '',
+      customer.email || '',
+      customer.national_id || '',
+      customer.address || '',
+      customer.is_active ? 'نشط' : 'غير نشط',
+      customer.is_vip ? 'نعم' : 'لا',
+      customer.created_at ? new Date(customer.created_at).toLocaleDateString('ar-SA') : '',
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => {
+        // Escape quotes and wrap in quotes if contains comma or quote
+        const cellStr = String(cell || '');
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      }).join(',')),
+    ].join('\n');
+
+    // Add UTF-8 BOM for Excel Arabic support
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.dismiss();
+    toast.success(`تم تصدير ${customersToExport.length} عميل بنجاح`);
+  } catch (error: any) {
+    toast.dismiss();
+    toast.error(error.message || 'فشل تصدير البيانات');
+  }
+};
+
 // ===== Main Component =====
 const CustomersPageRedesigned: React.FC = () => {
   const navigate = useNavigate();
@@ -487,6 +624,17 @@ const CustomersPageRedesigned: React.FC = () => {
               >
                 <Upload className="w-4 h-4" />
                 استيراد
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportCustomersToCSV(customers, companyId, filters, supabase)}
+                disabled={isLoading}
+                className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+              >
+                <Download className="w-4 h-4" />
+                تصدير
               </Button>
 
               <Button

@@ -348,11 +348,14 @@ export const useContractsData = (filters: any = {}) => {
       }
     },
     enabled: !!user?.id && !!filter?.company_id,
-    keepPreviousData: true,
-    retry: 1,
-    staleTime: 0, // إعادة الجلب فوراً عند تغير queryKey (خاصة البحث)
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 30 * 1000, // 30 ثانية - نفس صفحة العملاء
     gcTime: 5 * 60 * 1000, // Cache لمدة 5 دقائق
     refetchOnWindowFocus: false, // منع إعادة الجلب عند التركيز على النافذة
+    refetchOnMount: true, // إعادة الجلب عند التحميل
+    // Provide placeholder data to prevent loading flash during search
+    placeholderData: (previousData) => previousData,
   });
 
   // Extract contracts from response (handle both array and paginated response)
