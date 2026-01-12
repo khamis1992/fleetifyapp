@@ -1,21 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import {
-  Download,
-  FileText,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  Building,
-  Users,
-  Target
-} from 'lucide-react';
+import { Target } from 'lucide-react';
 import { WizardData } from '../AccountingSystemWizard';
 import { useTemplateSystem } from '@/hooks/useTemplateSystem';
 
