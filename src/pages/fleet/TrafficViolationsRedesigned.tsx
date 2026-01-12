@@ -52,6 +52,9 @@ const TrafficViolationPaymentsDialog = lazy(() =>
 const TrafficViolationPDFImport = lazy(() =>
   import('@/components/fleet/TrafficViolationPDFImport').then(m => ({ default: m.TrafficViolationPDFImport }))
 );
+const TrafficViolationReports = lazy(() =>
+  import('@/components/fleet/TrafficViolationReports').then(m => ({ default: m.TrafficViolationReports }))
+);
 
 export default function TrafficViolationsRedesigned() {
   const navigate = useNavigate();
@@ -723,76 +726,9 @@ export default function TrafficViolationsRedesigned() {
 
             {/* Tab Content: Reports */}
             <TabsContent value="reports" className="p-6">
-              <h3 className="text-xl font-bold mb-6">التقارير والإحصائيات</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-teal-50 rounded-lg">
-                        <BarChart className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">تقرير المخالفات الشهري</CardTitle>
-                        <CardDescription>عرض جميع المخالفات خلال الشهر الحالي</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">عرض التقرير</Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-50 rounded-lg">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">تقرير المدفوعات</CardTitle>
-                        <CardDescription>ملخص المدفوعات والمبالغ المستحقة</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full rounded-xl border-green-200 text-green-600 hover:bg-green-50">عرض التقرير</Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-amber-50 rounded-lg">
-                        <Car className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">تقرير المركبات</CardTitle>
-                        <CardDescription>المخالفات حسب المركبة</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full rounded-xl border-amber-200 text-amber-600 hover:bg-amber-50">عرض التقرير</Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-lg hover:border-teal-500/30 transition-shadow cursor-pointer border-slate-200/50 rounded-3xl bg-white/80 backdrop-blur-xl">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-50 rounded-lg">
-                        <Gavel className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">تقرير القضايا القانونية</CardTitle>
-                        <CardDescription>المخالفات المحولة للقسم القانوني</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50">عرض التقرير</Button>
-                  </CardContent>
-                </Card>
-              </div>
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
+                <TrafficViolationReports />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </div>
