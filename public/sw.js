@@ -136,8 +136,8 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data?.text() || 'إشعار جديد',
-    icon: '/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png',
-    badge: '/lovable-uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png',
+    icon: '/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png',
+    badge: '/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png',
     vibrate: [200, 100, 200],
     dir: 'rtl',
     lang: 'ar',

@@ -368,7 +368,7 @@ export const FleetSmartDashboard: React.FC<FleetSmartDashboardProps> = ({
   return (
     <div className="space-y-4 mb-6">
       {/* Main Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <SmartStatCard
           title="المركبات المتاحة"
           value={stats.availableVehicles}
@@ -403,6 +403,24 @@ export const FleetSmartDashboard: React.FC<FleetSmartDashboardProps> = ({
           color="red"
           onClick={() => onFilterByStatus?.('out_of_service')}
           isActive={activeStatus === 'out_of_service'}
+        />
+        <SmartStatCard
+          title="مركز الشرطة"
+          value={stats.policeStationVehicles}
+          subtitle="مركبات في مركز الشرطة"
+          icon={Shield}
+          color="purple"
+          onClick={() => onFilterByStatus?.('police_station')}
+          isActive={activeStatus === 'police_station'}
+        />
+        <SmartStatCard
+          title="محجوزة"
+          value={stats.reservedVehicles}
+          subtitle="محجوزة لموظف أو آخر"
+          icon={Clock}
+          color="blue"
+          onClick={() => onFilterByStatus?.('reserved_employee')}
+          isActive={activeStatus === 'reserved_employee' || activeStatus === 'reserved'}
         />
       </div>
 

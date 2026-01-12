@@ -83,6 +83,7 @@ interface SimpleContractWizardProps {
   preselectedCustomerId?: string;
   preselectedVehicleId?: string;
   showAssistant?: boolean;
+  editContract?: any; // Contract to edit (if provided, wizard is in edit mode)
 }
 
 interface Customer {
@@ -896,7 +897,9 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   preselectedCustomerId,
   preselectedVehicleId,
   showAssistant = true,
+  editContract,
 }) => {
+  const isEditMode = !!editContract;
   const { user } = useAuth();
   const companyId = useCurrentCompanyId();
   const [currentStep, setCurrentStep] = useState(0);
@@ -909,39 +912,53 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
   const [customersRefreshKey, setCustomersRefreshKey] = useState(0);
   const [customerSearch, setCustomerSearch] = useState('');
 
-  const [formData, setFormData] = useState<Partial<ContractFormData>>({
-    customer_id: preselectedCustomerId || '',
-    vehicle_id: preselectedVehicleId || '',
-    contract_type: 'daily',
-    start_date: new Date().toISOString().slice(0, 10),
-    end_date: '',
-    rental_days: 1,
-    contract_amount: 0,
-    late_fines_enabled: false,
-  });
+  // Initialize form data - prioritize editContract over preselected values
+  const getInitialFormData = (): Partial<ContractFormData> => {
+    if (editContract) {
+      return {
+        customer_id: editContract.customer_id || '',
+        vehicle_id: editContract.vehicle_id || '',
+        contract_type: editContract.contract_type || 'daily',
+        start_date: editContract.start_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+        end_date: editContract.end_date?.slice(0, 10) || '',
+        rental_days: editContract.rental_days || 1,
+        daily_rate: editContract.daily_rate || 0,
+        weekly_rate: editContract.weekly_rate || 0,
+        monthly_rate: editContract.monthly_rate || editContract.monthly_amount || 0,
+        contract_amount: editContract.contract_amount || 0,
+        late_fines_enabled: editContract.late_fines_enabled || false,
+        late_fine_per_day: editContract.late_fine_per_day || 0,
+        notes: editContract.notes || editContract.description || '',
+      };
+    }
+    return {
+      customer_id: preselectedCustomerId || '',
+      vehicle_id: preselectedVehicleId || '',
+      contract_type: 'daily',
+      start_date: new Date().toISOString().slice(0, 10),
+      end_date: '',
+      rental_days: 1,
+      contract_amount: 0,
+      late_fines_enabled: false,
+    };
+  };
 
-  // Update formData when preselected values change
+  const [formData, setFormData] = useState<Partial<ContractFormData>>(getInitialFormData);
+
+  // Reset form data when dialog opens with new editContract or preselected values
   useEffect(() => {
-    if (preselectedCustomerId) {
-      setFormData(prev => ({
-        ...prev,
-        customer_id: preselectedCustomerId,
-      }));
+    if (open) {
+      setFormData(getInitialFormData());
+      setCurrentStep(0); // Reset to first step
     }
-    if (preselectedVehicleId) {
-      setFormData(prev => ({
-        ...prev,
-        vehicle_id: preselectedVehicleId,
-      }));
-    }
-  }, [preselectedCustomerId, preselectedVehicleId]);
+  }, [open, editContract?.id, preselectedCustomerId, preselectedVehicleId]);
 
   const totalSteps = 3;
   const stepTitles = ['العميل والمركبة', 'التفاصيل والتسعير', 'المراجعة والإرسال'];
 
   // Load customers with server-side search support
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId || !open) return; // Only load when dialog is open
     
     const fetchCustomers = async () => {
       setIsLoadingCustomers(true);
@@ -949,7 +966,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
       // Build query
       let query = supabase
         .from('customers')
-        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id')
+        .select('id, first_name, last_name, first_name_ar, last_name_ar, phone, national_id, customer_type, company_name, company_name_ar')
         .eq('company_id', companyId)
         .eq('is_active', true);
       
@@ -961,36 +978,55 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
           `first_name_ar.ilike.%${customerSearch}%,` +
           `last_name_ar.ilike.%${customerSearch}%,` +
           `phone.ilike.%${customerSearch}%,` +
-          `national_id.ilike.%${customerSearch}%`
+          `national_id.ilike.%${customerSearch}%,` +
+          `company_name.ilike.%${customerSearch}%,` +
+          `company_name_ar.ilike.%${customerSearch}%`
         );
       }
       
       const { data, error } = await query
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(30); // Reduced limit for faster loading
 
       if (!error && data) {
         const customersWithFullName = data.map(c => ({
           ...c,
-          full_name: c.first_name_ar && c.last_name_ar 
-            ? `${c.first_name_ar} ${c.last_name_ar}`.trim()
-            : c.first_name && c.last_name 
-              ? `${c.first_name} ${c.last_name}`.trim()
-              : c.first_name_ar || c.first_name || 'عميل غير مسمى'
+          full_name: c.customer_type === 'corporate'
+            ? c.company_name_ar || c.company_name || 'شركة غير مسماة'
+            : c.first_name_ar && c.last_name_ar 
+              ? `${c.first_name_ar} ${c.last_name_ar}`.trim()
+              : c.first_name && c.last_name 
+                ? `${c.first_name} ${c.last_name}`.trim()
+                : c.first_name_ar || c.first_name || 'عميل غير مسمى'
         }));
+        
+        // In edit mode, ensure the contract's customer is always included
+        if (editContract?.customer_id && !customersWithFullName.find(c => c.id === editContract.customer_id)) {
+          const customerName = editContract.customers?.first_name_ar 
+            ? `${editContract.customers.first_name_ar} ${editContract.customers.last_name_ar || ''}`.trim()
+            : editContract.customers?.first_name 
+              ? `${editContract.customers.first_name} ${editContract.customers.last_name || ''}`.trim()
+              : 'عميل العقد الحالي';
+          customersWithFullName.unshift({
+            id: editContract.customer_id,
+            full_name: customerName,
+            phone: editContract.customers?.phone || '',
+          } as any);
+        }
+        
         setCustomers(customersWithFullName);
       }
       setIsLoadingCustomers(false);
     };
 
-    // Debounce search to avoid too many requests
-    const debounceTimer = setTimeout(fetchCustomers, 300);
+    // Debounce search to avoid too many requests - shorter delay for better UX
+    const debounceTimer = setTimeout(fetchCustomers, 150);
     return () => clearTimeout(debounceTimer);
-  }, [companyId, customerSearch, customersRefreshKey]);
+  }, [companyId, customerSearch, customersRefreshKey, open, editContract?.customer_id]);
 
-  // Load vehicles
+  // Load vehicles - only when dialog is open
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId || !open) return;
     
     const fetchVehicles = async () => {
       setIsLoadingVehicles(true);
@@ -998,16 +1034,31 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
         .from('vehicles')
         .select('id, plate_number, make, model, year, status, daily_rate')
         .eq('company_id', companyId)
-        .order('make');
+        .in('status', ['available', 'rented']) // Only show relevant vehicles
+        .order('make')
+        .limit(50); // Limit for faster loading
 
       if (!error && data) {
+        // In edit mode, ensure the contract's vehicle is always included
+        if (editContract?.vehicle_id && !data.find(v => v.id === editContract.vehicle_id)) {
+          const vehicleInfo = editContract.vehicles || {};
+          data.unshift({
+            id: editContract.vehicle_id,
+            plate_number: vehicleInfo.plate_number || 'مركبة العقد',
+            make: vehicleInfo.make || '',
+            model: vehicleInfo.model || '',
+            year: vehicleInfo.year || null,
+            status: vehicleInfo.status || 'rented',
+            daily_rate: vehicleInfo.daily_rate || editContract.daily_rate || 0,
+          });
+        }
         setVehicles(data);
       }
       setIsLoadingVehicles(false);
     };
 
     fetchVehicles();
-  }, [companyId]);
+  }, [companyId, open, editContract?.vehicle_id]);
 
   const updateFormData = (updates: Partial<ContractFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -1045,6 +1096,28 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
     try {
       if (onSubmit) {
         await onSubmit(formData as ContractFormData);
+      } else if (isEditMode && editContract?.id) {
+        // Update existing contract
+        const { error } = await supabase
+          .from('contracts')
+          .update({
+            customer_id: formData.customer_id,
+            vehicle_id: formData.vehicle_id || null,
+            contract_type: formData.contract_type,
+            start_date: formData.start_date,
+            end_date: formData.end_date,
+            monthly_amount: formData.monthly_amount || formData.monthly_rate || 0,
+            contract_amount: formData.contract_amount || 0,
+            description: formData.notes || null,
+          })
+          .eq('id', editContract.id);
+
+        if (error) {
+          console.error('Contract update error:', error);
+          throw error;
+        }
+        
+        toast.success('تم تحديث العقد بنجاح!');
       } else {
         // Generate contract number
         const timestamp = Date.now().toString(36).toUpperCase();
@@ -1079,13 +1152,14 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
             .update({ status: 'rented' })
             .eq('id', formData.vehicle_id);
         }
+        
+        toast.success('تم إنشاء العقد بنجاح!');
       }
 
-      toast.success('تم إنشاء العقد بنجاح!');
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Error creating contract:', error);
-      toast.error(error?.message || 'فشل في إنشاء العقد');
+      console.error('Error saving contract:', error);
+      toast.error(error?.message || (isEditMode ? 'فشل في تحديث العقد' : 'فشل في إنشاء العقد'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1152,10 +1226,15 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between text-xl">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center shadow-lg",
+                  isEditMode 
+                    ? "bg-gradient-to-br from-sky-500 to-sky-600 shadow-sky-500/30"
+                    : "bg-gradient-to-br from-teal-500 to-teal-600 shadow-teal-500/30"
+                )}>
                   <FileText className="h-5 w-5 text-white" />
                 </div>
-                إنشاء عقد جديد
+                {isEditMode ? 'تعديل العقد' : 'إنشاء عقد جديد'}
               </div>
               {showAssistant && (
                 <Button
@@ -1221,12 +1300,12 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  جاري الإرسال...
+                  {isEditMode ? 'جاري الحفظ...' : 'جاري الإرسال...'}
                 </>
               ) : (
                 <>
                   <Send className="h-5 w-5" />
-                  إرسال العقد
+                  {isEditMode ? 'حفظ التعديلات' : 'إرسال العقد'}
                 </>
               )}
             </Button>

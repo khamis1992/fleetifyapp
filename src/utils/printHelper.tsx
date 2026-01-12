@@ -54,7 +54,9 @@ export const printDocument = (data: PrintableDocumentData): void => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>طباعة - ${data.documentNumber}</title>
+        <title>طباعة - ${data.documentNumber} - Fleetify</title>
+        <link rel="icon" href="${window.location.origin}/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
+        <link rel="shortcut icon" href="${window.location.origin}/uploads/7453c280-3175-4ccf-a73b-24921ec5990b.png" type="image/png">
         <style>
           * {
             margin: 0;

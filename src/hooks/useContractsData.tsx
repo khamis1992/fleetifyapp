@@ -242,6 +242,15 @@ export const useContractsData = (filters: any = {}) => {
             customer_type,
             phone
           ),
+          vehicles(
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            status,
+            daily_rate
+          ),
           cost_center:cost_centers(
             id,
             center_code,
@@ -387,6 +396,7 @@ export const useContractsData = (filters: any = {}) => {
       expiredContracts: [],
       suspendedContracts: [],
       cancelledContracts: [],
+      legalProcedureContracts: [],
       totalRevenue: 0
     };
 
@@ -408,6 +418,7 @@ export const useContractsData = (filters: any = {}) => {
     const expiredContracts = statsContracts.filter((c: any) => c.status === 'expired');
     const suspendedContracts = statsContracts.filter((c: any) => c.status === 'suspended');
     const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
+    const legalProcedureContracts = statsContracts.filter((c: any) => c.status === 'under_legal_procedure');
     
     // Include both active and under_review contracts in revenue calculation
     // Use monthly_amount for monthly revenue, not contract_amount (total contract value)
@@ -421,6 +432,7 @@ export const useContractsData = (filters: any = {}) => {
       cancelled: cancelledContracts.length,
       expired: expiredContracts.length,
       suspended: suspendedContracts.length,
+      legalProcedure: legalProcedureContracts.length,
       totalRevenue
     });
 
@@ -431,6 +443,7 @@ export const useContractsData = (filters: any = {}) => {
       expiredContracts,
       suspendedContracts,
       cancelledContracts,
+      legalProcedureContracts,
       totalRevenue
     };
   }, [allContractsForStats]);

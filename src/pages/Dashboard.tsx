@@ -19,15 +19,22 @@ const DashboardLoader: React.FC = () => (
 const DashboardInner: React.FC = () => {
   const { moduleContext, isLoading: moduleLoading, company, refreshData, isBrowsingMode, currentCompanyId } = useModuleConfig();
   const [timeoutReached, setTimeoutReached] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
-  // Watchdog timer to prevent infinite loading
+  // CRITICAL FIX: Reduced timeout from 8s to 3s to prevent navigation hanging
+  // Also added retry count to prevent infinite retry loops
   useEffect(() => {
+    mountedRef.current = true;
+    
     if (moduleLoading) {
       loadingTimeoutRef.current = setTimeout(() => {
-        console.warn('🏢 [DASHBOARD] Loading timeout reached after 8 seconds');
-        setTimeoutReached(true);
-      }, 8000);
+        if (mountedRef.current) {
+          console.warn('🏢 [DASHBOARD] Loading timeout reached after 3 seconds');
+          setTimeoutReached(true);
+        }
+      }, 3000); // Reduced from 8000ms to 3000ms
     } else {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -36,19 +43,30 @@ const DashboardInner: React.FC = () => {
     }
 
     return () => {
+      mountedRef.current = false;
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
   }, [moduleLoading]);
 
-  // Show loading while module is loading
+  // CRITICAL FIX: Auto-retry once on timeout
+  useEffect(() => {
+    if (timeoutReached && retryCount < 1) {
+      console.log('🏢 [DASHBOARD] Auto-retrying after timeout...');
+      setRetryCount(prev => prev + 1);
+      setTimeoutReached(false);
+      refreshData();
+    }
+  }, [timeoutReached, retryCount, refreshData]);
+
+  // Show loading while module is loading (max 3 seconds)
   if (moduleLoading && !timeoutReached) {
     return <DashboardLoader />;
   }
 
-  // Handle timeout scenario
-  if (timeoutReached && (moduleLoading || !company?.business_type)) {
+  // Handle timeout scenario after auto-retry failed
+  if (timeoutReached && retryCount >= 1 && (moduleLoading || !company?.business_type)) {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -58,6 +76,7 @@ const DashboardInner: React.FC = () => {
           <button 
             onClick={() => {
               setTimeoutReached(false);
+              setRetryCount(0);
               refreshData();
             }}
             className="px-4 py-2 bg-[#e85a4f] text-white rounded-lg hover:bg-[#d44332]"
@@ -69,8 +88,9 @@ const DashboardInner: React.FC = () => {
     );
   }
 
-  // Show loading if no company data yet
-  if (!company?.id) {
+  // CRITICAL FIX: Don't block on company ID - proceed if we have timed out
+  // The BentoDashboard will handle missing data gracefully
+  if (!company?.id && !timeoutReached) {
     return <DashboardLoader />;
   }
 

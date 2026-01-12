@@ -204,7 +204,7 @@ export default function CarRentalScheduler() {
       if (!companyId) return [];
       const { data, error } = await supabase
         .from('vehicles')
-        .select('id, plate_number, make, model, daily_rate, status, vehicle_type')
+        .select('id, plate_number, make, model, daily_rate, status')
         .eq('company_id', companyId)
         .eq('is_active', true)
         .order('plate_number')
@@ -335,7 +335,7 @@ export default function CarRentalScheduler() {
         .eq('company_id', companyId)
         .gte('scheduled_date', format(startRange, 'yyyy-MM-dd'))
         .lte('scheduled_date', format(endRange, 'yyyy-MM-dd'))
-        .in('status', ['pending', 'in_progress', 'scheduled']);
+        .in('status', ['pending', 'in_progress']);
 
       if (error) throw error;
       return data || [];

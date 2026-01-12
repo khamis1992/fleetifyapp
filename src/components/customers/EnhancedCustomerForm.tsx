@@ -202,30 +202,38 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
     sendWelcomeEmail: false
   });
 
+  // Track if form has been initialized to prevent resetting on every render
+  const formInitializedRef = React.useRef(false);
+  const editingCustomerIdRef = React.useRef<string | null>(null);
+
   // Sanitize editingCustomer - keep null values as undefined to avoid validation issues
   // Also handle date fields properly - convert string dates to Date objects
-  const sanitizedEditingCustomer = editingCustomer ? {
-    customer_type: editingCustomer.customer_type || 'individual',
-    first_name: editingCustomer.first_name || undefined,
-    last_name: editingCustomer.last_name || undefined,
-    first_name_ar: editingCustomer.first_name_ar || undefined,
-    last_name_ar: editingCustomer.last_name_ar || undefined,
-    company_name: editingCustomer.company_name || undefined,
-    company_name_ar: editingCustomer.company_name_ar || undefined,
-    phone: editingCustomer.phone || '',
-    email: editingCustomer.email || undefined,
-    national_id: editingCustomer.national_id || undefined,
-    passport_number: editingCustomer.passport_number || undefined,
-    license_number: editingCustomer.license_number || undefined,
-    notes: editingCustomer.notes || undefined,
-    address: editingCustomer.address || undefined,
-    city: editingCustomer.city || undefined,
-    country: editingCustomer.country || undefined,
-    // Handle date fields - convert string dates to Date objects for the form
-    date_of_birth: editingCustomer.date_of_birth ? new Date(editingCustomer.date_of_birth) : undefined,
-    national_id_expiry: editingCustomer.national_id_expiry ? new Date(editingCustomer.national_id_expiry) : undefined,
-    license_expiry: editingCustomer.license_expiry ? new Date(editingCustomer.license_expiry) : undefined,
-  } : undefined;
+  // CRITICAL FIX: Use useMemo to prevent recreating object on every render
+  const sanitizedEditingCustomer = React.useMemo(() => {
+    if (!editingCustomer) return undefined;
+    return {
+      customer_type: editingCustomer.customer_type || 'individual',
+      first_name: editingCustomer.first_name || undefined,
+      last_name: editingCustomer.last_name || undefined,
+      first_name_ar: editingCustomer.first_name_ar || undefined,
+      last_name_ar: editingCustomer.last_name_ar || undefined,
+      company_name: editingCustomer.company_name || undefined,
+      company_name_ar: editingCustomer.company_name_ar || undefined,
+      phone: editingCustomer.phone || '',
+      email: editingCustomer.email || undefined,
+      national_id: editingCustomer.national_id || undefined,
+      passport_number: editingCustomer.passport_number || undefined,
+      license_number: editingCustomer.license_number || undefined,
+      notes: editingCustomer.notes || undefined,
+      address: editingCustomer.address || undefined,
+      city: editingCustomer.city || undefined,
+      country: editingCustomer.country || undefined,
+      // Handle date fields - convert string dates to Date objects for the form
+      date_of_birth: editingCustomer.date_of_birth ? new Date(editingCustomer.date_of_birth) : undefined,
+      national_id_expiry: editingCustomer.national_id_expiry ? new Date(editingCustomer.national_id_expiry) : undefined,
+      license_expiry: editingCustomer.license_expiry ? new Date(editingCustomer.license_expiry) : undefined,
+    };
+  }, [editingCustomer?.id]); // Only recreate when customer ID changes
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -256,11 +264,17 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
   const nationalId = form.watch('national_id');
 
   // Update form when editingCustomer changes (e.g., when dialog opens)
+  // CRITICAL FIX: Only reset form once when customer ID changes, not on every render
   React.useEffect(() => {
-    if (mode === 'edit' && sanitizedEditingCustomer) {
-      form.reset(sanitizedEditingCustomer);
+    if (mode === 'edit' && sanitizedEditingCustomer && editingCustomer?.id) {
+      // Only reset if this is a different customer or form hasn't been initialized
+      if (editingCustomerIdRef.current !== editingCustomer.id || !formInitializedRef.current) {
+        form.reset(sanitizedEditingCustomer);
+        editingCustomerIdRef.current = editingCustomer.id;
+        formInitializedRef.current = true;
+      }
     }
-  }, [mode, sanitizedEditingCustomer, form]);
+  }, [mode, editingCustomer?.id, sanitizedEditingCustomer, form]);
 
   // Auto-fill license number when national ID changes
   React.useEffect(() => {

@@ -102,7 +102,7 @@ export const useMaintenanceStats = () => {
         // 4. Cost statistics (completed and pending)
         supabase
           .from('vehicle_maintenance')
-          .select('status, actual_cost, estimated_cost, scheduled_date, completion_date')
+          .select('status, actual_cost, estimated_cost, scheduled_date, completed_date')
           .eq('company_id', companyId),
 
         // 5. Vehicles in maintenance count
@@ -179,9 +179,9 @@ export const useMaintenanceStats = () => {
       let totalDays = 0;
       let completedWithDates = 0;
       completedRecords.forEach(r => {
-        if (r.scheduled_date && r.completion_date) {
+        if (r.scheduled_date && r.completed_date) {
           const start = new Date(r.scheduled_date);
-          const end = new Date(r.completion_date);
+          const end = new Date(r.completed_date);
           const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
           if (days >= 0) {
             totalDays += days;

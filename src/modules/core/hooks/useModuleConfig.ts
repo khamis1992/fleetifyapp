@@ -136,14 +136,19 @@ export const useModuleConfig = () => {
     availableModules: availableModules || []
   }), [company?.business_type, enabledModules, moduleSettingsMap, availableModules]);
 
-  // تحسين منطق التحميل - نعتبر البيانات محملة فقط عندما تكون بيانات الشركة موجودة ومعرفة
-  // وجود business_type أمر ضروري لاتخاذ قرار عرض الـ dashboard الصحيح
-  const isDataLoaded = !!company && !!company.business_type && moduleSettings !== undefined;
+  // CRITICAL FIX: Improved loading logic
+  // - If companyId is null, we can't load data - don't wait forever
+  // - If companyId exists but data isn't loaded, wait briefly
+  // - Consider loaded if we have company data OR if there's no companyId (can't load without it)
+  const hasNoCompanyToLoad = !companyId;
+  const hasCompanyData = !!company && !!company.business_type;
+  const isDataLoaded = hasNoCompanyToLoad || (hasCompanyData && moduleSettings !== undefined);
   
   logger.debug('🔧 [MODULE_CONFIG] Loading Status Check:', {
     hasCompany: !!company,
     hasBusinessType: !!company?.business_type,
     hasModuleSettings: moduleSettings !== undefined,
+    hasNoCompanyToLoad,
     isDataLoaded,
     companyId
   });

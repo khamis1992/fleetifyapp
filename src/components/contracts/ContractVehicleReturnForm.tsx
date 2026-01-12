@@ -343,21 +343,12 @@ export const ContractVehicleReturnForm: React.FC<ContractVehicleReturnFormProps>
           {/* Vehicle Damage Diagram */}
           <div className="w-full">
             <h4 className="font-medium mb-4">مجسم أضرار المركبة</h4>
-            {vehicleData ? (
-              <VehicleConditionDiagram
-                damagePoints={damagePoints}
-                onDamagePointsChange={handleDamagePointsChange}
-                readOnly={false}
-                conditionReportId={contract.id}
-              />
-            ) : (
-              <div className="flex items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-lg">
-                <div className="text-center text-slate-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                  جاري تحميل معلومات المركبة...
-                </div>
-              </div>
-            )}
+            <VehicleConditionDiagram
+              damagePoints={damagePoints}
+              onDamagePointsChange={handleDamagePointsChange}
+              readOnly={false}
+              conditionReportId={contract.id}
+            />
           </div>
 
           {/* Separator */}

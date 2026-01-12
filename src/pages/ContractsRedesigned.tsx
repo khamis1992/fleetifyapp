@@ -24,14 +24,14 @@ import {
   Car,
   Eye,
   Edit,
-  MoreHorizontal,
   TrendingUp,
-  Zap,
   Upload,
   Download,
   XOctagon,
   MessageSquare,
   FileSignature,
+  ArrowUpDown,
+  Play,
 } from "lucide-react";
 
 // Component imports
@@ -50,7 +50,6 @@ import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpl
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings";
 import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
-import { ExpressContractForm } from "@/components/contracts";
 import { ContractAmendmentForm } from "@/components/contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -61,6 +60,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useContractCreation } from "@/hooks/useContractCreation";
 import { useContractDrafts } from "@/hooks/useContractDrafts";
 import { useToast } from "@/hooks/use-toast-mock";
+import { useUpdateContractStatus } from "@/hooks/useContractRenewal";
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -69,7 +69,6 @@ import { getCurrencyConfig } from "@/utils/currencyConfig";
 function ContractsRedesigned() {
   // State management
   const [showContractWizard, setShowContractWizard] = useState(false);
-  const [showExpressMode, setShowExpressMode] = useState(false);
   const [showAmendmentForm, setShowAmendmentForm] = useState(false);
   const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
@@ -95,6 +94,7 @@ function ContractsRedesigned() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
+  const [sortBy, setSortBy] = useState<'default' | 'customer_name' | 'contract_date' | 'end_date'>('default');
 
   // Refs to track processed parameters
   const processedCustomerRef = useRef(false);
@@ -129,6 +129,10 @@ function ContractsRedesigned() {
       newFilters.status = "active";
     } else if (activeTab === "cancelled") {
       newFilters.status = "cancelled";
+    } else if (activeTab === "legal_action") {
+      newFilters.status = "under_legal_procedure";
+    } else if (activeTab === "pending_completion") {
+      newFilters.status = "pending_completion";
     } else if (activeTab === "alerts") {
       newFilters.status = "expiring_soon";
     }
@@ -145,6 +149,27 @@ function ContractsRedesigned() {
 
   const safeContracts = useMemo(() => (Array.isArray(contracts) ? contracts : []), [contracts]);
   const safeFilteredContracts = useMemo(() => (Array.isArray(filteredContracts) ? filteredContracts : []), [filteredContracts]);
+  
+  // Sort contracts based on selected sort option
+  const sortedContracts = useMemo(() => {
+    if (sortBy === 'default') return safeFilteredContracts;
+    
+    return [...safeFilteredContracts].sort((a, b) => {
+      if (sortBy === 'customer_name') {
+        const nameA = a.customers?.first_name_ar || a.customers?.first_name || a.customers?.company_name_ar || a.customers?.company_name || '';
+        const nameB = b.customers?.first_name_ar || b.customers?.first_name || b.customers?.company_name_ar || b.customers?.company_name || '';
+        return nameA.localeCompare(nameB, 'ar');
+      }
+      if (sortBy === 'contract_date') {
+        return new Date(b.contract_date || 0).getTime() - new Date(a.contract_date || 0).getTime();
+      }
+      if (sortBy === 'end_date') {
+        return new Date(a.end_date || 0).getTime() - new Date(b.end_date || 0).getTime();
+      }
+      return 0;
+    });
+  }, [safeFilteredContracts, sortBy]);
+  
   const isInitialLoading = isLoading && safeFilteredContracts.length === 0;
   const safeStatistics = useMemo(
     () => statistics || {
@@ -152,6 +177,7 @@ function ContractsRedesigned() {
       draftContracts: [],
       underReviewContracts: [],
       cancelledContracts: [],
+      legalProcedureContracts: [],
       totalRevenue: 0,
     },
     [statistics]
@@ -264,6 +290,22 @@ function ContractsRedesigned() {
     setShowCancellationDialog(true);
   }, []);
 
+  // Handler to reactivate cancelled contract
+  const { mutateAsync: updateContractStatus, isPending: isReactivating } = useUpdateContractStatus();
+  
+  const handleReactivateContract = useCallback(async (contract: any) => {
+    try {
+      await updateContractStatus({
+        contractId: contract.id,
+        status: 'active',
+        reason: 'تم إعادة تنشيط العقد'
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error reactivating contract:', error);
+    }
+  }, [updateContractStatus, refetch]);
+
   const handleDeleteContract = useCallback((contract: any) => {
     setSelectedContract(contract);
     setShowDeleteDialog(true);
@@ -335,17 +377,18 @@ function ContractsRedesigned() {
     title: string;
     value: number;
     icon: React.ElementType;
-    color: 'emerald' | 'violet' | 'amber' | 'slate';
+    color: 'emerald' | 'violet' | 'amber' | 'slate' | 'rose';
     description: string;
   }) => {
-    const colorStyles = {
+    const colorStyles: Record<string, { bg: string; text: string; iconBg: string }> = {
       emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', iconBg: 'bg-gradient-to-br from-teal-500 to-teal-600' },
-      violet: { bg: 'bg-violet-50', text: 'text-violet-600', iconBg: 'bg-gradient-to-br from-teal-500 to-teal-600' },
-      amber: { bg: 'bg-amber-50', text: 'text-amber-600', iconBg: 'bg-gradient-to-br from-teal-500 to-teal-600' },
-      slate: { bg: 'bg-slate-50', text: 'text-slate-600', iconBg: 'bg-gradient-to-br from-teal-500 to-teal-600' },
+      violet: { bg: 'bg-violet-50', text: 'text-violet-600', iconBg: 'bg-gradient-to-br from-violet-500 to-violet-600' },
+      amber: { bg: 'bg-amber-50', text: 'text-amber-600', iconBg: 'bg-gradient-to-br from-amber-500 to-amber-600' },
+      slate: { bg: 'bg-slate-50', text: 'text-slate-600', iconBg: 'bg-gradient-to-br from-slate-500 to-slate-600' },
+      rose: { bg: 'bg-rose-50', text: 'text-rose-600', iconBg: 'bg-gradient-to-br from-rose-500 to-rose-600' },
     };
 
-    const style = colorStyles[color];
+    const style = colorStyles[color] || colorStyles.slate;
 
     return (
       <motion.div
@@ -422,10 +465,10 @@ function ContractsRedesigned() {
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="text-lg font-bold text-slate-900 mb-1">{contract.contract_number || "غير محدد"}</h4>
+              <h4 className="text-lg font-bold text-slate-900 mb-1">{getCustomerName(contract)}</h4>
               <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
-                <User className="w-4 h-4" />
-                <span>{getCustomerName(contract)}</span>
+                <FileText className="w-4 h-4" />
+                <span>{contract.contract_number || "غير محدد"}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <Car className="w-4 h-4" />
@@ -452,10 +495,6 @@ function ContractsRedesigned() {
         </div>
 
         <div className="border-t border-slate-200/50 pt-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button variant="outline" size="sm" onClick={() => handleViewDetails(contract)} className="bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
-            <Eye className="w-4 h-4 ml-2" />
-            عرض
-          </Button>
           <Button variant="outline" size="sm" onClick={() => {
             setContractToEdit(contract);
             setShowContractWizard(true);
@@ -467,14 +506,37 @@ function ContractsRedesigned() {
             <RefreshCw className="w-4 h-4 ml-2" />
             تجديد
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleCancelContract(contract)} className="bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
-            <XCircle className="w-4 h-4 ml-2" />
-            إلغاء
-          </Button>
-          <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-3xl ml-auto hover:shadow-xl hover:shadow-teal-500/10">
-            <MoreHorizontal className="w-4 h-4 ml-2" />
-            المزيد
-          </Button>
+          {contract.status === 'cancelled' ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleReactivateContract(contract)}
+              disabled={isReactivating}
+              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-3xl hover:shadow-xl hover:shadow-emerald-500/10"
+            >
+              <Play className="w-4 h-4 ml-2" />
+              {isReactivating ? 'جاري التنشيط...' : 'تنشيط'}
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => handleCancelContract(contract)} className="bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
+              <XCircle className="w-4 h-4 ml-2" />
+              إلغاء
+            </Button>
+          )}
+          {contract.status === 'cancelled' && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setSelectedContract(contract);
+                setShowDeleteDialog(true);
+              }} 
+              className="bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-3xl ml-auto hover:shadow-xl hover:shadow-rose-500/10"
+            >
+              <Trash2 className="w-4 h-4 ml-2" />
+              حذف نهائي
+            </Button>
+          )}
         </div>
       </motion.div>
     );
@@ -514,14 +576,6 @@ function ContractsRedesigned() {
                 >
                   <Plus className="w-4 h-4 ml-2" />
                   إنشاء عقد جديد
-                </Button>
-                <Button
-                  onClick={() => setShowExpressMode(true)}
-                  variant="outline"
-                  className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
-                >
-                  <Zap className="w-4 h-4 ml-2 text-amber-500" />
-                  عقود ايجار
                 </Button>
                 {user?.roles?.includes('super_admin') && (
                   <Button
@@ -572,7 +626,7 @@ function ContractsRedesigned() {
 
         <div className="max-w-[1600px] mx-auto px-6 py-8 space-y-6">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               title="نشط"
               value={safeStatistics.activeContracts?.length || 0}
@@ -581,18 +635,11 @@ function ContractsRedesigned() {
               description="العقود النشطة"
             />
             <StatCard
-              title="مسودات"
-              value={safeStatistics.draftContracts?.length || 0}
-              icon={FileEdit}
-              color="violet"
-              description="بانتظار الإكمال"
-            />
-            <StatCard
-              title="مراجعة"
-              value={safeStatistics.underReviewContracts?.length || 0}
-              icon={Clock}
-              color="amber"
-              description="قيد المراجعة"
+              title="إجراء قانوني"
+              value={safeStatistics.legalProcedureContracts?.length || 0}
+              icon={AlertTriangle}
+              color="rose"
+              description="تحت الإجراء القانوني"
             />
             <StatCard
               title="ملغية"
@@ -709,27 +756,51 @@ function ContractsRedesigned() {
           >
             {/* Tabs */}
             <div className="border-b border-slate-200/50">
-              <div className="flex gap-2 p-2 overflow-x-auto">
-                {[
-                  { id: "all", label: "جميع العقود" },
-                  { id: "active", label: "النشطة" },
-                  { id: "cancelled", label: "الملغية" },
-                  { id: "alerts", label: "تنبيهات الانتهاء" },
-                  { id: "settings", label: "إعدادات الغرامات" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+              <div className="flex items-center justify-between p-2">
+                <div className="flex gap-2 overflow-x-auto">
+                  {[
+                    { id: "all", label: "جميع العقود" },
+                    { id: "active", label: "النشطة" },
+                    { id: "cancelled", label: "الملغية" },
+                    { id: "legal_action", label: "الإجراء القانوني" },
+                    { id: "pending_completion", label: "بانتظار الإكمال" },
+                    { id: "alerts", label: "تنبيهات الانتهاء" },
+                    { id: "settings", label: "إعدادات الغرامات" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        "px-4 py-2.5 rounded-3xl text-sm font-medium transition-all whitespace-nowrap",
+                        activeTab === tab.id
+                          ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20"
+                          : "text-slate-600 hover:bg-slate-50/50 hover:shadow-xl hover:shadow-teal-500/10"
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2 mr-4">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
                     className={cn(
-                      "px-4 py-2.5 rounded-3xl text-sm font-medium transition-all whitespace-nowrap",
-                      activeTab === tab.id
-                        ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20"
-                        : "text-slate-600 hover:bg-slate-50/50 hover:shadow-xl hover:shadow-teal-500/10"
+                      "px-3 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer",
+                      "bg-white/50 border-slate-200/50 text-slate-600",
+                      "hover:border-teal-500/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20",
+                      "outline-none"
                     )}
                   >
-                    {tab.label}
-                  </button>
-                ))}
+                    <option value="default">ترتيب افتراضي</option>
+                    <option value="customer_name">حسب اسم العميل</option>
+                    <option value="contract_date">حسب تاريخ العقد</option>
+                    <option value="end_date">حسب تاريخ الانتهاء</option>
+                  </select>
+                  <ArrowUpDown className="w-4 h-4 text-slate-400" />
+                </div>
               </div>
             </div>
 
@@ -739,7 +810,7 @@ function ContractsRedesigned() {
                 <LateFinesSettings />
               ) : (
                 <div className="space-y-4">
-                  {safeFilteredContracts.length === 0 ? (
+                  {sortedContracts.length === 0 ? (
                     <div className="text-center py-16">
                       <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
                         <FileText className="w-8 h-8 text-slate-400" />
@@ -765,7 +836,7 @@ function ContractsRedesigned() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-4">
-                      {safeFilteredContracts.map((contract) => (
+                      {sortedContracts.map((contract) => (
                         <ContractCard key={contract.id} contract={contract} />
                       ))}
                     </div>
@@ -806,13 +877,16 @@ function ContractsRedesigned() {
       <ContractExportDialog open={showExportDialog} onOpenChange={setShowExportDialog} />
       <SimpleContractWizard
         open={showContractWizard}
-        onOpenChange={setShowContractWizard}
+        onOpenChange={(open) => {
+          setShowContractWizard(open);
+          if (!open) setContractToEdit(undefined); // Reset edit contract when closing
+        }}
         onSubmit={handleContractSubmit}
         preselectedCustomerId={preselectedCustomerId}
         preselectedVehicleId={preselectedVehicleId}
-        key={showContractWizard ? 'wizard-open' : 'wizard-closed'}
+        editContract={contractToEdit}
+        key={contractToEdit?.id || (showContractWizard ? 'wizard-open' : 'wizard-closed')}
       />
-      <ExpressContractForm open={showExpressMode} onOpenChange={setShowExpressMode} onSubmit={handleContractSubmit} />
       {selectedContract && (
         <ContractAmendmentForm
           open={showAmendmentForm}
