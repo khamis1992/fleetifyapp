@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Upload, 
-  FileText, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Upload,
+  FileText,
+  AlertTriangle,
+  CheckCircle,
   RefreshCw,
   Save,
   X,
@@ -19,67 +19,58 @@ import {
   DollarSign,
   Hash,
   Building,
-  Eye
+  Eye,
+  User,
+  Copy
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { useVehicles } from '@/hooks/useVehicles';
 import { PDFViewer } from './PDFViewer';
 import { TrafficViolationStats } from './TrafficViolationStats';
 import { ViolationImportReport } from './ViolationImportReport';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import * as pdfjsLib from 'pdfjs-dist';
+import {
+  ExtractedViolation,
+  MatchedViolation,
+  ImportProcessingResult,
+  PDFHeaderData,
+  MATCH_CONFIDENCE_LABELS,
+  MATCH_CONFIDENCE_COLORS
+} from '@/types/violations';
+import { useViolationMatching, useViolationSave } from '@/hooks/useViolationMatching';
 
-// تهيئة PDF.js worker
+// Initialize PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
-interface ExtractedViolation {
-  id: string;
-  violationNumber: string;
-  date: string;
-  time?: string;
-  plateNumber: string;
-  location: string;
-  authority: string;
-  fineAmount: number;
-  points: number;
-  violationType: string;
-  status: 'extracted' | 'matched' | 'error';
-  vehicleId?: string;
-  errors: string[];
-}
-
-interface ProcessingResult {
-  totalExtracted: number;
-  successfulMatches: number;
-  errors: number;
-  violations: ExtractedViolation[];
-}
 
 export const TrafficViolationPDFImport: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
+  const [processingResult, setProcessingResult] = useState<ImportProcessingResult | null>(null);
   const [selectedViolations, setSelectedViolations] = useState<Set<string>>(new Set());
-  const [isSaving, setIsSaving] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  
+
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
-  const { data: vehicles = [] } = useVehicles();
+  const { processViolations, isProcessing: isMatching } = useViolationMatching({
+    companyId,
+    autoLink: true,
+    checkDuplicates: true
+  });
+  const { saveViolations, isSaving } = useViolationSave();
 
-  // استخراج النص من PDF باستخدام pdf.js
+  // Extract text from PDF using pdf.js
   const extractTextFromPDF = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
-    
-    console.log(`📄 استخراج النص من PDF: ${pdf.numPages} صفحة`);
-    
+
+    console.log(`📄 Extracting text from PDF: ${pdf.numPages} pages`);
+
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
@@ -87,143 +78,146 @@ export const TrafficViolationPDFImport: React.FC = () => {
         .map((item: any) => item.str)
         .join(' ');
       fullText += pageText + '\n\n';
-      console.log(`✅ صفحة ${pageNum}: ${pageText.length} حرف`);
     }
-    
+
     return fullText.trim();
   };
 
-  // تحويل PDF إلى صور (fallback إذا فشل استخراج النص)
+  // Convert PDF to images (fallback if text extraction fails)
   const convertPDFToImages = async (file: File): Promise<File[]> => {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const images: File[] = [];
-    
-    console.log(`📄 تحويل PDF إلى صور: ${pdf.numPages} صفحة`);
-    
+
+    console.log(`📄 Converting PDF to images: ${pdf.numPages} pages`);
+
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const scale = 2;
       const viewport = page.getViewport({ scale });
-      
+
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       if (!context) continue;
-      
+
       canvas.height = viewport.height;
       canvas.width = viewport.width;
-      
+
       await page.render({
         canvasContext: context,
         viewport: viewport
       }).promise;
-      
+
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((b) => resolve(b!), 'image/png', 0.95);
       });
-      
+
       const imageFile = new File(
-        [blob], 
+        [blob],
         `${file.name.replace('.pdf', '')}_page_${pageNum}.png`,
         { type: 'image/png' }
       );
       images.push(imageFile);
     }
-    
+
     return images;
   };
 
-  // استخراج البيانات من الملف
-  const extractDataFromPDF = async (file: File): Promise<ExtractedViolation[]> => {
+  // Extract data from PDF file
+  const extractDataFromPDF = async (file: File): Promise<{
+    header?: PDFHeaderData;
+    violations: ExtractedViolation[];
+  }> => {
     try {
-      const allViolations: ExtractedViolation[] = [];
-      
-      // إذا كان الملف PDF
+      // If PDF file
       if (file.type === 'application/pdf') {
         toast({
-          title: '📄 قراءة ملف PDF...',
-          description: 'يتم استخراج النص من الملف',
+          title: '📄 Reading PDF file...',
+          description: 'Extracting text from file',
         });
-        
-        // محاولة استخراج النص أولاً (أسرع وأرخص)
+
+        // Try to extract text first (faster and cheaper)
         let pdfText = '';
         try {
           pdfText = await extractTextFromPDF(file);
-          console.log(`📝 تم استخراج ${pdfText.length} حرف من PDF`);
+          console.log(`📝 Extracted ${pdfText.length} characters from PDF`);
         } catch (textError) {
           console.error('Error extracting text from PDF:', textError);
         }
-        
-        // إذا وجدنا نص كافٍ، نرسله مباشرة للتحليل
+
+        // If we have enough text, send for analysis
         if (pdfText.length > 50) {
           toast({
-            title: '✅ تم قراءة النص',
-            description: `تم استخراج ${pdfText.length} حرف - جاري التحليل...`,
+            title: '✅ Text extracted',
+            description: `Extracted ${pdfText.length} characters - Analyzing...`,
           });
-          
-          console.log('📤 إرسال النص للتحليل...');
+
+          console.log('📤 Sending text for analysis...');
           const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
-            body: { 
+            body: {
               text: pdfText,
               source: file.name
             }
           });
-          
+
           if (error) {
             console.error('Error from text analysis:', error);
-            // إذا فشل، نحاول الطريقة البديلة (صور)
             throw new Error('FALLBACK_TO_IMAGES');
           }
-          
+
           if (!data?.success) {
             if (data?.error === 'PDF_NO_TEXT') {
               throw new Error('FALLBACK_TO_IMAGES');
             }
-            throw new Error(data?.details || 'فشل في تحليل النص');
+            throw new Error(data?.details || 'Failed to analyze text');
           }
-          
-          // تحويل البيانات المستخرجة
-          const violations = processViolationsData(data.violations, allViolations.length);
-          return matchViolationsWithVehicles(violations);
-          
+
+          return {
+            header: data.header,
+            violations: data.violations
+          };
+
         } else {
-          // النص غير كافٍ، نستخدم الصور
-          console.log('⚠️ النص غير كافٍ، التحويل للصور...');
+          // Not enough text, use images
+          console.log('⚠️ Not enough text, converting to images...');
           throw new Error('FALLBACK_TO_IMAGES');
         }
-        
+
       } else {
-        // ملف صورة - إرسال مباشر
+        // Image file - send directly
         const formData = new FormData();
         formData.append('file', file);
 
         const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
           body: formData
         });
-        
+
         if (error) throw error;
-        if (!data?.success) throw new Error(data?.details || 'فشل في استخراج البيانات');
-        
-        const violations = processViolationsData(data.violations, 0);
-        return matchViolationsWithVehicles(violations);
+        if (!data?.success) throw new Error(data?.details || 'Failed to extract data');
+
+        return {
+          header: data.header,
+          violations: data.violations
+        };
       }
-      
+
     } catch (err: any) {
-      // Fallback: تحويل PDF لصور إذا فشل استخراج النص
+      // Fallback: convert PDF to images if text extraction failed
       if (err.message === 'FALLBACK_TO_IMAGES' && file.type === 'application/pdf') {
         toast({
-          title: '📸 تحويل PDF إلى صور...',
-          description: 'يتم تحويل الملف لصور للتحليل البصري',
+          title: '📸 Converting PDF to images...',
+          description: 'Converting file to images for visual analysis',
         });
-        
+
         const images = await convertPDFToImages(file);
         toast({
-          title: '✅ تم التحويل',
-          description: `تم تحويل ${images.length} صفحة`,
+          title: '✅ Conversion complete',
+          description: `Converted ${images.length} pages`,
         });
-        
-        const allViolations: ExtractedViolation[] = [];
-        
+
+        let allViolations: ExtractedViolation[] = [];
+        let header: PDFHeaderData | undefined;
+
         for (const imageFile of images) {
           const formData = new FormData();
           formData.append('file', imageFile);
@@ -231,80 +225,32 @@ export const TrafficViolationPDFImport: React.FC = () => {
           const { data, error } = await supabase.functions.invoke('extract-traffic-violations', {
             body: formData
           });
-          
+
           if (error || !data?.success) {
             console.warn('Error processing image:', error || data?.details);
             continue;
           }
-          
-          const violations = processViolationsData(data.violations, allViolations.length);
-          allViolations.push(...violations);
+
+          // Merge violations from all pages
+          if (!header && data.header) {
+            header = data.header;
+          }
+          allViolations = [...allViolations, ...data.violations];
         }
-        
-        return matchViolationsWithVehicles(allViolations);
+
+        return { header, violations: allViolations };
       }
-      
+
       throw err;
     }
   };
-  
-  // تحويل بيانات المخالفات للتنسيق المطلوب
-  const processViolationsData = (violations: any[], startIndex: number): ExtractedViolation[] => {
-    return violations.map((violation: any, index: number) => ({
-      id: `extracted_${startIndex + index + 1}`,
-      violationNumber: violation.violation_number || '',
-      date: violation.date || '',
-      time: violation.time || '',
-      plateNumber: violation.plate_number || '',
-      location: violation.location || '',
-      authority: violation.issuing_authority || '',
-      fineAmount: violation.fine_amount || 0,
-      points: 0,
-      violationType: violation.violation_type || '',
-      status: 'extracted' as const,
-      errors: []
-    }));
-  };
-  
-  // ربط المخالفات بالمركبات
-  const matchViolationsWithVehicles = (violations: ExtractedViolation[]): ExtractedViolation[] => {
-    return violations.map(violation => {
-      if (!violation.plateNumber) {
-        return {
-          ...violation,
-          status: 'error' as const,
-          errors: ['رقم اللوحة غير موجود']
-        };
-      }
 
-      const matchedVehicle = vehicles.find(v => 
-        v.plate_number?.replace(/\s/g, '').toLowerCase() === 
-        violation.plateNumber.replace(/\s/g, '').toLowerCase()
-      );
-
-      if (matchedVehicle) {
-        return {
-          ...violation,
-          vehicleId: matchedVehicle.id,
-          status: 'matched' as const
-        };
-      }
-
-      return {
-        ...violation,
-        status: 'error' as const,
-        errors: ['لم يتم العثور على المركبة في النظام']
-      };
-    });
-  };
-
-
-  // معالجة الملفات المرفوعة
+  // Process uploaded files
   const processFiles = async () => {
     if (uploadedFiles.length === 0) {
       toast({
-        title: "خطأ",
-        description: "يرجى رفع ملف (صورة أو PDF) أولاً",
+        title: "Error",
+        description: "Please upload a file (image or PDF) first",
         variant: "destructive"
       });
       return;
@@ -313,41 +259,52 @@ export const TrafficViolationPDFImport: React.FC = () => {
     setIsProcessing(true);
     try {
       let allViolations: ExtractedViolation[] = [];
+      let header: PDFHeaderData | undefined;
 
+      // Extract data from all files
       for (const file of uploadedFiles) {
         try {
-          const extractedViolations = await extractDataFromPDF(file);
-          allViolations = [...allViolations, ...extractedViolations];
+          const extracted = await extractDataFromPDF(file);
+          if (extracted.header) {
+            header = extracted.header;
+          }
+          allViolations = [...allViolations, ...extracted.violations];
         } catch (error: unknown) {
-          // في حالة فشل استخراج بيانات ملف معين، أضف خطأ ولكن لا توقف المعالجة
-          console.error(`فشل في معالجة الملف ${file.name}:`, error);
+          console.error(`Failed to process file ${file.name}:`, error);
           toast({
-            title: "تحذير",
-            description: `فشل في معالجة الملف ${file.name}: ${error.message}`,
+            title: "Warning",
+            description: `Failed to process file ${file.name}: ${error.message}`,
             variant: "destructive"
           });
         }
       }
 
-      const result: ProcessingResult = {
-        totalExtracted: allViolations.length,
-        successfulMatches: allViolations.filter(v => v.status === 'matched').length,
-        errors: allViolations.filter(v => v.status === 'error').length,
-        violations: allViolations
-      };
+      if (allViolations.length === 0) {
+        throw new Error('No violations found in the uploaded files');
+      }
+
+      // Process violations: match and check duplicates
+      const result = await processViolations(allViolations);
+
+      // Add header data to result
+      result.header = header;
 
       setProcessingResult(result);
-      setSelectedViolations(new Set(allViolations.filter(v => v.status === 'matched').map(v => v.id)));
+      setSelectedViolations(new Set(
+        result.violations
+          .filter(v => v.status === 'matched' && !v.is_duplicate)
+          .map(v => v.id)
+      ));
 
       toast({
-        title: "تم استخراج البيانات",
-        description: `تم استخراج ${result.totalExtracted} مخالفة، ${result.successfulMatches} منها مطابقة للمركبات`,
+        title: "Data extracted successfully",
+        description: `Extracted ${result.total_extracted} violations, ${result.successful_matches} matched to vehicles`,
       });
 
     } catch (error: unknown) {
       toast({
-        title: "خطأ في المعالجة",
-        description: `فشل في معالجة الملفات: ${error.message}`,
+        title: "Processing error",
+        description: `Failed to process files: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -355,82 +312,52 @@ export const TrafficViolationPDFImport: React.FC = () => {
     }
   };
 
-  // حفظ المخالفات المحددة
+  // Save selected violations
   const saveSelectedViolations = async () => {
     if (!processingResult || selectedViolations.size === 0) {
       toast({
-        title: "خطأ",
-        description: "يرجى تحديد مخالفات للحفظ",
+        title: "Error",
+        description: "Please select violations to save",
         variant: "destructive"
       });
       return;
     }
 
-    setIsSaving(true);
-    try {
-      const violationsToSave = processingResult.violations.filter(v => 
-        selectedViolations.has(v.id) && v.status === 'matched'
-      );
+    const violationsToSave = processingResult.violations.filter(v =>
+      selectedViolations.has(v.id) && v.status === 'matched' && !v.is_duplicate
+    );
 
-      let savedCount = 0;
+    const result = await saveViolations(
+      violationsToSave,
+      companyId,
+      'moi_pdf',
+      processingResult.header?.file_number
+    );
 
-      for (const violation of violationsToSave) {
-        const { error } = await supabase
-          .from('traffic_violations')
-          .insert({
-            company_id: companyId,
-            vehicle_id: violation.vehicleId,
-            violation_number: violation.violationNumber,
-            violation_date: violation.date,
-            violation_time: violation.time,
-            violation_type: violation.violationType,
-            violation_description: violation.authority,
-            location: violation.location,
-            fine_amount: violation.fineAmount,
-            total_amount: violation.fineAmount,
-            issuing_authority: violation.authority,
-            status: 'pending'
-          });
+    toast({
+      title: "Saved successfully",
+      description: `Saved ${result.success} violations to the system${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
+    });
 
-        if (error) {
-          console.error(`خطأ في حفظ المخالفة ${violation.violationNumber}:`, error);
-        } else {
-          savedCount++;
-        }
-      }
-
-      toast({
-        title: "تم الحفظ بنجاح",
-        description: `تم حفظ ${savedCount} مخالفة في النظام`,
-      });
-
-      // إعادة تعيين البيانات
+    if (result.success > 0) {
+      // Reset data
       setProcessingResult(null);
       setUploadedFiles([]);
       setSelectedViolations(new Set());
-
-    } catch (error: unknown) {
-      toast({
-        title: "خطأ في الحفظ",
-        description: `فشل في حفظ المخالفات: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  // إعداد منطقة السحب والإفلات
+  // Setup drag and drop
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const supportedFiles = acceptedFiles.filter(file => 
-      file.type === 'application/pdf' || 
+    const supportedFiles = acceptedFiles.filter(file =>
+      file.type === 'application/pdf' ||
       file.type.startsWith('image/')
     );
-    
+
     if (supportedFiles.length !== acceptedFiles.length) {
       toast({
-        title: "تحذير",
-        description: "تم قبول ملفات PDF والصور فقط (JPG, PNG, GIF, WEBP)",
+        title: "Warning",
+        description: "Only PDF and image files accepted (JPG, PNG, GIF, WEBP)",
         variant: "destructive"
       });
     }
@@ -447,12 +374,12 @@ export const TrafficViolationPDFImport: React.FC = () => {
     multiple: true
   });
 
-  // إزالة ملف
+  // Remove file
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // تبديل تحديد المخالفة
+  // Toggle violation selection
   const toggleViolationSelection = (violationId: string) => {
     setSelectedViolations(prev => {
       const newSet = new Set(prev);
@@ -465,15 +392,17 @@ export const TrafficViolationPDFImport: React.FC = () => {
     });
   };
 
-  // تحديد/إلغاء تحديد الكل
+  // Select/deselect all
   const toggleSelectAll = () => {
     if (!processingResult) return;
 
-    const matchedViolations = processingResult.violations.filter(v => v.status === 'matched');
-    if (selectedViolations.size === matchedViolations.length) {
+    const matchableViolations = processingResult.violations.filter(
+      v => v.status === 'matched' && !v.is_duplicate
+    );
+    if (selectedViolations.size === matchableViolations.length) {
       setSelectedViolations(new Set());
     } else {
-      setSelectedViolations(new Set(matchedViolations.map(v => v.id)));
+      setSelectedViolations(new Set(matchableViolations.map(v => v.id)));
     }
   };
 
@@ -486,30 +415,30 @@ export const TrafficViolationPDFImport: React.FC = () => {
             استيراد المخالفات المرورية
           </CardTitle>
           <CardDescription>
-            رفع ومعالجة ملفات الصور أو PDF للمخالفات المرورية واستخراج البيانات تلقائياً
+            Upload and process PDF or image files for traffic violations and automatically extract data
             <br />
             <span className="text-green-600 text-sm font-medium">
-              ✅ يُفضل رفع صور (JPG, PNG) للحصول على أفضل النتائج
+              ✅ Images (JPG, PNG) preferred for best results
             </span>
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs defaultValue="upload" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="upload">رفع الملفات</TabsTrigger>
+              <TabsTrigger value="upload">Upload Files</TabsTrigger>
               <TabsTrigger value="process" disabled={uploadedFiles.length === 0}>
-                معالجة البيانات
+                Process Data
               </TabsTrigger>
               <TabsTrigger value="review" disabled={!processingResult}>
-                مراجعة وحفظ
+                Review & Save
               </TabsTrigger>
               <TabsTrigger value="stats" disabled={!processingResult}>
-                الإحصائيات
+                Statistics
               </TabsTrigger>
             </TabsList>
 
-            {/* تاب رفع الملفات */}
+            {/* Upload Tab */}
             <TabsContent value="upload" className="space-y-4">
               <div
                 {...getRootProps()}
@@ -520,19 +449,19 @@ export const TrafficViolationPDFImport: React.FC = () => {
                 <input {...getInputProps()} />
                 <FileText className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                 {isDragActive ? (
-                  <p className="text-blue-600">اسحب الملفات هنا...</p>
+                  <p className="text-blue-600">Drag files here...</p>
                 ) : (
                   <div>
-                    <p className="text-lg font-medium mb-2">اسحب الملفات هنا أو اضغط للاختيار</p>
-                    <p className="text-sm text-slate-500">يدعم ملفات PDF والصور (JPG, PNG, GIF, WEBP)</p>
+                    <p className="text-lg font-medium mb-2">Drag files here or click to select</p>
+                    <p className="text-sm text-slate-500">Supports PDF and images (JPG, PNG, GIF, WEBP)</p>
                   </div>
                 )}
               </div>
 
-              {/* قائمة الملفات المرفوعة */}
+              {/* Uploaded files list */}
               {uploadedFiles.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium">الملفات المرفوعة ({uploadedFiles.length})</h4>
+                  <h4 className="font-medium">Uploaded Files ({uploadedFiles.length})</h4>
                   {uploadedFiles.map((file, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -551,7 +480,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                             setIsPreviewOpen(true);
                           }}
                           className="h-6 w-6 p-0"
-                          title="معاينة الملف"
+                          title="Preview file"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -560,7 +489,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           variant="ghost"
                           onClick={() => removeFile(index)}
                           className="h-6 w-6 p-0"
-                          title="حذف الملف"
+                          title="Delete file"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -571,53 +500,82 @@ export const TrafficViolationPDFImport: React.FC = () => {
               )}
             </TabsContent>
 
-            {/* تاب معالجة البيانات */}
+            {/* Process Tab */}
             <TabsContent value="process" className="space-y-4">
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  سيتم استخراج البيانات من الملفات ومحاولة ربطها بالمركبات المسجلة في النظام.
-                  يُفضل استخدام الصور (JPG, PNG) للحصول على أفضل النتائج. ملفات PDF قد لا تعمل بشكل صحيح.
+                  Will extract data from files and automatically link to vehicles and contracts in the system.
+                  Images (JPG, PNG) work best. PDF files may not work correctly.
                 </AlertDescription>
               </Alert>
 
               <div className="flex gap-3">
-                <Button 
+                <Button
                   onClick={processFiles}
-                  disabled={isProcessing || uploadedFiles.length === 0}
+                  disabled={isProcessing || isMatching || uploadedFiles.length === 0}
                   className="flex items-center gap-2"
                 >
-                  {isProcessing ? (
+                  {(isProcessing || isMatching) ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
-                  {isProcessing ? 'جاري المعالجة...' : 'بدء المعالجة'}
+                  {(isProcessing || isMatching) ? 'Processing...' : 'Start Processing'}
                 </Button>
               </div>
 
-              {isProcessing && (
+              {(isProcessing || isMatching) && (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                  <p className="text-lg font-medium">جاري استخراج البيانات من الملفات...</p>
-                  <p className="text-sm text-slate-500 mt-2">يرجى الانتظار، هذا قد يستغرق بضع دقائق</p>
+                  <p className="text-lg font-medium">Extracting data from files...</p>
+                  <p className="text-sm text-slate-500 mt-2">Please wait, this may take a few minutes</p>
                 </div>
               )}
             </TabsContent>
 
-            {/* تاب مراجعة وحفظ */}
+            {/* Review & Save Tab */}
             <TabsContent value="review" className="space-y-4">
               {processingResult && (
                 <>
-                  {/* إحصائيات النتائج */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Header info */}
+                  {processingResult.header && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Document Information</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-slate-500">File Number:</span>
+                            <p className="font-medium">{processingResult.header.file_number || '-'}</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Vehicle Plate:</span>
+                            <p className="font-medium">{processingResult.header.vehicle_plate || '-'}</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Owner:</span>
+                            <p className="font-medium">{processingResult.header.owner_name || '-'}</p>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Total Violations:</span>
+                            <p className="font-medium">{processingResult.header.total_violations || '-'}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Statistics */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-blue-600" />
                           <div>
-                            <p className="text-2xl font-bold">{processingResult.totalExtracted}</p>
-                            <p className="text-sm text-slate-600">إجمالي المخالفات</p>
+                            <p className="text-2xl font-bold">{processingResult.total_extracted}</p>
+                            <p className="text-sm text-slate-600">Total</p>
                           </div>
                         </div>
                       </CardContent>
@@ -628,8 +586,20 @@ export const TrafficViolationPDFImport: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <CheckCircle className="h-5 w-5 text-green-600" />
                           <div>
-                            <p className="text-2xl font-bold">{processingResult.successfulMatches}</p>
-                            <p className="text-sm text-slate-600">مطابقة للمركبات</p>
+                            <p className="text-2xl font-bold">{processingResult.successful_matches}</p>
+                            <p className="text-sm text-slate-600">Matched</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Copy className="h-5 w-5 text-orange-600" />
+                          <div>
+                            <p className="text-2xl font-bold">{processingResult.duplicates_found}</p>
+                            <p className="text-sm text-slate-600">Duplicates</p>
                           </div>
                         </div>
                       </CardContent>
@@ -641,7 +611,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <AlertTriangle className="h-5 w-5 text-red-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.errors}</p>
-                            <p className="text-sm text-slate-600">أخطاء</p>
+                            <p className="text-sm text-slate-600">Errors</p>
                           </div>
                         </div>
                       </CardContent>
@@ -652,17 +622,15 @@ export const TrafficViolationPDFImport: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-5 w-5 text-orange-600" />
                           <div>
-                            <p className="text-2xl font-bold">
-                              {processingResult.violations.reduce((sum, v) => sum + v.fineAmount, 0).toFixed(2)}
-                            </p>
-                            <p className="text-sm text-slate-600">إجمالي الغرامات (د.ك)</p>
+                            <p className="text-2xl font-bold">{processingResult.total_amount.toFixed(2)}</p>
+                            <p className="text-sm text-slate-600">Total (QR)</p>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
                   </div>
 
-                  {/* أزرار التحكم */}
+                  {/* Control buttons */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Button
@@ -670,13 +638,13 @@ export const TrafficViolationPDFImport: React.FC = () => {
                         size="sm"
                         onClick={toggleSelectAll}
                       >
-                        {selectedViolations.size === processingResult.violations.filter(v => v.status === 'matched').length 
-                          ? 'إلغاء تحديد الكل' 
-                          : 'تحديد الكل'
+                        {selectedViolations.size === processingResult.violations.filter(v => v.status === 'matched' && !v.is_duplicate).length
+                          ? 'Deselect All'
+                          : 'Select All'
                         }
                       </Button>
                       <span className="text-sm text-slate-600">
-                        محدد: {selectedViolations.size} من {processingResult.successfulMatches}
+                        Selected: {selectedViolations.size} of {processingResult.successful_matches}
                       </span>
                     </div>
 
@@ -690,29 +658,31 @@ export const TrafficViolationPDFImport: React.FC = () => {
                       ) : (
                         <Save className="h-4 w-4" />
                       )}
-                      حفظ المخالفات المحددة ({selectedViolations.size})
+                      Save Selected ({selectedViolations.size})
                     </Button>
                   </div>
 
-                  {/* جدول المخالفات */}
+                  {/* Violations table */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>المخالفات المستخرجة</CardTitle>
+                      <CardTitle>Extracted Violations</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="w-12">تحديد</TableHead>
-                              <TableHead>رقم المخالفة</TableHead>
-                              <TableHead>التاريخ والوقت</TableHead>
-                              <TableHead>رقم اللوحة</TableHead>
-                              <TableHead>الموقع</TableHead>
-                              <TableHead>نوع المخالفة</TableHead>
-                              <TableHead>الغرامة</TableHead>
-                              <TableHead>النقاط</TableHead>
-                              <TableHead>الحالة</TableHead>
+                              <TableHead className="w-12">Select</TableHead>
+                              <TableHead>Ref#</TableHead>
+                              <TableHead>Date & Time</TableHead>
+                              <TableHead>Plate</TableHead>
+                              <TableHead>Location</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Customer</TableHead>
+                              <TableHead>Contract</TableHead>
+                              <TableHead>Confidence</TableHead>
+                              <TableHead>Amount</TableHead>
+                              <TableHead>Status</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -723,14 +693,14 @@ export const TrafficViolationPDFImport: React.FC = () => {
                                     type="checkbox"
                                     checked={selectedViolations.has(violation.id)}
                                     onChange={() => toggleViolationSelection(violation.id)}
-                                    disabled={violation.status === 'error'}
+                                    disabled={violation.status === 'error' || violation.is_duplicate}
                                     className="rounded"
                                   />
                                 </TableCell>
                                 <TableCell className="font-mono text-sm">
                                   <div className="flex items-center gap-1">
                                     <Hash className="h-3 w-3" />
-                                    {violation.violationNumber}
+                                    {violation.reference_number || violation.violation_number}
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -747,7 +717,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                                 <TableCell>
                                   <div className="flex items-center gap-1">
                                     <Car className="h-3 w-3" />
-                                    <span className="font-mono text-sm">{violation.plateNumber}</span>
+                                    <span className="font-mono text-sm">{violation.plate_number}</span>
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -758,35 +728,59 @@ export const TrafficViolationPDFImport: React.FC = () => {
                                 </TableCell>
                                 <TableCell>
                                   <Badge variant="outline" className="text-xs">
-                                    {violation.violationType}
+                                    {violation.violation_type}
                                   </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {violation.customer_name ? (
+                                    <div className="flex items-center gap-1">
+                                      <User className="h-3 w-3" />
+                                      <span className="text-sm">{violation.customer_name}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 text-sm">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {violation.contract_number ? (
+                                    <span className="text-sm font-mono">{violation.contract_number}</span>
+                                  ) : (
+                                    <span className="text-slate-400 text-sm">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`text-xs font-medium ${MATCH_CONFIDENCE_COLORS[violation.match_confidence]}`}>
+                                    {MATCH_CONFIDENCE_LABELS[violation.match_confidence]}
+                                  </span>
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-1">
                                     <DollarSign className="h-3 w-3" />
-                                    <span className="font-medium">{violation.fineAmount.toFixed(2)} د.ك</span>
+                                    <span className="font-medium">{violation.fine_amount.toFixed(2)} QR</span>
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant={violation.points > 0 ? 'destructive' : 'secondary'} className="text-xs">
-                                    {violation.points} نقطة
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge 
-                                    variant={
-                                      violation.status === 'matched' ? 'default' :
-                                      violation.status === 'error' ? 'destructive' : 'secondary'
-                                    }
-                                  >
-                                    {violation.status === 'matched' ? 'مطابقة' :
-                                     violation.status === 'error' ? 'خطأ' : 'مستخرجة'}
-                                  </Badge>
-                                  {violation.errors.length > 0 && (
-                                    <div className="text-xs text-red-600 mt-1">
-                                      {violation.errors.join(', ')}
-                                    </div>
-                                  )}
+                                  <div className="flex flex-col gap-1">
+                                    <Badge
+                                      variant={
+                                        violation.status === 'matched' ? 'default' :
+                                          violation.status === 'error' ? 'destructive' : 'secondary'
+                                      }
+                                    >
+                                      {violation.status === 'matched' ? 'Matched' :
+                                        violation.status === 'error' ? 'Error' : 'Extracted'}
+                                    </Badge>
+                                    {violation.is_duplicate && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Duplicate
+                                      </Badge>
+                                    )}
+                                    {violation.errors.length > 0 && (
+                                      <div className="text-xs text-red-600">
+                                        {violation.errors.join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -799,17 +793,17 @@ export const TrafficViolationPDFImport: React.FC = () => {
               )}
             </TabsContent>
 
-            {/* تاب الإحصائيات */}
+            {/* Statistics Tab */}
             <TabsContent value="stats" className="space-y-6">
               {processingResult && (
                 <>
                   <TrafficViolationStats violations={processingResult.violations} />
-                  <ViolationImportReport 
+                  <ViolationImportReport
                     violations={processingResult.violations}
                     onExport={(format) => {
                       toast({
-                        title: "تصدير التقرير",
-                        description: `سيتم تصدير التقرير بصيغة ${format} قريباً`,
+                        title: "Export Report",
+                        description: `Report will be exported in ${format} format soon`,
                       });
                     }}
                   />
@@ -820,7 +814,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* مكون معاينة PDF */}
+      {/* PDF Viewer Component */}
       {previewFile && (
         <PDFViewer
           file={previewFile}

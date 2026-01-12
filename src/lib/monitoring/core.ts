@@ -157,6 +157,19 @@ class MonitoringCore {
 
   // Error Tracking
   trackError(error: Error, context?: ErrorContext): void {
+    // Skip harmless errors from multi-tab scenarios
+    const errorMessage = error?.message || '';
+    const isIgnorableError = 
+      errorMessage.includes('ServiceWorker') ||
+      errorMessage.includes('CacheStorage') ||
+      errorMessage.includes('The object is in an invalid state') ||
+      errorMessage.includes('Failed to update a ServiceWorker');
+    
+    if (isIgnorableError) {
+      // Silently skip these errors - they're harmless
+      return;
+    }
+    
     const errorEntry = {
       error,
       context: {

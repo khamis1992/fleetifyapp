@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, lazy, Suspense } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Clock, Search, Calendar as CalendarIcon, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,9 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { PageHelp } from "@/components/help";
 import { AttendancePageHelpContent } from "@/components/help/content";
+
+// Lazy load Calendar component for better performance
+const Calendar = lazy(() => import('@/components/ui/calendar').then(m => ({ default: m.Calendar })));
 
 interface AttendanceRecord {
   id: string;
@@ -40,36 +42,32 @@ export default function Attendance() {
     queryFn: async () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       
-      // جلب سجلات الحضور أولاً
+      // جلب سجلات الحضور
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('attendance_records')
         .select('*')
         .eq('attendance_date', dateStr)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
       
       if (attendanceError) throw attendanceError;
-      if (!attendanceData) return [];
+      if (!attendanceData || attendanceData.length === 0) return [];
 
       // جلب بيانات الموظفين
-      const employeeIds = attendanceData.map(record => record.employee_id);
-      const { data: employeesData, error: employeesError } = await supabase
+      const employeeIds = [...new Set(attendanceData.map(r => r.employee_id))];
+      const { data: employeesData } = await supabase
         .from('employees')
         .select('id, first_name, last_name, employee_number')
         .in('id', employeeIds);
       
-      if (employeesError) throw employeesError;
-
       // دمج البيانات
-      const recordsWithEmployees = attendanceData.map(record => {
-        const employee = employeesData?.find(emp => emp.id === record.employee_id);
-        return {
-          ...record,
-          employees: employee || null
-        };
-      });
-
-      return recordsWithEmployees;
+      const employeeMap = new Map(employeesData?.map(e => [e.id, e]) || []);
+      return attendanceData.map(record => ({
+        ...record,
+        employees: employeeMap.get(record.employee_id) || null
+      }));
     },
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   const getStatusBadge = (status: string) => {
@@ -134,12 +132,14 @@ export default function Attendance() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              initialFocus
-            />
+            <Suspense fallback={<div className="p-4 text-center text-slate-500">جاري التحميل...</div>}>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                initialFocus
+              />
+            </Suspense>
           </PopoverContent>
         </Popover>
       </div>

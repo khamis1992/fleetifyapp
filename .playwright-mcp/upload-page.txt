@@ -1,0 +1,344 @@
+### New console messages
+- [LOG] 🔧 [DEBUG] Supabase config loaded successfully {hasUrl: true, hasKey: true} @ http://localhost...
+- [WARNING] GoTrueClient@supabase.auth.token:1 (2.88.0) 2026-01-12T07:53:18.060Z Multiple GoTrueClient...
+- [LOG] 🔍 [RouteRenderer] Component rendered, routes: 135 @ http://localhost:8080/src/components/rout...
+- [ERROR] 🔄 [DEV] Global error: Error: useAuth must be used within an AuthProvider
+    at useAuth (ht...
+- Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:8080/src/context...
+- [ERROR] 🔴 [RouteErrorBoundary] Error caught: Error: useAuth must be used within an AuthProvider
+   ...
+- [LOG] 🔍 [RouteRenderer] Component rendered, routes: 135 @ http://localhost:8080/src/components/rout...
+- [ERROR] 🔄 [DEV] Global error: Error: useAuth must be used within an AuthProvider
+    at useAuth (ht...
+- Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:8080/src/context...
+- [ERROR] 🔴 [RouteErrorBoundary] Error caught: Error: useAuth must be used within an AuthProvider
+   ...
+- [ERROR] The above error occurred in the <BentoLayout> component:
+
+    at BentoLayout (http://localho...
+- [ERROR] 🔴 [RouteErrorBoundary] Error in route: Unknown {error: useAuth must be used within an AuthP...
+- [ERROR] Error: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:8...
+- [TABLE] {route: undefined, componentStack: 
+    at BentoLayout (http://localhost:8080/src/com…ocalho...
+- [LOG] 🔍 [RouteRenderer] Total routes: 135 @ http://localhost:8080/src/components/router/RouteRender...
+- [LOG] 🏢 [COMPANY_CONTEXT] State changed: {isBrowsingMode: false, browsedCompany: null, user: 2a2b3a...
+- [LOG] 📝 [AUTH_CONTEXT] Component mounted, initializing auth... @ http://localhost:8080/src/contexts...
+- [LOG] 📝 [AUTH_CONTEXT] Starting initialization... @ http://localhost:8080/src/contexts/AuthContext....
+- [LOG] 📝 [AUTH_CONTEXT] Session check complete in 36ms: No session @ http://localhost:8080/src/conte...
+- [LOG] 📝 [AUTH_CONTEXT] No session - completed in 36ms @ http://localhost:8080/src/contexts/AuthCont...
+- [LOG] 📝 [AUTH_CONTEXT] Auth initialization complete in 36ms @ http://localhost:8080/src/contexts/Au...
+- [LOG] 🔧 Service Worker registered successfully @ http://localhost:8080/src/components/performance/M...
+- [ERROR] 🔄 [DEV] Global error: Error: useAuth must be used within an AuthProvider
+    at useAuth (ht...
+- Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:8080/src/context...
+- [ERROR] 🔴 [RouteErrorBoundary] Error caught: Error: useAuth must be used within an AuthProvider
+   ...
+- [ERROR] 🔄 [DEV] Global error: Error: useAuth must be used within an AuthProvider
+    at useAuth (ht...
+- Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:8080/src/context...
+- [ERROR] 🔴 [RouteErrorBoundary] Error caught: Error: useAuth must be used within an AuthProvider
+   ...
+- [ERROR] The above error occurred in the <BentoLayout> component:
+
+    at BentoLayout (http://localho...
+- [ERROR] 🔴 [RouteErrorBoundary] Error in route: Unknown {error: useAuth must be used within an AuthP...
+- [ERROR] Error: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:8...
+- [TABLE] {route: undefined, componentStack: 
+    at BentoLayout (http://localhost:8080/src/com…ocalho...
+- [LOG] 🔍 [RouteRenderer] Module loaded @ http://localhost:8080/src/components/router/RouteRenderer.t...
+- [LOG] 🔍 [App] routeConfigs length: 135 @ http://localhost:8080/src/App.tsx?t=1768204397694:153
+- [LOG] 🔍 [App] Mobile routes: [/mobile-demo, /mobile, /mobile/home, /mobile/cars, /mobile/contracts,...
+- [LOG] 🔍 [RouteRenderer] Component rendered, routes: 135 @ http://localhost:8080/src/components/rout...
+- [LOG] ✅ [PERF] Application unmounted @ http://localhost:8080/src/App.tsx?t=1768204104636:185
+- [LOG] 🔍 [RouteRenderer] Total routes: 135 @ http://localhost:8080/src/components/router/RouteRender...
+- [LOG] ✅ [PERF] Performance monitoring enabled @ http://localhost:8080/src/App.tsx?t=1768204397694:16...
+- [LOG] 🚀 [PERF] Starting permission check for:  @ http://localhost:8080/src/hooks/usePermissionCheck...
+- [ERROR] Error in useTrafficViolations: Error: المستخدم غير مسجل الدخول
+    at queryFn (http://localh...
+- [LOG] 🚀 [PERF] Combined permission query completed in: 311 ms @ http://localhost:8080/src/hooks/use...
+- [ERROR] Error in useTrafficViolations: Error: المستخدم غير مسجل الدخول
+    at queryFn (http://localh...
+- [LOG] ✅ Preloaded route: /dashboard @ http://localhost:8080/src/utils/routePreloading.ts?t=176820439...
+- [LOG] ✅ Preloaded route: /customers @ http://localhost:8080/src/utils/routePreloading.ts?t=176820439...
+- [LOG] ✅ Preloaded route: /contracts @ http://localhost:8080/src/utils/routePreloading.ts?t=176820439...
+- [LOG] ✅ Preloaded route: /finance @ http://localhost:8080/src/utils/routePreloading.ts?t=17682043976...
+- [ERROR] Error in useTrafficViolations: Error: المستخدم غير مسجل الدخول
+    at queryFn (http://localh...
+- [WARNING] ⚠️ [AUTH_CONTEXT] Force clearing loading state after 5s to prevent navigation hang @ http:...
+- [ERROR] Error in useTrafficViolations: Error: المستخدم غير مسجل الدخول
+    at queryFn (http://localh...
+
+### Page state
+- Page URL: http://localhost:8080/fleet/traffic-violations
+- Page Title: Traffic Violations - FleetifyApp
+- Page Snapshot:
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e456]:
+    - generic [ref=e457]:
+      - complementary [ref=e458]:
+        - generic [ref=e459]:
+          - generic [ref=e460]:
+            - generic [ref=e462]: F
+            - generic [ref=e463]: Fleetify
+          - button "تصغير" [ref=e464] [cursor=pointer]:
+            - img [ref=e465]
+        - navigation [ref=e468]:
+          - list [ref=e470]:
+            - listitem [ref=e471]:
+              - link "الرئيسية" [ref=e472] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e473]
+                - generic [ref=e478]: الرئيسية
+          - generic [ref=e480]:
+            - generic [ref=e481]: التشغيل
+            - list [ref=e482]:
+              - listitem [ref=e483]:
+                - generic [ref=e484]:
+                  - button "إدارة العملاء" [ref=e485] [cursor=pointer]:
+                    - img [ref=e486]
+                    - generic [ref=e491]: إدارة العملاء
+                    - img [ref=e492]
+                  - list [ref=e494]:
+                    - listitem [ref=e495]:
+                      - link "قائمة العملاء" [ref=e496] [cursor=pointer]:
+                        - /url: /customers
+                        - img [ref=e497]
+                        - generic [ref=e498]: قائمة العملاء
+                    - listitem [ref=e499]:
+                      - link "إدارة العلاقات (CRM)" [ref=e500] [cursor=pointer]:
+                        - /url: /customers/crm
+                        - img [ref=e501]
+                        - generic [ref=e503]: إدارة العلاقات (CRM)
+              - listitem [ref=e504]:
+                - generic [ref=e505]:
+                  - button "إدارة الأسطول" [ref=e506] [cursor=pointer]:
+                    - img [ref=e507]
+                    - generic [ref=e511]: إدارة الأسطول
+                    - img [ref=e512]
+                  - list [ref=e514]:
+                    - listitem [ref=e515]:
+                      - link "المركبات" [ref=e516] [cursor=pointer]:
+                        - /url: /fleet
+                        - img [ref=e517]
+                        - generic [ref=e521]: المركبات
+                    - listitem [ref=e522]:
+                      - link "الصيانة" [ref=e523] [cursor=pointer]:
+                        - /url: /fleet/maintenance
+                        - img [ref=e524]
+                        - generic [ref=e526]: الصيانة
+                    - listitem [ref=e527]:
+                      - link "الحجوزات" [ref=e528] [cursor=pointer]:
+                        - /url: /fleet/reservations
+                        - img [ref=e529]
+                        - generic [ref=e531]: الحجوزات
+                    - listitem [ref=e532]:
+                      - link "المخالفات المرورية" [ref=e533] [cursor=pointer]:
+                        - /url: /fleet/traffic-violations
+                        - img [ref=e534]
+                        - generic [ref=e536]: المخالفات المرورية
+                    - listitem [ref=e537]:
+                      - link "تقارير الأسطول" [ref=e538] [cursor=pointer]:
+                        - /url: /fleet/reports
+                        - img [ref=e539]
+                        - generic [ref=e541]: تقارير الأسطول
+              - listitem [ref=e542]:
+                - button "العروض والعقود" [ref=e544] [cursor=pointer]:
+                  - img [ref=e545]
+                  - generic [ref=e548]: العروض والعقود
+                  - img [ref=e549]
+          - generic [ref=e552]:
+            - generic [ref=e553]: الإدارة
+            - list [ref=e554]:
+              - listitem [ref=e555]:
+                - link "المالية" [ref=e556] [cursor=pointer]:
+                  - /url: /finance/hub
+                  - img [ref=e557]
+                  - generic [ref=e560]: المالية
+              - listitem [ref=e561]:
+                - button "الموارد البشرية" [ref=e563] [cursor=pointer]:
+                  - img [ref=e564]
+                  - generic [ref=e568]: الموارد البشرية
+                  - img [ref=e569]
+              - listitem [ref=e571]:
+                - button "الشؤون القانونية" [ref=e573] [cursor=pointer]:
+                  - img [ref=e574]
+                  - generic [ref=e576]: الشؤون القانونية
+                  - img [ref=e577]
+              - listitem [ref=e579]:
+                - button "العمليات" [ref=e581] [cursor=pointer]:
+                  - img [ref=e582]
+                  - generic [ref=e587]: العمليات
+                  - img [ref=e588]
+          - generic [ref=e591]:
+            - generic [ref=e592]: النظام
+            - list [ref=e593]:
+              - listitem [ref=e594]:
+                - link "إدارة المهام" [ref=e595] [cursor=pointer]:
+                  - /url: /tasks
+                  - img [ref=e596]
+                  - generic [ref=e599]: إدارة المهام
+              - listitem [ref=e600]:
+                - link "التقارير" [ref=e601] [cursor=pointer]:
+                  - /url: /reports
+                  - img [ref=e602]
+                  - generic [ref=e604]: التقارير
+              - listitem [ref=e605]:
+                - link "الإعدادات" [ref=e606] [cursor=pointer]:
+                  - /url: /settings
+                  - img [ref=e607]
+                  - generic [ref=e610]: الإعدادات
+        - generic [ref=e612]:
+          - generic [ref=e613]: KH
+          - generic [ref=e614]:
+            - generic [ref=e615]:
+              - paragraph [ref=e616]: khamis-1992
+              - paragraph [ref=e617]: khamis-1992@hotmail.com
+            - button "تسجيل الخروج" [ref=e618] [cursor=pointer]:
+              - img [ref=e619]
+      - main [ref=e622]:
+        - generic [ref=e623]:
+          - navigation "Breadcrumb" [ref=e624]:
+            - link "لوحة التحكم" [ref=e625] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e626]
+              - generic [ref=e629]: لوحة التحكم
+            - img [ref=e630]
+            - link "إدارة الأسطول" [ref=e632] [cursor=pointer]:
+              - /url: /fleet
+            - img [ref=e633]
+            - generic [ref=e635]: المخالفات المرورية
+          - generic [ref=e636]:
+            - generic [ref=e637]:
+              - generic [ref=e638]:
+                - img [ref=e640]
+                - generic [ref=e642]:
+                  - heading "إدارة المخالفات المرورية" [level=1] [ref=e643]
+                  - paragraph [ref=e644]: نظام تتبع وإدارة غرامات المركبات
+              - generic [ref=e645]:
+                - button "تحديث" [ref=e646] [cursor=pointer]:
+                  - img [ref=e647]
+                  - generic [ref=e652]: تحديث
+                - button "طباعة التقرير" [ref=e653] [cursor=pointer]:
+                  - img [ref=e654]
+                  - generic [ref=e658]: طباعة التقرير
+                - button "تسجيل مخالفة" [ref=e659] [cursor=pointer]:
+                  - img [ref=e660]
+                  - text: تسجيل مخالفة
+            - main [ref=e661]:
+              - generic [ref=e662]:
+                - generic [ref=e663]:
+                  - generic [ref=e665]:
+                    - generic [ref=e666]:
+                      - paragraph [ref=e667]: إجمالي المخالفات
+                      - paragraph [ref=e668]: "0"
+                      - paragraph [ref=e669]: QAR 0.00
+                    - img [ref=e671]
+                  - generic [ref=e674]:
+                    - generic [ref=e675]:
+                      - paragraph [ref=e676]: مبالغ غير مسددة
+                      - paragraph [ref=e677]: QAR 0.00
+                      - paragraph [ref=e678]: 0 مخالفة
+                    - img [ref=e680]
+                  - generic [ref=e683]:
+                    - generic [ref=e684]:
+                      - paragraph [ref=e685]: مبالغ مسددة
+                      - paragraph [ref=e686]: QAR 0.00
+                      - paragraph [ref=e687]: 0 مخالفة
+                    - img [ref=e689]
+                  - generic [ref=e693]:
+                    - generic [ref=e694]:
+                      - paragraph [ref=e695]: نسبة التحصيل
+                      - paragraph [ref=e696]: 0%
+                      - paragraph [ref=e697]: "متوسط المخالفة: QAR 0.00"
+                    - img [ref=e699]
+                  - generic [ref=e702]:
+                    - generic [ref=e703]:
+                      - img [ref=e704]
+                      - generic [ref=e707]: "100"
+                    - generic [ref=e708]:
+                      - generic [ref=e709]: ممتاز
+                      - generic [ref=e710]: مؤشر الإدارة
+                - generic [ref=e711]:
+                  - heading "ملخص سريع" [level=3] [ref=e712]:
+                    - img [ref=e713]
+                    - text: ملخص سريع
+                  - generic [ref=e715]:
+                    - generic [ref=e716]:
+                      - generic [ref=e717]: "0"
+                      - generic [ref=e718]: قيد المراجعة
+                    - generic [ref=e719]:
+                      - generic [ref=e720]: "0"
+                      - generic [ref=e721]: مؤكدة
+                    - generic [ref=e722]:
+                      - generic [ref=e723]: "0"
+                      - generic [ref=e724]: ملغاة
+                    - generic [ref=e725]:
+                      - generic [ref=e726]: "0"
+                      - generic [ref=e727]: مركبات متكررة
+                    - generic [ref=e728]:
+                      - generic [ref=e729]: "0"
+                      - generic [ref=e730]: عملاء متكررين
+              - generic [ref=e731]:
+                - generic [ref=e732]: ✅ لا توجد تنبيهات
+                - generic [ref=e733]: جميع المخالفات تحت السيطرة
+              - generic [ref=e735]:
+                - tablist [ref=e737]:
+                  - tab "قائمة المخالفات" [selected] [ref=e738] [cursor=pointer]:
+                    - img [ref=e739]
+                    - text: قائمة المخالفات
+                  - tab "استيراد PDF" [ref=e740] [cursor=pointer]:
+                    - img [ref=e741]
+                    - text: استيراد PDF
+                  - tab "التقارير" [ref=e744] [cursor=pointer]:
+                    - img [ref=e745]
+                    - text: التقارير
+                - tabpanel "قائمة المخالفات" [ref=e746]:
+                  - generic [ref=e747]:
+                    - generic [ref=e748]:
+                      - img [ref=e749]
+                      - 'textbox "بحث: رقم المخالفة، المركبة، العميل..." [ref=e752]'
+                    - generic [ref=e753]:
+                      - generic [ref=e754]:
+                        - img
+                        - combobox [ref=e755] [cursor=pointer]:
+                          - option "جميع المركبات" [selected]
+                        - img
+                      - generic [ref=e756]:
+                        - img
+                        - combobox [ref=e757] [cursor=pointer]:
+                          - option "جميع العملاء" [selected]
+                        - img
+                      - generic [ref=e758]:
+                        - button "الكل" [ref=e759] [cursor=pointer]
+                        - button "مسددة" [ref=e760] [cursor=pointer]
+                        - button "غير مسددة" [ref=e761] [cursor=pointer]
+                        - button "جزئي" [ref=e762] [cursor=pointer]
+                  - table [ref=e764]:
+                    - rowgroup [ref=e765]:
+                      - row "رقم المخالفة / التاريخ المركبة العميل التفاصيل القيمة الحالة الإجراءات" [ref=e766]:
+                        - columnheader "رقم المخالفة / التاريخ" [ref=e767]
+                        - columnheader "المركبة" [ref=e768]
+                        - columnheader "العميل" [ref=e769]
+                        - columnheader "التفاصيل" [ref=e770]
+                        - columnheader "القيمة" [ref=e771]
+                        - columnheader "الحالة" [ref=e772]
+                        - columnheader "الإجراءات" [ref=e773]
+                    - rowgroup [ref=e774]:
+                      - row "لا توجد سجلات مطابقة للفلاتر الحالية" [ref=e775]:
+                        - cell "لا توجد سجلات مطابقة للفلاتر الحالية" [ref=e776]:
+                          - generic [ref=e777]:
+                            - img [ref=e778]
+                            - paragraph [ref=e780]: لا توجد سجلات مطابقة للفلاتر الحالية
+    - region "Notifications alt+T"
+  - generic [ref=e781]:
+    - img [ref=e783]
+    - button "Open Tanstack query devtools" [ref=e831] [cursor=pointer]:
+      - img [ref=e832]
+```

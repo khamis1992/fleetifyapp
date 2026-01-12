@@ -17,30 +17,22 @@ const DashboardLoader: React.FC = () => (
 );
 
 const DashboardInner: React.FC = () => {
-  const { moduleContext, isLoading: moduleLoading, company, refreshData, isBrowsingMode, currentCompanyId } = useModuleConfig();
-  const [timeoutReached, setTimeoutReached] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const { isLoading: moduleLoading, company } = useModuleConfig();
+  const [forceRender, setForceRender] = useState(false);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
-  // CRITICAL FIX: Reduced timeout from 8s to 3s to prevent navigation hanging
-  // Also added retry count to prevent infinite retry loops
+  // CRITICAL FIX: Force render after 2 seconds to prevent infinite loading on multi-tab scenarios
   useEffect(() => {
     mountedRef.current = true;
     
-    if (moduleLoading) {
-      loadingTimeoutRef.current = setTimeout(() => {
-        if (mountedRef.current) {
-          console.warn('🏢 [DASHBOARD] Loading timeout reached after 3 seconds');
-          setTimeoutReached(true);
-        }
-      }, 3000); // Reduced from 8000ms to 3000ms
-    } else {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
+    // Set a timeout to force render even if loading isn't complete
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current && !forceRender) {
+        console.warn('🏢 [DASHBOARD] Force render after 2s to prevent multi-tab hang');
+        setForceRender(true);
       }
-      setTimeoutReached(false);
-    }
+    }, 2000);
 
     return () => {
       mountedRef.current = false;
@@ -48,49 +40,22 @@ const DashboardInner: React.FC = () => {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [moduleLoading]);
+  }, []);
 
-  // CRITICAL FIX: Auto-retry once on timeout
+  // Clear forceRender when loading completes normally
   useEffect(() => {
-    if (timeoutReached && retryCount < 1) {
-      console.log('🏢 [DASHBOARD] Auto-retrying after timeout...');
-      setRetryCount(prev => prev + 1);
-      setTimeoutReached(false);
-      refreshData();
+    if (!moduleLoading && company?.id) {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     }
-  }, [timeoutReached, retryCount, refreshData]);
+  }, [moduleLoading, company?.id]);
 
-  // Show loading while module is loading (max 3 seconds)
-  if (moduleLoading && !timeoutReached) {
-    return <DashboardLoader />;
-  }
+  // CRITICAL FIX: Show loading for max 2 seconds, then force render
+  // This prevents hang on multi-tab scenarios where auth/module loading gets stuck
+  const shouldShowLoader = moduleLoading && !forceRender && !company?.id;
 
-  // Handle timeout scenario after auto-retry failed
-  if (timeoutReached && retryCount >= 1 && (moduleLoading || !company?.business_type)) {
-    return (
-      <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-sm text-red-600">
-            انتهت مهلة التحميل - يرجى المحاولة مرة أخرى
-          </p>
-          <button 
-            onClick={() => {
-              setTimeoutReached(false);
-              setRetryCount(0);
-              refreshData();
-            }}
-            className="px-4 py-2 bg-[#e85a4f] text-white rounded-lg hover:bg-[#d44332]"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // CRITICAL FIX: Don't block on company ID - proceed if we have timed out
-  // The BentoDashboard will handle missing data gracefully
-  if (!company?.id && !timeoutReached) {
+  if (shouldShowLoader) {
     return <DashboardLoader />;
   }
 

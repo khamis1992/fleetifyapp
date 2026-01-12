@@ -80,13 +80,12 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('react-router-dom')) {
             return undefined;
           }
-          // Core React vendor chunk
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+          // Keep React, Radix UI, next-themes together to avoid hook issues
+          if (id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/@radix-ui/') ||
+              id.includes('node_modules/next-themes/')) {
             return 'react-vendor';
-          }
-          // UI components vendor chunk
-          if (id.includes('node_modules/@radix-ui/')) {
-            return 'ui-vendor';
           }
           // Query vendor chunk
           if (id.includes('node_modules/@tanstack/')) {

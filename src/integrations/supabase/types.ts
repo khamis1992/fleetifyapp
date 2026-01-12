@@ -17916,6 +17916,10 @@ export type Database = {
           violation_number: string
           violation_time: string | null
           violation_type: string
+          reference_number: string | null
+          match_confidence: 'high' | 'medium' | 'low' | 'none' | null
+          import_source: 'moi_pdf' | 'manual' | 'api' | 'bulk_import' | null
+          file_number: string | null
         }
         Insert: {
           company_id: string
@@ -17937,6 +17941,10 @@ export type Database = {
           violation_number: string
           violation_time?: string | null
           violation_type: string
+          reference_number?: string | null
+          match_confidence?: 'high' | 'medium' | 'low' | 'none' | null
+          import_source?: 'moi_pdf' | 'manual' | 'api' | 'bulk_import' | null
+          file_number?: string | null
         }
         Update: {
           company_id?: string
@@ -17958,6 +17966,10 @@ export type Database = {
           violation_number?: string
           violation_time?: string | null
           violation_type?: string
+          reference_number?: string | null
+          match_confidence?: 'high' | 'medium' | 'low' | 'none' | null
+          import_source?: 'moi_pdf' | 'manual' | 'api' | 'bulk_import' | null
+          file_number?: string | null
         }
         Relationships: [
           {

@@ -58,11 +58,25 @@ if (!import.meta.env.DEV) {
   // Handle unhandled promise rejections (for dynamic imports)
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
+    const errorMessage = error?.message || '';
+    
     const isChunkLoadError = 
-      error?.message?.includes('Failed to fetch dynamically imported module') ||
-      error?.message?.includes('Importing a module script failed') ||
-      error?.message?.includes('error loading dynamically imported module') ||
-      (error instanceof TypeError && error.message.includes('fetch'));
+      errorMessage.includes('Failed to fetch dynamically imported module') ||
+      errorMessage.includes('Importing a module script failed') ||
+      errorMessage.includes('error loading dynamically imported module') ||
+      (error instanceof TypeError && errorMessage.includes('fetch'));
+    
+    // Ignore Service Worker and CacheStorage errors (common in multi-tab scenarios)
+    const isServiceWorkerError = 
+      errorMessage.includes('ServiceWorker') ||
+      errorMessage.includes('CacheStorage') ||
+      errorMessage.includes('The object is in an invalid state');
+    
+    if (isServiceWorkerError) {
+      // Silently ignore SW/Cache errors - they're harmless in multi-tab scenarios
+      event.preventDefault();
+      return;
+    }
     
     if (isChunkLoadError) {
       console.warn('🔄 [CHUNK_LOAD_ERROR] Detected stale chunk in promise, reloading page...');
@@ -97,20 +111,33 @@ if (!import.meta.env.DEV) {
 
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
+    const errorMessage = error?.message || '';
+    
     const isChunkLoadError = 
-      error?.message?.includes('Failed to fetch dynamically imported module') ||
-      error?.message?.includes('Importing a module script failed') ||
-      error?.message?.includes('error loading dynamically imported module') ||
-      (error instanceof TypeError && error.message.includes('fetch'));
+      errorMessage.includes('Failed to fetch dynamically imported module') ||
+      errorMessage.includes('Importing a module script failed') ||
+      errorMessage.includes('error loading dynamically imported module') ||
+      (error instanceof TypeError && errorMessage.includes('fetch'));
+    
+    // Ignore Service Worker and CacheStorage errors (common in multi-tab scenarios)
+    const isServiceWorkerError = 
+      errorMessage.includes('ServiceWorker') ||
+      errorMessage.includes('CacheStorage') ||
+      errorMessage.includes('The object is in an invalid state');
     
     if (isChunkLoadError) {
-      console.warn('🔄 [DEV] Chunk load error in promise (HMR will handle this):', error?.message);
-      // Don't prevent default or reload in development - let HMR handle it
+      console.warn('🔄 [DEV] Chunk load error in promise (HMR will handle this):', errorMessage);
+      return;
+    }
+    
+    if (isServiceWorkerError) {
+      // Silently ignore SW/Cache errors - they're harmless in multi-tab scenarios
+      event.preventDefault();
       return;
     }
     
     // Log other promise rejections but don't prevent default
-    if (error && !error.message?.includes('ResizeObserver')) {
+    if (error && !errorMessage.includes('ResizeObserver')) {
       console.error('🔄 [DEV] Unhandled promise rejection:', error);
     }
   });

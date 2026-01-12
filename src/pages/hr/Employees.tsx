@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Users, DollarSign } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, DollarSign, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -42,6 +43,7 @@ interface Employee {
 }
 
 export default function Employees() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -561,7 +563,11 @@ const { user } = useAuth();
           </Card>
         ) : (
           filteredEmployees.map((employee) => (
-            <Card key={employee.id} className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+            <Card 
+              key={employee.id} 
+              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 cursor-pointer"
+              onClick={() => navigate(`/hr/employees/${employee.id}`)}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -605,7 +611,7 @@ const { user } = useAuth();
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewPayroll(employee)}
+                        onClick={(e) => { e.stopPropagation(); handleViewPayroll(employee); }}
                         title="عرض الرواتب"
                         className="border-slate-200/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10"
                       >
@@ -615,7 +621,7 @@ const { user } = useAuth();
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditEmployee(employee)}
+                          onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
                           disabled={updateEmployeeMutation.isPending}
                           className="border-slate-200/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10"
                         >
@@ -626,7 +632,7 @@ const { user } = useAuth();
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteEmployee(employee)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
                           disabled={deleteEmployeeMutation.isPending}
                           className="border-slate-200/50 hover:border-red-500/30 hover:shadow-lg hover:shadow-rose-500/10"
                         >

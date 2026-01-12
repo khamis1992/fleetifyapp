@@ -22,43 +22,71 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-// System prompt for extracting violations
-const EXTRACTION_SYSTEM_PROMPT = `أنت نظام ذكي لاستخراج بيانات المخالفات المرورية من نصوص المستندات.
+// System prompt for extracting violations - MOI Qatar optimized
+const EXTRACTION_SYSTEM_PROMPT = `أنت نظام ذكي متخصص في استخراج بيانات المخالفات المرورية من مستندات وزارة الداخلية القطرية (MOI Qatar).
 
-استخرج جميع المخالفات المرورية الموجودة في النص.
+## مهمتك:
+استخرج جميع المعلومات من رأس الصفحة (Header) وجدول المخالفات.
 
-لكل مخالفة، استخرج:
-- رقم المخالفة (violation_number)
-- تاريخ المخالفة (date بصيغة YYYY-MM-DD)
-- وقت المخالفة (time بصيغة HH:MM) - إذا غير موجود اتركه null
-- رقم اللوحة (plate_number)
-- نوع المخالفة (violation_type)
-- وصف المخالفة (description)
-- مكان المخالفة (location)
-- مبلغ الغرامة (fine_amount كرقم)
-- المبلغ الإجمالي (total_amount كرقم) - إذا غير موجود استخدم fine_amount
-- الجهة المصدرة (issuing_authority)
+## معلومات رأس الصفحة (Header):
+ابحث عن هذه المعلومات في أعلى الصفحة:
+- company_id: معرف الشركة (صيغة UUID مثل: 24bc0b21-4e2d-4413-9842-31719a3669f4)
+- file_number: رقم الملف (مثل: 86-2015-17)
+- vehicle_plate: رقم اللوحة (مثل: 86-2015)
+- owner_name: اسم المالك (اسم الشركة)
+- total_violations: إجمالي عدد المخالفات
+- total_amount: إجمالي المبلغ (بالريال القطري)
 
+## بيانات كل مخالفة (من الجدول):
+لكل مخالفة في الجدول، استخرج:
+- violation_number: رقم المخالفة (رقم المرجع - 10 أرقام)
+- reference_number: رقم المرجع الرسمي من وزارة الداخلية
+- date: تاريخ المخالفة (بصيغة YYYY-MM-DD)
+- time: وقت المخالفة (بصيغة HH:MM) - إذا غير موجود اتركه null
+- plate_number: رقم اللوحة
+- violation_type: نوع المخالفة (النص العربي)
+- location: موقع المخالفة (المدينة/المنطقة في قطر)
+- fine_amount: مبلغ الغرامة (رقم فقط)
+- issuing_authority: الجهة المصدرة (مثل: إدارة المرور - وزارة الداخلية)
+
+## تنسيق التاريخ:
+النص قد يحتوي على تاريخ بصيغة DD/MM/YYYY - حولها إلى YYYY-MM-DD
+مثال: 16/01/2025 → 2025-01-16
+
+## تنسيق الإخراج المطلوب:
 أعد JSON فقط بهذا التنسيق:
 {
+  "header": {
+    "company_id": "uuid-هنا",
+    "file_number": "رقم الملف",
+    "vehicle_plate": "رقم اللوحة",
+    "owner_name": "اسم المالك",
+    "total_violations": عدد,
+    "total_amount": مبلغ
+  },
   "violations": [
     {
-      "violation_number": "string",
+      "violation_number": "رقم المخالفة",
+      "reference_number": "رقم المرجع",
       "date": "YYYY-MM-DD",
       "time": "HH:MM",
-      "plate_number": "string",
-      "violation_type": "string",
-      "description": "string",
-      "location": "string",
-      "fine_amount": number,
-      "total_amount": number,
-      "issuing_authority": "string",
-      "status": "pending"
+      "plate_number": "رقم اللوحة",
+      "violation_type": "نوع المخالفة",
+      "location": "الموقع",
+      "fine_amount": رقم,
+      "issuing_authority": "الجهة المصدرة"
     }
   ]
 }
 
-إذا لم تجد مخالفات: { "violations": [] }`;
+## ملاحظات مهمة:
+- إذا لم تجد company_id، ضع null
+- إذا لم تجد reference_number، استخدم violation_number
+- التواريخ يجب أن تكون بصيغة YYYY-MM-DD
+- المبالغ يجب أن تكون أرقام فقط (بدون عملة)
+- المواقع يجب أن تكون بالعربية
+
+إذا لم تجد مخالفات: { "header": {}, "violations": [] }`;
 
 // Process text with GPT-4 (faster and cheaper than Vision)
 async function processTextWithGPT4(text: string): Promise<Response> {
@@ -236,8 +264,9 @@ serve(async (req) => {
     // Try to parse JSON from the response
     try {
       // Extract JSON from the response (it might be wrapped in markdown)
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || 
-                        content.match(/```\n([\s\S]*?)\n```/) || 
+      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) ||
+                        content.match(/```\n([\s\S]*?)\n```/) ||
+                        content.match(/\{[\s\S]*"header"[\s\S]*"violations"[\s\S]*\}/) ||
                         content.match(/\{[\s\S]*"violations"[\s\S]*\}/);
       
       let jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
@@ -269,7 +298,7 @@ serve(async (req) => {
 
       if (extractedData.violations && Array.isArray(extractedData.violations)) {
         console.log(`Extracted ${extractedData.violations.length} violations`);
-        
+
         if (extractedData.violations.length === 0) {
           return new Response(JSON.stringify({
             success: false,
@@ -281,8 +310,10 @@ serve(async (req) => {
           });
         }
 
+        // Return response with header and violations
         return new Response(JSON.stringify({
           success: true,
+          header: extractedData.header || {},
           violations: extractedData.violations,
           total_count: extractedData.violations.length,
           images_processed: 1

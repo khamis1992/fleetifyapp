@@ -46,19 +46,42 @@ export const initializePWA = (): void => {
 };
 
 /**
- * Register service worker
+ * Register service worker with multi-tab safety
  */
 const registerServiceWorker = async (): Promise<void> => {
   try {
-    // Check if service worker file exists
+    // Check if already registered to avoid conflicts
+    const existingRegistration = await navigator.serviceWorker.getRegistration('/');
+    if (existingRegistration) {
+      console.log('✅ Service Worker already registered:', existingRegistration.scope);
+      // Just listen for updates, don't re-register
+      existingRegistration.addEventListener('updatefound', () => {
+        const newWorker = existingRegistration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('🔄 New version available! Please refresh.');
+              window.dispatchEvent(new CustomEvent('pwa-update-available'));
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    // Register new service worker
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     });
 
     console.log('✅ Service Worker registered:', registration.scope);
 
-    // Check for updates on page load
-    registration.update();
+    // Check for updates on page load (with delay to avoid conflicts)
+    setTimeout(() => {
+      registration.update().catch(() => {
+        // Silently ignore update errors (common in multi-tab scenarios)
+      });
+    }, 1000);
 
     // Listen for updates
     registration.addEventListener('updatefound', () => {
@@ -74,7 +97,11 @@ const registerServiceWorker = async (): Promise<void> => {
       }
     });
   } catch (error) {
-    console.log('⚠️ Service Worker registration failed:', error);
+    // Silently handle service worker registration failures
+    // This is common when multiple tabs are open
+    if (import.meta.env.DEV) {
+      console.log('⚠️ Service Worker registration skipped:', (error as Error).message);
+    }
   }
 };
 

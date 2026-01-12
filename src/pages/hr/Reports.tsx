@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AttendanceReportModal } from '@/components/hr/reports/AttendanceReportModal';
 import { EmployeeReportModal } from '@/components/hr/reports/EmployeeReportModal';
 import { PayrollReportModal } from '@/components/hr/reports/PayrollReportModal';
+import { LeaveReportModal } from '@/components/hr/reports/LeaveReportModal';
 
 export default function HRReports() {
   const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
@@ -146,6 +147,10 @@ const { data: statistics, isLoading: statsLoading } = useHRStatistics();
       <PayrollReportModal 
         open={payrollModalOpen} 
         onOpenChange={setPayrollModalOpen} 
+      />
+      <LeaveReportModal 
+        open={leaveModalOpen} 
+        onOpenChange={setLeaveModalOpen} 
       />
     </div>
   );

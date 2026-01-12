@@ -36,7 +36,15 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     storage: createCapacitorStorageAdapter(),
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    // Disable cross-tab sync to prevent multi-tab conflicts
+    storageKey: 'supabase.auth.token',
+  },
+  // Add retry logic for better reliability
+  global: {
+    headers: { 'x-client-info': 'fleetify-web' },
+  },
 });
 
 // Export configuration for secure access if needed

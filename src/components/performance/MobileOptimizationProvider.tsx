@@ -118,15 +118,23 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
         (window as any).gc();
       }
 
-      // Clear some caches
+      // Clear some caches - with proper error handling for multi-tab scenarios
       if ('caches' in window) {
-        caches.open('dynamic-cache').then(cache => {
-          cache.keys().then(keys => {
-            // Remove half of the cached items
-            const itemsToRemove = keys.slice(0, Math.floor(keys.length / 2));
-            itemsToRemove.forEach(key => cache.delete(key));
+        try {
+          caches.open('dynamic-cache').then(cache => {
+            cache.keys().then(keys => {
+              // Remove half of the cached items
+              const itemsToRemove = keys.slice(0, Math.floor(keys.length / 2));
+              itemsToRemove.forEach(key => cache.delete(key));
+            }).catch(() => {
+              // Silently ignore cache key errors
+            });
+          }).catch(() => {
+            // Silently ignore cache open errors (common in multi-tab scenarios)
           });
-        });
+        } catch {
+          // Silently ignore CacheStorage errors
+        }
       }
 
       // Update performance config to be more aggressive

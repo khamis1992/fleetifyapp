@@ -60,7 +60,6 @@ export const useAttendanceReport = (startDate?: string, endDate?: string) => {
   return useQuery({
     queryKey: ["attendance-report", startDate, endDate],
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "hrreports", message: "Fetching data", level: "info" });
       // Get company_id from current user
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
@@ -162,7 +161,6 @@ export const useEmployeeReport = () => {
   return useQuery({
     queryKey: ["employee-report"],
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "hrreports", message: "Fetching data", level: "info" });
       const { data, error } = await supabase
         .from("employees")
         .select(`
@@ -194,7 +192,6 @@ export const usePayrollReport = (startDate?: string, endDate?: string) => {
   return useQuery({
     queryKey: ["payroll-report", startDate, endDate],
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "hrreports", message: "Fetching data", level: "info" });
       let payrollQuery = supabase
         .from("payroll")
         .select("*")
@@ -257,7 +254,6 @@ export const useLeaveReport = (startDate?: string, endDate?: string) => {
   return useQuery({
     queryKey: ["leave-report", startDate, endDate],
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "hrreports", message: "Fetching data", level: "info" });
       // For now, return empty data as leaves table doesn't exist yet
       return []
     }
@@ -269,7 +265,6 @@ export const useHRStatistics = () => {
   return useQuery({
     queryKey: ["hr-statistics"],
     queryFn: async () => {
-      Sentry.addBreadcrumb({ category: "hrreports", message: "Fetching data", level: "info" });
       // Get total employees
       const { data: employees, error: empError } = await supabase
         .from("employees")

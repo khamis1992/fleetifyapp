@@ -112,6 +112,7 @@ const VehicleInstallments = lazy(() => import('@/pages/VehicleInstallments'));
 
 // HR Management pages
 const Employees = lazy(() => import('@/pages/hr/Employees'));
+const EmployeeDetails = lazy(() => import('@/pages/hr/EmployeeDetails'));
 const UserManagement = lazy(() => import('@/pages/hr/UserManagement'));
 const Attendance = lazy(() => import('@/pages/hr/Attendance'));
 const LeaveManagement = lazy(() => import('@/pages/hr/LeaveManagement'));
@@ -1186,6 +1187,18 @@ const routeConfigs: RouteConfig[] = [
     exact: true,
     title: 'Employees',
     description: 'Employee management',
+    group: 'hr',
+    priority: 80,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/hr/employees/:employeeId',
+    component: EmployeeDetails,
+    lazy: true,
+    exact: true,
+    title: 'Employee Details',
+    description: 'Employee details page',
     group: 'hr',
     priority: 80,
     protected: true,
