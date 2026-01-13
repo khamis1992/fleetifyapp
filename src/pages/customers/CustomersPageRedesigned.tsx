@@ -282,8 +282,67 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
   );
 };
 
-// ===== CSV Export Helper =====
-const exportCustomersToCSV = async (
+// ===== التحقق من صحة رقم الهوية (11 رقم) =====
+const isValidNationalId = (nationalId: string | null | undefined): boolean => {
+  if (!nationalId) return false;
+  const cleaned = nationalId.replace(/\D/g, ''); // إزالة أي شيء غير الأرقام
+  return cleaned.length === 11;
+};
+
+// ===== التحقق من صحة رقم الجوال (8 أرقام أو 11 مع كود الدولة 974) =====
+const isValidPhone = (phone: string | null | undefined): boolean => {
+  if (!phone) return false;
+  const cleaned = phone.replace(/\D/g, ''); // إزالة أي شيء غير الأرقام
+  // 8 أرقام (رقم محلي قطري)
+  if (cleaned.length === 8) return true;
+  // 11 رقم مع كود الدولة 974
+  if (cleaned.length === 11 && cleaned.startsWith('974')) return true;
+  // 12 رقم مع + أو 00
+  if (cleaned.length === 12 && cleaned.startsWith('00974')) return true;
+  return false;
+};
+
+// ===== تحديد المعلومات الناقصة للعميل =====
+const getMissingFields = (customer: Customer): string[] => {
+  const missing: string[] = [];
+  
+  if (customer.customer_type === 'individual') {
+    // للأفراد
+    if (!customer.first_name_ar && !customer.first_name) missing.push('الاسم');
+    if (!customer.last_name_ar && !customer.last_name) missing.push('اسم العائلة');
+    if (!customer.national_id) missing.push('رقم الهوية');
+  } else {
+    // للشركات
+    if (!customer.company_name_ar && !customer.company_name) missing.push('اسم الشركة');
+  }
+  
+  // حقول مشتركة
+  if (!customer.phone) missing.push('رقم الهاتف');
+  if (!customer.email) missing.push('البريد الإلكتروني');
+  if (!customer.address) missing.push('العنوان');
+  
+  return missing;
+};
+
+// ===== تحديد الحقول ذات الأخطاء (تنسيق خاطئ) =====
+const getInvalidFields = (customer: Customer): string[] => {
+  const invalid: string[] = [];
+  
+  // التحقق من رقم الهوية (يجب أن يكون 11 رقم)
+  if (customer.national_id && !isValidNationalId(customer.national_id)) {
+    invalid.push('رقم الهوية (يجب 11 رقم)');
+  }
+  
+  // التحقق من رقم الجوال
+  if (customer.phone && !isValidPhone(customer.phone)) {
+    invalid.push('رقم الجوال (يجب 8 أرقام أو 974XXXXXXXX)');
+  }
+  
+  return invalid;
+};
+
+// ===== Excel Export Helper with Missing Data Highlighting =====
+const exportCustomersToExcel = async (
   customers: Customer[],
   companyId: string,
   filters: CustomerFilters,
@@ -297,6 +356,9 @@ const exportCustomersToCSV = async (
   try {
     toast.loading('جاري تحضير البيانات للتصدير...');
 
+    // Import ExcelJS dynamically
+    const ExcelJS = await import('exceljs');
+    
     // Build query to fetch ALL customers matching filters (no pagination)
     let query = supabaseClient
       .from('customers')
@@ -345,75 +407,206 @@ const exportCustomersToCSV = async (
       return;
     }
 
-    // Define CSV headers in Arabic
-    const headers = [
-      'كود العميل',
-      'الاسم (عربي)',
-      'الاسم (إنجليزي)',
-      'اسم الشركة (عربي)',
-      'اسم الشركة (إنجليزي)',
-      'نوع العميل',
-      'الهاتف',
-      'البريد الإلكتروني',
-      'رقم الهوية',
-      'العنوان',
-      'الحالة',
-      'عميل VIP',
-      'تاريخ الإنشاء',
+    // Create workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Fleetify';
+    workbook.created = new Date();
+    
+    const worksheet = workbook.addWorksheet('العملاء', {
+      views: [{ rightToLeft: true }]
+    });
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'كود العميل', key: 'code', width: 15 },
+      { header: 'الاسم (عربي)', key: 'name_ar', width: 25 },
+      { header: 'الاسم (إنجليزي)', key: 'name_en', width: 25 },
+      { header: 'اسم الشركة (عربي)', key: 'company_ar', width: 25 },
+      { header: 'اسم الشركة (إنجليزي)', key: 'company_en', width: 25 },
+      { header: 'نوع العميل', key: 'type', width: 12 },
+      { header: 'الهاتف', key: 'phone', width: 18 },
+      { header: 'البريد الإلكتروني', key: 'email', width: 30 },
+      { header: 'رقم الهوية', key: 'national_id', width: 18 },
+      { header: 'العنوان', key: 'address', width: 35 },
+      { header: 'الحالة', key: 'status', width: 10 },
+      { header: 'عميل VIP', key: 'vip', width: 10 },
+      { header: 'تاريخ الإنشاء', key: 'created_at', width: 15 },
+      { header: 'المعلومات الناقصة', key: 'missing', width: 35 },
+      { header: 'ملاحظات (أخطاء التنسيق)', key: 'notes', width: 45 },
     ];
 
-    // Convert customers data to CSV rows
-    const rows = customersToExport.map((customer: Customer) => [
-      customer.customer_code || '',
-      customer.customer_type === 'individual'
-        ? `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim()
-        : '',
-      customer.customer_type === 'individual'
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
-        : '',
-      customer.company_name_ar || '',
-      customer.company_name || '',
-      customer.customer_type === 'individual' ? 'فرد' : 'شركة',
-      customer.phone || '',
-      customer.email || '',
-      customer.national_id || '',
-      customer.address || '',
-      customer.is_active ? 'نشط' : 'غير نشط',
-      customer.is_vip ? 'نعم' : 'لا',
-      customer.created_at ? new Date(customer.created_at).toLocaleDateString('ar-SA') : '',
-    ]);
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2563EB' }
+    };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.height = 25;
 
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => {
-        // Escape quotes and wrap in quotes if contains comma or quote
-        const cellStr = String(cell || '');
-        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
-          return `"${cellStr.replace(/"/g, '""')}"`;
-        }
-        return cellStr;
-      }).join(',')),
-    ].join('\n');
+    // Count customers with issues
+    let customersWithMissingData = 0;
+    let customersWithInvalidData = 0;
 
-    // Add UTF-8 BOM for Excel Arabic support
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Add data rows
+    customersToExport.forEach((customer: Customer) => {
+      const missingFields = getMissingFields(customer);
+      const invalidFields = getInvalidFields(customer);
+      const hasMissingData = missingFields.length > 0;
+      const hasInvalidData = invalidFields.length > 0;
+      
+      if (hasMissingData) customersWithMissingData++;
+      if (hasInvalidData) customersWithInvalidData++;
+
+      const row = worksheet.addRow({
+        code: customer.customer_code || '',
+        name_ar: customer.customer_type === 'individual'
+          ? `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim()
+          : '',
+        name_en: customer.customer_type === 'individual'
+          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+          : '',
+        company_ar: customer.company_name_ar || '',
+        company_en: customer.company_name || '',
+        type: customer.customer_type === 'individual' ? 'فرد' : 'شركة',
+        phone: customer.phone || '',
+        email: customer.email || '',
+        national_id: customer.national_id || '',
+        address: customer.address || '',
+        status: customer.is_active ? 'نشط' : 'غير نشط',
+        vip: customer.is_vip ? 'نعم' : 'لا',
+        created_at: customer.created_at ? new Date(customer.created_at).toLocaleDateString('ar-SA') : '',
+        missing: hasMissingData ? missingFields.join('، ') : '✓ مكتمل',
+        notes: hasInvalidData ? invalidFields.join('، ') : '',
+      });
+
+      // تلوين خلية رقم الهوية باللون الأصفر إذا كان التنسيق خاطئ
+      if (customer.national_id && !isValidNationalId(customer.national_id)) {
+        const nationalIdCell = row.getCell('national_id');
+        nationalIdCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFEF3C7' } // Light yellow background
+        };
+        nationalIdCell.font = { bold: true, color: { argb: 'FFB45309' } }; // Orange/amber text
+      }
+
+      // تلوين خلية رقم الجوال باللون الأصفر إذا كان التنسيق خاطئ
+      if (customer.phone && !isValidPhone(customer.phone)) {
+        const phoneCell = row.getCell('phone');
+        phoneCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFEF3C7' } // Light yellow background
+        };
+        phoneCell.font = { bold: true, color: { argb: 'FFB45309' } }; // Orange/amber text
+      }
+
+      // Highlight row with missing data in red
+      if (hasMissingData) {
+        row.eachCell((cell, colNumber) => {
+          // لا نغير لون خلايا الهاتف والهوية إذا كانت صفراء
+          const phoneColNum = 7;
+          const nationalIdColNum = 9;
+          if (colNumber === phoneColNum && customer.phone && !isValidPhone(customer.phone)) return;
+          if (colNumber === nationalIdColNum && customer.national_id && !isValidNationalId(customer.national_id)) return;
+          
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFEE2E2' } // Light red background
+          };
+          cell.font = { color: { argb: 'FFDC2626' } }; // Red text
+        });
+        
+        // Make missing column bold
+        const missingCell = row.getCell('missing');
+        missingCell.font = { bold: true, color: { argb: 'FFDC2626' } };
+      } else {
+        // Green for complete data
+        const missingCell = row.getCell('missing');
+        missingCell.font = { color: { argb: 'FF16A34A' } }; // Green text
+      }
+
+      // تلوين عمود الملاحظات باللون الأصفر إذا كان هناك أخطاء تنسيق
+      if (hasInvalidData) {
+        const notesCell = row.getCell('notes');
+        notesCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFEF3C7' } // Light yellow background
+        };
+        notesCell.font = { bold: true, color: { argb: 'FFB45309' } }; // Orange/amber text
+      }
+
+      // Add borders
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+          right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        };
+      });
+    });
+
+    // Add summary row at the end
+    worksheet.addRow({});
+    const summaryRow = worksheet.addRow({
+      code: 'ملخص:',
+      name_ar: `إجمالي العملاء: ${customersToExport.length}`,
+      name_en: `عملاء مكتملين: ${customersToExport.length - customersWithMissingData}`,
+      company_ar: `بيانات ناقصة: ${customersWithMissingData}`,
+      company_en: `أخطاء تنسيق: ${customersWithInvalidData}`,
+    });
+    summaryRow.font = { bold: true };
+    summaryRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF3F4F6' }
+    };
+
+    // Add legend row
+    const legendRow = worksheet.addRow({
+      code: 'دليل الألوان:',
+      name_ar: '🔴 أحمر = بيانات ناقصة',
+      name_en: '🟡 أصفر = تنسيق خاطئ',
+      company_ar: '🟢 أخضر = مكتمل',
+    });
+    legendRow.font = { italic: true };
+
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
 
     // Create download link
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.xlsx`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     toast.dismiss();
-    toast.success(`تم تصدير ${customersToExport.length} عميل بنجاح`);
+    
+    if (customersWithMissingData > 0) {
+      toast.success(
+        `تم تصدير ${customersToExport.length} عميل - ${customersWithMissingData} عميل لديهم بيانات ناقصة (محددين باللون الأحمر)`,
+        { duration: 5000 }
+      );
+    } else {
+      toast.success(`تم تصدير ${customersToExport.length} عميل - جميع البيانات مكتملة`);
+    }
   } catch (error: any) {
     toast.dismiss();
+    console.error('Export error:', error);
     toast.error(error.message || 'فشل تصدير البيانات');
   }
 };
@@ -629,7 +822,7 @@ const CustomersPageRedesigned: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => exportCustomersToCSV(customers, companyId, filters, supabase)}
+                onClick={() => exportCustomersToExcel(customers, companyId!, filters, supabase)}
                 disabled={isLoading}
                 className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
               >

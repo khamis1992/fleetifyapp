@@ -727,7 +727,7 @@ function ContractsRedesigned() {
               <div className="flex-1 relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="بحث برقم العقد، اسم العميل، رقم المركبة..."
+                  placeholder="بحث برقم العقد، اسم العميل، رقم الجوال، الرقم الشخصي، رقم المركبة..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);

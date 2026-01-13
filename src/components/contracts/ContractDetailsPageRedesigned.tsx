@@ -267,6 +267,12 @@ const ContractOverviewTab = ({
             <div className="flex-1">
               <p className="text-xs text-slate-500 mb-1">العميل</p>
               <p className="font-semibold text-slate-900">{customerName}</p>
+              {contract.customer?.phone && (
+                <p className="text-sm text-slate-600 mt-1" dir="ltr">📱 {contract.customer.phone}</p>
+              )}
+              {contract.customer?.national_id && (
+                <p className="text-sm text-slate-600 mt-0.5">🪪 {contract.customer.national_id}</p>
+              )}
             </div>
           </div>
         </CardContent>

@@ -240,7 +240,8 @@ export const useContractsData = (filters: any = {}) => {
             company_name_ar,
             company_name,
             customer_type,
-            phone
+            phone,
+            national_id
           ),
           vehicles(
             id,
@@ -503,6 +504,8 @@ export const useContractsData = (filters: any = {}) => {
           contract.description || '',
           contract.terms || '',
           customerName,
+          contract.customers?.phone || '',
+          contract.customers?.national_id || '',
           contract.vehicle?.plate_number || contract.license_plate || '',
           contract.vehicle?.make || contract.make || '',
           contract.vehicle?.model || contract.model || ''
