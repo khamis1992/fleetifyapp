@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import {
@@ -33,10 +33,13 @@ import {
   LayoutGrid,
   ArrowUpDown,
   Trophy,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 import { TrafficViolation } from '@/hooks/useTrafficViolations';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface TrafficViolationReportDialogProps {
   open: boolean;
@@ -80,7 +83,7 @@ interface VehicleGroup {
 export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialogProps> = ({
   open,
   onOpenChange,
-  violations,
+  violations: passedViolations,
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
   
@@ -98,6 +101,88 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     minAmount: '',
     maxAmount: '',
   });
+
+  // جلب جميع المخالفات عند فتح النافذة (بدون تحديد limit)
+  const { data: allViolations = [], isLoading: isLoadingAll } = useQuery({
+    queryKey: ['traffic-violations-all-for-report'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+      
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
+
+      const { data, error } = await supabase
+        .from('penalties')
+        .select(`
+          id,
+          penalty_number,
+          violation_type,
+          penalty_date,
+          amount,
+          location,
+          vehicle_plate,
+          vehicle_id,
+          reason,
+          notes,
+          status,
+          payment_status,
+          customer_id,
+          contract_id,
+          created_at,
+          updated_at,
+          vehicles (
+            id,
+            plate_number,
+            make,
+            model,
+            year,
+            registration_expiry
+          ),
+          customers (
+            id,
+            first_name,
+            last_name,
+            company_name,
+            phone
+          ),
+          contracts (
+            id,
+            contract_number,
+            status,
+            start_date,
+            end_date,
+            customer_id,
+            customers (
+              id,
+              first_name,
+              last_name,
+              company_name,
+              phone
+            )
+          )
+        `)
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching all traffic violations:', error);
+        throw error;
+      }
+
+      return data as TrafficViolation[];
+    },
+    enabled: open, // فقط عند فتح النافذة
+    staleTime: 1 * 60 * 1000, // 1 minute cache
+  });
+
+  // استخدم جميع المخالفات إذا تم تحميلها، وإلا استخدم المُمررة
+  const violations = allViolations.length > 0 ? allViolations : passedViolations;
 
   // قائمة المركبات المتاحة للفلترة
   const availableVehicles = useMemo(() => {
@@ -1220,6 +1305,14 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* مؤشر التحميل */}
+          {isLoadingAll && (
+            <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <span className="text-blue-700 font-medium">جاري تحميل جميع المخالفات...</span>
+            </div>
+          )}
+
           {/* طريقة العرض */}
           <div className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl border border-rose-100">
             <Label className="font-semibold mb-3 flex items-center gap-2">

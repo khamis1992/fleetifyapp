@@ -159,7 +159,7 @@ export const useContractsData = (filters: any = {}) => {
         // This handles cases where users search for "عمارة الخروبي" which is stored as first_name + last_name
         let customerSearchConditions: string[] = [];
         
-        // Search each word in first_name and last_name fields
+        // Search each word in first_name, last_name, phone, and national_id fields
         for (const word of searchWords) {
           customerSearchConditions.push(`first_name.ilike.%${word}%`);
           customerSearchConditions.push(`last_name.ilike.%${word}%`);
@@ -167,6 +167,8 @@ export const useContractsData = (filters: any = {}) => {
           customerSearchConditions.push(`last_name_ar.ilike.%${word}%`);
           customerSearchConditions.push(`company_name.ilike.%${word}%`);
           customerSearchConditions.push(`company_name_ar.ilike.%${word}%`);
+          customerSearchConditions.push(`phone.ilike.%${word}%`);
+          customerSearchConditions.push(`national_id.ilike.%${word}%`);
         }
         
         // Also search the full term
@@ -176,6 +178,8 @@ export const useContractsData = (filters: any = {}) => {
         customerSearchConditions.push(`last_name_ar.ilike.%${searchTerm}%`);
         customerSearchConditions.push(`company_name.ilike.%${searchTerm}%`);
         customerSearchConditions.push(`company_name_ar.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`phone.ilike.%${searchTerm}%`);
+        customerSearchConditions.push(`national_id.ilike.%${searchTerm}%`);
         
         const { data: matchingCustomers } = await supabase
           .from('customers')

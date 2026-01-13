@@ -734,6 +734,8 @@ const ContractDetailsPageRedesigned = () => {
   const [isTerminating, setIsTerminating] = useState(false);
   const [isDeletePermanentDialogOpen, setIsDeletePermanentDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRemoveLegalDialogOpen, setIsRemoveLegalDialogOpen] = useState(false);
+  const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [relatedDataCounts, setRelatedDataCounts] = useState<{invoices: number; payments: number; violations: number} | null>(null);
 
   // Fetch contract data
@@ -981,6 +983,52 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [contract, companyId, queryClient, toast]);
 
+  // إزالة الإجراء القانوني وإعادة العقد للحالة النشطة
+  const executeRemoveLegalProcedure = useCallback(async () => {
+    if (!contract?.id || !companyId) return;
+
+    setIsRemovingLegal(true);
+    try {
+      // تحديث حالة العقد إلى active
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({ 
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contract.id)
+        .eq('company_id', companyId);
+
+      if (contractError) throw contractError;
+
+      // حذف سجل العميل المتعثر إن وجد
+      await supabase
+        .from('delinquent_customers')
+        .delete()
+        .eq('contract_id', contract.id);
+
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+
+      toast({
+        title: 'تم إزالة الإجراء القانوني',
+        description: `تم إعادة العقد #${contract.contract_number} للحالة النشطة`,
+      });
+
+      setIsRemoveLegalDialogOpen(false);
+    } catch (error: any) {
+      console.error('خطأ في إزالة الإجراء القانوني:', error);
+      toast({
+        title: 'خطأ في إزالة الإجراء القانوني',
+        description: error.message || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRemovingLegal(false);
+    }
+  }, [contract, companyId, queryClient, toast]);
+
   const executeDeletePermanent = useCallback(async () => {
     if (!contract?.id || !companyId) return;
 
@@ -1197,6 +1245,16 @@ const ContractDetailsPageRedesigned = () => {
                       تحويل للشؤون القانونية
                     </Button>
                   )}
+                  {contract.status === 'under_legal_procedure' && (
+                    <Button
+                      onClick={() => setIsRemoveLegalDialogOpen(true)}
+                      variant="outline"
+                      className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl"
+                    >
+                      <Scale className="w-4 h-4" />
+                      إزالة الإجراء القانوني
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={handleTerminate}
@@ -1373,6 +1431,43 @@ const ContractDetailsPageRedesigned = () => {
                 </>
               ) : (
                 'نعم، حذف نهائياً'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Legal Procedure Dialog */}
+      <AlertDialog open={isRemoveLegalDialogOpen} onOpenChange={setIsRemoveLegalDialogOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-emerald-600">إزالة الإجراء القانوني</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div className="space-y-4">
+                <p>هل أنت متأكد من إزالة الإجراء القانوني للعقد #{contract.contract_number}؟</p>
+                <Alert className="border-emerald-200 bg-emerald-50">
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  <AlertDescription className="text-emerald-800">
+                    سيتم إعادة العقد للحالة النشطة وحذف سجل العميل المتعثر إن وجد.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeRemoveLegalProcedure}
+              disabled={isRemovingLegal}
+              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+            >
+              {isRemovingLegal ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  جاري الإزالة...
+                </>
+              ) : (
+                'نعم، إزالة الإجراء القانوني'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

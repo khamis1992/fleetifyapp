@@ -53,6 +53,18 @@ import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
 import { ContractAmendmentForm } from "@/components/contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Hook imports
@@ -66,6 +78,8 @@ import { generateShortContractNumber } from "@/utils/contractNumberGenerator";
 import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getCurrencyConfig } from "@/utils/currencyConfig";
+import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { supabase } from "@/integrations/supabase/client";
 
 function ContractsRedesigned() {
   // State management
@@ -85,6 +99,8 @@ function ContractsRedesigned() {
   const [showCreationProgress, setShowCreationProgress] = useState(false);
   const [showCancellationDialog, setShowCancellationDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRemoveLegalDialog, setShowRemoveLegalDialog] = useState(false);
+  const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
@@ -115,6 +131,7 @@ function ContractsRedesigned() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { companyId } = useUnifiedCompanyAccess();
   const { createContract, creationState, isCreating, retryCreation, resetCreationState } = useContractCreation();
   const contractDrafts = useContractDrafts();
   const { formatCurrency: formatCurrencyAmount, currency } = useCurrencyFormatter();
@@ -306,6 +323,86 @@ function ContractsRedesigned() {
       console.error('Error reactivating contract:', error);
     }
   }, [updateContractStatus, refetch]);
+
+  // إزالة الإجراء القانوني
+  const handleRemoveLegalProcedure = useCallback((contract: any) => {
+    setSelectedContract(contract);
+    setShowRemoveLegalDialog(true);
+  }, []);
+
+  // تحويل للشؤون القانونية
+  const handleConvertToLegal = useCallback(async (contract: any) => {
+    if (!contract || !companyId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('contracts')
+        .update({ 
+          status: 'under_legal_procedure',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contract.id)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم التحويل للشؤون القانونية',
+        description: `تم تحويل العقد #${contract.contract_number} للإجراء القانوني`,
+      });
+
+      refetch();
+    } catch (error: any) {
+      console.error('خطأ في التحويل للشؤون القانونية:', error);
+      toast({
+        title: 'خطأ في التحويل',
+        description: error.message || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    }
+  }, [companyId, toast, refetch]);
+
+  const executeRemoveLegalProcedure = useCallback(async () => {
+    if (!selectedContract || !companyId) return;
+    
+    setIsRemovingLegal(true);
+    try {
+      // تحديث حالة العقد إلى active
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({ 
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedContract.id)
+        .eq('company_id', companyId);
+
+      if (contractError) throw contractError;
+
+      // حذف سجل العميل المتعثر إن وجد
+      await supabase
+        .from('delinquent_customers')
+        .delete()
+        .eq('contract_id', selectedContract.id);
+
+      toast({
+        title: 'تم إزالة الإجراء القانوني',
+        description: `تم إعادة العقد #${selectedContract.contract_number} للحالة النشطة`,
+      });
+
+      setShowRemoveLegalDialog(false);
+      refetch();
+    } catch (error: any) {
+      console.error('خطأ في إزالة الإجراء القانوني:', error);
+      toast({
+        title: 'خطأ في إزالة الإجراء القانوني',
+        description: error.message || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRemovingLegal(false);
+    }
+  }, [selectedContract, companyId, toast, refetch]);
 
   const handleDeleteContract = useCallback((contract: any) => {
     setSelectedContract(contract);
@@ -544,19 +641,41 @@ function ContractsRedesigned() {
               إلغاء
             </Button>
           )}
-          {contract.status === 'cancelled' && (
+          {contract.status === 'under_legal_procedure' && (
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => {
-                setSelectedContract(contract);
-                setShowDeleteDialog(true);
-              }} 
-              className="bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-3xl ml-auto hover:shadow-xl hover:shadow-rose-500/10"
+              onClick={() => handleRemoveLegalProcedure(contract)}
+              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-3xl hover:shadow-xl hover:shadow-emerald-500/10"
             >
-              <Trash2 className="w-4 h-4 ml-2" />
-              حذف نهائي
+              <Scale className="w-4 h-4 ml-2" />
+              إزالة الإجراء القانوني
             </Button>
+          )}
+          {contract.status === 'cancelled' && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleConvertToLegal(contract)}
+                className="bg-violet-50 text-violet-700 hover:bg-violet-100 rounded-3xl hover:shadow-xl hover:shadow-violet-500/10"
+              >
+                <Scale className="w-4 h-4 ml-2" />
+                تحويل للشؤون القانونية
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setSelectedContract(contract);
+                  setShowDeleteDialog(true);
+                }} 
+                className="bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-3xl ml-auto hover:shadow-xl hover:shadow-rose-500/10"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                حذف نهائي
+              </Button>
+            </>
           )}
         </div>
       </motion.div>
@@ -935,6 +1054,44 @@ function ContractsRedesigned() {
         }}
       />
       <BulkDeleteContractsDialog open={showBulkDelete} onOpenChange={setShowBulkDelete} />
+      
+      {/* Remove Legal Procedure Dialog */}
+      <AlertDialog open={showRemoveLegalDialog} onOpenChange={setShowRemoveLegalDialog}>
+        <AlertDialogContent className="rounded-2xl" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-emerald-600">إزالة الإجراء القانوني</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div className="space-y-4">
+                <p>هل أنت متأكد من إزالة الإجراء القانوني للعقد #{selectedContract?.contract_number}؟</p>
+                <Alert className="border-emerald-200 bg-emerald-50">
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  <AlertDescription className="text-emerald-800">
+                    سيتم إعادة العقد للحالة النشطة وحذف سجل العميل المتعثر إن وجد.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeRemoveLegalProcedure}
+              disabled={isRemovingLegal}
+              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+            >
+              {isRemovingLegal ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  جاري الإزالة...
+                </>
+              ) : (
+                'نعم، إزالة الإجراء القانوني'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <SendRemindersDialog
         open={showRemindersDialog}
         onOpenChange={setShowRemindersDialog}

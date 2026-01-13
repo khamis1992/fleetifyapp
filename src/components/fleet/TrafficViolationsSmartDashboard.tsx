@@ -268,6 +268,16 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
     // High value violations (above 500 QAR)
     const highValueViolations = violationsData.filter(v => Number(v.amount) > 500).length;
 
+    // Violations without customers
+    const violationsWithoutCustomers = violationsData.filter(v => !v.customer_id);
+    const violationsWithoutCustomersCount = violationsWithoutCustomers.length;
+    const violationsWithoutCustomersAmount = violationsWithoutCustomers.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+
+    // Violations with customers (linked to customers)
+    const violationsWithCustomers = violationsData.filter(v => v.customer_id);
+    const violationsWithCustomersCount = violationsWithCustomers.length;
+    const violationsWithCustomersAmount = violationsWithCustomers.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+
     // Monthly data
     const today = new Date();
     const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -301,7 +311,11 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
       overdueViolations,
       highValueViolations,
       thisMonthCount,
-      lastMonthCount
+      lastMonthCount,
+      violationsWithoutCustomersCount,
+      violationsWithoutCustomersAmount,
+      violationsWithCustomersCount,
+      violationsWithCustomersAmount
     };
   }, [allViolations, violations]);
 
@@ -319,12 +333,12 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
   return (
     <div className="space-y-4">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* Total Violations */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Total Violations Amount */}
         <SmartStatCard
           title="إجمالي المخالفات"
-          value={stats.totalViolations.toLocaleString('en-US')}
-          subValue={formatCurrency(stats.totalAmount)}
+          value={formatCurrency(stats.totalAmount)}
+          subValue={`${stats.totalViolations.toLocaleString('en-US')} مخالفة`}
           icon={FileWarning}
           iconBg="bg-rose-50"
           iconColor="text-coral-600"
@@ -335,14 +349,14 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
           } : undefined}
         />
 
-        {/* Unpaid Amount */}
+        {/* Violations With Customers */}
         <SmartStatCard
-          title="مبالغ غير مسددة"
-          value={formatCurrency(stats.unpaidAmount)}
-          subValue={`${stats.unpaidCount} مخالفة`}
-          icon={AlertCircle}
-          iconBg="bg-red-50"
-          iconColor="text-red-600"
+          title="مخالفات مربوطة بعملاء"
+          value={formatCurrency(stats.violationsWithCustomersAmount)}
+          subValue={`${stats.violationsWithCustomersCount} مخالفة`}
+          icon={Users}
+          iconBg="bg-blue-50"
+          iconColor="text-blue-600"
         />
 
         {/* Paid Amount */}
@@ -355,20 +369,15 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
           iconColor="text-green-600"
         />
 
-        {/* Collection Rate */}
+        {/* Violations Without Customers */}
         <SmartStatCard
-          title="نسبة التحصيل"
-          value={`${stats.collectionRate}%`}
-          subValue={`متوسط المخالفة: ${formatCurrency(stats.averageViolationAmount)}`}
-          icon={DollarSign}
-          iconBg="bg-blue-50"
-          iconColor="text-blue-600"
+          title="مخالفات بدون عملاء"
+          value={formatCurrency(stats.violationsWithoutCustomersAmount)}
+          subValue={`${stats.violationsWithoutCustomersCount} مخالفة`}
+          icon={Users}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-600"
         />
-
-        {/* Health Score */}
-        <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100 hover:shadow-lg transition-shadow flex items-center justify-center">
-          <HealthScoreDisplay score={stats.violationsHealthScore} />
-        </div>
       </div>
 
       {/* Alerts Summary - Only show if there are issues */}

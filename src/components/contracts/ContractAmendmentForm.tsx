@@ -19,8 +19,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useContractAmendments } from '@/hooks/useContractAmendments';
-import { AlertCircle, FileEdit, Calendar, DollarSign, FileText, Truck, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { AlertCircle, FileEdit, Calendar, DollarSign, FileText, Truck, Check, Loader2 } from 'lucide-react';
 import type { Contract } from '@/types/contracts';
 import type { AmendmentType, AmendmentFormData } from '@/types/amendment';
 
@@ -37,7 +38,8 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
   contract,
   onSuccess
 }) => {
-  const { createAmendment, isCreating } = useContractAmendments(contract.id);
+  const { toast } = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [formData, setFormData] = useState<AmendmentFormData>({
     amendment_type: 'other',
@@ -107,7 +109,7 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
     return icons[type];
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.amendment_reason.trim()) {
       return;
     }
@@ -116,50 +118,60 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
       return;
     }
 
-    // Prepare original and new values
-    const original_values: Record<string, any> = {};
-    const new_values: Record<string, any> = {};
+    setIsUpdating(true);
+    try {
+      // Build update object with only changed fields
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
 
-    // Only include changed fields
-    if (changes.start_date) {
-      original_values.start_date = contract.start_date;
-      new_values.start_date = formData.start_date;
-    }
-    if (changes.end_date) {
-      original_values.end_date = contract.end_date;
-      new_values.end_date = formData.end_date;
-    }
-    if (changes.contract_amount) {
-      original_values.contract_amount = contract.contract_amount;
-      new_values.contract_amount = formData.contract_amount;
-    }
-    if (changes.monthly_amount) {
-      original_values.monthly_amount = contract.monthly_amount;
-      new_values.monthly_amount = formData.monthly_amount;
-    }
-    if (changes.description) {
-      original_values.description = contract.description;
-      new_values.description = formData.description;
-    }
-    if (changes.terms) {
-      original_values.terms = contract.terms;
-      new_values.terms = formData.terms;
-    }
-
-    createAmendment({
-      contract_id: contract.id,
-      amendment_type: formData.amendment_type,
-      amendment_reason: formData.amendment_reason,
-      original_values,
-      new_values,
-      requires_customer_signature: formData.requires_customer_signature,
-      effective_date: formData.effective_date
-    }, {
-      onSuccess: () => {
-        onOpenChange(false);
-        onSuccess?.();
+      if (changes.start_date) {
+        updateData.start_date = formData.start_date;
       }
-    });
+      if (changes.end_date) {
+        updateData.end_date = formData.end_date;
+      }
+      if (changes.contract_amount) {
+        updateData.contract_amount = formData.contract_amount;
+      }
+      if (changes.monthly_amount) {
+        updateData.monthly_amount = formData.monthly_amount;
+      }
+      if (changes.description) {
+        updateData.description = formData.description;
+      }
+      if (changes.terms) {
+        updateData.terms = formData.terms;
+      }
+
+      // Update the contract directly
+      const { error } = await supabase
+        .from('contracts')
+        .update(updateData)
+        .eq('id', contract.id);
+
+      if (error) {
+        console.error('Contract update error:', error);
+        throw error;
+      }
+
+      toast({
+        title: '✅ تم تعديل العقد',
+        description: `تم تحديث العقد ${contract.contract_number} بنجاح`,
+      });
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      console.error('Error updating contract:', error);
+      toast({
+        title: '❌ فشل تعديل العقد',
+        description: error.message || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const Icon = getAmendmentTypeIcon(formData.amendment_type);
@@ -415,15 +427,22 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isCreating}
+            disabled={isUpdating}
           >
             إلغاء
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!formData.amendment_reason.trim() || !hasChanges || isCreating}
+            disabled={!formData.amendment_reason.trim() || !hasChanges || isUpdating}
           >
-            {isCreating ? 'جاري الإنشاء...' : 'إنشاء التعديل'}
+            {isUpdating ? (
+              <>
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                جاري الحفظ...
+              </>
+            ) : (
+              'حفظ التعديلات'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

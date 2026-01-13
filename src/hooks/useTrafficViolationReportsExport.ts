@@ -108,7 +108,8 @@ export const useTrafficViolationPaymentsReport = (startDate?: string, endDate?: 
   return useQuery({
     queryKey: ["traffic-violation-payments-report", startDate, endDate],
     queryFn: async (): Promise<TrafficViolationPaymentReportData[]> => {
-      let query = supabase
+      // Step 1: Fetch payments
+      let paymentsQuery = supabase
         .from("traffic_violation_payments")
         .select(`
           id,
@@ -120,47 +121,70 @@ export const useTrafficViolationPaymentsReport = (startDate?: string, endDate?: 
           status,
           reference_number,
           notes,
-          traffic_violation_id,
-          penalties:traffic_violation_id (
-            penalty_number,
-            reason,
-            vehicle_plate
-          )
+          traffic_violation_id
         `)
         .order("payment_date", { ascending: false });
 
       if (startDate) {
-        query = query.gte("payment_date", startDate);
+        paymentsQuery = paymentsQuery.gte("payment_date", startDate);
       }
       if (endDate) {
-        query = query.lte("payment_date", endDate);
+        paymentsQuery = paymentsQuery.lte("payment_date", endDate);
       }
 
-      const { data, error } = await query;
+      const { data: payments, error: paymentsError } = await paymentsQuery;
 
-      if (error) {
-        console.error("Error fetching traffic violation payments report:", error);
-        throw error;
+      if (paymentsError) {
+        console.error("Error fetching traffic violation payments report:", paymentsError);
+        throw paymentsError;
       }
 
-      return data?.map(item => ({
-        id: item.id,
-        payment_number: item.payment_number,
-        penalty_number: item.penalties?.penalty_number || '',
-        payment_date: item.payment_date,
-        amount: item.amount || 0,
-        payment_method: item.payment_method,
-        payment_type: item.payment_type,
-        status: item.status,
-        reference_number: item.reference_number,
-        notes: item.notes,
-        penalty: item.penalties ? {
-          reason: item.penalties.reason,
-          vehicle: item.penalties.vehicle_plate ? {
-            plate_number: item.penalties.vehicle_plate
+      if (!payments || payments.length === 0) {
+        return [];
+      }
+
+      // Step 2: Get unique violation IDs
+      const violationIds = [...new Set(payments.map(p => p.traffic_violation_id).filter(Boolean))];
+
+      // Step 3: Fetch penalties data for these violations
+      let penaltiesMap: Record<string, { penalty_number: string; reason: string | null; vehicle_plate: string | null }> = {};
+      
+      if (violationIds.length > 0) {
+        const { data: penalties, error: penaltiesError } = await supabase
+          .from("penalties")
+          .select("id, penalty_number, reason, vehicle_plate")
+          .in("id", violationIds);
+
+        if (!penaltiesError && penalties) {
+          penaltiesMap = penalties.reduce((acc, p) => {
+            acc[p.id] = { penalty_number: p.penalty_number, reason: p.reason, vehicle_plate: p.vehicle_plate };
+            return acc;
+          }, {} as Record<string, { penalty_number: string; reason: string | null; vehicle_plate: string | null }>);
+        }
+      }
+
+      // Step 4: Map and return data
+      return payments.map(item => {
+        const penalty = penaltiesMap[item.traffic_violation_id];
+        return {
+          id: item.id,
+          payment_number: item.payment_number,
+          penalty_number: penalty?.penalty_number || '',
+          payment_date: item.payment_date,
+          amount: item.amount || 0,
+          payment_method: item.payment_method,
+          payment_type: item.payment_type,
+          status: item.status,
+          reference_number: item.reference_number,
+          notes: item.notes,
+          penalty: penalty ? {
+            reason: penalty.reason || '',
+            vehicle: penalty.vehicle_plate ? {
+              plate_number: penalty.vehicle_plate
+            } : undefined
           } : undefined
-        } : undefined
-      })) || [];
+        };
+      });
     },
     enabled: true,
   });

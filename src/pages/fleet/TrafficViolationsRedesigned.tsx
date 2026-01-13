@@ -19,7 +19,6 @@ import {
   CreditCard,
   Edit,
   Upload,
-  BarChart,
   List,
   Gavel,
   RefreshCw
@@ -51,9 +50,6 @@ const TrafficViolationPaymentsDialog = lazy(() =>
 );
 const TrafficViolationPDFImport = lazy(() =>
   import('@/components/fleet/TrafficViolationPDFImportRedesigned').then(m => ({ default: m.TrafficViolationPDFImportRedesigned }))
-);
-const TrafficViolationReports = lazy(() =>
-  import('@/components/fleet/TrafficViolationReports').then(m => ({ default: m.TrafficViolationReports }))
 );
 
 export default function TrafficViolationsRedesigned() {
@@ -377,10 +373,6 @@ export default function TrafficViolationsRedesigned() {
                 <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <Upload className="w-4 h-4" />
                   استيراد PDF
-                </TabsTrigger>
-                <TabsTrigger value="reports" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
-                  <BarChart className="w-4 h-4" />
-                  التقارير
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -714,13 +706,6 @@ export default function TrafficViolationsRedesigned() {
             <TabsContent value="import" className="p-0">
               <Suspense fallback={<LoadingSpinner size="lg" />}>
                 <TrafficViolationPDFImport />
-              </Suspense>
-            </TabsContent>
-
-            {/* Tab Content: Reports */}
-            <TabsContent value="reports" className="p-6">
-              <Suspense fallback={<LoadingSpinner size="lg" />}>
-                <TrafficViolationReports />
               </Suspense>
             </TabsContent>
           </Tabs>
