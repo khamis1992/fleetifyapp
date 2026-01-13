@@ -66,28 +66,44 @@ export default function DuplicateInvoicesCleanup() {
     }
     setLoading(true);
     try {
-      // جلب كل الفواتير النشطة للشركة
-      const { data: invoices, error } = await supabase
-        .from('invoices')
-        .select(`
-          id, 
-          invoice_number, 
-          invoice_date, 
-          due_date, 
-          total_amount, 
-          status,
-          contract_id,
-          created_at,
-          contracts (
-            contract_number
-          )
-        `)
-        .eq('company_id', companyId)
-        .neq('status', 'cancelled')
-        .not('contract_id', 'is', null)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
+      // جلب كل الفواتير النشطة للشركة بدون limit
+      let allInvoices: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data: batch, error: batchError } = await supabase
+          .from('invoices')
+          .select(`
+            id, 
+            invoice_number, 
+            invoice_date, 
+            due_date, 
+            total_amount, 
+            status,
+            contract_id,
+            created_at,
+            contracts (
+              contract_number
+            )
+          `)
+          .eq('company_id', companyId)
+          .neq('status', 'cancelled')
+          .not('contract_id', 'is', null)
+          .order('created_at', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (batchError) throw batchError;
+        if (!batch || batch.length === 0) break;
+        
+        allInvoices = [...allInvoices, ...batch];
+        page++;
+        
+        if (batch.length < pageSize) break;
+      }
+      
+      const invoices = allInvoices;
+      console.log(`📊 Duplicates - Total invoices fetched: ${invoices?.length || 0}`);
 
       // تجميع حسب العقد والشهر
       const grouped = new Map<string, {
@@ -155,33 +171,43 @@ export default function DuplicateInvoicesCleanup() {
     let invoicesCancelled = 0;
 
     try {
-      for (const group of duplicates) {
-        const primaryInvoice = group.invoices.find(i => i.isPrimary);
-        const duplicateInvoices = group.invoices.filter(i => !i.isPrimary);
-
-        if (!primaryInvoice || !duplicateInvoices.length) continue;
-
-        const duplicateIds = duplicateInvoices.map(i => i.id);
+      // معالجة بـ batches من 10 مجموعات في نفس الوقت
+      const BATCH_SIZE = 10;
+      
+      for (let i = 0; i < duplicates.length; i += BATCH_SIZE) {
+        const batch = duplicates.slice(i, i + BATCH_SIZE);
         
-        // ملاحظة: لا نحاول نقل الدفعات لأنها قد تكون مكررة أيضاً
-        // الدفعات ستبقى مرتبطة بالفواتير الملغاة ولكن الفواتير ستكون cancelled
-        
-        // إلغاء الفواتير المكررة
-        for (const dup of duplicateInvoices) {
-          const { error: cancelError } = await supabase
-            .from('invoices')
-            .update({
-              status: 'cancelled',
-              notes: `ملغاة تلقائياً - مكررة مع الفاتورة: ${primaryInvoice.invoiceNumber} | تم الإلغاء: ${new Date().toISOString()}`
-            })
-            .eq('id', dup.id);
+        const results = await Promise.all(batch.map(async (group) => {
+          const primaryInvoice = group.invoices.find(inv => inv.isPrimary);
+          const duplicateInvoices = group.invoices.filter(inv => !inv.isPrimary);
 
-          if (!cancelError) {
-            invoicesCancelled++;
+          if (!primaryInvoice || !duplicateInvoices.length) return { cancelled: 0 };
+
+          // إلغاء جميع الفواتير المكررة في هذه المجموعة
+          const cancelResults = await Promise.all(duplicateInvoices.map(async (dup) => {
+            const { error } = await supabase
+              .from('invoices')
+              .update({
+                status: 'cancelled',
+                notes: `ملغاة تلقائياً - مكررة مع الفاتورة: ${primaryInvoice.invoiceNumber} | تم الإلغاء: ${new Date().toISOString()}`
+              })
+              .eq('id', dup.id);
+
+            return !error ? 1 : 0;
+          }));
+
+          return { cancelled: cancelResults.reduce((a, b) => a + b, 0) };
+        }));
+
+        // حساب النتائج
+        for (const r of results) {
+          if (r.cancelled > 0) {
+            groupsCleaned++;
+            invoicesCancelled += r.cancelled;
           }
         }
-
-        groupsCleaned++;
+        
+        console.log(`📊 Progress: ${i + batch.length}/${duplicates.length} groups (Cancelled: ${invoicesCancelled})`);
       }
 
       // إعادة حساب أرصدة الفواتير الأساسية
@@ -237,24 +263,41 @@ export default function DuplicateInvoicesCleanup() {
     
     setLoading(true);
     try {
-      const { data: invoices, error } = await supabase
-        .from('invoices')
-        .select(`
-          id, invoice_number, invoice_date, due_date, contract_id,
-          contracts (contract_number)
-        `)
-        .eq('company_id', companyId)
-        .not('contract_id', 'is', null)
-        .neq('status', 'cancelled')
-        .order('due_date', { ascending: false });
-
-      if (error) throw error;
+      // جلب جميع الفواتير للشركة بدون limit
+      let allInvoices: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data: batch, error: batchError } = await supabase
+          .from('invoices')
+          .select(`
+            id, invoice_number, invoice_date, due_date, contract_id,
+            contracts (contract_number)
+          `)
+          .eq('company_id', companyId)
+          .neq('status', 'cancelled')
+          .order('due_date', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (batchError) throw batchError;
+        if (!batch || batch.length === 0) break;
+        
+        allInvoices = [...allInvoices, ...batch];
+        page++;
+        
+        if (batch.length < pageSize) break;
+      }
+      
+      const invoices = allInvoices;
+      console.log(`📊 Total invoices fetched: ${invoices?.length || 0}`);
 
       // تجميع الفواتير حسب العقد والشهر
       const groupedByContractMonth = new Map<string, typeof invoices>();
       for (const inv of invoices || []) {
         const date = inv.due_date || inv.invoice_date;
         if (!date) continue;
+        if (!inv.contract_id) continue; // تخطي الفواتير بدون عقد
         const month = date.substring(0, 7);
         const key = `${inv.contract_id}|${month}`;
         if (!groupedByContractMonth.has(key)) {
@@ -306,7 +349,7 @@ export default function DuplicateInvoicesCleanup() {
     }
   };
 
-  // تصحيح تواريخ الفواتير (أو إلغاء المكررة)
+  // تصحيح تواريخ الفواتير (أو إلغاء المكررة) - معالجة متوازية
   const fixInvoiceDates = async () => {
     if (!wrongDateInvoices.length) return;
     
@@ -316,52 +359,60 @@ export default function DuplicateInvoicesCleanup() {
     let failed = 0;
 
     try {
-      for (const inv of wrongDateInvoices) {
-        if (inv.hasPrimaryInvoice) {
-          // هذه فاتورة مكررة - يجب إلغاؤها
-          const { error } = await supabase
-            .from('invoices')
-            .update({
-              status: 'cancelled',
-              notes: `ملغاة تلقائياً - فاتورة مكررة بتاريخ خاطئ (${inv.oldDate}) | تم الإلغاء: ${new Date().toISOString()}`
-            })
-            .eq('id', inv.id);
-
-          if (error) {
-            failed++;
-          } else {
-            cancelled++;
-          }
-        } else {
-          // محاولة تصحيح التاريخ أولاً
-          const { error } = await supabase
-            .from('invoices')
-            .update({
-              invoice_date: inv.newDate,
-              due_date: inv.newDate
-            })
-            .eq('id', inv.id);
-
-          if (error) {
-            // إذا فشل (بسبب trigger conflict)، نلغي الفاتورة بدلاً من ذلك
-            console.warn(`فشل تصحيح ${inv.invoiceNumber}, نحاول الإلغاء...`, error);
-            const { error: cancelError } = await supabase
+      // معالجة بـ batches من 20 فاتورة في نفس الوقت
+      const BATCH_SIZE = 20;
+      
+      for (let i = 0; i < wrongDateInvoices.length; i += BATCH_SIZE) {
+        const batch = wrongDateInvoices.slice(i, i + BATCH_SIZE);
+        
+        const results = await Promise.all(batch.map(async (inv) => {
+          if (inv.hasPrimaryInvoice) {
+            // هذه فاتورة مكررة - يجب إلغاؤها
+            const { error } = await supabase
               .from('invoices')
               .update({
                 status: 'cancelled',
-                notes: `ملغاة تلقائياً - تعارض مع فاتورة موجودة بتاريخ ${inv.newDate} | تم الإلغاء: ${new Date().toISOString()}`
+                notes: `ملغاة تلقائياً - فاتورة مكررة بتاريخ خاطئ (${inv.oldDate}) | تم الإلغاء: ${new Date().toISOString()}`
               })
               .eq('id', inv.id);
-            
-            if (cancelError) {
-              failed++;
-            } else {
-              cancelled++;
-            }
+
+            return { type: error ? 'failed' : 'cancelled' };
           } else {
-            fixed++;
+            // محاولة تصحيح التاريخ أولاً
+            const { error } = await supabase
+              .from('invoices')
+              .update({
+                invoice_date: inv.newDate,
+                due_date: inv.newDate
+              })
+              .eq('id', inv.id);
+
+            if (error) {
+              // إذا فشل، نلغي الفاتورة بدلاً من ذلك
+              const { error: cancelError } = await supabase
+                .from('invoices')
+                .update({
+                  status: 'cancelled',
+                  notes: `ملغاة تلقائياً - تعارض مع فاتورة موجودة بتاريخ ${inv.newDate} | تم الإلغاء: ${new Date().toISOString()}`
+                })
+                .eq('id', inv.id);
+              
+              return { type: cancelError ? 'failed' : 'cancelled' };
+            } else {
+              return { type: 'fixed' };
+            }
           }
+        }));
+
+        // حساب النتائج
+        for (const r of results) {
+          if (r.type === 'fixed') fixed++;
+          else if (r.type === 'cancelled') cancelled++;
+          else failed++;
         }
+        
+        // تحديث الـ UI كل batch
+        console.log(`📊 Progress: ${i + batch.length}/${wrongDateInvoices.length} (Fixed: ${fixed}, Cancelled: ${cancelled}, Failed: ${failed})`);
       }
 
       setDateFixResults({ fixed: fixed + cancelled, failed });
