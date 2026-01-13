@@ -245,6 +245,8 @@ export const useUpdateContractStatus = () => {
       if (contractError) throw contractError;
       
       // Update contract status
+      // Note: Vehicle status is automatically updated by database trigger
+      // (contracts_vehicle_status_update -> update_vehicle_status_from_contract)
       const { data, error } = await supabase
         .from("contracts")
         .update(updateData)
@@ -254,17 +256,8 @@ export const useUpdateContractStatus = () => {
       
       if (error) throw error;
       
-      // If cancelling contract and it has a vehicle, make vehicle available
-      if (status === 'cancelled' && contractData.vehicle_id) {
-        const { error: vehicleError } = await supabase
-          .from("vehicles")
-          .update({ status: 'available' })
-          .eq("id", contractData.vehicle_id);
-        
-        if (vehicleError) {
-          console.warn("خطأ في تحديث حالة المركبة:", vehicleError.message);
-        }
-      }
+      // Vehicle status is now handled by database trigger - no manual update needed
+      // This prevents the "tuple already modified" error
       
       return { data, contractData };
     },

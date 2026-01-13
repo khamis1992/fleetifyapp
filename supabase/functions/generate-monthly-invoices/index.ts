@@ -61,25 +61,45 @@ serve(async (req) => {
 
     for (const contract of contracts || []) {
       try {
-        // Check if invoice already exists for this month
+        // ✅ استخدام الدالة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
+        const invoiceMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
+        
+        // Check if invoice already exists for this month using due_date
         const { data: existingInvoice } = await supabaseClient
           .from("invoices")
-          .select("id")
+          .select("id, invoice_number")
           .eq("contract_id", contract.id)
-          .gte("invoice_date", `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`)
-          .lt("invoice_date", `${currentYear}-${String(currentMonth).padStart(2, "0")}-31`)
-          .single();
+          .gte("due_date", invoiceMonth)
+          .lt("due_date", `${currentYear}-${String(currentMonth).padStart(2, "0")}-31`)
+          .neq("status", "cancelled")
+          .limit(1);
 
-        if (existingInvoice) {
-          console.log(`Invoice already exists for contract ${contract.contract_number}`);
+        if (existingInvoice && existingInvoice.length > 0) {
+          console.log(`Invoice already exists for contract ${contract.contract_number}: ${existingInvoice[0].invoice_number}`);
           results.skipped++;
           continue;
         }
 
-        // Generate invoice number
-        const invoiceNumber = `INV-${currentYear}${String(currentMonth).padStart(2, "0")}-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
+        // Generate unique invoice number with sequence
+        const { data: lastInvoice } = await supabaseClient
+          .from("invoices")
+          .select("invoice_number")
+          .eq("company_id", contract.company_id)
+          .like("invoice_number", `INV-${currentYear}${String(currentMonth).padStart(2, "0")}%`)
+          .order("invoice_number", { ascending: false })
+          .limit(1);
 
-        // Create invoice
+        let sequence = 1;
+        if (lastInvoice && lastInvoice.length > 0) {
+          const match = lastInvoice[0].invoice_number.match(/-(\d+)$/);
+          if (match) {
+            sequence = parseInt(match[1], 10) + 1;
+          }
+        }
+
+        const invoiceNumber = `INV-${currentYear}${String(currentMonth).padStart(2, "0")}-${String(sequence).padStart(5, "0")}`;
+
+        // Create invoice with first day of month as invoice_date and due_date
         const { error: invoiceError } = await supabaseClient
           .from("invoices")
           .insert({
@@ -87,14 +107,26 @@ serve(async (req) => {
             customer_id: contract.customer_id,
             contract_id: contract.id,
             invoice_number: invoiceNumber,
-            invoice_date: now.toISOString().split("T")[0],
-            due_date: dueDate.toISOString().split("T")[0],
+            invoice_date: invoiceMonth, // أول يوم في الشهر
+            due_date: invoiceMonth, // أول يوم في الشهر
             total_amount: contract.monthly_amount,
-            status: "unpaid",
-            notes: `فاتورة إيجار شهرية - ${currentYear}/${currentMonth}`,
+            subtotal: contract.monthly_amount,
+            balance_due: contract.monthly_amount,
+            paid_amount: 0,
+            status: "sent",
+            payment_status: "unpaid",
+            invoice_type: "rental",
+            currency: "QAR",
+            notes: `فاتورة إيجار شهرية - ${currentYear}/${currentMonth} - عقد #${contract.contract_number}`,
           });
 
         if (invoiceError) {
+          // Check if it's a duplicate error from the trigger
+          if (invoiceError.message?.includes('فاتورة مكررة') || invoiceError.code === '23505') {
+            console.log(`Invoice already exists (caught by trigger) for contract ${contract.contract_number}`);
+            results.skipped++;
+            continue;
+          }
           throw new Error(`Error creating invoice: ${invoiceError.message}`);
         }
 

@@ -249,66 +249,108 @@ export async function checkByPlateAndDate(
 }
 
 // ----------------------------------------------------------------------------
-// Batch Duplicate Checking
+// Batch Duplicate Checking (Optimized)
 // ----------------------------------------------------------------------------
 
 /**
- * Check multiple violations for duplicates
+ * Check multiple violations for duplicates - OPTIMIZED VERSION
+ * Fetches all existing violations once and checks in-memory
  * Returns array of duplicate check results with same indices as input
  */
 export async function checkDuplicatesBatch(
   violations: MatchedViolation[],
   companyId: string
 ): Promise<DuplicateCheckResult[]> {
-  const results: DuplicateCheckResult[] = [];
+  // Fast path: if no violations, return empty
+  if (violations.length === 0) {
+    return [];
+  }
 
-  for (const violation of violations) {
+  console.log(`🔍 Checking duplicates for ${violations.length} violations...`);
+
+  // Collect all violation numbers and vehicle IDs for batch lookup
+  const violationNumbers = violations
+    .map(v => v.violation_number)
+    .filter((v): v is string => !!v);
+
+  // Fetch all existing violations with matching violation_numbers in one query
+  const { data: existingViolations, error } = await supabase
+    .from('traffic_violations')
+    .select('id, violation_number, reference_number, vehicle_id, violation_date')
+    .eq('company_id', companyId)
+    .in('violation_number', violationNumbers.slice(0, 1000)); // Limit to 1000 for query safety
+
+  if (error) {
+    console.error('Error fetching existing violations for duplicate check:', error);
+    // Return no duplicates if we can't check
+    return violations.map(() => ({
+      is_duplicate: false,
+      duplicate_type: 'none' as const,
+      confidence: 'low' as const
+    }));
+  }
+
+  // Build lookup maps for O(1) access
+  const byViolationNumber = new Map<string, typeof existingViolations[0]>();
+  const byCompositeKey = new Map<string, typeof existingViolations[0]>();
+
+  (existingViolations || []).forEach(v => {
+    if (v.violation_number) {
+      byViolationNumber.set(v.violation_number, v);
+    }
+    // Composite key: vehicle_id + violation_number + date
+    if (v.vehicle_id && v.violation_number && v.violation_date) {
+      const key = `${v.vehicle_id}|${v.violation_number}|${v.violation_date}`;
+      byCompositeKey.set(key, v);
+    }
+  });
+
+  console.log(`✅ Built lookup maps: ${byViolationNumber.size} by number, ${byCompositeKey.size} by composite`);
+
+  // Check each violation against the maps
+  const results: DuplicateCheckResult[] = violations.map(violation => {
     // Skip violations without vehicle_id
     if (!violation.vehicle_id) {
-      results.push({
+      return {
         is_duplicate: false,
-        duplicate_type: 'none',
-        confidence: 'low'
-      });
-      continue;
+        duplicate_type: 'none' as const,
+        confidence: 'low' as const
+      };
     }
 
-    // Check by reference number first (highest confidence)
-    if (violation.reference_number) {
-      const refCheck = await checkByReferenceNumber(
-        violation.reference_number,
-        companyId
-      );
-
-      if (refCheck.is_duplicate) {
-        results.push(refCheck);
-        continue;
-      }
+    // Check by violation number
+    const byNumber = byViolationNumber.get(violation.violation_number);
+    if (byNumber) {
+      return {
+        is_duplicate: true,
+        existing_violation: byNumber as any,
+        duplicate_type: 'reference_number' as const,
+        confidence: 'exact' as const
+      };
     }
 
     // Check by composite key
-    const compositeCheck = await checkByCompositeKey(
-      violation.vehicle_id,
-      violation.violation_number,
-      violation.date,
-      companyId
-    );
-
-    if (compositeCheck.is_duplicate) {
-      results.push(compositeCheck);
-      continue;
+    const compositeKey = `${violation.vehicle_id}|${violation.violation_number}|${violation.date}`;
+    const byComposite = byCompositeKey.get(compositeKey);
+    if (byComposite) {
+      return {
+        is_duplicate: true,
+        existing_violation: byComposite as any,
+        duplicate_type: 'composite' as const,
+        confidence: 'exact' as const
+      };
     }
 
-    // Check for similar violations
-    const similarCheck = await findSimilar(
-      violation.vehicle_id,
-      violation.date,
-      violation.violation_number,
-      companyId
-    );
+    // No duplicate found
+    return {
+      is_duplicate: false,
+      duplicate_type: 'none' as const,
+      confidence: 'low' as const
+    };
+  });
 
-    results.push(similarCheck);
-  }
+  const duplicateCount = results.filter(r => r.is_duplicate).length;
+  console.log(`✅ Found ${duplicateCount} duplicates out of ${violations.length} violations`);
 
   return results;
 }

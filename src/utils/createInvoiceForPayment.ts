@@ -13,6 +13,8 @@ export interface CreateInvoiceForPaymentResult {
 /**
  * Creates an invoice for a payment if no invoice exists
  * This is typically called after linking a payment to a contract
+ * 
+ * ✅ تم تحديثها لاستخدام الخدمة الموحدة لمنع إنشاء فواتير مكررة
  */
 export const createInvoiceForPayment = async (
   paymentId: string,
@@ -78,6 +80,53 @@ export const createInvoiceForPayment = async (
       contract = contractData;
     }
 
+    // ✅ استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
+    if (payment.contract_id && payment.customer_id && contract) {
+      const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
+      const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
+        companyId,
+        customerId: payment.customer_id,
+        contractId: payment.contract_id,
+        contractNumber: contract.contract_number || 'N/A',
+        monthlyAmount: contract.monthly_amount || payment.amount,
+        paymentDate: payment.payment_date || new Date().toISOString().split('T')[0]
+      });
+
+      if (invoiceResult.success && invoiceResult.invoice) {
+        // Link the payment to the invoice
+        const { error: updateError } = await supabase
+          .from('payments')
+          .update({ invoice_id: invoiceResult.invoice.id })
+          .eq('id', paymentId);
+
+        if (updateError) {
+          logger.error('Failed to link payment to invoice', { updateError, paymentId, invoiceId: invoiceResult.invoice.id });
+          logger.warn('Invoice found/created but payment link failed', { invoiceId: invoiceResult.invoice.id });
+        }
+
+        logger.info('Invoice found/created successfully for payment', { 
+          paymentId, 
+          invoiceId: invoiceResult.invoice.id, 
+          invoiceNumber: invoiceResult.invoice.invoice_number,
+          reason: invoiceResult.reason
+        });
+
+        return {
+          success: true,
+          invoiceId: invoiceResult.invoice.id,
+          invoiceNumber: invoiceResult.invoice.invoice_number
+        };
+      } else {
+        return {
+          success: false,
+          error: invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة'
+        };
+      }
+    }
+
+    // Fallback: إذا لم يكن هناك عقد، ننشئ فاتورة إيصال دفع
+    const invoiceNumber = await generateInvoiceNumber(companyId);
+
     // Get customer details
     let customer = null;
     if (payment.customer_id) {
@@ -89,9 +138,6 @@ export const createInvoiceForPayment = async (
       
       customer = customerData;
     }
-
-    // Generate invoice number
-    const invoiceNumber = await generateInvoiceNumber(companyId);
 
     // Create invoice description
     const description = createInvoiceDescription(payment, contract, customer);
@@ -113,7 +159,7 @@ export const createInvoiceForPayment = async (
         invoice_type: 'payment_receipt',
         description: description,
         payment_terms: 'مدفوع',
-        currency: 'KWD'
+        currency: 'QAR'
       })
       .select('id, invoice_number')
       .single();

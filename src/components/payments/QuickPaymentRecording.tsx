@@ -422,7 +422,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         paymentMethod
       });
 
-      // ✅ معالجة حالة عدم وجود فواتير - إنشاء فاتورة تلقائياً
+      // ✅ معالجة حالة عدم وجود فواتير - البحث عن فاتورة موجودة أو إنشاء واحدة
       if (selectedInvoices.length === 0) {
         // البحث عن عقد نشط للعميل
         const { data: activeContracts, error: contractError } = await supabase
@@ -440,37 +440,41 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
         const activeContract = activeContracts[0];
         
-        // إنشاء فاتورة تلقائياً للدفعة
-        const { generateInvoiceNumber } = await import('@/utils/createInvoiceForPayment');
-        const invoiceNumber = await generateInvoiceNumber(companyId);
-        
-        const { data: newInvoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert({
-            company_id: companyId,
-            customer_id: selectedCustomer.id,
-            contract_id: activeContract.id,
-            invoice_number: invoiceNumber,
-            invoice_date: paymentDate,
-            due_date: paymentDate,
-            total_amount: amount,
-            balance_due: 0, // مدفوعة بالكامل
-            payment_status: 'paid',
-            status: 'draft',
-            invoice_type: 'rental',
-            description: `فاتورة تلقائية للدفعة - عقد ${activeContract.contract_number}`,
-            notes: 'تم إنشاء هذه الفاتورة تلقائياً عند تسجيل دفعة بدون فاتورة',
-          })
-          .select()
-          .single();
+        // ✅ استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
+        const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
+        const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
+          companyId,
+          customerId: selectedCustomer.id,
+          contractId: activeContract.id,
+          contractNumber: activeContract.contract_number,
+          monthlyAmount: activeContract.monthly_amount || amount,
+          paymentDate
+        });
 
-        if (invoiceError) {
-          throw new Error(`فشل في إنشاء الفاتورة: ${invoiceError.message}`);
+        if (!invoiceResult.success || !invoiceResult.invoice) {
+          throw new Error(invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة');
         }
 
-        // إضافة الفاتورة الجديدة إلى القائمة المحددة
-        selectedInvoices.push(newInvoice as any);
-        console.log('✅ تم إنشاء فاتورة تلقائياً:', invoiceNumber);
+        // جلب بيانات الفاتورة الكاملة مع العقد
+        const { data: fullInvoice } = await supabase
+          .from('invoices')
+          .select(`
+            *,
+            contracts:contract_id (
+              contract_number,
+              vehicle_number,
+              vehicles:vehicle_id (
+                plate_number
+              )
+            )
+          `)
+          .eq('id', invoiceResult.invoice.id)
+          .single();
+
+        if (fullInvoice) {
+          selectedInvoices.push(fullInvoice as any);
+          console.log('✅ تم العثور على/إنشاء فاتورة:', invoiceResult.invoice.invoice_number, invoiceResult.reason || 'جديدة');
+        }
       }
 
       // Group invoices by contract
@@ -1021,35 +1025,24 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                           const activeContract = activeContracts[0];
                           const today = new Date().toISOString().split('T')[0];
                           
-                          // إنشاء رقم فاتورة
-                          const { data: lastInvoice } = await supabase
-                            .from('invoices')
-                            .select('invoice_number')
-                            .eq('company_id', companyId)
-                            .order('created_at', { ascending: false })
-                            .limit(1);
+                          // ✅ استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
+                          const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
+                          const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
+                            companyId,
+                            customerId: selectedCustomer.id,
+                            contractId: activeContract.id,
+                            contractNumber: activeContract.contract_number,
+                            monthlyAmount: activeContract.monthly_amount || 0,
+                            paymentDate: today
+                          });
 
-                          const lastNum = lastInvoice?.[0]?.invoice_number?.match(/\d+$/)?.[0] || '0';
-                          const newNum = (parseInt(lastNum) + 1).toString().padStart(6, '0');
-                          const invoiceNumber = `INV-${new Date().getFullYear()}-${newNum}`;
+                          if (!invoiceResult.success || !invoiceResult.invoice) {
+                            throw new Error(invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة');
+                          }
 
-                          // إنشاء الفاتورة
-                          const { data: newInvoice, error: invoiceError } = await supabase
+                          // جلب بيانات الفاتورة الكاملة مع العقد
+                          const { data: fullInvoice } = await supabase
                             .from('invoices')
-                            .insert({
-                              company_id: companyId,
-                              customer_id: selectedCustomer.id,
-                              contract_id: activeContract.id,
-                              invoice_number: invoiceNumber,
-                              invoice_date: today,
-                              due_date: today,
-                              total_amount: activeContract.monthly_amount || 0,
-                              balance_due: activeContract.monthly_amount || 0,
-                              payment_status: 'unpaid',
-                              status: 'draft',
-                              invoice_type: 'rental',
-                              description: `فاتورة شهرية - عقد ${activeContract.contract_number}`,
-                            })
                             .select(`
                               *,
                               contracts:contract_id (
@@ -1060,19 +1053,21 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                                 )
                               )
                             `)
+                            .eq('id', invoiceResult.invoice.id)
                             .single();
 
-                          if (invoiceError) {
-                            throw invoiceError;
-                          }
-
+                          const wasExisting = invoiceResult.reason?.includes('العثور');
                           toast({
-                            title: 'تم إنشاء الفاتورة',
-                            description: `تم إنشاء الفاتورة ${invoiceNumber} بنجاح`,
+                            title: wasExisting ? 'تم العثور على فاتورة' : 'تم إنشاء الفاتورة',
+                            description: wasExisting 
+                              ? `تم العثور على فاتورة موجودة: ${invoiceResult.invoice.invoice_number}` 
+                              : `تم إنشاء الفاتورة ${invoiceResult.invoice.invoice_number} بنجاح`,
                           });
 
                           // تحديث قائمة الفواتير
-                          setInvoices([newInvoice as any]);
+                          if (fullInvoice) {
+                            setInvoices([fullInvoice as any]);
+                          }
                         } catch (error: any) {
                           console.error('Error creating invoice:', error);
                           toast({

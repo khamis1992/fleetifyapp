@@ -234,6 +234,11 @@ async function processTextWithGPT4(text: string): Promise<Response> {
 serve(async (req) => {
   const requestId = crypto.randomUUID();
 
+  // Handle CORS preflight requests FIRST - before any other processing
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   // Handle test endpoint for API key validation
   if (req.url.includes('/test-api-key')) {
     console.log(`[${requestId}] Testing GLM API key...`);
@@ -569,11 +574,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-  }
-
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
   }
 
   console.log(`[${requestId}] New request received`);

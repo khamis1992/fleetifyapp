@@ -1019,37 +1019,52 @@ export function usePaymentsCSVUpload() {
           } else if (options.balanceHandling === 'create_invoice' && (customer_id || contract_id)) {
             // Create invoice for remaining balance
             try {
-              // Generate invoice number
-              const { data: lastInvoice } = await supabase
-                .from('invoices')
-                .select('invoice_number')
-                .eq('company_id', targetCompanyId)
-                .order('created_at', { ascending: false })
-                .limit(1);
+              // ✅ استخدام UnifiedInvoiceService للتحقق من المكررات
+              const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
+              const paymentDate = new Date();
+              const invoiceMonth = paymentDate.toISOString().substring(0, 7);
               
-              let invoiceNumber = 'INV-0001';
-              if (lastInvoice && lastInvoice.length > 0) {
-                const lastNum = parseInt(lastInvoice[0].invoice_number.split('-')[1] || '0');
-                invoiceNumber = `INV-${String(lastNum + 1).padStart(4, '0')}`;
+              // التحقق من وجود فاتورة للشهر
+              const existingInvoice = await UnifiedInvoiceService.findExistingInvoice(contract_id, invoiceMonth);
+              
+              if (!existingInvoice) {
+                // إنشاء فاتورة جديدة فقط إذا لم تكن موجودة
+                const firstDayOfMonth = `${invoiceMonth}-01`;
+                
+                // Generate invoice number
+                const { data: lastInvoice } = await supabase
+                  .from('invoices')
+                  .select('invoice_number')
+                  .eq('company_id', targetCompanyId)
+                  .order('created_at', { ascending: false })
+                  .limit(1);
+                
+                let invoiceNumber = 'INV-0001';
+                if (lastInvoice && lastInvoice.length > 0) {
+                  const lastNum = parseInt(lastInvoice[0].invoice_number.split('-')[1] || '0');
+                  invoiceNumber = `INV-${String(lastNum + 1).padStart(4, '0')}`;
+                }
+                
+                await supabase
+                  .from('invoices')
+                  .insert({
+                    company_id: targetCompanyId,
+                    customer_id: customer_id,
+                    contract_id: contract_id,
+                    invoice_number: invoiceNumber,
+                    invoice_type: 'balance_due',
+                    invoice_date: firstDayOfMonth,
+                    due_date: firstDayOfMonth, // ✅ أول يوم في الشهر
+                    subtotal: balance,
+                    total_amount: balance,
+                    balance_due: balance,
+                    payment_status: 'unpaid',
+                    notes: `فاتورة للرصيد المتبقي من دفعة ${payment_number}`,
+                    created_by: user.id,
+                  });
+              } else {
+                console.log(`⚠️ توجد فاتورة للشهر ${invoiceMonth}: ${existingInvoice.invoice_number}`);
               }
-              
-              await supabase
-                .from('invoices')
-                .insert({
-                  company_id: targetCompanyId,
-                  customer_id: customer_id,
-                  contract_id: contract_id,
-                  invoice_number: invoiceNumber,
-                  invoice_type: 'balance_due',
-                  invoice_date: new Date().toISOString().split('T')[0],
-                  due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-                  subtotal: balance,
-                  total_amount: balance,
-                  balance_due: balance,
-                  payment_status: 'unpaid',
-                  notes: `فاتورة للرصيد المتبقي من دفعة ${payment_number}`,
-                  created_by: user.id,
-                });
             } catch (error) {
               console.error('خطأ في إنشاء فاتورة للرصيد المتبقي:', error);
             }

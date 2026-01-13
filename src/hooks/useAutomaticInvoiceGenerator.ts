@@ -129,13 +129,13 @@ export function useAutomaticInvoiceGenerator() {
     const invoiceDate = payment.payment_date || new Date().toISOString().split('T')[0];
     const invoiceMonth = invoiceDate.substring(0, 7); // YYYY-MM
     
-    // التحقق من وجود فاتورة لهذا العقد في نفس الشهر
+    // ✅ التحقق من وجود فاتورة لهذا العقد في نفس الشهر (باستخدام due_date للدقة)
     const { data: existingInvoice } = await supabase
       .from('invoices')
       .select('id, invoice_number')
       .eq('contract_id', contract.id)
-      .gte('invoice_date', `${invoiceMonth}-01`)
-      .lt('invoice_date', `${invoiceMonth.substring(0, 4)}-${String(parseInt(invoiceMonth.substring(5, 7)) + 1).padStart(2, '0')}-01`)
+      .gte('due_date', `${invoiceMonth}-01`)
+      .lte('due_date', `${invoiceMonth}-31`)
       .neq('status', 'cancelled')
       .limit(1);
     

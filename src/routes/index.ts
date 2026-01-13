@@ -81,6 +81,7 @@ const SuperAdminSupport = lazy(() => import('@/pages/super-admin/Support'));
 const SuperAdminPayments = lazy(() => import('@/pages/super-admin/Payments'));
 const SuperAdminReports = lazy(() => import('@/pages/super-admin/Reports'));
 const LandingManagement = lazy(() => import('@/pages/super-admin/LandingManagement'));
+const DuplicateInvoicesCleanup = lazy(() => import('@/pages/admin/DuplicateInvoicesCleanup'));
 
 // Settings and Profile pages
 const Profile = lazy(() => import('@/pages/Profile'));
@@ -104,6 +105,7 @@ const PropertyContracts = lazy(() => import('@/pages/properties/PropertyContract
 // Fleet Management pages
 const Maintenance = lazy(() => import('@/pages/fleet/MaintenanceRedesigned'));
 const TrafficViolations = lazy(() => import('@/pages/fleet/TrafficViolationsRedesigned'));
+const TrafficViolationImport = lazy(() => import('@/pages/fleet/TrafficViolationImport'));
 const TrafficViolationPayments = lazy(() => import('@/pages/fleet/TrafficViolationPayments'));
 const FleetReports = lazy(() => import('@/pages/fleet/FleetReports'));
 const DispatchPermits = lazy(() => import('@/pages/fleet/DispatchPermits'));
@@ -907,6 +909,18 @@ const routeConfigs: RouteConfig[] = [
     layout: 'admin',
     requiredRole: 'super_admin',
   },
+  {
+    path: '/admin/duplicate-invoices',
+    component: DuplicateInvoicesCleanup,
+    lazy: true,
+    exact: true,
+    title: 'تنظيف الفواتير المكررة',
+    description: 'Cleanup duplicate invoices',
+    group: 'admin',
+    priority: 50,
+    protected: true,
+    layout: 'bento',
+  },
 
   // === Settings and Profile Routes ===
   {
@@ -1119,6 +1133,18 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
+    path: '/fleet/traffic-violations/import',
+    component: TrafficViolationImport,
+    lazy: true,
+    exact: true,
+    title: 'Import Violations',
+    description: 'Import traffic violations from PDF',
+    group: 'fleet',
+    priority: 72,
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/fleet/traffic-violations/payments',
     component: TrafficViolationPayments,
     lazy: true,
@@ -1126,7 +1152,7 @@ const routeConfigs: RouteConfig[] = [
     title: 'Violation Payments',
     description: 'Traffic violation payments',
     group: 'fleet',
-    priority: 72,
+    priority: 73,
     protected: true,
     layout: 'bento',
   },

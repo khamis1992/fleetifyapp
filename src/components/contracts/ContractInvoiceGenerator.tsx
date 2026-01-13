@@ -54,19 +54,22 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
       const invoiceDate = new Date().toISOString().split('T')[0]
       const invoiceMonth = invoiceDate.substring(0, 7) // YYYY-MM format
       
-      // التحقق من وجود فاتورة لهذا الشهر
+      // ✅ التحقق من وجود فاتورة لهذا الشهر باستخدام due_date (الأكثر دقة)
       const { data: existingForMonth } = await supabase
         .from('invoices')
         .select('id, invoice_number')
         .eq('contract_id', contract.id)
-        .gte('invoice_date', `${invoiceMonth}-01`)
-        .lt('invoice_date', new Date(new Date(invoiceDate).setMonth(new Date(invoiceDate).getMonth() + 1)).toISOString().split('T')[0])
+        .gte('due_date', `${invoiceMonth}-01`)
+        .lte('due_date', `${invoiceMonth}-31`)
         .neq('status', 'cancelled')
         .limit(1)
       
       if (existingForMonth && existingForMonth.length > 0) {
         throw new Error(`توجد فاتورة مسجلة لهذا الشهر: ${existingForMonth[0].invoice_number}`)
       }
+      
+      // ✅ تاريخ الاستحقاق = أول يوم في الشهر (حسب التعليمات)
+      const firstDayOfMonth = `${invoiceMonth}-01`;
       
       const { data, error } = await supabase
         .from('invoices')
@@ -76,8 +79,8 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
           contract_id: contract.id,
           invoice_number: `INV-C-${contract.contract_number?.substring(0, 10) || 'CNT'}-${invoiceMonth}`,
           invoice_type: 'sale',
-          invoice_date: invoiceDate,
-          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          invoice_date: firstDayOfMonth,
+          due_date: firstDayOfMonth, // ✅ أول يوم في الشهر
           subtotal: period === 'monthly' ? contract.monthly_amount : 
                    period === 'quarterly' ? contract.monthly_amount * 3 : 
                    contract.contract_amount,
@@ -217,6 +220,25 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
 
       if (!schedule) throw new Error('Payment schedule not found');
 
+      // ✅ التحقق من وجود فاتورة لهذا الشهر قبل الإنشاء
+      const scheduleMonth = schedule.due_date.substring(0, 7); // YYYY-MM
+      const { data: existingForMonth } = await supabase
+        .from('invoices')
+        .select('id, invoice_number')
+        .eq('contract_id', contract.id)
+        .gte('due_date', `${scheduleMonth}-01`)
+        .lte('due_date', `${scheduleMonth}-31`)
+        .neq('status', 'cancelled')
+        .limit(1);
+
+      if (existingForMonth && existingForMonth.length > 0) {
+        toast.warning(`توجد فاتورة مسجلة لهذا الشهر: ${existingForMonth[0].invoice_number}`);
+        return;
+      }
+
+      // ✅ استخدام أول يوم في الشهر كتاريخ الفاتورة والاستحقاق
+      const firstDayOfScheduleMonth = `${scheduleMonth}-01`;
+      
       const { data: invoice, error } = await supabase
         .from('invoices')
         .insert({
@@ -225,8 +247,8 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
           contract_id: contract.id,
           invoice_number: `CNT-INV-${new Date().getFullYear()}-${Date.now()}`,
           invoice_type: 'sale',
-          invoice_date: new Date().toISOString().split('T')[0],
-          due_date: schedule.due_date,
+          invoice_date: firstDayOfScheduleMonth,
+          due_date: firstDayOfScheduleMonth, // ✅ أول يوم في الشهر
           subtotal: schedule.amount,
           tax_amount: 0,
           total_amount: schedule.amount,

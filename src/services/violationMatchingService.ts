@@ -263,7 +263,7 @@ export async function matchToContract(
       return {
         contract_id: contract.id,
         customer_id: contract.customer_id,
-        customer_name,
+        customer_name: customerName,
         contract_number: contract.contract_number,
         confidence: 'high',
         reason: `عقد نشط (${contract.contract_number})`
@@ -288,7 +288,7 @@ export async function matchToContract(
       return {
         contract_id: contract.id,
         customer_id: contract.customer_id,
-        customer_name,
+        customer_name: customerName,
         contract_number: contract.contract_number,
         confidence: 'medium',
         reason: `عقد (${contract.contract_number}) - ${contract.status === 'active' ? 'نشط' : contract.status}`
@@ -318,7 +318,7 @@ export async function matchToContract(
       return {
         contract_id: contract.id,
         customer_id: contract.customer_id,
-        customer_name,
+        customer_name: customerName,
         contract_number: contract.contract_number,
         confidence: daysDiff <= 7 ? 'medium' : 'low',
         reason: `أقرب عقد (${daysDiff} أيام قبل المخالفة)`
@@ -335,7 +335,7 @@ export async function matchToContract(
     return {
       contract_id: contract.id,
       customer_id: contract.customer_id,
-      customer_name,
+      customer_name: customerName,
       contract_number: contract.contract_number,
       confidence: 'low',
       reason: 'أحدث عقد متوفر'
@@ -448,19 +448,211 @@ async function matchToVehicleFromCache(
 }
 
 /**
- * Batch match multiple violations
+ * Fetch all contracts with customer info for batch matching
+ */
+async function fetchContractsForMatching(companyId: string): Promise<Map<string, any[]>> {
+  console.log('📋 Fetching contracts for batch matching...');
+  
+  const { data: contracts, error } = await supabase
+    .from('contracts')
+    .select(`
+      id,
+      contract_number,
+      status,
+      start_date,
+      end_date,
+      vehicle_id,
+      customer_id,
+      customers (
+        id,
+        first_name_ar,
+        last_name_ar,
+        first_name,
+        last_name,
+        company_name
+      )
+    `)
+    .eq('company_id', companyId)
+    .order('end_date', { ascending: false });
+
+  if (error || !contracts) {
+    console.error('Error fetching contracts:', error);
+    return new Map();
+  }
+
+  // Group contracts by vehicle_id
+  const contractsByVehicle = new Map<string, any[]>();
+  contracts.forEach(contract => {
+    if (contract.vehicle_id) {
+      const existing = contractsByVehicle.get(contract.vehicle_id) || [];
+      existing.push(contract);
+      contractsByVehicle.set(contract.vehicle_id, existing);
+    }
+  });
+
+  console.log(`✅ Loaded ${contracts.length} contracts for ${contractsByVehicle.size} vehicles`);
+  return contractsByVehicle;
+}
+
+/**
+ * Match violation to contract using cached contracts (in-memory)
+ */
+function matchToContractFromCache(
+  vehicleId: string,
+  violationDate: string,
+  contractsCache: Map<string, any[]>
+): ContractMatchResult {
+  const contracts = contractsCache.get(vehicleId);
+  
+  if (!contracts || contracts.length === 0) {
+    return {
+      contract_id: null,
+      customer_id: null,
+      customer_name: null,
+      contract_number: null,
+      confidence: 'none',
+      reason: 'لا يوجد عقود لهذه المركبة'
+    };
+  }
+
+  const vDate = new Date(violationDate);
+
+  // Helper function to extract customer name
+  const getCustomerName = (contract: any): string => {
+    const customer = contract.customers as any;
+    return customer?.company_name ||
+      `${customer?.first_name_ar || ''} ${customer?.last_name_ar || ''}`.trim() ||
+      `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() ||
+      '';
+  };
+
+  // Helper function to check if date is in range
+  const isInRange = (startDate: string | null, endDate: string | null): boolean => {
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    const afterStart = !start || vDate >= start;
+    const beforeEnd = !end || vDate <= end;
+    return afterStart && beforeEnd;
+  };
+
+  // Tier 1: Active contract with date range match
+  const activeInRange = contracts.find(c => 
+    c.status === 'active' && isInRange(c.start_date, c.end_date)
+  );
+  if (activeInRange) {
+    return {
+      contract_id: activeInRange.id,
+      customer_id: activeInRange.customer_id,
+      customer_name: getCustomerName(activeInRange),
+      contract_number: activeInRange.contract_number,
+      confidence: 'high',
+      reason: `عقد نشط (${activeInRange.contract_number})`
+    };
+  }
+
+  // Tier 2: Any contract with date range match
+  const inRange = contracts.find(c => isInRange(c.start_date, c.end_date));
+  if (inRange) {
+    return {
+      contract_id: inRange.id,
+      customer_id: inRange.customer_id,
+      customer_name: getCustomerName(inRange),
+      contract_number: inRange.contract_number,
+      confidence: 'medium',
+      reason: `عقد (${inRange.contract_number}) - ${inRange.status === 'active' ? 'نشط' : inRange.status}`
+    };
+  }
+
+  // Tier 3: Most recent contract
+  const mostRecent = contracts[0];
+  return {
+    contract_id: mostRecent.id,
+    customer_id: mostRecent.customer_id,
+    customer_name: getCustomerName(mostRecent),
+    contract_number: mostRecent.contract_number,
+    confidence: 'low',
+    reason: 'أحدث عقد متوفر'
+  };
+}
+
+/**
+ * Batch match multiple violations - OPTIMIZED VERSION
+ * Fetches all data once, then matches in-memory
  */
 export async function matchViolationsBatch(
   violations: ExtractedViolation[],
   companyId: string
 ): Promise<MatchedViolation[]> {
-  // Build vehicle cache for efficiency
+  console.log(`🚀 Starting batch matching for ${violations.length} violations...`);
+  
+  // Step 1: Build vehicle cache for efficiency
+  console.log('📋 Step 1: Loading vehicles...');
   const vehicleCache = await fetchVehiclesForMatching(companyId);
+  console.log(`✅ Loaded ${vehicleCache.size} vehicle plate variations`);
 
-  // Match all violations
-  const results = await Promise.all(
-    violations.map(v => matchViolation(v, companyId, vehicleCache))
-  );
+  // Step 2: Fetch all contracts with customers
+  console.log('📋 Step 2: Loading contracts...');
+  const contractsCache = await fetchContractsForMatching(companyId);
+
+  // Step 3: Match all violations in-memory (no DB calls)
+  console.log('📋 Step 3: Matching violations...');
+  const results: MatchedViolation[] = [];
+  
+  for (let i = 0; i < violations.length; i++) {
+    const violation = violations[i];
+    const id = `temp_${Date.now()}_${i}`;
+    
+    // Match to vehicle
+    const vehicleMatch = await matchToVehicleFromCache(violation.plate_number, vehicleCache);
+    
+    if (!vehicleMatch.vehicle_id) {
+      results.push({
+        ...violation,
+        id,
+        match_confidence: 'none',
+        status: 'error',
+        errors: [vehicleMatch.reason],
+        warnings: []
+      });
+      continue;
+    }
+
+    // Match to contract (in-memory)
+    const contractMatch = matchToContractFromCache(
+      vehicleMatch.vehicle_id,
+      violation.date,
+      contractsCache
+    );
+
+    // Determine overall confidence
+    const overallConfidence: MatchConfidence = 
+      contractMatch.confidence === 'high' ? 'high' :
+      contractMatch.confidence === 'medium' ? 'medium' :
+      contractMatch.confidence === 'low' ? 'low' : 'none';
+
+    results.push({
+      ...violation,
+      id,
+      vehicle_id: vehicleMatch.vehicle_id,
+      contract_id: contractMatch.contract_id,
+      customer_id: contractMatch.customer_id,
+      customer_name: contractMatch.customer_name || undefined,
+      contract_number: contractMatch.contract_number || undefined,
+      match_confidence: overallConfidence,
+      status: overallConfidence === 'none' ? 'error' : 'matched',
+      errors: [],
+      warnings: []
+    });
+
+    // Log progress every 100 violations
+    if ((i + 1) % 100 === 0) {
+      console.log(`📊 Matched ${i + 1}/${violations.length} violations...`);
+    }
+  }
+
+  const matched = results.filter(r => r.status === 'matched').length;
+  const errors = results.filter(r => r.status === 'error').length;
+  console.log(`✅ Batch matching complete: ${matched} matched, ${errors} errors`);
 
   return results;
 }

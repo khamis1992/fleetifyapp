@@ -276,6 +276,24 @@ export const useCreateInvoice = () => {
       }
 
       try {
+        // ✅ التحقق من وجود فاتورة مكررة لنفس العقد في نفس الشهر
+        if (invoice.contract_id && invoice.due_date) {
+          const invoiceMonth = invoice.due_date.substring(0, 7); // YYYY-MM
+          
+          const { data: existingInvoice } = await supabase
+            .from('invoices')
+            .select('id, invoice_number')
+            .eq('contract_id', invoice.contract_id)
+            .gte('due_date', `${invoiceMonth}-01`)
+            .lte('due_date', `${invoiceMonth}-31`)
+            .neq('status', 'cancelled')
+            .limit(1);
+
+          if (existingInvoice && existingInvoice.length > 0) {
+            throw new Error(`توجد فاتورة مسجلة لهذا الشهر: ${existingInvoice[0].invoice_number}`);
+          }
+        }
+
         const { data, error } = await supabase
           .from("invoices")
           .insert({

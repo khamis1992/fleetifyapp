@@ -18,6 +18,7 @@ const SuperAdminSupport = lazy(() => import('@/pages/super-admin/Support'));
 const SuperAdminPayments = lazy(() => import('@/pages/super-admin/Payments'));
 const SuperAdminReports = lazy(() => import('@/pages/super-admin/Reports'));
 const LandingManagement = lazy(() => import('@/pages/super-admin/LandingManagement'));
+const DuplicateInvoicesCleanup = lazy(() => import('@/pages/admin/DuplicateInvoicesCleanup'));
 
 export const adminRoutes: RouteConfig[] = [
   {
@@ -161,6 +162,19 @@ export const adminRoutes: RouteConfig[] = [
     protected: true,
     requiredRole: 'super_admin',
     layout: 'admin',
+  },
+  {
+    path: '/admin/duplicate-invoices',
+    component: DuplicateInvoicesCleanup,
+    lazy: true,
+    exact: true,
+    title: 'تنظيف الفواتير المكررة',
+    description: 'Cleanup duplicate invoices',
+    group: 'admin',
+    priority: 111,
+    protected: true,
+    requiredRole: 'admin',
+    layout: 'bento',
   },
 ];
 

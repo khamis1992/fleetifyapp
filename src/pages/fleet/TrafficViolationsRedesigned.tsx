@@ -50,7 +50,7 @@ const TrafficViolationPaymentsDialog = lazy(() =>
   import('@/components/fleet/TrafficViolationPaymentsDialog').then(m => ({ default: m.TrafficViolationPaymentsDialog }))
 );
 const TrafficViolationPDFImport = lazy(() =>
-  import('@/components/fleet/TrafficViolationPDFImport').then(m => ({ default: m.TrafficViolationPDFImport }))
+  import('@/components/fleet/TrafficViolationPDFImportRedesigned').then(m => ({ default: m.TrafficViolationPDFImportRedesigned }))
 );
 const TrafficViolationReports = lazy(() =>
   import('@/components/fleet/TrafficViolationReports').then(m => ({ default: m.TrafficViolationReports }))
@@ -711,17 +711,10 @@ export default function TrafficViolationsRedesigned() {
             </TabsContent>
 
             {/* Tab Content: Import */}
-            <TabsContent value="import" className="p-6">
-              <div className="text-center max-w-md mx-auto space-y-4">
-                <div className="w-24 h-24 mx-auto bg-teal-50 rounded-full flex items-center justify-center">
-                  <Upload className="w-12 h-12 text-teal-400" />
-                </div>
-                <h3 className="text-xl font-bold">استيراد مخالفات من PDF</h3>
-                <p className="text-neutral-500">قم بتحميل ملف PDF يحتوي على المخالفات المرورية وسيتم استخراجها تلقائياً</p>
-                <Suspense fallback={<LoadingSpinner size="lg" />}>
-                  <TrafficViolationPDFImport />
-                </Suspense>
-              </div>
+            <TabsContent value="import" className="p-0">
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
+                <TrafficViolationPDFImport />
+              </Suspense>
             </TabsContent>
 
             {/* Tab Content: Reports */}
