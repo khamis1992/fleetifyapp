@@ -229,7 +229,19 @@
       "Bash(cmd.exe /c \"taskkill /F /PID 26120\")",
       "Bash(powershell.exe -Command \"Stop-Process -Id 26120 -Force\")",
       "mcp__zai-mcp-server__analyze_image",
-      "mcp__plugin_playwright_playwright__browser_file_upload"
+      "mcp__plugin_playwright_playwright__browser_file_upload",
+      "Bash(git stash:*)",
+      "Bash(do if [ -d \"src/$dir\" ])",
+      "Bash(then echo \"=== Checking src/$dir ===\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path ''C:\\\\Users\\\\khamis\\\\Desktop\\\\المخالفات المرورية\\\\'' -Filter ''*.pdf'' | Select-Object -First 5 Name, Length\")",
+      "Skill(excel-analysis)",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "Bash(powershell.exe:*)",
+      "mcp__plugin_supabase_supabase__get_logs",
+      "Bash(Test-Path:*)",
+      "Bash(copy:*)",
+      "mcp__plugin_supabase_supabase__deploy_edge_function"
     ],
     "deny": [],
     "ask": []

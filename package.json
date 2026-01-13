@@ -79,7 +79,8 @@
     "visual:help": "tsx scripts/visual-regression-helper.ts help",
     "generate:payment-schedules": "tsx scripts/generate-payment-schedules-from-invoices.ts",
     "generate:payment-schedules:dry": "tsx scripts/generate-payment-schedules-from-invoices.ts --all-contracts --dry-run",
-    "generate:payment-schedules:contract": "tsx scripts/generate-payment-schedules-from-invoices.ts"
+    "generate:payment-schedules:contract": "tsx scripts/generate-payment-schedules-from-invoices.ts",
+    "db:doc": "node scripts/extract-schema-docs.cjs"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.3",

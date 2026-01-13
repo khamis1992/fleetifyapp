@@ -155,10 +155,30 @@ Custom hooks are organized in `src/hooks/`:
 
 ### Database Operations
 **CRITICAL: Never assume schema - always verify!**
-1. Check `src/integrations/supabase/types.ts` for actual schema
-2. Use `information_schema` to verify table structures
-3. Test migrations on staging before production
-4. Always write reversible migrations
+
+**📋 MANDATORY PRE-FLIGHT CHECKLIST (Before ANY Database Change):**
+```
+□ Read DATABASE_REFERENCE.md first
+□ Verify actual schema using information_schema
+□ Use Supabase MCP for all migrations/modifications
+□ Test on staging before production
+□ Write reversible migrations with rollback
+```
+
+**🔴 STRICT RULES (Non-Negotiable):**
+1. **ALWAYS read `DATABASE_REFERENCE.md`** before any database operation
+2. **Use Supabase MCP** for ALL migrations, schema changes, and queries
+3. **NEVER guess column names** - verify in DATABASE_REFERENCE.md
+4. **Check `src/integrations/supabase/types.ts`** for TypeScript types
+5. **Use `information_schema`** to verify table structures
+6. **Test migrations on staging** before production
+7. **Always write reversible migrations** with rollback plans
+8. **Update DATABASE_REFERENCE.md** after schema changes
+
+**When Supabase MCP is unavailable:**
+- Fall back to SQL queries from `docs/DATABASE_SCHEMA_QUERIES.sql`
+- Reference DATABASE_REFERENCE.md for schema information
+- Use `supabase` CLI commands locally
 
 ### React Module Bundling
 **To prevent blank page/forwardRef errors:**

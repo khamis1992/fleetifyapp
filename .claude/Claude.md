@@ -20,11 +20,16 @@ Post the plan for approval before coding.
 ---
 
 ## 2) Pre-Flight Safety Checks
-- Typecheck, lint, and unit tests must pass on `main`  
-- Build succeeds locally and in CI  
-- `.env` and secrets are not hard-coded  
-- Confirm correct environment (dev/stage/prod) and feature flag paths  
-- If DB/migrations involved: create reversible migrations with down scripts and test on sandbox
+- Typecheck, lint, and unit tests must pass on `main`
+- Build succeeds locally and in CI
+- `.env` and secrets are not hard-coded
+- Confirm correct environment (dev/stage/prod) and feature flag paths
+- **IF DB/MIGRATIONS INVOLVED:**
+  1. **Read `DATABASE_REFERENCE.md` FIRST** (mandatory, non-negotiable)
+  2. Use Supabase MCP for ALL database operations
+  3. Create reversible migrations with down scripts
+  4. Test on sandbox/staging before production
+  5. Update DATABASE_REFERENCE.md after schema changes
 
 ---
 
@@ -80,9 +85,17 @@ Update `SYSTEM_REFERENCE.md` and READMEs:
 
 **Purpose:** Enforce consistent MCP usage per task category in Cursor.
 
+**🔴 MANDATORY DATABASE WORKFLOW:**
+```
+1. READ DATABASE_REFERENCE.md (project root)
+2. Use Supabase MCP for operations
+3. Verify with information_schema
+4. Update docs after changes
+```
+
 | Task Type | MCP Server | Purpose |
 |------------|-------------|----------|
-| Database operations (queries, migrations, schema, Supabase tasks) | `supabase mcp` | Execute and manage Supabase DB actions |
+| Database operations (queries, migrations, schema, Supabase tasks) | `supabase mcp` | **ALWAYS use this for DB work** |
 | Verification / inspection (files, URLs, browser validation) | `browser mcp` | Validate files, URLs, and external outputs |
 | Service creation or modification (new features, APIs, logic) | `thinking mcp` | Perform structured reasoning and feature planning |
 

@@ -28,6 +28,7 @@ export interface DelinquencyStats {
   needFormalNotice: number;
   needWarning: number;
   needMonitoring: number;
+  needImmediateAction: number; // عملاء يحتاجون إجراء فوري (> 90 يوم)
 
   // Financial breakdown
   averageDebt: number;
@@ -68,6 +69,7 @@ export const useDelinquencyStats = () => {
           needFormalNotice: 0,
           needWarning: 0,
           needMonitoring: 0,
+          needImmediateAction: 0,
           averageDebt: 0,
           averageDaysOverdue: 0,
           averageRiskScore: 0,
@@ -104,6 +106,7 @@ export const useDelinquencyStats = () => {
         needFormalNotice: delinquentCustomers.filter(c => c.recommended_action.action === 'SEND_FORMAL_NOTICE').length,
         needWarning: delinquentCustomers.filter(c => c.recommended_action.action === 'SEND_WARNING').length,
         needMonitoring: delinquentCustomers.filter(c => c.recommended_action.action === 'MONITOR').length,
+        needImmediateAction: delinquentCustomers.filter(c => c.days_overdue >= 90).length,
 
         // Financial breakdown
         averageDebt: delinquentCustomers.reduce((sum, c) => sum + c.total_debt, 0) / delinquentCustomers.length,
@@ -120,5 +123,7 @@ export const useDelinquencyStats = () => {
     },
     enabled: !isLoading && !error && !!delinquentCustomers,
     retry: false, // Don't retry if there's an error
+    staleTime: 1000 * 60 * 5, // 5 minutes - نفس مدة كاش العملاء
+    gcTime: 1000 * 60 * 15, // 15 minutes
   });
 };

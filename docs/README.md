@@ -383,3 +383,65 @@ FleetifyApp is a **comprehensive fleet management platform** built for modern tr
 This documentation is a living resource that evolves with our system. We welcome feedback and contributions to improve its accuracy and usefulness.
 
 For questions or support, please reach out to the architecture team or create an issue in our project repository.
+
+---
+
+## 🗄️ Database Documentation
+
+### Overview
+The Fleetify database is built on PostgreSQL 17.6 via Supabase, featuring:
+- **290 tables** across public, auth, and storage schemas
+- **44 views** for reporting and data aggregation
+- **Multi-tenancy** via `company_id` with Row-Level Security (RLS)
+- **Comprehensive audit trails** for regulatory compliance
+
+### Key Database Files
+
+| File | Description | Usage |
+|------|-------------|-------|
+| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | Auto-generated schema reference | View table definitions, relationships, and column types |
+| [DATABASE_SCHEMA_QUERIES.sql](./DATABASE_SCHEMA_QUERIES.sql) | Live metadata queries | Run in Supabase SQL Editor for current database state |
+| [TABLES_LIST.txt](./TABLES_LIST.txt) | Alphabetical table list | Quick reference for all 290 tables |
+
+### Key Tables by Domain
+
+#### Financial System
+- `chart_of_accounts` - Hierarchical chart (levels 1-6)
+- `journal_entries` - Transaction headers
+- `journal_entry_lines` - Line items (use `line_description`, not `description`)
+- `invoices` - Billing documents (1,250+ records)
+- `payments` - Payment records (6,568+ records)
+
+#### Customer Management
+- `customers` - Customer records (781+ records)
+- `customer_accounts` - Customer accounts
+- `customer_balances` - Balance tracking
+- `customer_payment_scores` - Payment scoring
+
+#### Contract Management
+- `contracts` - Rental contracts (588+ records)
+- `contract_vehicles` - Contract-vehicle relationships
+- `contract_payment_schedules` - Payment schedules
+- `contract_amendments` - Contract amendments
+
+#### Fleet Management
+- `vehicles` - Vehicle records (510+ records)
+- `fleet_vehicle_insurance` - Vehicle insurance
+- `maintenance_records` - Maintenance tracking
+- `fuel_records` - Fuel tracking
+
+### Regenerating Documentation
+```bash
+npm run db:doc
+```
+
+### Important Column Names
+- `account_name` (NOT `account_name_en`) - Chart of accounts display name
+- `line_description` (NOT `description`) - Journal entry line descriptions
+- `account_level` (NOT `level`) - Chart of account levels
+- `payment_status` (NOT `status`) - Payment status field
+
+### Multi-Tenancy
+All public tables include `company_id` for multi-tenancy. RLS policies enforce company isolation in queries.
+
+For detailed database documentation, see [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md).

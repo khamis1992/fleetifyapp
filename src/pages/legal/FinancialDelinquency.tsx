@@ -86,13 +86,8 @@ const FinancialDelinquencyPage: React.FC = () => {
     toast.success('تم تصدير البيانات');
   };
 
-  if (statsLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  // ⚡ تحسين: عرض الصفحة مباشرة بدلاً من انتظار تحميل الإحصائيات
+  // الإحصائيات ستظهر عند تحميلها في المكونات الفرعية
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 font-sans text-right pb-10" dir="rtl">

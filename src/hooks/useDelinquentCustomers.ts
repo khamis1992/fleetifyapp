@@ -224,10 +224,11 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       return calculateDelinquentCustomersDynamically(companyId, filters);
     },
     enabled: !!user?.id && !isCompanyLoading,
-    staleTime: 1000 * 60 * 1, // 1 minute - تحديث أسرع للبيانات الحية
-    gcTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: true, // تحديث عند العودة للنافذة
-    refetchOnMount: true, // تحديث عند تحميل المكون
+    staleTime: 1000 * 60 * 5, // 5 minutes - تقليل طلبات إعادة الجلب
+    gcTime: 1000 * 60 * 15, // 15 minutes - الاحتفاظ بالكاش لفترة أطول
+    refetchOnWindowFocus: false, // منع التحديث التلقائي عند العودة
+    refetchOnMount: false, // استخدام الكاش إذا كان متاحاً
+    retry: 1, // محاولة واحدة فقط عند الفشل
   });
 };
 
@@ -310,39 +311,27 @@ async function calculateDelinquentCustomersDynamically(
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
-    // First, get all invoices for these contracts that are past due
-    // ⚠️ Supabase has a hard limit of 1000 rows per request, so we need to paginate
+    // ⚡ تحسين الأداء: جلب الفواتير المتأخرة مباشرة بدون pagination loop
+    // نستخدم حد أقصى 2000 فاتورة وهو كافي لمعظم الحالات
     let allInvoicesData: Array<{contract_id: string, due_date: string, payment_status: string, total_amount: number, paid_amount: number}> = [];
-    let hasMore = true;
-    let offset = 0;
-    const pageSize = 1000;
     
-    while (hasMore) {
-      const { data: pageData, error: pageError } = await supabase
-        .from('invoices')
-        .select('contract_id, due_date, payment_status, total_amount, paid_amount')
-        .eq('company_id', companyId)
-        .in('contract_id', contractIds)
-        .lt('due_date', todayStr) // Only past due dates
-        .order('due_date', { ascending: true })
-        .range(offset, offset + pageSize - 1);
-      
-      if (pageError) {
-        console.warn('Error fetching invoices page:', pageError);
-        break;
-      }
-      
-      if (pageData && pageData.length > 0) {
-        allInvoicesData = [...allInvoicesData, ...pageData];
-        offset += pageData.length;
-        // If we got less than pageSize, we've reached the end
-        hasMore = pageData.length === pageSize;
-      } else {
-        hasMore = false;
-      }
+    const { data: invoicesData, error: invoicesError } = await supabase
+      .from('invoices')
+      .select('contract_id, due_date, payment_status, total_amount, paid_amount')
+      .eq('company_id', companyId)
+      .in('contract_id', contractIds.slice(0, 500)) // تحديد عدد العقود لتجنب Query طويلة جداً
+      .lt('due_date', todayStr) // Only past due dates
+      .in('payment_status', ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid']) // فقط الفواتير غير المدفوعة
+      .order('due_date', { ascending: true })
+      .limit(2000); // حد أقصى للفواتير
+    
+    if (invoicesError) {
+      console.warn('Error fetching invoices:', invoicesError);
+    } else if (invoicesData) {
+      allInvoicesData = invoicesData;
     }
     
-    console.log(`📊 [DELINQUENT] Fetched ${allInvoicesData.length} total overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
+    console.log(`📊 [DELINQUENT] Fetched ${allInvoicesData.length} overdue invoices for ${Math.min(contractIds.length, 500)} contracts (today: ${todayStr})`);
     
     if (allInvoicesData.length > 0) {
       // Filter to only include invoices that are actually unpaid or partially paid
@@ -363,15 +352,16 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching overdue invoices:', error);
   }
 
-  // Get payments (handle errors gracefully)
+  // Get payments (handle errors gracefully) - تحسين: حد أقصى للدفعات
   try {
     const { data: paymentsData, error: paymentsError } = await supabase
       .from('payments')
       .select('customer_id, amount, payment_date, payment_status')
       .eq('company_id', companyId)
-      .in('customer_id', customerIds)
+      .in('customer_id', customerIds.slice(0, 500)) // تحديد عدد العملاء
       .in('payment_status', ['completed', 'paid', 'approved'])
-      .order('payment_date', { ascending: false });
+      .order('payment_date', { ascending: false })
+      .limit(2000); // حد أقصى للدفعات
     
     if (!paymentsError && paymentsData) {
       payments = paymentsData;
