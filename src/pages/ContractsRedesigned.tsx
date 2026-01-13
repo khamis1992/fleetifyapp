@@ -32,6 +32,7 @@ import {
   FileSignature,
   ArrowUpDown,
   Play,
+  Scale,
 } from "lucide-react";
 
 // Component imports
@@ -359,6 +360,7 @@ function ContractsRedesigned() {
       cancelled: { icon: XCircle, label: "ملغي", bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-200" },
       expired: { icon: XOctagon, label: "منتهي", bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200" },
       expiring_soon: { icon: AlertTriangle, label: "قارب الانتهاء", bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200" },
+      under_legal_procedure: { icon: Scale, label: "إجراء قانوني", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
     };
 
     const config = statusConfig[status] || statusConfig.active;
@@ -410,14 +412,33 @@ function ContractsRedesigned() {
     );
   };
 
+  // Helper function to check if text contains Arabic characters
+  const containsArabic = (text: string | null | undefined): boolean => {
+    if (!text) return false;
+    return /[\u0600-\u06FF]/.test(text);
+  };
+
+  // Helper function to get Arabic name with fallback
+  const getArabicOrFallback = (arabicField: string | null | undefined, englishField: string | null | undefined): string => {
+    // If arabic field contains Arabic, use it
+    if (containsArabic(arabicField)) return arabicField!;
+    // If english field contains Arabic (data stored incorrectly), use it
+    if (containsArabic(englishField)) return englishField!;
+    // Otherwise, use arabic field if available, then english
+    return arabicField || englishField || "";
+  };
+
   // Helper functions
   const getCustomerName = (contract: any) => {
     if (!contract.customers) return "غير محدد";
     const customer = contract.customers;
     if (customer.customer_type === "company") {
-      return customer.company_name_ar || customer.company_name || "شركة غير محددة";
+      const companyName = getArabicOrFallback(customer.company_name_ar, customer.company_name);
+      return companyName || "شركة غير محددة";
     }
-    return `${customer.first_name_ar || customer.first_name || ""} ${customer.last_name_ar || customer.last_name || ""}`.trim() || "عميل غير محدد";
+    const firstName = getArabicOrFallback(customer.first_name_ar, customer.first_name);
+    const lastName = getArabicOrFallback(customer.last_name_ar, customer.last_name);
+    return `${firstName} ${lastName}`.trim() || "عميل غير محدد";
   };
 
   const getVehicleInfo = (contract: any) => {
