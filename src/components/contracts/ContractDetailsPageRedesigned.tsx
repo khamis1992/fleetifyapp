@@ -710,7 +710,7 @@ const ContractDetailsPageRedesigned = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { companyId } = useUnifiedCompanyAccess();
+  const { companyId, isInitializing } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
 
   // State
@@ -948,15 +948,13 @@ const ContractDetailsPageRedesigned = () => {
 
       if (contractError) throw contractError;
 
-      if (contract.vehicle_id) {
-        await supabase
-          .from('vehicles')
-          .update({ status: 'available' })
-          .eq('id', contract.vehicle_id);
-      }
+      // Note: Vehicle status is automatically updated by database trigger
+      // (contracts_vehicle_status_update -> update_vehicle_status_from_contract)
+      // No manual update needed - this prevents the "tuple already modified" error
 
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] }); // Refresh vehicles list
 
       toast({
         title: 'تم إنهاء العقد',
@@ -1022,8 +1020,8 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [contract, companyId, queryClient, toast, navigate]);
 
-  // Loading state
-  if (isLoading) {
+  // Loading state - wait for both initialization and data loading
+  if (isLoading || isInitializing) {
     return <PageSkeletonFallback />;
   }
 

@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Trash2, CheckCircle, AlertTriangle, RefreshCcw } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle, AlertTriangle, RefreshCcw, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface DuplicateGroup {
   contractId: string;
@@ -27,13 +28,29 @@ interface DuplicateGroup {
   }>;
 }
 
+interface WrongDateInvoice {
+  id: string;
+  invoiceNumber: string;
+  oldDate: string;
+  newDate: string;
+  contractId: string;
+  contractNumber: string;
+  hasPrimaryInvoice: boolean;  // هل يوجد فاتورة بتاريخ يوم 1؟
+}
+
 export default function DuplicateInvoicesCleanup() {
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
+  const [wrongDateInvoices, setWrongDateInvoices] = useState<WrongDateInvoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [cleaning, setCleaning] = useState(false);
+  const [fixingDates, setFixingDates] = useState(false);
   const [cleanupResults, setCleanupResults] = useState<{
     groupsCleaned: number;
     invoicesCancelled: number;
+  } | null>(null);
+  const [dateFixResults, setDateFixResults] = useState<{
+    fixed: number;
+    failed: number;
   } | null>(null);
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
@@ -214,9 +231,164 @@ export default function DuplicateInvoicesCleanup() {
     }
   };
 
+  // جلب الفواتير بتواريخ خاطئة (ليست في يوم 1)
+  const fetchWrongDateInvoices = async () => {
+    if (!companyId) return;
+    
+    setLoading(true);
+    try {
+      const { data: invoices, error } = await supabase
+        .from('invoices')
+        .select(`
+          id, invoice_number, invoice_date, due_date, contract_id,
+          contracts (contract_number)
+        `)
+        .eq('company_id', companyId)
+        .not('contract_id', 'is', null)
+        .neq('status', 'cancelled')
+        .order('due_date', { ascending: false });
+
+      if (error) throw error;
+
+      // تجميع الفواتير حسب العقد والشهر
+      const groupedByContractMonth = new Map<string, typeof invoices>();
+      for (const inv of invoices || []) {
+        const date = inv.due_date || inv.invoice_date;
+        if (!date) continue;
+        const month = date.substring(0, 7);
+        const key = `${inv.contract_id}|${month}`;
+        if (!groupedByContractMonth.has(key)) {
+          groupedByContractMonth.set(key, []);
+        }
+        groupedByContractMonth.get(key)!.push(inv);
+      }
+
+      // فلترة الفواتير التي ليست في يوم 1
+      const wrongDates: WrongDateInvoice[] = [];
+      for (const inv of invoices || []) {
+        const date = inv.due_date || inv.invoice_date;
+        if (!date) continue;
+        
+        const day = parseInt(date.split('-')[2] || '0');
+        if (day !== 1) {
+          const month = date.substring(0, 7);
+          const key = `${inv.contract_id}|${month}`;
+          const sameMonthInvoices = groupedByContractMonth.get(key) || [];
+          
+          // هل يوجد فاتورة بتاريخ يوم 1 لنفس العقد/الشهر؟
+          const hasPrimaryInvoice = sameMonthInvoices.some(i => {
+            const d = i.due_date || i.invoice_date;
+            return d && d.endsWith('-01') && i.id !== inv.id;
+          });
+          
+          wrongDates.push({
+            id: inv.id,
+            invoiceNumber: inv.invoice_number,
+            oldDate: date,
+            newDate: `${month}-01`,
+            contractId: inv.contract_id,
+            contractNumber: (inv.contracts as any)?.contract_number || 'غير معروف',
+            hasPrimaryInvoice
+          });
+        }
+      }
+
+      setWrongDateInvoices(wrongDates);
+      setDateFixResults(null);
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // تصحيح تواريخ الفواتير (أو إلغاء المكررة)
+  const fixInvoiceDates = async () => {
+    if (!wrongDateInvoices.length) return;
+    
+    setFixingDates(true);
+    let fixed = 0;
+    let cancelled = 0;
+    let failed = 0;
+
+    try {
+      for (const inv of wrongDateInvoices) {
+        if (inv.hasPrimaryInvoice) {
+          // هذه فاتورة مكررة - يجب إلغاؤها
+          const { error } = await supabase
+            .from('invoices')
+            .update({
+              status: 'cancelled',
+              notes: `ملغاة تلقائياً - فاتورة مكررة بتاريخ خاطئ (${inv.oldDate}) | تم الإلغاء: ${new Date().toISOString()}`
+            })
+            .eq('id', inv.id);
+
+          if (error) {
+            failed++;
+          } else {
+            cancelled++;
+          }
+        } else {
+          // محاولة تصحيح التاريخ أولاً
+          const { error } = await supabase
+            .from('invoices')
+            .update({
+              invoice_date: inv.newDate,
+              due_date: inv.newDate
+            })
+            .eq('id', inv.id);
+
+          if (error) {
+            // إذا فشل (بسبب trigger conflict)، نلغي الفاتورة بدلاً من ذلك
+            console.warn(`فشل تصحيح ${inv.invoiceNumber}, نحاول الإلغاء...`, error);
+            const { error: cancelError } = await supabase
+              .from('invoices')
+              .update({
+                status: 'cancelled',
+                notes: `ملغاة تلقائياً - تعارض مع فاتورة موجودة بتاريخ ${inv.newDate} | تم الإلغاء: ${new Date().toISOString()}`
+              })
+              .eq('id', inv.id);
+            
+            if (cancelError) {
+              failed++;
+            } else {
+              cancelled++;
+            }
+          } else {
+            fixed++;
+          }
+        }
+      }
+
+      setDateFixResults({ fixed: fixed + cancelled, failed });
+      
+      toast({
+        title: 'تم المعالجة',
+        description: `تم تصحيح ${fixed} فاتورة وإلغاء ${cancelled} فاتورة${failed > 0 ? ` (فشل: ${failed})` : ''}`,
+      });
+
+      // إعادة جلب البيانات
+      await fetchWrongDateInvoices();
+
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setFixingDates(false);
+    }
+  };
+
   useEffect(() => {
     if (companyId) {
       fetchDuplicates();
+      fetchWrongDateInvoices();
     }
   }, [companyId]);
 
@@ -236,12 +408,31 @@ export default function DuplicateInvoicesCleanup() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">تنظيف الفواتير المكررة</h1>
+        <h1 className="text-2xl font-bold mb-2">صيانة الفواتير</h1>
         <p className="text-muted-foreground">
-          هذه الصفحة تعرض الفواتير المكررة (أكثر من فاتورة لنفس العقد في نفس الشهر) وتسمح بتنظيفها
+          تنظيف الفواتير المكررة وتصحيح تواريخ الفواتير القديمة
         </p>
       </div>
 
+      <Tabs defaultValue="duplicates" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="duplicates" className="flex items-center gap-2">
+            <Trash2 className="h-4 w-4" />
+            الفواتير المكررة
+            {duplicates.length > 0 && (
+              <Badge variant="destructive" className="mr-2">{duplicates.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="dates" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            تصحيح التواريخ
+            {wrongDateInvoices.length > 0 && (
+              <Badge variant="secondary" className="mr-2">{wrongDateInvoices.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="duplicates">
       {cleanupResults && (
         <Alert className="mb-6 border-green-500 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -356,6 +547,116 @@ export default function DuplicateInvoicesCleanup() {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="dates">
+          {dateFixResults && (
+            <Alert className="mb-6 border-green-500 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">تم التصحيح</AlertTitle>
+              <AlertDescription className="text-green-700">
+                تم تصحيح {dateFixResults.fixed} فاتورة
+                {dateFixResults.failed > 0 && ` (فشل: ${dateFixResults.failed})`}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex gap-2 mb-6">
+            <Button onClick={fetchWrongDateInvoices} disabled={loading} variant="outline">
+              <RefreshCcw className={`h-4 w-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
+              تحديث
+            </Button>
+            
+            {wrongDateInvoices.length > 0 && (
+              <Button 
+                onClick={fixInvoiceDates} 
+                disabled={fixingDates}
+                variant="default"
+              >
+                {fixingDates ? (
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                ) : (
+                  <Calendar className="h-4 w-4 ml-2" />
+                )}
+                تصحيح الكل ({wrongDateInvoices.length} فاتورة)
+              </Button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : wrongDateInvoices.length === 0 ? (
+            <Alert className="border-green-500 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">جميع التواريخ صحيحة</AlertTitle>
+              <AlertDescription className="text-green-700">
+                جميع الفواتير تاريخها في يوم 1 من الشهر كما هو مطلوب.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="space-y-4">
+              <Alert className="border-yellow-500 bg-yellow-50">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="text-yellow-800">
+                  تم العثور على {wrongDateInvoices.length} فاتورة بتاريخ غير صحيح
+                </AlertTitle>
+                <AlertDescription className="text-yellow-700">
+                  <strong className="text-red-600">{wrongDateInvoices.filter(i => i.hasPrimaryInvoice).length}</strong> فاتورة مكررة سيتم إلغاؤها، 
+                  <strong className="text-green-600"> {wrongDateInvoices.filter(i => !i.hasPrimaryInvoice).length}</strong> فاتورة سيتم تصحيح تاريخها
+                </AlertDescription>
+              </Alert>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>فواتير تحتاج معالجة</CardTitle>
+                  <CardDescription>
+                    🔴 الحمراء = مكررة وسيتم إلغاؤها | 🟡 الصفراء = سيتم تصحيح تاريخها
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {wrongDateInvoices.map((inv) => (
+                      <div 
+                        key={inv.id}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          inv.hasPrimaryInvoice 
+                            ? 'bg-red-50 border border-red-200' 
+                            : 'bg-yellow-50 border border-yellow-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {inv.hasPrimaryInvoice ? (
+                            <Trash2 className="h-5 w-5 text-red-600" />
+                          ) : (
+                            <Calendar className="h-5 w-5 text-yellow-600" />
+                          )}
+                          <div>
+                            <div className="font-medium">{inv.invoiceNumber}</div>
+                            <div className="text-xs text-muted-foreground">
+                              عقد: {inv.contractNumber}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive">{formatDate(inv.oldDate)}</Badge>
+                          <span>→</span>
+                          {inv.hasPrimaryInvoice ? (
+                            <Badge variant="destructive">إلغاء</Badge>
+                          ) : (
+                            <Badge variant="default">{formatDate(inv.newDate)}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
