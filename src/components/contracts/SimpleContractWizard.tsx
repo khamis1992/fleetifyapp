@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { DateField } from '@/components/ui/date-field';
 import {
   Select,
   SelectContent,
@@ -524,20 +525,19 @@ const Step2DetailsPricing: React.FC<{
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-neutral-600 mb-2 block">تاريخ البدء</Label>
-            <Input
-              type="date"
+            <DateField
               value={formData.start_date || ''}
-              onChange={(e) => onUpdate({ start_date: e.target.value })}
+              onChange={(value) => onUpdate({ start_date: value || '' })}
+              placeholder="اختر تاريخ البدء"
               className="h-12 rounded-xl border-neutral-200 focus:border-teal-400"
             />
           </div>
           <div>
             <Label className="text-neutral-600 mb-2 block">تاريخ الانتهاء</Label>
-            <Input
-              type="date"
+            <DateField
               value={formData.end_date || ''}
-              onChange={(e) => onUpdate({ end_date: e.target.value })}
-              min={formData.start_date}
+              onChange={(value) => onUpdate({ end_date: value || '' })}
+              placeholder="اختر تاريخ الانتهاء"
               className="h-12 rounded-xl border-neutral-200 focus:border-teal-400"
             />
           </div>

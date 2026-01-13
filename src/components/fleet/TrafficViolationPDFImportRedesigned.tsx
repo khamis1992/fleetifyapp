@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,10 @@ import {
   CircleDot,
   FileSearch,
   Database,
-  Link2
+  Link2,
+  CreditCard,
+  Wallet,
+  Building2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
@@ -76,6 +80,12 @@ import { useViolationMatching, useViolationSave } from '@/hooks/useViolationMatc
 import { useViolationNotifications, NotificationSettings, ViolationNotificationData } from '@/hooks/useViolationNotifications';
 import { ViolationNotificationSettings } from './ViolationNotificationSettings';
 import { cn } from '@/lib/utils';
+import { 
+  detectPaidViolations, 
+  markViolationsAsPaidByCompanyBatch,
+  AutoPaymentResult,
+  PaidViolation 
+} from '@/services/autoPaymentDetection';
 
 // ============================================================================
 // Types & Constants
@@ -494,6 +504,7 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
 
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
   const { processViolations, isProcessing: isMatching } = useViolationMatching({
     companyId,
     autoLink: true,
@@ -510,6 +521,12 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
   
   // Notification settings state
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
+
+  // Auto payment detection state
+  const [enableAutoPayment, setEnableAutoPayment] = useState(true);
+  const [autoPaymentResult, setAutoPaymentResult] = useState<AutoPaymentResult | null>(null);
+  const [selectedPaidViolations, setSelectedPaidViolations] = useState<Set<string>>(new Set());
+  const [isProcessingAutoPayment, setIsProcessingAutoPayment] = useState(false);
 
   // Filtered violations
   const filteredViolations = useMemo(() => {
@@ -693,10 +710,26 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
       }
 
       setProcessingStatus('جاري مطابقة المخالفات مع المركبات...');
-      setProcessingProgress(75);
+      setProcessingProgress(70);
 
       const result = await processViolations(allViolations);
       result.header = header;
+
+      // كشف الدفع التلقائي
+      let detectedPaidCount = 0;
+      if (enableAutoPayment && companyId) {
+        setProcessingStatus('جاري الكشف عن المخالفات المدفوعة...');
+        setProcessingProgress(85);
+        
+        const paymentResult = await detectPaidViolations(allViolations, companyId);
+        setAutoPaymentResult(paymentResult);
+        detectedPaidCount = paymentResult.paidByCompany.length;
+        
+        // تحديد جميع المخالفات المدفوعة تلقائياً
+        if (detectedPaidCount > 0) {
+          setSelectedPaidViolations(new Set(paymentResult.paidByCompany.map(v => v.id)));
+        }
+      }
 
       setProcessingResult(result);
       setSelectedViolations(new Set(
@@ -712,9 +745,13 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
         setCurrentStep('review');
       }, 500);
 
+      const autoPaymentInfo = detectedPaidCount > 0
+        ? ` | تم اكتشاف ${detectedPaidCount} مخالفة مدفوعة`
+        : '';
+
       toast({
         title: "تم استخراج البيانات بنجاح",
-        description: `تم استخراج ${result.total_extracted} مخالفة، ${result.successful_matches} مطابقة للمركبات`,
+        description: `تم استخراج ${result.total_extracted} مخالفة، ${result.successful_matches} مطابقة للمركبات${autoPaymentInfo}`,
       });
 
     } catch (error: any) {
@@ -726,6 +763,49 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
       setCurrentStep('upload');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Process auto payment - mark violations as paid by company
+  const processAutoPayment = async () => {
+    if (!autoPaymentResult || selectedPaidViolations.size === 0) return;
+
+    setIsProcessingAutoPayment(true);
+    try {
+      const violationIds = Array.from(selectedPaidViolations);
+      console.log(`🔄 Processing auto payment for ${violationIds.length} violations...`);
+      
+      const result = await markViolationsAsPaidByCompanyBatch(violationIds);
+      
+      if (result.success > 0) {
+        toast({
+          title: "✅ تم تسجيل الدفع التلقائي",
+          description: `تم تحديث ${result.success} مخالفة كمدفوعة من الشركة${result.failed > 0 ? ` (${result.failed} فشل)` : ''}`,
+        });
+
+        // إعادة تحميل بيانات المخالفات
+        queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+        queryClient.invalidateQueries({ queryKey: ['traffic-violations-dashboard-stats'] });
+        queryClient.invalidateQueries({ queryKey: ['penalties'] });
+      } else {
+        toast({
+          title: "⚠️ فشل تسجيل الدفعات",
+          description: `لم يتم تحديث أي مخالفة. تأكد من صلاحيات الوصول.`,
+          variant: "destructive"
+        });
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Error in processAutoPayment:', error);
+      toast({
+        title: "خطأ في تسجيل الدفع",
+        description: error.message,
+        variant: "destructive"
+      });
+      return { success: 0, failed: selectedPaidViolations.size };
+    } finally {
+      setIsProcessingAutoPayment(false);
     }
   };
 
@@ -743,6 +823,12 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
       'moi_pdf',
       processingResult.header?.file_number
     );
+
+    // معالجة الدفع التلقائي إذا كان مفعّلاً
+    let autoPaymentSaveResult = null;
+    if (enableAutoPayment && selectedPaidViolations.size > 0) {
+      autoPaymentSaveResult = await processAutoPayment();
+    }
 
     setSaveResult(result);
     setCompletedSteps(prev => new Set([...prev, 'review', 'complete']));
@@ -1030,6 +1116,31 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
                       ))}
                     </div>
 
+                    {/* Auto Payment Option */}
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="enableAutoPayment"
+                          checked={enableAutoPayment}
+                          onCheckedChange={(checked) => setEnableAutoPayment(checked === true)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <label 
+                            htmlFor="enableAutoPayment" 
+                            className="font-semibold text-amber-800 dark:text-amber-200 cursor-pointer flex items-center gap-2"
+                          >
+                            <Building2 className="h-4 w-4" />
+                            الكشف عن الدفع التلقائي
+                          </label>
+                          <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                            المخالفات الموجودة في النظام ولكن غير موجودة في ملف PDF = تم دفعها من الشركة.
+                            سيتم تسجيلها كمدفوعة من الشركة مع بقاء مطالبة العميل بقيمتها.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="pt-4">
                       <Button
                         onClick={processFiles}
@@ -1139,6 +1250,115 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
                     color="purple"
                   />
                 </div>
+
+                {/* Auto Payment Detection Results */}
+                {autoPaymentResult && autoPaymentResult.paidByCompany.length > 0 && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-800 flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-amber-800 dark:text-amber-200">
+                            مخالفات مدفوعة من الشركة
+                          </h3>
+                          <p className="text-sm text-amber-700 dark:text-amber-300">
+                            تم اكتشاف {autoPaymentResult.paidByCompany.length} مخالفة غير موجودة في PDF (تم دفعها)
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-2xl font-bold text-amber-800 dark:text-amber-200">
+                          {autoPaymentResult.paidByCompany.reduce((sum, v) => sum + v.amount, 0).toLocaleString('en-US')}
+                        </p>
+                        <p className="text-sm text-amber-600">ر.ق إجمالي المدفوع</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Checkbox
+                          checked={selectedPaidViolations.size === autoPaymentResult.paidByCompany.length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedPaidViolations(new Set(autoPaymentResult.paidByCompany.map(v => v.id)));
+                            } else {
+                              setSelectedPaidViolations(new Set());
+                            }
+                          }}
+                        />
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                          تحديد الكل ({selectedPaidViolations.size}/{autoPaymentResult.paidByCompany.length})
+                        </span>
+                      </div>
+                      
+                      {autoPaymentResult.paidByCompany.slice(0, 10).map(violation => (
+                        <div key={violation.id} className="flex items-center gap-3 p-2 bg-white dark:bg-slate-800 rounded-lg">
+                          <Checkbox
+                            checked={selectedPaidViolations.has(violation.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedPaidViolations(prev => {
+                                const newSet = new Set(prev);
+                                if (checked) newSet.add(violation.id);
+                                else newSet.delete(violation.id);
+                                return newSet;
+                              });
+                            }}
+                          />
+                          <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
+                            <span className="font-medium">{violation.penalty_number}</span>
+                            <span>{violation.vehicle_plate || '-'}</span>
+                            <span>{violation.customer_name || 'بدون عميل'}</span>
+                            <span className="font-semibold text-amber-700">{violation.amount.toLocaleString('en-US')} ر.ق</span>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {autoPaymentResult.paidByCompany.length > 10 && (
+                        <p className="text-center text-sm text-amber-600 py-2">
+                          و {autoPaymentResult.paidByCompany.length - 10} مخالفة أخرى...
+                        </p>
+                      )}
+                    </div>
+
+                    <Alert className="mt-4 bg-amber-100/50 border-amber-300">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        <strong>ملاحظة:</strong> سيتم تسجيل هذه المخالفات كمدفوعة من الشركة. 
+                        العميل سيظل مطالباً بسداد قيمتها للشركة.
+                      </AlertDescription>
+                    </Alert>
+
+                    {/* زر تسجيل الدفعات */}
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        onClick={async () => {
+                          const result = await processAutoPayment();
+                          if (result && result.success > 0) {
+                            // إعادة تعيين النتائج
+                            setAutoPaymentResult(null);
+                            setSelectedPaidViolations(new Set());
+                          }
+                        }}
+                        disabled={selectedPaidViolations.size === 0 || isProcessingAutoPayment}
+                        className="bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        {isProcessingAutoPayment ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
+                            جاري التسجيل...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="h-4 w-4 ml-2" />
+                            تسجيل {selectedPaidViolations.size} دفعة
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Header Info */}
                 {processingResult.header && (

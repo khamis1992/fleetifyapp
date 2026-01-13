@@ -52,6 +52,7 @@ import { LateFinesSettings } from "@/components/contracts/LateFinesSettings";
 import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
 import { ContractAmendmentForm } from "@/components/contracts";
+import { ContractPDFImportRedesigned } from "@/components/contracts/ContractPDFImportRedesigned";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -104,6 +105,7 @@ function ContractsRedesigned() {
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [showRemindersDialog, setShowRemindersDialog] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [showContractPDFImport, setShowContractPDFImport] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState("all");
@@ -728,6 +730,14 @@ function ContractsRedesigned() {
                   </Button>
                 )}
                 <Button
+                  onClick={() => setShowContractPDFImport(true)}
+                  variant="outline"
+                  className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
+                >
+                  <FileText className="w-4 h-4 ml-2 text-teal-500" />
+                  <span className="hidden lg:inline">استيراد PDF</span>
+                </Button>
+                <Button
                   onClick={() => setShowRemindersDialog(true)}
                   variant="outline"
                   className="px-4 py-2.5 rounded-3xl font-medium border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/50 transition-all hover:shadow-xl hover:shadow-teal-500/10"
@@ -1021,7 +1031,8 @@ function ContractsRedesigned() {
           setShowContractWizard(open);
           if (!open) setContractToEdit(undefined); // Reset edit contract when closing
         }}
-        onSubmit={handleContractSubmit}
+        // Don't pass onSubmit in edit mode - let SimpleContractWizard handle update internally
+        onSubmit={contractToEdit ? undefined : handleContractSubmit}
         preselectedCustomerId={preselectedCustomerId}
         preselectedVehicleId={preselectedVehicleId}
         editContract={contractToEdit}
@@ -1096,6 +1107,11 @@ function ContractsRedesigned() {
         open={showRemindersDialog}
         onOpenChange={setShowRemindersDialog}
         contracts={safeContracts as any || []}
+      />
+      <ContractPDFImportRedesigned
+        open={showContractPDFImport}
+        onOpenChange={setShowContractPDFImport}
+        onComplete={() => refetch()}
       />
       {showTemplateManager && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

@@ -21,14 +21,20 @@ import {
   Upload,
   List,
   Gavel,
-  RefreshCw
+  RefreshCw,
+  Link2,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useUpdatePaymentStatus } from '@/hooks/useTrafficViolations';
+import { useRelinkViolations } from '@/hooks/useRelinkViolations';
 import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViolationsSmartDashboard';
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
 import { TrafficViolationSidePanelNew } from '@/components/fleet/TrafficViolationSidePanelNew';
@@ -69,6 +75,7 @@ export default function TrafficViolationsRedesigned() {
   const [isPaymentsDialogOpen, setIsPaymentsDialogOpen] = useState(false);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isRelinkDialogOpen, setIsRelinkDialogOpen] = useState(false);
   
   // Data Fetching - Reduced limit for better performance (was 10000!)
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,6 +115,7 @@ export default function TrafficViolationsRedesigned() {
   const deleteViolationMutation = useDeleteTrafficViolation();
   const updatePaymentStatusMutation = useUpdatePaymentStatus();
   const { formatCurrency } = useCurrencyFormatter();
+  const { relinkViolations, isProcessing: isRelinking, progress: relinkProgress, result: relinkResult, resetResult: resetRelinkResult } = useRelinkViolations();
 
   // Fetch customers for filter
   const { data: customers = [] } = useQuery({
@@ -288,6 +296,187 @@ export default function TrafficViolationsRedesigned() {
         violations={violations}
       />
 
+      {/* Relink Violations Dialog */}
+      <Dialog open={isRelinkDialogOpen} onOpenChange={(open) => {
+        setIsRelinkDialogOpen(open);
+        if (!open) resetRelinkResult();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-orange-600" />
+              إعادة ربط المخالفات بالعملاء
+            </DialogTitle>
+            <DialogDescription>
+              سيتم البحث عن العقود المناسبة لكل مخالفة غير مربوطة وربطها بالعميل تلقائياً
+            </DialogDescription>
+          </DialogHeader>
+
+          {!relinkResult && !isRelinking && (
+            <div className="py-6 space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <h4 className="font-semibold text-orange-800 mb-2">كيف تعمل هذه الميزة؟</h4>
+                <ul className="text-sm text-orange-700 space-y-1 list-disc list-inside">
+                  <li>البحث عن جميع المخالفات غير المربوطة بعملاء</li>
+                  <li>مطابقة كل مخالفة مع العقود بناءً على رقم اللوحة وتاريخ المخالفة</li>
+                  <li>ربط المخالفة بالعميل صاحب العقد المناسب</li>
+                </ul>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h4 className="font-semibold text-blue-800 mb-2">خوارزمية المطابقة (4 مستويات):</h4>
+                <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                  <li><strong>ثقة عالية:</strong> عقد نشط + تاريخ المخالفة ضمن فترة العقد</li>
+                  <li><strong>ثقة متوسطة:</strong> أي عقد (حتى منتهي) + تاريخ ضمن فترته</li>
+                  <li><strong>ثقة منخفضة:</strong> أقرب عقد انتهى قبل المخالفة (خلال 30 يوم)</li>
+                  <li><strong>آخر خيار:</strong> أحدث عقد متوفر للمركبة</li>
+                </ol>
+              </div>
+            </div>
+          )}
+
+          {isRelinking && (
+            <div className="py-8 space-y-4">
+              <div className="flex items-center justify-center gap-3">
+                <RefreshCw className="w-6 h-6 text-orange-600 animate-spin" />
+                <span className="text-lg font-medium">جاري معالجة المخالفات...</span>
+              </div>
+              <Progress value={relinkProgress} className="h-3" />
+              <p className="text-center text-sm text-neutral-500">{relinkProgress}% مكتمل</p>
+            </div>
+          )}
+
+          {relinkResult && (
+            <div className="py-4 space-y-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-slate-700">{relinkResult.totalUnlinked}</div>
+                  <div className="text-xs text-slate-500">إجمالي غير المربوطة</div>
+                </div>
+                <div className="bg-green-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-green-600">{relinkResult.linked}</div>
+                  <div className="text-xs text-green-600">تم ربطها</div>
+                </div>
+                <div className="bg-amber-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-amber-600">{relinkResult.noContractFound}</div>
+                  <div className="text-xs text-amber-600">بدون عقد</div>
+                </div>
+                <div className="bg-red-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-red-600">{relinkResult.failed}</div>
+                  <div className="text-xs text-red-600">فشل</div>
+                </div>
+              </div>
+
+              {/* Success Rate */}
+              {relinkResult.totalUnlinked > 0 && (
+                <div className="bg-gradient-to-r from-teal-50 to-green-50 rounded-xl p-4 text-center">
+                  <div className="text-3xl font-bold text-teal-600">
+                    {Math.round((relinkResult.linked / relinkResult.totalUnlinked) * 100)}%
+                  </div>
+                  <div className="text-sm text-teal-700">نسبة النجاح</div>
+                </div>
+              )}
+
+              {/* Details List */}
+              {relinkResult.details.length > 0 && (
+                <div className="border rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-100 sticky top-0">
+                      <tr>
+                        <th className="px-3 py-2 text-right">رقم المخالفة</th>
+                        <th className="px-3 py-2 text-right">اللوحة</th>
+                        <th className="px-3 py-2 text-right">الحالة</th>
+                        <th className="px-3 py-2 text-right">التفاصيل</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {relinkResult.details.slice(0, 50).map((detail, idx) => (
+                        <tr key={idx} className={
+                          detail.status === 'linked' ? 'bg-green-50/50' :
+                          detail.status === 'no_contract' || detail.status === 'no_vehicle' ? 'bg-amber-50/50' :
+                          'bg-red-50/50'
+                        }>
+                          <td className="px-3 py-2 font-mono text-xs">{detail.penaltyNumber}</td>
+                          <td className="px-3 py-2">{detail.vehiclePlate}</td>
+                          <td className="px-3 py-2">
+                            {detail.status === 'linked' && (
+                              <Badge className="bg-green-100 text-green-700 text-xs">
+                                <CheckCircle2 className="w-3 h-3 ml-1" />
+                                تم الربط
+                              </Badge>
+                            )}
+                            {(detail.status === 'no_contract' || detail.status === 'no_vehicle') && (
+                              <Badge className="bg-amber-100 text-amber-700 text-xs">
+                                <AlertTriangle className="w-3 h-3 ml-1" />
+                                لا يوجد عقد
+                              </Badge>
+                            )}
+                            {detail.status === 'error' && (
+                              <Badge className="bg-red-100 text-red-700 text-xs">
+                                <XCircle className="w-3 h-3 ml-1" />
+                                خطأ
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-xs text-neutral-600">
+                            {detail.status === 'linked' ? (
+                              <span>
+                                {detail.customerName} 
+                                <span className="text-neutral-400 mx-1">•</span>
+                                <span className={
+                                  detail.confidence === 'high' ? 'text-green-600' :
+                                  detail.confidence === 'medium' ? 'text-amber-600' :
+                                  'text-red-600'
+                                }>
+                                  {detail.confidence === 'high' ? 'ثقة عالية' :
+                                   detail.confidence === 'medium' ? 'ثقة متوسطة' :
+                                   'ثقة منخفضة'}
+                                </span>
+                              </span>
+                            ) : detail.reason}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {relinkResult.details.length > 50 && (
+                    <div className="bg-slate-50 px-3 py-2 text-center text-xs text-slate-500">
+                      عرض أول 50 نتيجة من {relinkResult.details.length}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            {!relinkResult && !isRelinking && (
+              <>
+                <Button variant="outline" onClick={() => setIsRelinkDialogOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button 
+                  onClick={() => relinkViolations()}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  <Link2 className="w-4 h-4 ml-2" />
+                  بدء إعادة الربط
+                </Button>
+              </>
+            )}
+            {relinkResult && (
+              <Button onClick={() => {
+                setIsRelinkDialogOpen(false);
+                resetRelinkResult();
+                refetch();
+              }}>
+                إغلاق
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* --- Top Navbar --- */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -315,6 +504,14 @@ export default function TrafficViolationsRedesigned() {
           >
             <Printer className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">طباعة التقرير</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsRelinkDialogOpen(true)}
+            className="border-orange-200/50 hover:bg-orange-50 rounded-xl hover:border-orange-500/30 text-orange-700"
+          >
+            <User className="w-4 h-4 ml-2" />
+            <span className="hidden md:inline">ربط المخالفات</span>
           </Button>
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
