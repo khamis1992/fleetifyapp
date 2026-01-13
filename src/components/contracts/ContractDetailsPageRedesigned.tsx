@@ -787,6 +787,7 @@ const ContractDetailsPageRedesigned = () => {
         .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('due_date', { ascending: false });
 
       if (error) throw error;

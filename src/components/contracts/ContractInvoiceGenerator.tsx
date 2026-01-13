@@ -40,6 +40,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
         .from('invoices')
         .select('*')
         .eq('contract_id', contract.id)
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('invoice_date', { ascending: false })
       
       if (error) throw error

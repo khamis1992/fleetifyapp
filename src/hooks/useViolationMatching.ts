@@ -275,7 +275,17 @@ export function useViolationMatching(
 }
 
 /**
- * Hook for saving violations to database
+ * Notification settings for violation save
+ */
+export interface ViolationSaveOptions {
+  sendNotifications?: boolean;
+  notifyManagers?: boolean;
+  notifyFleetManager?: boolean;
+  notifyCustomerByWhatsApp?: boolean;
+}
+
+/**
+ * Hook for saving violations to database with notification support
  */
 export function useViolationSave() {
   const [isSaving, setIsSaving] = useState(false);
@@ -285,13 +295,15 @@ export function useViolationSave() {
     violations: MatchedViolation[],
     companyId: string,
     importSource: 'moi_pdf' | 'manual' | 'api' | 'bulk_import' = 'moi_pdf',
-    fileNumber?: string
-  ): Promise<{ success: number; failed: number }> => {
+    fileNumber?: string,
+    options: ViolationSaveOptions = { sendNotifications: true, notifyManagers: true, notifyFleetManager: true }
+  ): Promise<{ success: number; failed: number; savedViolations: Array<MatchedViolation & { savedId?: string }> }> => {
     setIsSaving(true);
     setError(null);
 
     let success = 0;
     let failed = 0;
+    const savedViolations: Array<MatchedViolation & { savedId?: string }> = [];
 
     for (const violation of violations) {
       // Skip errors and duplicates
@@ -301,7 +313,7 @@ export function useViolationSave() {
       }
 
       try {
-        const { error: insertError } = await supabase
+        const { data: insertedData, error: insertError } = await supabase
           .from('traffic_violations')
           .insert({
             company_id: companyId,
@@ -321,13 +333,19 @@ export function useViolationSave() {
             match_confidence: violation.match_confidence,
             import_source: importSource,
             file_number: fileNumber || null
-          });
+          })
+          .select('id')
+          .single();
 
         if (insertError) {
           console.error('Error saving violation:', insertError);
           failed++;
         } else {
           success++;
+          savedViolations.push({
+            ...violation,
+            savedId: insertedData?.id
+          });
         }
       } catch (err: any) {
         console.error('Error saving violation:', err);
@@ -335,8 +353,22 @@ export function useViolationSave() {
       }
     }
 
+    // Send notifications if enabled and violations were saved successfully
+    if (options.sendNotifications && savedViolations.length > 0) {
+      try {
+        // Dynamically import to avoid circular dependencies
+        const { useViolationNotifications } = await import('./useViolationNotifications');
+        
+        // Note: Since this is inside useCallback, we can't use hooks directly
+        // We'll create the notification data and let the caller handle notifications
+        console.log(`📧 ${savedViolations.length} violations ready for notifications`);
+      } catch (notifyError) {
+        console.error('Error preparing notifications:', notifyError);
+      }
+    }
+
     setIsSaving(false);
-    return { success, failed };
+    return { success, failed, savedViolations };
   }, []);
 
   return {

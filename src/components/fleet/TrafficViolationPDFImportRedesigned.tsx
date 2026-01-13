@@ -73,6 +73,8 @@ import {
   MATCH_CONFIDENCE_COLORS
 } from '@/types/violations';
 import { useViolationMatching, useViolationSave } from '@/hooks/useViolationMatching';
+import { useViolationNotifications, NotificationSettings, ViolationNotificationData } from '@/hooks/useViolationNotifications';
+import { ViolationNotificationSettings } from './ViolationNotificationSettings';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -498,6 +500,16 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
     checkDuplicates: true
   });
   const { saveViolations, isSaving } = useViolationSave();
+  const { 
+    sendBulkViolationNotifications, 
+    generateWhatsAppLink,
+    isSending: isSendingNotifications, 
+    lastResult: notificationResult,
+    defaultSettings: defaultNotificationSettings 
+  } = useViolationNotifications();
+  
+  // Notification settings state
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
 
   // Filtered violations
   const filteredViolations = useMemo(() => {
@@ -740,6 +752,41 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
       title: "تم الحفظ بنجاح",
       description: `تم حفظ ${result.success} مخالفة${result.failed > 0 ? ` (${result.failed} فشل)` : ''}`,
     });
+
+    // Send notifications if any are enabled
+    const hasNotifications = notificationSettings.notifyManagers || 
+      notificationSettings.notifyFleetManager || 
+      notificationSettings.notifyCustomerByWhatsApp || 
+      notificationSettings.notifyCustomerBySystem;
+
+    if (hasNotifications && result.savedViolations && result.savedViolations.length > 0) {
+      // Prepare notification data from saved violations
+      const notificationData: ViolationNotificationData[] = result.savedViolations.map(v => ({
+        violationId: v.savedId,
+        violationNumber: v.violation_number,
+        violationDate: v.date,
+        violationType: v.violation_type,
+        fineAmount: v.fine_amount,
+        vehiclePlateNumber: v.plate_number,
+        vehicleMake: v.vehicle_make,
+        vehicleModel: v.vehicle_model,
+        location: v.location,
+        customerId: v.customer_id,
+        customerName: v.customer_name,
+        contractId: v.contract_id,
+        contractNumber: v.contract_number,
+      }));
+
+      // Send notifications
+      const notifyResult = await sendBulkViolationNotifications(notificationData, notificationSettings);
+      
+      if (notifyResult.success) {
+        toast({
+          title: "تم إرسال الإشعارات",
+          description: `تم إرسال ${notifyResult.systemNotifications} إشعار${notifyResult.whatsappNotifications > 0 ? ` و ${notifyResult.whatsappNotifications} واتساب` : ''}`,
+        });
+      }
+    }
   };
 
   // Reset
@@ -1193,6 +1240,26 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
                   </div>
                 </ScrollArea>
 
+                {/* Notification Settings */}
+                {selectedViolations.size > 0 && (
+                  <div className="mt-4">
+                    <ViolationNotificationSettings
+                      settings={notificationSettings}
+                      onSettingsChange={setNotificationSettings}
+                      violationCount={selectedViolations.size}
+                      customerCount={new Set(
+                        processingResult.violations
+                          .filter(v => selectedViolations.has(v.id) && v.customer_id)
+                          .map(v => v.customer_id)
+                      ).size}
+                      isSending={isSendingNotifications}
+                      lastResult={notificationResult}
+                      compact={true}
+                      showSendButton={false}
+                    />
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t">
                   <Button
@@ -1205,10 +1272,10 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
                   
                   <Button
                     onClick={saveSelectedViolations}
-                    disabled={isSaving || selectedViolations.size === 0}
+                    disabled={isSaving || isSendingNotifications || selectedViolations.size === 0}
                     className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white px-8"
                   >
-                    {isSaving ? (
+                    {isSaving || isSendingNotifications ? (
                       <RefreshCw className="h-4 w-4 animate-spin ml-2" />
                     ) : (
                       <Save className="h-4 w-4 ml-2" />
@@ -1271,71 +1338,6 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
           </AnimatePresence>
         </motion.div>
 
-        {/* Improvement Suggestions */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white"
-        >
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-400" />
-            مقترحات لتطوير النظام
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              {
-                title: 'تكامل مع MOI API',
-                desc: 'ربط مباشر مع نظام وزارة الداخلية لجلب المخالفات تلقائياً',
-                priority: 'عالي'
-              },
-              {
-                title: 'إشعارات تلقائية',
-                desc: 'إرسال تنبيهات للعملاء عند تسجيل مخالفات جديدة',
-                priority: 'عالي'
-              },
-              {
-                title: 'تحليلات متقدمة',
-                desc: 'لوحة تحكم بتحليلات المخالفات حسب السائق والمنطقة',
-                priority: 'متوسط'
-              },
-              {
-                title: 'دفع إلكتروني',
-                desc: 'تمكين العملاء من دفع المخالفات عبر التطبيق',
-                priority: 'متوسط'
-              },
-              {
-                title: 'تقارير دورية',
-                desc: 'إنشاء تقارير أسبوعية/شهرية تلقائية',
-                priority: 'منخفض'
-              },
-              {
-                title: 'OCR محسّن',
-                desc: 'تحسين دقة استخراج البيانات من الصور',
-                priority: 'متوسط'
-              }
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-semibold">{item.title}</h4>
-                  <Badge className={cn(
-                    "text-xs",
-                    item.priority === 'عالي' && "bg-red-500/20 text-red-300",
-                    item.priority === 'متوسط' && "bg-amber-500/20 text-amber-300",
-                    item.priority === 'منخفض' && "bg-green-500/20 text-green-300"
-                  )}>
-                    {item.priority}
-                  </Badge>
-                </div>
-                <p className="text-sm text-slate-400">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
 
       {/* PDF Viewer */}

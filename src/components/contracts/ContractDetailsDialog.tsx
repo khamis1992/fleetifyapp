@@ -173,6 +173,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('created_at', { ascending: false });
       return data || [];
     },
