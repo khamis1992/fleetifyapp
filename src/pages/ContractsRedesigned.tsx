@@ -80,7 +80,7 @@ import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getCurrencyConfig } from "@/utils/currencyConfig";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, supabaseConfig } from "@/integrations/supabase/client";
 
 function ContractsRedesigned() {
   // State management
@@ -710,7 +710,7 @@ function ContractsRedesigned() {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions - PDF Import Button */}
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   onClick={() => setShowContractWizard(true)}
@@ -1112,6 +1112,10 @@ function ContractsRedesigned() {
         open={showContractPDFImport}
         onOpenChange={setShowContractPDFImport}
         onComplete={() => refetch()}
+        ocrConfig={{
+          supabaseUrl: supabaseConfig.url,
+          apiKey: supabaseConfig.anonKey,
+        }}
       />
       {showTemplateManager && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

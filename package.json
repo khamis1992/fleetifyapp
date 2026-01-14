@@ -195,6 +195,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "terser": "^5.44.0",
+    "tesseract.js": "^7.0.0",
     "three": "^0.178.0",
     "usehooks-ts": "^3.1.1",
     "uuid": "^10.0.0",

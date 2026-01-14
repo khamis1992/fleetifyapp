@@ -1,7 +1,14 @@
 /**
  * Contract Data Extraction Service
  * Parses extracted text from contract PDFs and identifies key fields
+ * 
+ * Features:
+ * - Smart pattern matching with learned patterns
+ * - Caching of extraction results
+ * - Confidence-based field validation
  */
+
+import { getContractTemplateService } from './contractTemplateService';
 
 export interface ExtractedContractFields {
   // Customer information
@@ -32,12 +39,38 @@ export interface ExtractedContractFields {
   confidence: number;
   rawText: string;
   extractionErrors: string[];
+  
+  // Metadata
+  extractionTimeMs?: number;
+  usedLearnedPatterns?: boolean;
+}
+
+// Cache for recently extracted texts (avoids re-processing)
+const extractionCache = new Map<string, ExtractedContractFields>();
+const CACHE_MAX_SIZE = 20;
+
+/**
+ * Generate a cache key from text (first 200 chars + length)
+ */
+function getCacheKey(text: string): string {
+  return `${text.substring(0, 200)}_${text.length}`;
 }
 
 /**
  * Main function to extract contract fields from text
+ * Uses learned patterns when available for faster extraction
  */
 export function extractContractFields(text: string): ExtractedContractFields {
+  const startTime = Date.now();
+  
+  // Check cache first
+  const cacheKey = getCacheKey(text);
+  const cached = extractionCache.get(cacheKey);
+  if (cached) {
+    console.log('📝 [Contract Extractor] Using cached result');
+    return { ...cached };
+  }
+  
   const errors: string[] = [];
   const fields: ExtractedContractFields = {
     confidence: 0,
@@ -45,39 +78,109 @@ export function extractContractFields(text: string): ExtractedContractFields {
     extractionErrors: errors,
   };
 
-  // Extract customer name (Arabic)
-  fields.customerName = extractCustomerName(text);
+  // Get learned patterns from template service
+  let usedLearnedPatterns = false;
+  try {
+    const templateService = getContractTemplateService();
+    const template = templateService.getBestTemplate();
+    
+    // Try learned patterns first (faster)
+    if (template.successCount > 0) {
+      console.log('📝 [Contract Extractor] Using learned patterns from template:', template.name);
+      usedLearnedPatterns = true;
+      
+      // Extract using learned patterns
+      fields.customerName = extractWithLearnedPatterns(text, template.patterns.customerName) || extractCustomerName(text);
+      fields.qatariId = extractWithLearnedPatterns(text, template.patterns.qatariId) || extractQatariId(text);
+      fields.plateNumber = extractWithLearnedPatterns(text, template.patterns.plateNumber) || extractPlateNumber(text);
+      fields.startDate = extractWithLearnedPatterns(text, template.patterns.startDate) || extractStartDate(text);
+      fields.endDate = extractWithLearnedPatterns(text, template.patterns.endDate) || extractEndDate(text);
+      
+      const monthlyStr = extractWithLearnedPatterns(text, template.patterns.monthlyAmount);
+      if (monthlyStr) {
+        const parsed = parseFloat(monthlyStr.replace(/,/g, ''));
+        if (!isNaN(parsed)) fields.monthlyAmount = parsed;
+      }
+    }
+  } catch (error) {
+    console.warn('📝 [Contract Extractor] Template service not available, using default patterns');
+  }
 
-  // Extract Qatari ID
-  fields.qatariId = extractQatariId(text);
+  // Log for debugging (only first extraction)
+  if (!usedLearnedPatterns) {
+    console.log('📝 [Contract Extractor] Raw text length:', text.length);
+    console.log('📝 [Contract Extractor] First 300 chars:', text.substring(0, 300));
+  }
 
-  // Extract phone numbers
-  fields.phoneNumbers = extractPhoneNumbers(text);
-
-  // Extract license number
-  fields.licenseNumber = extractLicenseNumber(text);
+  // Fill in any missing fields with default extraction
+  if (!fields.customerName) fields.customerName = extractCustomerName(text);
+  if (!fields.qatariId) fields.qatariId = extractQatariId(text);
+  if (!fields.phoneNumbers) fields.phoneNumbers = extractPhoneNumbers(text);
+  if (!fields.licenseNumber) fields.licenseNumber = extractLicenseNumber(text);
 
   // Extract vehicle information
-  fields.vehicleMake = extractVehicleMake(text);
-  fields.vehicleModel = extractVehicleModel(text);
-  fields.vehicleYear = extractVehicleYear(text);
-  fields.plateNumber = extractPlateNumber(text);
+  if (!fields.vehicleMake) fields.vehicleMake = extractVehicleMake(text);
+  if (!fields.vehicleModel) fields.vehicleModel = extractVehicleModel(text);
+  if (!fields.vehicleYear) fields.vehicleYear = extractVehicleYear(text);
+  if (!fields.plateNumber) fields.plateNumber = extractPlateNumber(text);
 
-  // Extract contract dates
-  fields.contractDate = extractContractDate(text);
-  fields.startDate = extractStartDate(text);
-  fields.endDate = extractEndDate(text);
+  // Extract contract number and dates
+  if (!fields.contractNumber) fields.contractNumber = extractContractNumber(text);
+  if (!fields.contractDate) fields.contractDate = extractContractDate(text);
+  if (!fields.startDate) fields.startDate = extractStartDate(text);
+  if (!fields.endDate) fields.endDate = extractEndDate(text);
 
   // Extract financial information
-  fields.contractAmount = extractContractAmount(text);
-  fields.monthlyAmount = extractMonthlyAmount(text);
-  fields.paymentMethod = extractPaymentMethod(text);
-  fields.paymentCycle = extractPaymentCycle(text);
+  if (!fields.contractAmount) fields.contractAmount = extractContractAmount(text);
+  if (!fields.monthlyAmount) fields.monthlyAmount = extractMonthlyAmount(text);
+  if (!fields.paymentMethod) fields.paymentMethod = extractPaymentMethod(text);
+  if (!fields.paymentCycle) fields.paymentCycle = extractPaymentCycle(text);
 
   // Calculate confidence based on extracted fields
   fields.confidence = calculateConfidence(fields);
+  fields.extractionTimeMs = Date.now() - startTime;
+  fields.usedLearnedPatterns = usedLearnedPatterns;
+
+  // Cache the result
+  if (extractionCache.size >= CACHE_MAX_SIZE) {
+    // Remove oldest entry
+    const firstKey = extractionCache.keys().next().value;
+    if (firstKey) extractionCache.delete(firstKey);
+  }
+  extractionCache.set(cacheKey, { ...fields, rawText: '' }); // Don't cache rawText
+
+  console.log(`📝 [Contract Extractor] Completed in ${fields.extractionTimeMs}ms, confidence: ${Math.round(fields.confidence * 100)}%`);
 
   return fields;
+}
+
+/**
+ * Extract using learned regex patterns
+ */
+function extractWithLearnedPatterns(text: string, patterns: string[]): string | undefined {
+  if (!patterns || patterns.length === 0) return undefined;
+  
+  for (const patternStr of patterns) {
+    try {
+      const pattern = new RegExp(patternStr, 'i');
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    } catch (error) {
+      // Invalid regex pattern, skip
+    }
+  }
+  
+  return undefined;
+}
+
+/**
+ * Clear extraction cache
+ */
+export function clearExtractionCache(): void {
+  extractionCache.clear();
+  console.log('📝 [Contract Extractor] Cache cleared');
 }
 
 // ============================================================================
@@ -85,22 +188,35 @@ export function extractContractFields(text: string): ExtractedContractFields {
 // ============================================================================
 
 /**
- * Extract customer name (Arabic)
+ * Extract customer name (Arabic or English)
  */
 function extractCustomerName(text: string): string | undefined {
-  // Look for patterns like "اسم العميل: يوسف الخليلي"
+  // Look for patterns like "اسم العميل: يوسف الخليلي" or "Second Party: YOUSSEF KHALILI"
   const patterns = [
     /اسم\s*العميل[:\s]+([أ-ي\s]+)/i,
     /العميل[:\s]+([أ-ي\s]+)/i,
     /اسم\s*المستأجر[:\s]+([أ-ي\s]+)/i,
     /المستأجر[:\s]+([أ-ي\s]+)/i,
+    /الطرف\s*الثاني[:\s]+([أ-ي\s]+)/i,
+    // English patterns
+    /Second\s*Party[:\s]+([A-Z\s]+)/i,
+    /Lessee[:\s]+([A-Z\s]+)/i,
+    /Name[:\s]+([A-Z\s]+)/i,
+    // Mixed patterns - look for Arabic name after English label
+    /يوسف\s+[\u0600-\u06FF\s]+/,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
       const name = match[1].trim().replace(/\s+/g, ' ');
-      if (name.length > 2) {
+      if (name.length > 2 && name.length < 100) {
+        return name;
+      }
+    } else if (match && match[0]) {
+      // For patterns without capture groups
+      const name = match[0].trim().replace(/\s+/g, ' ');
+      if (name.length > 2 && name.length < 100) {
         return name;
       }
     }
@@ -121,6 +237,9 @@ function extractQatariId(text: string): string | undefined {
     /البطاقة[:\s]*([\d\s\-]+)/i,
     /رقم\s*الشخصي[:\s]*([\d\s\-]+)/i,
     /(?:الإثارة|الإثارة)\s*الشخصية[:\s]*([\d\s\-]+)/i,
+    // English patterns
+    /QID\s*(?:No)?[:\s]*([\d\s\-]+)/i,
+    /License\s*No[:\s]*([\d\s\-]+)/i,
     // Direct 11-digit pattern
     /\b(\d{11})\b/,
   ];
@@ -197,50 +316,61 @@ function extractLicenseNumber(text: string): string | undefined {
 }
 
 /**
- * Extract vehicle make
+ * Vehicle make to models mapping for validation
+ */
+const VEHICLE_DATABASE: { [make: string]: { arabic: string; models: string[] } } = {
+  'toyota': { arabic: 'تويوتا', models: ['hilux', 'corolla', 'camry', 'yaris', 'land cruiser', 'fortuner', 'rav4', 'prado'] },
+  'nissan': { arabic: 'نيسان', models: ['sentra', 'altima', 'patrol', 'sunny', 'kicks', 'x-trail', 'navara'] },
+  'hyundai': { arabic: 'هيونداي', models: ['accent', 'elantra', 'sonata', 'tucson', 'santa fe', 'creta', 'i10', 'i20'] },
+  'kia': { arabic: 'كيا', models: ['cerato', 'sportage', 'sorento', 'seltos', 'k5', 'rio', 'picanto', 'carnival'] },
+  'honda': { arabic: 'هوندا', models: ['accord', 'civic', 'cr-v', 'crv', 'hr-v', 'hrv', 'city', 'pilot'] },
+  'ford': { arabic: 'فورد', models: ['f-150', 'f150', 'explorer', 'escape', 'fusion', 'mustang', 'ranger'] },
+  'chevrolet': { arabic: 'شفروليه', models: ['impala', 'malibu', 'captiva', 'tahoe', 'silverado', 'trax', 'equinox'] },
+  'mitsubishi': { arabic: 'ميتسوبيشي', models: ['pajero', 'outlander', 'montero', 'lancer', 'attrage', 'eclipse'] },
+  'mazda': { arabic: 'مازدا', models: ['3', '6', 'cx-5', 'cx5', 'cx-30', 'cx30', 'cx-9', 'cx9'] },
+  'bmw': { arabic: 'بي إم دبليو', models: ['x1', 'x3', 'x5', 'x7', '3 series', '5 series', '7 series'] },
+  'mercedes': { arabic: 'مرسيدس', models: ['c-class', 'e-class', 's-class', 'gla', 'glc', 'gle', 'gls', 'a-class'] },
+  'volkswagen': { arabic: 'فولكس واجن', models: ['golf', 'passat', 'tiguan', 'jetta', 'arteon', 'id.4'] },
+  'audi': { arabic: 'أودي', models: ['a3', 'a4', 'a6', 'a8', 'q3', 'q5', 'q7', 'q8'] },
+  'lexus': { arabic: 'لكزس', models: ['es', 'is', 'ls', 'rx', 'nx', 'lx', 'gx', 'ux'] },
+  'bestune': { arabic: 'بيستون', models: ['t77', 't99', 't55', 't33', 'b70', 'b90'] },
+  'geely': { arabic: 'جيلي', models: ['coolray', 'emgrand', 'azkarra', 'okavango', 'starray'] },
+  'chery': { arabic: 'شيري', models: ['tiggo 7', 'tiggo 8', 'arrizo', 'x70', 'x90', 'x95'] },
+  'haval': { arabic: 'هافال', models: ['jolion', 'h6', 'h9', 'dargo', 'big dog'] },
+  'mg': { arabic: 'إم جي', models: ['5', 'zs', 'hs', 'rx5', 'gt', 'marvel r'] },
+  'jac': { arabic: 'جاك', models: ['s2', 's3', 's4', 's7', 'j7', 't6', 't8'] },
+  'changan': { arabic: 'شانجان', models: ['cs35', 'cs55', 'cs75', 'cs85', 'eado', 'uni-t', 'uni-k'] },
+  'great wall': { arabic: 'جريت وول', models: ['poer', 'wingle', 'tank 300', 'tank 500'] },
+};
+
+/**
+ * Extract vehicle make - improved to validate with model context
  */
 function extractVehicleMake(text: string): string | undefined {
-  const makes = [
-    'تويوتا', 'Toyota',
-    'نيسان', 'Nissan',
-    'هيونداي', 'Hyundai',
-    'كيا', 'Kia',
-    'فورد', 'Ford',
-    'شفروليه', 'Chevrolet',
-    'هوندا', 'Honda',
-    'ميتسوبيشي', 'Mitsubishi',
-    'مازدا', 'Mazda',
-    'بي إم دبليو', 'BMW',
-    'مرسيدس', 'Mercedes',
-    'فولكس واجن', 'Volkswagen',
-    'أودي', 'Audi',
-    'لكزس', 'Lexus',
-  ];
-
   const lowerText = text.toLowerCase();
 
-  for (const make of makes) {
-    const lowerMake = make.toLowerCase();
-    if (lowerText.includes(lowerMake)) {
-      // Return Arabic name if available
-      const arabicMap: { [key: string]: string } = {
-        'toyota': 'تويوتا',
-        'nissan': 'نيسان',
-        'hyundai': 'هيونداي',
-        'kia': 'كيا',
-        'ford': 'فورد',
-        'chevrolet': 'شفروليه',
-        'honda': 'هوندا',
-        'mitsubishi': 'ميتسوبيشي',
-        'mazda': 'مازدا',
-        'bmw': 'بي إم دبليو',
-        'mercedes': 'مرسيدس',
-        'volkswagen': 'فولكس واجن',
-        'audi': 'أودي',
-        'lexus': 'لكزس',
-      };
+  // First, try to find make-model combinations to ensure accuracy
+  for (const [make, info] of Object.entries(VEHICLE_DATABASE)) {
+    // Check if make exists in text
+    if (!lowerText.includes(make) && !text.includes(info.arabic)) {
+      continue;
+    }
 
-      return arabicMap[lowerMake] || make;
+    // If make is found, check if any of its models are also present
+    const hasModel = info.models.some(model => lowerText.includes(model.toLowerCase()));
+    
+    if (hasModel) {
+      // Validated: both make and one of its models found
+      console.log(`[Vehicle Extractor] Validated: ${make} with matching model`);
+      return info.arabic;
+    }
+  }
+
+  // Second pass: just find any make without validation (less reliable)
+  for (const [make, info] of Object.entries(VEHICLE_DATABASE)) {
+    if (lowerText.includes(make) || text.includes(info.arabic)) {
+      console.log(`[Vehicle Extractor] Found make without model validation: ${make}`);
+      return info.arabic;
     }
   }
 
@@ -248,42 +378,87 @@ function extractVehicleMake(text: string): string | undefined {
 }
 
 /**
- * Extract vehicle model
+ * Extract vehicle model - improved to work with VEHICLE_DATABASE
  */
 function extractVehicleModel(text: string): string | undefined {
-  const models = [
-    'هيلكس', 'Hilux',
-    'كورولا', 'Corolla',
-    'كامري', 'Camry',
-    'يارس', 'Yaris',
-    'سنترا', 'Sentra',
-    'ألتيما', 'Altima',
-    'باترول', 'Patrol',
-    'لاند كروزر', 'Land Cruiser',
-    'فورتشنر', 'Fortuner',
-    'راڤ 4', 'RAV4',
-    'CR-V', 'CRV',
-    'أكورد', 'Accord',
-    'سيفيك', 'Civic',
-    'إكسنت', 'Accent',
-    'إلنترا', 'Elantra',
-    'سوناتا', 'Sonata',
-    'سبورتيج', 'Sportage',
-    'سيراتو', 'Cerato',
-    'سولار', 'Solar',
-    'توسان', 'Tucson',
-    'إمبالا', 'Impala',
-    'كابتيفا', 'Captiva',
-    'F-150', 'F150',
-    'رنج روفر', 'Range Rover',
-    'إيفوك', 'Evoque',
-  ];
-
   const lowerText = text.toLowerCase();
+  
+  // Extended models list with Arabic names
+  const modelsWithArabic: { [key: string]: string } = {
+    'hilux': 'هيلكس',
+    'corolla': 'كورولا',
+    'camry': 'كامري',
+    'yaris': 'يارس',
+    'sentra': 'سنترا',
+    'altima': 'ألتيما',
+    'patrol': 'باترول',
+    'land cruiser': 'لاند كروزر',
+    'fortuner': 'فورتشنر',
+    'rav4': 'راف فور',
+    'cr-v': 'سي آر في',
+    'crv': 'سي آر في',
+    'accord': 'أكورد',
+    'civic': 'سيفيك',
+    'accent': 'أكسنت',
+    'elantra': 'إلنترا',
+    'sonata': 'سوناتا',
+    'sportage': 'سبورتاج',
+    'cerato': 'سيراتو',
+    'tucson': 'توسان',
+    'impala': 'إمبالا',
+    'captiva': 'كابتيفا',
+    'f-150': 'إف-150',
+    'f150': 'إف-150',
+    't77': 'تي77',
+    't99': 'تي99',
+    't55': 'تي55',
+    't33': 'تي33',
+    'x70': 'إكس70',
+    'x90': 'إكس90',
+    'jolion': 'جوليون',
+    'h6': 'إتش6',
+    'h9': 'إتش9',
+    'coolray': 'كول راي',
+    'emgrand': 'إمجراند',
+    'prado': 'برادو',
+    'sunny': 'صني',
+    'kicks': 'كيكس',
+    'creta': 'كريتا',
+    'seltos': 'سيلتوس',
+    'sorento': 'سورينتو',
+    'santa fe': 'سانتا في',
+    'city': 'سيتي',
+    'pilot': 'بايلوت',
+    'explorer': 'إكسبلورر',
+    'ranger': 'رينجر',
+    'tahoe': 'تاهو',
+    'silverado': 'سلفرادو',
+    'pajero': 'باجيرو',
+    'outlander': 'أوتلاندر',
+    'attrage': 'أتراج',
+  };
 
-  for (const model of models) {
-    if (lowerText.includes(model.toLowerCase())) {
-      return model;
+  // Check for model keywords first
+  const modelKeywordPatterns = [
+    /(?:Model|الموديل|النوع)[:\s]*([A-Za-z0-9\s\-]+)/i,
+  ];
+  
+  for (const pattern of modelKeywordPatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      const modelName = match[1].trim();
+      if (modelName.length > 1 && modelName.length < 30) {
+        console.log(`[Vehicle Extractor] Found model from keyword: ${modelName}`);
+        return modelName;
+      }
+    }
+  }
+
+  // Search for known models
+  for (const [english, arabic] of Object.entries(modelsWithArabic)) {
+    if (lowerText.includes(english) || text.includes(arabic)) {
+      console.log(`[Vehicle Extractor] Found model: ${english}`);
+      return english.charAt(0).toUpperCase() + english.slice(1);
     }
   }
 
@@ -317,16 +492,63 @@ function extractPlateNumber(text: string): string | undefined {
     /رقم\s*اللوحة[:\s]*([A-Z0-9\s\-]+)/i,
     /اللوحة[:\s]*([A-Z0-9\s\-]+)/i,
     /لوحة\s*المركبة[:\s]*([A-Z0-9\s\-]+)/i,
-    // Qatar plate format: 6-7 digits
-    /\b(\d{6,7})\b/,
+    // English patterns
+    /Reg\.?\s*(?:No?|N)[:\s]*(\d{4,7})/i,
+    /Registration\s*(?:No?|N)[:\s]*(\d{4,7})/i,
+    /Plate\s*(?:No?|N)?[:\s]*(\d{4,7})/i,
+    // Specific keyword followed by number
+    /(?:اللوحة|لوحة)[:\s]*(\d{4,7})/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
       const plate = match[1].replace(/[\s\-]/g, '');
-      if (/^\d{6,7}$/.test(plate)) {
-        return plate;
+      // Qatar plates can be 4-7 digits, but exclude years (2000-2030)
+      if (/^\d{4,7}$/.test(plate)) {
+        const asNumber = parseInt(plate);
+        // Exclude values that look like years
+        if (asNumber < 2000 || asNumber > 2030) {
+          return plate;
+        }
+      }
+    }
+  }
+
+  // Second pass: look for plate-like numbers that aren't years
+  const allNumbers = text.match(/\b(\d{4,7})\b/g) || [];
+  for (const numStr of allNumbers) {
+    const num = parseInt(numStr);
+    // Skip if it looks like a year (2000-2030)
+    if (num >= 2000 && num <= 2030) continue;
+    // Skip if it's the Qatari ID
+    if (numStr.length === 11) continue;
+    // Valid plate number
+    return numStr;
+  }
+
+  return undefined;
+}
+
+/**
+ * Extract contract number
+ */
+function extractContractNumber(text: string): string | undefined {
+  const patterns = [
+    /رقم\s*العقد[:\s]*([A-Z0-9\-\s]+)/i,
+    /العقد\s*رقم[:\s]*([A-Z0-9\-\s]+)/i,
+    // English patterns
+    /Agreement\s*(?:No?|N)[:\s]*([A-Z0-9\-\s]+)/i,
+    /Contract\s*(?:No?|N)[:\s]*([A-Z0-9\-\s]+)/i,
+    /(?:LTO|CON|AGR)[:\s\-]*(\d{4}[\-\s]*\d+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      const contractNum = match[1].trim().replace(/\s+/g, ' ');
+      if (contractNum.length > 2 && contractNum.length < 50) {
+        return contractNum;
       }
     }
   }
@@ -342,6 +564,13 @@ function extractContractDate(text: string): string | undefined {
     /تاريخ\s*العقد[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
     /عقد\s*بتاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
     /التاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /اعتبارا\s*من\s*تاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /من\s*تاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    // English patterns
+    /effective\s*on[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /dated?[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    // Generic date pattern at start
+    /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/,
   ];
 
   for (const pattern of patterns) {
@@ -355,21 +584,84 @@ function extractContractDate(text: string): string | undefined {
 }
 
 /**
+ * Flexible date pattern that matches multiple formats
+ */
+const DATE_PATTERN = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/g;
+
+/**
+ * Parse date string to standardized format (DD/MM/YYYY)
+ */
+function parseDate(dateStr: string): string | undefined {
+  const match = dateStr.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+  if (!match) return undefined;
+  
+  let [, day, month, year] = match;
+  
+  // Handle 2-digit years
+  if (year.length === 2) {
+    year = parseInt(year) > 50 ? `19${year}` : `20${year}`;
+  }
+  
+  // Validate
+  const dayNum = parseInt(day);
+  const monthNum = parseInt(month);
+  const yearNum = parseInt(year);
+  
+  if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1990 || yearNum > 2050) {
+    return undefined;
+  }
+  
+  return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+}
+
+/**
+ * Extract all dates from text
+ */
+function extractAllDates(text: string): string[] {
+  const dates: string[] = [];
+  let match;
+  
+  while ((match = DATE_PATTERN.exec(text)) !== null) {
+    const parsed = parseDate(match[0]);
+    if (parsed) {
+      dates.push(parsed);
+    }
+  }
+  
+  return dates;
+}
+
+/**
  * Extract start date
  */
 function extractStartDate(text: string): string | undefined {
   const patterns = [
-    /تاريخ\s*البداية[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-    /من\s*تاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-    /ابتداء\s*من[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-    /يبدأ\s*من[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /تاريخ\s*البداية[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /من\s*تاريخ[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /ابتداء\s*من[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /يبدأ\s*من[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /اعتبارا\s*من[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    // English patterns
+    /(?:Start|From|Effective)\s*(?:Date)?[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /(?:Commencing|Beginning)[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
-      return match[1];
+      const parsed = parseDate(match[1]);
+      if (parsed) {
+        console.log(`[Date Extractor] Found start date: ${parsed}`);
+        return parsed;
+      }
     }
+  }
+
+  // Fallback: if we found dates, assume first date is start date
+  const allDates = extractAllDates(text);
+  if (allDates.length > 0) {
+    console.log(`[Date Extractor] Using first date as start: ${allDates[0]}`);
+    return allDates[0];
   }
 
   return undefined;
@@ -380,17 +672,32 @@ function extractStartDate(text: string): string | undefined {
  */
 function extractEndDate(text: string): string | undefined {
   const patterns = [
-    /تاريخ\s*النهاية[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-    /إلى\s*تاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-    /وينتهي\s*بتاريخ[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
-    /حتى[:\s]*(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /تاريخ\s*النهاية[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /إلى\s*تاريخ[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /وينتهي\s*بتاريخ[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /حتى[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /ينتهي\s*في[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    // English patterns
+    /(?:End|To|Until|Expiry)\s*(?:Date)?[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
+    /(?:Ending|Termination)[:\s]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
-      return match[1];
+      const parsed = parseDate(match[1]);
+      if (parsed) {
+        console.log(`[Date Extractor] Found end date: ${parsed}`);
+        return parsed;
+      }
     }
+  }
+
+  // Fallback: if we found multiple dates, assume second date is end date
+  const allDates = extractAllDates(text);
+  if (allDates.length > 1) {
+    console.log(`[Date Extractor] Using second date as end: ${allDates[1]}`);
+    return allDates[1];
   }
 
   return undefined;
@@ -433,14 +740,22 @@ function extractMonthlyAmount(text: string): number | undefined {
     /شهريا[:\s]*[\d,]+\.?\d*/i,
     /ريال\s*شهريا[:\s]*[\d,]+\.?\d*/i,
     /ر\.ق\s*شهريا[:\s]*[\d,]+\.?\d*/i,
+    // English patterns
+    /monthly\s*rental[:\s]*(?:QAR\s*)?([\d,]+\.?\d*)/i,
+    /QAR\s*([\d,]+\.?\d*)\s*(?:monthly|شهري)/i,
+    /rent[:\s]*(?:QAR\s*)?([\d,]+\.?\d*)/i,
+    // Direct QAR amount pattern
+    /QAR\s*([\d,]+\.?\d*)/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    if (match && match[0]) {
-      const amount = match[0].match(/[\d,]+\.?\d*/);
-      if (amount) {
-        const parsed = parseFloat(amount[0].replace(/,/g, ''));
+    if (match) {
+      // Try to get the captured group first, then fall back to the whole match
+      const amountStr = match[1] || match[0];
+      const amountMatch = amountStr.match(/[\d,]+\.?\d*/);
+      if (amountMatch) {
+        const parsed = parseFloat(amountMatch[0].replace(/,/g, ''));
         if (!isNaN(parsed) && parsed > 0 && parsed < 100000) {
           return parsed;
         }

@@ -26,11 +26,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
-  extractTextFromPDF,
+  extractTextFromPDFSmart,
   convertPDFToImage,
   needsOCR,
 } from '@/services/contractPDFExtractor';
 import { extractContractFields } from '@/services/contractDataExtractor';
+import { hybridOCR, HybridOCRProgress } from '@/services/hybridOCRService';
 import { matchCustomer, CustomerMatch } from '@/services/contractCustomerMatcher';
 import {
   Upload,
@@ -134,6 +135,10 @@ interface ContractPDFImportRedesignedProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
+  ocrConfig?: {
+    apiKey?: string;
+    supabaseUrl?: string;
+  };
 }
 
 // ============================================================================
@@ -144,6 +149,7 @@ export const ContractPDFImportRedesigned: React.FC<ContractPDFImportRedesignedPr
   open,
   onOpenChange,
   onComplete,
+  ocrConfig,
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -180,8 +186,37 @@ export const ContractPDFImportRedesigned: React.FC<ContractPDFImportRedesignedPr
         setProcessingProgress(Math.round(((i) / uploadedFiles.length) * 100));
 
         try {
-          // Extract text from PDF
-          const { rawText } = await extractTextFromPDF(file);
+          // 🚀 Use Hybrid OCR System for maximum speed
+          const stageMessages: Record<string, string> = {
+            'direct_extraction': 'جاري استخراج النص المباشر...',
+            'tesseract': 'جاري التعرف على النص (محلي)...',
+            'preprocessing': 'جاري تحسين الصور...',
+            'ocr': 'جاري معالجة OCR...',
+            'deepseek': 'جاري الاستخراج بالذكاء الاصطناعي...',
+            'complete': 'اكتملت المعالجة',
+          };
+
+          const ocrResult = await hybridOCR(file, {
+            minConfidence: 0.5,
+            maxOCRPages: 3,
+            enableDeepSeek: true,
+            onProgress: (progress: HybridOCRProgress) => {
+              console.log(`[Hybrid OCR] Tier ${progress.tier}: ${progress.stage} (${progress.percent}%)`);
+              setProcessingStatus(`${stageMessages[progress.stage] || progress.message} (${file.name})`);
+              // Update progress for current file
+              const fileProgress = Math.round(((i) / uploadedFiles.length) * 100);
+              const stepProgress = Math.round(progress.percent * 0.8 / uploadedFiles.length);
+              setProcessingProgress(fileProgress + stepProgress);
+            },
+          });
+
+          const rawText = ocrResult.text;
+          const method = ocrResult.method;
+
+          console.log(`🚀 Hybrid OCR: Tier ${ocrResult.tier}, Method: ${method.toUpperCase()}`);
+          console.log(`⏱️ Processing time: ${ocrResult.processingTimeMs}ms`);
+          console.log(`📝 Extracted text length: ${rawText.length} characters`);
+          console.log(`📊 Confidence: ${Math.round(ocrResult.confidence * 100)}%`);
 
           // Extract contract fields
           const fields = extractContractFields(rawText);

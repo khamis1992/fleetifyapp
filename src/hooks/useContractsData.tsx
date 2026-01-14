@@ -78,7 +78,7 @@ export const useContractsData = (filters: any = {}) => {
         const companyId = filter?.company_id || null;
         
         // التحقق من صحة companyId
-        if (!companyId) {
+        if (!companyId || companyId === '__loading__') {
           console.warn('⚠️ [CONTRACTS_STATS] No company ID available, skipping stats fetch');
           return [];
         }
@@ -107,7 +107,7 @@ export const useContractsData = (filters: any = {}) => {
         return [];
       }
     },
-    enabled: !!user?.id && !!filter?.company_id,
+    enabled: !!user?.id && !!filter?.company_id && filter?.company_id !== '__loading__',
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
     retry: 1,
   });
@@ -129,8 +129,8 @@ export const useContractsData = (filters: any = {}) => {
         const companyId = filter?.company_id || null;
         
         // التحقق من صحة companyId
-        if (!companyId) {
-          console.warn('⚠️ [CONTRACTS_QUERY] No company ID available');
+        if (!companyId || companyId === '__loading__') {
+          console.warn('⚠️ [CONTRACTS_QUERY] No company ID available or still loading');
           return [];
         }
 
@@ -361,7 +361,7 @@ export const useContractsData = (filters: any = {}) => {
         return [];
       }
     },
-    enabled: !!user?.id && !!filter?.company_id,
+    enabled: !!user?.id && !!filter?.company_id && filter?.company_id !== '__loading__',
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     staleTime: 30 * 1000, // 30 ثانية - نفس صفحة العملاء

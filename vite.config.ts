@@ -67,6 +67,11 @@ export default defineConfig(({ mode }) => ({
     // Performance optimizations
     target: 'esnext',
     minify: 'terser',
+    // Web Worker configuration - bundle as separate files
+    worker: {
+      format: 'es',
+      plugins: [],
+    },
     terserOptions: {
       compress: {
         drop_console: mode === 'production',

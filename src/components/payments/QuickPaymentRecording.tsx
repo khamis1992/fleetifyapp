@@ -339,6 +339,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         `)
         .eq('customer_id', customer.id)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('due_date', { ascending: true });
 
       if (error) throw error;
@@ -770,6 +771,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         `)
         .eq('customer_id', currentCustomer.id)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('due_date', { ascending: true });
 
       if (error) throw error;

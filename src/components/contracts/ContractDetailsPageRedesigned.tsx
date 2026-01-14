@@ -82,7 +82,7 @@ import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
 import { ContractRenewalDialog } from './ContractRenewalDialog';
-import { ContractAmendmentForm } from './ContractAmendmentForm';
+import { SimpleContractWizard } from './SimpleContractWizard';
 import { ContractPrintDialog } from './ContractPrintDialog';
 import { FinancialDashboard } from './FinancialDashboard';
 import { ContractAlerts } from './ContractAlerts';
@@ -726,7 +726,7 @@ const ContractDetailsPageRedesigned = () => {
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
-  const [isAmendmentDialogOpen, setIsAmendmentDialogOpen] = useState(false);
+  const [isEditWizardOpen, setIsEditWizardOpen] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [isStatusManagementOpen, setIsStatusManagementOpen] = useState(false);
   const [isConvertToLegalOpen, setIsConvertToLegalOpen] = useState(false);
@@ -911,7 +911,7 @@ const ContractDetailsPageRedesigned = () => {
   }, []);
 
   const handleAmend = useCallback(() => {
-    setIsAmendmentDialogOpen(true);
+    setIsEditWizardOpen(true);
   }, []);
 
   const handleTerminate = useCallback(() => {
@@ -1350,14 +1350,16 @@ const ContractDetailsPageRedesigned = () => {
       <ContractRenewalDialog open={isRenewalDialogOpen} onOpenChange={setIsRenewalDialogOpen} contract={contract} />
 
       {contract && (
-        <ContractAmendmentForm
-          open={isAmendmentDialogOpen}
-          onOpenChange={setIsAmendmentDialogOpen}
-          contract={contract}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['contract-details'] });
-            setIsAmendmentDialogOpen(false);
+        <SimpleContractWizard
+          open={isEditWizardOpen}
+          onOpenChange={(open) => {
+            setIsEditWizardOpen(open);
+            if (!open) {
+              queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+            }
           }}
+          editContract={contract}
+          key={contract?.id || 'wizard-closed'}
         />
       )}
 
