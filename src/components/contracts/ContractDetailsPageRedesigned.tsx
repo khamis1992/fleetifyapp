@@ -90,6 +90,7 @@ import { TimelineView } from './TimelineView';
 import { QuickActionsButton } from './QuickActionsButton';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { useContractPaymentSchedules } from '@/hooks/usePaymentSchedules';
+import { ContractPaymentsTab } from './ContractPaymentsTab';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -376,6 +377,8 @@ const FinancialTab = ({
   onPayInvoice,
   onPreviewInvoice,
   onCreateInvoice,
+  onCancelInvoice,
+  isCancellingInvoice,
 }: {
   contract: Contract;
   invoices: Invoice[];
@@ -387,6 +390,8 @@ const FinancialTab = ({
   onPayInvoice: (invoice: Invoice) => void;
   onPreviewInvoice: (invoice: Invoice) => void;
   onCreateInvoice: () => void;
+  onCancelInvoice: (invoice: Invoice) => void;
+  isCancellingInvoice: boolean;
 }) => (
   <Tabs defaultValue="overview" className="w-full">
     <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
@@ -410,6 +415,13 @@ const FinancialTab = ({
       >
         <Wallet className="w-4 h-4" />
         جدول الدفعات
+      </TabsTrigger>
+      <TabsTrigger
+        value="payments"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+      >
+        <CreditCard className="w-4 h-4" />
+        الدفعات
       </TabsTrigger>
     </TabsList>
 
@@ -439,6 +451,7 @@ const FinancialTab = ({
                   <TableHead>رقم الفاتورة</TableHead>
                   <TableHead>التاريخ</TableHead>
                   <TableHead>المبلغ</TableHead>
+                  <TableHead>المبلغ المتبقي</TableHead>
                   <TableHead>الحالة</TableHead>
                   <TableHead>الإجراءات</TableHead>
                 </TableRow>
@@ -449,6 +462,9 @@ const FinancialTab = ({
                     <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                     <TableCell>{invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</TableCell>
                     <TableCell>{formatCurrency(invoice.total_amount || 0)}</TableCell>
+                    <TableCell className={invoice.balance_due && invoice.balance_due > 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
+                      {formatCurrency(invoice.balance_due || 0)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
                         {invoice.payment_status === 'paid' ? 'مسدد' : invoice.payment_status === 'partial' ? 'جزئي' : 'مستحق'}
@@ -463,6 +479,17 @@ const FinancialTab = ({
                           <Button size="sm" onClick={() => onPayInvoice(invoice)} className="bg-gradient-to-r from-[#40E0D0] to-[#20B2AA]">
                             <DollarSign className="w-4 h-4 ml-2" />
                             دفع
+                          </Button>
+                        )}
+                        {invoice.status !== 'cancelled' && (
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            onClick={() => onCancelInvoice(invoice)}
+                            disabled={isCancellingInvoice}
+                          >
+                            <XCircle className="w-4 h-4 ml-1" />
+                            إلغاء
                           </Button>
                         )}
                       </div>
@@ -518,7 +545,9 @@ const FinancialTab = ({
                             ? 'default'
                             : schedule.status === 'overdue'
                               ? 'destructive'
-                              : 'secondary'
+                              : schedule.status === 'partially_paid'
+                                ? 'outline'
+                                : 'secondary'
                         }
                       >
                         {schedule.status === 'paid'
@@ -527,7 +556,9 @@ const FinancialTab = ({
                             ? 'متأخر'
                             : schedule.status === 'pending'
                               ? 'معلق'
-                              : schedule.status}
+                              : schedule.status === 'partially_paid'
+                                ? 'جزئي'
+                                : schedule.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -542,6 +573,15 @@ const FinancialTab = ({
           )}
         </CardContent>
       </Card>
+    </TabsContent>
+
+    <TabsContent value="payments" className="mt-6">
+      <ContractPaymentsTab
+        contractId={contractId}
+        companyId={companyId}
+        invoiceIds={invoices.map(inv => inv.id)}
+        formatCurrency={formatCurrency}
+      />
     </TabsContent>
   </Tabs>
 );
@@ -737,6 +777,9 @@ const ContractDetailsPageRedesigned = () => {
   const [isRemoveLegalDialogOpen, setIsRemoveLegalDialogOpen] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
   const [relatedDataCounts, setRelatedDataCounts] = useState<{invoices: number; payments: number; violations: number} | null>(null);
+  const [isCancellingInvoice, setIsCancellingInvoice] = useState(false);
+  const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
+  const [isCancelInvoiceDialogOpen, setIsCancelInvoiceDialogOpen] = useState(false);
 
   // Fetch contract data
   const { data: contract, isLoading, error } = useQuery({
@@ -796,7 +839,7 @@ const ContractDetailsPageRedesigned = () => {
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
         .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
-        .order('due_date', { ascending: false });
+        .order('due_date', { ascending: true });  // ترتيب من الأقدم إلى الأحدث
 
       if (error) throw error;
       return data as Invoice[];
@@ -905,6 +948,50 @@ const ContractDetailsPageRedesigned = () => {
     setSelectedInvoice(invoice);
     setIsPreviewDialogOpen(true);
   }, []);
+
+  const handleCancelInvoice = useCallback((invoice: Invoice) => {
+    setInvoiceToCancel(invoice);
+    setIsCancelInvoiceDialogOpen(true);
+  }, []);
+
+  const confirmCancelInvoice = useCallback(async () => {
+    if (!invoiceToCancel) return;
+    
+    setIsCancellingInvoice(true);
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          status: 'cancelled',
+          payment_status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoiceToCancel.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم إلغاء الفاتورة',
+        description: `تم إلغاء الفاتورة ${invoiceToCancel.invoice_number} بنجاح`,
+      });
+
+      // Refresh invoices
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
+    } catch (error) {
+      console.error('Error cancelling invoice:', error);
+      toast({
+        title: 'خطأ في إلغاء الفاتورة',
+        description: 'حدث خطأ أثناء إلغاء الفاتورة',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCancellingInvoice(false);
+      setIsCancelInvoiceDialogOpen(false);
+      setInvoiceToCancel(null);
+    }
+  }, [invoiceToCancel, queryClient, toast]);
 
   const handleRenew = useCallback(() => {
     setIsRenewalDialogOpen(true);
@@ -1292,6 +1379,8 @@ const ContractDetailsPageRedesigned = () => {
                   onPayInvoice={handleInvoicePay}
                   onPreviewInvoice={handleInvoicePreview}
                   onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
+                  onCancelInvoice={handleCancelInvoice}
+                  isCancellingInvoice={isCancellingInvoice}
                 />
               </TabsContent>
 
@@ -1470,6 +1559,43 @@ const ContractDetailsPageRedesigned = () => {
                 </>
               ) : (
                 'نعم، إزالة الإجراء القانوني'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Invoice Dialog */}
+      <AlertDialog open={isCancelInvoiceDialogOpen} onOpenChange={setIsCancelInvoiceDialogOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">إلغاء الفاتورة</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div className="space-y-4">
+                <p>هل أنت متأكد من إلغاء الفاتورة <strong>{invoiceToCancel?.invoice_number}</strong>؟</p>
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    سيتم إلغاء الفاتورة ولن تظهر في التقارير المالية. هذا الإجراء لا يمكن التراجع عنه.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelInvoice}
+              disabled={isCancellingInvoice}
+              className="bg-red-600 hover:bg-red-700 rounded-xl"
+            >
+              {isCancellingInvoice ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  جاري الإلغاء...
+                </>
+              ) : (
+                'نعم، إلغاء الفاتورة'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

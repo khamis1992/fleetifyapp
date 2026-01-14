@@ -1,16 +1,17 @@
 /**
- * DeepSeek OCR Edge Function
+ * DeepSeek VL2 OCR Edge Function
+ *
+ * Uses DeepSeek VL2 Vision API for document text extraction.
+ * Unlike OpenAI, DeepSeek does NOT refuse to process personal documents!
  * 
- * High-accuracy OCR using DeepSeek Vision API
- * Features:
- * - 97% accuracy for Arabic text
- * - Handles complex layouts
- * - Optimized for contracts and documents
- * 
- * Note: You'll need a DeepSeek API key from https://platform.deepseek.com/
- * If DeepSeek is unavailable, falls back to OpenAI Vision
+ * Benefits:
+ * - 90% cheaper than OpenAI
+ * - No content policy refusals for documents
+ * - High accuracy for Arabic text
+ * - OpenAI-compatible API format
  */
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -19,241 +20,305 @@ const corsHeaders = {
 };
 
 interface OCRRequest {
-  images: string[];
-  language?: string;
+  imageDataUrls: string[];
+  language?: 'ar' | 'en' | 'both';
+  detail?: 'low' | 'high' | 'auto';
+  provider?: 'deepseek' | 'qwen'; // Allow switching between providers
 }
 
 interface OCRResponse {
   success: boolean;
-  text: string;
+  text?: string;
   confidence: number;
-  method: 'deepseek' | 'openai';
+  pagesProcessed: number;
+  method: 'deepseek' | 'qwen';
   error?: string;
-  processingTimeMs?: number;
 }
 
-// DeepSeek API endpoint
+// DeepSeek VL2 API endpoint (OpenAI-compatible)
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
-// OpenAI API endpoint (fallback)
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+// Qwen VL API endpoint (via Dashscope)
+const QWEN_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
-/**
- * Extract text using DeepSeek Vision
- */
-async function extractWithDeepSeek(
-  images: string[],
-  language: string
-): Promise<{ text: string; confidence: number }> {
-  const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-  
-  if (!apiKey) {
-    throw new Error('DEEPSEEK_API_KEY not configured');
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
 
-  // Prepare image content
-  const imageContent = images.slice(0, 3).map(img => ({
-    type: 'image_url',
-    image_url: {
-      url: img,
-      detail: 'high',
-    },
-  }));
+  try {
+    const { imageDataUrls, language = 'ar', detail = 'high', provider = 'deepseek' }: OCRRequest = await req.json();
 
-  const prompt = language === 'ara+eng' || language === 'ar'
-    ? `أنت خبير في استخراج النصوص من المستندات. استخرج كل النص المرئي من هذه الصورة/الصور بالضبط كما هو مكتوب.
+    console.log('📄 DeepSeek/Qwen OCR Request received:', {
+      pageCount: imageDataUrls?.length || 0,
+      language,
+      detail,
+      provider,
+    });
 
-تعليمات مهمة:
-1. استخرج كل النص (العربي والإنجليزي)
-2. حافظ على تنسيق الجداول والأرقام
-3. لا تفسر أو تلخص - فقط انسخ النص
-4. إذا كان هناك أرقام (هاتف، هوية، لوحة سيارة) اكتبها بدقة
+    // Validate input
+    if (!imageDataUrls || !Array.isArray(imageDataUrls) || imageDataUrls.length === 0) {
+      throw new Error('No images provided for OCR processing');
+    }
 
-أعد النص المستخرج فقط، بدون أي شرح أو تعليق.`
-    : `You are an expert document text extractor. Extract all visible text from these image(s) exactly as written.
+    if (imageDataUrls.length > 10) {
+      throw new Error('Too many pages - maximum 10 pages per request');
+    }
 
-Important:
-1. Extract all text (Arabic and English)
-2. Preserve table formatting and numbers
-3. Don't interpret or summarize - just copy the text
-4. Write numbers (phone, ID, plate) accurately
+    // Get API key based on provider
+    let apiKey: string | undefined;
+    let apiUrl: string;
+    let modelName: string;
 
-Return only the extracted text, no explanation or comments.`;
+    if (provider === 'qwen') {
+      apiKey = Deno.env.get('QWEN_API_KEY') || Deno.env.get('DASHSCOPE_API_KEY');
+      apiUrl = QWEN_API_URL;
+      modelName = 'qwen-vl-max'; // or qwen-vl-plus
+    } else {
+      // Default to DeepSeek
+      apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+      apiUrl = DEEPSEEK_API_URL;
+      modelName = 'deepseek-vl2'; // DeepSeek Vision model
+    }
 
-  const response = await fetch(DEEPSEEK_API_URL, {
+    if (!apiKey) {
+      console.error(`${provider} API key not configured`);
+      throw new Error(`${provider} API key not configured. Please set ${provider === 'qwen' ? 'QWEN_API_KEY' : 'DEEPSEEK_API_KEY'} in Supabase environment.`);
+    }
+
+    console.log(`🔍 Processing ${imageDataUrls.length} page(s) with ${provider}...`);
+
+    // Extract text from all pages
+    const pageTexts: string[] = [];
+
+    for (let i = 0; i < imageDataUrls.length; i++) {
+      const imageUrl = imageDataUrls[i];
+      console.log(`📖 Processing page ${i + 1}/${imageDataUrls.length}...`);
+
+      try {
+        const pageText = await extractTextFromImage(
+          imageUrl,
+          apiKey,
+          apiUrl,
+          modelName,
+          language,
+          detail,
+          provider
+        );
+
+        if (pageText && pageText.trim().length > 0) {
+          pageTexts.push(pageText.trim());
+          console.log(`✅ Page ${i + 1}: ${pageText.trim().length} characters extracted`);
+        } else {
+          console.warn(`⚠️  Page ${i + 1}: No text extracted`);
+        }
+      } catch (error) {
+        console.error(`❌ Error processing page ${i + 1}:`, error);
+        pageTexts.push(`[Error processing page ${i + 1}: ${error}]`);
+      }
+    }
+
+    // Combine all page texts
+    const fullText = pageTexts.join('\n\n--- صفحة جديدة ---\n\n');
+
+    if (!fullText || fullText.trim().length === 0) {
+      throw new Error('No text could be extracted from any pages');
+    }
+
+    // Calculate confidence score
+    const confidence = calculateConfidence(fullText, language);
+
+    console.log(`✅ OCR complete: ${fullText.length} characters extracted`);
+    console.log(`📊 Confidence score: ${Math.round(confidence * 100)}%`);
+
+    const response: OCRResponse = {
+      success: true,
+      text: fullText,
+      confidence,
+      pagesProcessed: imageDataUrls.length,
+      method: provider as 'deepseek' | 'qwen',
+    };
+
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error: unknown) {
+    console.error('❌ OCR Error:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+    const response: OCRResponse = {
+      success: false,
+      confidence: 0,
+      pagesProcessed: 0,
+      method: 'deepseek',
+      error: errorMessage,
+    };
+
+    return new Response(JSON.stringify(response), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+/**
+ * Extract text from a single image using DeepSeek/Qwen Vision API
+ */
+async function extractTextFromImage(
+  imageUrl: string,
+  apiKey: string,
+  apiUrl: string,
+  modelName: string,
+  language: string,
+  detail: string,
+  provider: string
+): Promise<string> {
+  // Build the prompt for document extraction
+  const systemPrompt = buildSystemPrompt(language);
+  const userPrompt = language === 'ar'
+    ? 'استخرج كل النص من هذه الصورة بدقة عالية. هذا مستند تجاري/عقد. استخرج جميع التفاصيل بما في ذلك الأسماء والأرقام والتواريخ.'
+    : 'Extract all text from this image with high accuracy. This is a business document/contract. Extract all details including names, numbers, and dates.';
+
+  console.log(`📤 Calling ${provider} Vision API...`);
+
+  // Build message content based on provider
+  const imageContent = buildImageContent(imageUrl, detail, provider);
+
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: modelName,
       messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
         {
           role: 'user',
           content: [
-            { type: 'text', text: prompt },
-            ...imageContent,
-          ],
-        },
+            { type: 'text', text: userPrompt },
+            ...imageContent
+          ]
+        }
       ],
-      max_tokens: 4000,
-      temperature: 0.1, // Low temperature for accuracy
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[DeepSeek] API error:', errorText);
-    throw new Error(`DeepSeek API error: ${response.status}`);
-  }
-
-  const result = await response.json();
-  const text = result.choices?.[0]?.message?.content || '';
-
-  // Estimate confidence based on response
-  const confidence = text.length > 100 ? 0.95 : text.length > 50 ? 0.85 : 0.7;
-
-  return { text, confidence };
-}
-
-/**
- * Fallback to OpenAI Vision
- */
-async function extractWithOpenAI(
-  images: string[],
-  language: string
-): Promise<{ text: string; confidence: number }> {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
-  const imageContent = images.slice(0, 3).map(img => ({
-    type: 'image_url',
-    image_url: {
-      url: img,
-      detail: 'high',
-    },
-  }));
-
-  const prompt = language === 'ara+eng' || language === 'ar'
-    ? `استخرج كل النص من هذه الصورة/الصور. أعد النص فقط بدون أي تفسير.`
-    : `Extract all text from these image(s). Return only the text, no explanation.`;
-
-  const response = await fetch(OPENAI_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            ...imageContent,
-          ],
-        },
-      ],
-      max_tokens: 4000,
+      max_tokens: 4096,
       temperature: 0.1,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[OpenAI] API error:', errorText);
-    throw new Error(`OpenAI API error: ${response.status}`);
+    console.error(`${provider} API error:`, response.status, errorText);
+    throw new Error(`${provider} Vision API error: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json();
-  const text = result.choices?.[0]?.message?.content || '';
-  const confidence = text.length > 100 ? 0.92 : text.length > 50 ? 0.82 : 0.7;
 
-  return { text, confidence };
+  if (!result.choices || result.choices.length === 0) {
+    throw new Error(`No response from ${provider} Vision API`);
+  }
+
+  const extractedText = result.choices[0].message.content || '';
+
+  console.log(`📥 ${provider} response: ${extractedText.length} characters`);
+
+  return extractedText;
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+/**
+ * Build image content based on provider format
+ */
+function buildImageContent(imageUrl: string, detail: string, provider: string): any[] {
+  // Both DeepSeek and Qwen use OpenAI-compatible format
+  return [{
+    type: 'image_url',
+    image_url: {
+      url: imageUrl,
+      detail: detail
+    }
+  }];
+}
+
+/**
+ * Build system prompt for document extraction
+ */
+function buildSystemPrompt(language: string): string {
+  if (language === 'ar') {
+    return `
+أنت خبير في استخراج النصوص من المستندات والعقود الممسوحة ضوئياً.
+
+مهمتك:
+1. استخرج كل النص من الصورة بدقة 100%
+2. احتفظ بالتنسيق الأصلي (فقرات، جداول، أعمدة)
+3. استخرج جميع:
+   - الأسماء كاملة (عربية وإنجليزية)
+   - أرقام الهوية (QID) والهواتف
+   - التواريخ بجميع صيغها
+   - المبالغ المالية والعملات
+   - أرقام لوحات المركبات
+   - تفاصيل المركبات (الماركة، الموديل، السنة)
+4. لا تضف أي تفسيرات - فقط النص الخام
+5. إذا كان النص غير واضح، ضع [غير واضح]
+
+أخرج النص الخام فقط.
+`;
   }
 
-  const startTime = Date.now();
+  return `
+You are an expert in extracting text from scanned documents and contracts.
 
-  try {
-    const { images, language = 'ara+eng' }: OCRRequest = await req.json();
+Your task:
+1. Extract ALL text from the image with 100% accuracy
+2. Preserve original formatting (paragraphs, tables, columns)
+3. Extract all:
+   - Full names (Arabic and English)
+   - ID numbers (QID) and phone numbers
+   - Dates in all formats
+   - Financial amounts and currencies
+   - Vehicle plate numbers
+   - Vehicle details (make, model, year)
+4. Do not add any interpretations - raw text only
+5. If text is unclear, mark with [unclear]
 
-    if (!images || images.length === 0) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'No images provided' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+Output raw text only.
+`;
+}
 
-    console.log(`[DeepSeek OCR] Processing ${images.length} image(s)...`);
+/**
+ * Calculate confidence score based on extracted text quality
+ */
+function calculateConfidence(text: string, language: string): number {
+  if (!text || text.length < 10) return 0;
 
-    let text = '';
-    let confidence = 0;
-    let method: 'deepseek' | 'openai' = 'deepseek';
+  let confidence = 0.4; // Higher base for DeepSeek
 
-    // Try DeepSeek first
-    try {
-      const result = await extractWithDeepSeek(images, language);
-      text = result.text;
-      confidence = result.confidence;
-      method = 'deepseek';
-      console.log(`[DeepSeek OCR] DeepSeek success: ${text.length} chars`);
-    } catch (deepSeekError) {
-      console.warn('[DeepSeek OCR] DeepSeek failed, trying OpenAI fallback...');
-      
-      // Fallback to OpenAI
-      try {
-        const result = await extractWithOpenAI(images, language);
-        text = result.text;
-        confidence = result.confidence;
-        method = 'openai';
-        console.log(`[DeepSeek OCR] OpenAI fallback success: ${text.length} chars`);
-      } catch (openAIError) {
-        console.error('[DeepSeek OCR] Both APIs failed');
-        throw openAIError;
-      }
-    }
-
-    const processingTime = Date.now() - startTime;
-
-    const response: OCRResponse = {
-      success: true,
-      text,
-      confidence,
-      method,
-      processingTimeMs: processingTime,
-    };
-
-    return new Response(
-      JSON.stringify(response),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('[DeepSeek OCR] Error:', error);
-
-    const response: OCRResponse = {
-      success: false,
-      text: '',
-      confidence: 0,
-      method: 'deepseek',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      processingTimeMs: Date.now() - startTime,
-    };
-
-    return new Response(
-      JSON.stringify(response),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  // Arabic text presence
+  if (/[\u0600-\u06FF]/.test(text)) {
+    confidence += 0.2;
+    if (text.length > 200) confidence += 0.1;
   }
-});
+
+  // Numbers (QID, phone)
+  if (/\d{8,}/.test(text)) confidence += 0.1;
+
+  // Dates
+  if (/\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4}/.test(text)) confidence += 0.1;
+
+  // Length bonus
+  if (text.length > 100) confidence += 0.05;
+  if (text.length > 500) confidence += 0.05;
+
+  // Document markers
+  if (/عقد|contract|اتفاقية|agreement|إيجار|rental/i.test(text)) {
+    confidence += 0.1;
+  }
+
+  return Math.min(confidence, 1.0);
+}

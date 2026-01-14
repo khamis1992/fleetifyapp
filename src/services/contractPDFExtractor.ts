@@ -302,7 +302,7 @@ export async function needsOCR(file: File): Promise<boolean> {
  */
 export async function convertAllPagesToImages(
   file: File,
-  scale: number = 2
+  scale: number = 3 // Increased for better OCR quality (especially Arabic text)
 ): Promise<string[]> {
   try {
     const arrayBuffer = await file.arrayBuffer();

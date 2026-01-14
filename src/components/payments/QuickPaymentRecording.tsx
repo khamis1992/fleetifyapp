@@ -423,41 +423,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         paymentMethod
       });
 
-      // ✅ معالجة حالة عدم وجود فواتير - البحث عن فاتورة موجودة أو إنشاء واحدة
+      // ✅ معالجة حالة عدم وجود فواتير - التوزيع التلقائي على الفواتير المستحقة
       if (selectedInvoices.length === 0) {
-        // البحث عن عقد نشط للعميل
-        const { data: activeContracts, error: contractError } = await supabase
-          .from('contracts')
-          .select('id, contract_number, monthly_amount')
-          .eq('customer_id', selectedCustomer.id)
-          .eq('company_id', companyId)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (contractError || !activeContracts || activeContracts.length === 0) {
-          throw new Error('لا يوجد عقد نشط للعميل. يرجى إنشاء فاتورة أولاً.');
-        }
-
-        const activeContract = activeContracts[0];
+        console.log('🔄 لم يتم اختيار فواتير - البحث عن الفواتير المستحقة للتوزيع التلقائي...');
         
-        // ✅ استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
-        const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
-        const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
-          companyId,
-          customerId: selectedCustomer.id,
-          contractId: activeContract.id,
-          contractNumber: activeContract.contract_number,
-          monthlyAmount: activeContract.monthly_amount || amount,
-          paymentDate
-        });
-
-        if (!invoiceResult.success || !invoiceResult.invoice) {
-          throw new Error(invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة');
-        }
-
-        // جلب بيانات الفاتورة الكاملة مع العقد
-        const { data: fullInvoice } = await supabase
+        // البحث عن جميع الفواتير المستحقة للعميل (مرتبة حسب تاريخ الاستحقاق)
+        const { data: unpaidInvoices, error: invoicesError } = await supabase
           .from('invoices')
           .select(`
             *,
@@ -469,12 +440,91 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
               )
             )
           `)
-          .eq('id', invoiceResult.invoice.id)
-          .single();
+          .eq('customer_id', selectedCustomer.id)
+          .eq('company_id', companyId)
+          .in('payment_status', ['unpaid', 'partial'])
+          .neq('status', 'cancelled')
+          .order('due_date', { ascending: true });
 
-        if (fullInvoice) {
-          selectedInvoices.push(fullInvoice as any);
-          console.log('✅ تم العثور على/إنشاء فاتورة:', invoiceResult.invoice.invoice_number, invoiceResult.reason || 'جديدة');
+        if (invoicesError) {
+          console.error('Error fetching unpaid invoices:', invoicesError);
+          throw new Error('خطأ في جلب الفواتير المستحقة');
+        }
+
+        if (unpaidInvoices && unpaidInvoices.length > 0) {
+          // ✅ التوزيع التلقائي: إضافة الفواتير حسب المبلغ المتاح
+          let remainingToDistribute = amount;
+          
+          for (const invoice of unpaidInvoices) {
+            if (remainingToDistribute <= 0) break;
+            
+            const invoiceBalance = (invoice.balance_due ?? invoice.total_amount) || 0;
+            if (invoiceBalance <= 0) continue;
+            
+            selectedInvoices.push(invoice as any);
+            remainingToDistribute -= invoiceBalance;
+          }
+          
+          console.log(`✅ تم اختيار ${selectedInvoices.length} فاتورة للتوزيع التلقائي`);
+          
+          // تحذير إذا كان المبلغ أكبر من إجمالي الفواتير المستحقة
+          if (remainingToDistribute > 0) {
+            console.warn(`⚠️ المبلغ المدفوع (${amount}) أكبر من إجمالي الفواتير المستحقة. الفائض: ${remainingToDistribute}`);
+          }
+        } else {
+          // لا توجد فواتير مستحقة - البحث عن عقد نشط وإنشاء فاتورة جديدة
+          console.log('⚠️ لا توجد فواتير مستحقة - البحث عن عقد نشط...');
+          
+          const { data: activeContracts, error: contractError } = await supabase
+            .from('contracts')
+            .select('id, contract_number, monthly_amount')
+            .eq('customer_id', selectedCustomer.id)
+            .eq('company_id', companyId)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (contractError || !activeContracts || activeContracts.length === 0) {
+            throw new Error('لا يوجد عقد نشط للعميل ولا توجد فواتير مستحقة.');
+          }
+
+          const activeContract = activeContracts[0];
+          
+          // استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
+          const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
+          const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
+            companyId,
+            customerId: selectedCustomer.id,
+            contractId: activeContract.id,
+            contractNumber: activeContract.contract_number,
+            monthlyAmount: activeContract.monthly_amount || amount,
+            paymentDate
+          });
+
+          if (!invoiceResult.success || !invoiceResult.invoice) {
+            throw new Error(invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة');
+          }
+
+          // جلب بيانات الفاتورة الكاملة مع العقد
+          const { data: fullInvoice } = await supabase
+            .from('invoices')
+            .select(`
+              *,
+              contracts:contract_id (
+                contract_number,
+                vehicle_number,
+                vehicles:vehicle_id (
+                  plate_number
+                )
+              )
+            `)
+            .eq('id', invoiceResult.invoice.id)
+            .single();
+
+          if (fullInvoice) {
+            selectedInvoices.push(fullInvoice as any);
+            console.log('✅ تم العثور على/إنشاء فاتورة:', invoiceResult.invoice.invoice_number, invoiceResult.reason || 'جديدة');
+          }
         }
       }
 
@@ -535,19 +585,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         if (!firstPaymentId) firstPaymentId = payment.id;
         paymentsCreated++;
 
-        // تحديث الفاتورة
-        const newBalance = Math.max(0, invoiceBalance - amountToApply);
-        const newPaymentStatus = newBalance <= 0 ? 'paid' : 'partial';
+        // ✅ لا نقوم بتحديث الفاتورة يدوياً - الـ trigger (update_invoice_payment_totals) يفعل ذلك تلقائياً
+        // هذا يمنع التعارض بين التحديث اليدوي والـ trigger
         
-        await supabase
-          .from('invoices')
-          .update({ 
-            payment_status: newPaymentStatus,
-            paid_amount: (invoice.total_amount - newBalance),
-            balance_due: newBalance
-          })
-          .eq('id', invoice.id);
-
         remainingAmount -= amountToApply;
       }
 
@@ -596,6 +636,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         title: 'تم تسجيل الدفعة بنجاح ✅',
         description: `تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} ر.ق لـ ${selectedInvoices.length} فاتورة`,
       });
+
+      // ✅ مسح قائمة الفواتير فوراً لمنع إعادة الاختيار
+      setSelectedInvoices([]);
+      setInvoices([]);
 
     } catch (error: unknown) {
       console.error('Error processing payment:', JSON.stringify(error, null, 2));
@@ -746,6 +790,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
+    setProcessing(true); // ✅ إظهار حالة التحميل أثناء جلب الفواتير
+
+    // ✅ تأخير قصير للسماح بتحديث قاعدة البيانات (الـ triggers)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // إعادة جلب الفواتير للعميل الحالي
     try {
@@ -795,6 +843,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         description: 'حدث خطأ أثناء جلب الفواتير',
         variant: 'destructive',
       });
+    } finally {
+      setProcessing(false); // ✅ إيقاف حالة التحميل
     }
   };
 
@@ -871,8 +921,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                     تحميل السند
                   </Button>
                   
-                  <Button variant="outline" onClick={newPaymentSameCustomer}>
-                    دفعة جديدة (نفس العميل)
+                  <Button variant="outline" onClick={newPaymentSameCustomer} disabled={processing}>
+                    {processing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        جاري التحميل...
+                      </>
+                    ) : (
+                      'دفعة جديدة (نفس العميل)'
+                    )}
                   </Button>
                   <Button variant="ghost" onClick={resetForm}>
                     عميل آخر
