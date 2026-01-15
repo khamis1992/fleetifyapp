@@ -90,6 +90,12 @@ import { QuickActionsButton } from './QuickActionsButton';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { useContractPaymentSchedules, useGeneratePaymentSchedulesFromInvoices } from '@/hooks/usePaymentSchedules';
 import { ContractPaymentsTab } from './ContractPaymentsTab';
+import { ContractPaymentsTabRedesigned } from './ContractPaymentsTabRedesigned';
+import { ContractInvoicesTabRedesigned } from './ContractInvoicesTabRedesigned';
+import { EnhancedPaymentScheduleTabRedesigned } from './EnhancedPaymentScheduleTabRedesigned';
+import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesigned';
+import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
+import { ContractHeaderRedesigned } from './ContractHeaderRedesigned';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -122,120 +128,6 @@ const slideIn = {
     x: 0,
     transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
   }
-};
-
-// ===== Contract Header Component =====
-const ContractHeader = ({
-  contract,
-  onBack,
-  onRefresh,
-  onPrint,
-  onStatusClick,
-}: {
-  contract: Contract;
-  onBack: () => void;
-  onRefresh: () => void;
-  onPrint: () => void;
-  onStatusClick: () => void;
-}) => {
-  const getContractTypeLabel = (type: string) => {
-    switch (type) {
-      case 'rental': return 'عقد إيجار';
-      case 'lease': return 'عقد تأجير';
-      case 'corporate': return 'عقد شركة';
-      default: return type;
-    }
-  };
-
-  const isExpiringSoon = contract.end_date && differenceInDays(new Date(contract.end_date), new Date()) <= 30;
-  const isExpired = contract.end_date && new Date(contract.end_date) < new Date();
-
-  return (
-    <motion.div
-      variants={fadeInUp}
-      className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm"
-    >
-      {/* Cover Gradient */}
-      <div className="h-28 bg-gradient-to-r from-teal-500 via-teal-600 to-cyan-600 relative">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0yaDJ2MmgtMnptMC00djJoMnYyaC0yem0wLTR2MmgydjJoLTJ6bTAgLTR2MmgydjJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-
-        {/* Top Actions */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onRefresh}
-              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onPrint}
-              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
-            >
-              <Printer className="w-4 h-4" />
-            </Button>
-            <QuickActionsButton contract={contract} />
-          </div>
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="px-8 pb-6">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-3xl font-bold text-neutral-900">#{contract.contract_number}</h1>
-              <Badge className={cn(
-                "text-sm px-3 py-1",
-                isExpired ? 'bg-red-100 text-red-700' : isExpiringSoon ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-              )}>
-                {isExpired ? 'منتهي' : isExpiringSoon ? 'ينتهي قريباً' : contract.status === 'active' ? 'نشط' : contract.status}
-              </Badge>
-            </div>
-            <p className="text-neutral-500 text-lg">{getContractTypeLabel(contract.contract_type)}</p>
-          </div>
-
-          <div onClick={onStatusClick} className="cursor-pointer">
-            <ContractStatusBadge status={contract.status} clickable />
-          </div>
-        </div>
-
-        {/* Key Info Bar */}
-        <div className="flex items-center gap-6 text-sm">
-          {contract.start_date && (
-            <div className="flex items-center gap-2 text-neutral-600">
-              <Calendar className="w-4 h-4" />
-              <span>من {format(new Date(contract.start_date), 'dd MMM yyyy', { locale: ar })}</span>
-            </div>
-          )}
-          {contract.end_date && (
-            <div className="flex items-center gap-2 text-neutral-600">
-              <Calendar className="w-4 h-4" />
-              <span>إلى {format(new Date(contract.end_date), 'dd MMM yyyy', { locale: ar })}</span>
-            </div>
-          )}
-          {contract.monthly_amount && (
-            <div className="flex items-center gap-2 text-teal-600 font-semibold">
-              <DollarSign className="w-4 h-4" />
-              <span>{contract.monthly_amount.toLocaleString()} ر.ق / شهرياً</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
 };
 
 // ===== Stats Cards Component =====
@@ -506,11 +398,6 @@ const ContractOverviewTab = ({
   onStatusClick,
   onCustomerClick,
   onVehicleClick,
-  onRenew,
-  onAmend,
-  onTerminate,
-  onConvertToLegal,
-  onRemoveLegal,
 }: {
   contract: Contract;
   customerName: string;
@@ -522,11 +409,6 @@ const ContractOverviewTab = ({
   onStatusClick: () => void;
   onCustomerClick: () => void;
   onVehicleClick: () => void;
-  onRenew: () => void;
-  onAmend: () => void;
-  onTerminate: () => void;
-  onConvertToLegal: () => void;
-  onRemoveLegal: () => void;
 }) => (
   <div className="space-y-6">
     <ContractStatsGrid
@@ -593,15 +475,6 @@ const ContractOverviewTab = ({
         )}
       </CardContent>
     </Card>
-
-    <QuickActionsBar
-      contract={contract}
-      onRenew={onRenew}
-      onAmend={onAmend}
-      onTerminate={onTerminate}
-      onConvertToLegal={onConvertToLegal}
-      onRemoveLegal={onRemoveLegal}
-    />
   </div>
 );
 
@@ -741,18 +614,18 @@ const FinancialTab = ({
         الفواتير
       </TabsTrigger>
       <TabsTrigger
-        value="schedule"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
-      >
-        <Wallet className="w-4 h-4" />
-        جدول الدفعات
-      </TabsTrigger>
-      <TabsTrigger
         value="payments"
         className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <CreditCard className="w-4 h-4" />
         الدفعات
+      </TabsTrigger>
+      <TabsTrigger
+        value="schedule"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+      >
+        <Wallet className="w-4 h-4" />
+        جدول الدفعات
       </TabsTrigger>
     </TabsList>
 
@@ -761,171 +634,34 @@ const FinancialTab = ({
     </TabsContent>
 
     <TabsContent value="invoices" className="mt-6">
-      <Card className="border-neutral-200">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">الفواتير</CardTitle>
-          <Button onClick={onCreateInvoice} size="sm" className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl">
-            <Plus className="w-4 h-4" />
-            إنشاء فاتورة
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {invoices.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                <Receipt className="w-10 h-10 text-neutral-400" />
-              </div>
-              <p className="text-neutral-500">لا توجد فواتير لهذا العقد</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>رقم الفاتورة</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>المبلغ المتبقي</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                    <TableCell>{invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</TableCell>
-                    <TableCell>{formatCurrency(invoice.total_amount || 0)}</TableCell>
-                    <TableCell className={invoice.balance_due && invoice.balance_due > 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
-                      {formatCurrency(invoice.balance_due || 0)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
-                        {invoice.payment_status === 'paid' ? 'مسدد' : invoice.payment_status === 'partial' ? 'جزئي' : 'مستحق'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onPreviewInvoice(invoice)}>
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {invoice.payment_status !== 'paid' && (
-                          <Button size="sm" onClick={() => onPayInvoice(invoice)} className="bg-gradient-to-r from-teal-500 to-teal-600">
-                            <DollarSign className="w-4 h-4 ml-2" />
-                            دفع
-                          </Button>
-                        )}
-                        {invoice.status !== 'cancelled' && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => onCancelInvoice(invoice)}
-                            disabled={isCancellingInvoice}
-                          >
-                            <XCircle className="w-4 h-4 ml-1" />
-                            إلغاء
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
-
-    <TabsContent value="schedule" className="mt-6">
-      <Card className="border-neutral-200">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">جدول الدفعات</CardTitle>
-          {invoices.length > 0 && paymentSchedules.length < invoices.length && (
-            <Button
-              onClick={onGeneratePaymentSchedules}
-              size="sm"
-              className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
-            >
-              <RefreshCw className="w-4 h-4" />
-              إنشاء جدول الدفعات من الفواتير
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isLoadingPaymentSchedules ? (
-            <div className="text-center py-16 text-neutral-500">
-              <Loader2 className="w-12 h-12 text-neutral-300 mx-auto mb-4 animate-spin" />
-              <p>جاري تحميل جدول الدفعات...</p>
-            </div>
-          ) : paymentSchedules.length === 0 ? (
-            <div className="text-center py-16 text-neutral-500">
-              <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                <Wallet className="w-10 h-10 text-neutral-400" />
-              </div>
-              <p>لا يوجد جدول دفعات لهذا العقد</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>رقم القسط</TableHead>
-                  <TableHead>تاريخ الاستحقاق</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ الدفع</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paymentSchedules.map((schedule) => (
-                  <TableRow key={schedule.id}>
-                    <TableCell className="font-medium">{schedule.installment_number || '-'}</TableCell>
-                    <TableCell>
-                      {schedule.due_date ? format(new Date(schedule.due_date), 'dd/MM/yyyy', { locale: ar }) : '-'}
-                    </TableCell>
-                    <TableCell>{formatCurrency(schedule.amount || 0)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          schedule.status === 'paid'
-                            ? 'default'
-                            : schedule.status === 'overdue'
-                              ? 'destructive'
-                              : schedule.status === 'partially_paid'
-                                ? 'outline'
-                                : 'secondary'
-                        }
-                      >
-                        {schedule.status === 'paid'
-                          ? 'مدفوع'
-                          : schedule.status === 'overdue'
-                            ? 'متأخر'
-                            : schedule.status === 'pending'
-                              ? 'معلق'
-                              : schedule.status === 'partially_paid'
-                                ? 'جزئي'
-                                : schedule.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {schedule.payment_date
-                        ? format(new Date(schedule.payment_date), 'dd/MM/yyyy', { locale: ar })
-                        : '-'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <ContractInvoicesTabRedesigned
+        invoices={invoices}
+        formatCurrency={formatCurrency}
+        onPayInvoice={onPayInvoice}
+        onPreviewInvoice={onPreviewInvoice}
+        onCreateInvoice={onCreateInvoice}
+        onCancelInvoice={onCancelInvoice}
+        isCancellingInvoice={isCancellingInvoice}
+        contractNumber={contract.contract_number}
+      />
     </TabsContent>
 
     <TabsContent value="payments" className="mt-6">
-      <ContractPaymentsTab
+      <ContractPaymentsTabRedesigned
         contractId={contractId}
         companyId={companyId}
         invoiceIds={invoices.map(inv => inv.id)}
         formatCurrency={formatCurrency}
+      />
+    </TabsContent>
+
+    <TabsContent value="schedule" className="mt-6">
+      <EnhancedPaymentScheduleTabRedesigned
+        contract={contract}
+        formatCurrency={formatCurrency}
+        payments={paymentSchedules}
+        onGenerateSchedules={invoices.length > 0 && paymentSchedules.length < invoices.length ? onGeneratePaymentSchedules : undefined}
+        hasInvoices={invoices.length > 0}
       />
     </TabsContent>
   </Tabs>
@@ -936,12 +672,36 @@ const VehicleTab = ({
   contract,
   customerName,
   plateNumber,
-  trafficViolations,
   formatCurrency,
 }: {
   contract: Contract;
   customerName: string;
   plateNumber?: string;
+  formatCurrency: (amount: number) => string;
+}) => (
+  <VehiclePickupReturnTabRedesigned
+    contract={{
+      id: contract.id,
+      contract_number: contract.contract_number,
+      customer_name: customerName,
+      customer_phone: contract.customer?.phone || '',
+      vehicle_plate: plateNumber || '',
+      vehicle_make: contract.vehicle?.make || '',
+      vehicle_model: contract.vehicle?.model || '',
+      vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
+      start_date: contract.start_date,
+      end_date: contract.end_date,
+    }}
+    formatCurrency={formatCurrency}
+  />
+);
+
+// Violations Tab Component
+const ViolationsTab = ({
+  trafficViolations,
+  formatCurrency,
+  contractNumber,
+}: {
   trafficViolations: Array<{
     id: string;
     violation_date: string | null;
@@ -950,91 +710,13 @@ const VehicleTab = ({
     status: string;
   }>;
   formatCurrency: (amount: number) => string;
+  contractNumber: string;
 }) => (
-  <Tabs defaultValue="handover" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
-      <TabsTrigger
-        value="handover"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
-      >
-        <Wrench className="w-4 h-4" />
-        استلام وتسليم المركبة
-      </TabsTrigger>
-      <TabsTrigger
-        value="violations"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
-      >
-        <AlertCircle className="w-4 h-4" />
-        المخالفات
-      </TabsTrigger>
-    </TabsList>
-
-    <TabsContent value="handover" className="mt-6">
-      <VehicleHandoverUnified
-        contract={{
-          id: contract.id,
-          contract_number: contract.contract_number,
-          customer_name: customerName,
-          customer_phone: contract.customer?.phone || '',
-          vehicle_plate: plateNumber || '',
-          vehicle_make: contract.vehicle?.make || '',
-          vehicle_model: contract.vehicle?.model || '',
-          vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
-          start_date: contract.start_date,
-          end_date: contract.end_date,
-        }}
-        initialType="pickup"
-        onComplete={(type, data) => {
-          console.log('Handover completed:', type, data);
-        }}
-      />
-    </TabsContent>
-
-    <TabsContent value="violations" className="mt-6">
-      <Card className="border-neutral-200">
-        <CardHeader>
-          <CardTitle className="text-lg">المخالفات المرورية</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {trafficViolations.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-green-500" />
-              </div>
-              <p className="text-neutral-500">لا توجد مخالفات مرورية لهذا العقد</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {trafficViolations.map((violation) => (
-                  <TableRow key={violation.id}>
-                    <TableCell>
-                      {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
-                    </TableCell>
-                    <TableCell>{violation.violation_type || '-'}</TableCell>
-                    <TableCell>{formatCurrency(violation.fine_amount || 0)}</TableCell>
-                    <TableCell>
-                      <Badge variant={violation.status === 'paid' ? 'default' : 'secondary'}>
-                        {violation.status === 'paid' ? 'مسدد' : 'غير مسدد'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
-  </Tabs>
+  <ContractViolationsTabRedesigned
+    violations={trafficViolations}
+    formatCurrency={formatCurrency}
+    contractNumber={contractNumber}
+  />
 );
 
 // Documents Tab Component
@@ -1297,6 +979,11 @@ const ContractDetailsPageRedesigned = () => {
     setIsPrintDialogOpen(true);
   }, []);
 
+  const handleExport = useCallback(() => {
+    // Export functionality - can be implemented later
+    setIsPrintDialogOpen(true);
+  }, []);
+
   const handleCustomerClick = useCallback(() => {
     if (contract?.customer?.id) {
       navigate(`/customers/${contract.customer.id}`);
@@ -1324,7 +1011,8 @@ const ContractDetailsPageRedesigned = () => {
     setIsCancelInvoiceDialogOpen(true);
   }, []);
 
-  const confirmCancelInvoice = useCallback(async () => {
+  const confirmCancelInvoice = useCallback(async (e?: React.MouseEvent) => {
+    e?.preventDefault();
     if (!invoiceToCancel) return;
 
     setIsCancellingInvoice(true);
@@ -1558,6 +1246,7 @@ const ContractDetailsPageRedesigned = () => {
     { value: 'contract', label: 'العقد', icon: FileCheck },
     { value: 'financial', label: 'المالي', icon: Receipt },
     { value: 'vehicle', label: 'المركبة', icon: Car },
+    { value: 'violations', label: 'المخالفات', icon: AlertCircle },
     { value: 'documents', label: 'المستندات', icon: Folder },
   ];
 
@@ -1570,13 +1259,24 @@ const ContractDetailsPageRedesigned = () => {
       dir="rtl"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {/* Contract Header */}
-        <ContractHeader
+        {/* Contract Header - Redesigned */}
+        <ContractHeaderRedesigned
           contract={contract}
-          onBack={handleBack}
-          onRefresh={handleRefresh}
+          onEdit={() => setIsEditWizardOpen(true)}
           onPrint={handlePrint}
-          onStatusClick={() => setIsStatusManagementOpen(true)}
+          onExport={handleExport}
+          onRefresh={handleRefresh}
+          isRefreshing={false}
+        />
+
+        {/* Quick Actions */}
+        <QuickActionsBar
+          contract={contract}
+          onRenew={handleRenew}
+          onAmend={handleAmend}
+          onTerminate={handleTerminate}
+          onConvertToLegal={() => setIsConvertToLegalOpen(true)}
+          onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
         />
 
         {/* Alerts */}
@@ -1620,11 +1320,6 @@ const ContractDetailsPageRedesigned = () => {
                   onStatusClick={() => setIsStatusManagementOpen(true)}
                   onCustomerClick={handleCustomerClick}
                   onVehicleClick={handleVehicleClick}
-                  onRenew={handleRenew}
-                  onAmend={handleAmend}
-                  onTerminate={handleTerminate}
-                  onConvertToLegal={() => setIsConvertToLegalOpen(true)}
-                  onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
                 />
               </TabsContent>
 
@@ -1655,8 +1350,15 @@ const ContractDetailsPageRedesigned = () => {
                   contract={contract}
                   customerName={customerName}
                   plateNumber={plateNumber}
+                  formatCurrency={formatCurrency}
+                />
+              </TabsContent>
+
+              <TabsContent value="violations" className="mt-0">
+                <ViolationsTab
                   trafficViolations={trafficViolations}
                   formatCurrency={formatCurrency}
+                  contractNumber={contract.contract_number}
                 />
               </TabsContent>
 
@@ -1849,7 +1551,10 @@ const ContractDetailsPageRedesigned = () => {
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">تراجع</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmCancelInvoice}
+              onClick={(e) => {
+                e.preventDefault();
+                confirmCancelInvoice(e);
+              }}
               disabled={isCancellingInvoice}
               className="bg-red-600 hover:bg-red-700 rounded-xl"
             >

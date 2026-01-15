@@ -49,18 +49,6 @@ export const ContractAlerts = ({
       });
     }
 
-    // تنبيه: المتبقي من قيمة العقد
-    const remaining = (contract.contract_amount || 0) - (contract.total_paid || 0);
-    if (remaining > 0) {
-      alertsList.push({
-        type: 'warning',
-        icon: <TrendingDown className="w-4 h-4" />,
-        title: 'مبلغ متبقي',
-        description: `المبلغ المتبقي: ${formatCurrency(remaining)}`,
-        severity: 4,
-      });
-    }
-
     // تنبيه: قرب نهاية العقد
     if (contract.end_date) {
       const daysUntilEnd = differenceInDays(new Date(contract.end_date), new Date());
@@ -95,6 +83,7 @@ export const ContractAlerts = ({
     }
 
     // نجاح: جميع الدفعات مكتملة
+    const remaining = (contract.contract_amount || 0) - (contract.total_paid || 0);
     if (remaining <= 0 && contract.status !== 'terminated' && contract.status !== 'cancelled') {
       alertsList.push({
         type: 'success',

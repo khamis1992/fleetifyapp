@@ -506,7 +506,7 @@ const PersonalInfoTab = ({ customer }: { customer: any }) => {
       title: 'المعلومات الشخصية',
       icon: User,
       items: [
-        { label: 'الاسم الكامل', value: `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() || '-' },
+        { label: 'الاسم الكامل', value: `${customer.first_name_ar?.trim() || customer.first_name?.trim() || ''} ${customer.last_name_ar?.trim() || customer.last_name?.trim() || ''}`.trim() || '-' },
         { label: 'تاريخ الميلاد', value: customer.date_of_birth || '-' },
         { label: 'الجنسية', value: customer.nationality || '-' },
         { label: 'الحالة الاجتماعية', value: customer.marital_status || '-' },
@@ -1798,10 +1798,11 @@ const CustomerDetailsPage = () => {
   const customerName = useMemo(() => {
     if (!customer) return 'غير محدد';
     if (customer.customer_type === 'corporate') {
-      return customer.company_name_ar || customer.company_name || 'شركة';
+      return customer.company_name_ar?.trim() || customer.company_name?.trim() || 'شركة';
     }
-    const firstName = customer.first_name_ar || customer.first_name || '';
-    const lastName = customer.last_name_ar || customer.last_name || '';
+    // استخدام الاسم العربي أولاً، ثم الإنجليزي كبديل
+    const firstName = customer.first_name_ar?.trim() || customer.first_name?.trim() || '';
+    const lastName = customer.last_name_ar?.trim() || customer.last_name?.trim() || '';
     return `${firstName} ${lastName}`.trim() || 'غير محدد';
   }, [customer]);
 
@@ -2068,7 +2069,7 @@ const CustomerDetailsPage = () => {
         open={isPaymentDialogOpen}
         onOpenChange={setIsPaymentDialogOpen}
         customerId={customerId}
-        customerName={customer ? `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() : ''}
+        customerName={customer ? `${customer.first_name_ar?.trim() || customer.first_name?.trim() || ''} ${customer.last_name_ar?.trim() || customer.last_name?.trim() || ''}`.trim() : ''}
         customerPhone={customer?.phone || null}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['customer-payments', customerId, companyId] });

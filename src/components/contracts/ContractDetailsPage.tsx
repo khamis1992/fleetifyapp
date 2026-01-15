@@ -671,9 +671,11 @@ const ContractDetailsPage = () => {
   const getCustomerName = (customer: any): string => {
     if (!customer) return 'غير محدد';
     if (customer.customer_type === 'corporate') {
-      return customer.company_name_ar || customer.company_name || 'شركة';
+      return customer.company_name_ar?.trim() || customer.company_name?.trim() || 'شركة';
     }
-    return `${customer.first_name_ar || customer.first_name} ${customer.last_name_ar || customer.last_name}`;
+    const firstName = customer.first_name_ar?.trim() || customer.first_name?.trim() || '';
+    const lastName = customer.last_name_ar?.trim() || customer.last_name?.trim() || '';
+    return `${firstName} ${lastName}`.trim() || 'غير محدد';
   };
 
   // معالجة حالات التحميل والأخطاء
@@ -1614,8 +1616,8 @@ const ContractDetailsTab = ({ contract, formatCurrency }: ContractDetailsTabProp
   const navigate = useNavigate();
   const customerName = contract.customer
     ? contract.customer.customer_type === 'corporate'
-      ? contract.customer.company_name_ar || contract.customer.company_name
-      : `${contract.customer.first_name_ar || contract.customer.first_name} ${contract.customer.last_name_ar || contract.customer.last_name}`
+      ? contract.customer.company_name_ar?.trim() || contract.customer.company_name?.trim() || 'شركة'
+      : `${contract.customer.first_name_ar?.trim() || contract.customer.first_name?.trim() || ''} ${contract.customer.last_name_ar?.trim() || contract.customer.last_name?.trim() || ''}`.trim() || 'غير محدد'
     : 'غير محدد';
 
   const vehicleInfo = contract.vehicle
@@ -2639,7 +2641,9 @@ const PaymentScheduleTab = ({ contract, formatCurrency, payments = [] }: Payment
                 date={formatReceiptDate(selectedPayment.payment_date)}
                 customerName={
                   contract.customer 
-                    ? `${contract.customer.first_name_ar || contract.customer.first_name || ''} ${contract.customer.last_name_ar || contract.customer.last_name || ''}`.trim()
+                    ? contract.customer.customer_type === 'corporate'
+                      ? contract.customer.company_name_ar?.trim() || contract.customer.company_name?.trim() || 'شركة'
+                      : `${contract.customer.first_name_ar?.trim() || contract.customer.first_name?.trim() || ''} ${contract.customer.last_name_ar?.trim() || contract.customer.last_name?.trim() || ''}`.trim() || 'عميل'
                     : 'عميل'
                 }
                 amountInWords={numberToArabicWords(selectedPayment.amount || 0)}

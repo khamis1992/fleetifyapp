@@ -257,8 +257,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     const exportData = {
       contract_number: contract.contract_number,
       customer_name: customer?.customer_type === 'individual' 
-        ? `${customer.first_name} ${customer.last_name}`
-        : customer?.company_name,
+        ? `${customer.first_name_ar?.trim() || customer.first_name?.trim() || ''} ${customer.last_name_ar?.trim() || customer.last_name?.trim() || ''}`.trim()
+        : customer?.company_name_ar?.trim() || customer?.company_name?.trim() || '',
       contract_type: contract.contract_type,
       start_date: contract.start_date,
       end_date: contract.end_date,
@@ -611,8 +611,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                       <span className="text-sm text-muted-foreground">اسم العميل</span>
                       <span className="font-medium">
                         {customer.customer_type === 'individual' 
-                          ? `${customer.first_name_ar || customer.first_name} ${customer.last_name_ar || customer.last_name}`
-                          : customer.company_name_ar || customer.company_name
+                          ? `${customer.first_name_ar?.trim() || customer.first_name?.trim() || ''} ${customer.last_name_ar?.trim() || customer.last_name?.trim() || ''}`.trim() || 'غير محدد'
+                          : customer.company_name_ar?.trim() || customer.company_name?.trim() || 'شركة'
                         }
                       </span>
                     </div>
