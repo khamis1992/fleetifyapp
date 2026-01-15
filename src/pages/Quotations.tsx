@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { ResponsivePageActions } from "@/components/ui/responsive-page-actions"
 import { generateShortContractNumber } from "@/utils/contractNumberGenerator"
 import { PageHelp } from "@/components/help";
@@ -37,6 +38,7 @@ export default function Quotations() {
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
   const { user } = useAuth()
   const { filter, companyId, hasGlobalAccess, getQueryKey } = useUnifiedCompanyAccess()
+  const { formatCurrency } = useCurrencyFormatter()
   const queryClient = useQueryClient()
   
   const { register, handleSubmit, watch, reset, setValue } = useForm<QuotationFormData>({
@@ -358,8 +360,8 @@ export default function Quotations() {
 *تفاصيل السعر:*
 • نوع الإيجار: ${quotation.quotation_type === 'daily' ? 'يومي' : quotation.quotation_type === 'weekly' ? 'أسبوعي' : 'شهري'}
 • المدة: ${quotation.duration} ${durationType}
-• السعر لكل ${durationType}: ${quotation.rate_per_unit?.toFixed(3)} د.ك
-• *المبلغ الإجمالي: ${quotation.total_amount?.toFixed(3)} د.ك*
+• السعر لكل ${durationType}: ${formatCurrency(quotation.rate_per_unit || 0)}
+• *المبلغ الإجمالي: ${formatCurrency(quotation.total_amount || 0)}*
 
 *صالح حتى:* ${new Date(quotation.valid_until).toLocaleDateString('en-GB')}
 
@@ -469,7 +471,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{totalQuotationValue.toFixed(3)} د.ك</div>
+            <div className="text-2xl font-bold text-slate-900">{formatCurrency(totalQuotationValue)}</div>
             <p className="text-xs text-slate-500">العروض المعلقة</p>
           </CardContent>
         </Card>
@@ -525,7 +527,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-slate-500" />
                       <span className="text-sm font-medium text-slate-900">
-                        {quotation.total_amount?.toFixed(3)} د.ك
+                        {formatCurrency(quotation.total_amount || 0)}
                       </span>
                     </div>
 
