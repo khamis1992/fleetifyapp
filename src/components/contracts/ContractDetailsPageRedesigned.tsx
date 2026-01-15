@@ -1,8 +1,9 @@
 /**
- * صفحة تفاصيل العقد - تصميم SaaS احترافي مع نظام ألوان تركواز
- * Professional SaaS design for Contract Details Page with Turquoise color system
+ * صفحة تفاصيل العقد - UX Redesign V2
+ * Professional SaaS design with improved information architecture
+ * Better visual hierarchy, clearer actions, and enhanced mobile experience
  *
- * @component ContractDetailsPageRedesigned
+ * @component ContractDetailsPageRedesignedV2
  */
 
 import { useState, useMemo, useCallback } from 'react';
@@ -40,6 +41,13 @@ import {
   FileCheck,
   Receipt,
   Wrench,
+  Phone,
+  Mail,
+  MapPin,
+  Building2,
+  Share2,
+  Download,
+  Bell,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -58,6 +66,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -87,9 +96,405 @@ import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 
-// === New Tab Components ===
+// ===== Animation Variants =====
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
+  }
+};
 
-// Overview Tab Component
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
+  }
+};
+
+const slideIn = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
+  }
+};
+
+// ===== Contract Header Component =====
+const ContractHeader = ({
+  contract,
+  onBack,
+  onRefresh,
+  onPrint,
+  onStatusClick,
+}: {
+  contract: Contract;
+  onBack: () => void;
+  onRefresh: () => void;
+  onPrint: () => void;
+  onStatusClick: () => void;
+}) => {
+  const getContractTypeLabel = (type: string) => {
+    switch (type) {
+      case 'rental': return 'عقد إيجار';
+      case 'lease': return 'عقد تأجير';
+      case 'corporate': return 'عقد شركة';
+      default: return type;
+    }
+  };
+
+  const isExpiringSoon = contract.end_date && differenceInDays(new Date(contract.end_date), new Date()) <= 30;
+  const isExpired = contract.end_date && new Date(contract.end_date) < new Date();
+
+  return (
+    <motion.div
+      variants={fadeInUp}
+      className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm"
+    >
+      {/* Cover Gradient */}
+      <div className="h-28 bg-gradient-to-r from-teal-500 via-teal-600 to-cyan-600 relative">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0yaDJ2MmgtMnptMC00djJoMnYyaC0yem0wLTR2MmgydjJoLTJ6bTAgLTR2MmgydjJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+
+        {/* Top Actions */}
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onRefresh}
+              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onPrint}
+              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm"
+            >
+              <Printer className="w-4 h-4" />
+            </Button>
+            <QuickActionsButton contract={contract} />
+          </div>
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="px-8 pb-6">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <h1 className="text-3xl font-bold text-neutral-900">#{contract.contract_number}</h1>
+              <Badge className={cn(
+                "text-sm px-3 py-1",
+                isExpired ? 'bg-red-100 text-red-700' : isExpiringSoon ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+              )}>
+                {isExpired ? 'منتهي' : isExpiringSoon ? 'ينتهي قريباً' : contract.status === 'active' ? 'نشط' : contract.status}
+              </Badge>
+            </div>
+            <p className="text-neutral-500 text-lg">{getContractTypeLabel(contract.contract_type)}</p>
+          </div>
+
+          <div onClick={onStatusClick} className="cursor-pointer">
+            <ContractStatusBadge status={contract.status} clickable />
+          </div>
+        </div>
+
+        {/* Key Info Bar */}
+        <div className="flex items-center gap-6 text-sm">
+          {contract.start_date && (
+            <div className="flex items-center gap-2 text-neutral-600">
+              <Calendar className="w-4 h-4" />
+              <span>من {format(new Date(contract.start_date), 'dd MMM yyyy', { locale: ar })}</span>
+            </div>
+          )}
+          {contract.end_date && (
+            <div className="flex items-center gap-2 text-neutral-600">
+              <Calendar className="w-4 h-4" />
+              <span>إلى {format(new Date(contract.end_date), 'dd MMM yyyy', { locale: ar })}</span>
+            </div>
+          )}
+          {contract.monthly_amount && (
+            <div className="flex items-center gap-2 text-teal-600 font-semibold">
+              <DollarSign className="w-4 h-4" />
+              <span>{contract.monthly_amount.toLocaleString()} ر.ق / شهرياً</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ===== Stats Cards Component =====
+const ContractStatsGrid = ({
+  contractStats,
+  trafficViolationsCount,
+  formatCurrency,
+}: {
+  contractStats: Record<string, unknown>;
+  trafficViolationsCount: number;
+  formatCurrency: (amount: number) => string;
+}) => {
+  const stats = [
+    {
+      label: 'إجمالي القيمة',
+      value: formatCurrency(contractStats?.totalAmount as number || 0),
+      subtext: `${formatCurrency(contractStats?.monthlyAmount as number || 0)} شهرياً`,
+      icon: DollarSign,
+      color: 'from-teal-500 to-teal-600',
+      bgColor: 'bg-teal-50',
+    },
+    {
+      label: 'مدة العقد',
+      value: `${contractStats?.totalMonths || 0} شهر`,
+      subtext: `${contractStats?.daysRemaining > 0 ? `${contractStats.daysRemaining} يوم متبقي` : contractStats?.daysRemaining === 0 ? 'ينتهي اليوم' : 'منتهي'}`,
+      icon: Calendar,
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'bg-blue-50',
+      progress: contractStats?.progressPercentage as number || 0,
+    },
+    {
+      label: 'حالة السداد',
+      value: `${contractStats?.paidPayments} / ${contractStats?.totalPayments}`,
+      subtext: contractStats?.paymentStatus === 'completed' ? 'تم السداد' : 'قيد السداد',
+      icon: CreditCard,
+      color: contractStats?.paymentStatus === 'completed' ? 'from-green-500 to-green-600' : 'from-purple-500 to-purple-600',
+      bgColor: contractStats?.paymentStatus === 'completed' ? 'bg-green-50' : 'bg-purple-50',
+    },
+    {
+      label: 'المخالفات',
+      value: trafficViolationsCount.toString(),
+      subtext: trafficViolationsCount === 0 ? 'لا توجد مخالفات' : 'مخالفة مرورية',
+      icon: AlertCircle,
+      color: trafficViolationsCount > 0 ? 'from-red-500 to-red-600' : 'from-green-500 to-green-600',
+      bgColor: trafficViolationsCount > 0 ? 'bg-red-50' : 'bg-green-50',
+    },
+  ];
+
+  return (
+    <motion.div
+      variants={fadeInUp}
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+    >
+      {stats.map((stat, idx) => (
+        <motion.div
+          key={idx}
+          variants={scaleIn}
+          whileHover={{ y: -4 }}
+          className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-all"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className={cn("w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg", stat.color)}>
+              <stat.icon className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs text-neutral-500">{stat.label}</span>
+          </div>
+          <p className="text-2xl font-bold text-neutral-900 mb-1">{stat.value}</p>
+          <p className="text-sm text-neutral-500">{stat.subtext}</p>
+          {stat.progress !== undefined && (
+            <div className="mt-3">
+              <Progress value={stat.progress} className="h-2" />
+            </div>
+          )}
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+};
+
+// ===== Customer & Vehicle Cards =====
+const CustomerVehicleCards = ({
+  customerName,
+  vehicleName,
+  plateNumber,
+  contract,
+  onCustomerClick,
+  onVehicleClick,
+}: {
+  customerName: string;
+  vehicleName: string;
+  plateNumber?: string;
+  contract: Contract;
+  onCustomerClick: () => void;
+  onVehicleClick: () => void;
+}) => (
+  <motion.div
+    variants={fadeInUp}
+    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+  >
+    {/* Customer Card */}
+    <Card className="border-neutral-200 hover:border-teal-200 transition-colors cursor-pointer" onClick={onCustomerClick}>
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg flex-shrink-0">
+            <User className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-neutral-500 mb-1">العميل</p>
+            <h3 className="font-bold text-neutral-900 text-lg mb-2 truncate">{customerName}</h3>
+            <div className="space-y-1">
+              {contract.customer?.phone && (
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <Phone className="w-3.5 h-3.5" />
+                  <span className="font-mono" dir="ltr">{contract.customer.phone}</span>
+                </div>
+              )}
+              {contract.customer?.email && (
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span className="truncate">{contract.customer.email}</span>
+                </div>
+              )}
+              {contract.customer?.national_id && (
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{contract.customer.national_id}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Vehicle Card */}
+    <Card className="border-neutral-200 hover:border-teal-200 transition-colors cursor-pointer" onClick={onVehicleClick}>
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
+            <Car className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-neutral-500 mb-1">المركبة</p>
+            <h3 className="font-bold text-neutral-900 text-lg mb-2">{vehicleName}</h3>
+            <div className="space-y-1">
+              {plateNumber && (
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span className="font-mono font-bold">{plateNumber}</span>
+                </div>
+              )}
+              {contract.vehicle?.year && (
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{contract.vehicle.year}</span>
+                </div>
+              )}
+              {contract.vehicle?.color && (
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{contract.vehicle.color}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
+// ===== Quick Actions Bar =====
+const QuickActionsBar = ({
+  contract,
+  onRenew,
+  onAmend,
+  onTerminate,
+  onConvertToLegal,
+  onRemoveLegal,
+}: {
+  contract: Contract;
+  onRenew: () => void;
+  onAmend: () => void;
+  onTerminate: () => void;
+  onConvertToLegal: () => void;
+  onRemoveLegal: () => void;
+}) => {
+  const actions = [
+    {
+      label: 'تجديد العقد',
+      icon: RefreshCw,
+      onClick: onRenew,
+      color: 'bg-teal-500 hover:bg-teal-600 text-white border-transparent',
+      show: contract.status === 'active',
+    },
+    {
+      label: 'تعديل العقد',
+      icon: FileEdit,
+      onClick: onAmend,
+      color: 'border-teal-200 text-teal-700 hover:bg-teal-50',
+      show: contract.status === 'active',
+    },
+    {
+      label: 'تحويل للشؤون القانونية',
+      icon: Scale,
+      onClick: onConvertToLegal,
+      color: 'border-violet-200 text-violet-700 hover:bg-violet-50',
+      show: contract.status === 'active' || contract.status === 'cancelled',
+    },
+    {
+      label: 'إزالة الإجراء القانوني',
+      icon: Scale,
+      onClick: onRemoveLegal,
+      color: 'border-emerald-200 text-emerald-700 hover:bg-emerald-50',
+      show: contract.status === 'under_legal_procedure',
+    },
+    {
+      label: 'إنهاء العقد',
+      icon: XCircle,
+      onClick: onTerminate,
+      color: 'border-rose-200 text-rose-700 hover:bg-rose-50',
+      show: contract.status === 'active' || contract.status === 'cancelled',
+    },
+  ];
+
+  const visibleActions = actions.filter(a => a.show);
+
+  return (
+    <motion.div
+      variants={fadeInUp}
+      className="bg-white rounded-2xl border border-neutral-200 p-4"
+    >
+      <div className="flex items-center gap-3 overflow-x-auto">
+        <span className="text-sm font-medium text-neutral-500 whitespace-nowrap">إجراءات سريعة:</span>
+        {visibleActions.map((action, idx) => (
+          <motion.div
+            key={idx}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Button
+              variant={action.color.includes('border') ? 'outline' : 'default'}
+              size="sm"
+              onClick={action.onClick}
+              className={cn("gap-2 whitespace-nowrap rounded-xl", action.color)}
+            >
+              <action.icon className="w-4 h-4" />
+              {action.label}
+            </Button>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+// ===== Tab Components =====
+
+// Overview Tab
 const ContractOverviewTab = ({
   contract,
   customerName,
@@ -99,6 +504,13 @@ const ContractOverviewTab = ({
   trafficViolationsCount,
   formatCurrency,
   onStatusClick,
+  onCustomerClick,
+  onVehicleClick,
+  onRenew,
+  onAmend,
+  onTerminate,
+  onConvertToLegal,
+  onRemoveLegal,
 }: {
   contract: Contract;
   customerName: string;
@@ -108,200 +520,109 @@ const ContractOverviewTab = ({
   trafficViolationsCount: number;
   formatCurrency: (amount: number) => string;
   onStatusClick: () => void;
+  onCustomerClick: () => void;
+  onVehicleClick: () => void;
+  onRenew: () => void;
+  onAmend: () => void;
+  onTerminate: () => void;
+  onConvertToLegal: () => void;
+  onRemoveLegal: () => void;
 }) => (
   <div className="space-y-6">
-    {/* Header Row */}
-    <Card className="border-teal-200 bg-gradient-to-br from-teal-50 to-white">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200">
-              <FileSignature className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">عقد #{contract.contract_number}</h2>
-              <p className="text-sm text-slate-500">{contract.contract_type === 'rental' ? 'عقد إيجار' : contract.contract_type}</p>
-            </div>
+    <ContractStatsGrid
+      contractStats={contractStats}
+      trafficViolationsCount={trafficViolationsCount}
+      formatCurrency={formatCurrency}
+    />
+
+    <CustomerVehicleCards
+      customerName={customerName}
+      vehicleName={vehicleName}
+      plateNumber={plateNumber}
+      contract={contract}
+      onCustomerClick={onCustomerClick}
+      onVehicleClick={onVehicleClick}
+    />
+
+    {/* Contract Terms */}
+    <Card className="border-neutral-200">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <FileCheck className="w-5 h-5 text-teal-600" />
+          شروط العقد
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div>
+            <p className="text-sm text-neutral-500 mb-2">تاريخ البداية</p>
+            <p className="font-semibold text-neutral-900">
+              {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
+            </p>
           </div>
-          <div onClick={onStatusClick} className="cursor-pointer">
-            <ContractStatusBadge status={contract.status} clickable />
+          <div>
+            <p className="text-sm text-neutral-500 mb-2">تاريخ الانتهاء</p>
+            <p className="font-semibold text-neutral-900">
+              {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-neutral-500 mb-2">الإيجار الشهري</p>
+            <p className="font-semibold text-teal-600">{formatCurrency(contract.monthly_amount || 0)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-neutral-500 mb-2">التأمين</p>
+            <p className="font-semibold text-neutral-900">{formatCurrency(contract.insurance_amount || 0)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-neutral-500 mb-2">طريقة الدفع</p>
+            <p className="font-semibold text-neutral-900">
+              {contract.payment_method === 'cash' ? 'نقدي' : contract.payment_method === 'bank' ? 'تحويل بنكي' : contract.payment_method || '-'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-neutral-500 mb-2">الحد المسموح بالكيلومترات</p>
+            <p className="font-semibold text-neutral-900">{contract.allowed_km ? `${contract.allowed_km.toLocaleString()} كم` : 'غير محدود'}</p>
           </div>
         </div>
-        {contractStats?.daysRemaining !== undefined && (
-          <div className="mt-4 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-600" />
-            <span className="text-sm text-slate-600">
-              {contractStats.daysRemaining > 0
-                ? `${contractStats.daysRemaining} يوم متبقي`
-                : contractStats.daysRemaining === 0
-                  ? 'ينتهي اليوم'
-                  : 'منتهي'}
-            </span>
+        {contract.notes && (
+          <div className="mt-6 pt-6 border-t border-neutral-100">
+            <p className="text-sm text-neutral-500 mb-2">ملاحظات</p>
+            <p className="text-neutral-700">{contract.notes}</p>
           </div>
         )}
       </CardContent>
     </Card>
 
-    {/* Quick Stats Grid */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Total Value */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:shadow-teal-100/50 hover:scale-[1.02] transition-all duration-300"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
-            <DollarSign className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xs text-slate-500">إجمالي القيمة</span>
-        </div>
-        <p className="text-2xl font-bold text-slate-900">
-          {formatCurrency(contractStats?.totalAmount || 0)}
-        </p>
-        <p className="text-sm text-slate-500 mt-1">
-          شهرياً: {formatCurrency(contractStats?.monthlyAmount || 0)}
-        </p>
-      </motion.div>
-
-      {/* Duration */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:shadow-teal-100/50 hover:scale-[1.02] transition-all duration-300"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
-            <Calendar className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xs text-slate-500">مدة العقد</span>
-        </div>
-        <p className="text-2xl font-bold text-slate-900">
-          {contractStats?.totalMonths || 0} شهر
-        </p>
-        <div className="mt-3">
-          <Progress value={contractStats?.progressPercentage || 0} className="h-2" />
-        </div>
-      </motion.div>
-
-      {/* Payment Status */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:shadow-teal-100/50 hover:scale-[1.02] transition-all duration-300"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className={cn(
-            "w-11 h-11 rounded-xl flex items-center justify-center shadow-lg",
-            contractStats?.paymentStatus === 'completed'
-              ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200'
-              : 'bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] shadow-teal-200'
-          )}>
-            <CreditCard className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xs text-slate-500">حالة السداد</span>
-        </div>
-        <p className={cn(
-          "text-2xl font-bold",
-          contractStats?.paymentStatus === 'completed' ? 'text-emerald-600' : 'text-[#40E0D0]'
-        )}>
-          {contractStats?.paidPayments} / {contractStats?.totalPayments}
-        </p>
-        <p className="text-sm text-slate-500 mt-1">
-          {contractStats?.paymentStatus === 'completed' ? 'تم السداد' : 'قيد السداد'}
-        </p>
-      </motion.div>
-
-      {/* Violations */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:shadow-teal-100/50 hover:scale-[1.02] transition-all duration-300"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className={cn(
-            "w-11 h-11 rounded-xl flex items-center justify-center shadow-lg",
-            trafficViolationsCount > 0
-              ? 'bg-gradient-to-br from-rose-400 to-rose-500 shadow-rose-200'
-              : 'bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200'
-          )}>
-            <AlertCircle className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xs text-slate-500">المخالفات</span>
-        </div>
-        <p className="text-2xl font-bold text-slate-900">
-          {trafficViolationsCount}
-        </p>
-        <p className="text-sm text-slate-500 mt-1">
-          {trafficViolationsCount === 0 ? 'لا توجد مخالفات' : 'مخالفة مرورية'}
-        </p>
-      </motion.div>
-    </div>
-
-    {/* Customer & Vehicle Summary */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Customer Card */}
-      <Card className="border-teal-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
-              <User className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-slate-500 mb-1">العميل</p>
-              <p className="font-semibold text-slate-900">{customerName}</p>
-              {contract.customer?.phone && (
-                <p className="text-sm text-slate-600 mt-1" dir="ltr">📱 {contract.customer.phone}</p>
-              )}
-              {contract.customer?.national_id && (
-                <p className="text-sm text-slate-600 mt-0.5">🪪 {contract.customer.national_id}</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Vehicle Card */}
-      <Card className="border-teal-200">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
-              <Car className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-slate-500 mb-1">السيارة</p>
-              <p className="font-semibold text-slate-900">
-                {vehicleName} {plateNumber && `• ${plateNumber}`}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <QuickActionsBar
+      contract={contract}
+      onRenew={onRenew}
+      onAmend={onAmend}
+      onTerminate={onTerminate}
+      onConvertToLegal={onConvertToLegal}
+      onRemoveLegal={onRemoveLegal}
+    />
   </div>
 );
 
-// Contract Tab Component (Details + Official)
+// Contract Tab Component
 const ContractTab = ({
   contract,
 }: {
   contract: Contract;
 }) => (
   <Tabs defaultValue="details" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
+    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
       <TabsTrigger
         value="details"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <Info className="w-4 h-4" />
         التفاصيل
       </TabsTrigger>
       <TabsTrigger
         value="official"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <FileCheck className="w-4 h-4" />
         العقد الرسمي
@@ -309,33 +630,51 @@ const ContractTab = ({
     </TabsList>
 
     <TabsContent value="details" className="mt-6">
-      <Card>
+      <Card className="border-neutral-200">
         <CardHeader>
           <CardTitle className="text-lg">معلومات العقد</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
             <div>
-              <p className="text-sm text-slate-500 mb-1">رقم العقد</p>
-              <p className="font-semibold text-slate-900">{contract.contract_number}</p>
+              <p className="text-sm text-neutral-500 mb-2">رقم العقد</p>
+              <p className="font-semibold text-neutral-900 text-lg">{contract.contract_number}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-500 mb-1">نوع العقد</p>
-              <p className="font-semibold text-slate-900">{contract.contract_type === 'rental' ? 'إيجار' : contract.contract_type}</p>
+              <p className="text-sm text-neutral-500 mb-2">نوع العقد</p>
+              <p className="font-semibold text-neutral-900 text-lg">
+                {contract.contract_type === 'rental' ? 'إيجار' : contract.contract_type}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-slate-500 mb-1">تاريخ البداية</p>
-              <p className="font-semibold text-slate-900">{contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}</p>
+              <p className="text-sm text-neutral-500 mb-2">تاريخ البداية</p>
+              <p className="font-semibold text-neutral-900">
+                {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-slate-500 mb-1">تاريخ الانتهاء</p>
-              <p className="font-semibold text-slate-900">{contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}</p>
+              <p className="text-sm text-neutral-500 mb-2">تاريخ الانتهاء</p>
+              <p className="font-semibold text-neutral-900">
+                {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-neutral-500 mb-2">الإيجار الشهري</p>
+              <p className="font-semibold text-teal-600 text-lg">
+                {contract.monthly_amount ? `${contract.monthly_amount.toLocaleString()} ر.ق` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-neutral-500 mb-2">التأمين</p>
+              <p className="font-semibold text-neutral-900 text-lg">
+                {contract.insurance_amount ? `${contract.insurance_amount.toLocaleString()} ر.ق` : '-'}
+              </p>
             </div>
           </div>
           {contract.notes && (
-            <div>
-              <p className="text-sm text-slate-500 mb-1">ملاحظات</p>
-              <p className="text-slate-700">{contract.notes}</p>
+            <div className="pt-6 border-t border-neutral-100">
+              <p className="text-sm text-neutral-500 mb-2">ملاحظات</p>
+              <p className="text-neutral-700 leading-relaxed">{contract.notes}</p>
             </div>
           )}
         </CardContent>
@@ -386,31 +725,31 @@ const FinancialTab = ({
   onGeneratePaymentSchedules: () => void;
 }) => (
   <Tabs defaultValue="overview" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
+    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
       <TabsTrigger
         value="overview"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <LayoutDashboard className="w-4 h-4" />
         نظرة عامة
       </TabsTrigger>
       <TabsTrigger
         value="invoices"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <Receipt className="w-4 h-4" />
         الفواتير
       </TabsTrigger>
       <TabsTrigger
         value="schedule"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <Wallet className="w-4 h-4" />
         جدول الدفعات
       </TabsTrigger>
       <TabsTrigger
         value="payments"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <CreditCard className="w-4 h-4" />
         الدفعات
@@ -422,19 +761,21 @@ const FinancialTab = ({
     </TabsContent>
 
     <TabsContent value="invoices" className="mt-6">
-      <Card>
+      <Card className="border-neutral-200">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">الفواتير</CardTitle>
-          <Button onClick={onCreateInvoice} size="sm" className="gap-2 bg-gradient-to-r from-[#40E0D0] to-[#20B2AA] hover:shadow-lg shadow-teal-200">
+          <Button onClick={onCreateInvoice} size="sm" className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl">
             <Plus className="w-4 h-4" />
             إنشاء فاتورة
           </Button>
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">لا توجد فواتير لهذا العقد</p>
+            <div className="text-center py-16">
+              <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+                <Receipt className="w-10 h-10 text-neutral-400" />
+              </div>
+              <p className="text-neutral-500">لا توجد فواتير لهذا العقد</p>
             </div>
           ) : (
             <Table>
@@ -468,15 +809,15 @@ const FinancialTab = ({
                           <Eye className="w-4 h-4" />
                         </Button>
                         {invoice.payment_status !== 'paid' && (
-                          <Button size="sm" onClick={() => onPayInvoice(invoice)} className="bg-gradient-to-r from-[#40E0D0] to-[#20B2AA]">
+                          <Button size="sm" onClick={() => onPayInvoice(invoice)} className="bg-gradient-to-r from-teal-500 to-teal-600">
                             <DollarSign className="w-4 h-4 ml-2" />
                             دفع
                           </Button>
                         )}
                         {invoice.status !== 'cancelled' && (
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
+                          <Button
+                            size="sm"
+                            variant="destructive"
                             onClick={() => onCancelInvoice(invoice)}
                             disabled={isCancellingInvoice}
                           >
@@ -496,14 +837,14 @@ const FinancialTab = ({
     </TabsContent>
 
     <TabsContent value="schedule" className="mt-6">
-      <Card>
+      <Card className="border-neutral-200">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">جدول الدفعات</CardTitle>
           {invoices.length > 0 && paymentSchedules.length < invoices.length && (
             <Button
               onClick={onGeneratePaymentSchedules}
               size="sm"
-              className="gap-2 bg-gradient-to-r from-[#40E0D0] to-[#20B2AA] hover:shadow-lg shadow-teal-200"
+              className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
             >
               <RefreshCw className="w-4 h-4" />
               إنشاء جدول الدفعات من الفواتير
@@ -512,13 +853,15 @@ const FinancialTab = ({
         </CardHeader>
         <CardContent>
           {isLoadingPaymentSchedules ? (
-            <div className="text-center py-12 text-slate-500">
-              <Loader2 className="w-12 h-12 text-slate-300 mx-auto mb-4 animate-spin" />
+            <div className="text-center py-16 text-neutral-500">
+              <Loader2 className="w-12 h-12 text-neutral-300 mx-auto mb-4 animate-spin" />
               <p>جاري تحميل جدول الدفعات...</p>
             </div>
           ) : paymentSchedules.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <Wallet className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <div className="text-center py-16 text-neutral-500">
+              <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+                <Wallet className="w-10 h-10 text-neutral-400" />
+              </div>
               <p>لا يوجد جدول دفعات لهذا العقد</p>
             </div>
           ) : (
@@ -609,17 +952,17 @@ const VehicleTab = ({
   formatCurrency: (amount: number) => string;
 }) => (
   <Tabs defaultValue="handover" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
+    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
       <TabsTrigger
         value="handover"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <Wrench className="w-4 h-4" />
         استلام وتسليم المركبة
       </TabsTrigger>
       <TabsTrigger
         value="violations"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <AlertCircle className="w-4 h-4" />
         المخالفات
@@ -648,15 +991,17 @@ const VehicleTab = ({
     </TabsContent>
 
     <TabsContent value="violations" className="mt-6">
-      <Card>
+      <Card className="border-neutral-200">
         <CardHeader>
           <CardTitle className="text-lg">المخالفات المرورية</CardTitle>
         </CardHeader>
         <CardContent>
           {trafficViolations.length === 0 ? (
-            <div className="text-center py-12">
-              <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">لا توجد مخالفات مرورية لهذا العقد</p>
+            <div className="text-center py-16">
+              <div className="w-20 h-20 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-green-500" />
+              </div>
+              <p className="text-neutral-500">لا توجد مخالفات مرورية لهذا العقد</p>
             </div>
           ) : (
             <Table>
@@ -699,24 +1044,24 @@ const DocumentsTab = ({
   contract: Contract;
 }) => (
   <Tabs defaultValue="documents" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
+    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
       <TabsTrigger
         value="documents"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <Folder className="w-4 h-4" />
         المستندات
       </TabsTrigger>
       <TabsTrigger
         value="timeline"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <GitBranch className="w-4 h-4" />
         الجدول الزمني
       </TabsTrigger>
       <TabsTrigger
         value="activity"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-4 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0]"
+        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
       >
         <Activity className="w-4 h-4" />
         النشاط
@@ -728,7 +1073,7 @@ const DocumentsTab = ({
     </TabsContent>
 
     <TabsContent value="timeline" className="mt-6">
-      <Card>
+      <Card className="border-neutral-200">
         <CardHeader>
           <CardTitle className="text-lg">الجدول الزمني للعقد</CardTitle>
         </CardHeader>
@@ -739,13 +1084,15 @@ const DocumentsTab = ({
     </TabsContent>
 
     <TabsContent value="activity" className="mt-6">
-      <Card>
+      <Card className="border-neutral-200">
         <CardHeader>
           <CardTitle className="text-lg">سجل النشاط</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-slate-500">
-            <Activity className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <div className="text-center py-16 text-neutral-500">
+            <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+              <Activity className="w-10 h-10 text-neutral-400" />
+            </div>
             <p>سجل النشاط سيظهر هنا</p>
           </div>
         </CardContent>
@@ -754,7 +1101,7 @@ const DocumentsTab = ({
   </Tabs>
 );
 
-// === Main Component ===
+// ===== Main Component =====
 const ContractDetailsPageRedesigned = () => {
   const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
@@ -842,8 +1189,8 @@ const ContractDetailsPageRedesigned = () => {
         .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
-        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
-        .order('due_date', { ascending: true });  // ترتيب من الأقدم إلى الأحدث
+        .neq('status', 'cancelled')
+        .order('due_date', { ascending: true });
 
       if (error) throw error;
       return data as Invoice[];
@@ -946,6 +1293,22 @@ const ContractDetailsPageRedesigned = () => {
     queryClient.invalidateQueries({ queryKey: ['contract-details'] });
   }, [queryClient]);
 
+  const handlePrint = useCallback(() => {
+    setIsPrintDialogOpen(true);
+  }, []);
+
+  const handleCustomerClick = useCallback(() => {
+    if (contract?.customer?.id) {
+      navigate(`/customers/${contract.customer.id}`);
+    }
+  }, [contract, navigate]);
+
+  const handleVehicleClick = useCallback(() => {
+    if (contract?.vehicle?.id) {
+      navigate(`/fleet/vehicles/${contract.vehicle.id}`);
+    }
+  }, [contract, navigate]);
+
   const handleInvoicePay = useCallback((invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setIsPayDialogOpen(true);
@@ -963,12 +1326,12 @@ const ContractDetailsPageRedesigned = () => {
 
   const confirmCancelInvoice = useCallback(async () => {
     if (!invoiceToCancel) return;
-    
+
     setIsCancellingInvoice(true);
     try {
       const { error } = await supabase
         .from('invoices')
-        .update({ 
+        .update({
           status: 'cancelled',
           payment_status: 'cancelled',
           updated_at: new Date().toISOString()
@@ -982,7 +1345,6 @@ const ContractDetailsPageRedesigned = () => {
         description: `تم إلغاء الفاتورة ${invoiceToCancel.invoice_number} بنجاح`,
       });
 
-      // Refresh invoices
       queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
@@ -1056,13 +1418,9 @@ const ContractDetailsPageRedesigned = () => {
 
       if (contractError) throw contractError;
 
-      // Note: Vehicle status is automatically updated by database trigger
-      // (contracts_vehicle_status_update -> update_vehicle_status_from_contract)
-      // No manual update needed - this prevents the "tuple already modified" error
-
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      queryClient.invalidateQueries({ queryKey: ['vehicles'] }); // Refresh vehicles list
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
 
       toast({
         title: 'تم إنهاء العقد',
@@ -1082,16 +1440,14 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [contract, companyId, queryClient, toast]);
 
-  // إزالة الإجراء القانوني وإعادة العقد للحالة النشطة
   const executeRemoveLegalProcedure = useCallback(async () => {
     if (!contract?.id || !companyId) return;
 
     setIsRemovingLegal(true);
     try {
-      // تحديث حالة العقد إلى active
       const { error: contractError } = await supabase
         .from('contracts')
-        .update({ 
+        .update({
           status: 'active',
           updated_at: new Date().toISOString()
         })
@@ -1100,7 +1456,6 @@ const ContractDetailsPageRedesigned = () => {
 
       if (contractError) throw contractError;
 
-      // حذف سجل العميل المتعثر إن وجد
       await supabase
         .from('delinquent_customers')
         .delete()
@@ -1174,79 +1529,56 @@ const ContractDetailsPageRedesigned = () => {
     }
   }, [contract, companyId, queryClient, toast, navigate]);
 
-  // Loading state - wait for both initialization and data loading
+  // Loading state
   if (isLoading || isInitializing) {
     return <PageSkeletonFallback />;
   }
 
   if (error || !contract) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-100 via-white to-neutral-100 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full border-neutral-200">
           <CardContent className="p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-            <h2 className="text-lg font-bold text-slate-900 mb-2">خطأ في تحميل العقد</h2>
-            <p className="text-slate-500 mb-4">لم يتم العثور على العقد المطلوب</p>
-            <Button onClick={handleBack}>العودة للقائمة</Button>
+            <div className="w-20 h-20 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-10 h-10 text-red-600" />
+            </div>
+            <h2 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل العقد</h2>
+            <p className="text-neutral-500 mb-4">لم يتم العثور على العقد المطلوب</p>
+            <Button onClick={handleBack} className="bg-gradient-to-r from-teal-500 to-teal-600">
+              العودة للقائمة
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  const tabs = [
+    { value: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
+    { value: 'contract', label: 'العقد', icon: FileCheck },
+    { value: 'financial', label: 'المالي', icon: Receipt },
+    { value: 'vehicle', label: 'المركبة', icon: Car },
+    { value: 'documents', label: 'المستندات', icon: Folder },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50" dir="rtl">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Back & Title */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleBack}
-                className="rounded-xl"
-              >
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#40E0D0] to-[#20B2AA] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
-                  <FileSignature className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-slate-900">عقد #{contract.contract_number}</h1>
-                  <p className="text-sm text-slate-500">تفاصيل العقد</p>
-                </div>
-              </div>
-            </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gradient-to-br from-neutral-100 via-white to-neutral-100"
+      dir="rtl"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Contract Header */}
+        <ContractHeader
+          contract={contract}
+          onBack={handleBack}
+          onRefresh={handleRefresh}
+          onPrint={handlePrint}
+          onStatusClick={() => setIsStatusManagementOpen(true)}
+        />
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleRefresh}
-                className="rounded-xl"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPrintDialogOpen(true)}
-                className="rounded-xl gap-2 border-[#40E0D0] text-[#40E0D0] hover:bg-teal-50"
-              >
-                <Printer className="w-4 h-4" />
-                <span className="hidden sm:inline">طباعة</span>
-              </Button>
-              <QuickActionsButton contract={contract} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-[1600px] mx-auto px-6 py-8 space-y-6">
         {/* Alerts */}
         <ContractAlerts
           contract={contract}
@@ -1256,58 +1588,26 @@ const ContractDetailsPageRedesigned = () => {
 
         {/* Main Tabs */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+          variants={fadeInUp}
+          className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm"
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b border-slate-200 px-6">
+            <div className="border-b border-neutral-200 px-6">
               <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none flex gap-1 overflow-x-auto">
-                <TabsTrigger
-                  value="overview"
-                  className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0] hover:bg-teal-50/50 whitespace-nowrap"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  نظرة عامة
-                </TabsTrigger>
-                <TabsTrigger
-                  value="contract"
-                  className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0] hover:bg-teal-50/50 whitespace-nowrap"
-                >
-                  <FileCheck className="w-4 h-4" />
-                  العقد
-                </TabsTrigger>
-                <TabsTrigger
-                  value="financial"
-                  className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0] hover:bg-teal-50/50 whitespace-nowrap"
-                >
-                  <Receipt className="w-4 h-4" />
-                  المالي
-                </TabsTrigger>
-                <TabsTrigger
-                  value="vehicle"
-                  className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0] hover:bg-teal-50/50 whitespace-nowrap relative"
-                >
-                  <Car className="w-4 h-4" />
-                  المركبة
-                  {(checkInInspection || checkOutInspection) && (
-                    <span className="absolute top-2 left-2 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="documents"
-                  className="data-[state=active]:bg-teal-50 data-[state=active]:text-[#40E0D0] rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-[#40E0D0] hover:bg-teal-50/50 whitespace-nowrap"
-                >
-                  <Folder className="w-4 h-4" />
-                  المستندات
-                </TabsTrigger>
+                {tabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-4 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500 hover:bg-teal-50/50 whitespace-nowrap"
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </div>
 
-            <div className="p-6">
+            <div className="p-8">
               <TabsContent value="overview" className="mt-0">
                 <ContractOverviewTab
                   contract={contract}
@@ -1318,61 +1618,14 @@ const ContractDetailsPageRedesigned = () => {
                   trafficViolationsCount={trafficViolations.length}
                   formatCurrency={formatCurrency}
                   onStatusClick={() => setIsStatusManagementOpen(true)}
+                  onCustomerClick={handleCustomerClick}
+                  onVehicleClick={handleVehicleClick}
+                  onRenew={handleRenew}
+                  onAmend={handleAmend}
+                  onTerminate={handleTerminate}
+                  onConvertToLegal={() => setIsConvertToLegalOpen(true)}
+                  onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
                 />
-
-                {/* Quick Actions */}
-                <div className="mt-6 flex flex-wrap items-center gap-3 pt-6 border-t border-slate-200">
-                  {contract.status === 'active' && (
-                    <>
-                      <Button onClick={handleRenew} className="gap-2 bg-gradient-to-r from-[#40E0D0] to-[#20B2AA] hover:shadow-lg shadow-teal-200 rounded-xl">
-                        <RefreshCw className="w-4 h-4" />
-                        تجديد العقد
-                      </Button>
-                      <Button onClick={handleAmend} variant="outline" className="gap-2 border-[#40E0D0] text-[#40E0D0] hover:bg-teal-50 rounded-xl">
-                        <FileEdit className="w-4 h-4" />
-                        تعديل العقد
-                      </Button>
-                    </>
-                  )}
-                  {(contract.status === 'active' || contract.status === 'cancelled') && (
-                    <Button
-                      onClick={() => setIsConvertToLegalOpen(true)}
-                      variant="outline"
-                      className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50 rounded-xl"
-                    >
-                      <Scale className="w-4 h-4" />
-                      تحويل للشؤون القانونية
-                    </Button>
-                  )}
-                  {contract.status === 'under_legal_procedure' && (
-                    <Button
-                      onClick={() => setIsRemoveLegalDialogOpen(true)}
-                      variant="outline"
-                      className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-xl"
-                    >
-                      <Scale className="w-4 h-4" />
-                      إزالة الإجراء القانوني
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={handleTerminate}
-                    className="gap-2 border-rose-300 text-rose-700 hover:bg-rose-50 rounded-xl"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    إنهاء العقد
-                  </Button>
-                  {contract.status === 'cancelled' && (
-                    <Button
-                      variant="destructive"
-                      onClick={handleOpenDeletePermanent}
-                      className="gap-2 rounded-xl"
-                    >
-                      <AlertTriangle className="w-4 h-4" />
-                      حذف نهائي
-                    </Button>
-                  )}
-                </div>
               </TabsContent>
 
               <TabsContent value="contract" className="mt-0">
@@ -1612,7 +1865,7 @@ const ContractDetailsPageRedesigned = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 };
 
