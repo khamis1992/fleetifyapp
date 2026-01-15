@@ -13,6 +13,7 @@ import {
   createBankTransactionFromPayment, 
   reverseBankTransactionForPayment 
 } from '@/utils/bankTransactionHelper';
+import { calculateInvoiceTotalsAfterPaymentReversal } from '@/utils/invoiceHelpers';
 
 export interface PaymentOperationsOptions {
   autoCreateJournalEntry?: boolean;
@@ -510,6 +511,84 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     mutationFn: async ({ paymentId, reason }: { paymentId: string; reason?: string }) => {
       console.log('❌ [usePaymentOperations] Starting payment cancellation:', { paymentId, reason });
 
+      if (!companyId) {
+        throw new Error('لم يتم تحديد الشركة');
+      }
+
+      // Fetch payment first (needed to reverse invoice totals safely)
+      const { data: existingPayment, error: fetchPaymentError } = await supabase
+        .from('payments')
+        .select('id, invoice_id, amount, payment_status')
+        .eq('id', paymentId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (fetchPaymentError || !existingPayment) {
+        console.error('❌ [usePaymentOperations] Fetch payment before cancel failed:', fetchPaymentError);
+        throw new Error('الدفعة غير موجودة');
+      }
+
+      if (existingPayment.payment_status === 'cancelled') {
+        // Idempotent: nothing to do
+        return existingPayment as any;
+      }
+
+      // If linked to invoice, reverse invoice paid totals
+      if (existingPayment.invoice_id) {
+        console.log('📄 [usePaymentOperations] Updating invoice:', existingPayment.invoice_id);
+        
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('id, total_amount, paid_amount, balance_due')
+          .eq('id', existingPayment.invoice_id)
+          .eq('company_id', companyId)
+          .single();
+
+        if (invoiceError || !invoice) {
+          console.error('❌ [usePaymentOperations] Fetch invoice before cancel failed:', invoiceError);
+          throw new Error('تعذر جلب بيانات الفاتورة لتحديثها');
+        }
+
+        console.log('📊 [usePaymentOperations] Invoice before reversal:', {
+          total_amount: invoice.total_amount,
+          paid_amount: invoice.paid_amount,
+          balance_due: invoice.balance_due,
+          reversed_amount: existingPayment.amount,
+        });
+
+        const { paidAmount, balanceDue, paymentStatus } = calculateInvoiceTotalsAfterPaymentReversal({
+          totalAmount: Number(invoice.total_amount) || 0,
+          currentPaidAmount: Number(invoice.paid_amount) || 0,
+          reversedAmount: Number(existingPayment.amount) || 0,
+        });
+
+        console.log('📊 [usePaymentOperations] Invoice after reversal:', {
+          paidAmount,
+          balanceDue,
+          paymentStatus,
+        });
+
+        const { error: updateInvoiceError } = await supabase
+          .from('invoices')
+          .update({
+            paid_amount: paidAmount,
+            balance_due: balanceDue,
+            payment_status: paymentStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', invoice.id)
+          .eq('company_id', companyId);
+
+        if (updateInvoiceError) {
+          console.error('❌ [usePaymentOperations] Update invoice after cancel failed:', updateInvoiceError);
+          throw new Error('فشل تحديث الفاتورة بعد إلغاء الدفعة');
+        }
+
+        console.log('✅ [usePaymentOperations] Invoice updated successfully');
+      } else {
+        console.log('ℹ️ [usePaymentOperations] Payment has no invoice_id, skipping invoice update');
+      }
+
       // Update payment status
       const { data: cancelledPayment, error } = await supabase
         .from('payments')
@@ -548,6 +627,7 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
     onSuccess: (payment) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['payment', payment.id] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['banks'] });
       queryClient.invalidateQueries({ queryKey: ['bank-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['treasury-summary'] });

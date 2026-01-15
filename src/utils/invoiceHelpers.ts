@@ -52,3 +52,36 @@ export const extractCustomerName = (invoice: any): string => {
   return 'عميل';
 };
 
+export type InvoicePaymentStatus = 'unpaid' | 'partial' | 'paid';
+
+/**
+ * حساب حالة الفاتورة بعد إلغاء/حذف دفعة (عكس مبلغ مدفوع سابقاً)
+ *
+ * ملاحظة: النظام يستخدم قيم payment_status التالية: unpaid | partial | paid
+ */
+export const calculateInvoiceTotalsAfterPaymentReversal = ({
+  totalAmount,
+  currentPaidAmount,
+  reversedAmount,
+}: {
+  totalAmount: number;
+  currentPaidAmount: number;
+  reversedAmount: number;
+}): { paidAmount: number; balanceDue: number; paymentStatus: InvoicePaymentStatus } => {
+  const safeTotal = Number(totalAmount) || 0;
+  const safeCurrentPaid = Number(currentPaidAmount) || 0;
+  const safeReversed = Number(reversedAmount) || 0;
+
+  const paidAmount = Math.max(0, safeCurrentPaid - safeReversed);
+  const balanceDue = Math.max(0, safeTotal - paidAmount);
+
+  let paymentStatus: InvoicePaymentStatus = 'unpaid';
+  if (paidAmount >= safeTotal && safeTotal > 0) {
+    paymentStatus = 'paid';
+  } else if (paidAmount > 0) {
+    paymentStatus = 'partial';
+  }
+
+  return { paidAmount, balanceDue, paymentStatus };
+};
+

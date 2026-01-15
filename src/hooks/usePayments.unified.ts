@@ -488,73 +488,10 @@ export const useCreatePayment = () => {
           throw new Error(`خطأ في إنشاء الدفع: ${paymentError.message}`);
         }
         
-        // If this is a payment for an invoice, update the invoice
-        if (paymentData.invoice_id) {
-          // Get current invoice data
-          const { data: invoice, error: invoiceError } = await supabase
-            .from("invoices")
-            .select("total_amount, paid_amount, balance_due")
-            .eq("id", paymentData.invoice_id)
-            .single();
-            
-          if (invoiceError) {
-            Sentry.captureException(invoiceError, {
-              tags: {
-                feature: 'payments',
-                action: 'create',
-                component: 'useCreatePayment.unified',
-                step: 'fetch_invoice_for_update'
-              },
-              extra: { 
-                userId: user?.id, 
-                invoiceId: paymentData.invoice_id 
-              }
-            });
-            throw new Error('خطأ في جلب بيانات الفاتورة للتحديث');
-          }
-          
-          const newPaidAmount = (invoice.paid_amount || 0) + paymentData.amount;
-          const newBalanceDue = (invoice.total_amount || 0) - newPaidAmount;
-          
-          let newPaymentStatus: 'unpaid' | 'partial' | 'paid';
-          if (newPaidAmount >= (invoice.total_amount || 0)) {
-            newPaymentStatus = 'paid';
-          } else if (newPaidAmount > 0) {
-            newPaymentStatus = 'partial';
-          } else {
-            newPaymentStatus = 'unpaid';
-          }
-          
-          // Update invoice
-          const { error: updateError } = await supabase
-            .from("invoices")
-            .update({
-              paid_amount: newPaidAmount,
-              balance_due: Math.max(0, newBalanceDue),
-              payment_status: newPaymentStatus,
-              updated_at: new Date().toISOString()
-            })
-            .eq("id", paymentData.invoice_id);
-            
-          if (updateError) {
-            Sentry.captureException(updateError, {
-              tags: {
-                feature: 'payments',
-                action: 'create',
-                component: 'useCreatePayment.unified',
-                step: 'update_invoice'
-              },
-              extra: { 
-                userId: user?.id, 
-                invoiceId: paymentData.invoice_id,
-                newPaidAmount,
-                newBalanceDue,
-                newPaymentStatus
-              }
-            });
-            throw new Error('خطأ في تحديث الفاتورة');
-          }
-        }
+        // Note: Invoice update (paid_amount, balance_due, payment_status) is now 
+        // handled automatically by the database trigger 'trigger_update_invoice_payment_status'
+        // which fires AFTER INSERT/UPDATE/DELETE on payments table.
+        // This eliminates race conditions and ensures data consistency.
         
         return payment;
       } catch (error) {

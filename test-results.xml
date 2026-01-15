@@ -1,0 +1,98 @@
+<testsuites id="" name="" tests="42" failures="0" skipped="0" errors="0" time="54.280688999999995">
+<testsuite name="finance-hub.spec.ts" timestamp="2026-01-15T15:21:59.092Z" hostname="chromium" tests="7" failures="0" skipped="0" time="50.022" errors="0">
+<testcase name="Finance Hub › FH-001: Navigate to Finance Hub and verify layout" classname="finance-hub.spec.ts" time="7.667">
+</testcase>
+<testcase name="Finance Hub › FH-002: Verify KPI cards display correctly" classname="finance-hub.spec.ts" time="7.273">
+</testcase>
+<testcase name="Finance Hub › FH-003: Quick Actions work correctly" classname="finance-hub.spec.ts" time="7.708">
+</testcase>
+<testcase name="Finance Hub › FH-004: Universal Search functionality" classname="finance-hub.spec.ts" time="6.882">
+</testcase>
+<testcase name="Finance Hub › FH-005: Activity Timeline displays recent activities" classname="finance-hub.spec.ts" time="9.431">
+</testcase>
+<testcase name="Finance Hub › FH-006: Navigate to Billing Center from Hub" classname="finance-hub.spec.ts" time="4.688">
+</testcase>
+<testcase name="Finance Hub › FH-007: Navigate to Reports from Hub" classname="finance-hub.spec.ts" time="6.373">
+</testcase>
+</testsuite>
+<testsuite name="finance-hub.spec.ts" timestamp="2026-01-15T15:21:59.092Z" hostname="firefox" tests="7" failures="0" skipped="0" time="285.188" errors="0">
+<testcase name="Finance Hub › FH-001: Navigate to Finance Hub and verify layout" classname="finance-hub.spec.ts" time="42.607">
+</testcase>
+<testcase name="Finance Hub › FH-002: Verify KPI cards display correctly" classname="finance-hub.spec.ts" time="41.668">
+</testcase>
+<testcase name="Finance Hub › FH-003: Quick Actions work correctly" classname="finance-hub.spec.ts" time="40.286">
+</testcase>
+<testcase name="Finance Hub › FH-004: Universal Search functionality" classname="finance-hub.spec.ts" time="40.992">
+</testcase>
+<testcase name="Finance Hub › FH-005: Activity Timeline displays recent activities" classname="finance-hub.spec.ts" time="41.274">
+</testcase>
+<testcase name="Finance Hub › FH-006: Navigate to Billing Center from Hub" classname="finance-hub.spec.ts" time="38.846">
+</testcase>
+<testcase name="Finance Hub › FH-007: Navigate to Reports from Hub" classname="finance-hub.spec.ts" time="39.515">
+</testcase>
+</testsuite>
+<testsuite name="finance-hub.spec.ts" timestamp="2026-01-15T15:21:59.092Z" hostname="webkit" tests="7" failures="0" skipped="0" time="112.428" errors="0">
+<testcase name="Finance Hub › FH-001: Navigate to Finance Hub and verify layout" classname="finance-hub.spec.ts" time="15.633">
+</testcase>
+<testcase name="Finance Hub › FH-002: Verify KPI cards display correctly" classname="finance-hub.spec.ts" time="16.484">
+</testcase>
+<testcase name="Finance Hub › FH-003: Quick Actions work correctly" classname="finance-hub.spec.ts" time="14.655">
+</testcase>
+<testcase name="Finance Hub › FH-004: Universal Search functionality" classname="finance-hub.spec.ts" time="17.511">
+</testcase>
+<testcase name="Finance Hub › FH-005: Activity Timeline displays recent activities" classname="finance-hub.spec.ts" time="15.244">
+</testcase>
+<testcase name="Finance Hub › FH-006: Navigate to Billing Center from Hub" classname="finance-hub.spec.ts" time="14.534">
+</testcase>
+<testcase name="Finance Hub › FH-007: Navigate to Reports from Hub" classname="finance-hub.spec.ts" time="18.367">
+</testcase>
+</testsuite>
+<testsuite name="finance-hub.spec.ts" timestamp="2026-01-15T15:21:59.092Z" hostname="Mobile Chrome" tests="7" failures="0" skipped="0" time="49.455" errors="0">
+<testcase name="Finance Hub › FH-001: Navigate to Finance Hub and verify layout" classname="finance-hub.spec.ts" time="7.25">
+</testcase>
+<testcase name="Finance Hub › FH-002: Verify KPI cards display correctly" classname="finance-hub.spec.ts" time="6.822">
+</testcase>
+<testcase name="Finance Hub › FH-003: Quick Actions work correctly" classname="finance-hub.spec.ts" time="8.83">
+</testcase>
+<testcase name="Finance Hub › FH-004: Universal Search functionality" classname="finance-hub.spec.ts" time="8.785">
+</testcase>
+<testcase name="Finance Hub › FH-005: Activity Timeline displays recent activities" classname="finance-hub.spec.ts" time="8.201">
+</testcase>
+<testcase name="Finance Hub › FH-006: Navigate to Billing Center from Hub" classname="finance-hub.spec.ts" time="5.384">
+</testcase>
+<testcase name="Finance Hub › FH-007: Navigate to Reports from Hub" classname="finance-hub.spec.ts" time="4.183">
+</testcase>
+</testsuite>
+<testsuite name="finance-hub.spec.ts" timestamp="2026-01-15T15:21:59.092Z" hostname="Mobile Safari" tests="7" failures="0" skipped="0" time="111.854" errors="0">
+<testcase name="Finance Hub › FH-001: Navigate to Finance Hub and verify layout" classname="finance-hub.spec.ts" time="17.471">
+</testcase>
+<testcase name="Finance Hub › FH-002: Verify KPI cards display correctly" classname="finance-hub.spec.ts" time="18.068">
+</testcase>
+<testcase name="Finance Hub › FH-003: Quick Actions work correctly" classname="finance-hub.spec.ts" time="15.388">
+</testcase>
+<testcase name="Finance Hub › FH-004: Universal Search functionality" classname="finance-hub.spec.ts" time="18.078">
+</testcase>
+<testcase name="Finance Hub › FH-005: Activity Timeline displays recent activities" classname="finance-hub.spec.ts" time="16.882">
+</testcase>
+<testcase name="Finance Hub › FH-006: Navigate to Billing Center from Hub" classname="finance-hub.spec.ts" time="13.22">
+</testcase>
+<testcase name="Finance Hub › FH-007: Navigate to Reports from Hub" classname="finance-hub.spec.ts" time="12.747">
+</testcase>
+</testsuite>
+<testsuite name="finance-hub.spec.ts" timestamp="2026-01-15T15:21:59.092Z" hostname="Tablet" tests="7" failures="0" skipped="0" time="38.486" errors="0">
+<testcase name="Finance Hub › FH-001: Navigate to Finance Hub and verify layout" classname="finance-hub.spec.ts" time="5.83">
+</testcase>
+<testcase name="Finance Hub › FH-002: Verify KPI cards display correctly" classname="finance-hub.spec.ts" time="6.395">
+</testcase>
+<testcase name="Finance Hub › FH-003: Quick Actions work correctly" classname="finance-hub.spec.ts" time="7.315">
+</testcase>
+<testcase name="Finance Hub › FH-004: Universal Search functionality" classname="finance-hub.spec.ts" time="6.073">
+</testcase>
+<testcase name="Finance Hub › FH-005: Activity Timeline displays recent activities" classname="finance-hub.spec.ts" time="5.095">
+</testcase>
+<testcase name="Finance Hub › FH-006: Navigate to Billing Center from Hub" classname="finance-hub.spec.ts" time="3.301">
+</testcase>
+<testcase name="Finance Hub › FH-007: Navigate to Reports from Hub" classname="finance-hub.spec.ts" time="4.477">
+</testcase>
+</testsuite>
+</testsuites>

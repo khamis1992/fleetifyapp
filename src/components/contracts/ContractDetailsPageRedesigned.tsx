@@ -5,15 +5,14 @@
  * @component ContractDetailsPageRedesigned
  */
 
-import { useState, useMemo, useCallback, Fragment } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
   Printer,
-  Download,
   FileText,
   FileSignature,
   User,
@@ -23,14 +22,9 @@ import {
   XCircle,
   DollarSign,
   Calendar,
-  CalendarCheck,
-  CalendarX,
   CreditCard,
-  ClipboardCheck,
   Info,
   Wallet,
-  LogIn,
-  LogOut,
   AlertTriangle,
   AlertCircle,
   Folder,
@@ -38,20 +32,16 @@ import {
   Activity,
   CheckCircle,
   Clock,
-  Circle,
   Plus,
   Eye,
-  Upload,
   Scale,
   Loader2,
-  ChevronDown,
   LayoutDashboard,
   FileCheck,
   Receipt,
   Wrench,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,18 +79,13 @@ import { ContractAlerts } from './ContractAlerts';
 import { TimelineView } from './TimelineView';
 import { QuickActionsButton } from './QuickActionsButton';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
-import { useContractPaymentSchedules } from '@/hooks/usePaymentSchedules';
+import { useContractPaymentSchedules, useGeneratePaymentSchedulesFromInvoices } from '@/hooks/usePaymentSchedules';
 import { ContractPaymentsTab } from './ContractPaymentsTab';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
-
-// === Theme Colors ===
-const TURQUOISE = '#40E0D0';
-const TURQUOISE_DARK = '#20B2AA';
-const TURQUOISE_LIGHT = 'rgb(45, 212, 191)'; // teal-400
 
 // === New Tab Components ===
 
@@ -119,7 +104,7 @@ const ContractOverviewTab = ({
   customerName: string;
   vehicleName: string;
   plateNumber?: string;
-  contractStats: any;
+  contractStats: Record<string, unknown>;
   trafficViolationsCount: number;
   formatCurrency: (amount: number) => string;
   onStatusClick: () => void;
@@ -302,10 +287,8 @@ const ContractOverviewTab = ({
 // Contract Tab Component (Details + Official)
 const ContractTab = ({
   contract,
-  formatCurrency,
 }: {
   contract: Contract;
-  formatCurrency: (amount: number) => string;
 }) => (
   <Tabs defaultValue="details" className="w-full">
     <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
@@ -379,10 +362,18 @@ const FinancialTab = ({
   onCreateInvoice,
   onCancelInvoice,
   isCancellingInvoice,
+  onGeneratePaymentSchedules,
 }: {
   contract: Contract;
   invoices: Invoice[];
-  paymentSchedules: any[];
+  paymentSchedules: Array<{
+    id: string;
+    installment_number: number | null;
+    due_date: string | null;
+    amount: number | null;
+    status: string;
+    payment_date: string | null;
+  }>;
   isLoadingPaymentSchedules: boolean;
   contractId: string;
   companyId: string;
@@ -392,6 +383,7 @@ const FinancialTab = ({
   onCreateInvoice: () => void;
   onCancelInvoice: (invoice: Invoice) => void;
   isCancellingInvoice: boolean;
+  onGeneratePaymentSchedules: () => void;
 }) => (
   <Tabs defaultValue="overview" className="w-full">
     <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-slate-200">
@@ -505,8 +497,18 @@ const FinancialTab = ({
 
     <TabsContent value="schedule" className="mt-6">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">جدول الدفعات</CardTitle>
+          {invoices.length > 0 && paymentSchedules.length < invoices.length && (
+            <Button
+              onClick={onGeneratePaymentSchedules}
+              size="sm"
+              className="gap-2 bg-gradient-to-r from-[#40E0D0] to-[#20B2AA] hover:shadow-lg shadow-teal-200"
+            >
+              <RefreshCw className="w-4 h-4" />
+              إنشاء جدول الدفعات من الفواتير
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoadingPaymentSchedules ? (
@@ -592,16 +594,18 @@ const VehicleTab = ({
   customerName,
   plateNumber,
   trafficViolations,
-  contractId,
-  companyId,
   formatCurrency,
 }: {
   contract: Contract;
   customerName: string;
   plateNumber?: string;
-  trafficViolations: any[];
-  contractId: string;
-  companyId: string;
+  trafficViolations: Array<{
+    id: string;
+    violation_date: string | null;
+    violation_type: string | null;
+    fine_amount: number | null;
+    status: string;
+  }>;
   formatCurrency: (amount: number) => string;
 }) => (
   <Tabs defaultValue="handover" className="w-full">
@@ -665,7 +669,7 @@ const VehicleTab = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {trafficViolations.map((violation: any) => (
+                {trafficViolations.map((violation) => (
                   <TableRow key={violation.id}>
                     <TableCell>
                       {violation.violation_date ? format(new Date(violation.violation_date), 'dd/MM/yyyy') : '-'}
@@ -872,6 +876,9 @@ const ContractDetailsPageRedesigned = () => {
   // Fetch payment schedules
   const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(contract?.id || '');
 
+  // Hook to generate payment schedules from invoices
+  const generatePaymentSchedulesFromInvoices = useGeneratePaymentSchedulesFromInvoices();
+
   // Calculations
   const contractStats = useMemo(() => {
     if (!contract) return null;
@@ -1005,6 +1012,11 @@ const ContractDetailsPageRedesigned = () => {
     setIsTerminateDialogOpen(true);
   }, []);
 
+  const handleGeneratePaymentSchedules = useCallback(() => {
+    if (!contract?.id) return;
+    generatePaymentSchedulesFromInvoices.mutate(contract.id);
+  }, [contract?.id, generatePaymentSchedulesFromInvoices]);
+
   const handleOpenDeletePermanent = useCallback(async () => {
     if (!contract?.id) return;
 
@@ -1058,11 +1070,11 @@ const ContractDetailsPageRedesigned = () => {
       });
 
       setIsTerminateDialogOpen(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error('خطأ في إنهاء العقد:', error);
       toast({
         title: 'خطأ في إنهاء العقد',
-        description: error.message || 'حدث خطأ غير متوقع',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
         variant: 'destructive',
       });
     } finally {
@@ -1104,11 +1116,11 @@ const ContractDetailsPageRedesigned = () => {
       });
 
       setIsRemoveLegalDialogOpen(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error('خطأ في إزالة الإجراء القانوني:', error);
       toast({
         title: 'خطأ في إزالة الإجراء القانوني',
-        description: error.message || 'حدث خطأ غير متوقع',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
         variant: 'destructive',
       });
     } finally {
@@ -1150,11 +1162,11 @@ const ContractDetailsPageRedesigned = () => {
       });
 
       navigate('/contracts');
-    } catch (error: any) {
+    } catch (error) {
       console.error('خطأ في الحذف النهائي:', error);
       toast({
         title: 'خطأ في الحذف',
-        description: error.message || 'حدث خطأ غير متوقع',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
         variant: 'destructive',
       });
     } finally {
@@ -1364,7 +1376,7 @@ const ContractDetailsPageRedesigned = () => {
               </TabsContent>
 
               <TabsContent value="contract" className="mt-0">
-                <ContractTab contract={contract} formatCurrency={formatCurrency} />
+                <ContractTab contract={contract} />
               </TabsContent>
 
               <TabsContent value="financial" className="mt-0">
@@ -1381,6 +1393,7 @@ const ContractDetailsPageRedesigned = () => {
                   onCreateInvoice={() => setIsInvoiceDialogOpen(true)}
                   onCancelInvoice={handleCancelInvoice}
                   isCancellingInvoice={isCancellingInvoice}
+                  onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
                 />
               </TabsContent>
 
@@ -1390,8 +1403,6 @@ const ContractDetailsPageRedesigned = () => {
                   customerName={customerName}
                   plateNumber={plateNumber}
                   trafficViolations={trafficViolations}
-                  contractId={contract.id}
-                  companyId={companyId}
                   formatCurrency={formatCurrency}
                 />
               </TabsContent>

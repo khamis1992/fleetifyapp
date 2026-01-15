@@ -17,6 +17,8 @@ import {
   Clock,
   Ban,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { calculateInvoiceTotalsAfterPaymentReversal } from '@/utils/invoiceHelpers';
 
 interface Payment {
   id: string;
@@ -72,14 +75,14 @@ export function ContractPaymentsTab({
   const queryClient = useQueryClient();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [showAllPayments, setShowAllPayments] = useState(false);
 
   // Fetch payments for all invoices in this contract
   const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['contract-payments', contractId, invoiceIds],
+    queryKey: ['contract-payments', contractId, showAllPayments],
     queryFn: async () => {
-      if (!invoiceIds.length) return [];
-
-      const { data, error } = await supabase
+      // Build the base query
+      let query = supabase
         .from('payments')
         .select(`
           id,
@@ -93,19 +96,68 @@ export function ContractPaymentsTab({
           invoice_id,
           invoice:invoices!invoice_id(invoice_number)
         `)
-        .in('invoice_id', invoiceIds)
-        .eq('company_id', companyId)
-        .order('payment_date', { ascending: false });
+        .eq('company_id', companyId);
+
+      // Filter either by contract_id (show all) or by invoice_ids (only linked to invoices)
+      if (showAllPayments) {
+        query = query.eq('contract_id', contractId);
+      } else {
+        if (!invoiceIds.length) return [];
+        query = query.in('invoice_id', invoiceIds);
+      }
+
+      query = query.order('payment_date', { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return (data || []) as Payment[];
     },
-    enabled: invoiceIds.length > 0,
+    enabled: showAllPayments || invoiceIds.length > 0,
   });
 
   // Mutation to cancel payment
   const cancelPaymentMutation = useMutation({
     mutationFn: async (paymentId: string) => {
+      if (!selectedPayment) {
+        throw new Error('لم يتم تحديد الدفعة');
+      }
+
+      // Reverse invoice totals first (so invoice reflects cancellation) - only if invoice_id exists
+      if (selectedPayment.invoice_id) {
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('id, total_amount, paid_amount')
+          .eq('id', selectedPayment.invoice_id)
+          .eq('company_id', companyId)
+          .single();
+
+        if (invoiceError || !invoice) {
+          throw new Error('تعذر جلب بيانات الفاتورة لتحديثها');
+        }
+
+        const { paidAmount, balanceDue, paymentStatus } = calculateInvoiceTotalsAfterPaymentReversal({
+          totalAmount: Number(invoice.total_amount) || 0,
+          currentPaidAmount: Number(invoice.paid_amount) || 0,
+          reversedAmount: Number(selectedPayment.amount) || 0,
+        });
+
+        const { error: updateInvoiceError } = await supabase
+          .from('invoices')
+          .update({
+            paid_amount: paidAmount,
+            balance_due: balanceDue,
+            payment_status: paymentStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', invoice.id)
+          .eq('company_id', companyId);
+
+        if (updateInvoiceError) {
+          throw new Error('فشل تحديث الفاتورة بعد إلغاء الدفعة');
+        }
+      }
+
       const { error } = await supabase
         .from('payments')
         .update({ 
@@ -210,15 +262,34 @@ export function ContractPaymentsTab({
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-teal-600" />
-            سجل الدفعات
-            {payments.length > 0 && (
-              <Badge variant="secondary" className="mr-2">
-                {payments.length} دفعة
-              </Badge>
-            )}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-teal-600" />
+              سجل الدفعات
+              {payments.length > 0 && (
+                <Badge variant="secondary" className="mr-2">
+                  {payments.length} دفعة
+                </Badge>
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              {payments.filter(p => !p.invoice_id).length > 0 && (
+                <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">
+                  {payments.filter(p => !p.invoice_id).length} غير مرتبطة بفاتورة
+                </Badge>
+              )}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="show-all-payments" className="text-sm cursor-pointer">
+                  عرض الكل
+                </Label>
+                <Switch
+                  id="show-all-payments"
+                  checked={showAllPayments}
+                  onCheckedChange={setShowAllPayments}
+                />
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (

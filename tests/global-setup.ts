@@ -23,7 +23,7 @@ async function globalSetup(config: FullConfig) {
 
     // Check if the application is running
     console.log('📡 Checking application availability...');
-    await page.goto('http://localhost:5173');
+    await page.goto('http://localhost:8080');
 
     // Wait for the app to be ready
     await page.waitForSelector('body', { timeout: 30000 });
@@ -31,7 +31,7 @@ async function globalSetup(config: FullConfig) {
 
     // Generate test authentication token if needed
     try {
-      await page.goto('http://localhost:5173/login');
+      await page.goto('http://localhost:8080/auth');
 
       // Check if login form exists
       const loginForm = page.locator('[data-testid="email-input"]');

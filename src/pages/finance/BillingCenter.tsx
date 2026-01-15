@@ -34,6 +34,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +64,7 @@ import {
   Send,
   Wallet,
   CalendarDays,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +72,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
 
 // ===== Stat Card Component =====
 interface StatCardProps {
@@ -148,6 +151,11 @@ const BillingCenter = () => {
   const [isCreatePaymentOpen, setIsCreatePaymentOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [isPaymentPreviewOpen, setIsPaymentPreviewOpen] = useState(false);
+  const [isCancelPaymentDialogOpen, setIsCancelPaymentDialogOpen] = useState(false);
+  const [paymentToCancel, setPaymentToCancel] = useState<any>(null);
+  const [cancelReason, setCancelReason] = useState<string>("");
+
+  const { cancelPayment } = usePaymentOperations();
 
   // Data fetching
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoices({ pageSize: 100 });
@@ -279,6 +287,7 @@ const BillingCenter = () => {
   const getStatusBadge = (status: string) => {
     const configs: Record<string, { label: string; className: string }> = {
       paid: { label: 'مدفوعة', className: 'bg-green-100 text-green-700' },
+      unpaid: { label: 'غير مدفوعة', className: 'bg-slate-100 text-slate-700' },
       pending: { label: 'معلقة', className: 'bg-yellow-100 text-yellow-700' },
       partial: { label: 'جزئية', className: 'bg-blue-100 text-blue-700' },
       overdue: { label: 'متأخرة', className: 'bg-red-100 text-red-700' },
@@ -288,6 +297,43 @@ const BillingCenter = () => {
     };
     const config = configs[status] || { label: status, className: 'bg-slate-100 text-slate-700' };
     return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  const openCancelPaymentDialog = (payment: any) => {
+    setPaymentToCancel(payment);
+    setCancelReason("");
+    setIsCancelPaymentDialogOpen(true);
+  };
+
+  const confirmCancelPayment = async () => {
+    if (!paymentToCancel?.id) {
+      toast.error('لم يتم تحديد الدفعة');
+      return;
+    }
+
+    cancelPayment.mutate(
+      {
+        paymentId: paymentToCancel.id,
+        reason: cancelReason?.trim() || `تم الإلغاء من صفحة الفواتير والمدفوعات`,
+      },
+      {
+        onSuccess: () => {
+          // Refresh local lists
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+          queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+
+          setIsCancelPaymentDialogOpen(false);
+          setPaymentToCancel(null);
+          setCancelReason("");
+        },
+        onError: (error: any) => {
+          console.error('Error cancelling payment:', error);
+          toast.error(error?.message || 'فشل إلغاء الدفعة');
+        },
+      }
+    );
   };
 
   const formatDate = (date: string) => {
@@ -678,6 +724,18 @@ const BillingCenter = () => {
                           >
                             <Send className="w-4 h-4" />
                           </Button>
+                          {payment?.payment_status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600"
+                              onClick={() => openCancelPaymentDialog(payment)}
+                              title="إلغاء الدفعة"
+                              disabled={cancelPayment.isPending}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -789,6 +847,55 @@ const BillingCenter = () => {
           onOpenChange={setIsPaymentPreviewOpen}
         />
       )}
+
+      {/* Cancel Payment Confirmation */}
+      <AlertDialog open={isCancelPaymentDialogOpen} onOpenChange={setIsCancelPaymentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              تأكيد إلغاء الدفعة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-3">
+              <p>هل أنت متأكد من إلغاء هذه الدفعة؟ سيتم تحديث الفاتورة المرتبطة تلقائياً.</p>
+              {paymentToCancel && (
+                <div className="bg-neutral-50 rounded-lg p-3 text-sm space-y-1">
+                  <p><strong>رقم الدفعة:</strong> {paymentToCancel.payment_number || '-'}</p>
+                  <p><strong>المبلغ:</strong> {formatCurrency(Number(paymentToCancel.amount) || 0)}</p>
+                  <p><strong>التاريخ:</strong> {paymentToCancel.payment_date ? formatDate(paymentToCancel.payment_date) : '-'}</p>
+                  <p><strong>الفاتورة:</strong> {paymentToCancel?.invoices?.invoice_number || paymentToCancel?.invoice?.invoice_number || '-'}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">سبب الإلغاء (اختياري)</p>
+                <Textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="اكتب سبب الإلغاء..."
+                  rows={2}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelPayment.isPending}>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelPayment}
+              disabled={cancelPayment.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {cancelPayment.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  جاري الإلغاء...
+                </>
+              ) : (
+                'تأكيد الإلغاء'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

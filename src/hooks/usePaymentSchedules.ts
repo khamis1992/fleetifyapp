@@ -4,12 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import * as Sentry from '@sentry/react';
-import { 
-  PaymentSchedule, 
-  PaymentScheduleCreationData, 
+import {
+  PaymentSchedule,
+  PaymentScheduleCreationData,
   PaymentScheduleUpdateData,
   CreateScheduleRequest,
-  PaymentScheduleWithContract
 } from "@/types/payment-schedules";
 
 // Hook to fetch payment schedules for a specific contract
@@ -94,7 +93,7 @@ export const usePaymentSchedules = (filters?: {
         throw error;
       }
       Sentry.addBreadcrumb({ category: 'payment_schedules', message: 'Payment schedules fetched', level: 'info', data: { count: data?.length || 0 } });
-      return data as any[];
+      return data as PaymentSchedule[];
     },
     enabled: !!user?.id,
   });
@@ -569,6 +568,95 @@ export const useMarkPaymentAsPaid = () => {
       toast({
         title: "خطأ في تسجيل الدفع",
         description: "حدث خطأ أثناء تسجيل الدفع",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Hook to generate payment schedules from existing invoices
+export const useGeneratePaymentSchedulesFromInvoices = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (contractId: string) => {
+      // Permission check
+      if (!hasPermission('payment_schedules:create')) {
+        const error = new Error('ليس لديك صلاحية لإنشاء جداول الدفع');
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'generate_from_invoices',
+            component: 'useGeneratePaymentSchedulesFromInvoices'
+          },
+          extra: { userId: user?.id, contractId }
+        });
+        throw error;
+      }
+
+      if (!user?.id) throw new Error('المستخدم غير مصرح له');
+
+      Sentry.addBreadcrumb({
+        category: 'payment_schedules',
+        message: 'Generating payment schedules from invoices',
+        level: 'info',
+        data: { contractId }
+      });
+
+      const { data: result, error } = await supabase.rpc(
+        'generate_payment_schedules_for_contract',
+        {
+          p_contract_id: contractId,
+          p_dry_run: false
+        }
+      );
+
+      if (error) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'payment_schedules',
+            action: 'generate_from_invoices',
+            component: 'useGeneratePaymentSchedulesFromInvoices',
+            step: 'rpc_call'
+          },
+          extra: { userId: user?.id, contractId }
+        });
+        throw error;
+      }
+
+      return result;
+    },
+    onSuccess: (result, variables) => {
+      const schedulesCreated = result?.schedules_created || 0;
+      const invoicesProcessed = result?.invoices_processed || 0;
+      const schedulesSkipped = result?.schedules_skipped || 0;
+
+      queryClient.invalidateQueries({
+        queryKey: ['payment-schedules', variables]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['payment-schedules']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['contract-invoices', variables]
+      });
+
+      toast({
+        title: "تم إنشاء جدول الدفعات",
+        description: `تم إنشاء ${schedulesCreated} جدول دفعات من ${invoicesProcessed} فاتورة${schedulesSkipped > 0 ? ` (${schedulesSkipped} تم تخطيها)` : ''}`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error generating payment schedules from invoices:', error);
+
+      const errorMessage = error.message || 'حدث خطأ أثناء إنشاء جدول الدفعات من الفواتير';
+
+      toast({
+        title: "خطأ في إنشاء جدول الدفعات",
+        description: errorMessage,
         variant: "destructive",
       });
     },

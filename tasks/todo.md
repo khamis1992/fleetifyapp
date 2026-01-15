@@ -1,3 +1,47 @@
+# Task Plan: إلغاء الدفعة لفاتورة INV-202511-00711 (من صفحة الفواتير)
+
+## Goal
+تمكين إلغاء دفعة مرتبطة بفاتورة من واجهة الفواتير/المدفوعات، مع **تحديث الفاتورة تلقائياً** (paid_amount / balance_due / payment_status) بعد الإلغاء.
+
+## Phases (Todo)
+- [x] Reproduce: تجربة إلغاء الدفعة للفاتورة `INV-202511-00711` عبر صفحة الفواتير/المدفوعات والتأكد من السلوك الحالي
+- [x] Fix: تنفيذ “Cancel payment” بشكل آمن بحيث يُحدّث الفاتورة المرتبطة بعد الإلغاء
+- [x] UI: إضافة زر “إلغاء” للدفعات في `BillingCenter` (تبويب المدفوعات) وربطه بالعملية الموحدة
+- [x] Refactor (small): توحيد مسار الإلغاء في `ContractPaymentsTab` (بدلاً من تحديث `payments` فقط) إن كان هو المسار المستخدم في صفحة العقد
+- [x] Tests: إضافة اختبار Vitest لحساب تحديث الفاتورة بعد إلغاء دفعة (حالة unpaid/partial/paid)
+- [x] Verify: تحقق يدوي على `http://localhost:8080/contracts/C-ALF-0014` وعلى صفحة الفواتير/المدفوعات ✅ تم بنجاح
+
+## Notes / Findings
+- `src/components/contracts/ContractPaymentsTab.tsx` يلغي الدفعة بتحديث `payments.payment_status` فقط، ولا يوجد منطق مؤكد لتحديث الفاتورة بعدها.
+- `src/hooks/business/usePaymentOperations.ts` لديه `cancelPayment` لكنه لا يعيد حساب/تحديث بيانات الفاتورة (على عكس `useCreatePayment` و`useDeletePayment` في `hooks/usePayments.unified.ts`).
+- `src/pages/finance/BillingCenter.tsx` لا يعرض أي إجراء لإلغاء الدفعات حالياً (فقط معاينة/واتساب).
+
+## Review (to fill after completion)
+- Changes summary:
+  - إضافة دالة حسابية موحدة لإعادة حساب حالة الفاتورة بعد عكس دفعة (إلغاء/حذف).
+  - جعل `cancelPayment` يقوم بتحديث الفاتورة المرتبطة (إن وجدت) قبل تحديث حالة الدفعة إلى `cancelled`.
+  - إضافة زر/حوار “إلغاء الدفعة” داخل `BillingCenter` في تبويب المدفوعات.
+  - تحديث مسار إلغاء الدفعة في `ContractPaymentsTab` ليحدّث الفاتورة كذلك.
+  - **إصلاحات إضافية:**
+    - إضافة فحص `invoice_id` في `ContractPaymentsTab` قبل محاولة تحديث الفاتورة.
+    - إضافة فحص `invoice_id` في `BillingCenter` لعرض زر الإلغاء فقط للدفعات المرتبطة بفاتورة.
+    - تحسين معالجة الأخطاء في `confirmCancelPayment` باستخدام `mutate` بدلاً من `mutateAsync`.
+    - إضافة المزيد من رسائل التحقق (console.log) في `usePaymentOperations` لتتبع عملية الإلغاء.
+    - إضافة `balance_due` إلى الاستعلام في `usePaymentOperations` للتأكد من تحديثه بشكل صحيح.
+- Files touched:
+  - `src/utils/invoiceHelpers.ts`
+  - `src/hooks/business/usePaymentOperations.ts`
+  - `src/components/contracts/ContractPaymentsTab.tsx`
+  - `src/pages/finance/BillingCenter.tsx`
+  - `src/__tests__/unit/invoicePaymentMath.test.ts`
+- Test plan / verification notes:
+  - ✅ Unit tests: `npm test -- --run src/__tests__/unit/invoicePaymentMath.test.ts`
+  - ✅ UI smoke: فتح `/finance/billing` والتأكد من عدم وجود خطأ Runtime.
+  - ✅ إصلاحات: إضافة فحوصات `invoice_id` وتحسين معالجة الأخطاء.
+  - ⏳ يتبقى: تحقق فعلي على فاتورة `INV-202511-00711` بعد توفر البيانات/ظهورها في البيئة الحالية.
+
+---
+
 # Navigation Infinite Loading Issue - Audit & Fix Plan
 
 ## Problem Description

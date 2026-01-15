@@ -73,7 +73,7 @@
   :root {
     --success-light: 142 56% 95%;
     --warning-light: 25 85% 95%;
-    --primary-dark: 0 70% 35%;
+    --primary-dark: 175 84% 32%;
     --shadow-glow: 0 0 20px hsl(var(--primary-glow));
     --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
   }
@@ -141,12 +141,12 @@ All colors MUST be HSL.
     --card-hover: 0 0% 98%;
     --card-glass: 0 0% 100% / 0.9;
     
-    /* Deep Red Primary */
-    --primary: 0 70% 45%;
+    /* Teal Primary - اللون الأساسي للنظام (أخضر تركوازي) */
+    --primary: 174 80% 40%;
     --primary-foreground: 0 0% 100%;
-    --primary-dark: 0 70% 35%;
-    --primary-light: 0 70% 55%;
-    --primary-glow: 0 70% 45% / 0.2;
+    --primary-dark: 175 84% 32%;
+    --primary-light: 173 75% 48%;
+    --primary-glow: 174 80% 40% / 0.2;
     
     /* Professional Orange Accent System */
     --accent: 25 90% 92%;
@@ -179,8 +179,8 @@ All colors MUST be HSL.
     --border: 0 0% 85%;
     --input: 0 0% 98%;
     --input-border: 0 0% 80%;
-    --input-focus: 0 70% 45%;
-    --ring: 0 70% 45%;
+    --input-focus: 174 80% 40%;
+    --ring: 174 80% 40%;
     
     /* Elegant Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
@@ -220,12 +220,12 @@ All colors MUST be HSL.
     /* Charcoal Sidebar Variables */
     --sidebar-background: 0 0% 20%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 0 70% 45%;
+    --sidebar-primary: 174 80% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 25%;
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 30%;
-    --sidebar-ring: 0 70% 45%;
+    --sidebar-ring: 174 80% 40%;
     /* Mobile-specific colors */
     --mobile-navbar: var(--background);
     --mobile-tab: var(--card);
@@ -1130,7 +1130,7 @@ All colors MUST be HSL.
   }
 
   .number-display {
-    background: linear-gradient(135deg, hsl(0, 70%, 45%), hsl(25, 85%, 55%));
+    background: linear-gradient(135deg, hsl(174, 80%, 40%), hsl(173, 75%, 48%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1177,16 +1177,16 @@ All colors MUST be HSL.
   }
 
   .nav-pill.active {
-    background: linear-gradient(135deg, hsl(0, 70%, 45%), hsl(0, 70%, 40%));
+    background: linear-gradient(135deg, hsl(174, 80%, 40%), hsl(175, 84%, 32%));
     color: white;
     border-color: transparent;
-    box-shadow: 0 4px 8px hsl(0, 70%, 45% / 0.25);
+    box-shadow: 0 4px 8px hsl(174, 80%, 40% / 0.25);
   }
 
   .nav-pill:not(.active):hover {
     background: hsl(0, 0%, 97%);
-    border-color: hsl(0, 70%, 45%);
-    color: hsl(0, 70%, 45%);
+    border-color: hsl(174, 80%, 40%);
+    color: hsl(174, 80%, 40%);
   }
 
   .chart-glass {
