@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 16
+      "actualWorkers": 4
     },
     "preserveOutput": "always",
     "reporter": [
@@ -49,7 +49,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "chromium",
         "name": "chromium",
@@ -58,14 +58,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 90000
       },
       {
         "outputDir": "C:/Users/khamis/Desktop/fleetifyapp/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "firefox",
         "name": "firefox",
@@ -74,14 +74,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 90000
       },
       {
         "outputDir": "C:/Users/khamis/Desktop/fleetifyapp/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "webkit",
         "name": "webkit",
@@ -90,14 +90,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 90000
       },
       {
         "outputDir": "C:/Users/khamis/Desktop/fleetifyapp/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "Mobile Chrome",
         "name": "Mobile Chrome",
@@ -106,14 +106,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 90000
       },
       {
         "outputDir": "C:/Users/khamis/Desktop/fleetifyapp/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "Mobile Safari",
         "name": "Mobile Safari",
@@ -122,14 +122,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 90000
       },
       {
         "outputDir": "C:/Users/khamis/Desktop/fleetifyapp/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "Tablet",
         "name": "Tablet",
@@ -138,14 +138,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 90000
       },
       {
         "outputDir": "C:/Users/khamis/Desktop/fleetifyapp/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 16
+          "actualWorkers": 4
         },
         "id": "accessibility",
         "name": "accessibility",
@@ -154,7 +154,7 @@
         "testMatch": [
           "**/accessibility/*.spec.ts"
         ],
-        "timeout": 60000
+        "timeout": 90000
       }
     ],
     "shard": null,
@@ -162,7 +162,7 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.57.0",
-    "workers": 16,
+    "workers": 4,
     "webServer": {
       "command": "npm run dev",
       "url": "http://localhost:8080",
@@ -172,25 +172,966 @@
   },
   "suites": [
     {
-      "title": "finance-hub.spec.ts",
-      "file": "finance-hub.spec.ts",
+      "title": "financial-system.spec.ts",
+      "file": "financial-system.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Finance Hub",
-          "file": "finance-hub.spec.ts",
-          "line": 21,
+          "title": "Financial System E2E Tests",
+          "file": "financial-system.spec.ts",
+          "line": 142,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Phase 1: Test Data Setup",
+              "file": "financial-system.spec.ts",
+              "line": 148,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create test customer",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 8344,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:02.101Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-96ca3119d7d2cbc3a327",
+                  "file": "financial-system.spec.ts",
+                  "line": 149,
+                  "column": 5
+                },
+                {
+                  "title": "should create test vehicle",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 11601,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:02.072Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-588d0dfb83d6830879ec",
+                  "file": "financial-system.spec.ts",
+                  "line": 177,
+                  "column": 5
+                },
+                {
+                  "title": "should verify finance dashboard loads correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 8351,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:02.087Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-e2ea51d802f3d66127b2",
+                  "file": "financial-system.spec.ts",
+                  "line": 243,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Phase 2: Payment Methods",
+              "file": "financial-system.spec.ts",
+              "line": 264,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should process cash payment successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 7555,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:02.039Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-02ec46461b3e1c944e1b",
+                  "file": "financial-system.spec.ts",
+                  "line": 270,
+                  "column": 5
+                },
+                {
+                  "title": "should process check payment successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 5228,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:09.918Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-f30a78d3af88fdf6acfc",
+                  "file": "financial-system.spec.ts",
+                  "line": 308,
+                  "column": 5
+                },
+                {
+                  "title": "should process bank transfer payment successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 5590,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:11.043Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-3622ccb12ef0d9ec13ee",
+                  "file": "financial-system.spec.ts",
+                  "line": 342,
+                  "column": 5
+                },
+                {
+                  "title": "should process credit card payment successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5856,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:11.195Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-9e88052f0956753b6c86",
+                  "file": "financial-system.spec.ts",
+                  "line": 372,
+                  "column": 5
+                },
+                {
+                  "title": "should process online transfer payment successfully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 5263,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:14.129Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-6d0052dbfd8caee7027d",
+                  "file": "financial-system.spec.ts",
+                  "line": 396,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Phase 3: Payment Status Scenarios",
+              "file": "financial-system.spec.ts",
+              "line": 429,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle full payment and update invoice status to paid",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 5395,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:15.157Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-741550d0d6861e4d3831",
+                  "file": "financial-system.spec.ts",
+                  "line": 435,
+                  "column": 5
+                },
+                {
+                  "title": "should handle partial payment and update invoice status correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 5456,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:16.648Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-a1d02ec8f5509789c3f6",
+                  "file": "financial-system.spec.ts",
+                  "line": 468,
+                  "column": 5
+                },
+                {
+                  "title": "should handle multiple partial payments until fully paid",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6066,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:17.061Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-4b5b99633f2e21310ceb",
+                  "file": "financial-system.spec.ts",
+                  "line": 494,
+                  "column": 5
+                },
+                {
+                  "title": "should calculate and apply late payment penalty",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 5397,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:19.402Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-cb601be29399188fde0d",
+                  "file": "financial-system.spec.ts",
+                  "line": 521,
+                  "column": 5
+                },
+                {
+                  "title": "should handle payment cancellation correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 5453,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:20.561Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-9762a5bad92d6661e9f7",
+                  "file": "financial-system.spec.ts",
+                  "line": 545,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Phase 4: Journal Entry Integration",
+              "file": "financial-system.spec.ts",
+              "line": 578,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should create journal entry automatically when payment is made",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 5528,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:22.120Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-f49126b0c33a19f3be2b",
+                  "file": "financial-system.spec.ts",
+                  "line": 584,
+                  "column": 5
+                },
+                {
+                  "title": "should verify journal entry is balanced (debit = credit)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 6708,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:23.138Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-c673591d598d6941f21b",
+                  "file": "financial-system.spec.ts",
+                  "line": 617,
+                  "column": 5
+                },
+                {
+                  "title": "should reverse journal entry when payment is cancelled",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 5588,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:24.811Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-c655c675e270cdff4478",
+                  "file": "financial-system.spec.ts",
+                  "line": 641,
+                  "column": 5
+                },
+                {
+                  "title": "should update account balances correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 4749,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:26.026Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-f6867f8b547094866ec1",
+                  "file": "financial-system.spec.ts",
+                  "line": 672,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Phase 5: Edge Cases",
+              "file": "financial-system.spec.ts",
+              "line": 703,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should prevent duplicate payments",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 5512,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:27.663Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-1d3fce203da1b956f26e",
+                  "file": "financial-system.spec.ts",
+                  "line": 709,
+                  "column": 5
+                },
+                {
+                  "title": "should handle bounced check correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5904,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:29.857Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-ae5bd957813dd098d94b",
+                  "file": "financial-system.spec.ts",
+                  "line": 751,
+                  "column": 5
+                },
+                {
+                  "title": "should handle overpayment gracefully",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 7475,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:30.410Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-76634af43a6489f280d0",
+                  "file": "financial-system.spec.ts",
+                  "line": 779,
+                  "column": 5
+                },
+                {
+                  "title": "should validate payment amount is positive",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 6105,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:30.788Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-aeabb318b5ef697ee962",
+                  "file": "financial-system.spec.ts",
+                  "line": 806,
+                  "column": 5
+                },
+                {
+                  "title": "should handle payment with missing required fields",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 5667,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:33.186Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-b976214238af6105a656",
+                  "file": "financial-system.spec.ts",
+                  "line": 828,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Phase 6: Verification and Cleanup",
+              "file": "financial-system.spec.ts",
+              "line": 853,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should verify invoice-payment relationship is correct",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5605,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:35.773Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-89dae147997d066a5047",
+                  "file": "financial-system.spec.ts",
+                  "line": 859,
+                  "column": 5
+                },
+                {
+                  "title": "should verify customer balance is accurate",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 3,
+                          "status": "passed",
+                          "duration": 5637,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:36.904Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-e18cabffaf468322e14c",
+                  "file": "financial-system.spec.ts",
+                  "line": 887,
+                  "column": 5
+                },
+                {
+                  "title": "should verify financial reports are accurate",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 5750,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:37.901Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-87ca655f1d57e525d000",
+                  "file": "financial-system.spec.ts",
+                  "line": 903,
+                  "column": 5
+                },
+                {
+                  "title": "should verify all test data can be found",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "passed",
+                          "duration": 10752,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-01-15T18:33:38.871Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "bfd73220c7761a123b28-f3bd59923ef4bf0ada58",
+                  "file": "financial-system.spec.ts",
+                  "line": 923,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Financial System API Tests",
+          "file": "financial-system.spec.ts",
+          "line": 964,
           "column": 6,
           "specs": [
             {
-              "title": "FH-001: Navigate to Finance Hub and verify layout",
+              "title": "should verify payment types are correctly defined",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 60000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
@@ -200,12 +1141,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7667,
+                      "duration": 16,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.050Z",
+                      "startTime": "2026-01-15T18:33:41.389Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -213,645 +1154,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "ad6e32bcd4e048fa70bd-b9cb5651489cdf3a0e99",
-              "file": "finance-hub.spec.ts",
-              "line": 41,
+              "id": "bfd73220c7761a123b28-b9245f8f9d56099d19ba",
+              "file": "financial-system.spec.ts",
+              "line": 965,
               "column": 3
             },
             {
-              "title": "FH-002: Verify KPI cards display correctly",
+              "title": "should verify test data generators work correctly",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 60000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 7273,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.147Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-8cf128ff161cb96218cf",
-              "file": "finance-hub.spec.ts",
-              "line": 69,
-              "column": 3
-            },
-            {
-              "title": "FH-003: Quick Actions work correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 7708,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.051Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-affabe062c76384d853a",
-              "file": "finance-hub.spec.ts",
-              "line": 111,
-              "column": 3
-            },
-            {
-              "title": "FH-004: Universal Search functionality",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
-                      "status": "passed",
-                      "duration": 6882,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.021Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-a94908d7cf6716431780",
-              "file": "finance-hub.spec.ts",
-              "line": 162,
-              "column": 3
-            },
-            {
-              "title": "FH-005: Activity Timeline displays recent activities",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 4,
-                      "parallelIndex": 4,
-                      "status": "passed",
-                      "duration": 9431,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.068Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-d1c89ce8708ea8466bfe",
-              "file": "finance-hub.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "FH-006: Navigate to Billing Center from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 5,
-                      "parallelIndex": 5,
-                      "status": "passed",
-                      "duration": 4688,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.203Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-c466b1d122244c4a1b0d",
-              "file": "finance-hub.spec.ts",
-              "line": 217,
-              "column": 3
-            },
-            {
-              "title": "FH-007: Navigate to Reports from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 6,
-                      "parallelIndex": 6,
-                      "status": "passed",
-                      "duration": 6373,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.315Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-d40d4ef2afeb02979629",
-              "file": "finance-hub.spec.ts",
-              "line": 242,
-              "column": 3
-            },
-            {
-              "title": "FH-001: Navigate to Finance Hub and verify layout",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 7,
-                      "parallelIndex": 7,
-                      "status": "passed",
-                      "duration": 42607,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.103Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-bf099dde88dd5d32e9a5",
-              "file": "finance-hub.spec.ts",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "FH-002: Verify KPI cards display correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 8,
-                      "parallelIndex": 8,
-                      "status": "passed",
-                      "duration": 41668,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.186Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-47b223d260aa2bc2d0d2",
-              "file": "finance-hub.spec.ts",
-              "line": 69,
-              "column": 3
-            },
-            {
-              "title": "FH-003: Quick Actions work correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 9,
-                      "parallelIndex": 9,
-                      "status": "passed",
-                      "duration": 40286,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.146Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-1ed0e09fe4940b382b7d",
-              "file": "finance-hub.spec.ts",
-              "line": 111,
-              "column": 3
-            },
-            {
-              "title": "FH-004: Universal Search functionality",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 10,
-                      "parallelIndex": 10,
-                      "status": "passed",
-                      "duration": 40992,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.316Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-0d32b45d6278647b4991",
-              "file": "finance-hub.spec.ts",
-              "line": 162,
-              "column": 3
-            },
-            {
-              "title": "FH-005: Activity Timeline displays recent activities",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 11,
-                      "parallelIndex": 11,
-                      "status": "passed",
-                      "duration": 41274,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.331Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-a22459c864c63737ab56",
-              "file": "finance-hub.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "FH-006: Navigate to Billing Center from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 12,
-                      "parallelIndex": 12,
-                      "status": "passed",
-                      "duration": 38846,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.214Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-eaae62459f4fa79c1f92",
-              "file": "finance-hub.spec.ts",
-              "line": 217,
-              "column": 3
-            },
-            {
-              "title": "FH-007: Navigate to Reports from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "firefox",
-                  "projectName": "firefox",
-                  "results": [
-                    {
-                      "workerIndex": 13,
-                      "parallelIndex": 13,
-                      "status": "passed",
-                      "duration": 39515,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.222Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-4c9250efe12c300d4794",
-              "file": "finance-hub.spec.ts",
-              "line": 242,
-              "column": 3
-            },
-            {
-              "title": "FH-001: Navigate to Finance Hub and verify layout",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
-                  "results": [
-                    {
-                      "workerIndex": 14,
-                      "parallelIndex": 14,
-                      "status": "passed",
-                      "duration": 15633,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.374Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-7db095b67b825a64d4c9",
-              "file": "finance-hub.spec.ts",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "FH-002: Verify KPI cards display correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
-                  "results": [
-                    {
-                      "workerIndex": 15,
-                      "parallelIndex": 15,
-                      "status": "passed",
-                      "duration": 16484,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:00.282Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-3b168c97974030cd646e",
-              "file": "finance-hub.spec.ts",
-              "line": 69,
-              "column": 3
-            },
-            {
-              "title": "FH-003: Quick Actions work correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
-                  "results": [
-                    {
-                      "workerIndex": 16,
-                      "parallelIndex": 5,
-                      "status": "passed",
-                      "duration": 14655,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:06.809Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-c14aa8734d8b328bc9f5",
-              "file": "finance-hub.spec.ts",
-              "line": 111,
-              "column": 3
-            },
-            {
-              "title": "FH-004: Universal Search functionality",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
-                  "results": [
-                    {
-                      "workerIndex": 17,
-                      "parallelIndex": 3,
-                      "status": "passed",
-                      "duration": 17511,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:08.514Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-720e1b370bb1ded5cd85",
-              "file": "finance-hub.spec.ts",
-              "line": 162,
-              "column": 3
-            },
-            {
-              "title": "FH-005: Activity Timeline displays recent activities",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
-                  "results": [
-                    {
-                      "workerIndex": 18,
-                      "parallelIndex": 6,
-                      "status": "passed",
-                      "duration": 15244,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:08.740Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-2eb5acfa6a7b4a5b34a6",
-              "file": "finance-hub.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "FH-006: Navigate to Billing Center from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
-                  "results": [
-                    {
-                      "workerIndex": 19,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 14534,
+                      "duration": 11,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-01-15T15:22:09.155Z",
+                      "startTime": "2026-01-15T18:33:41.415Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -859,339 +1188,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "ad6e32bcd4e048fa70bd-63fb72b6f4307ded7390",
-              "file": "finance-hub.spec.ts",
-              "line": 217,
+              "id": "bfd73220c7761a123b28-a13bb287e1c8c3e69178",
+              "file": "financial-system.spec.ts",
+              "line": 975,
               "column": 3
             },
             {
-              "title": "FH-007: Navigate to Reports from Hub",
+              "title": "should verify payment calculations are correct",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 60000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "webkit",
-                  "projectName": "webkit",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 21,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 18367,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:09.220Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-b22537f1f2fb977841ca",
-              "file": "finance-hub.spec.ts",
-              "line": 242,
-              "column": 3
-            },
-            {
-              "title": "FH-001: Navigate to Finance Hub and verify layout",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 20,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 7250,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:09.362Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-6ff2fbbf7e9a2408f37a",
-              "file": "finance-hub.spec.ts",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "FH-002: Verify KPI cards display correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 22,
-                      "parallelIndex": 4,
-                      "status": "passed",
-                      "duration": 6822,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:11.211Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-4d829761fc97b3c5fb3f",
-              "file": "finance-hub.spec.ts",
-              "line": 69,
-              "column": 3
-            },
-            {
-              "title": "FH-003: Quick Actions work correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 20,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 8830,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:17.155Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-f522756d00d459bfd975",
-              "file": "finance-hub.spec.ts",
-              "line": 111,
-              "column": 3
-            },
-            {
-              "title": "FH-004: Universal Search functionality",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 23,
-                      "parallelIndex": 14,
-                      "status": "passed",
-                      "duration": 8785,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:19.212Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-a9c097206f2a682dbb1a",
-              "file": "finance-hub.spec.ts",
-              "line": 162,
-              "column": 3
-            },
-            {
-              "title": "FH-005: Activity Timeline displays recent activities",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 24,
-                      "parallelIndex": 15,
-                      "status": "passed",
-                      "duration": 8201,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:20.230Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-a16bd5ed991c933c8c60",
-              "file": "finance-hub.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "FH-006: Navigate to Billing Center from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 22,
-                      "parallelIndex": 4,
-                      "status": "passed",
-                      "duration": 5384,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:18.329Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-4e8e054b51a7b88e1aca",
-              "file": "finance-hub.spec.ts",
-              "line": 217,
-              "column": 3
-            },
-            {
-              "title": "FH-007: Navigate to Reports from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Chrome",
-                  "projectName": "Mobile Chrome",
-                  "results": [
-                    {
-                      "workerIndex": 25,
-                      "parallelIndex": 5,
-                      "status": "passed",
-                      "duration": 4183,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:24.645Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-f6b4d7e1c6ab15151978",
-              "file": "finance-hub.spec.ts",
-              "line": 242,
-              "column": 3
-            },
-            {
-              "title": "FH-001: Navigate to Finance Hub and verify layout",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
-                  "results": [
-                    {
-                      "workerIndex": 28,
-                      "parallelIndex": 4,
-                      "status": "passed",
-                      "duration": 17471,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:27.121Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-91b79264f71d32739c08",
-              "file": "finance-hub.spec.ts",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "FH-002: Verify KPI cards display correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
-                  "results": [
-                    {
-                      "workerIndex": 26,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 18068,
+                      "duration": 4,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-01-15T15:22:26.542Z",
+                      "startTime": "2026-01-15T18:33:41.434Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1199,33 +1222,33 @@
                   "status": "expected"
                 }
               ],
-              "id": "ad6e32bcd4e048fa70bd-0938c0e4d8e88bd6fdd6",
-              "file": "finance-hub.spec.ts",
-              "line": 69,
+              "id": "bfd73220c7761a123b28-bea63de3a73547405418",
+              "file": "financial-system.spec.ts",
+              "line": 1002,
               "column": 3
             },
             {
-              "title": "FH-003: Quick Actions work correctly",
+              "title": "should verify monthly invoices are generated correctly",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 60000,
+                  "timeout": 90000,
                   "annotations": [],
                   "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 27,
-                      "parallelIndex": 6,
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 15388,
+                      "duration": 11,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-01-15T15:22:26.703Z",
+                      "startTime": "2026-01-15T18:33:41.448Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1233,383 +1256,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "ad6e32bcd4e048fa70bd-6eb4ce9c7191dcfe9f86",
-              "file": "finance-hub.spec.ts",
-              "line": 111,
-              "column": 3
-            },
-            {
-              "title": "FH-004: Universal Search functionality",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
-                  "results": [
-                    {
-                      "workerIndex": 29,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 18078,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:27.758Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-37c03b53dde7de63b6cc",
-              "file": "finance-hub.spec.ts",
-              "line": 162,
-              "column": 3
-            },
-            {
-              "title": "FH-005: Activity Timeline displays recent activities",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
-                  "results": [
-                    {
-                      "workerIndex": 30,
-                      "parallelIndex": 3,
-                      "status": "passed",
-                      "duration": 16882,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:27.974Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-ecaf33c058fa3e5abd70",
-              "file": "finance-hub.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "FH-006: Navigate to Billing Center from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
-                  "results": [
-                    {
-                      "workerIndex": 31,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 13220,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:29.229Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-e71762b9ac904985f98e",
-              "file": "finance-hub.spec.ts",
-              "line": 217,
-              "column": 3
-            },
-            {
-              "title": "FH-007: Navigate to Reports from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Mobile Safari",
-                  "projectName": "Mobile Safari",
-                  "results": [
-                    {
-                      "workerIndex": 32,
-                      "parallelIndex": 14,
-                      "status": "passed",
-                      "duration": 12747,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:30.070Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-9c6b1bb03978876ee607",
-              "file": "finance-hub.spec.ts",
-              "line": 242,
-              "column": 3
-            },
-            {
-              "title": "FH-001: Navigate to Finance Hub and verify layout",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 33,
-                      "parallelIndex": 15,
-                      "status": "passed",
-                      "duration": 5830,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:30.762Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-efec72b592bce1610604",
-              "file": "finance-hub.spec.ts",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "FH-002: Verify KPI cards display correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 34,
-                      "parallelIndex": 5,
-                      "status": "passed",
-                      "duration": 6395,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:31.124Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-16a11c48744f49d38823",
-              "file": "finance-hub.spec.ts",
-              "line": 69,
-              "column": 3
-            },
-            {
-              "title": "FH-003: Quick Actions work correctly",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 33,
-                      "parallelIndex": 15,
-                      "status": "passed",
-                      "duration": 7315,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:37.155Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-8501fd7dcf8976c3aab7",
-              "file": "finance-hub.spec.ts",
-              "line": 111,
-              "column": 3
-            },
-            {
-              "title": "FH-004: Universal Search functionality",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 34,
-                      "parallelIndex": 5,
-                      "status": "passed",
-                      "duration": 6073,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:37.839Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-f83a90b563b45c0b2613",
-              "file": "finance-hub.spec.ts",
-              "line": 162,
-              "column": 3
-            },
-            {
-              "title": "FH-005: Activity Timeline displays recent activities",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 37,
-                      "parallelIndex": 9,
-                      "status": "passed",
-                      "duration": 5095,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:46.329Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-354e29a989f29f65d224",
-              "file": "finance-hub.spec.ts",
-              "line": 190,
-              "column": 3
-            },
-            {
-              "title": "FH-006: Navigate to Billing Center from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 35,
-                      "parallelIndex": 6,
-                      "status": "passed",
-                      "duration": 3301,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:43.636Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-25e5dc7fef9c62f8459f",
-              "file": "finance-hub.spec.ts",
-              "line": 217,
-              "column": 3
-            },
-            {
-              "title": "FH-007: Navigate to Reports from Hub",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Tablet",
-                  "projectName": "Tablet",
-                  "results": [
-                    {
-                      "workerIndex": 36,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 4477,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-15T15:22:44.068Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ad6e32bcd4e048fa70bd-c4b15e25f25496490f04",
-              "file": "finance-hub.spec.ts",
-              "line": 242,
+              "id": "bfd73220c7761a123b28-31c7d1d93cc2ecc31a03",
+              "file": "financial-system.spec.ts",
+              "line": 1022,
               "column": 3
             }
           ]
@@ -1619,9 +1268,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-01-15T15:21:57.515Z",
-    "duration": 54280.689,
-    "expected": 42,
+    "startTime": "2026-01-15T18:32:59.341Z",
+    "duration": 50410.314,
+    "expected": 30,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

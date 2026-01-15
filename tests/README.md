@@ -8,10 +8,18 @@
 
 ## 📁 محتويات المجلد
 
-| الملف | الوصف | النوع |
+| الملف/المجلد | الوصف | النوع |
 |------|-------|------|
 | `rls_security_tests.sql` | اختبارات Row Level Security | SQL |
 | `permissions_tests.md` | اختبارات الصلاحيات (RBAC) | Manual |
+| `e2e/` | اختبارات End-to-End | Playwright |
+| `e2e/financial-system.spec.ts` | اختبارات النظام المالي الشاملة | E2E |
+| `e2e/financial-system-api.spec.ts` | اختبارات API المالي | E2E |
+| `e2e/journal-integration.spec.ts` | اختبارات تكامل القيود المحاسبية | E2E |
+| `e2e/financial-edge-cases.spec.ts` | اختبارات الحالات الاستثنائية | E2E |
+| `utils/testDataGenerators.ts` | مولدات البيانات التجريبية | Utility |
+| `utils/financialTestHelpers.ts` | أدوات مساعدة للاختبارات المالية | Utility |
+| `fixtures/financial-test-accounts.json` | بيانات الحسابات التجريبية | Fixture |
 | `README.md` | هذا الملف | Documentation |
 
 ---
@@ -152,6 +160,14 @@ INSERT INTO users (email, company_id, role) VALUES
 - ✅ CRUD Operations
 - ✅ Approval Workflows
 - ✅ Data Validation
+
+### 4. اختبارات النظام المالي (Financial System E2E Tests) 🆕
+- ✅ جميع طرق الدفع (cash, check, bank_transfer, credit_card, online_transfer)
+- ✅ حالات الدفع (full, partial, late, cancelled, bounced)
+- ✅ تكامل الفواتير والمدفوعات
+- ✅ القيود المحاسبية التلقائية
+- ✅ توازن الميزان (debit = credit)
+- ✅ الحالات الاستثنائية (duplicate prevention, overpayment, bounced checks)
 
 ---
 
@@ -334,6 +350,94 @@ const canDelete = hasPermission('delete_contracts');
 ### التقارير
 - [final_complete_security_report.md](../final_complete_security_report.md)
 - [PERMISSIONS_IMPLEMENTATION_GUIDE.md](../PERMISSIONS_IMPLEMENTATION_GUIDE.md)
+
+---
+
+## 💰 اختبارات النظام المالي (Financial System E2E)
+
+### كيفية التشغيل
+
+```bash
+# تشغيل جميع اختبارات النظام المالي
+npx playwright test tests/e2e/financial-system.spec.ts
+
+# تشغيل اختبارات API المالية
+npx playwright test tests/e2e/financial-system-api.spec.ts
+
+# تشغيل اختبارات القيود المحاسبية
+npx playwright test tests/e2e/journal-integration.spec.ts
+
+# تشغيل اختبارات الحالات الاستثنائية
+npx playwright test tests/e2e/financial-edge-cases.spec.ts
+
+# تشغيل جميع اختبارات E2E المالية
+npx playwright test tests/e2e/financial*.spec.ts
+
+# تشغيل مع واجهة المستخدم
+npx playwright test tests/e2e/financial-system.spec.ts --ui
+```
+
+### السيناريوهات المغطاة
+
+| السيناريو | الوصف | الملف |
+|-----------|-------|-------|
+| طرق الدفع | cash, check, bank_transfer, credit_card, online | `financial-system.spec.ts` |
+| دفعة كاملة | دفع كامل المبلغ وتحديث حالة الفاتورة | `financial-system.spec.ts` |
+| دفعة جزئية | دفع جزء من المبلغ (50%) | `financial-system.spec.ts` |
+| دفعات متعددة | 2000 + 2000 + 1000 = 5000 | `financial-system.spec.ts` |
+| دفعة متأخرة | احتساب غرامة التأخير (5%) | `financial-system.spec.ts` |
+| شيك مرتجع | تحويل الشيك لحالة bounced | `financial-edge-cases.spec.ts` |
+| إلغاء دفعة | إلغاء وعكس الأثر المالي | `financial-edge-cases.spec.ts` |
+| منع التكرار | idempotency للدفعات | `financial-edge-cases.spec.ts` |
+| الدفع الزائد | التعامل مع overpayment | `financial-edge-cases.spec.ts` |
+| القيود المحاسبية | إنشاء وترحيل وعكس القيود | `journal-integration.spec.ts` |
+| توازن القيد | debit = credit دائماً | `journal-integration.spec.ts` |
+| التقارير المالية | ميزان المراجعة، قائمة الدخل | `journal-integration.spec.ts` |
+
+### البيانات التجريبية
+
+```typescript
+import {
+  generateTestPayment,
+  generateTestInvoice,
+  generateCashPayment,
+  generateCheckPayment,
+  generateBankTransferPayment,
+  generatePartialPayment,
+  generateLatePayment,
+  generatePaymentTestScenarios,
+  generateFinancialTestFixture,
+} from '../utils/testDataGenerators';
+
+// إنشاء fixture كامل
+const fixture = generateFinancialTestFixture();
+console.log(fixture.customer);    // عميل تجريبي
+console.log(fixture.vehicle);     // مركبة تجريبية
+console.log(fixture.contract);    // عقد تجريبي
+console.log(fixture.invoices);    // فواتير شهرية
+console.log(fixture.scenarios);   // سيناريوهات الدفع
+```
+
+### الحسابات المستخدمة
+
+| الحساب | الكود | النوع |
+|--------|-------|-------|
+| النقدية | 11151 | أصول |
+| البنك | 11152 | أصول |
+| ذمم العملاء | 12101 | أصول |
+| إيرادات التأجير | 41101 | إيرادات |
+| غرامات التأخير | 41201 | إيرادات |
+
+### معايير النجاح
+
+- ✅ جميع طرق الدفع تعمل بشكل صحيح
+- ✅ تحديث حالة الفاتورة تلقائياً (unpaid → partial → paid)
+- ✅ إنشاء قيد محاسبي لكل دفعة
+- ✅ توازن القيود (total_debit = total_credit)
+- ✅ منع الدفعات المكررة
+- ✅ التعامل مع الشيكات المرتجعة
+- ✅ حساب غرامات التأخير
+- ✅ التعامل مع الدفع الزائد
 
 ---
 

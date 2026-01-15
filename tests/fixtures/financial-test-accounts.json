@@ -1,0 +1,246 @@
+{
+  "companyId": "24bc0b21-4e2d-4413-9842-31719a3669f4",
+  "currency": "QAR",
+  "accounts": {
+    "cash": {
+      "code": "11151",
+      "name": "النقدية",
+      "nameEn": "Cash",
+      "type": "asset",
+      "level": 4,
+      "isHeader": false
+    },
+    "bank": {
+      "code": "11152",
+      "name": "البنك",
+      "nameEn": "Bank",
+      "type": "asset",
+      "level": 4,
+      "isHeader": false
+    },
+    "receivables": {
+      "code": "12101",
+      "name": "ذمم العملاء",
+      "nameEn": "Accounts Receivable",
+      "type": "asset",
+      "level": 4,
+      "isHeader": false
+    },
+    "payables": {
+      "code": "21101",
+      "name": "ذمم الموردين",
+      "nameEn": "Accounts Payable",
+      "type": "liability",
+      "level": 4,
+      "isHeader": false
+    },
+    "revenue": {
+      "code": "41101",
+      "name": "إيرادات التأجير",
+      "nameEn": "Rental Revenue",
+      "type": "revenue",
+      "level": 4,
+      "isHeader": false
+    },
+    "lateFees": {
+      "code": "41201",
+      "name": "غرامات التأخير",
+      "nameEn": "Late Fees Revenue",
+      "type": "revenue",
+      "level": 4,
+      "isHeader": false
+    },
+    "bouncedCheckFees": {
+      "code": "41202",
+      "name": "رسوم الشيكات المرتجعة",
+      "nameEn": "Bounced Check Fees",
+      "type": "revenue",
+      "level": 4,
+      "isHeader": false
+    }
+  },
+  "paymentTypes": [
+    {
+      "key": "cash",
+      "label": "نقداً",
+      "labelEn": "Cash",
+      "requiresReference": false,
+      "requiresCheckNumber": false
+    },
+    {
+      "key": "check",
+      "label": "شيك",
+      "labelEn": "Check",
+      "requiresReference": false,
+      "requiresCheckNumber": true,
+      "canBounce": true
+    },
+    {
+      "key": "bank_transfer",
+      "label": "تحويل بنكي",
+      "labelEn": "Bank Transfer",
+      "requiresReference": true,
+      "requiresCheckNumber": false
+    },
+    {
+      "key": "credit_card",
+      "label": "بطاقة ائتمان",
+      "labelEn": "Credit Card",
+      "requiresReference": true,
+      "requiresCheckNumber": false
+    },
+    {
+      "key": "online_transfer",
+      "label": "تحويل إلكتروني",
+      "labelEn": "Online Transfer",
+      "requiresReference": true,
+      "requiresCheckNumber": false
+    }
+  ],
+  "paymentStatuses": [
+    {
+      "key": "pending",
+      "label": "قيد الانتظار",
+      "labelEn": "Pending",
+      "color": "yellow"
+    },
+    {
+      "key": "completed",
+      "label": "مكتمل",
+      "labelEn": "Completed",
+      "color": "green"
+    },
+    {
+      "key": "failed",
+      "label": "فشل",
+      "labelEn": "Failed",
+      "color": "red"
+    },
+    {
+      "key": "cancelled",
+      "label": "ملغي",
+      "labelEn": "Cancelled",
+      "color": "gray"
+    },
+    {
+      "key": "cleared",
+      "label": "مقاصة",
+      "labelEn": "Cleared",
+      "color": "blue"
+    },
+    {
+      "key": "bounced",
+      "label": "مرتجع",
+      "labelEn": "Bounced",
+      "color": "red"
+    }
+  ],
+  "invoiceStatuses": [
+    {
+      "key": "draft",
+      "label": "مسودة",
+      "labelEn": "Draft"
+    },
+    {
+      "key": "sent",
+      "label": "مرسل",
+      "labelEn": "Sent"
+    },
+    {
+      "key": "paid",
+      "label": "مدفوع",
+      "labelEn": "Paid"
+    },
+    {
+      "key": "overdue",
+      "label": "متأخر",
+      "labelEn": "Overdue"
+    },
+    {
+      "key": "cancelled",
+      "label": "ملغي",
+      "labelEn": "Cancelled"
+    }
+  ],
+  "invoicePaymentStatuses": [
+    {
+      "key": "unpaid",
+      "label": "غير مدفوع",
+      "labelEn": "Unpaid"
+    },
+    {
+      "key": "partial",
+      "label": "جزئي",
+      "labelEn": "Partial"
+    },
+    {
+      "key": "paid",
+      "label": "مدفوع",
+      "labelEn": "Paid"
+    }
+  ],
+  "journalEntryStatuses": [
+    {
+      "key": "draft",
+      "label": "مسودة",
+      "labelEn": "Draft"
+    },
+    {
+      "key": "posted",
+      "label": "مرحل",
+      "labelEn": "Posted"
+    },
+    {
+      "key": "reversed",
+      "label": "معكوس",
+      "labelEn": "Reversed"
+    }
+  ],
+  "testScenarios": {
+    "fullPayment": {
+      "name": "دفعة كاملة",
+      "invoiceAmount": 5000,
+      "paymentAmount": 5250,
+      "taxRate": 0.05,
+      "expectedInvoiceStatus": "paid",
+      "expectedBalance": 0
+    },
+    "partialPayment": {
+      "name": "دفعة جزئية",
+      "invoiceAmount": 5000,
+      "paymentAmount": 2000,
+      "taxRate": 0.05,
+      "expectedInvoiceStatus": "partial",
+      "expectedBalance": 3250
+    },
+    "multiplePayments": {
+      "name": "دفعات متعددة",
+      "invoiceAmount": 5000,
+      "payments": [2000, 2000, 1250],
+      "taxRate": 0.05,
+      "expectedInvoiceStatus": "paid",
+      "expectedBalance": 0
+    },
+    "latePayment": {
+      "name": "دفعة متأخرة",
+      "invoiceAmount": 5000,
+      "daysLate": 30,
+      "lateFeePercentage": 0.05,
+      "expectedLateFee": 250
+    },
+    "bouncedCheck": {
+      "name": "شيك مرتجع",
+      "paymentAmount": 5000,
+      "bounceFee": 100,
+      "expectedStatus": "bounced"
+    }
+  },
+  "validationRules": {
+    "minPaymentAmount": 1,
+    "maxPaymentAmount": 999999999,
+    "currencyPrecision": 2,
+    "maxNotesLength": 500,
+    "maxReferenceLength": 50,
+    "maxCheckNumberLength": 20
+  }
+}

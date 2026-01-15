@@ -343,3 +343,513 @@ export function generateTestFixture() {
     getCommercialVehicle: () => vehicles.commercial[0],
   };
 }
+
+// ============================================================================
+// Payment & Invoice Generators for Financial System E2E Tests
+// ============================================================================
+
+export type PaymentType = 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'online_transfer';
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'cancelled' | 'cleared' | 'bounced';
+export type PaymentMethod = 'received' | 'made';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+export type InvoicePaymentStatus = 'unpaid' | 'partial' | 'paid';
+
+export interface MockPayment {
+  id: string;
+  paymentNumber: string;
+  paymentType: PaymentType;
+  paymentMethod: PaymentMethod;
+  amount: number;
+  paymentDate: string;
+  paymentStatus: PaymentStatus;
+  referenceNumber?: string;
+  checkNumber?: string;
+  notes?: string;
+  customerId?: string;
+  vendorId?: string;
+  invoiceId?: string;
+  contractId?: string;
+  lateFineAmount?: number;
+  lateFineStatus?: 'none' | 'paid' | 'waived' | 'pending';
+}
+
+export interface MockInvoice {
+  id: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  invoiceType: 'sales' | 'purchase' | 'service';
+  subtotal: number;
+  taxAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  paidAmount: number;
+  balanceDue: number;
+  currency: string;
+  status: InvoiceStatus;
+  paymentStatus: InvoicePaymentStatus;
+  customerId?: string;
+  contractId?: string;
+  notes?: string;
+}
+
+export interface MockJournalEntry {
+  id: string;
+  entryNumber: string;
+  entryDate: string;
+  description: string;
+  totalDebit: number;
+  totalCredit: number;
+  status: 'draft' | 'posted' | 'reversed';
+  referenceType?: string;
+  referenceId?: string;
+  lines: MockJournalEntryLine[];
+}
+
+export interface MockJournalEntryLine {
+  lineNumber: number;
+  accountCode: string;
+  accountName: string;
+  description: string;
+  debitAmount: number;
+  creditAmount: number;
+}
+
+/**
+ * Generate a test payment with realistic data
+ */
+export function generateTestPayment(overrides: Partial<MockPayment> = {}): MockPayment {
+  const paymentTypes: PaymentType[] = ['cash', 'check', 'bank_transfer', 'credit_card', 'online_transfer'];
+  const paymentType = faker.helpers.arrayElement(paymentTypes);
+  const year = new Date().getFullYear().toString().slice(-2);
+  const seq = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+  
+  const basePayment: MockPayment = {
+    id: `pay_${Math.random().toString(36).substring(7)}`,
+    paymentNumber: `PAY-${year}-${seq}`,
+    paymentType,
+    paymentMethod: 'received',
+    amount: Math.floor(Math.random() * 5000) + 500,
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentStatus: 'completed',
+    referenceNumber: paymentType !== 'cash' ? `REF-${Math.random().toString(36).substring(7).toUpperCase()}` : undefined,
+    checkNumber: paymentType === 'check' ? `CHK-${Math.floor(Math.random() * 999999).toString().padStart(6, '0')}` : undefined,
+    notes: 'Test payment generated for E2E testing',
+  };
+
+  return { ...basePayment, ...overrides };
+}
+
+/**
+ * Generate a test invoice with realistic data
+ */
+export function generateTestInvoice(overrides: Partial<MockInvoice> = {}): MockInvoice {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const seq = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+  const subtotal = Math.floor(Math.random() * 10000) + 1000;
+  const taxRate = 0.05; // 5% VAT in Qatar
+  const taxAmount = Math.round(subtotal * taxRate);
+  const discountAmount = 0;
+  const totalAmount = subtotal + taxAmount - discountAmount;
+  
+  const baseInvoice: MockInvoice = {
+    id: `inv_${Math.random().toString(36).substring(7)}`,
+    invoiceNumber: `INV-${year}-${seq}`,
+    invoiceDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+    invoiceType: 'sales',
+    subtotal,
+    taxAmount,
+    discountAmount,
+    totalAmount,
+    paidAmount: 0,
+    balanceDue: totalAmount,
+    currency: 'QAR',
+    status: 'sent',
+    paymentStatus: 'unpaid',
+    notes: 'Test invoice generated for E2E testing',
+  };
+
+  return { ...baseInvoice, ...overrides };
+}
+
+/**
+ * Generate test invoices for multiple months
+ */
+export function generateMonthlyInvoices(
+  contractId: string, 
+  customerId: string, 
+  monthlyAmount: number, 
+  months: number = 3
+): MockInvoice[] {
+  const invoices: MockInvoice[] = [];
+  const startDate = new Date();
+  
+  for (let i = 0; i < months; i++) {
+    const invoiceDate = new Date(startDate);
+    invoiceDate.setMonth(invoiceDate.getMonth() - i);
+    
+    const dueDate = new Date(invoiceDate);
+    dueDate.setDate(dueDate.getDate() + 30);
+    
+    const taxAmount = Math.round(monthlyAmount * 0.05);
+    const totalAmount = monthlyAmount + taxAmount;
+    
+    // Determine status based on due date
+    const isOverdue = dueDate < new Date();
+    
+    invoices.push(generateTestInvoice({
+      invoiceNumber: `INV-${invoiceDate.getFullYear().toString().slice(-2)}-${(invoiceDate.getMonth() + 1).toString().padStart(2, '0')}-${String(i + 1).padStart(4, '0')}`,
+      invoiceDate: invoiceDate.toISOString().split('T')[0],
+      dueDate: dueDate.toISOString().split('T')[0],
+      subtotal: monthlyAmount,
+      taxAmount,
+      totalAmount,
+      balanceDue: totalAmount,
+      status: isOverdue ? 'overdue' : 'sent',
+      customerId,
+      contractId,
+    }));
+  }
+  
+  return invoices;
+}
+
+// ============================================================================
+// Payment Scenario Generators
+// ============================================================================
+
+/**
+ * Generate a cash payment (full amount)
+ */
+export function generateCashPayment(amount: number, invoiceId?: string): MockPayment {
+  return generateTestPayment({
+    paymentType: 'cash',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: 'completed',
+    invoiceId,
+    notes: 'Cash payment - full amount',
+  });
+}
+
+/**
+ * Generate a check payment
+ */
+export function generateCheckPayment(amount: number, invoiceId?: string, bounced: boolean = false): MockPayment {
+  return generateTestPayment({
+    paymentType: 'check',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: bounced ? 'bounced' : 'cleared',
+    checkNumber: `CHK-${Math.floor(Math.random() * 999999).toString().padStart(6, '0')}`,
+    invoiceId,
+    notes: bounced ? 'Check payment - BOUNCED' : 'Check payment - cleared',
+  });
+}
+
+/**
+ * Generate a bank transfer payment
+ */
+export function generateBankTransferPayment(amount: number, invoiceId?: string): MockPayment {
+  return generateTestPayment({
+    paymentType: 'bank_transfer',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: 'completed',
+    referenceNumber: `TRF-${Date.now().toString().slice(-8)}`,
+    invoiceId,
+    notes: 'Bank transfer payment',
+  });
+}
+
+/**
+ * Generate a credit card payment
+ */
+export function generateCreditCardPayment(amount: number, invoiceId?: string): MockPayment {
+  return generateTestPayment({
+    paymentType: 'credit_card',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: 'completed',
+    referenceNumber: `CC-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+    invoiceId,
+    notes: 'Credit card payment',
+  });
+}
+
+/**
+ * Generate an online transfer payment
+ */
+export function generateOnlineTransferPayment(amount: number, invoiceId?: string): MockPayment {
+  return generateTestPayment({
+    paymentType: 'online_transfer',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: 'completed',
+    referenceNumber: `ONL-${Date.now().toString().slice(-10)}`,
+    invoiceId,
+    notes: 'Online transfer payment',
+  });
+}
+
+/**
+ * Generate a partial payment
+ */
+export function generatePartialPayment(
+  totalAmount: number, 
+  paymentPercentage: number = 0.5, 
+  invoiceId?: string
+): MockPayment {
+  const amount = Math.round(totalAmount * paymentPercentage);
+  return generateTestPayment({
+    paymentType: 'cash',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: 'completed',
+    invoiceId,
+    notes: `Partial payment - ${Math.round(paymentPercentage * 100)}% of total`,
+  });
+}
+
+/**
+ * Generate a late payment with penalty
+ */
+export function generateLatePayment(
+  amount: number, 
+  daysLate: number = 30, 
+  invoiceId?: string
+): MockPayment {
+  const lateFinePercentage = 0.05; // 5% late fee
+  const lateFineAmount = Math.round(amount * lateFinePercentage);
+  
+  const paymentDate = new Date();
+  paymentDate.setDate(paymentDate.getDate() - daysLate);
+  
+  return generateTestPayment({
+    paymentType: 'bank_transfer',
+    paymentMethod: 'received',
+    amount: amount + lateFineAmount,
+    paymentDate: new Date().toISOString().split('T')[0], // Paid today
+    paymentStatus: 'completed',
+    invoiceId,
+    lateFineAmount,
+    lateFineStatus: 'paid',
+    notes: `Late payment - ${daysLate} days overdue, includes ${lateFineAmount} QAR penalty`,
+  });
+}
+
+/**
+ * Generate a cancelled payment
+ */
+export function generateCancelledPayment(amount: number, invoiceId?: string): MockPayment {
+  return generateTestPayment({
+    paymentType: 'check',
+    paymentMethod: 'received',
+    amount,
+    paymentStatus: 'cancelled',
+    invoiceId,
+    notes: 'Payment cancelled by customer request',
+  });
+}
+
+/**
+ * Generate a payment for a vendor (outgoing)
+ */
+export function generateVendorPayment(amount: number, vendorId: string): MockPayment {
+  return generateTestPayment({
+    paymentType: 'bank_transfer',
+    paymentMethod: 'made',
+    amount,
+    paymentStatus: 'completed',
+    vendorId,
+    notes: 'Vendor payment - outgoing',
+  });
+}
+
+// ============================================================================
+// Payment Scenario Batches for E2E Testing
+// ============================================================================
+
+export interface PaymentTestScenario {
+  name: string;
+  description: string;
+  invoiceAmount: number;
+  payments: MockPayment[];
+  expectedInvoiceStatus: InvoicePaymentStatus;
+  expectedBalance: number;
+}
+
+/**
+ * Generate all payment test scenarios
+ */
+export function generatePaymentTestScenarios(invoiceAmount: number = 5000): PaymentTestScenario[] {
+  const taxAmount = Math.round(invoiceAmount * 0.05);
+  const totalAmount = invoiceAmount + taxAmount;
+  
+  return [
+    {
+      name: 'full_cash_payment',
+      description: 'Full payment in cash',
+      invoiceAmount: totalAmount,
+      payments: [generateCashPayment(totalAmount)],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: 0,
+    },
+    {
+      name: 'full_check_payment',
+      description: 'Full payment by check',
+      invoiceAmount: totalAmount,
+      payments: [generateCheckPayment(totalAmount)],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: 0,
+    },
+    {
+      name: 'full_bank_transfer',
+      description: 'Full payment by bank transfer',
+      invoiceAmount: totalAmount,
+      payments: [generateBankTransferPayment(totalAmount)],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: 0,
+    },
+    {
+      name: 'full_credit_card',
+      description: 'Full payment by credit card',
+      invoiceAmount: totalAmount,
+      payments: [generateCreditCardPayment(totalAmount)],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: 0,
+    },
+    {
+      name: 'partial_payment_single',
+      description: 'Single partial payment (50%)',
+      invoiceAmount: totalAmount,
+      payments: [generatePartialPayment(totalAmount, 0.5)],
+      expectedInvoiceStatus: 'partial',
+      expectedBalance: Math.round(totalAmount * 0.5),
+    },
+    {
+      name: 'multiple_partial_payments',
+      description: 'Multiple partial payments totaling full amount',
+      invoiceAmount: totalAmount,
+      payments: [
+        generatePartialPayment(totalAmount, 0.4),
+        generatePartialPayment(totalAmount, 0.4),
+        generatePartialPayment(totalAmount, 0.2),
+      ],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: 0,
+    },
+    {
+      name: 'late_payment_with_penalty',
+      description: 'Late payment including penalty',
+      invoiceAmount: totalAmount,
+      payments: [generateLatePayment(totalAmount, 45)],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: 0,
+    },
+    {
+      name: 'bounced_check',
+      description: 'Check payment that bounced',
+      invoiceAmount: totalAmount,
+      payments: [generateCheckPayment(totalAmount, undefined, true)],
+      expectedInvoiceStatus: 'unpaid', // Payment failed, invoice still unpaid
+      expectedBalance: totalAmount,
+    },
+    {
+      name: 'cancelled_payment',
+      description: 'Payment that was cancelled',
+      invoiceAmount: totalAmount,
+      payments: [generateCancelledPayment(totalAmount)],
+      expectedInvoiceStatus: 'unpaid', // Payment cancelled, invoice still unpaid
+      expectedBalance: totalAmount,
+    },
+    {
+      name: 'overpayment',
+      description: 'Payment exceeding invoice amount',
+      invoiceAmount: totalAmount,
+      payments: [generateCashPayment(totalAmount + 500)],
+      expectedInvoiceStatus: 'paid',
+      expectedBalance: -500, // Credit balance
+    },
+  ];
+}
+
+/**
+ * Generate API payload for creating a payment
+ */
+export function generatePaymentApiPayload(
+  payment: MockPayment = generateTestPayment(),
+  companyId: string = '24bc0b21-4e2d-4413-9842-31719a3669f4'
+) {
+  return {
+    company_id: companyId,
+    payment_number: payment.paymentNumber,
+    payment_type: payment.paymentType,
+    payment_method: payment.paymentMethod,
+    amount: payment.amount,
+    payment_date: payment.paymentDate,
+    payment_status: payment.paymentStatus,
+    reference_number: payment.referenceNumber,
+    check_number: payment.checkNumber,
+    notes: payment.notes,
+    customer_id: payment.customerId,
+    vendor_id: payment.vendorId,
+    invoice_id: payment.invoiceId,
+    contract_id: payment.contractId,
+    late_fine_amount: payment.lateFineAmount,
+    late_fine_status: payment.lateFineStatus,
+    transaction_type: payment.paymentMethod === 'received' ? 'receipt' : 'payment',
+  };
+}
+
+/**
+ * Generate API payload for creating an invoice
+ */
+export function generateInvoiceApiPayload(
+  invoice: MockInvoice = generateTestInvoice(),
+  companyId: string = '24bc0b21-4e2d-4413-9842-31719a3669f4'
+) {
+  return {
+    company_id: companyId,
+    invoice_number: invoice.invoiceNumber,
+    invoice_date: invoice.invoiceDate,
+    due_date: invoice.dueDate,
+    invoice_type: invoice.invoiceType,
+    subtotal: invoice.subtotal,
+    tax_amount: invoice.taxAmount,
+    discount_amount: invoice.discountAmount,
+    total_amount: invoice.totalAmount,
+    paid_amount: invoice.paidAmount,
+    balance_due: invoice.balanceDue,
+    currency: invoice.currency,
+    status: invoice.status,
+    payment_status: invoice.paymentStatus,
+    customer_id: invoice.customerId,
+    contract_id: invoice.contractId,
+    notes: invoice.notes,
+  };
+}
+
+/**
+ * Generate a complete financial test fixture
+ */
+export function generateFinancialTestFixture() {
+  const customer = generateTestCustomer({ type: 'company' });
+  const vehicle = generateTestVehicle({ status: 'available' });
+  const contract = generateTestContract({ monthlyRate: 5000 });
+  const invoices = generateMonthlyInvoices(contract.agreementNumber, customer.id, 5000, 3);
+  const scenarios = generatePaymentTestScenarios(5000);
+  
+  return {
+    customer,
+    vehicle,
+    contract,
+    invoices,
+    scenarios,
+    // Helper methods
+    getUnpaidInvoice: () => invoices.find(inv => inv.paymentStatus === 'unpaid'),
+    getOverdueInvoice: () => invoices.find(inv => inv.status === 'overdue'),
+    getScenario: (name: string) => scenarios.find(s => s.name === name),
+  };
+}
