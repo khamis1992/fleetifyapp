@@ -18906,11 +18906,14 @@ export type Database = {
           identified_issues: string[] | null
           inspection_certificate_url: string | null
           inspection_date: string
+          inspection_time: string | null
           inspection_type: string
+          inspected_by: string | null
           inspector_name: string
           interior_condition: string | null
           is_passed: boolean | null
           lights_condition: string | null
+          mechanical_condition: Json | null
           mileage_at_inspection: number | null
           next_inspection_due: string | null
           notes: string | null
@@ -18922,6 +18925,19 @@ export type Database = {
           transmission_condition: string | null
           updated_at: string
           vehicle_id: string
+          vehicle_type: string | null
+          visual_inspection_zones: Json | null
+          photo_urls: string[] | null
+          fuel_level: number | null
+          odometer_reading: number | null
+          cleanliness_rating: number | null
+          accessories: Json | null
+          documents: Json | null
+          customer_signature: string | null
+          staff_notes: string | null
+          customer_acknowledgment: boolean | null
+          additional_charges: Json | null
+          status: string | null
         }
         Insert: {
           ac_condition?: string | null
@@ -18937,11 +18953,14 @@ export type Database = {
           identified_issues?: string[] | null
           inspection_certificate_url?: string | null
           inspection_date: string
+          inspection_time?: string | null
           inspection_type?: string
+          inspected_by?: string | null
           inspector_name: string
           interior_condition?: string | null
           is_passed?: boolean | null
           lights_condition?: string | null
+          mechanical_condition?: Json | null
           mileage_at_inspection?: number | null
           next_inspection_due?: string | null
           notes?: string | null
@@ -18953,6 +18972,19 @@ export type Database = {
           transmission_condition?: string | null
           updated_at?: string
           vehicle_id: string
+          vehicle_type?: string | null
+          visual_inspection_zones?: Json | null
+          photo_urls?: string[] | null
+          fuel_level?: number | null
+          odometer_reading?: number | null
+          cleanliness_rating?: number | null
+          accessories?: Json | null
+          documents?: Json | null
+          customer_signature?: string | null
+          staff_notes?: string | null
+          customer_acknowledgment?: boolean | null
+          additional_charges?: Json | null
+          status?: string | null
         }
         Update: {
           ac_condition?: string | null
@@ -18968,22 +19000,38 @@ export type Database = {
           identified_issues?: string[] | null
           inspection_certificate_url?: string | null
           inspection_date?: string
+          inspection_time?: string | null
           inspection_type?: string
+          inspected_by?: string | null
           inspector_name?: string
           interior_condition?: string | null
           is_passed?: boolean | null
           lights_condition?: string | null
+          mechanical_condition?: Json | null
           mileage_at_inspection?: number | null
           next_inspection_due?: string | null
           notes?: string | null
           overall_condition?: string
           photos?: Json | null
           repair_recommendations?: string[] | null
-          safety_equipment_status?: string | null
+          safety_eququipment_status?: string | null
           tire_condition?: string | null
           transmission_condition?: string | null
           updated_at?: string
           vehicle_id?: string
+          vehicle_type?: string | null
+          visual_inspection_zones?: Json | null
+          photo_urls?: string[] | null
+          fuel_level?: number | null
+          odometer_reading?: number | null
+          cleanliness_rating?: number | null
+          accessories?: Json | null
+          documents?: Json | null
+          customer_signature?: string | null
+          staff_notes?: string | null
+          customer_acknowledgment?: boolean | null
+          additional_charges?: Json | null
+          status?: string | null
         }
         Relationships: [
           {

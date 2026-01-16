@@ -29,16 +29,20 @@ import {
   Signature,
   Shield,
   Package,
+  AlertTriangle,
 } from 'lucide-react';
 import { VehicleReturnFormDialog } from './VehicleReturnFormDialog';
+import { VisualVehicleDiagram } from './vehicle-inspection';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { ZoneSelection, VehicleType } from './vehicle-inspection/types';
 
 // ===== Animation Variants =====
 const fadeInUp = {
@@ -97,6 +101,9 @@ interface InspectionRecord {
     staff: string;
   };
   status: 'completed' | 'pending';
+  // Visual inspection data
+  vehicleType?: VehicleType;
+  visualZones?: ZoneSelection[];
 }
 
 // ===== Mock Data (replace with actual data fetching) =====
@@ -265,6 +272,67 @@ const InspectionCard = ({ record, formatCurrency }: { record: InspectionRecord; 
           />
         </div>
       </div>
+
+      {/* Visual Inspection Zone Markers */}
+      {record.visualZones && record.visualZones.length > 0 && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+          <h4 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            الفحص المرئي - المناطق المميزة
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
+            {record.visualZones.map((zone) => {
+              const zoneColors = {
+                clean: '#10b981',
+                scratch: '#f59e0b',
+                dent: '#f97316',
+                crack: '#ef4444',
+                broken: '#b91c1c',
+                missing: '#6b7280',
+              };
+
+              const zoneLabels: Record<typeof zone.condition, string> = {
+                clean: 'سليم',
+                scratch: 'خدش',
+                dent: 'مثني',
+                crack: 'كسر',
+                broken: 'معطل',
+                missing: 'مفقود',
+              };
+
+              return (
+                <div key={zone.zone_id} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200">
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: zoneColors[zone.condition] }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium truncate text-neutral-900">
+                      {zone.zone_name_ar}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {zoneLabels[zone.condition]}
+                    </div>
+                  </div>
+                  {zone.photo_urls && zone.photo_urls.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] h-5">
+                      {zone.photo_urls.length}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-sm text-neutral-600">
+            <span className="font-semibold">
+              {record.visualZones.filter(z => z.condition !== 'clean').length}
+            </span>
+            {' / '}
+            {record.visualZones.length}
+            {' منطقة تحتاج انتباه'}
+          </div>
+        </div>
+      )}
 
       {/* Accessories & Documents */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

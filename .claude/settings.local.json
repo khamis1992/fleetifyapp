@@ -244,7 +244,8 @@
       "mcp__plugin_supabase_supabase__deploy_edge_function",
       "mcp__zai-mcp-server__extract_text_from_screenshot",
       "mcp__plugin_playwright_playwright__browser_fill_form",
-      "mcp__plugin_playwright_playwright__browser_resize"
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "Skill(planning-with-files)"
     ],
     "deny": [],
     "ask": []

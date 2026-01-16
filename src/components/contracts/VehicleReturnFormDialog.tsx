@@ -56,6 +56,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { VehicleMarking } from './vehicle-inspection/VehicleMarking';
+import { VehicleMark } from './vehicle-inspection/types';
 
 // ===== Animation Variants =====
 const fadeInUp = {
@@ -286,11 +288,14 @@ export const VehicleReturnFormDialog = ({
     permit: true,
   });
 
+  // Vehicle Marks State (new marking system)
+  const [vehicleMarks, setVehicleMarks] = useState<VehicleMark[]>([]);
+
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5; // Updated to include visual inspection step
 
   // Calculate additional charges total
   const chargesTotal = additionalCharges.reduce((sum, charge) => sum + charge.amount, 0);
@@ -421,6 +426,24 @@ export const VehicleReturnFormDialog = ({
     setAdditionalCharges(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // ===== Vehicle Marking Handlers =====
+
+  // Handle adding a new mark
+  const handleAddMark = useCallback((mark: Omit<VehicleMark, 'id' | 'created_at' | 'created_by'>) => {
+    const newMark: VehicleMark = {
+      ...mark,
+      id: Math.random().toString(36).substr(2, 9),
+      created_at: new Date().toISOString(),
+      created_by: '', // Will be set by user in handleSubmit
+    };
+    setVehicleMarks(prev => [...prev, newMark]);
+  }, []);
+
+  // Handle deleting a mark
+  const handleDeleteMark = useCallback((markId: string) => {
+    setVehicleMarks(prev => prev.filter(mark => mark.id !== markId));
+  }, []);
+
   // Submit form
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,6 +460,9 @@ export const VehicleReturnFormDialog = ({
     setIsSubmitting(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Upload photos to storage
       const photoUrls: string[] = [];
       for (const photo of photos) {
@@ -494,8 +520,8 @@ export const VehicleReturnFormDialog = ({
         .from('vehicle_inspections')
         .insert({
           contract_id: contract.id,
-          company_id: (await supabase.auth.getUser()).data.user?.user_metadata?.company_id,
-          inspection_type: 'return',
+          company_id: user?.user_metadata?.company_id,
+          inspection_type: 'check_out',
           inspection_date: returnDate,
           inspection_time: returnTime,
           mileage: parseInt(mileage),
@@ -520,6 +546,19 @@ export const VehicleReturnFormDialog = ({
           staff_notes: staffNotes,
           customer_acknowledgment: customerAcknowledgment,
           status: 'completed',
+          // Visual inspection data - using new marking system
+          visual_inspection_zones: vehicleMarks.map(mark => ({
+            zone_id: mark.id,
+            zone_name: 'Mark',
+            zone_name_ar: 'علامة',
+            category: 'exterior' as const,
+            condition: mark.condition || 'scratch',
+            severity: mark.severity || 'minor',
+            description: mark.description,
+            photo_urls: mark.photo_urls,
+            marked_by: user?.id || '',
+            marked_at: mark.created_at,
+          })),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -564,6 +603,7 @@ export const VehicleReturnFormDialog = ({
     notes,
     staffNotes,
     customerAcknowledgment,
+    vehicleMarks,
     calculateOverallRating,
     validateForm,
     toast,
@@ -753,7 +793,7 @@ export const VehicleReturnFormDialog = ({
               </motion.div>
             )}
 
-            {/* Step 2: Vehicle Condition Check Sheet */}
+            {/* Step 2: Visual Inspection */}
             {currentStep === 2 && (
               <motion.div
                 variants={fadeInUp}
@@ -762,8 +802,52 @@ export const VehicleReturnFormDialog = ({
                 className="space-y-6"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">
                     2
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-neutral-900">فحص السيارة</h3>
+                    <p className="text-sm text-neutral-500">انقر على أي مكان في الصورة لإضافة علامة ووصف المشكلة</p>
+                  </div>
+                </div>
+
+                <VehicleMarking
+                  vehicleImage="/images/vehicles/sedan-top-view.png"
+                  marks={vehicleMarks}
+                  onMarkAdd={handleAddMark}
+                  onMarkDelete={handleDeleteMark}
+                  mode="add"
+                  contractId={contract.id}
+                />
+
+                {vehicleMarks.length > 0 && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg border border-neutral-200">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">
+                        <MapPin className="w-4 h-4 inline ml-2" />
+                        العلامات المضافة ({vehicleMarks.length})
+                      </h4>
+                      <Badge variant="secondary" className="gap-1">
+                        <Camera className="w-3 h-3" />
+                        {vehicleMarks.filter(m => m.photo_urls.length > 0).length} مع صور
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step 3: Vehicle Condition Check Sheet */}
+            {currentStep === 3 && (
+              <motion.div
+                variants={fadeInUp}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                    3
                   </div>
                   <h3 className="text-xl font-bold text-neutral-900">بطاقة فحص الشاملة</h3>
                 </div>
@@ -1156,8 +1240,8 @@ export const VehicleReturnFormDialog = ({
               </motion.div>
             )}
 
-            {/* Step 3: Photos & Additional Charges */}
-            {currentStep === 3 && (
+            {/* Step 4: Accessories & Documents */}
+            {currentStep === 4 && (
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"
@@ -1166,7 +1250,7 @@ export const VehicleReturnFormDialog = ({
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                    3
+                    4
                   </div>
                   <h3 className="text-xl font-bold text-neutral-900">الصور والمصاريف الإضافية</h3>
                 </div>
@@ -1308,8 +1392,8 @@ export const VehicleReturnFormDialog = ({
               </motion.div>
             )}
 
-            {/* Step 4: Notes & Confirmation */}
-            {currentStep === 4 && (
+            {/* Step 5: Notes & Confirmation */}
+            {currentStep === 5 && (
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"
@@ -1318,7 +1402,7 @@ export const VehicleReturnFormDialog = ({
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold">
-                    4
+                    5
                   </div>
                   <h3 className="text-xl font-bold text-neutral-900">الملاحظات والتأكيد</h3>
                 </div>
