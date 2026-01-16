@@ -241,19 +241,19 @@ function CustomerRow({
         </div>
 
         {/* Section 3: Quick Actions */}
-        <div className="flex items-center justify-end gap-2 w-full md:w-3/12 opacity-80 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); onCall(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-sky-50 hover:text-sky-600 transition shadow-sm" title="اتصال">
+        <div className="flex items-center justify-end gap-2 w-full md:w-3/12 opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <button onClick={(e) => { e.stopPropagation(); onCall(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-sky-50 hover:text-sky-600 transition shadow-sm pointer-events-auto" title="اتصال">
             <Phone size={18} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-emerald-50 hover:text-emerald-600 transition shadow-sm" title="واتساب">
+          <button onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-emerald-50 hover:text-emerald-600 transition shadow-sm pointer-events-auto" title="واتساب">
             <MessageCircle size={18} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 hover:text-slate-800 transition shadow-sm" title="ملاحظة">
+          <button onClick={(e) => { e.stopPropagation(); onNote(); }} className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 hover:text-slate-800 transition shadow-sm pointer-events-auto" title="ملاحظة">
             <Plus size={18} />
           </button>
           <button
             onClick={onToggle}
-            className={`px-3 py-2 ${BRAND_BG} text-white rounded-2xl hover:bg-opacity-90 transition flex items-center gap-1 text-sm font-medium shadow-sm`}
+            className={`px-3 py-2 ${BRAND_BG} text-white rounded-2xl hover:bg-opacity-90 transition flex items-center gap-1 text-sm font-medium shadow-sm pointer-events-auto`}
             title="عرض التفاصيل الشاملة"
           >
             <ChevronDown size={16} className="transform -rotate-90" />
@@ -640,37 +640,71 @@ export default function CustomerCRMNew() {
   };
 
   // طباعة تقرير العملاء المتأخرين
-  const handlePrintLateReport = useCallback(() => {
+  const handlePrintLateReport = useCallback(async () => {
+    if (!companyId) return;
+
     // جمع بيانات العملاء المتأخرين
     const lateCustomers = customers.filter(c => {
       const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
       return crmCustomer && getPaymentStatusOptimized(crmCustomer) === 'late';
     });
-    
+
+    // Fetch traffic violations for all customers
+    const customerIds = lateCustomers.map(c => c.id);
+
+    // Get all contracts for these customers
+    const { data: customerContracts } = await supabase
+      .from('contracts')
+      .select('id, customer_id')
+      .in('customer_id', customerIds)
+      .eq('company_id', companyId);
+
+    const contractIds = customerContracts?.map(c => c.id) || [];
+
+    // Get traffic violations for these contracts
+    const { data: trafficViolations } = await supabase
+      .from('traffic_violations')
+      .select('contract_id, fine_amount')
+      .in('contract_id', contractIds);
+
+    // Group violations by customer
+    const violationsByCustomer = new Map<string, { count: number; totalAmount: number }>();
+    trafficViolations?.forEach(violation => {
+      const contract = customerContracts?.find(c => c.id === violation.contract_id);
+      if (!contract) return;
+
+      const customerId = contract.customer_id;
+      const current = violationsByCustomer.get(customerId) || { count: 0, totalAmount: 0 };
+      violationsByCustomer.set(customerId, {
+        count: current.count + 1,
+        totalAmount: current.totalAmount + (violation.fine_amount || 0),
+      });
+    });
+
     // حساب إجمالي المستحقات لكل عميل
     const reportData = lateCustomers.map(customer => {
       const customerInvoices = invoices.filter(inv => inv.customer_id === customer.id);
       const contract = getCustomerContract(customer.id);
       const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
       const lastContact = crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null;
-      
+      const violations = violationsByCustomer.get(customer.id) || { count: 0, totalAmount: 0 };
+
       const totalAmount = customerInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
       const totalPaid = customerInvoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
       const totalRemaining = totalAmount - totalPaid;
-      
-      const overdueInvoices = customerInvoices.filter(inv => {
+
+      const pendingInvoices = customerInvoices.filter(inv => {
         if (inv.payment_status === 'paid') return false;
-        if (!inv.due_date) return false;
-        return new Date(inv.due_date) < new Date();
+        return true;
       });
-      
+
       return {
-        customerCode: customer.customer_code || '-',
         nameAr: `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معرف',
         phone: customer.phone || '-',
-        contractNumber: contract?.contract_number || '-',
-        overdueCount: overdueInvoices.length,
+        pendingInvoicesCount: pendingInvoices.length,
         totalRemaining,
+        violationsCount: violations.count,
+        violationsAmount: violations.totalAmount,
         lastContactDays: lastContact === null ? 'لم يتم' : `${lastContact} يوم`,
       };
     }).sort((a, b) => b.totalRemaining - a.totalRemaining);
@@ -683,6 +717,7 @@ export default function CustomerCRMNew() {
     }
 
     const totalOutstanding = reportData.reduce((sum, c) => sum + c.totalRemaining, 0);
+    const totalViolations = reportData.reduce((sum, c) => sum + c.violationsAmount, 0);
     const today = format(new Date(), 'dd/MM/yyyy');
 
     printWindow.document.write(`
@@ -940,7 +975,11 @@ export default function CustomerCRMNew() {
             </div>
             <div class="summary-item">
               <div class="summary-value">${totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div class="summary-label">إجمالي المستحقات (QAR)</div>
+              <div class="summary-label">إجمالي الفواتير المستحقة (ر.ق)</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value">${totalViolations.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div class="summary-label">إجمالي المخالفات (ر.ق)</div>
             </div>
           </div>
 
@@ -950,12 +989,12 @@ export default function CustomerCRMNew() {
               <tr>
                 <th class="checkbox-col">✓</th>
                 <th>#</th>
-                <th>كود العميل</th>
                 <th>اسم العميل</th>
                 <th>الهاتف</th>
-                <th>رقم العقد</th>
-                <th>فواتير</th>
-                <th>المستحق (ر.ق)</th>
+                <th>الفواتير المستحقة</th>
+                <th>المبلغ المستحق (ر.ق)</th>
+                <th>المخالفات</th>
+                <th>قيمة المخالفات (ر.ق)</th>
                 <th>آخر تواصل</th>
                 <th>ملاحظات</th>
               </tr>
@@ -965,12 +1004,12 @@ export default function CustomerCRMNew() {
                 <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
                   <td class="checkbox-col"><div class="checkbox"></div></td>
                   <td style="text-align: center;">${(i + 1).toLocaleString('en-US')}</td>
-                  <td>${c.customerCode}</td>
                   <td>${c.nameAr}</td>
                   <td class="phone-cell">${c.phone}</td>
-                  <td>${c.contractNumber}</td>
-                  <td style="text-align: center;">${c.overdueCount.toLocaleString('en-US')}</td>
+                  <td style="text-align: center;">${c.pendingInvoicesCount.toLocaleString('en-US')}</td>
                   <td class="amount">${c.totalRemaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td style="text-align: center;">${c.violationsCount.toLocaleString('en-US')}</td>
+                  <td class="amount">${c.violationsAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td>${c.lastContactDays === 'لم يتم' ? 'لم يتم' : c.lastContactDays.replace(/\d+/, (match: string) => parseInt(match).toLocaleString('en-US'))}</td>
                   <td style="min-width: 80px;"></td>
                 </tr>
@@ -1012,7 +1051,7 @@ export default function CustomerCRMNew() {
     `);
     
     printWindow.document.close();
-  }, [customers, invoices, crmCustomers, getCustomerContract, toast]);
+  }, [customers, invoices, crmCustomers, getCustomerContract, toast, companyId, supabase]);
 
   // --- Render ---
   if (isLoading) {
