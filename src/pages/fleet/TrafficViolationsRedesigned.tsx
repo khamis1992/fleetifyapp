@@ -658,10 +658,11 @@ export default function TrafficViolationsRedesigned() {
                 <table className="w-full text-right print:text-sm">
                   <thead className="bg-neutral-50 border-b border-neutral-100 text-neutral-500 font-medium text-xs uppercase tracking-wider print:bg-neutral-100 print:text-black">
                     <tr>
-                      <th className="px-6 py-4">رقم المخالفة / التاريخ</th>
+                      <th className="px-6 py-4">رقم المخالفة</th>
+                      <th className="px-6 py-4">التاريخ</th>
                       <th className="px-6 py-4">المركبة</th>
                       <th className="px-6 py-4">العميل</th>
-                      <th className="px-6 py-4">التفاصيل</th>
+                      <th className="px-6 py-4">الموقع</th>
                       <th className="px-6 py-4">القيمة</th>
                       <th className="px-6 py-4">الحالة</th>
                       <th className="px-6 py-4 text-center print:hidden">الإجراءات</th>
@@ -670,7 +671,7 @@ export default function TrafficViolationsRedesigned() {
                   <tbody className="divide-y divide-neutral-100 text-sm print:divide-neutral-200">
                     {filteredViolations.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-12 text-center text-neutral-400">
+                        <td colSpan={8} className="py-12 text-center text-neutral-400">
                           <div className="flex flex-col items-center gap-2">
                             <FileWarning className="w-10 h-10 opacity-20" />
                             <p>لا توجد سجلات مطابقة للفلاتر الحالية</p>
@@ -679,15 +680,17 @@ export default function TrafficViolationsRedesigned() {
                       </tr>
                     ) : (
                       filteredViolations.map(violation => (
-                        <tr 
-                          key={violation.id} 
+                        <tr
+                          key={violation.id}
                           className="hover:bg-neutral-50 transition group print:break-inside-avoid cursor-pointer"
                           onClick={() => handleOpenSidePanel(violation)}
                         >
                           <td className="px-6 py-4">
                             <div className="font-mono font-bold text-neutral-800">{violation.penalty_number}</div>
-                            <div className="text-neutral-400 text-xs mt-1 flex items-center gap-1">
-                              <Calendar className="w-3 h-3"/> 
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-neutral-600 text-sm flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5 text-neutral-400"/>
                               {violation.penalty_date && format(new Date(violation.penalty_date), 'dd/MM/yyyy')}
                             </div>
                           </td>
@@ -730,16 +733,7 @@ export default function TrafficViolationsRedesigned() {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-neutral-800 font-medium">{violation.violation_type || violation.reason || '-'}</div>
-                            {violation.location && (
-                              <div className="text-xs text-neutral-500 mt-1">📍 {violation.location}</div>
-                            )}
-                            {violation.notes && (
-                              <div className="text-xs text-neutral-500 mt-1 flex items-start gap-1 max-w-[200px] print:max-w-none">
-                                <MessageSquare className="w-3 h-3 flex-shrink-0 mt-0.5 print:hidden" /> 
-                                <span className="truncate print:whitespace-normal">{violation.notes}</span>
-                              </div>
-                            )}
+                            <div className="text-neutral-600 text-sm">{violation.location || '-'}</div>
                           </td>
                           <td className="px-6 py-4 font-bold text-teal-600 text-base">{formatCurrency(violation.amount || 0)}</td>
                           <td className="px-6 py-4">
@@ -763,7 +757,7 @@ export default function TrafficViolationsRedesigned() {
                             )}
                           </td>
                           <td className="px-6 py-4 print:hidden" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleOpenSidePanel(violation)}
                                 className="p-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition"

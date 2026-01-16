@@ -21,7 +21,11 @@ import {
   Building,
   Eye,
   User,
-  Copy
+  Copy,
+  ArrowRight,
+  Database,
+  Edit3,
+  Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDropzone } from 'react-dropzone';
@@ -41,7 +45,7 @@ import {
   MATCH_CONFIDENCE_LABELS,
   MATCH_CONFIDENCE_COLORS
 } from '@/types/violations';
-import { useViolationMatching, useViolationSave } from '@/hooks/useViolationMatching';
+import { useViolationMatching, useViolationSave, useViolationEnrichment, EnrichableViolation } from '@/hooks/useViolationMatching';
 
 export const TrafficViolationPDFImport: React.FC = () => {
   // Initialize PDF.js worker inside component to avoid module-level issues
@@ -67,6 +71,10 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const [selectedViolations, setSelectedViolations] = useState<Set<string>>(new Set());
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  // Enrichment state - لإكمال البيانات الناقصة
+  const [enrichableViolations, setEnrichableViolations] = useState<EnrichableViolation[]>([]);
+  const [selectedEnrichments, setSelectedEnrichments] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
   const { companyId } = useUnifiedCompanyAccess();
@@ -76,6 +84,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
     checkDuplicates: true
   });
   const { saveViolations, isSaving } = useViolationSave();
+  const { findEnrichableViolations, enrichViolations, isSearching, isEnriching } = useViolationEnrichment();
 
   // Extract text from PDF using pdf.js
   const extractTextFromPDF = async (file: File): Promise<string> => {
@@ -308,6 +317,19 @@ export const TrafficViolationPDFImport: React.FC = () => {
           .map(v => v.id)
       ));
 
+      // البحث عن المخالفات الموجودة التي يمكن إكمال بياناتها
+      if (companyId && allViolations.length > 0) {
+        const enrichmentResult = await findEnrichableViolations(allViolations, companyId);
+        if (enrichmentResult.enrichable_count > 0) {
+          setEnrichableViolations(enrichmentResult.enrichable_violations);
+          setSelectedEnrichments(new Set(enrichmentResult.enrichable_violations.map(v => v.existingViolation.id)));
+          toast({
+            title: "تم العثور على بيانات ناقصة",
+            description: `يمكن إكمال ${enrichmentResult.enrichable_count} مخالفة موجودة بالبيانات من الملف`,
+          });
+        }
+      }
+
       toast({
         title: "Data extracted successfully",
         description: `Extracted ${result.total_extracted} violations, ${result.successful_matches} matched to vehicles`,
@@ -321,6 +343,59 @@ export const TrafficViolationPDFImport: React.FC = () => {
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // حفظ البيانات الناقصة للمخالفات الموجودة
+  const saveEnrichments = async () => {
+    if (selectedEnrichments.size === 0) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء تحديد المخالفات المراد تحديثها",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const violationsToEnrich = enrichableViolations.filter(v =>
+      selectedEnrichments.has(v.existingViolation.id)
+    );
+
+    const result = await enrichViolations(violationsToEnrich);
+
+    toast({
+      title: "تم التحديث بنجاح",
+      description: `تم تحديث ${result.success} مخالفة${result.failed > 0 ? ` (فشل ${result.failed})` : ''}`,
+    });
+
+    if (result.success > 0) {
+      // إزالة المخالفات المحدثة من القائمة
+      setEnrichableViolations(prev => 
+        prev.filter(v => !selectedEnrichments.has(v.existingViolation.id))
+      );
+      setSelectedEnrichments(new Set());
+    }
+  };
+
+  // Toggle enrichment selection
+  const toggleEnrichmentSelection = (violationId: string) => {
+    setSelectedEnrichments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(violationId)) {
+        newSet.delete(violationId);
+      } else {
+        newSet.add(violationId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select/deselect all enrichments
+  const toggleSelectAllEnrichments = () => {
+    if (selectedEnrichments.size === enrichableViolations.length) {
+      setSelectedEnrichments(new Set());
+    } else {
+      setSelectedEnrichments(new Set(enrichableViolations.map(v => v.existingViolation.id)));
     }
   };
 
@@ -437,10 +512,14 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
         <CardContent>
           <Tabs defaultValue="upload" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="upload">Upload Files</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="upload">رفع الملفات</TabsTrigger>
               <TabsTrigger value="process" disabled={uploadedFiles.length === 0}>
-                Process Data
+                معالجة البيانات
+              </TabsTrigger>
+              <TabsTrigger value="enrich" disabled={enrichableViolations.length === 0}>
+                <Database className="h-4 w-4 ml-1" />
+                إكمال البيانات ({enrichableViolations.length})
               </TabsTrigger>
               <TabsTrigger value="review" disabled={!processingResult}>
                 Review & Save
@@ -802,6 +881,137 @@ export const TrafficViolationPDFImport: React.FC = () => {
                     </CardContent>
                   </Card>
                 </>
+              )}
+            </TabsContent>
+
+            {/* Enrichment Tab - إكمال البيانات الناقصة */}
+            <TabsContent value="enrich" className="space-y-4">
+              {enrichableViolations.length > 0 ? (
+                <>
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <Database className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800">
+                      تم العثور على <strong>{enrichableViolations.length}</strong> مخالفة موجودة في النظام يمكن إكمال بياناتها الناقصة من ملف PDF.
+                      حدد المخالفات التي تريد تحديثها ثم اضغط "تحديث البيانات".
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Control buttons */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSelectAllEnrichments}
+                      >
+                        {selectedEnrichments.size === enrichableViolations.length
+                          ? 'إلغاء تحديد الكل'
+                          : 'تحديد الكل'
+                        }
+                      </Button>
+                      <span className="text-sm text-slate-600">
+                        محدد: {selectedEnrichments.size} من {enrichableViolations.length}
+                      </span>
+                    </div>
+
+                    <Button
+                      onClick={saveEnrichments}
+                      disabled={isEnriching || selectedEnrichments.size === 0}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isEnriching ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Edit3 className="h-4 w-4" />
+                      )}
+                      تحديث البيانات ({selectedEnrichments.size})
+                    </Button>
+                  </div>
+
+                  {/* Enrichable violations table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">المخالفات التي يمكن إكمال بياناتها</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12">تحديد</TableHead>
+                              <TableHead>رقم المخالفة</TableHead>
+                              <TableHead>التاريخ</TableHead>
+                              <TableHead>البيانات الناقصة</TableHead>
+                              <TableHead>القيم الجديدة من PDF</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {enrichableViolations.map((item) => (
+                              <TableRow key={item.existingViolation.id}>
+                                <TableCell>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedEnrichments.has(item.existingViolation.id)}
+                                    onChange={() => toggleEnrichmentSelection(item.existingViolation.id)}
+                                    className="rounded"
+                                  />
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">
+                                  <div className="flex items-center gap-1">
+                                    <Hash className="h-3 w-3" />
+                                    {item.existingViolation.reference_number || item.existingViolation.violation_number}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {format(new Date(item.existingViolation.violation_date), 'dd/MM/yyyy', { locale: ar })}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {item.missingFields.map((field, idx) => (
+                                      <Badge key={idx} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                                        {field.label}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-1 text-sm">
+                                    {item.missingFields.map((field, idx) => (
+                                      <div key={idx} className="flex items-center gap-2">
+                                        <span className="text-slate-500">{field.label}:</span>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-slate-400 line-through">فارغ</span>
+                                          <ArrowRight className="h-3 w-3 text-green-500" />
+                                          <span className="text-green-700 font-medium truncate max-w-[200px]">
+                                            {field.field === 'violation_time' && <Clock className="h-3 w-3 inline ml-1" />}
+                                            {field.field === 'location' && <MapPin className="h-3 w-3 inline ml-1" />}
+                                            {field.field === 'issuing_authority' && <Building className="h-3 w-3 inline ml-1" />}
+                                            {field.newValue}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Database className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <p className="text-lg font-medium text-slate-600 mb-2">لا توجد بيانات ناقصة للإكمال</p>
+                  <p className="text-sm text-slate-500">
+                    قم برفع ملف PDF ومعالجته للبحث عن المخالفات الموجودة التي تحتاج لإكمال بياناتها
+                  </p>
+                </div>
               )}
             </TabsContent>
 

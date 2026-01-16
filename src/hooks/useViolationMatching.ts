@@ -377,3 +377,231 @@ export function useViolationSave() {
     error
   };
 }
+
+// ============================================================================
+// Violation Enrichment Types
+// ============================================================================
+
+export interface MissingFieldInfo {
+  field: string;
+  label: string;
+  currentValue: string | null;
+  newValue: string | null;
+}
+
+export interface EnrichableViolation {
+  existingViolation: {
+    id: string;
+    violation_number: string;
+    reference_number: string | null;
+    violation_date: string;
+    location: string | null;
+    violation_description: string | null;
+    violation_time: string | null;
+    issuing_authority: string | null;
+    contract_id: string | null;
+  };
+  pdfData: ExtractedViolation;
+  missingFields: MissingFieldInfo[];
+  canEnrich: boolean;
+}
+
+export interface EnrichmentResult {
+  total_found: number;
+  enrichable_count: number;
+  enrichable_violations: EnrichableViolation[];
+}
+
+// ============================================================================
+// Hook for Violation Enrichment (Fill Missing Data)
+// ============================================================================
+
+export function useViolationEnrichment() {
+  const [isSearching, setIsSearching] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * البحث عن المخالفات الموجودة ومقارنتها مع بيانات PDF
+   */
+  const findEnrichableViolations = useCallback(async (
+    pdfViolations: ExtractedViolation[],
+    companyId: string
+  ): Promise<EnrichmentResult> => {
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      // استخراج أرقام المرجع وأرقام المخالفات من PDF
+      const referenceNumbers = pdfViolations
+        .map(v => v.reference_number)
+        .filter((r): r is string => !!r);
+      
+      const violationNumbers = pdfViolations
+        .map(v => v.violation_number)
+        .filter((v): v is string => !!v);
+
+      // البحث عن المخالفات الموجودة في قاعدة البيانات
+      const { data: existingViolations, error: searchError } = await supabase
+        .from('traffic_violations')
+        .select('id, violation_number, reference_number, violation_date, location, violation_description, violation_time, issuing_authority, contract_id')
+        .eq('company_id', companyId)
+        .or(`reference_number.in.(${referenceNumbers.join(',')}),violation_number.in.(${violationNumbers.join(',')})`);
+
+      if (searchError) {
+        throw new Error(`خطأ في البحث: ${searchError.message}`);
+      }
+
+      if (!existingViolations || existingViolations.length === 0) {
+        return {
+          total_found: 0,
+          enrichable_count: 0,
+          enrichable_violations: []
+        };
+      }
+
+      // مقارنة وإيجاد البيانات الناقصة
+      const enrichableViolations: EnrichableViolation[] = [];
+
+      for (const existing of existingViolations) {
+        // البحث عن المخالفة المقابلة في بيانات PDF
+        const pdfMatch = pdfViolations.find(pdf => 
+          (pdf.reference_number && pdf.reference_number === existing.reference_number) ||
+          (pdf.violation_number && pdf.violation_number === existing.violation_number)
+        );
+
+        if (!pdfMatch) continue;
+
+        // مقارنة الحقول وإيجاد الناقصة
+        const missingFields: MissingFieldInfo[] = [];
+
+        // الموقع
+        if (!existing.location && pdfMatch.location) {
+          missingFields.push({
+            field: 'location',
+            label: 'الموقع',
+            currentValue: existing.location,
+            newValue: pdfMatch.location
+          });
+        }
+
+        // وصف المخالفة
+        if (!existing.violation_description && pdfMatch.violation_description) {
+          missingFields.push({
+            field: 'violation_description',
+            label: 'وصف المخالفة',
+            currentValue: existing.violation_description,
+            newValue: pdfMatch.violation_description
+          });
+        }
+
+        // وقت المخالفة
+        if (!existing.violation_time && pdfMatch.time) {
+          missingFields.push({
+            field: 'violation_time',
+            label: 'وقت المخالفة',
+            currentValue: existing.violation_time,
+            newValue: pdfMatch.time
+          });
+        }
+
+        // الجهة المصدرة
+        if (!existing.issuing_authority && pdfMatch.issuing_authority) {
+          missingFields.push({
+            field: 'issuing_authority',
+            label: 'الجهة المصدرة',
+            currentValue: existing.issuing_authority,
+            newValue: pdfMatch.issuing_authority
+          });
+        }
+
+        if (missingFields.length > 0) {
+          enrichableViolations.push({
+            existingViolation: existing,
+            pdfData: pdfMatch,
+            missingFields,
+            canEnrich: true
+          });
+        }
+      }
+
+      return {
+        total_found: existingViolations.length,
+        enrichable_count: enrichableViolations.length,
+        enrichable_violations: enrichableViolations
+      };
+
+    } catch (err: any) {
+      setError(err.message);
+      return {
+        total_found: 0,
+        enrichable_count: 0,
+        enrichable_violations: []
+      };
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  /**
+   * تحديث المخالفات الموجودة بالبيانات الناقصة من PDF
+   */
+  const enrichViolations = useCallback(async (
+    enrichableViolations: EnrichableViolation[]
+  ): Promise<{ success: number; failed: number }> => {
+    setIsEnriching(true);
+    setError(null);
+
+    let success = 0;
+    let failed = 0;
+
+    for (const item of enrichableViolations) {
+      if (!item.canEnrich || item.missingFields.length === 0) {
+        continue;
+      }
+
+      try {
+        // بناء كائن التحديث
+        const updateData: Record<string, string | null> = {};
+        
+        for (const field of item.missingFields) {
+          if (field.newValue) {
+            updateData[field.field] = field.newValue;
+          }
+        }
+
+        if (Object.keys(updateData).length === 0) {
+          continue;
+        }
+
+        // تحديث المخالفة في قاعدة البيانات
+        const { error: updateError } = await supabase
+          .from('traffic_violations')
+          .update(updateData)
+          .eq('id', item.existingViolation.id);
+
+        if (updateError) {
+          console.error('خطأ في تحديث المخالفة:', updateError);
+          failed++;
+        } else {
+          success++;
+        }
+
+      } catch (err: any) {
+        console.error('خطأ في تحديث المخالفة:', err);
+        failed++;
+      }
+    }
+
+    setIsEnriching(false);
+    return { success, failed };
+  }, []);
+
+  return {
+    findEnrichableViolations,
+    enrichViolations,
+    isSearching,
+    isEnriching,
+    error
+  };
+}

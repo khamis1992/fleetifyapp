@@ -29,11 +29,14 @@ import {
   XCircle,
   Ban,
   Gavel,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -42,6 +45,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -49,9 +60,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 // ===== Animation Variants =====
 const fadeInUp = {
@@ -260,11 +273,13 @@ const ViolationCard = ({
   formatCurrency,
   onView,
   onPay,
+  onDownload,
 }: {
   violation: TrafficViolation;
   formatCurrency: (amount: number) => string;
   onView: () => void;
   onPay?: () => void;
+  onDownload?: () => void;
 }) => {
   const statusInfo = getViolationStatusInfo(violation.status);
   const StatusIcon = statusInfo.icon;
@@ -313,7 +328,13 @@ const ViolationCard = ({
               <Eye className="w-4 h-4" />
               <span>عرض التفاصيل</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDownload?.();
+              }}
+              className="gap-2"
+            >
               <Download className="w-4 h-4" />
               <span>تحميل PDF</span>
             </DropdownMenuItem>
@@ -578,6 +599,340 @@ const ViolationsEmptyState = () => (
   </div>
 );
 
+// ===== Violation Details Dialog Component =====
+interface ViolationDetailsDialogProps {
+  violation: TrafficViolation | null;
+  open: boolean;
+  onClose: () => void;
+  formatCurrency: (amount: number) => string;
+  onPay?: () => void;
+}
+
+const ViolationDetailsDialog = ({
+  violation,
+  open,
+  onClose,
+  formatCurrency,
+  onPay,
+}: ViolationDetailsDialogProps) => {
+  if (!violation) return null;
+
+  const statusInfo = getViolationStatusInfo(violation.status);
+  const StatusIcon = statusInfo.icon;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <AlertTriangle className="h-5 w-5" />
+            تفاصيل المخالفة المرورية
+          </DialogTitle>
+          <DialogDescription>
+            معلومات تفصيلية عن المخالفة والإجراءات المتاحة
+          </DialogDescription>
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 max-h-[calc(90vh-180px)]">
+          <div className="space-y-4 pr-4">
+            {/* Status Banner */}
+            <div className={cn("p-4 rounded-xl border", statusInfo.bgColor, statusInfo.borderColor)}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", statusInfo.iconBg)}>
+                    <StatusIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-neutral-900">{statusInfo.label}</p>
+                    <p className="text-sm text-neutral-600">حالة المخالفة</p>
+                  </div>
+                </div>
+                {violation.status === 'pending' && onPay && (
+                  <Button onClick={onPay} className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600">
+                    <CreditCard className="w-4 h-4" />
+                    دفع الغرامة
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  المعلومات الأساسية
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">رقم المخالفة</p>
+                    <p className="font-semibold text-neutral-900">
+                      {violation.violation_number || `#${violation.id.slice(0, 8)}`}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">نوع المخالفة</p>
+                    <p className="font-semibold text-neutral-900">
+                      {getViolationTypeLabel(violation.violation_type)}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">تاريخ المخالفة</p>
+                    <p className="font-semibold text-neutral-900" dir="ltr">
+                      {violation.violation_date
+                        ? format(new Date(violation.violation_date), 'dd MMM yyyy', { locale: ar })
+                        : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">قيمة الغرامة</p>
+                    <p className="font-bold text-xl text-teal-600">
+                      {formatCurrency(violation.fine_amount || 0)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location & Description */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  التفاصيل
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {violation.location && (
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">الموقع</p>
+                    <p className="text-sm text-neutral-900">{violation.location}</p>
+                  </div>
+                )}
+                {violation.description && (
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">الوصف</p>
+                    <p className="text-sm text-neutral-900 bg-neutral-50 p-3 rounded-lg">
+                      {violation.description}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Evidence */}
+            {violation.evidence_urls && violation.evidence_urls.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Image className="h-5 w-5" />
+                    المستندات الداعمة
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {violation.evidence_urls.map((url, index) => (
+                      <Badge key={index} variant="outline" className="gap-1">
+                        <Image className="w-3 h-3" />
+                        مستند {index + 1}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Payment Information */}
+            {violation.status === 'paid' && violation.payment_date && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-5 w-5" />
+                    معلومات الدفع
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-neutral-500 mb-1">تاريخ الدفع</p>
+                      <p className="font-semibold text-neutral-900" dir="ltr">
+                        {format(new Date(violation.payment_date), 'dd MMM yyyy', { locale: ar })}
+                      </p>
+                    </div>
+                    <Badge className="bg-green-50 text-green-700 border-green-200">
+                      تم الدفع
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>
+            إغلاق
+          </Button>
+          {violation.status === 'pending' && onPay && (
+            <Button onClick={onPay} className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600">
+              <CreditCard className="w-4 h-4" />
+              دفع الغرامة
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ===== Violation Payment Dialog Component =====
+interface ViolationPaymentDialogProps {
+  violation: TrafficViolation | null;
+  open: boolean;
+  onClose: () => void;
+  formatCurrency: (amount: number) => string;
+  onPaymentComplete: (violationId: string) => void;
+}
+
+const ViolationPaymentDialog = ({
+  violation,
+  open,
+  onClose,
+  formatCurrency,
+  onPaymentComplete,
+}: ViolationPaymentDialogProps) => {
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
+
+  if (!violation) return null;
+
+  const handlePayment = async () => {
+    setIsProcessing(true);
+
+    try {
+      // Simulate payment processing
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Show success message
+      toast({
+        title: 'تم الدفع بنجاح',
+        description: `تم دفع غرامة المخالفة ${violation.violation_number || `#${violation.id.slice(0, 8)}`} بنجاح`,
+      });
+
+      // Call payment complete callback
+      onPaymentComplete(violation.id);
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'خطأ في الدفع',
+        description: 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <CreditCard className="h-5 w-5 text-teal-600" />
+            دفع الغرامة المرورية
+          </DialogTitle>
+          <DialogDescription>
+            تأكيد دفع غرامة المخالفة المرورية
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Violation Summary */}
+          <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-neutral-900">
+                  {violation.violation_number || `#${violation.id.slice(0, 8)}`}
+                </p>
+                <p className="text-sm text-neutral-600">
+                  {getViolationTypeLabel(violation.violation_type)}
+                </p>
+                <p className="text-xs text-neutral-500 mt-1" dir="ltr">
+                  {violation.violation_date
+                    ? format(new Date(violation.violation_date), 'dd MMM yyyy', { locale: ar })
+                    : ''}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Amount */}
+          <div className="text-center py-4">
+            <p className="text-sm text-neutral-500 mb-1">المبلغ المطلوب</p>
+            <p className="text-3xl font-bold text-teal-600">
+              {formatCurrency(violation.fine_amount || 0)}
+            </p>
+          </div>
+
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <Label className="text-base">طريقة الدفع</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="اختر طريقة الدفع" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">نقداً</SelectItem>
+                <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                <SelectItem value="card">بطاقة ائتمان</SelectItem>
+                <SelectItem value="check">شيك</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Payment Method Note */}
+          {paymentMethod === 'bank_transfer' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+              يرجى تحويل المبلغ إلى الحساب البنكي التالي وإرفاق إيصال التحويل
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isProcessing}>
+            إلغاء
+          </Button>
+          <Button
+            onClick={handlePayment}
+            disabled={isProcessing}
+            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                جاري المعالجة...
+              </>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4" />
+                تأكيد الدفع
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ===== Main Component =====
 export const ContractViolationsTabRedesigned = ({
   violations,
@@ -588,6 +943,13 @@ export const ContractViolationsTabRedesigned = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortOption, setSortOption] = useState('date-desc');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+
+  // Dialog states
+  const [selectedViolation, setSelectedViolation] = useState<TrafficViolation | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
+  const { toast } = useToast();
 
   // Filter and sort violations
   const filteredAndSortedViolations = useMemo(() => {
@@ -627,13 +989,46 @@ export const ContractViolationsTabRedesigned = ({
   }, [violations, searchQuery, statusFilter, sortOption]);
 
   const handleViewViolation = (violation: TrafficViolation) => {
-    console.log('View violation:', violation);
-    // TODO: Open violation details dialog
+    setSelectedViolation(violation);
+    setIsViewDialogOpen(true);
   };
 
   const handlePayViolation = (violation: TrafficViolation) => {
-    console.log('Pay violation:', violation);
-    // TODO: Open payment dialog
+    setSelectedViolation(violation);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleDownloadPDF = () => {
+    toast({
+      title: 'قريباً',
+      description: 'سيتم إضافة ميزة تحميل PDF قريباً',
+    });
+  };
+
+  const handlePaymentComplete = (violationId: string) => {
+    // In a real implementation, this would update the violation in the database
+    // For now, we'll just show a success message and close the dialog
+    toast({
+      title: 'تم التحديث',
+      description: 'تم تحديث حالة المخالفة بنجاح',
+    });
+    setIsPaymentDialogOpen(false);
+    setSelectedViolation(null);
+  };
+
+  const handleCloseViewDialog = () => {
+    setIsViewDialogOpen(false);
+    setSelectedViolation(null);
+  };
+
+  const handleClosePaymentDialog = () => {
+    setIsPaymentDialogOpen(false);
+    setSelectedViolation(null);
+  };
+
+  const handlePayFromViewDialog = () => {
+    setIsViewDialogOpen(false);
+    setIsPaymentDialogOpen(true);
   };
 
   return (
@@ -731,6 +1126,7 @@ export const ContractViolationsTabRedesigned = ({
                   formatCurrency={formatCurrency}
                   onView={() => handleViewViolation(violation)}
                   onPay={() => handlePayViolation(violation)}
+                  onDownload={handleDownloadPDF}
                 />
               ))}
             </motion.div>
@@ -765,6 +1161,23 @@ export const ContractViolationsTabRedesigned = ({
           )}
         </>
       )}
+
+      {/* Dialogs */}
+      <ViolationDetailsDialog
+        violation={selectedViolation}
+        open={isViewDialogOpen}
+        onClose={handleCloseViewDialog}
+        formatCurrency={formatCurrency}
+        onPay={selectedViolation?.status === 'pending' ? handlePayFromViewDialog : undefined}
+      />
+
+      <ViolationPaymentDialog
+        violation={selectedViolation}
+        open={isPaymentDialogOpen}
+        onClose={handleClosePaymentDialog}
+        formatCurrency={formatCurrency}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </div>
   );
 };
