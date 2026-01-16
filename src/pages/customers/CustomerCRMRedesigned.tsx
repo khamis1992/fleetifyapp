@@ -743,27 +743,87 @@ export default function CustomerCRMRedesigned() {
   };
 
   // Print late payments report
-  const handlePrintLateReport = useCallback(() => {
+  const handlePrintLateReport = useCallback(async () => {
+    if (!companyId) return;
+
     const lateCustomers = customers.filter(c => {
       const crmCustomer = crmCustomers.find(cc => cc.customer_id === c.id);
       return crmCustomer && getPaymentStatusOptimized(crmCustomer) === 'late';
     });
 
+    // Get customer IDs for fetching related data
+    const customerIds = lateCustomers.map(c => c.id);
+
+    // Fetch unpaid invoices for these customers
+    const { data: overdueInvoices } = await supabase
+      .from('invoices')
+      .select('id, customer_id, invoice_date, due_date, payment_status, balance_due')
+      .in('customer_id', customerIds)
+      .eq('company_id', companyId)
+      .neq('payment_status', 'paid');
+
+    // Fetch traffic violations for these customers via contracts
+    const { data: customerContracts } = await supabase
+      .from('contracts')
+      .select('id, customer_id')
+      .in('customer_id', customerIds)
+      .eq('company_id', companyId);
+
+    const contractIds = customerContracts?.map(c => c.id) || [];
+
+    const { data: trafficViolations } = await supabase
+      .from('traffic_violations')
+      .select('contract_id, fine_amount, status')
+      .in('contract_id', contractIds)
+      .neq('status', 'paid');
+
+    // Group violations by customer
+    const violationsByCustomer = new Map<string, { count: number; totalAmount: number }>();
+    trafficViolations?.forEach(violation => {
+      const contract = customerContracts?.find(c => c.id === violation.contract_id);
+      if (!contract) return;
+
+      const customerId = contract.customer_id;
+      const current = violationsByCustomer.get(customerId) || { count: 0, totalAmount: 0 };
+      violationsByCustomer.set(customerId, {
+        count: current.count + 1,
+        totalAmount: current.totalAmount + (violation.fine_amount || 0),
+      });
+    });
+
+    // Arabic month names
+    const arabicMonths = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+
     const reportData = lateCustomers.map(customer => {
-      const contract = getCustomerContract(customer.id);
       const crmCustomer = crmCustomers.find(cc => cc.customer_id === customer.id);
       const lastContact = crmCustomer ? getLastContactDaysOptimized(crmCustomer) : null;
+      const violations = violationsByCustomer.get(customer.id) || { count: 0, totalAmount: 0 };
+
+      // Get overdue invoices for this customer and format as month names with year
+      const customerInvoices = overdueInvoices?.filter(inv => inv.customer_id === customer.id) || [];
+      const invoiceMonths = customerInvoices.map(inv => {
+        const invoiceDate = new Date(inv.invoice_date || inv.due_date);
+        const monthIndex = invoiceDate.getMonth();
+        const year = invoiceDate.getFullYear();
+        return `فاتورة شهر ${arabicMonths[monthIndex]} ${year}`;
+      });
+      const dueInvoicesText = invoiceMonths.length > 0 ? invoiceMonths.join(' و') : 'لا توجد';
 
       return {
-        customerCode: customer.customer_code || '-',
         nameAr: `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معرف',
         phone: customer.phone || '-',
-        contractNumber: contract?.contract_number || '-',
+        dueInvoices: dueInvoicesText,
+        violationsCount: violations.count,
+        violationsAmount: violations.totalAmount,
         lastContactDays: lastContact === null ? 'لم يتم' : `${lastContact} يوم`,
       };
     });
 
     const totalOutstanding = reportData.length;
+    const totalViolationsAmount = reportData.reduce((sum, c) => sum + c.violationsAmount, 0);
     const today = format(new Date(), 'dd/MM/yyyy');
 
     const printWindow = window.open('', '_blank');
@@ -779,16 +839,26 @@ export default function CustomerCRMRedesigned() {
         <meta charset="UTF-8">
         <title>تقرير العملاء المتأخرين - ${today}</title>
         <style>
-          @page { size: A4; margin: 15mm; }
+          @page { size: A4 landscape; margin: 12mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; background: #fff; color: #1f2937; }
-          .container { max-width: 100%; border: 3px double #1f2937; border-radius: 8px; padding: 24px; }
+          body { font-family: Arial, Tahoma, sans-serif; background: #fff; color: #1f2937; }
+          .container { max-width: 100%; border: 3px double #1f2937; border-radius: 8px; padding: 20px; }
           .header { text-align: center; border-bottom: 2px solid #1f2937; padding-bottom: 16px; margin-bottom: 20px; }
           .title { font-size: 20px; font-weight: bold; color: #1f2937; margin-bottom: 8px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-          th { background: #f43f5e; color: white; padding: 10px; text-align: right; font-weight: bold; }
-          td { padding: 8px; border: 1px solid #e5e7eb; text-align: right; }
+          .summary { display: flex; justify-content: center; gap: 40px; margin: 20px 0; padding: 16px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 8px; border: 1px solid #fecaca; }
+          .summary-item { text-align: center; }
+          .summary-value { font-size: 28px; font-weight: bold; color: #dc2626; }
+          .summary-label { font-size: 12px; color: #991b1b; margin-top: 4px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 11px; }
+          th { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 10px 6px; text-align: right; font-weight: bold; border: 1px solid #1e3a8a; }
+          td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: right; }
           tr:nth-child(even) { background: #f9fafb; }
+          tr:hover { background: #fef2f2; }
+          .amount { font-weight: bold; color: #dc2626; }
+          .phone-cell { direction: ltr; text-align: left; font-family: monospace; }
+          .invoices-cell { font-size: 10px; color: #374151; max-width: 200px; }
+          .violations-cell { text-align: center; }
+          .contact-needed { background: #fef3c7 !important; }
           @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>
       </head>
@@ -796,33 +866,37 @@ export default function CustomerCRMRedesigned() {
         <div class="container">
           <div class="header">
             <div class="title">تقرير العملاء المتأخرين</div>
-            <div style="font-size: 14px; color: #64748b;">${today}</div>
+            <div style="font-size: 14px; color: #64748b;">تاريخ التقرير: ${today}</div>
           </div>
-          <div style="display: flex; justify-content: center; gap: 40px; margin: 20px 0; padding: 16px; background: #fef2f2; border-radius: 8px;">
-            <div style="text-align: center;">
-              <div style="font-size: 28px; font-weight: bold; color: #dc2626;">${totalOutstanding}</div>
-              <div style="font-size: 12px; color: #991b1b;">عدد العملاء المتأخرين</div>
+          <div class="summary">
+            <div class="summary-item">
+              <div class="summary-value">${totalOutstanding}</div>
+              <div class="summary-label">عدد العملاء المتأخرين</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-value">${totalViolationsAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div class="summary-label">إجمالي المخالفات (ر.ق)</div>
             </div>
           </div>
           <table>
             <thead>
               <tr>
                 <th>#</th>
-                <th>كود العميل</th>
                 <th>اسم العميل</th>
                 <th>الهاتف</th>
-                <th>رقم العقد</th>
+                <th>الفواتير المستحقة</th>
+                <th>المخالفات المرورية</th>
                 <th>آخر تواصل</th>
               </tr>
             </thead>
             <tbody>
               ${reportData.map((c, i) => `
-                <tr>
-                  <td>${i + 1}</td>
-                  <td>${c.customerCode}</td>
+                <tr class="${c.lastContactDays === 'لم يتم' ? 'contact-needed' : ''}">
+                  <td style="text-align: center;">${i + 1}</td>
                   <td>${c.nameAr}</td>
-                  <td>${c.phone}</td>
-                  <td>${c.contractNumber}</td>
+                  <td class="phone-cell">${c.phone}</td>
+                  <td class="invoices-cell">${c.dueInvoices}</td>
+                  <td class="violations-cell">${c.violationsCount > 0 ? `${c.violationsCount} مخالفة (${c.violationsAmount.toLocaleString('en-US')} ر.ق)` : 'لا توجد'}</td>
                   <td>${c.lastContactDays}</td>
                 </tr>
               `).join('')}
@@ -835,7 +909,7 @@ export default function CustomerCRMRedesigned() {
     `);
 
     printWindow.document.close();
-  }, [customers, crmCustomers, getCustomerContract, toast]);
+  }, [customers, crmCustomers, companyId, toast]);
 
   // Export to CSV
   const handleExportCSV = useCallback(() => {
