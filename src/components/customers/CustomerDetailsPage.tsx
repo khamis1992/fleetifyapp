@@ -875,7 +875,7 @@ const InvoicesTab = ({
                   <div>
                     <p className="font-bold text-neutral-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
                     <p className="text-sm text-neutral-500">
-                      {invoice.created_at ? format(new Date(invoice.created_at), 'dd/MM/yyyy') : '-'}
+                      {invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}
                     </p>
                   </div>
                 </div>
@@ -1771,8 +1771,8 @@ const CustomerDetailsPage = () => {
         .select(`*, contract:contracts!contract_id(id, contract_number)`)
         .eq('customer_id', customerId)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
+        .order('due_date', { ascending: false });
       if (error) return [];
       return data || [];
     },
