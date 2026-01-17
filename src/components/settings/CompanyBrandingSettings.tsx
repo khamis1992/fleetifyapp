@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,13 +7,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Palette, Upload, RotateCcw, Save, Eye, Settings, Type, Image, 
-  Info, CheckCircle, AlertCircle, Menu
+import {
+  Palette, Upload, RotateCcw, Save, Eye, Settings, Type, Image,
+  Info, CheckCircle, AlertCircle, Menu, Undo2, History
 } from 'lucide-react';
 import { useCompanyBranding } from '@/hooks/useCompanyBranding';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDebounce } from '@/hooks/useDebounce';
 import { ImageUploadField } from './ImageUploadField';
+import { ColorPicker } from './ColorPicker';
+import { ConfirmDialog } from './ConfirmDialog';
+import { isValidHexColor } from '@/lib/color-utils';
 
 const THEME_PRESETS = [
   {
@@ -87,36 +91,108 @@ const FONT_OPTIONS = [
 
 export const CompanyBrandingSettings = () => {
   const { user } = useAuth();
-  const { 
-    settings, 
-    loading, 
-    saving, 
-    saveBrandingSettings, 
-    resetToDefaults, 
-    previewChanges 
+  const {
+    settings,
+    loading,
+    saving,
+    saveBrandingSettings,
+    resetToDefaults,
+    previewChanges
   } = useCompanyBranding();
 
+  // State management
   const [localSettings, setLocalSettings] = React.useState(settings);
+  const [previousSettings, setPreviousSettings] = React.useState(settings);
   const [isPreviewMode, setIsPreviewMode] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
+  // Dialog states
+  const [showResetDialog, setShowResetDialog] = React.useState(false);
+  const [showDiscardDialog, setShowDiscardDialog] = React.useState(false);
+
+  // Validation state
+  const [validationErrors, setValidationErrors] = React.useState<Record<string, string>>({});
+
+  // Debounce local settings for preview
+  const debouncedLocalSettings = useDebounce(localSettings, 300);
+
+  // Sync with loaded settings
   React.useEffect(() => {
     setLocalSettings(settings);
+    setPreviousSettings(settings);
     setHasUnsavedChanges(false);
+    setValidationErrors({});
   }, [settings]);
 
-  const handleSettingChange = (key: string, value: string) => {
+  // Auto-preview when in preview mode (debounced)
+  useEffect(() => {
+    if (isPreviewMode && !loading) {
+      previewChanges(debouncedLocalSettings);
+    }
+  }, [debouncedLocalSettings, isPreviewMode, loading, previewChanges]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Validation helper
+  const validateColor = useCallback((key: string, value: string): boolean => {
+    if (!value || value === '#') return true; // Empty is ok (will use default)
+
+    if (!isValidHexColor(value)) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [key]: 'صيغة اللون غير صالحة. استخدم تنسيق #RRGGBB'
+      }));
+      return false;
+    }
+
+    setValidationErrors(prev => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    return true;
+  }, []);
+
+  const handleSettingChange = useCallback((key: string, value: string) => {
+    // Validate color inputs
+    if (key.includes('color') && !validateColor(key, value)) {
+      return;
+    }
+
+    // Validate system name length
+    if ((key === 'system_name' || key === 'system_name_ar') && value.length > 100) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [key]: 'الاسم طويل جداً (حد أقصى 100 حرف)'
+      }));
+      return;
+    }
+
     const newSettings = { ...localSettings, [key]: value };
     setLocalSettings(newSettings);
     setHasUnsavedChanges(true);
-    
-    if (isPreviewMode) {
-      previewChanges(newSettings);
-    }
-  };
 
-  const handleThemePresetChange = (preset: typeof THEME_PRESETS[0]) => {
+    // Clear validation error for this field
+    setValidationErrors(prev => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, [localSettings, validateColor]);
+
+  const handleThemePresetChange = useCallback((preset: typeof THEME_PRESETS[0]) => {
     const newSettings = {
       ...localSettings,
       theme_preset: preset.value,
@@ -126,14 +202,31 @@ export const CompanyBrandingSettings = () => {
     };
     setLocalSettings(newSettings);
     setHasUnsavedChanges(true);
-    
+
     if (isPreviewMode) {
       previewChanges(newSettings);
     }
-  };
+  }, [localSettings, isPreviewMode, previewChanges]);
 
   const handleSave = async () => {
+    // Validate all colors before saving
+    const colorFields = ['primary_color', 'secondary_color', 'accent_color',
+      'sidebar_background_color', 'sidebar_foreground_color',
+      'sidebar_accent_color', 'sidebar_border_color'];
+
+    let hasErrors = false;
+    for (const field of colorFields) {
+      if (localSettings[field] && !validateColor(field, localSettings[field])) {
+        hasErrors = true;
+      }
+    }
+
+    if (hasErrors) {
+      return;
+    }
+
     try {
+      setPreviousSettings(localSettings);
       await saveBrandingSettings(localSettings);
       setHasUnsavedChanges(false);
       setIsPreviewMode(false);
@@ -145,11 +238,24 @@ export const CompanyBrandingSettings = () => {
   const handleReset = async () => {
     try {
       await resetToDefaults();
+      setPreviousSettings(settings);
       setIsPreviewMode(false);
       setHasUnsavedChanges(false);
+      setShowResetDialog(false);
     } catch (error) {
       console.error('Error resetting settings:', error);
     }
+  };
+
+  const handleDiscardChanges = () => {
+    setLocalSettings(previousSettings);
+    setHasUnsavedChanges(false);
+    setValidationErrors({});
+    setIsPreviewMode(false);
+    setShowDiscardDialog(false);
+
+    // Revert preview
+    previewChanges(previousSettings);
   };
 
   const togglePreview = () => {
@@ -163,12 +269,14 @@ export const CompanyBrandingSettings = () => {
     setIsPreviewMode(!isPreviewMode);
   };
 
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8" role="status" aria-label="جاري التحميل">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري التحميل...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" aria-hidden="true"></div>
+          <p className="text-muted-foreground">جاري تحميل إعدادات الهوية البصرية...</p>
         </div>
       </div>
     );
@@ -178,60 +286,117 @@ export const CompanyBrandingSettings = () => {
     <div className="space-y-6" dir="rtl">
       {/* Header Info */}
       <Alert>
-        <Info className="h-4 w-4" />
+        <Info className="h-4 w-4" aria-hidden="true" />
         <AlertDescription>
           يمكنك تخصيص ألوان النظام واسمه من هنا. استخدم زر المعاينة لرؤية التغييرات قبل الحفظ.
         </AlertDescription>
       </Alert>
 
+      {/* Validation Errors Alert */}
+      {hasValidationErrors && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" aria-hidden="true" />
+          <AlertDescription>
+            يوجد أخطاء في الإدخال. يرجى تصحيحها قبل الحفظ.
+            <ul className="mt-2 list-disc list-inside">
+              {Object.values(validationErrors).map((error, idx) => (
+                <li key={idx}>{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Action Buttons */}
       <div className="flex items-center gap-3 justify-start flex-wrap">
-        <Button 
+        <Button
           onClick={togglePreview}
           variant={isPreviewMode ? "default" : "outline"}
           size="sm"
+          aria-pressed={isPreviewMode}
         >
-          <Eye className="h-4 w-4 ml-2" />
+          <Eye className="h-4 w-4 ml-2" aria-hidden="true" />
           {isPreviewMode ? 'إيقاف المعاينة' : 'معاينة التغييرات'}
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={handleSave}
-          disabled={saving || !hasUnsavedChanges}
+          disabled={saving || !hasUnsavedChanges || hasValidationErrors}
           size="sm"
-          className={hasUnsavedChanges ? 'bg-green-600 hover:bg-green-700' : ''}
+          className={hasUnsavedChanges && !hasValidationErrors ? 'bg-green-600 hover:bg-green-700' : ''}
+          aria-label={hasUnsavedChanges ? 'حفظ التغييرات' : 'لا توجد تغييرات للحفظ'}
         >
-          <Save className="h-4 w-4 ml-2" />
+          <Save className="h-4 w-4 ml-2" aria-hidden="true" />
           {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
         </Button>
-        
-        <Button 
-          onClick={handleReset}
+
+        {hasUnsavedChanges && (
+          <Button
+            onClick={() => setShowDiscardDialog(true)}
+            variant="outline"
+            size="sm"
+            aria-label="تجاهل التغييرات والعودة للإعدادات السابقة"
+          >
+            <Undo2 className="h-4 w-4 ml-2" aria-hidden="true" />
+            تجاهل التغييرات
+          </Button>
+        )}
+
+        <Button
+          onClick={() => setShowResetDialog(true)}
           variant="outline"
           size="sm"
+          aria-label="إعادة تعيين جميع الإعدادات إلى القيم الافتراضية"
         >
-          <RotateCcw className="h-4 w-4 ml-2" />
+          <RotateCcw className="h-4 w-4 ml-2" aria-hidden="true" />
           إعادة تعيين
         </Button>
-        
+
         <div className="flex items-center gap-2">
           {isPreviewMode && (
-            <Badge variant="secondary">وضع المعاينة مفعل</Badge>
+            <Badge variant="secondary" className="animate-pulse">
+              <Eye className="h-3 w-3 ml-1" aria-hidden="true" />
+              وضع المعاينة مفعل
+            </Badge>
           )}
           {hasUnsavedChanges && (
             <Badge variant="outline" className="text-orange-600 border-orange-600">
-              <AlertCircle className="h-3 w-3 ml-1" />
+              <AlertCircle className="h-3 w-3 ml-1" aria-hidden="true" />
               تغييرات غير محفوظة
             </Badge>
           )}
         </div>
       </div>
 
+      {/* Reset Confirmation Dialog */}
+      <ConfirmDialog
+        open={showResetDialog}
+        onOpenChange={setShowResetDialog}
+        onConfirm={handleReset}
+        title="إعادة تعيين الإعدادات"
+        description="هل أنت متأكد من إعادة تعيين جميع إعدادات الهوية البصرية إلى القيم الافتراضية؟ سيتم فقدان جميع التخصيصات الحالية."
+        confirmText="نعم، إعادة تعيين"
+        cancelText="إلغاء"
+        variant="danger"
+      />
+
+      {/* Discard Changes Dialog */}
+      <ConfirmDialog
+        open={showDiscardDialog}
+        onOpenChange={setShowDiscardDialog}
+        onConfirm={handleDiscardChanges}
+        title="تجاهل التغييرات"
+        description="هل أنت متأكد من تجاهل جميع التغييرات غير المحفوظة؟ سيتم التراجع عن جميع التعديلات التي قمت بها."
+        confirmText="نعم، تجاهل التغييرات"
+        cancelText="إلغاء"
+        variant="warning"
+      />
+
       {/* System Name Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <Type className="h-5 w-5 text-primary" />
+            <Type className="h-5 w-5 text-primary" aria-hidden="true" />
             <div>
               <CardTitle className="text-lg">اسم النظام</CardTitle>
               <CardDescription>تخصيص اسم النظام المعروض في الواجهة</CardDescription>
@@ -247,7 +412,16 @@ export const CompanyBrandingSettings = () => {
                 value={localSettings.system_name || ''}
                 onChange={(e) => handleSettingChange('system_name', e.target.value)}
                 placeholder="Fleet Management System"
+                maxLength={100}
+                aria-invalid={!!validationErrors.system_name}
+                aria-describedby={validationErrors.system_name ? 'system_name_error' : undefined}
               />
+              {validationErrors.system_name && (
+                <p id="system_name_error" className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {validationErrors.system_name}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="system_name_ar">اسم النظام (بالعربية)</Label>
@@ -256,7 +430,17 @@ export const CompanyBrandingSettings = () => {
                 value={localSettings.system_name_ar || ''}
                 onChange={(e) => handleSettingChange('system_name_ar', e.target.value)}
                 placeholder="نظام إدارة الأسطول"
+                maxLength={100}
+                dir="rtl"
+                aria-invalid={!!validationErrors.system_name_ar}
+                aria-describedby={validationErrors.system_name_ar ? 'system_name_ar_error' : undefined}
               />
+              {validationErrors.system_name_ar && (
+                <p id="system_name_ar_error" className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
+                  {validationErrors.system_name_ar}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -325,114 +509,35 @@ export const CompanyBrandingSettings = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium">تخصيص الألوان بدقة</h4>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-              >
-                {showAdvanced ? 'إخفاء' : 'عرض'} التفاصيل
-              </Button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-3">
-                <Label htmlFor="primary_color" className="text-sm font-medium">
-                  اللون الأساسي
-                </Label>
-                <div className="space-y-2">
-                  <div className="flex gap-3 items-center">
-                    <Input
-                      id="primary_color"
-                      type="color"
-                      value={localSettings.primary_color}
-                      onChange={(e) => handleSettingChange('primary_color', e.target.value)}
-                      className="w-16 h-16 p-1 border rounded-lg cursor-pointer"
-                      title="اختر اللون الأساسي"
-                    />
-                    <div className="flex-1">
-                      <div 
-                        className="w-full h-8 rounded border"
-                        style={{ backgroundColor: localSettings.primary_color }}
-                      ></div>
-                    </div>
-                  </div>
-                  {showAdvanced && (
-                    <Input
-                      value={localSettings.primary_color}
-                      onChange={(e) => handleSettingChange('primary_color', e.target.value)}
-                      placeholder="#2563eb"
-                      className="font-mono text-xs"
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">يُستخدم للأزرار والروابط الرئيسية</p>
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="secondary_color" className="text-sm font-medium">
-                  اللون الثانوي
-                </Label>
-                <div className="space-y-2">
-                  <div className="flex gap-3 items-center">
-                    <Input
-                      id="secondary_color"
-                      type="color"
-                      value={localSettings.secondary_color}
-                      onChange={(e) => handleSettingChange('secondary_color', e.target.value)}
-                      className="w-16 h-16 p-1 border rounded-lg cursor-pointer"
-                      title="اختر اللون الثانوي"
-                    />
-                    <div className="flex-1">
-                      <div 
-                        className="w-full h-8 rounded border"
-                        style={{ backgroundColor: localSettings.secondary_color }}
-                      ></div>
-                    </div>
-                  </div>
-                  {showAdvanced && (
-                    <Input
-                      value={localSettings.secondary_color}
-                      onChange={(e) => handleSettingChange('secondary_color', e.target.value)}
-                      placeholder="#f59e0b"
-                      className="font-mono text-xs"
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">يُستخدم للعناصر المساعدة والتحديدات</p>
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="accent_color" className="text-sm font-medium">
-                  لون التمييز
-                </Label>
-                <div className="space-y-2">
-                  <div className="flex gap-3 items-center">
-                    <Input
-                      id="accent_color"
-                      type="color"
-                      value={localSettings.accent_color}
-                      onChange={(e) => handleSettingChange('accent_color', e.target.value)}
-                      className="w-16 h-16 p-1 border rounded-lg cursor-pointer"
-                      title="اختر لون التمييز"
-                    />
-                    <div className="flex-1">
-                      <div 
-                        className="w-full h-8 rounded border"
-                        style={{ backgroundColor: localSettings.accent_color }}
-                      ></div>
-                    </div>
-                  </div>
-                  {showAdvanced && (
-                    <Input
-                      value={localSettings.accent_color}
-                      onChange={(e) => handleSettingChange('accent_color', e.target.value)}
-                      placeholder="#dc2626"
-                      className="font-mono text-xs"
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">يُستخدم للتنبيهات والعناصر المهمة</p>
-              </div>
+              <ColorPicker
+                value={localSettings.primary_color}
+                onChange={(value) => handleSettingChange('primary_color', value)}
+                label="اللون الأساسي"
+                description="يُستخدم للأزرار والروابط الرئيسية"
+                showContrastCheck={true}
+                contrastBackgroundColor="#ffffff"
+              />
+
+              <ColorPicker
+                value={localSettings.secondary_color}
+                onChange={(value) => handleSettingChange('secondary_color', value)}
+                label="اللون الثانوي"
+                description="يُستخدم للعناصر المساعدة والتحديدات"
+                showContrastCheck={true}
+                contrastBackgroundColor="#ffffff"
+              />
+
+              <ColorPicker
+                value={localSettings.accent_color}
+                onChange={(value) => handleSettingChange('accent_color', value)}
+                label="لون التمييز"
+                description="يُستخدم للتنبيهات والعناصر المهمة"
+                showContrastCheck={true}
+                contrastBackgroundColor="#ffffff"
+              />
             </div>
           </div>
         </CardContent>
@@ -513,79 +618,31 @@ export const CompanyBrandingSettings = () => {
           </div>
 
           {/* Individual Sidebar Colors */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <Label htmlFor="sidebar_background_color">خلفية الشريط</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  id="sidebar_background_color"
-                  type="color"
-                  value={localSettings.sidebar_background_color}
-                  onChange={(e) => handleSettingChange('sidebar_background_color', e.target.value)}
-                  className="w-12 h-10 p-1 border rounded"
-                />
-                <Input
-                  value={localSettings.sidebar_background_color}
-                  onChange={(e) => handleSettingChange('sidebar_background_color', e.target.value)}
-                  className="flex-1"
-                  placeholder="#ffffff"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="sidebar_foreground_color">لون النص</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  id="sidebar_foreground_color"
-                  type="color"
-                  value={localSettings.sidebar_foreground_color}
-                  onChange={(e) => handleSettingChange('sidebar_foreground_color', e.target.value)}
-                  className="w-12 h-10 p-1 border rounded"
-                />
-                <Input
-                  value={localSettings.sidebar_foreground_color}
-                  onChange={(e) => handleSettingChange('sidebar_foreground_color', e.target.value)}
-                  className="flex-1"
-                  placeholder="#1f2937"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="sidebar_accent_color">لون التمييز</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  id="sidebar_accent_color"
-                  type="color"
-                  value={localSettings.sidebar_accent_color}
-                  onChange={(e) => handleSettingChange('sidebar_accent_color', e.target.value)}
-                  className="w-12 h-10 p-1 border rounded"
-                />
-                <Input
-                  value={localSettings.sidebar_accent_color}
-                  onChange={(e) => handleSettingChange('sidebar_accent_color', e.target.value)}
-                  className="flex-1"
-                  placeholder="#2563eb"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="sidebar_border_color">لون الحدود</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  id="sidebar_border_color"
-                  type="color"
-                  value={localSettings.sidebar_border_color}
-                  onChange={(e) => handleSettingChange('sidebar_border_color', e.target.value)}
-                  className="w-12 h-10 p-1 border rounded"
-                />
-                <Input
-                  value={localSettings.sidebar_border_color}
-                  onChange={(e) => handleSettingChange('sidebar_border_color', e.target.value)}
-                  className="flex-1"
-                  placeholder="#e5e7eb"
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ColorPicker
+              value={localSettings.sidebar_background_color}
+              onChange={(value) => handleSettingChange('sidebar_background_color', value)}
+              label="خلفية الشريط"
+            />
+            <ColorPicker
+              value={localSettings.sidebar_foreground_color}
+              onChange={(value) => handleSettingChange('sidebar_foreground_color', value)}
+              label="لون النص"
+              showContrastCheck={true}
+              contrastBackgroundColor={localSettings.sidebar_background_color}
+            />
+            <ColorPicker
+              value={localSettings.sidebar_accent_color}
+              onChange={(value) => handleSettingChange('sidebar_accent_color', value)}
+              label="لون التمييز"
+              showContrastCheck={true}
+              contrastBackgroundColor={localSettings.sidebar_background_color}
+            />
+            <ColorPicker
+              value={localSettings.sidebar_border_color}
+              onChange={(value) => handleSettingChange('sidebar_border_color', value)}
+              label="لون الحدود"
+            />
           </div>
         </CardContent>
       </Card>

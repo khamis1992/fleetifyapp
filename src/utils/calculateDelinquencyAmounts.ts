@@ -27,7 +27,7 @@ export interface DelinquencyCalculationResult {
   /** مجموع المبالغ المتبقية من الفواتير المتأخرة */
   overdueRent: number;
   
-  /** غرامة التأخير (120 ر.ق × أيام التأخير × عدد الفواتير) */
+  /** غرامة التأخير (120 ر.ق × أيام التأخير لكل فاتورة، بحد أقصى 3000 ر.ق للفاتورة) */
   lateFees: number;
   
   /** تفاصيل غرامة كل فاتورة */
@@ -67,6 +67,9 @@ export interface DelinquencyCalculationResult {
 /** غرامة التأخير اليومية بالريال القطري */
 export const DAILY_LATE_FEE = 120;
 
+/** الحد الأقصى للغرامة لكل فاتورة (25 يوم × 120 = 3000) */
+export const MAX_LATE_FEE_PER_INVOICE = 3000;
+
 /** رسوم الأضرار الثابتة بالريال القطري */
 export const DAMAGES_FEE = 10000;
 
@@ -98,14 +101,14 @@ export function calculateDelinquencyAmounts(
   
   const invoiceLateFees: DelinquencyCalculationResult['invoiceLateFees'] = [];
   let overdueRent = 0;
-  let lateFees = 0;
   let totalDaysOverdue = 0;
+  let lateFees = 0;
 
   for (const invoice of invoices) {
     const dueDate = new Date(invoice.due_date);
     dueDate.setHours(0, 0, 0, 0);
     
-    // تخطي الفواتير غير المتأخرة
+    // تخطي الفواتير غير المتأخرة (المستقبلية)
     if (dueDate >= today) continue;
     
     // حساب المبلغ المتبقي
@@ -117,12 +120,12 @@ export function calculateDelinquencyAmounts(
     // حساب أيام التأخير
     const daysOverdue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
     
-    // حساب غرامة التأخير لهذه الفاتورة
-    const invoiceLateFee = daysOverdue * DAILY_LATE_FEE;
+    // ✅ حساب الغرامة لهذه الفاتورة مع الحد الأقصى 3000 ر.ق
+    const invoiceLateFee = Math.min(daysOverdue * DAILY_LATE_FEE, MAX_LATE_FEE_PER_INVOICE);
     
     overdueRent += remainingAmount;
-    lateFees += invoiceLateFee;
     totalDaysOverdue += daysOverdue;
+    lateFees += invoiceLateFee;
     
     invoiceLateFees.push({
       invoiceId: invoice.id,

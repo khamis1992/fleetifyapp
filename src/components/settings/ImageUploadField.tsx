@@ -35,16 +35,36 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   });
 
   const handleFileSelect = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
+    // Validate file size (already done in useImageUpload, but add explicit check)
+    const maxSizeMB = 5;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      return;
+    }
+
+    // Create preview first
     createPreview(file);
-    const uploadedUrl = await uploadImage(file);
-    if (uploadedUrl) {
-      onChange(uploadedUrl);
+
+    // Upload the image
+    try {
+      const uploadedUrl = await uploadImage(file);
+      if (uploadedUrl) {
+        onChange(uploadedUrl);
+      }
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+    } finally {
       clearPreview();
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0 && files[0].type.startsWith('image/')) {
       handleFileSelect(files[0]);
@@ -56,20 +76,32 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
     if (files && files[0]) {
       handleFileSelect(files[0]);
     }
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
   };
 
   const handleDelete = async () => {
-    if (value && value.includes('supabase')) {
-      const deleted = await deleteImage(value);
-      if (deleted) {
+    try {
+      if (value && value.includes('supabase')) {
+        const deleted = await deleteImage(value);
+        if (deleted) {
+          onChange('');
+        }
+      } else {
         onChange('');
       }
-    } else {
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      // Still clear the value even if deletion failed
       onChange('');
     }
   };
 
   const handleUrlChange = (url: string) => {
+    // Basic URL validation
+    if (url && !url.match(/^https?:\/\/.+/)) {
+      return; // Invalid URL
+    }
     onChange(url);
     clearPreview();
   };

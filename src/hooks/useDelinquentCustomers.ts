@@ -516,27 +516,36 @@ async function calculateDelinquentCustomersDynamically(
       const customerPayments = (payments || []).filter(p => p && p.customer_id === contract.customer_id);
       const actualPayments = customerPayments.length;
 
-      // ✅ حساب الغرامة لكل فاتورة متأخرة على حدة ثم جمعها
-      // غرامة التأخير: 120 ريال × أيام التأخير لكل فاتورة
+      // ✅ حساب الغرامة لكل فاتورة متأخرة مع حد أقصى 3000 ر.ق لكل فاتورة
+      // القواعد:
+      // 1. كل فاتورة متأخرة: أيام التأخير × 120 ر.ق
+      // 2. الحد الأقصى للغرامة لكل فاتورة: 3,000 ر.ق
+      // 3. جمع غرامات جميع الفواتير غير المدفوعة
+      // 4. عدم حساب الفواتير المستقبلية (due_date >= today)
+      const MAX_LATE_FEE_PER_INVOICE = 3000;
       let latePenalty = 0;
-      const todayForPenalty = new Date();
-      todayForPenalty.setHours(0, 0, 0, 0);
       
-      for (const invoice of unpaidOverdueInvoices) {
-        const invoiceDueDate = new Date(invoice.due_date);
-        invoiceDueDate.setHours(0, 0, 0, 0);
-        const invoiceDaysOverdue = Math.floor((todayForPenalty.getTime() - invoiceDueDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (unpaidOverdueInvoices.length > 0) {
+        const todayForPenalty = new Date();
+        todayForPenalty.setHours(0, 0, 0, 0);
         
-        if (invoiceDaysOverdue > 0) {
-          // حساب الغرامة لهذه الفاتورة: 120 ر.ق × أيام التأخير
-          const invoicePenalty = invoiceDaysOverdue * DAILY_LATE_FEE;
-          latePenalty += invoicePenalty;
+        for (const invoice of unpaidOverdueInvoices) {
+          const invoiceDueDate = new Date(invoice.due_date);
+          invoiceDueDate.setHours(0, 0, 0, 0);
+          
+          // تخطي الفواتير المستقبلية
+          if (invoiceDueDate >= todayForPenalty) continue;
+          
+          const invoiceDaysOverdue = Math.floor((todayForPenalty.getTime() - invoiceDueDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (invoiceDaysOverdue > 0) {
+            // حساب الغرامة لهذه الفاتورة مع الحد الأقصى 3000 ر.ق
+            const invoiceLateFee = Math.min(invoiceDaysOverdue * DAILY_LATE_FEE, MAX_LATE_FEE_PER_INVOICE);
+            latePenalty += invoiceLateFee;
+          }
         }
-      }
-      
-      // إذا لم تكن هناك فواتير متأخرة ولكن يوجد daysOverdue من العقد
-      if (latePenalty === 0 && daysOverdue > 0) {
-        latePenalty = daysOverdue * DAILY_LATE_FEE;
+        
+        console.log(`📊 [DELINQUENT] Contract ${contract.contract_number}: ${unpaidOverdueInvoices.length} unpaid invoices, total penalty: ${latePenalty}`);
       }
 
       // Get violations for this customer

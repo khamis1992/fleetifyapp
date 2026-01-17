@@ -40,7 +40,7 @@ export type RecommendedAction = {
 
 /**
  * Calculate late payment penalty
- * New formula: 120 QAR per day, max 3000 QAR per month
+ * Formula: 120 QAR per day, max 3000 QAR per invoice (total)
  * 
  * @param overdueAmount - Not used in new calculation but kept for backward compatibility
  * @param daysOverdue - Number of days overdue
@@ -56,14 +56,9 @@ export function calculatePenalty(overdueAmount: number, daysOverdue: number): nu
   // Calculate raw penalty: 120 QAR per day
   const rawPenalty = penaltyDays * DAILY_PENALTY_AMOUNT;
   
-  // Calculate number of months (rounded up)
-  const monthsOverdue = Math.ceil(penaltyDays / 30);
-  
-  // Maximum penalty allowed: 3000 QAR per month
-  const maxPenalty = monthsOverdue * MAX_PENALTY_PER_MONTH;
-  
-  // Return the lesser of raw penalty or max penalty
-  return Math.min(rawPenalty, maxPenalty);
+  // Maximum penalty allowed: 3000 QAR per invoice (TOTAL, not per month)
+  // This means each invoice can never have more than 3000 QAR in late fees
+  return Math.min(rawPenalty, MAX_PENALTY_PER_MONTH);
 }
 
 /**
@@ -74,21 +69,23 @@ export function calculatePenaltyBreakdown(daysOverdue: number): {
   dailyRate: number;
   rawPenalty: number;
   monthsOverdue: number;
-  maxPenaltyPerMonth: number;
+  maxPenaltyPerInvoice: number;
   maxPenalty: number;
   finalPenalty: number;
 } {
   const days = Math.max(0, daysOverdue - GRACE_PERIOD_DAYS);
   const rawPenalty = days * DAILY_PENALTY_AMOUNT;
   const monthsOverdue = Math.ceil(days / 30);
-  const maxPenalty = monthsOverdue * MAX_PENALTY_PER_MONTH;
+  
+  // Maximum penalty: 3000 QAR per invoice (TOTAL)
+  const maxPenalty = MAX_PENALTY_PER_MONTH;
   
   return {
     days,
     dailyRate: DAILY_PENALTY_AMOUNT,
     rawPenalty,
     monthsOverdue,
-    maxPenaltyPerMonth: MAX_PENALTY_PER_MONTH,
+    maxPenaltyPerInvoice: MAX_PENALTY_PER_MONTH,
     maxPenalty,
     finalPenalty: Math.min(rawPenalty, maxPenalty),
   };
