@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Car, MoreVertical, Wrench, Edit, Trash2, Eye } from "lucide-react"
 import { Vehicle } from "@/hooks/useVehicles"
 import { VehicleForm } from "./VehicleForm"
+import { VehicleStatusChangeDialog } from "./VehicleStatusChangeDialog"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { useRolePermissions } from "@/hooks/useRolePermissions"
 
@@ -40,7 +42,9 @@ const statusLabels = {
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   const navigate = useNavigate()
   const [showEditForm, setShowEditForm] = useState(false)
+  const [showStatusDialog, setShowStatusDialog] = useState(false)
   const { hasPermission } = useRolePermissions()
+  const queryClient = useQueryClient()
 
   const status = vehicle.status || 'available'
   const { formatCurrency } = useCurrencyFormatter()
@@ -62,7 +66,10 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               <CardTitle className="text-lg">{vehicle.plate_number}</CardTitle>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge className={statusColors[status]}>
+              <Badge 
+                className={`${statusColors[status]} cursor-pointer hover:opacity-80 transition-opacity`}
+                onClick={() => setShowStatusDialog(true)}
+              >
                 {statusLabels[status]}
               </Badge>
               <DropdownMenu>
@@ -148,6 +155,16 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         vehicle={vehicle}
         open={showEditForm}
         onOpenChange={setShowEditForm}
+      />
+
+      <VehicleStatusChangeDialog
+        open={showStatusDialog}
+        onOpenChange={setShowStatusDialog}
+        vehicleId={vehicle.id}
+        currentStatus={vehicle.status}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+        }}
       />
     </>
   )

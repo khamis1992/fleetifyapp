@@ -86,6 +86,7 @@ import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
+import { VehicleStatusChangeDialog } from '@/components/fleet/VehicleStatusChangeDialog';
 
 // ===== Status Config =====
 const statusConfig = {
@@ -348,6 +349,8 @@ const FleetPageRedesigned: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
   const [sortBy, setSortBy] = useState('newest');
   const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set());
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [vehicleForStatus, setVehicleForStatus] = useState<Vehicle | null>(null);
 
   // Hooks
   const { isSyncing, handleSync } = useSyncVehicleStatus();
@@ -438,13 +441,9 @@ const FleetPageRedesigned: React.FC = () => {
     navigate(`/fleet/vehicles/${vehicleId}`);
   };
 
-  const handleStatusChange = async (vehicle: Vehicle) => {
-    const currentIndex = statusCycle.indexOf(vehicle.status as any);
-    const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
-
-    // TODO: Update vehicle status via API
-    toast.success(`تم تغيير الحالة إلى ${statusConfig[nextStatus].label}`);
-    refetch();
+  const handleStatusChange = (vehicle: Vehicle) => {
+    setVehicleForStatus(vehicle);
+    setShowStatusDialog(true);
   };
 
   const handleQuickAction = (action: 'rent' | 'maintenance' | 'contract', vehicle: Vehicle) => {
@@ -955,6 +954,21 @@ const FleetPageRedesigned: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {vehicleForStatus && (
+        <VehicleStatusChangeDialog
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          vehicleId={vehicleForStatus.id}
+          currentStatus={vehicleForStatus.status}
+          currentNotes={vehicleForStatus.notes}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['vehicles-paginated'] });
+            queryClient.invalidateQueries({ queryKey: ['fleet-status'] });
+            refetch();
+          }}
+        />
+      )}
 
     </div>
   );

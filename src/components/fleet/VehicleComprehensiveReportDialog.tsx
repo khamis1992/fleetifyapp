@@ -13,14 +13,16 @@ import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
   Printer, 
-  Loader2,
-  Car,
-  AlertTriangle,
-  FileCheck
+  Loader2, 
+  Car, 
+  AlertTriangle, 
+  FileCheck,
+  Gavel
 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface VehicleComprehensiveReportDialogProps {
   open: boolean;
@@ -66,7 +68,8 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
             company_name,
             company_name_ar,
             phone,
-            national_id
+            national_id,
+            country
           )
         `)
         .eq('vehicle_id', vehicleId)
@@ -127,6 +130,296 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
     const nameAr = customer.company_name_ar || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
     if (nameAr) return nameAr;
     return customer.company_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير محدد';
+  };
+
+  const handleLegalAction = async (contract: any) => {
+    try {
+      const customerName = getCustomerName(contract.customers);
+      const today = new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
+      
+      // Generate reference number
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const random = Math.floor(Math.random() * 9000) + 1000;
+      const refNumber = `ALR-TR/${year}/${month}/${random}`;
+
+      const COMPANY_INFO = {
+        name_ar: 'شركة العراف لتأجير السيارات',
+        name_en: 'AL-ARAF CAR RENTAL L.L.C',
+        logo: '/receipts/logo.png',
+        address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+        phone: '+974 3141 1919',
+        email: 'info@alaraf.qa',
+        cr: '146832',
+        authorized_signatory: 'أسامة أحمد البشرى',
+        authorized_title: 'المخول بالتوقيع',
+      };
+
+      const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>طلب تحويل مخالفات - ${customerName}</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
+    }
+    
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      body { margin: 0; padding: 0; }
+      .letter-container {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+    }
+    
+    body {
+      font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #000;
+      background: #fff;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+    }
+    
+    .letter-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20px 30px;
+      background: #fff;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px double #1e3a5f;
+      padding-bottom: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .company-ar { flex: 1; text-align: right; }
+    .company-ar h1 { color: #1e3a5f; margin: 0; font-size: 20px; font-weight: bold; }
+    .company-ar p { color: #000; margin: 2px 0; font-size: 11px; }
+    
+    .logo-container { flex: 0 0 130px; text-align: center; padding: 0 15px; }
+    .logo-container img { max-height: 70px; max-width: 120px; }
+    
+    .company-en { flex: 1; text-align: left; }
+    .company-en h1 { color: #1e3a5f; margin: 0; font-size: 14px; font-weight: bold; }
+    .company-en p { color: #000; margin: 2px 0; font-size: 10px; }
+    
+    .address-bar {
+      text-align: center;
+      color: #000;
+      font-size: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    
+    .ref-date {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #000;
+    }
+    
+    .subject-box {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .info-box {
+      background: #f5f5f5;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border-right: 4px solid #1e3a5f;
+    }
+    
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+    
+    .info-label { font-weight: bold; color: #555; min-width: 100px; }
+    
+    .section {
+      margin: 20px 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .info-box {
+      background: #f5f5f5;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border-right: 4px solid #1e3a5f;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .signature-section {
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+      <div class="info-row">
+        <span class="info-label">إلى:</span>
+        <span>السيد / رئيس نيابة المرور المحترم - الدوحة</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">الموضوع:</span>
+        <span>تحويل مخالفات مرورية</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">المدعى عليه:</span>
+        <span>${customerName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">الجنسية:</span>
+        <span>${contract.customers?.country || 'غير محدد'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم الهوية:</span>
+        <span>${contract.customers?.national_id || '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم الجوال:</span>
+        <span dir="ltr">${contract.customers?.phone || '-'}</span>
+      </div>
+    </div>
+
+    <!-- Section 1: المقدمة والوقائع -->
+    <div class="section">
+      <div class="section-title">أولاً: الوقائع</div>
+      <div class="section-content">
+        <p>
+          تحية طيبة وبعد،،،
+        </p>
+        <p>
+          نتقدم إلى سعادتكم بطلب تحويل المخالفات المرورية ضد الشخص المذكور أعلاه،
+          والذي قام باستئجار مركبة من شركة العراف لتأجير السيارات بموجب العقد رقم <strong>(${contract.contract_number})</strong> المبرم بين الطرفين بتاريخ <strong>${contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '-'}</strong>.
+        </p>
+        <p>
+          علماً بأنه تم إرجاع المركبة بتاريخ <strong>${contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : 'لا يزال العقد سارياً'}</strong>،
+          ولم يلتزم بسداد المخالفات المرورية المترتبة على استخدامه للمركبة،
+          وقد حاولنا التواصل معه عدة مرات لسداد المستحقات ولكن دون استجابة.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 2: بيانات المركبة -->
+    <div class="section">
+      <div class="section-title">ثانياً: بيانات المركبة</div>
+      <div class="section-content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div><strong>نوع المركبة:</strong> ${vehicle?.make} ${vehicle?.model}</div>
+          <div><strong>سنة الصنع:</strong> ${vehicle?.year}</div>
+          <div><strong>رقم اللوحة:</strong> ${vehicle?.plate_number}</div>
+          <div><strong>نوع اللوحة:</strong> خصوصي</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: المرفقات -->
+    <div class="section">
+      <div class="section-title">ثالثاً: المرفقات</div>
+      <div class="section-content">
+        <ul style="margin: 0; padding-right: 20px;">
+          <li>صورة من عقد الإيجار</li>
+          <li>صورة من البطاقة الشخصية للمستأجر</li>
+          <li>كشف بالمخالفات المرورية</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Section 4: الطلب الختامي -->
+    <div class="section">
+      <div class="section-title">رابعاً: الطلب</div>
+      <div class="section-content">
+        <p>
+          لذا نرجو من سيادتكم التكرم بالموافقة على تحويل المخالفات المرورية إلى رقمه الشخصي <strong>(${contract.customers?.national_id || '-'})</strong>، واتخاذ الإجراءات القانونية اللازمة ضده.
+        </p>
+      </div>
+    </div>
+
+    <!-- الختام -->
+    <div class="closing">
+      <p>وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
+    </div>
+    
+    <!-- التوقيع -->
+    <div class="signature-section">
+      <div class="stamp-area">
+        <div class="stamp-circle">
+          <span>مكان الختم</span>
+        </div>
+      </div>
+      
+      <div class="signatory">
+        <p class="company-name">${COMPANY_INFO.name_ar}</p>
+        <div class="line">
+          <p class="name">${COMPANY_INFO.authorized_signatory}</p>
+          <p class="title">${COMPANY_INFO.authorized_title}</p>
+        </div>
+      </div>
+      
+      <div class="sign-area">
+        <div class="sign-line"></div>
+        <span>التوقيع</span>
+      </div>
+    </div>
+    
+    <!-- الذيل -->
+    <div class="footer">
+      ${COMPANY_INFO.address}<br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
+    </div>
+
+  </div>
+  <script>
+    window.onload = function() { window.print(); }
+  </script>
+</body>
+</html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+      }
+    } catch (error) {
+      console.error('Error generating legal request:', error);
+      toast.error('حدث خطأ أثناء إنشاء الطلب');
+    }
   };
 
   const generateHTMLReport = () => {
@@ -440,6 +733,55 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
                 </div>
                 <div className="font-bold text-lg text-red-600">{formatCurrency(stats.unpaidViolationsAmount)}</div>
                 <div className="text-sm text-slate-500">مبالغ غير مسددة ({violations.length} مخالفة)</div>
+              </div>
+            </div>
+
+            {/* Contracts List for Legal Action */}
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-slate-50 px-4 py-2 border-b font-medium text-sm flex items-center gap-2">
+                <FileCheck className="w-4 h-4" />
+                سجل العقود (اختر عقد لإنشاء طلب تحويل مخالفات)
+              </div>
+              <div className="max-h-[200px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2 text-right">رقم العقد</th>
+                      <th className="px-4 py-2 text-right">العميل</th>
+                      <th className="px-4 py-2 text-right">التاريخ</th>
+                      <th className="px-4 py-2 text-center">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {contracts.map((contract) => (
+                      <tr key={contract.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-2 font-medium">{contract.contract_number}</td>
+                        <td className="px-4 py-2">{getCustomerName(contract.customers)}</td>
+                        <td className="px-4 py-2 text-slate-500">
+                          {contract.start_date ? new Date(contract.start_date).toLocaleDateString('en-GB') : '-'}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleLegalAction(contract)}
+                            title="إجراء قانوني (تحويل مخالفات)"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Gavel className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {contracts.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                          لا توجد عقود مسجلة
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 

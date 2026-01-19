@@ -120,6 +120,8 @@ Add a "Vehicle Report" button to the vehicle details page to generate a comprehe
 - [x] Create VehicleComprehensiveReportDialog component for generating the report
 - [x] Add "Vehicle Report" button to VehicleDetailsPage
 - [x] Integrate VehicleComprehensiveReportDialog into VehicleDetailsPage
+- [x] Add national_id to contracts query in VehicleComprehensiveReportDialog
+- [x] Update contracts table columns in generated report (VehicleComprehensiveReportDialog)
 
 ## Review
 
@@ -129,7 +131,7 @@ Add a "Vehicle Report" button to the vehicle details page to generate a comprehe
    - Generates a printable HTML report with sections for:
      - Vehicle Information
      - Traffic Violations (with responsible customer/company)
-     - Contracts History
+     - Contracts History (updated with phone and personal ID)
      - Financial Summary (Total Unpaid Fines)
    - Includes printing functionality.
 
@@ -141,3 +143,35 @@ Add a "Vehicle Report" button to the vehicle details page to generate a comprehe
 ### Files Touched:
 - `src/components/fleet/VehicleComprehensiveReportDialog.tsx` (New)
 - `src/components/fleet/VehicleDetailsPage.tsx` (Modified)
+
+---
+
+# Vehicle Status Update Feature
+
+## Goal
+Allow changing vehicle status directly from the vehicle details page and vehicle card in fleet list.
+
+## Phases (Todo)
+- [x] Create VehicleStatusChangeDialog component
+- [x] Add "Change Status" button to VehicleDetailsPage
+- [x] Make Vehicle Card status badge clickable to open status change dialog
+
+## Review
+
+### Changes Made:
+1. **Created `src/components/fleet/VehicleStatusChangeDialog.tsx`**:
+   - Simple dialog with a status selection dropdown and notes field.
+   - Uses `useUpdateVehicle` hook to update the status in the database.
+
+2. **Modified `src/components/fleet/VehicleDetailsPage.tsx`**:
+   - Added "Change Status" button to the header actions.
+   - Integrated the status change dialog.
+
+3. **Modified `src/components/fleet/VehicleCard.tsx`**:
+   - Made the status badge clickable.
+   - Integrated the status change dialog to allow quick status updates from the fleet grid.
+
+### Files Touched:
+- `src/components/fleet/VehicleStatusChangeDialog.tsx` (New)
+- `src/components/fleet/VehicleDetailsPage.tsx` (Modified)
+- `src/components/fleet/VehicleCard.tsx` (Modified)

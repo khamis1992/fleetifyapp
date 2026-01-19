@@ -5,7 +5,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw } from 'lucide-react';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
@@ -19,6 +19,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -37,6 +39,24 @@ const documentTypes = [
   { value: 'receipt', label: 'إيصال' },
   { value: 'other', label: 'أخرى' }
 ];
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
+  }
+};
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
+  }
+};
 
 export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -321,7 +341,11 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   };
 
   if (isLoading) {
-    return <div>جاري التحميل...</div>;
+    return (
+      <div className="flex items-center justify-center py-16">
+        <RefreshCw className="w-8 h-8 animate-spin text-teal-500" />
+      </div>
+    );
   }
 
   return (
@@ -342,159 +366,168 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       
       {/* Document Saving Errors Summary */}
       {documentSavingErrors.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-                <span className="text-sm font-medium text-red-800">
-                  {documentSavingErrors.length} خطأ في حفظ المستندات
-                </span>
-              </div>
-              <Button
-                variant="outline" 
-                size="sm"
-                onClick={clearErrors}
-                className="text-xs"
-              >
-                مسح الأخطاء
-              </Button>
+        <motion.div variants={fadeInUp} className="bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <span className="text-sm font-medium text-red-800">
+                {documentSavingErrors.length} خطأ في حفظ المستندات
+              </span>
             </div>
-            <div className="mt-2 text-xs text-red-700">
-              اضغط على زر "إعادة المحاولة" بجانب الخطوات الفاشلة أعلاه
-            </div>
-          </CardContent>
-        </Card>
+            <Button
+              variant="outline" 
+              size="sm"
+              onClick={clearErrors}
+              className="text-xs"
+            >
+              مسح الأخطاء
+            </Button>
+          </div>
+          <div className="mt-2 text-xs text-red-700">
+            اضغط على زر "إعادة المحاولة" بجانب الخطوات الفاشلة أعلاه
+          </div>
+        </motion.div>
       )}
       
       {/* Documents List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              مستندات العقد
-            </CardTitle>
-            <Button size="sm" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              إضافة مستند
-            </Button>
+      <motion.div
+        variants={fadeInUp}
+        className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-neutral-900">مستندات العقد</h3>
+            <p className="text-sm text-neutral-500">{documents.length} مستند</p>
           </div>
-        </CardHeader>
-        <CardContent>
+          <Button
+            onClick={() => setIsDialogOpen(true)}
+            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600"
+          >
+            <Plus className="w-4 h-4" />
+            إضافة مستند
+          </Button>
+        </div>
+
         {documents.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>لا توجد مستندات مرفقة</p>
-            <p className="text-sm">أضف مستندات للعقد باستخدام الزر أعلاه</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['العقد الموقع', 'رخصة القيادة', 'الهوية', 'تقرير الحالة'].map((placeholder, idx) => (
+              <motion.div
+                key={idx}
+                variants={scaleIn}
+                whileHover={{ y: -4 }}
+                onClick={() => setIsDialogOpen(true)}
+                className="aspect-[4/3] bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-neutral-400 hover:border-teal-300 hover:text-teal-500 transition-all cursor-pointer"
+              >
+                <FileText className="w-10 h-10 mb-2" />
+                <p className="text-xs font-bold">{placeholder}</p>
+              </motion.div>
+            ))}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {documents.map((document) => (
-              <div
+              <motion.div
                 key={document.id}
-                className={`flex items-center justify-between p-3 border rounded-lg transition-colors dir-rtl ${
-                  document.document_type === 'condition_report' && document.condition_report_id
-                    ? 'hover:bg-accent/50 cursor-pointer'
-                    : 'hover:bg-accent/50'
-                }`}
+                variants={scaleIn}
+                whileHover={{ y: -4 }}
                 onClick={() => {
                   if (document.document_type === 'condition_report' && document.condition_report_id) {
                     handleViewConditionReport(document.condition_report_id);
+                  } else if (document.file_path) {
+                    handlePreviewDocument(document);
                   }
                 }}
+                className="group relative bg-neutral-50 rounded-2xl overflow-hidden border border-neutral-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
               >
-                <div className="flex items-center gap-2">
-                  {document.document_type === 'condition_report' && document.condition_report_id && (
+                <div className="aspect-[4/3] bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center relative">
+                  {document.document_type === 'condition_report' ? (
+                    <Car className="w-12 h-12 text-blue-400" />
+                  ) : document.mime_type?.includes('image') ? (
+                    <LazyImage
+                      src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${document.file_path}`}
+                      alt={document.document_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : document.mime_type?.includes('pdf') ? (
+                    <FileText className="w-12 h-12 text-red-400" />
+                  ) : (
+                    <FileImage className="w-12 h-12 text-neutral-400" />
+                  )}
+                  
+                  {document.is_required && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+                        مطلوب
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-bold text-neutral-900 truncate flex-1" title={document.document_name}>
+                      {document.document_name}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] mb-1 truncate max-w-full">
+                    {getDocumentTypeLabel(document.document_type)}
+                  </Badge>
+                  <p className="text-[10px] text-neutral-500 mt-1">
+                    {format(new Date(document.uploaded_at), 'dd/MM/yyyy')}
+                  </p>
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/90 to-teal-600/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-10 w-10 p-0 rounded-xl"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (document.document_type === 'condition_report' && document.condition_report_id) {
+                        handleViewConditionReport(document.condition_report_id);
+                      } else {
+                        handlePreviewDocument(document);
+                      }
+                    }}
+                    title="معاينة"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </Button>
+                  
+                  {document.file_path && (
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="secondary"
+                      className="h-10 w-10 p-0 rounded-xl"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleViewConditionReport(document.condition_report_id!);
+                        handleDownload(document.file_path, document.document_name);
                       }}
-                      className="text-blue-600 hover:text-blue-700"
+                      title="تحميل"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Download className="w-5 h-5" />
                     </Button>
                   )}
-                   {document.file_path && (
-                     <>
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handlePreviewDocument(document);
-                         }}
-                         className="text-blue-600 hover:text-blue-700"
-                         title="معاينة"
-                       >
-                         <Eye className="h-4 w-4" />
-                       </Button>
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleDownload(document.file_path, document.document_name);
-                         }}
-                         className="text-green-600 hover:text-green-700"
-                         title="تحميل"
-                       >
-                         <Download className="h-4 w-4" />
-                       </Button>
-                     </>
-                   )}
                   
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
+                    className="h-10 w-10 p-0 rounded-xl bg-red-100 hover:bg-red-200 text-red-600"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(document.id);
                     }}
-                    disabled={deleteDocument.isPending}
-                    className="text-destructive hover:text-destructive"
                     title="حذف"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
-
-                <div className="flex-1 text-right">
-                  <div className="flex items-center justify-end gap-2 mb-1">
-                    {document.is_required && (
-                      <Badge variant="destructive" className="text-xs">
-                        مطلوب
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="text-xs">
-                      {getDocumentTypeLabel(document.document_type)}
-                    </Badge>
-                    <h4 className="font-medium">{document.document_name}</h4>
-                  </div>
-                  
-                  <div className="flex items-center justify-end gap-4 text-xs text-muted-foreground">
-                    {document.file_size && (
-                      <span>{formatFileSize(document.file_size)}</span>
-                    )}
-                    <span>
-                      {new Date(document.uploaded_at).toLocaleDateString('en-GB')}
-                    </span>
-                  </div>
-                  
-                  {document.notes && (
-                    <p className="text-sm text-muted-foreground mt-1 text-right">
-                      {document.notes}
-                    </p>
-                  )}
-                </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
-      </CardContent>
+      </motion.div>
 
       {/* Dialog لعرض تقرير حالة المركبة */}
       <Dialog open={isReportViewerOpen} onOpenChange={setIsReportViewerOpen}>
@@ -599,7 +632,6 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                       <div key={category} className="space-y-2">
                         <h5 className="font-medium text-sm capitalize">{category}</h5>
                         {typeof items === 'object' && Object.entries(items).map(([item, condition]) => {
-                          // Type assertion for condition object
                           const conditionObj = condition as any;
                           
                           return (
@@ -811,7 +843,6 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
         onSubmit={handleDocumentUpload}
         isSubmitting={createDocument.isPending}
       />
-      </Card>
     </div>
   );
 }

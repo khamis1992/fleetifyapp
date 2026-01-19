@@ -85,7 +85,7 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contracts')
-        .select('id, contract_number, customer_id, vehicle_id')
+        .select('id, contract_number, customer_id, vehicle_id, start_date, end_date')
         .eq('status', 'active')
         .order('contract_number')
         .limit(50); // Limit to 50 contracts for performance
@@ -103,6 +103,53 @@ export function TrafficViolationForm({ onSuccess, vehicleId, violation }: Traffi
       payment_status: 'unpaid'
     }
   });
+
+  // Watch for changes in penalty_date and vehicle_plate
+  const watchedPenaltyDate = form.watch('penalty_date');
+  const watchedVehiclePlate = form.watch('vehicle_plate');
+
+  // Automatically find and set contract and customer based on penalty date and vehicle
+  useEffect(() => {
+    const fetchContractForViolation = async () => {
+      if (!watchedPenaltyDate || (!watchedVehiclePlate && !vehicleId)) return;
+
+      try {
+        const vehicleIdToUse = vehicleId || (watchedVehiclePlate ? vehicles.find(v => v.plate_number === watchedVehiclePlate)?.id : null);
+        
+        if (!vehicleIdToUse) return;
+
+        const date = new Date(watchedPenaltyDate).toISOString().split('T')[0];
+        
+        // Find contract active during penalty date
+        const { data: contract, error } = await supabase
+          .from('contracts')
+          .select('id, customer_id')
+          .eq('vehicle_id', vehicleIdToUse)
+          .lte('start_date', date)
+          .gte('end_date', date)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching contract for violation:', error);
+          return;
+        }
+
+        if (contract) {
+          form.setValue('contract_id', contract.id);
+          form.setValue('customer_id', contract.customer_id);
+          toast.info('تم تحديد العقد والعميل تلقائياً بناءً على تاريخ المخالفة');
+        } else {
+          // If no contract found, maybe clear the fields or warn user
+          // form.setValue('contract_id', '');
+          // form.setValue('customer_id', '');
+        }
+      } catch (err) {
+        console.error('Error in auto-linking contract:', err);
+      }
+    };
+
+    fetchContractForViolation();
+  }, [watchedPenaltyDate, watchedVehiclePlate, vehicleId, form, vehicles]);
 
   // ملء النموذج ببيانات المخالفة عند التعديل
   useEffect(() => {

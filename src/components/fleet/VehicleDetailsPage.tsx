@@ -43,6 +43,7 @@ import { VehicleForm } from './VehicleForm';
 import { MaintenanceForm } from './MaintenanceForm';
 import { TrafficViolationForm } from './TrafficViolationForm';
 import { VehicleComprehensiveReportDialog } from './VehicleComprehensiveReportDialog';
+import { VehicleStatusChangeDialog } from './VehicleStatusChangeDialog';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -65,6 +66,7 @@ const VehicleDetailsPage = () => {
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [showViolationForm, setShowViolationForm] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
   const queryClient = useQueryClient();
 
   // جلب بيانات المركبة من قاعدة البيانات
@@ -340,6 +342,16 @@ const VehicleDetailsPage = () => {
               >
                 <FileText className="w-4 h-4" />
                 تقرير مركبة
+              </Button>
+
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setShowStatusDialog(true)}
+                disabled={!vehicle || loadingVehicle}
+              >
+                <CheckCircle className="w-4 h-4" />
+                تغيير الحالة
               </Button>
 
               <Button 
@@ -676,6 +688,21 @@ const VehicleDetailsPage = () => {
           open={showReportDialog} 
           onOpenChange={setShowReportDialog} 
           vehicleId={vehicleId} 
+        />
+      )}
+
+      {/* Vehicle Status Change Dialog */}
+      {vehicle && (
+        <VehicleStatusChangeDialog
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          vehicleId={vehicle.id}
+          currentStatus={vehicle.status}
+          currentNotes={vehicle.notes}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['vehicle-details', vehicleId, companyId] });
+            queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+          }}
         />
       )}
     </div>

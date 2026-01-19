@@ -78,6 +78,7 @@ import {
   FileCheck,
   AlertCircle,
   CreditCard as PaymentIcon,
+  Gavel,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +89,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { QuickPaymentDialog } from '@/components/finance/QuickPaymentDialog';
 import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
+import { CustomerLegalCaseDialog } from '@/components/legal/CustomerLegalCaseDialog';
 import {
   Dialog,
   DialogContent,
@@ -429,13 +431,15 @@ const QuickActions = ({
   onCall,
   onWhatsApp,
   onNewContract,
-  onAddNote
+  onAddNote,
+  onOpenLegalCase
 }: {
   customer: any;
   onCall: () => void;
   onWhatsApp: () => void;
   onNewContract: () => void;
   onAddNote: () => void;
+  onOpenLegalCase: () => void;
 }) => {
   const actions = [
     {
@@ -457,6 +461,13 @@ const QuickActions = ({
       icon: Plus,
       onClick: onNewContract,
       color: 'text-blue-600 border-blue-200 hover:bg-blue-50',
+      show: true
+    },
+    {
+      label: 'فتح قضية',
+      icon: Gavel,
+      onClick: onOpenLegalCase,
+      color: 'text-red-600 border-red-200 hover:bg-red-50',
       show: true
     },
     {
@@ -1706,6 +1717,7 @@ const CustomerDetailsPage = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLegalCaseDialogOpen, setIsLegalCaseDialogOpen] = useState(false);
 
   // Queries
   const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
@@ -1919,6 +1931,7 @@ const CustomerDetailsPage = () => {
           onWhatsApp={() => customer?.phone && window.open(`https://wa.me/${customer.phone.replace(/[^0-9]/g, '')}`, '_blank')}
           onNewContract={() => navigate(`/contracts?customer=${customerId}`)}
           onAddNote={() => setActiveTab('notes')}
+          onOpenLegalCase={() => setIsLegalCaseDialogOpen(true)}
         />
 
         {/* Tabs Section */}
@@ -2083,6 +2096,15 @@ const CustomerDetailsPage = () => {
         open={isInvoiceDialogOpen}
         onOpenChange={setIsInvoiceDialogOpen}
         invoice={selectedInvoice}
+      />
+
+      {/* Legal Case Dialog */}
+      <CustomerLegalCaseDialog
+        open={isLegalCaseDialogOpen}
+        onOpenChange={setIsLegalCaseDialogOpen}
+        customerId={customerId || ''}
+        companyId={companyId || ''}
+        customerName={customerName}
       />
     </motion.div>
   );
