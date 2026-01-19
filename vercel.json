@@ -17,6 +17,13 @@
     "silent": true
   },
   "rewrites": [
+    { "source": "/sw.js", "destination": "/sw.js" },
+    { "source": "/manifest.json", "destination": "/manifest.json" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/uploads/(.*)", "destination": "/uploads/$1" },
+    { "source": "/locales/(.*)", "destination": "/locales/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

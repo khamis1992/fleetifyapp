@@ -322,15 +322,18 @@ const BentoDashboardRedesigned: React.FC = () => {
   const [showContractWizard, setShowContractWizard] = useState(false);
   const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
 
+  // Get company_id from either profile or company object (with fallback)
+  const companyId = user?.profile?.company_id || user?.company?.id;
+
   // Fleet Status Query
   const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
-    queryKey: ['fleet-status-redesign', user?.profile?.company_id],
+    queryKey: ['fleet-status-redesign', companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return null;
+      if (!companyId) return null;
       const { data } = await supabase
         .from('vehicles')
         .select('status')
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .eq('is_active', true);
 
       const counts = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
@@ -342,31 +345,31 @@ const BentoDashboardRedesigned: React.FC = () => {
       });
       return counts;
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
   });
 
   // Maintenance Query
   const { data: maintenanceData } = useQuery({
-    queryKey: ['maintenance-redesign', user?.profile?.company_id],
+    queryKey: ['maintenance-redesign', companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) return [];
       const { data } = await supabase
         .from('vehicle_maintenance')
         .select('id, maintenance_type, scheduled_date, status, vehicles(plate_number)')
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .in('status', ['pending', 'in_progress'])
         .order('scheduled_date', { ascending: true })
         .limit(5);
       return data || [];
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
   });
 
   // Revenue Chart Data
   const { data: revenueData } = useQuery({
-    queryKey: ['revenue-chart-redesign', user?.profile?.company_id],
+    queryKey: ['revenue-chart-redesign', companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) return [];
       const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
       const currentMonth = new Date().getMonth();
 
@@ -379,7 +382,7 @@ const BentoDashboardRedesigned: React.FC = () => {
         const { data } = await supabase
           .from('contracts')
           .select('monthly_amount')
-          .eq('company_id', user?.profile?.company_id)
+          .eq('company_id', companyId)
           .eq('status', 'active')
           .lte('start_date', monthEnd.toISOString().split('T')[0]);
 
@@ -388,7 +391,7 @@ const BentoDashboardRedesigned: React.FC = () => {
       }
       return results;
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: !!companyId,
   });
 
   const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) +

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
