@@ -32,8 +32,6 @@ import {
   Printer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface CustomerExportDialogProps {
   open: boolean;
@@ -93,7 +91,7 @@ const getInvalidFields = (customer: Customer): string[] => {
   return invalid;
 };
 
-type ExportFormat = 'csv' | 'excel' | 'pdf';
+type ExportFormat = 'csv' | 'excel' | 'html';
 type FilterOption = 'all' | 'active_contracts' | 'traffic_violations' | 'both' | 'deficiencies_only';
 
 const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
@@ -102,7 +100,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
   companyId,
   filters,
 }) => {
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('html');
   const [filterOption, setFilterOption] = useState<FilterOption>('all');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -270,7 +268,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
       } else if (exportFormat === 'excel') {
         await exportToExcel(customersToExport, contractsMap, violationsMap);
       } else {
-        await exportToPDF(customersToExport, contractsMap, violationsMap);
+        await exportToHTML(customersToExport, contractsMap, violationsMap);
       }
 
       toast.dismiss();
@@ -549,50 +547,27 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const exportToPDF = async (
+  const exportToHTML = async (
     customers: Customer[],
     contractsMap: Map<string, any[]>,
     violationsMap: Map<string, any[]>
   ) => {
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4',
+    const currentDate = new Date().toLocaleDateString('ar-QA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+    const filterText = filterOption === 'all' ? 'جميع العملاء' :
+      filterOption === 'active_contracts' ? 'العملاء مع عقود سارية' :
+      filterOption === 'traffic_violations' ? 'العملاء مع مخالفات مرورية' :
+      filterOption === 'deficiencies_only' ? 'العملاء مع نواقص فقط' :
+      'العملاء مع عقود سارية أو مخالفات';
 
-    // إعداد الخط
-    doc.setFont('helvetica');
-
-    // العنوان الرئيسي
-    doc.setFillColor(13, 148, 136); // Teal color
-    doc.rect(0, 0, pageWidth, 25, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.text('Customers Deficiency Report', pageWidth / 2, 12, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text('تقرير نواقص العملاء', pageWidth / 2, 20, { align: 'center' });
-
-    // معلومات التقرير
-    doc.setTextColor(100, 100, 100);
-    doc.setFontSize(10);
-    const filterText = filterOption === 'all' ? 'All Customers' :
-      filterOption === 'active_contracts' ? 'Customers with Active Contracts' :
-      filterOption === 'traffic_violations' ? 'Customers with Traffic Violations' :
-      filterOption === 'deficiencies_only' ? 'Customers with Deficiencies Only' :
-      'Customers with Active Contracts or Traffic Violations';
-    doc.text(`Filter: ${filterText}`, 15, 35);
-    doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, pageWidth - 60, 35);
-    doc.text(`Total Customers: ${customers.length}`, 15, 42);
-
-    // إعداد البيانات للجدول
     let customersWithMissingData = 0;
     let customersWithViolationsCount = 0;
 
-    const tableData = customers.map((customer, index) => {
+    const tableRows = customers.map((customer, index) => {
       const customerName = customer.customer_type === 'individual'
         ? `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim()
         : customer.company_name_ar || customer.company_name || '';
@@ -605,203 +580,325 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
       const invalidFields = getInvalidFields(customer);
       const hasMissingData = missingFields.length > 0;
       const hasViolations = customerViolations.length > 0;
+      const hasInvalidData = invalidFields.length > 0;
       
       if (hasMissingData) customersWithMissingData++;
       if (hasViolations) customersWithViolationsCount++;
 
-      return [
-        (index + 1).toString(),
-        customer.customer_code || '-',
-        customerName || '-',
-        customer.customer_type === 'individual' ? 'Individual' : 'Corporate',
-        customer.phone || '-',
-        customer.national_id || '-',
-        contracts.length.toString(),
-        customerViolations.length.toString(),
-        totalViolationsAmount > 0 ? totalViolationsAmount.toLocaleString() : '-',
-        hasMissingData ? missingFields.join(', ') : 'Complete',
-        invalidFields.length > 0 ? invalidFields.join(', ') : '-',
-      ];
-    });
+      const rowClass = hasMissingData ? 'row-missing' : '';
+      const missingClass = hasMissingData ? 'cell-missing' : 'cell-complete';
+      const violationsClass = hasViolations ? 'cell-warning' : '';
+      const invalidClass = hasInvalidData ? 'cell-warning' : '';
 
-    // إنشاء الجدول
-    autoTable(doc, {
-      startY: 50,
-      head: [[
-        '#',
-        'Code',
-        'Name',
-        'Type',
-        'Phone',
-        'National ID',
-        'Contracts',
-        'Violations',
-        'Violations Total',
-        'Missing Data',
-        'Format Errors',
-      ]],
-      body: tableData,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [13, 148, 136],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'center',
-        fontSize: 8,
-      },
-      styles: {
-        font: 'helvetica',
-        fontSize: 7,
-        cellPadding: 2,
-        overflow: 'linebreak',
-        halign: 'center',
-      },
-      columnStyles: {
-        0: { cellWidth: 8 },
-        1: { cellWidth: 18 },
-        2: { cellWidth: 40, halign: 'left' },
-        3: { cellWidth: 18 },
-        4: { cellWidth: 25 },
-        5: { cellWidth: 25 },
-        6: { cellWidth: 15 },
-        7: { cellWidth: 15 },
-        8: { cellWidth: 20 },
-        9: { cellWidth: 45, halign: 'left' },
-        10: { cellWidth: 40, halign: 'left' },
-      },
-      didParseCell: (data) => {
-        // تلوين خلايا البيانات الناقصة
-        if (data.section === 'body') {
-          const missingDataCol = 9;
-          const formatErrorsCol = 10;
-          
-          if (data.column.index === missingDataCol) {
-            const cellText = data.cell.text.join('');
-            if (cellText !== 'Complete') {
-              data.cell.styles.fillColor = [254, 226, 226]; // Red background
-              data.cell.styles.textColor = [220, 38, 38]; // Red text
-              data.cell.styles.fontStyle = 'bold';
-            } else {
-              data.cell.styles.fillColor = [220, 252, 231]; // Green background
-              data.cell.styles.textColor = [22, 163, 74]; // Green text
-            }
-          }
-          
-          if (data.column.index === formatErrorsCol) {
-            const cellText = data.cell.text.join('');
-            if (cellText !== '-') {
-              data.cell.styles.fillColor = [254, 243, 199]; // Yellow background
-              data.cell.styles.textColor = [180, 83, 9]; // Amber text
-              data.cell.styles.fontStyle = 'bold';
-            }
-          }
+      return `
+        <tr class="${rowClass}">
+          <td>${index + 1}</td>
+          <td>${customer.customer_code || '-'}</td>
+          <td class="text-right">${customerName || '-'}</td>
+          <td>${customer.customer_type === 'individual' ? 'فرد' : 'شركة'}</td>
+          <td dir="ltr">${customer.phone || '-'}</td>
+          <td dir="ltr">${customer.national_id || '-'}</td>
+          <td class="${violationsClass}">${contracts.length}</td>
+          <td class="${violationsClass}">${customerViolations.length}</td>
+          <td class="${violationsClass}">${totalViolationsAmount > 0 ? totalViolationsAmount.toLocaleString() : '-'}</td>
+          <td class="${missingClass}">${hasMissingData ? missingFields.join('، ') : '✓ مكتمل'}</td>
+          <td class="${invalidClass}">${invalidFields.length > 0 ? invalidFields.join('، ') : '-'}</td>
+        </tr>
+      `;
+    }).join('');
 
-          // تلوين عمود المخالفات
-          if (data.column.index === 7 || data.column.index === 8) {
-            const cellText = data.cell.text.join('');
-            if (cellText !== '0' && cellText !== '-') {
-              data.cell.styles.fillColor = [254, 243, 199];
-              data.cell.styles.textColor = [180, 83, 9];
-              data.cell.styles.fontStyle = 'bold';
-            }
-          }
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير نواقص العملاء</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        
+        * {
+            box-sizing: border-box;
         }
-      },
-      didDrawPage: (data) => {
-        // إضافة رقم الصفحة
-        const pageCount = (doc as any).internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.text(
-          `Page ${data.pageNumber} of ${pageCount}`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: 'center' }
-        );
-      },
-    });
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            padding: 20px;
+            background: #fff;
+            color: #1a1a2e;
+            max-width: 297mm;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+        
+        .report-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0d9488;
+            margin-bottom: 5px;
+        }
+        
+        .report-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .summary-card.total { background: #f1f5f9; }
+        .summary-card.missing { background: #fee2e2; }
+        .summary-card.complete { background: #dcfce7; }
+        .summary-card.violations { background: #fef3c7; }
+        
+        .summary-card .label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .summary-card.total .value { color: #0d9488; }
+        .summary-card.missing .value { color: #dc2626; }
+        .summary-card.complete .value { color: #16a34a; }
+        .summary-card.violations .value { color: #b45309; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        
+        th {
+            background: #0d9488;
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        tr:hover {
+            background: #f1f5f9;
+        }
+        
+        .row-missing {
+            background: #fef2f2 !important;
+        }
+        
+        .cell-missing {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        
+        .cell-complete {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        
+        .cell-warning {
+            color: #b45309;
+            font-weight: 600;
+            background: #fef3c7;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .legend {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .legend-items {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .legend-color.red { background: #fee2e2; }
+        .legend-color.yellow { background: #fef3c7; }
+        .legend-color.green { background: #dcfce7; }
+        
+        .print-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            background: #0d9488;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .print-btn:hover {
+            background: #0f766e;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        @media print {
+            .print-btn { display: none; }
+            body { padding: 0; }
+            .summary-cards { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ طباعة التقرير</button>
 
-    // إضافة صفحة الملخص
-    doc.addPage();
-    
-    // عنوان الملخص
-    doc.setFillColor(13, 148, 136);
-    doc.rect(0, 0, pageWidth, 25, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.text('Report Summary', pageWidth / 2, 12, { align: 'center' });
-    doc.text('ملخص التقرير', pageWidth / 2, 20, { align: 'center' });
+    <div class="header">
+        <div class="company-name">شركة العراف لتأجير السيارات</div>
+        <div class="report-title">تقرير نواقص العملاء</div>
+        <div>تاريخ التقرير: ${currentDate}</div>
+    </div>
 
-    // بطاقات الملخص
-    const summaryY = 40;
-    const cardWidth = 60;
-    const cardHeight = 35;
-    const cardSpacing = 15;
-    const startX = (pageWidth - (4 * cardWidth + 3 * cardSpacing)) / 2;
+    <div class="report-info">
+        <div><strong>الفلتر:</strong> ${filterText}</div>
+        <div><strong>إجمالي العملاء:</strong> ${customers.length}</div>
+        <div><strong>تاريخ الإنشاء:</strong> ${new Date().toLocaleDateString('en-GB')}</div>
+    </div>
 
-    // بطاقة إجمالي العملاء
-    doc.setFillColor(241, 245, 249);
-    doc.roundedRect(startX, summaryY, cardWidth, cardHeight, 3, 3, 'F');
-    doc.setTextColor(71, 85, 105);
-    doc.setFontSize(10);
-    doc.text('Total Customers', startX + cardWidth / 2, summaryY + 10, { align: 'center' });
-    doc.setTextColor(13, 148, 136);
-    doc.setFontSize(20);
-    doc.text(customers.length.toString(), startX + cardWidth / 2, summaryY + 25, { align: 'center' });
+    <div class="summary-cards">
+        <div class="summary-card total">
+            <div class="label">إجمالي العملاء</div>
+            <div class="value">${customers.length}</div>
+        </div>
+        <div class="summary-card missing">
+            <div class="label">بيانات ناقصة</div>
+            <div class="value">${customersWithMissingData}</div>
+        </div>
+        <div class="summary-card complete">
+            <div class="label">بيانات مكتملة</div>
+            <div class="value">${customers.length - customersWithMissingData}</div>
+        </div>
+        <div class="summary-card violations">
+            <div class="label">لديهم مخالفات</div>
+            <div class="value">${customersWithViolationsCount}</div>
+        </div>
+    </div>
 
-    // بطاقة البيانات الناقصة
-    doc.setFillColor(254, 226, 226);
-    doc.roundedRect(startX + cardWidth + cardSpacing, summaryY, cardWidth, cardHeight, 3, 3, 'F');
-    doc.setTextColor(71, 85, 105);
-    doc.setFontSize(10);
-    doc.text('Missing Data', startX + cardWidth + cardSpacing + cardWidth / 2, summaryY + 10, { align: 'center' });
-    doc.setTextColor(220, 38, 38);
-    doc.setFontSize(20);
-    doc.text(customersWithMissingData.toString(), startX + cardWidth + cardSpacing + cardWidth / 2, summaryY + 25, { align: 'center' });
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>كود العميل</th>
+                <th>الاسم</th>
+                <th>النوع</th>
+                <th>الهاتف</th>
+                <th>رقم الهوية</th>
+                <th>العقود</th>
+                <th>المخالفات</th>
+                <th>إجمالي المخالفات</th>
+                <th>البيانات الناقصة</th>
+                <th>أخطاء التنسيق</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+    </table>
 
-    // بطاقة العملاء المكتملين
-    doc.setFillColor(220, 252, 231);
-    doc.roundedRect(startX + 2 * (cardWidth + cardSpacing), summaryY, cardWidth, cardHeight, 3, 3, 'F');
-    doc.setTextColor(71, 85, 105);
-    doc.setFontSize(10);
-    doc.text('Complete Data', startX + 2 * (cardWidth + cardSpacing) + cardWidth / 2, summaryY + 10, { align: 'center' });
-    doc.setTextColor(22, 163, 74);
-    doc.setFontSize(20);
-    doc.text((customers.length - customersWithMissingData).toString(), startX + 2 * (cardWidth + cardSpacing) + cardWidth / 2, summaryY + 25, { align: 'center' });
+    <div class="legend">
+        <div class="legend-title">دليل الألوان:</div>
+        <div class="legend-items">
+            <div class="legend-item">
+                <div class="legend-color red"></div>
+                <span>أحمر = بيانات ناقصة</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color yellow"></div>
+                <span>أصفر = أخطاء تنسيق / مخالفات</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color green"></div>
+                <span>أخضر = بيانات مكتملة</span>
+            </div>
+        </div>
+    </div>
 
-    // بطاقة المخالفات
-    doc.setFillColor(254, 243, 199);
-    doc.roundedRect(startX + 3 * (cardWidth + cardSpacing), summaryY, cardWidth, cardHeight, 3, 3, 'F');
-    doc.setTextColor(71, 85, 105);
-    doc.setFontSize(10);
-    doc.text('With Violations', startX + 3 * (cardWidth + cardSpacing) + cardWidth / 2, summaryY + 10, { align: 'center' });
-    doc.setTextColor(180, 83, 9);
-    doc.setFontSize(20);
-    doc.text(customersWithViolationsCount.toString(), startX + 3 * (cardWidth + cardSpacing) + cardWidth / 2, summaryY + 25, { align: 'center' });
+    <div class="footer">
+        <div>توقيع الموظف المسؤول</div>
+        <div>ختم الشركة</div>
+    </div>
+</body>
+</html>
+    `;
 
-    // دليل الألوان
-    const legendY = summaryY + cardHeight + 30;
-    doc.setFontSize(12);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Color Legend:', 15, legendY);
-
-    const legendItems = [
-      { color: [254, 226, 226], text: 'Red = Missing Data', textColor: [220, 38, 38] },
-      { color: [254, 243, 199], text: 'Yellow = Format Errors / Violations', textColor: [180, 83, 9] },
-      { color: [220, 252, 231], text: 'Green = Complete Data', textColor: [22, 163, 74] },
-    ];
-
-    legendItems.forEach((item, index) => {
-      const itemY = legendY + 12 + (index * 12);
-      doc.setFillColor(item.color[0], item.color[1], item.color[2]);
-      doc.roundedRect(15, itemY - 4, 8, 8, 1, 1, 'F');
-      doc.setTextColor(item.textColor[0], item.textColor[1], item.textColor[2]);
-      doc.setFontSize(10);
-      doc.text(item.text, 28, itemY + 2);
-    });
-
-    // حفظ الملف
-    doc.save(`customers_deficiency_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
 
   const filterLabels = {
@@ -839,23 +936,23 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
             >
               <div>
                 <RadioGroupItem
-                  value="pdf"
-                  id="pdf"
+                  value="html"
+                  id="html"
                   className="peer sr-only"
                 />
                 <Label
-                  htmlFor="pdf"
+                  htmlFor="html"
                   className={cn(
                     "flex flex-col items-center justify-center rounded-xl border-2 border-slate-200 p-4 cursor-pointer transition-all",
-                    "hover:border-red-300 hover:bg-red-50/50",
-                    exportFormat === 'pdf' && "border-red-500 bg-red-50"
+                    "hover:border-teal-300 hover:bg-teal-50/50",
+                    exportFormat === 'html' && "border-teal-500 bg-teal-50"
                   )}
                 >
                   <Printer className={cn(
                     "w-8 h-8 mb-2",
-                    exportFormat === 'pdf' ? "text-red-600" : "text-slate-400"
+                    exportFormat === 'html' ? "text-teal-600" : "text-slate-400"
                   )} />
-                  <span className="font-medium">PDF</span>
+                  <span className="font-medium">HTML</span>
                   <span className="text-xs text-slate-500 text-center">تقرير للطباعة</span>
                 </Label>
               </div>
@@ -974,11 +1071,11 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
               <li className="text-red-600">• البيانات الناقصة لكل عميل (مميزة باللون الأحمر)</li>
               <li className="text-amber-600">• أخطاء التنسيق (مميزة باللون الأصفر)</li>
             </ul>
-            {exportFormat === 'pdf' && (
+            {exportFormat === 'html' && (
               <div className="mt-3 pt-3 border-t border-slate-200">
                 <p className="text-xs text-slate-500 flex items-center gap-1">
                   <Printer className="w-3 h-3" />
-                  تقرير PDF يتضمن صفحة ملخص مع إحصائيات وجدول بيانات ملون
+                  تقرير HTML يفتح في نافذة جديدة مع إحصائيات وجدول بيانات ملون وإمكانية الطباعة
                 </p>
               </div>
             )}
