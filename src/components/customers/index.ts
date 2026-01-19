@@ -35,6 +35,7 @@ export { AccountingSummary } from './AccountingSummary';
 // تقارير العملاء
 export { CustomerAgingReport } from './CustomerAgingReport';
 export { CustomerInvoicesTab } from './CustomerInvoicesTab';
+export { default as CustomerExportDialog } from './CustomerExportDialog';
 
 // أدوات الإصلاح والصيانة
 export { FixCustomerAccounts } from './FixCustomerAccounts';

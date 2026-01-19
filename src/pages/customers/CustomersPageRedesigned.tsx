@@ -74,6 +74,7 @@ import {
   CustomerCSVUpload,
   CustomerSplitView,
 } from '@/components/customers';
+import CustomerExportDialog from '@/components/customers/CustomerExportDialog';
 
 // ===== Professional Stat Card =====
 interface ProStatCardProps {
@@ -634,6 +635,7 @@ const CustomersPageRedesigned: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Filters
   const filters: CustomerFilters = {
@@ -822,7 +824,7 @@ const CustomersPageRedesigned: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => exportCustomersToExcel(customers, companyId!, filters, supabase)}
+                onClick={() => setShowExportDialog(true)}
                 disabled={isLoading}
                 className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
               >
@@ -1090,6 +1092,13 @@ const CustomersPageRedesigned: React.FC = () => {
           refetch();
           toast.success('تم رفع الملف بنجاح');
         }}
+      />
+
+      <CustomerExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        companyId={companyId!}
+        filters={filters}
       />
 
       {/* Delete Dialog */}
