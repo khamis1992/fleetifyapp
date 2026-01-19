@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyContext } from '@/contexts/CompanyContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   getCompanyScopeContext, 
   getCompanyFilter, 
@@ -18,6 +19,36 @@ import {
 export const useUnifiedCompanyAccess = () => {
   const { user, session, loading } = useAuth();
   const { browsedCompany, isBrowsingMode } = useCompanyContext();
+  const queryClient = useQueryClient();
+  
+  // Track previous companyId to detect changes
+  const prevCompanyIdRef = useRef<string | null>(null);
+  
+  // Extract company_id early for dependency tracking
+  const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
+  
+  // CRITICAL FIX: Invalidate queries when companyId becomes available
+  // This fixes the issue where pages show 0 data after navigation because
+  // queries ran with companyId=null and refetchOnMount is false
+  useEffect(() => {
+    const prevId = prevCompanyIdRef.current;
+    
+    // If we had no companyId before and now we have one, invalidate all queries
+    if (prevId === null && userCompanyId !== null && !loading) {
+      console.log('🔄 [useUnifiedCompanyAccess] Company ID available, invalidating queries...', {
+        prevId,
+        newId: userCompanyId
+      });
+      
+      // Invalidate all queries to force refetch with the new companyId
+      // Using a small delay to ensure state has propagated
+      setTimeout(() => {
+        queryClient.invalidateQueries();
+      }, 50);
+    }
+    
+    prevCompanyIdRef.current = userCompanyId;
+  }, [userCompanyId, loading, queryClient]);
   
   // Always call useMemo with the same dependencies to ensure consistent hook order
   const result = useMemo(() => {
@@ -63,8 +94,7 @@ export const useUnifiedCompanyAccess = () => {
       return defaultReturn;
     }
 
-    // Extract company_id safely - try multiple sources
-    const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
+    // userCompanyId is extracted above for dependency tracking
 
     const rawRoles = Array.isArray((user as any)?.roles) ? (user as any).roles : [];
     const rolesNormalized = Array.from(
@@ -162,7 +192,7 @@ export const useUnifiedCompanyAccess = () => {
       isInitializing: false,
       authError: null
     };
-  }, [user?.id, loading, isBrowsingMode, browsedCompany?.id]);
+  }, [user?.id, user?.company?.id, (user as any)?.company_id, loading, isBrowsingMode, browsedCompany?.id, session?.access_token]);
 
   return result;
 };
