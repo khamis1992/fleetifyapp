@@ -67,22 +67,7 @@ export default defineConfig(({ mode }) => ({
             return undefined;
           }
 
-          // Heavy charting library - split out (lazy load when charts viewed)
-          if (id.includes('node_modules/recharts/')) {
-            return 'charts';
-          }
-
-          // Map library - lazy load when map viewed
-          if (id.includes('node_modules/leaflet/')) {
-            return 'maps';
-          }
-
-          // Animation library - heavy, split out
-          if (id.includes('node_modules/framer-motion/')) {
-            return 'animations';
-          }
-
-          // PDF libraries - already lazy loaded
+          // PDF libraries - split out safely
           if (id.includes('node_modules/pdfjs-dist/')) {
             return 'pdf';
           }
@@ -90,6 +75,13 @@ export default defineConfig(({ mode }) => ({
           // OCR library - only for invoice scanning
           if (id.includes('node_modules/tesseract.js/')) {
             return 'ocr';
+          }
+
+          // Heavy libraries - group together to avoid circular dependencies
+          if (id.includes('node_modules/recharts/') ||
+              id.includes('node_modules/leaflet/') ||
+              id.includes('node_modules/framer-motion/')) {
+            return 'heavy-vendor';
           }
 
           // Query library
