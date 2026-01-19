@@ -481,17 +481,6 @@ export default function SmartDocumentGenerator() {
           </Card>
         </motion.div>
 
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-4 text-center"
-        >
-          <p className="text-muted-foreground text-sm">
-            مدعوم بالذكاء الاصطناعي • شركة العراف لتأجير السيارات
-          </p>
-        </motion.div>
       </div>
     </div>
   );
