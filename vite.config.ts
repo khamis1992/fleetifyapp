@@ -54,12 +54,12 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // React core - keep together to prevent hook issues
+          // CRITICAL: Keep React & ReactDOM in main bundle to prevent createContext errors
+          // Do NOT split React into a separate chunk - it must load first
           if (id.includes('node_modules/react/') ||
               id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/react-router/') ||
               id.includes('node_modules/scheduler/')) {
-            return 'react-core';
+            return undefined; // Keep in main entry
           }
 
           // Keep react-router-dom in main entry for routing stability
