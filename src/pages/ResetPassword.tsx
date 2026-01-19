@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ const ResetPassword: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,21 +21,21 @@ const ResetPassword: React.FC = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
-      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+      toast({ title: 'تنبيه', description: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل', variant: 'destructive' });
       return;
     }
     if (password !== confirm) {
-      toast.error('كلمتا المرور غير متطابقتين');
+      toast({ title: 'تنبيه', description: 'كلمتا المرور غير متطابقتين', variant: 'destructive' });
       return;
     }
     try {
       setLoading(true);
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast.success('تم تحديث كلمة المرور بنجاح');
+      toast({ title: 'تم التعيين', description: 'تم تحديث كلمة المرور بنجاح' });
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      toast.error('تعذر تحديث كلمة المرور');
+      toast({ title: 'خطأ', description: 'تعذر تحديث كلمة المرور', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

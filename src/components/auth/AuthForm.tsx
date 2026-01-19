@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +18,7 @@ export const AuthForm: FC = () => {
   });
 
   const { signIn } = useAuth();
+  const { toast } = useToast();
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -37,36 +38,47 @@ export const AuthForm: FC = () => {
       
       if (error) {
         let errorMessage = 'خطأ في تسجيل الدخول';
-
+        
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = 'يرجى تأكيد البريد الإلكتروني أولاً';
         }
-
-        toast.error(errorMessage);
+        
+        toast({
+          title: "خطأ",
+          description: errorMessage,
+          variant: "destructive",
+        });
       } else {
-        toast.success('تم تسجيل الدخول بنجاح');
+        toast({
+          title: "مرحباً بك",
+          description: "تم تسجيل الدخول بنجاح",
+        });
       }
     } catch (error) {
-      toast.error('حدث خطأ غير متوقع');
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ غير متوقع",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   const handleResetPassword = async () => {
     try {
       if (!formData.email) {
-        toast.error('يرجى إدخال البريد الإلكتروني أولاً');
+        toast({ title: 'تنبيه', description: 'يرجى إدخال البريد الإلكتروني أولاً', variant: 'destructive' });
         return;
       }
       await supabase.auth.resetPasswordForEmail(formData.email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
-      toast.success('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك');
+      toast({ title: 'تم الإرسال', description: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك' });
     } catch (error) {
-      toast.error('تعذر إرسال رابط إعادة التعيين');
+      toast({ title: 'خطأ', description: 'تعذر إرسال رابط إعادة التعيين', variant: 'destructive' });
     }
   };
 
