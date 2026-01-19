@@ -87,6 +87,7 @@ import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 import { VehicleStatusChangeDialog } from '@/components/fleet/VehicleStatusChangeDialog';
+import VehicleDocumentDistributionDialog from '@/components/fleet/VehicleDocumentDistributionDialog';
 
 // ===== Status Config =====
 const statusConfig = {
@@ -351,6 +352,7 @@ const FleetPageRedesigned: React.FC = () => {
   const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set());
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [vehicleForStatus, setVehicleForStatus] = useState<Vehicle | null>(null);
+  const [showDocumentDistribution, setShowDocumentDistribution] = useState(false);
 
   // Hooks
   const { isSyncing, handleSync } = useSyncVehicleStatus();
@@ -563,6 +565,17 @@ const FleetPageRedesigned: React.FC = () => {
               >
                 <RotateCcw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
                 {isSyncing ? 'مزامنة...' : 'مزامنة'}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDocumentDistribution(true)}
+                className="gap-2"
+                title="توزيع المستندات"
+              >
+                <FileText className="w-4 h-4" />
+                توزيع المستندات
               </Button>
 
               {user?.roles?.includes('super_admin') && (
@@ -969,6 +982,12 @@ const FleetPageRedesigned: React.FC = () => {
           }}
         />
       )}
+
+      {/* Document Distribution Dialog */}
+      <VehicleDocumentDistributionDialog
+        open={showDocumentDistribution}
+        onOpenChange={setShowDocumentDistribution}
+      />
 
     </div>
   );
