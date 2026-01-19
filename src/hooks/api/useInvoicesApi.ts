@@ -202,21 +202,43 @@ export function useInvoiceStats() {
         }
       }
 
-      const { data } = await supabase
-        .from('invoices')
-        .select('status, total')
-        .eq('company_id', companyId);
+      // Use RPC for optimized stats aggregation (database-side instead of client-side)
+      const { data, error } = await supabase.rpc('get_invoice_stats', {
+        p_company_id: companyId
+      });
 
+      if (error) {
+        console.error('[Invoices API] RPC error:', error);
+        // Fallback to original method if RPC fails
+        const { data: fallbackData } = await supabase
+          .from('invoices')
+          .select('status, total_amount, payment_status')
+          .eq('company_id', companyId);
+
+        return {
+          total: fallbackData?.length || 0,
+          draft: fallbackData?.filter(i => i.status === 'draft').length || 0,
+          pending: fallbackData?.filter(i => i.status === 'pending').length || 0,
+          paid: fallbackData?.filter(i => i.status === 'paid').length || 0,
+          overdue: fallbackData?.filter(i => i.status === 'overdue').length || 0,
+          cancelled: fallbackData?.filter(i => i.status === 'cancelled').length || 0,
+          totalAmount: fallbackData?.reduce((sum, i) => sum + (i.total_amount || 0), 0) || 0,
+          paidAmount: fallbackData?.filter(i => i.payment_status === 'paid').reduce((sum, i) => sum + (i.total_amount || 0), 0) || 0,
+          pendingAmount: fallbackData?.filter(i => ['pending', 'overdue'].includes(i.status)).reduce((sum, i) => sum + (i.total_amount || 0), 0) || 0,
+        };
+      }
+
+      // RPC returns a single row with all stats
       return {
-        total: data?.length || 0,
-        draft: data?.filter(i => i.status === 'draft').length || 0,
-        pending: data?.filter(i => i.status === 'pending').length || 0,
-        paid: data?.filter(i => i.status === 'paid').length || 0,
-        overdue: data?.filter(i => i.status === 'overdue').length || 0,
-        cancelled: data?.filter(i => i.status === 'cancelled').length || 0,
-        totalAmount: data?.reduce((sum, i) => sum + (i.total || 0), 0) || 0,
-        paidAmount: data?.filter(i => i.status === 'paid').reduce((sum, i) => sum + (i.total || 0), 0) || 0,
-        pendingAmount: data?.filter(i => ['pending', 'overdue'].includes(i.status)).reduce((sum, i) => sum + (i.total || 0), 0) || 0,
+        total: data[0]?.total || 0,
+        draft: data[0]?.draft || 0,
+        pending: data[0]?.pending || 0,
+        paid: data[0]?.paid || 0,
+        overdue: data[0]?.overdue || 0,
+        cancelled: data[0]?.cancelled || 0,
+        totalAmount: Number(data[0]?.total_amount) || 0,
+        paidAmount: Number(data[0]?.paid_amount) || 0,
+        pendingAmount: Number(data[0]?.pending_amount) || 0,
       };
     },
     enabled: !!companyId,

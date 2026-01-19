@@ -3,7 +3,8 @@
  * Utility functions for exporting data to CSV and PDF formats
  */
 
-import html2pdf from 'html2pdf.js';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 
 interface ExportData {
@@ -92,7 +93,7 @@ export const exportAnalyticsToCSV = (analytics: any[], filename: string): void =
 };
 
 /**
- * Export data to PDF format
+ * Export data to PDF format using jsPDF + html2canvas
  * @param elementId - ID of the HTML element to convert to PDF
  * @param filename - Name of the file (without extension)
  * @param options - Optional PDF configuration
@@ -109,20 +110,43 @@ export const exportToPDF = async (
       return;
     }
 
-    const defaultOptions = {
-      margin: [10, 10],
-      filename: `${filename}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-    };
+    // Show loading indicator
+    toast.loading('Generating PDF...');
 
-    const pdfOptions = { ...defaultOptions, ...options };
+    // Convert element to canvas
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      letterRendering: true
+    });
 
-    await html2pdf().set(pdfOptions).from(element).save();
+    // Get canvas dimensions
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
 
+    // Create PDF
+    const doc = new jsPDF('p', 'mm', 'a4');
+    let position = 0;
+
+    // Add image to PDF (handle multi-page)
+    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      doc.addPage();
+      doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // Save PDF
+    doc.save(`${filename}.pdf`);
     toast.success('PDF exported successfully');
+
   } catch (error) {
     console.error('PDF export error:', error);
     toast.error('Failed to export PDF');

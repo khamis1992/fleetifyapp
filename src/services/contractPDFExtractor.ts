@@ -5,19 +5,7 @@
  * Uses hybrid approach with Web Worker for non-blocking processing
  */
 
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Initialize PDF.js worker
-if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.min.mjs',
-      import.meta.url
-    ).toString();
-  } catch {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
-}
+import { loadPDFWorker } from '@/lib/pdfWorker';
 
 export interface ExtractedContractData {
   rawText: string;
@@ -31,6 +19,7 @@ export interface ExtractedContractData {
  */
 export async function extractTextFromPDF(file: File): Promise<ExtractedContractData> {
   try {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
@@ -257,6 +246,7 @@ export async function convertPDFToImage(
   scale: number = 2
 ): Promise<string> {
   try {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const page = await pdf.getPage(pageNumber);
@@ -305,6 +295,7 @@ export async function convertAllPagesToImages(
   scale: number = 3 // Increased for better OCR quality (especially Arabic text)
 ): Promise<string[]> {
   try {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const images: string[] = [];

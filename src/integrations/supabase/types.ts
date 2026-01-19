@@ -25103,6 +25103,41 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: Json
       }
+      get_customer_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          active_customers: number
+          inactive_customers: number
+          total_customers: number
+          with_active_contracts: number
+        }[]
+      }
+      get_invoice_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          cancelled: number
+          draft: number
+          overdue: number
+          paid: number
+          paid_amount: number
+          pending: number
+          pending_amount: number
+          total: number
+          total_amount: number
+        }[]
+      }
+      get_vehicle_stats: {
+        Args: { p_company_id: string }
+        Returns: {
+          active_vehicles: number
+          available_vehicles: number
+          inactive_vehicles: number
+          maintenance_vehicles: number
+          out_of_service_vehicles: number
+          rented_vehicles: number
+          total_vehicles: number
+        }[]
+      }
     }
     Enums: {
       approval_priority: "low" | "medium" | "high" | "urgent"

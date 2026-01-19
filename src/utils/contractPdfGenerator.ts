@@ -18,34 +18,64 @@ export interface ContractPdfData {
 }
 
 export const generateContractPdf = async (contractData: ContractPdfData): Promise<Blob> => {
-  // Lazy load html2pdf.js (380KB) - only when generating PDF
-  const html2pdf = (await import('html2pdf.js')).default;
+  // Lazy load jsPDF and html2canvas
+  const jsPDF = (await import('jspdf')).default;
+  const html2canvas = (await import('html2canvas')).default;
 
   const contractHtml = generateContractHtml(contractData)
 
-  const options = {
-    margin: [10, 10, 10, 10],
-    filename: `contract-${contractData.contract_number}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
+  // Create a temporary container
+  const container = document.createElement('div');
+  container.innerHTML = contractHtml;
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  document.body.appendChild(container);
+
+  try {
+    // Convert to canvas
+    const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
+      logging: false,
       letterRendering: true
-    },
-    jsPDF: { 
-      unit: 'mm', 
-      format: 'a4', 
-      orientation: 'portrait',
-      putOnlyUsedFonts: true
+    });
+
+    // Get image data
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+    // Create PDF
+    const doc = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    });
+
+    const imgWidth = 210; // A4 width in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const pageHeight = 297; // A4 height in mm
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // Add image to PDF
+    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      doc.addPage();
+      doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
     }
+
+    // Return as blob
+    const pdfBlob = doc.output('blob');
+    return pdfBlob;
+
+  } finally {
+    // Clean up
+    document.body.removeChild(container);
   }
-
-  const pdfBlob = await html2pdf()
-    .set(options)
-    .from(contractHtml)
-    .outputPdf('blob')
-
-  return pdfBlob
 }
 
 const generateContractHtml = (data: ContractPdfData): string => {

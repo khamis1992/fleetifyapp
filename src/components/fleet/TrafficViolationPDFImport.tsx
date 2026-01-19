@@ -36,7 +36,6 @@ import { TrafficViolationStats } from './TrafficViolationStats';
 import { ViolationImportReport } from './ViolationImportReport';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import * as pdfjsLib from 'pdfjs-dist';
 import {
   ExtractedViolation,
   MatchedViolation,
@@ -46,25 +45,9 @@ import {
   MATCH_CONFIDENCE_COLORS
 } from '@/types/violations';
 import { useViolationMatching, useViolationSave, useViolationEnrichment, EnrichableViolation } from '@/hooks/useViolationMatching';
+import { loadPDFWorker } from '@/lib/pdfWorker';
 
 export const TrafficViolationPDFImport: React.FC = () => {
-  // Initialize PDF.js worker inside component to avoid module-level issues
-  React.useEffect(() => {
-    // Only initialize worker if not already set
-    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
-          import.meta.url
-        ).toString();
-        console.log('✅ PDF.js worker initialized');
-      } catch (error) {
-        console.error('❌ Failed to initialize PDF.js worker:', error);
-        // Fallback to CDN
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-      }
-    }
-  }, []);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingResult, setProcessingResult] = useState<ImportProcessingResult | null>(null);
@@ -88,6 +71,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
   // Extract text from PDF using pdf.js
   const extractTextFromPDF = async (file: File): Promise<string> => {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
@@ -108,6 +92,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
   // Convert PDF to images (fallback if text extraction fails)
   const convertPDFToImages = async (file: File): Promise<File[]> => {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const images: File[] = [];

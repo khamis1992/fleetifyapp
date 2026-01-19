@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { 
-  FileText, 
-  Download, 
+import {
+  FileText,
+  Download,
   Printer,
   Calendar,
   Hash,
@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
-import html2pdf from "html2pdf.js";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface ProfessionalInvoiceTemplateProps {
   invoice: any;
@@ -105,16 +106,44 @@ export function ProfessionalInvoiceTemplate({
     const element = document.getElementById('invoice-template');
     if (!element) return;
 
-    const opt = {
-      margin: 10,
-      filename: `فاتورة-${invoice.invoice_number}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
     try {
-      await html2pdf().set(opt).from(element).save();
+      // Convert element to canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      // Get image data
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+      // Create PDF
+      const doc = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageHeight = 297; // A4 height in mm
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add image to PDF
+      doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        doc.addPage();
+        doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Save PDF
+      doc.save(`فاتورة-${invoice.invoice_number}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       // Fallback to browser print

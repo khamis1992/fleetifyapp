@@ -28,7 +28,7 @@ export function VehicleMarkingExample() {
 
   return (
     <VehicleMarking
-      vehicleImage="/images/vehicles/sedan-top-view.png"
+      vehicleImage="/images/vehicles/sedan-top-view.webp"
       marks={marks}
       onMarkAdd={handleAddMark}
       onMarkDelete={handleDeleteMark}
@@ -53,7 +53,7 @@ export function VehicleMarkingExample() {
  * 3. Replace the VisualVehicleDiagram component (around line 825) with:
  *
  *    <VehicleMarking
- *      vehicleImage="/images/vehicles/sedan-top-view.png"
+ *      vehicleImage="/images/vehicles/sedan-top-view.webp"
  *      marks={vehicleMarks}
  *      onMarkAdd={(mark) => {
  *        const newMark: VehicleMark = {

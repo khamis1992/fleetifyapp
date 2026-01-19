@@ -363,7 +363,7 @@ export const EXTERIOR_ZONES: VehicleZone[] = [
 ];
 
 // VEHICLE ZONES - Simplified to 10 major zones only
-// Based on clean sedan top view (sedan-top-view.png)
+// Based on clean sedan top view (sedan-top-view.webp)
 // Coordinates based on 500x500 canvas system
 export const INTERIOR_ZONES: VehicleZone[] = [
   // Zone 1: Front Bumper

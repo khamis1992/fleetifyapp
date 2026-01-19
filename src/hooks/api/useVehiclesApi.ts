@@ -187,19 +187,37 @@ export function useVehicleStats() {
         }
       }
 
-      // Fallback
-      const { data } = await supabase
-        .from('vehicles')
-        .select('status, is_active')
-        .eq('company_id', companyId);
+      // Use RPC for optimized stats aggregation (database-side instead of client-side)
+      const { data, error } = await supabase.rpc('get_vehicle_stats', {
+        p_company_id: companyId
+      });
 
+      if (error) {
+        console.error('[Vehicles API] RPC error:', error);
+        // Fallback to original method if RPC fails
+        const { data: fallbackData } = await supabase
+          .from('vehicles')
+          .select('status, is_active')
+          .eq('company_id', companyId);
+
+        return {
+          total: fallbackData?.length || 0,
+          active: fallbackData?.filter(v => v.is_active).length || 0,
+          available: fallbackData?.filter(v => v.status === 'available').length || 0,
+          rented: fallbackData?.filter(v => v.status === 'rented').length || 0,
+          maintenance: fallbackData?.filter(v => v.status === 'maintenance').length || 0,
+          outOfService: fallbackData?.filter(v => v.status === 'out_of_service').length || 0,
+        };
+      }
+
+      // RPC returns a single row with all stats
       return {
-        total: data?.length || 0,
-        active: data?.filter(v => v.is_active).length || 0,
-        available: data?.filter(v => v.status === 'available').length || 0,
-        rented: data?.filter(v => v.status === 'rented').length || 0,
-        maintenance: data?.filter(v => v.status === 'maintenance').length || 0,
-        outOfService: data?.filter(v => v.status === 'out_of_service').length || 0,
+        total: data[0]?.total_vehicles || 0,
+        active: data[0]?.active_vehicles || 0,
+        available: data[0]?.available_vehicles || 0,
+        rented: data[0]?.rented_vehicles || 0,
+        maintenance: data[0]?.maintenance_vehicles || 0,
+        outOfService: data[0]?.out_of_service_vehicles || 0,
       };
     },
     enabled: !!companyId,

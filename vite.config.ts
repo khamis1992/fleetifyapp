@@ -27,41 +27,11 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ['playwright', 'playwright-core', 'chromium-bidi'],
-    force: true, // Force optimization to clear any cached issues
+    // Only include essential packages that need pre-bundling
     include: [
       'react',
       'react-dom',
       'react-router-dom',
-      'pdfjs-dist',
-      'react-dropzone',
-      '@radix-ui/react-accordion',
-      '@radix-ui/react-alert-dialog',
-      '@radix-ui/react-avatar',
-      '@radix-ui/react-checkbox',
-      '@radix-ui/react-collapsible',
-      '@radix-ui/react-context-menu',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-hover-card',
-      '@radix-ui/react-label',
-      '@radix-ui/react-menubar',
-      '@radix-ui/react-navigation-menu',
-      '@radix-ui/react-popover',
-      '@radix-ui/react-progress',
-      '@radix-ui/react-radio-group',
-      '@radix-ui/react-scroll-area',
-      '@radix-ui/react-select',
-      '@radix-ui/react-separator',
-      '@radix-ui/react-slider',
-      '@radix-ui/react-slot',
-      '@radix-ui/react-switch',
-      '@radix-ui/react-tabs',
-      '@radix-ui/react-toast',
-      '@radix-ui/react-toggle',
-      '@radix-ui/react-toggle-group',
-      '@radix-ui/react-tooltip',
-      'framer-motion',
-      'lucide-react',
     ],
   },
   build: {
@@ -84,22 +54,86 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Keep react-router-dom in main entry to avoid lazy loading race conditions
+          // React core - keep together to prevent hook issues
+          if (id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-router/') ||
+              id.includes('node_modules/scheduler/')) {
+            return 'react-core';
+          }
+
+          // Keep react-router-dom in main entry for routing stability
           if (id.includes('react-router-dom')) {
             return undefined;
           }
-          // Keep React, Radix UI, next-themes together to avoid hook issues
-          if (id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/@radix-ui/') ||
-              id.includes('node_modules/next-themes/')) {
-            return 'react-vendor';
+
+          // Heavy charting library - split out (lazy load when charts viewed)
+          if (id.includes('node_modules/recharts/')) {
+            return 'charts';
           }
-          // Query vendor chunk
-          if (id.includes('node_modules/@tanstack/')) {
+
+          // Map library - lazy load when map viewed
+          if (id.includes('node_modules/leaflet/')) {
+            return 'maps';
+          }
+
+          // Animation library - heavy, split out
+          if (id.includes('node_modules/framer-motion/')) {
+            return 'animations';
+          }
+
+          // PDF libraries - already lazy loaded
+          if (id.includes('node_modules/pdfjs-dist/')) {
+            return 'pdf';
+          }
+
+          // OCR library - only for invoice scanning
+          if (id.includes('node_modules/tesseract.js/')) {
+            return 'ocr';
+          }
+
+          // Query library
+          if (id.includes('node_modules/@tanstack/react-query/')) {
             return 'query-vendor';
           }
-          // Let Vite handle recharts/leaflet automatically to avoid initialization issues
+
+          // Supabase client
+          if (id.includes('node_modules/@supabase/supabase-js/')) {
+            return 'supabase';
+          }
+
+          // Date handling library
+          if (id.includes('node_modules/date-fns/') ||
+              id.includes('node_modules/dayjs/')) {
+            return 'date-utils';
+          }
+
+          // Radix UI - keep together for consistency
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'ui';
+          }
+
+          // Icons library
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'icons';
+          }
+
+          // i18n library
+          if (id.includes('node_modules/i18next/') ||
+              id.includes('node_modules/react-i18next/')) {
+            return 'i18n';
+          }
+
+          // Form validation
+          if (id.includes('node_modules/react-hook-form/') ||
+              id.includes('node_modules/@hookform/')) {
+            return 'forms';
+          }
+
+          // Table library
+          if (id.includes('node_modules/@tanstack/react-table/')) {
+            return 'tables';
+          }
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',

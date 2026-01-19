@@ -200,16 +200,33 @@ export function useCustomerStats() {
         }
       }
 
-      const { data } = await supabase
-        .from('customers')
-        .select('is_active')
-        .eq('company_id', companyId);
+      // Use RPC for optimized stats aggregation (database-side instead of client-side)
+      const { data, error } = await supabase.rpc('get_customer_stats', {
+        p_company_id: companyId
+      });
 
+      if (error) {
+        console.error('[Customers API] RPC error:', error);
+        // Fallback to original method if RPC fails
+        const { data: fallbackData } = await supabase
+          .from('customers')
+          .select('is_active')
+          .eq('company_id', companyId);
+
+        return {
+          total: fallbackData?.length || 0,
+          active: fallbackData?.filter(c => c.is_active).length || 0,
+          inactive: fallbackData?.filter(c => !c.is_active).length || 0,
+          withActiveContracts: 0,
+        };
+      }
+
+      // RPC returns a single row with all stats
       return {
-        total: data?.length || 0,
-        active: data?.filter(c => c.is_active).length || 0,
-        inactive: data?.filter(c => !c.is_active).length || 0,
-        withActiveContracts: 0,
+        total: data[0]?.total_customers || 0,
+        active: data[0]?.active_customers || 0,
+        inactive: data[0]?.inactive_customers || 0,
+        withActiveContracts: data[0]?.with_active_contracts || 0,
       };
     },
     enabled: !!companyId,

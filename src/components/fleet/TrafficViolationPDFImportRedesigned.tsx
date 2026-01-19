@@ -67,7 +67,6 @@ import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { PDFViewer } from './PDFViewer';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import * as pdfjsLib from 'pdfjs-dist';
 import {
   ExtractedViolation,
   MatchedViolation,
@@ -80,12 +79,13 @@ import { useViolationMatching, useViolationSave } from '@/hooks/useViolationMatc
 import { useViolationNotifications, NotificationSettings, ViolationNotificationData } from '@/hooks/useViolationNotifications';
 import { ViolationNotificationSettings } from './ViolationNotificationSettings';
 import { cn } from '@/lib/utils';
-import { 
-  detectPaidViolations, 
+import {
+  detectPaidViolations,
   markViolationsAsPaidByCompanyBatch,
   AutoPaymentResult,
-  PaidViolation 
+  PaidViolation
 } from '@/services/autoPaymentDetection';
+import { loadPDFWorker } from '@/lib/pdfWorker';
 
 // ============================================================================
 // Types & Constants
@@ -472,20 +472,6 @@ const ViolationRow: React.FC<{
 // ============================================================================
 
 export const TrafficViolationPDFImportRedesigned: React.FC = () => {
-  // Initialize PDF.js worker
-  React.useEffect(() => {
-    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
-          import.meta.url
-        ).toString();
-      } catch {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-      }
-    }
-  }, []);
-
   // State
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
   const [completedSteps, setCompletedSteps] = useState<Set<ImportStep>>(new Set());
@@ -556,6 +542,7 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
 
   // Extract text from PDF
   const extractTextFromPDF = async (file: File): Promise<string> => {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
@@ -574,6 +561,7 @@ export const TrafficViolationPDFImportRedesigned: React.FC = () => {
 
   // Convert PDF to images
   const convertPDFToImages = async (file: File): Promise<File[]> => {
+    const pdfjsLib = await loadPDFWorker();
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const images: File[] = [];

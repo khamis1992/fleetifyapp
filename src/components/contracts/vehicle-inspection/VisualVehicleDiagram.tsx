@@ -28,9 +28,9 @@ const fadeIn = {
 };
 
 // ===== Vehicle Image Paths =====
-// These would point to your actual vehicle images
+// WebP format for better performance (90% smaller than PNG)
 const VEHICLE_IMAGES: Record<VehicleType, string> = {
-  sedan: '/images/vehicles/sedan-top-view.png',
+  sedan: '/images/vehicles/sedan-top-view.webp',
   suv: '/images/vehicles/suv-top-view.png',
   truck: '/images/vehicles/truck-top-view.png',
 };

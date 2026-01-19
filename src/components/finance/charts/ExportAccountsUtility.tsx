@@ -29,28 +29,65 @@ export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({
   
   const exportToPDF = async () => {
     try {
-      // Dynamic import to avoid bundling html2pdf if not used
-      const html2pdf = (await import('html2pdf.js')).default;
-      
+      // Dynamic import to avoid bundling jsPDF if not used
+      const jsPDF = (await import('jspdf')).default;
+      const html2canvas = (await import('html2canvas')).default;
+
       const element = document.createElement('div');
       element.innerHTML = generateHTMLReport();
       element.style.direction = 'rtl';
       element.style.fontFamily = 'Arial, sans-serif';
-      
-      const opt = {
-        margin: 1,
-        filename: `chart-of-accounts-${new Date().toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().set(opt).from(element).save();
-      
-      toast({
-        title: "تم التصدير بنجاح",
-        description: "تم تصدير دليل الحسابات إلى ملف PDF",
-      });
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      document.body.appendChild(element);
+
+      try {
+        // Convert to canvas
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+
+        // Get image data
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+
+        // Create PDF
+        const doc = new jsPDF({
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait'
+        });
+
+        const imgWidth = 210; // A4 width in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pageHeight = 297; // A4 height in mm
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add image to PDF
+        doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          doc.addPage();
+          doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // Save PDF
+        doc.save(`chart-of-accounts-${new Date().toISOString().split('T')[0]}.pdf`);
+
+        toast({
+          title: "تم التصدير بنجاح",
+          description: "تم تصدير دليل الحسابات إلى ملف PDF",
+        });
+      } finally {
+        // Clean up
+        document.body.removeChild(element);
+      }
     } catch (error) {
       toast({
         title: "خطأ في التصدير",

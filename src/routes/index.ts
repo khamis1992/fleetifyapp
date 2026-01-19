@@ -12,7 +12,7 @@ import type { RouteConfig, RouteGroup, LazyRouteComponent } from './types';
 import Index from '@/pages/Index';
 import PremiumLanding from '@/pages/PremiumLanding';
 import EnterpriseLanding from '@/pages/landing/EnterpriseLanding';
-import Auth from '@/pages/Auth';
+const Auth = lazy(() => import('@/pages/Auth'));
 import Onboarding from '@/pages/onboarding/Onboarding';
 import ResetPassword from '@/pages/ResetPassword';
 import DemoTrial from '@/pages/DemoTrial';
@@ -29,10 +29,10 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
 // Mobile app pages
 const MobileLogin = lazy(() => import('@/pages/mobile/MobileLogin'));
-import { MobileApp } from '@/pages/mobile/MobileApp';
+const MobileApp = lazy(() => import('@/pages/mobile/MobileApp').then(m => ({ default: m.MobileApp })));
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
 const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
-import { MobileCarDetail } from '@/pages/mobile/MobileCarDetail';
+const MobileCarDetail = lazy(() => import('@/pages/mobile/MobileCarDetail').then(m => ({ default: m.MobileCarDetail })));
 const MobileCustomerDetails = lazy(() => import('@/pages/mobile/MobileCustomerDetails'));
 const MobileCustomerForm = lazy(() => import('@/pages/mobile/MobileCustomerForm'));
 
@@ -225,7 +225,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/auth',
     component: Auth,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Authentication',
     description: 'Login and registration',
@@ -330,7 +330,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/home',
     component: MobileApp,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Mobile App',
     description: 'Mobile app main interface',
@@ -341,7 +341,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/cars',
     component: MobileAppCars,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Mobile Cars',
     description: 'Mobile cars list',
@@ -352,7 +352,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/contracts',
     component: MobileAppContracts,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Mobile Contracts',
     description: 'Mobile contracts list',
@@ -363,7 +363,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/overdue',
     component: MobileAppOverdue,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Mobile Overdue',
     description: 'Mobile overdue contracts',
@@ -374,7 +374,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/customers',
     component: MobileAppCustomers,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Mobile Customers',
     description: 'Mobile customers list',
@@ -407,7 +407,7 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/mobile/cars/:vehicleId',
     component: MobileCarDetail,
-    lazy: false,
+    lazy: true,
     exact: true,
     title: 'Mobile Vehicle Details',
     description: 'Mobile vehicle details',

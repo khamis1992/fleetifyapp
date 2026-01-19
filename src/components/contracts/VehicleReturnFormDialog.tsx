@@ -812,7 +812,7 @@ export const VehicleReturnFormDialog = ({
                 </div>
 
                 <VehicleMarking
-                  vehicleImage="/images/vehicles/sedan-top-view.png"
+                  vehicleImage="/images/vehicles/sedan-top-view.webp"
                   marks={vehicleMarks}
                   onMarkAdd={handleAddMark}
                   onMarkDelete={handleDeleteMark}
