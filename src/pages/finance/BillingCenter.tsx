@@ -1,0 +1,930 @@
+/**
+ * مركز الفواتير والمدفوعات الموحد
+ * تصميم بسيط ومتوافق مع الداشبورد
+ * يشمل: الفواتير + المدفوعات + الودائع + الإيجارات
+ */
+import { useState, useMemo, Suspense, lazy, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
+
+// Lazy load additional tabs
+const Deposits = lazy(() => import("./Deposits"));
+const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
+import { useInvoices } from "@/hooks/finance/useInvoices";
+import { usePayments } from "@/hooks/useFinance";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { InvoiceForm } from "@/components/finance/InvoiceForm";
+import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
+import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog";
+import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
+import { UnifiedPaymentForm } from "@/components/finance/UnifiedPaymentForm";
+import { PaymentPreviewDialog } from "@/components/finance/PaymentPreviewDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { 
+  Receipt, 
+  CreditCard,
+  Plus, 
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  Loader2,
+  Send,
+  Wallet,
+  CalendarDays,
+  XCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
+
+// ===== Stat Card Component =====
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  iconBg: string;
+  trend?: 'up' | 'down' | 'neutral';
+  change?: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconBg,
+  trend = 'neutral',
+  change,
+}) => (
+  <motion.div 
+    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <div className="flex items-center justify-between mb-3">
+      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', iconBg)}>
+        <Icon className="w-5 h-5" />
+      </div>
+      {change && (
+        <span className={cn(
+          'px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1',
+          trend === 'up' ? 'bg-green-100 text-green-600' : 
+          trend === 'down' ? 'bg-red-100 text-red-600' : 
+          'bg-neutral-100 text-neutral-600'
+        )}>
+          {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : 
+           trend === 'down' ? <TrendingDown className="w-3 h-3" /> : null}
+          {change}
+        </span>
+      )}
+    </div>
+    <p className="text-xs text-neutral-500 font-medium mb-1">{title}</p>
+    <p className="text-2xl font-bold text-neutral-900">{value}</p>
+    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
+  </motion.div>
+);
+
+// ===== Main Component =====
+const BillingCenter = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { formatCurrency } = useCurrencyFormatter();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // State - use URL params for tab
+  const activeTab = searchParams.get("tab") || "invoices";
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  
+  // Invoice states
+  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<any>(null);
+  const [showPayDialog, setShowPayDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
+  
+  // Payment states
+  const [isCreatePaymentOpen, setIsCreatePaymentOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [isPaymentPreviewOpen, setIsPaymentPreviewOpen] = useState(false);
+  const [isCancelPaymentDialogOpen, setIsCancelPaymentDialogOpen] = useState(false);
+  const [paymentToCancel, setPaymentToCancel] = useState<any>(null);
+  const [cancelReason, setCancelReason] = useState<string>("");
+
+  const { cancelPayment } = usePaymentOperations();
+
+  // Data fetching
+  const { data: invoicesData, isLoading: invoicesLoading } = useInvoices({ pageSize: 100 });
+  const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
+
+  // Extract data
+  const invoices = useMemo(() => {
+    if (Array.isArray(invoicesData)) return invoicesData;
+    if (invoicesData?.data) return invoicesData.data;
+    return [];
+  }, [invoicesData]);
+
+  const payments = useMemo(() => {
+    if (Array.isArray(paymentsData)) return paymentsData;
+    return [];
+  }, [paymentsData]);
+
+  // Statistics
+  const stats = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // حساب بداية ونهاية الشهر الحالي
+    const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+    const startOfLastMonth = new Date(currentYear, currentMonth - 1, 1);
+    const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1);
+    
+    // إجمالي الفواتير
+    const totalInvoices = invoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
+    const paidInvoices = invoices.filter(inv => inv?.payment_status === 'paid')
+      .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
+    const pendingInvoices = invoices.filter(inv => inv?.payment_status === 'pending' || inv?.payment_status === 'partial')
+      .reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
+    const totalPayments = payments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
+
+    // مدفوعات الشهر الحالي
+    const currentMonthPayments = payments.filter(pmt => {
+      const paymentDate = new Date(pmt?.payment_date);
+      return paymentDate >= startOfCurrentMonth && paymentDate < startOfNextMonth;
+    });
+    const currentMonthTotal = currentMonthPayments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
+    
+    // مدفوعات الشهر السابق
+    const lastMonthPayments = payments.filter(pmt => {
+      const paymentDate = new Date(pmt?.payment_date);
+      return paymentDate >= startOfLastMonth && paymentDate < startOfCurrentMonth;
+    });
+    const lastMonthTotal = lastMonthPayments.reduce((sum, pmt) => sum + (Number(pmt?.amount) || 0), 0);
+    
+    // نسبة التغيير
+    const monthlyChange = lastMonthTotal > 0 
+      ? Math.round(((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100)
+      : currentMonthTotal > 0 ? 100 : 0;
+
+    // فواتير الشهر الحالي
+    const currentMonthInvoices = invoices.filter(inv => {
+      const invoiceDate = new Date(inv?.invoice_date);
+      return invoiceDate >= startOfCurrentMonth && invoiceDate < startOfNextMonth;
+    });
+    const currentMonthInvoicesTotal = currentMonthInvoices.reduce((sum, inv) => sum + (inv?.total_amount || 0), 0);
+
+    return {
+      totalInvoices,
+      paidInvoices,
+      pendingInvoices,
+      totalPayments,
+      invoiceCount: invoices.length,
+      paymentCount: payments.length,
+      // إحصائيات الشهر الحالي
+      currentMonthPayments: currentMonthTotal,
+      currentMonthPaymentsCount: currentMonthPayments.length,
+      lastMonthPayments: lastMonthTotal,
+      monthlyChange,
+      currentMonthInvoices: currentMonthInvoicesTotal,
+      currentMonthInvoicesCount: currentMonthInvoices.length,
+    };
+  }, [invoices, payments]);
+
+  // Filtered data
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(inv => {
+      const matchesSearch = inv?.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        inv?.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        inv?.customers?.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === "all" || inv?.payment_status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [invoices, searchTerm, filterStatus]);
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter(pmt => {
+      const matchesSearch = pmt?.payment_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pmt?.customers?.first_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === "all" || pmt?.payment_status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [payments, searchTerm, filterStatus]);
+
+  // Delete invoice mutation
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('invoice_id', invoiceId)
+        .limit(1);
+
+      if (payments && payments.length > 0) {
+        throw new Error('لا يمكن حذف الفاتورة لأنها مرتبطة بدفعات');
+      }
+
+      await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
+      const { error } = await supabase.from('invoices').delete().eq('id', invoiceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast.success('تم حذف الفاتورة بنجاح');
+      setDeleteDialogOpen(false);
+      setInvoiceToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'فشل حذف الفاتورة');
+    }
+  });
+
+  // Helper functions
+  const getStatusBadge = (status: string) => {
+    const configs: Record<string, { label: string; className: string }> = {
+      paid: { label: 'مدفوعة', className: 'bg-green-100 text-green-700' },
+      unpaid: { label: 'غير مدفوعة', className: 'bg-slate-100 text-slate-700' },
+      pending: { label: 'معلقة', className: 'bg-yellow-100 text-yellow-700' },
+      partial: { label: 'جزئية', className: 'bg-blue-100 text-blue-700' },
+      overdue: { label: 'متأخرة', className: 'bg-red-100 text-red-700' },
+      cancelled: { label: 'ملغاة', className: 'bg-slate-100 text-slate-700' },
+      completed: { label: 'مكتملة', className: 'bg-green-100 text-green-700' },
+      confirmed: { label: 'مؤكدة', className: 'bg-green-100 text-green-700' },
+    };
+    const config = configs[status] || { label: status, className: 'bg-slate-100 text-slate-700' };
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  const openCancelPaymentDialog = (payment: any) => {
+    setPaymentToCancel(payment);
+    setCancelReason("");
+    setIsCancelPaymentDialogOpen(true);
+  };
+
+  const confirmCancelPayment = async () => {
+    if (!paymentToCancel?.id) {
+      toast.error('لم يتم تحديد الدفعة');
+      return;
+    }
+
+    cancelPayment.mutate(
+      {
+        paymentId: paymentToCancel.id,
+        reason: cancelReason?.trim() || `تم الإلغاء من صفحة الفواتير والمدفوعات`,
+      },
+      {
+        onSuccess: () => {
+          // Refresh local lists
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+          queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['contract-payments'] });
+
+          setIsCancelPaymentDialogOpen(false);
+          setPaymentToCancel(null);
+          setCancelReason("");
+        },
+        onError: (error: any) => {
+          console.error('Error cancelling payment:', error);
+          toast.error(error?.message || 'فشل إلغاء الدفعة');
+        },
+      }
+    );
+  };
+
+  const formatDate = (date: string) => {
+    try {
+      return format(new Date(date), 'dd MMM yyyy', { locale: ar });
+    } catch {
+      return date;
+    }
+  };
+
+  // Send payment voucher via WhatsApp
+  const handleSendPaymentVoucher = async (payment: any) => {
+    // Get customer phone
+    let phone = payment.customers?.phone || '';
+    
+    if (!phone) {
+      toast.error('لا يوجد رقم هاتف للعميل');
+      return;
+    }
+
+    // Clean and format phone number
+    phone = phone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+    if (phone.startsWith('0')) {
+      phone = '974' + phone.substring(1);
+    } else if (!phone.startsWith('+') && !phone.startsWith('974')) {
+      phone = '974' + phone;
+    }
+    phone = phone.replace('+', '');
+
+    // Get customer name
+    const customerName = payment.customers?.company_name || 
+      `${payment.customers?.first_name || ''} ${payment.customers?.last_name || ''}`.trim() || 'العميل';
+
+    // Get payment method in Arabic
+    const paymentMethodAr = payment.payment_method === 'cash' ? 'نقدي' :
+      payment.payment_method === 'card' ? 'بطاقة' :
+      payment.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
+      payment.payment_method === 'cheque' ? 'شيك' : 
+      payment.payment_method === 'received' ? 'مستلم' : payment.payment_method;
+
+    // Create clean message without emojis
+    const message = `مرحباً ${customerName}،
+
+تم استلام دفعتكم بنجاح
+
+رقم الإيصال: ${payment.payment_number || '-'}
+المبلغ: ${formatCurrency(Number(payment.amount))}
+التاريخ: ${formatDate(payment.payment_date)}
+طريقة الدفع: ${paymentMethodAr}
+
+شكراً لتعاملكم معنا
+
+شركة العراف لتأجير السيارات`;
+
+    // First, open the preview dialog to show the receipt
+    setSelectedPayment(payment);
+    setIsPaymentPreviewOpen(true);
+
+    // Wait a bit for the dialog to render, then show instructions
+    setTimeout(() => {
+      toast.info('اضغط على زر الطباعة أو التحميل في نافذة الإيصال، ثم سيتم فتح واتساب');
+    }, 500);
+
+    // Open WhatsApp after a delay
+    setTimeout(() => {
+      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+      {/* Header */}
+      <motion.div 
+        className="mb-8"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
+              <Receipt className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-900">مركز الفواتير والمدفوعات</h1>
+              <p className="text-neutral-500">إدارة الفواتير والمدفوعات في مكان واحد</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setIsCreateInvoiceOpen(true)}
+              className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              فاتورة جديدة
+            </Button>
+            <Button 
+              onClick={() => setIsCreatePaymentOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <CreditCard className="w-4 h-4" />
+              تسجيل دفعة
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Monthly Summary - New Section */}
+      <motion.div 
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-lg font-semibold opacity-90 mb-1">ملخص الشهر الحالي</h2>
+            <p className="text-3xl font-bold">{formatCurrency(stats.currentMonthPayments)}</p>
+            <p className="text-sm opacity-80 mt-1">
+              {stats.currentMonthPaymentsCount} دفعة تم استلامها هذا الشهر
+            </p>
+          </div>
+          <div className="text-center">
+              <p className="text-sm opacity-80">فواتير الشهر</p>
+              <p className="text-xl font-bold">{formatCurrency(stats.currentMonthInvoices)}</p>
+              <p className="text-xs opacity-70">{stats.currentMonthInvoicesCount} فاتورة</p>
+            </div>
+        </div>
+      </motion.div>
+
+      {/* Statistics Cards - تظهر فقط في تبويبة الفواتير */}
+      {activeTab === "invoices" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard
+            title="إجمالي الفواتير"
+            value={formatCurrency(stats.totalInvoices)}
+            subtitle={`${stats.invoiceCount} فاتورة`}
+            icon={Receipt}
+            iconBg="bg-blue-100 text-blue-600"
+          />
+          <StatCard
+            title="المدفوع"
+            value={formatCurrency(stats.paidInvoices)}
+            icon={CheckCircle}
+            iconBg="bg-green-100 text-green-600"
+            trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+            change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+          />
+          <StatCard
+            title="المستحق"
+            value={formatCurrency(stats.pendingInvoices)}
+            icon={Clock}
+            iconBg="bg-yellow-100 text-yellow-600"
+          />
+          <StatCard
+            title="مدفوعات هذا الشهر"
+            value={formatCurrency(stats.currentMonthPayments)}
+            subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
+            icon={CreditCard}
+            iconBg="bg-purple-100 text-purple-600"
+            trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
+            change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
+          />
+        </div>
+      )}
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex items-center justify-between">
+          <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger 
+              value="invoices" 
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <Receipt className="w-4 h-4 ml-2" />
+              الفواتير
+            </TabsTrigger>
+            <TabsTrigger 
+              value="payments"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <CreditCard className="w-4 h-4 ml-2" />
+              المدفوعات
+            </TabsTrigger>
+            <TabsTrigger 
+              value="deposits"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <Wallet className="w-4 h-4 ml-2" />
+              الودائع
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rent"
+              className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"
+            >
+              <CalendarDays className="w-4 h-4 ml-2" />
+              الإيجارات
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Search & Filter */}
+          <div className="flex gap-3">
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Input
+                placeholder="بحث..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10 w-64 bg-white rounded-xl border-0 shadow-sm"
+              />
+            </div>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-40 bg-white rounded-xl border-0 shadow-sm">
+                <SelectValue placeholder="الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="paid">مدفوعة</SelectItem>
+                <SelectItem value="pending">معلقة</SelectItem>
+                <SelectItem value="partial">جزئية</SelectItem>
+                <SelectItem value="overdue">متأخرة</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Invoices Tab */}
+        <TabsContent value="invoices">
+          <motion.div 
+            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {invoicesLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+              </div>
+            ) : filteredInvoices.length === 0 ? (
+              <div className="text-center py-20">
+                <Receipt className="w-16 h-16 mx-auto text-neutral-300 mb-4" />
+                <p className="text-neutral-500">لا توجد فواتير</p>
+                <Button 
+                  onClick={() => setIsCreateInvoiceOpen(true)}
+                  className="mt-4 bg-rose-500 hover:bg-coral-600"
+                >
+                  إنشاء فاتورة جديدة
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-neutral-50">
+                    <TableHead className="text-right">رقم الفاتورة</TableHead>
+                    <TableHead className="text-right">العميل</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-center">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.slice(0, 20).map((invoice) => (
+                    <TableRow key={invoice.id} className="hover:bg-neutral-50">
+                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                      <TableCell>
+                        {invoice.customers?.company_name || 
+                         `${invoice.customers?.first_name || ''} ${invoice.customers?.last_name || ''}`}
+                      </TableCell>
+                      <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(invoice.total_amount)}</TableCell>
+                      <TableCell>{getStatusBadge(invoice.payment_status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setSelectedInvoice(invoice); setIsPreviewOpen(true); }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingInvoice(invoice)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {invoice.payment_status !== 'paid' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-green-600"
+                              onClick={() => { setSelectedInvoice(invoice); setShowPayDialog(true); }}
+                            >
+                              <DollarSign className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600"
+                            onClick={() => { setInvoiceToDelete(invoice); setDeleteDialogOpen(true); }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </motion.div>
+        </TabsContent>
+
+        {/* Payments Tab */}
+        <TabsContent value="payments">
+          <motion.div 
+            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {paymentsLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+              </div>
+            ) : filteredPayments.length === 0 ? (
+              <div className="text-center py-20">
+                <CreditCard className="w-16 h-16 mx-auto text-neutral-300 mb-4" />
+                <p className="text-neutral-500">لا توجد مدفوعات</p>
+                <Button 
+                  onClick={() => setIsCreatePaymentOpen(true)}
+                  className="mt-4 bg-rose-500 hover:bg-coral-600"
+                >
+                  تسجيل دفعة جديدة
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-neutral-50">
+                    <TableHead className="text-right">رقم الدفعة</TableHead>
+                    <TableHead className="text-right">العميل</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">طريقة الدفع</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-center">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPayments.slice(0, 20).map((payment) => (
+                    <TableRow key={payment.id} className="hover:bg-neutral-50">
+                      <TableCell className="font-medium">{payment.payment_number || '-'}</TableCell>
+                      <TableCell>
+                        {payment.customers?.company_name || 
+                         `${payment.customers?.first_name || ''} ${payment.customers?.last_name || ''}`}
+                      </TableCell>
+                      <TableCell>{formatDate(payment.payment_date)}</TableCell>
+                      <TableCell className="font-semibold text-green-600">
+                        {formatCurrency(Number(payment.amount))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {payment.payment_method === 'cash' ? 'نقدي' :
+                           payment.payment_method === 'card' ? 'بطاقة' :
+                           payment.payment_method === 'bank_transfer' ? 'تحويل' :
+                           payment.payment_method === 'cheque' ? 'شيك' : payment.payment_method}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(payment.payment_status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setSelectedPayment(payment); setIsPaymentPreviewOpen(true); }}
+                            title="معاينة"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-green-600"
+                            onClick={() => handleSendPaymentVoucher(payment)}
+                            title="إرسال عبر واتساب"
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                          {payment?.payment_status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600"
+                              onClick={() => openCancelPaymentDialog(payment)}
+                              title="إلغاء الدفعة"
+                              disabled={cancelPayment.isPending}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </motion.div>
+        </TabsContent>
+
+        {/* Deposits Tab */}
+        <TabsContent value="deposits">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Deposits />
+            </Suspense>
+          </motion.div>
+        </TabsContent>
+
+        {/* Monthly Rent Tracking Tab */}
+        <TabsContent value="rent">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <MonthlyRentTracking />
+            </Suspense>
+          </motion.div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialogs */}
+      {/* Create Invoice Dialog */}
+      <Dialog open={isCreateInvoiceOpen} onOpenChange={setIsCreateInvoiceOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
+          </DialogHeader>
+          <InvoiceForm 
+            onSuccess={() => {
+              setIsCreateInvoiceOpen(false);
+              queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            }}
+            onCancel={() => setIsCreateInvoiceOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Payment Dialog */}
+      <UnifiedPaymentForm
+        open={isCreatePaymentOpen}
+        onOpenChange={setIsCreatePaymentOpen}
+        type="customer_payment"
+        onSuccess={() => {
+          setIsCreatePaymentOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+        }}
+        onCancel={() => setIsCreatePaymentOpen(false)}
+      />
+
+      {/* Invoice Preview */}
+      {selectedInvoice && isPreviewOpen && (
+        <InvoicePreviewDialog
+          invoice={selectedInvoice}
+          open={isPreviewOpen}
+          onOpenChange={setIsPreviewOpen}
+        />
+      )}
+
+      {/* Invoice Edit */}
+      {editingInvoice && (
+        <InvoiceEditDialog
+          invoice={editingInvoice}
+          open={!!editingInvoice}
+          onOpenChange={(open) => !open && setEditingInvoice(null)}
+          onSuccess={() => {
+            setEditingInvoice(null);
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          }}
+        />
+      )}
+
+      {/* Pay Invoice */}
+      {selectedInvoice && showPayDialog && (
+        <PayInvoiceDialog
+          invoice={selectedInvoice}
+          open={showPayDialog}
+          onOpenChange={setShowPayDialog}
+          onSuccess={() => {
+            setShowPayDialog(false);
+            setSelectedInvoice(null);
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+          }}
+        />
+      )}
+
+      {/* Payment Preview */}
+      {selectedPayment && isPaymentPreviewOpen && (
+        <PaymentPreviewDialog
+          payment={selectedPayment}
+          open={isPaymentPreviewOpen}
+          onOpenChange={setIsPaymentPreviewOpen}
+        />
+      )}
+
+      {/* Cancel Payment Confirmation */}
+      <AlertDialog open={isCancelPaymentDialogOpen} onOpenChange={setIsCancelPaymentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              تأكيد إلغاء الدفعة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-3">
+              <p>هل أنت متأكد من إلغاء هذه الدفعة؟ سيتم تحديث الفاتورة المرتبطة تلقائياً.</p>
+              {paymentToCancel && (
+                <div className="bg-neutral-50 rounded-lg p-3 text-sm space-y-1">
+                  <p><strong>رقم الدفعة:</strong> {paymentToCancel.payment_number || '-'}</p>
+                  <p><strong>المبلغ:</strong> {formatCurrency(Number(paymentToCancel.amount) || 0)}</p>
+                  <p><strong>التاريخ:</strong> {paymentToCancel.payment_date ? formatDate(paymentToCancel.payment_date) : '-'}</p>
+                  <p><strong>الفاتورة:</strong> {paymentToCancel?.invoices?.invoice_number || paymentToCancel?.invoice?.invoice_number || '-'}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">سبب الإلغاء (اختياري)</p>
+                <Textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="اكتب سبب الإلغاء..."
+                  rows={2}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelPayment.isPending}>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelPayment}
+              disabled={cancelPayment.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {cancelPayment.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  جاري الإلغاء...
+                </>
+              ) : (
+                'تأكيد الإلغاء'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف الفاتورة رقم {invoiceToDelete?.invoice_number}؟
+              لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => invoiceToDelete && deleteInvoiceMutation.mutate(invoiceToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteInvoiceMutation.isPending}
+            >
+              {deleteInvoiceMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin ml-2" />
+              ) : null}
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default BillingCenter;
+

@@ -1,0 +1,3083 @@
+/**
+ * Customer Details Profile Page - Professional SaaS Redesign
+ * Modern Stripe/Linear/Vercel inspired design with refined animations
+ *
+ * @component CustomerDetailsPage
+ */
+
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
+import {
+  useCustomerDocuments,
+  useUploadCustomerDocument,
+  useDeleteCustomerDocument,
+  useDownloadCustomerDocument
+} from '@/hooks/useCustomerDocuments';
+import { useCustomerCRMActivity, CustomerActivity, AddActivityInput } from '@/hooks/useCustomerCRMActivity';
+import { format, differenceInDays } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowRight,
+  Bell,
+  Settings,
+  Edit3,
+  FileText,
+  Archive,
+  Trash2,
+  CheckCircle,
+  Hash,
+  Calendar,
+  Clock,
+  Mail,
+  Phone,
+  MapPin,
+  Cake,
+  CreditCard,
+  Briefcase,
+  User,
+  Wallet,
+  TrendingUp,
+  Car,
+  Plus,
+  Eye,
+  RefreshCw,
+  Star,
+  Landmark,
+  Banknote,
+  Smartphone,
+  ChevronRight,
+  ChevronLeft,
+  Download,
+  Upload,
+  Folder,
+  Activity,
+  AlertTriangle,
+  FileX,
+  Sparkles,
+  Shield,
+  MessageSquare,
+  PhoneCall,
+  Globe,
+  Building2,
+  IdCard,
+  FileImage,
+  MoreVertical,
+  Printer,
+  Share2,
+  Send,
+  PhoneOff,
+  PhoneIncoming,
+  Loader2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+import { UnifiedPaymentForm } from '@/components/finance/UnifiedPaymentForm';
+import { EnhancedCustomerForm } from '@/components/customers/EnhancedCustomerForm';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+};
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 200,
+      damping: 20,
+    },
+  },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 200,
+      damping: 15,
+    },
+  },
+};
+
+// ===== Helper Functions =====
+
+// Validate Qatari QID (11 digits)
+const isValidQatarQID = (qid: string | null | undefined): boolean => {
+  if (!qid) return false;
+  const cleanQID = qid.replace(/\D/g, '');
+  return cleanQID.length === 11;
+};
+
+// Validate Qatari phone number (starts with 3, 5, 6, 7)
+const isValidQatarPhone = (phone: string | null | undefined): boolean => {
+  if (!phone) return false;
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (cleanPhone.startsWith('974')) {
+    const localNumber = cleanPhone.substring(3);
+    return localNumber.length === 8 && /^[3567]/.test(localNumber);
+  }
+  return cleanPhone.length === 8 && /^[3567]/.test(cleanPhone);
+};
+
+// ===== Components =====
+
+// MissingDataWarnings Component
+const MissingDataWarnings = ({ customer }: { customer: any }) => {
+  const { missingFields, invalidFields } = useMemo(() => {
+    const missing: { label: string; priority: 'high' | 'medium' | 'low' }[] = [];
+    const invalid: { label: string; value: string }[] = [];
+
+    if (!customer.national_id && !customer.qid) {
+      missing.push({ label: 'الهوية الوطنية / QID', priority: 'high' });
+    } else {
+      const qid = customer.qid || customer.national_id;
+      if (qid && !isValidQatarQID(qid)) {
+        invalid.push({ label: 'QID غير صحيح', value: qid });
+      }
+    }
+    if (!customer.driver_license) {
+      missing.push({ label: 'رخصة القيادة', priority: 'high' });
+    }
+
+    if (customer.phone && !isValidQatarPhone(customer.phone)) {
+      invalid.push({ label: 'رقم الهاتف غير قياسي', value: customer.phone });
+    }
+
+    if (!customer.address) {
+      missing.push({ label: 'العنوان', priority: 'medium' });
+    }
+    if (!customer.email) {
+      missing.push({ label: 'البريد الإلكتروني', priority: 'medium' });
+    }
+    if (!customer.date_of_birth) {
+      missing.push({ label: 'تاريخ الميلاد', priority: 'low' });
+    }
+
+    return { missingFields: missing, invalidFields: invalid };
+  }, [customer]);
+
+  if (missingFields.length === 0 && invalidFields.length === 0) return null;
+
+  const highPriorityCount = missingFields.filter(f => f.priority === 'high').length;
+  const hasIssues = highPriorityCount > 0 || invalidFields.length > 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "mb-4 p-4 rounded-xl border flex items-start gap-3",
+        hasIssues ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200"
+      )}
+    >
+      <AlertTriangle className={cn(
+        "w-5 h-5 mt-0.5",
+        hasIssues ? "text-amber-500" : "text-blue-500"
+      )} />
+      <div className="flex-1">
+        {missingFields.length > 0 && (
+          <>
+            <h4 className={cn(
+              "text-sm font-bold mb-1",
+              hasIssues ? "text-amber-800" : "text-blue-800"
+            )}>
+              بيانات ناقصة ({missingFields.length})
+            </h4>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {missingFields.map((field, idx) => (
+                <Badge
+                  key={idx}
+                  className={cn(
+                    "text-xs",
+                    field.priority === 'high' ? "bg-red-100 text-red-700" :
+                    field.priority === 'medium' ? "bg-amber-100 text-amber-700" :
+                    "bg-neutral-100 text-neutral-600"
+                  )}
+                >
+                  {field.label}
+                </Badge>
+              ))}
+            </div>
+          </>
+        )}
+        {invalidFields.length > 0 && (
+          <>
+            <h4 className="text-sm font-bold mb-1 text-orange-800">
+              بيانات غير صحيحة ({invalidFields.length})
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {invalidFields.map((field, idx) => (
+                <Badge key={idx} className="text-xs bg-orange-100 text-orange-700">
+                  {field.label}
+                </Badge>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+// Empty State Component
+const EmptyState = ({
+  icon: Icon,
+  title,
+  description,
+  action
+}: {
+  icon: any;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) => (
+  <motion.div
+    variants={scaleIn}
+    initial="hidden"
+    animate="visible"
+    className="flex flex-col items-center justify-center py-16 px-6 text-center"
+  >
+    <div className="relative mb-6">
+      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 to-rose-600/20 rounded-full blur-3xl" />
+      <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+        <Icon className="w-10 h-10 text-slate-400" strokeWidth={1.5} />
+      </div>
+    </div>
+    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+      {title}
+    </h3>
+    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mb-6">
+      {description}
+    </p>
+    {action}
+  </motion.div>
+);
+
+// Stats Card Component
+const StatsCard = ({
+  icon: Icon,
+  label,
+  value,
+  gradient,
+  iconBg,
+  trend,
+  suffix,
+  progress
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  gradient: string;
+  iconBg: string;
+  trend?: string;
+  suffix?: string;
+  progress?: number;
+}) => (
+  <motion.div
+    variants={itemVariants}
+    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    className="relative group"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-rose-500/0 to-rose-600/0 group-hover:from-rose-500/5 group-hover:to-rose-600/5 rounded-2xl transition-all duration-300" />
+    <div className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300">
+      <div className={cn(
+        "w-14 h-14 rounded-2xl flex items-center justify-center mb-4",
+        iconBg
+      )}>
+        <Icon className={cn("w-7 h-7", gradient)} strokeWidth={2} />
+      </div>
+      <div className="mb-1">
+        <span className="text-3xl font-bold bg-gradient-to-br from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+          {value}
+        </span>
+        {suffix && (
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mr-2">
+            {suffix}
+          </span>
+        )}
+      </div>
+      <div className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">
+        {label}
+      </div>
+      {progress !== undefined && (
+        <div className="mt-4">
+          <Progress value={progress} className="h-1.5 bg-slate-100 dark:bg-slate-800" />
+        </div>
+      )}
+      {trend && (
+        <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          {trend}
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
+
+// Info Item Component
+const InfoItem = ({
+  icon: Icon,
+  label,
+  value,
+  iconBg,
+  iconGradient
+}: {
+  icon: any;
+  label: string;
+  value: string | number;
+  iconBg: string;
+  iconGradient: string;
+}) => (
+  <motion.div
+    variants={itemVariants}
+    whileHover={{ scale: 1.02 }}
+    className="group"
+  >
+    <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 hover:shadow-md transition-all duration-200">
+      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0", iconBg)}>
+        <Icon className={cn("w-5 h-5", iconGradient)} strokeWidth={2} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+          {label}
+        </div>
+        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+          {value || '-'}
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// ===== Tab Components =====
+
+// Personal Info Tab Component
+const PersonalInfoTab = ({ customer }: { customer: any }) => {
+  const infoItems = [
+    { label: 'صاحب العمل', value: customer.employer || '-', icon: Building2 },
+    { label: 'المجموعة', value: customer.group_name || 'عميل عادي', icon: User },
+    { label: 'الاسم الكامل', value: `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() || '-', icon: User },
+    { label: 'المنصب', value: customer.job_title || '-', icon: Briefcase },
+    { label: 'الاسم الأول', value: customer.first_name_ar || customer.first_name || '-', icon: User },
+    { label: 'الاسم الأوسط', value: customer.middle_name || '-', icon: User },
+    { label: 'اسم العائلة', value: customer.last_name_ar || customer.last_name || '-', icon: User },
+  ];
+
+  const addressItems = [
+    { label: 'الرقم الفيدرالي', value: customer.national_id || '-' },
+    { label: 'العنوان 1', value: customer.address || '-' },
+    { label: 'العنوان 2', value: customer.address_2 || '-' },
+    { label: 'المدينة', value: customer.city || '-' },
+    { label: 'المنطقة', value: customer.state || '-' },
+    { label: 'البلد', value: customer.country || 'قطر' },
+    { label: 'الرمز البريدي', value: customer.postal_code || '-' },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+    >
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4">معلومات العميل</h4>
+        <div className="grid grid-cols-2 gap-4">
+          {infoItems.map((item, index) => (
+            <div key={index} className="space-y-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4">معلومات العنوان</h4>
+        <div className="grid grid-cols-2 gap-4">
+          {addressItems.map((item, index) => (
+            <div key={index} className="space-y-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400">{item.label}</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Phone Numbers Tab Component
+const PhoneNumbersTab = ({ customer }: { customer: any }) => {
+  const phones = [
+    { type: 'رئيسي', number: customer.phone, icon: Phone },
+    { type: 'ثانوي', number: customer.secondary_phone || '-', icon: Phone },
+    { type: 'عمل', number: customer.work_phone || '-', icon: Briefcase },
+    { type: 'واتساب', number: customer.whatsapp || customer.phone || '-', icon: MessageSquare },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {phones.map((phone, index) => {
+          const isValid = phone.number !== '-' && isValidQatarPhone(phone.number);
+          const hasNumber = phone.number && phone.number !== '-';
+
+          return (
+            <div
+              key={index}
+              className={cn(
+                "p-4 rounded-xl border transition-colors",
+                hasNumber && !isValid
+                  ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+                  : "bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800"
+              )}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    hasNumber && !isValid ? "bg-amber-100 dark:bg-amber-900/30" : "bg-rose-100 dark:bg-rose-900/30"
+                  )}>
+                    <phone.icon className={cn(
+                      "w-5 h-5",
+                      hasNumber && !isValid ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"
+                    )} />
+                  </div>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{phone.type}</span>
+                </div>
+                {hasNumber && (
+                  <Badge className={cn(
+                    "text-[10px]",
+                    isValid ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                  )}>
+                    {isValid ? 'صحيح' : 'غير قياسي'}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-lg font-bold text-slate-900 dark:text-slate-100 font-mono" dir="ltr">
+                {phone.number}
+              </p>
+              {phone.number !== '-' && (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-rose-600 hover:text-rose-700 dark:text-rose-400 p-0 h-auto"
+                    onClick={() => window.open(`tel:${phone.number}`, '_self')}
+                  >
+                    <PhoneCall className="w-4 h-4 mr-1" />
+                    اتصال
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 p-0 h-auto"
+                    onClick={() => window.open(`https://wa.me/${phone.number.replace(/[^0-9]/g, '')}`, '_blank')}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    واتساب
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+};
+
+// Notes Tab Component - CRM Integration
+const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerPhone?: string }) => {
+  const [newNote, setNewNote] = useState('');
+  const [noteType, setNoteType] = useState<'note' | 'phone' | 'whatsapp'>('note');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const { activities, isLoading, addActivity, isAddingActivity } = useCustomerCRMActivity(customerId);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+
+    try {
+      await addActivity({
+        note_type: noteType,
+        content: newNote,
+        title: noteType === 'phone' ? 'مكالمة هاتفية' : noteType === 'whatsapp' ? 'رسالة واتساب' : 'ملاحظة',
+      });
+      setNewNote('');
+      setIsAdding(false);
+    } catch (error) {
+      console.error('Error adding note:', error);
+    }
+  };
+
+  const getActivityIcon = (type: string, status?: string) => {
+    switch (type) {
+      case 'phone':
+      case 'call':
+        if (status === 'no_answer') return <PhoneOff className="w-4 h-4 text-red-500" />;
+        if (status === 'busy') return <PhoneIncoming className="w-4 h-4 text-amber-500" />;
+        return <Phone className="w-4 h-4 text-emerald-500" />;
+      case 'whatsapp':
+        return <MessageSquare className="w-4 h-4 text-emerald-500" />;
+      case 'email':
+        return <Mail className="w-4 h-4 text-blue-500" />;
+      case 'followup':
+        return <Bell className="w-4 h-4 text-amber-500" />;
+      default:
+        return <FileText className="w-4 h-4 text-slate-500" />;
+    }
+  };
+
+  const getActivityLabel = (type: string) => {
+    switch (type) {
+      case 'phone':
+      case 'call': return 'مكالمة';
+      case 'whatsapp': return 'واتساب';
+      case 'email': return 'بريد';
+      case 'note': return 'ملاحظة';
+      case 'followup': return 'متابعة';
+      default: return 'تفاعل';
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">سجل التواصل والملاحظات</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{activities.length} تفاعل مسجل</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {customerPhone && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => window.open(`tel:${customerPhone}`)}
+                >
+                  <Phone className="w-4 h-4" />
+                  اتصال
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800"
+                  onClick={() => window.open(`https://wa.me/${customerPhone.replace(/[^0-9]/g, '')}`)}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  واتساب
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              className="gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+              onClick={() => setIsAdding(!isAdding)}
+            >
+              <Plus className="w-4 h-4" />
+              إضافة
+            </Button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-slate-100 dark:border-slate-800 pt-4"
+            >
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant={noteType === 'note' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setNoteType('note')}
+                  className={noteType === 'note' ? 'bg-gradient-to-r from-rose-500 to-rose-600' : ''}
+                >
+                  <FileText className="w-4 h-4 ml-1" />
+                  ملاحظة
+                </Button>
+                <Button
+                  variant={noteType === 'phone' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setNoteType('phone')}
+                  className={noteType === 'phone' ? 'bg-emerald-500' : ''}
+                >
+                  <Phone className="w-4 h-4 ml-1" />
+                  مكالمة
+                </Button>
+                <Button
+                  variant={noteType === 'whatsapp' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setNoteType('whatsapp')}
+                  className={noteType === 'whatsapp' ? 'bg-emerald-600' : ''}
+                >
+                  <MessageSquare className="w-4 h-4 ml-1" />
+                  واتساب
+                </Button>
+              </div>
+              <Textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="اكتب ملاحظتك هنا..."
+                className="min-h-[100px] mb-3"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>
+                  إلغاء
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+                  onClick={handleAddNote}
+                  disabled={!newNote.trim() || isAddingActivity}
+                >
+                  {isAddingActivity ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  حفظ
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+        </div>
+      ) : activities.length > 0 ? (
+        <div className="relative">
+          <div className="absolute right-6 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" />
+          <div className="space-y-3">
+            {activities.map((activity, index) => (
+              <motion.div
+                key={activity.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="relative pr-14"
+              >
+                <div className="absolute right-4 w-5 h-5 rounded-full bg-white dark:bg-slate-900 border-2 border-rose-300 flex items-center justify-center shadow-sm">
+                  {getActivityIcon(activity.note_type, activity.call_status)}
+                </div>
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {getActivityLabel(activity.note_type)}
+                      </Badge>
+                      {activity.is_important && (
+                        <Badge className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">مهم</Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      {format(new Date(activity.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{activity.content}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-700">
+          <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-600 dark:text-slate-400 font-medium">لا توجد ملاحظات مسجلة</p>
+          <p className="text-slate-400 text-sm mt-1">ابدأ بإضافة ملاحظة أو تسجيل مكالمة</p>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// Followups Tab Component
+const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId: string }) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [newFollowup, setNewFollowup] = useState({
+    title: '',
+    notes: '',
+    scheduled_date: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent'
+  });
+
+  const { data: followups, isLoading, refetch } = useQuery({
+    queryKey: ['customer-followups', customerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('scheduled_followups')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('scheduled_date', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId && !!companyId
+  });
+
+  const handleAddFollowup = async () => {
+    if (!newFollowup.title.trim() || !newFollowup.scheduled_date) return;
+
+    try {
+      const { error } = await supabase
+        .from('scheduled_followups')
+        .insert({
+          customer_id: customerId,
+          company_id: companyId,
+          title: newFollowup.title,
+          notes: newFollowup.notes,
+          scheduled_date: newFollowup.scheduled_date,
+          priority: newFollowup.priority,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      setNewFollowup({ title: '', notes: '', scheduled_date: '', priority: 'medium' });
+      setIsAdding(false);
+      refetch();
+    } catch (error) {
+      console.error('Error adding followup:', error);
+    }
+  };
+
+  const handleCompleteFollowup = async (followupId: string) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_followups')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', followupId);
+
+      if (error) throw error;
+      refetch();
+    } catch (error) {
+      console.error('Error completing followup:', error);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
+      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+      default: return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'عاجل';
+      case 'high': return 'عالي';
+      case 'medium': return 'متوسط';
+      default: return 'منخفض';
+    }
+  };
+
+  const pendingFollowups = followups?.filter(f => f.status !== 'completed') || [];
+  const completedFollowups = followups?.filter(f => f.status === 'completed') || [];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">المتابعات المجدولة</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{pendingFollowups.length} متابعة قادمة</p>
+          </div>
+          <Button
+            size="sm"
+            className="gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+            onClick={() => setIsAdding(!isAdding)}
+          >
+            <Plus className="w-4 h-4" />
+            إضافة متابعة
+          </Button>
+        </div>
+
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newFollowup.title}
+                  onChange={(e) => setNewFollowup(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="عنوان المتابعة..."
+                  className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white dark:bg-slate-900"
+                />
+                <input
+                  type="datetime-local"
+                  value={newFollowup.scheduled_date}
+                  onChange={(e) => setNewFollowup(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                  className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white dark:bg-slate-900"
+                />
+              </div>
+              <div className="flex gap-2">
+                {(['low', 'medium', 'high', 'urgent'] as const).map(priority => (
+                  <Button
+                    key={priority}
+                    variant={newFollowup.priority === priority ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewFollowup(prev => ({ ...prev, priority }))}
+                    className={newFollowup.priority === priority ? getPriorityColor(priority) : ''}
+                  >
+                    {getPriorityLabel(priority)}
+                  </Button>
+                ))}
+              </div>
+              <Textarea
+                value={newFollowup.notes}
+                onChange={(e) => setNewFollowup(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="ملاحظات إضافية..."
+                className="min-h-[80px]"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>
+                  إلغاء
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+                  onClick={handleAddFollowup}
+                  disabled={!newFollowup.title.trim() || !newFollowup.scheduled_date}
+                >
+                  <Plus className="w-4 h-4" />
+                  حفظ المتابعة
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+        </div>
+      ) : pendingFollowups.length > 0 ? (
+        <div className="space-y-3">
+          {pendingFollowups.map((followup, index) => (
+            <motion.div
+              key={followup.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bell className="w-4 h-4 text-rose-500" />
+                    <h5 className="font-medium text-slate-900 dark:text-slate-100">{followup.title}</h5>
+                    <Badge className={cn("text-xs", getPriorityColor(followup.priority))}>
+                      {getPriorityLabel(followup.priority)}
+                    </Badge>
+                  </div>
+                  {followup.notes && (
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{followup.notes}</p>
+                  )}
+                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {format(new Date(followup.scheduled_date), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                    </span>
+                    {differenceInDays(new Date(followup.scheduled_date), new Date()) <= 0 && (
+                      <Badge variant="destructive" className="text-xs">متأخرة</Badge>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCompleteFollowup(followup.id)}
+                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-700">
+          <Bell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-600 dark:text-slate-400 font-medium">لا توجد متابعات مجدولة</p>
+          <p className="text-slate-400 text-sm mt-1">أضف متابعة جديدة للتذكير</p>
+        </div>
+      )}
+
+      {completedFollowups.length > 0 && (
+        <div className="mt-6">
+          <h5 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">المتابعات المكتملة ({completedFollowups.length})</h5>
+          <div className="space-y-2">
+            {completedFollowups.slice(0, 5).map(followup => (
+              <div
+                key={followup.id}
+                className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800 opacity-60"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span className="text-sm text-slate-600 dark:text-slate-400 line-through">{followup.title}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+/**
+ * Main Customer Details Page Component
+ */
+const CustomerDetailsPage = () => {
+  const { customerId } = useParams<{ customerId: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
+  const queryClient = useQueryClient();
+
+  // Local state
+  const [activeTab, setActiveTab] = useState('contracts');
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Fetch customer data
+  const { data: customer, isLoading: loadingCustomer, error: customerError } = useQuery({
+    queryKey: ['customer-details', customerId, companyId],
+    queryFn: async () => {
+      console.log('🔍 [CustomerDetails] Fetching customer:', { customerId, companyId });
+
+      if (!customerId) {
+        console.error('❌ [CustomerDetails] Customer ID is missing');
+        throw new Error('معرف العميل مفقود');
+      }
+
+      if (!companyId) {
+        console.error('❌ [CustomerDetails] Company ID is missing');
+        throw new Error('معرف الشركة مفقود - يرجى تسجيل الدخول مرة أخرى');
+      }
+
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', customerId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (error) {
+        console.error('❌ [CustomerDetails] Error fetching customer:', {
+          error,
+          customerId,
+          companyId,
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        throw new Error(`خطأ في جلب بيانات العميل: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('❌ [CustomerDetails] Customer not found:', { customerId, companyId });
+        throw new Error('العميل غير موجود');
+      }
+
+      console.log('✅ [CustomerDetails] Customer fetched successfully:', data.id);
+      return data;
+    },
+    enabled: !!customerId && !!companyId,
+    retry: 1,
+    staleTime: 30 * 1000,
+  });
+
+  // Fetch customer contracts
+  const { data: contracts = [], isLoading: loadingContracts } = useQuery({
+    queryKey: ['customer-contracts', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+
+      const { data, error } = await supabase
+        .from('contracts')
+        .select(`
+          *,
+          vehicle:vehicles!vehicle_id(
+            id,
+            make,
+            model,
+            year,
+            plate_number
+          )
+        `)
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
+  });
+
+  // Fetch customer payments
+  const { data: payments = [], isLoading: loadingPayments } = useQuery({
+    queryKey: ['customer-payments', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('payment_date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId,
+  });
+
+  // Fetch customer invoices
+  const { data: customerInvoices = [], isLoading: loadingInvoices } = useQuery({
+    queryKey: ['customer-invoices', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          contract:contracts!contract_id(id, contract_number)
+        `)
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error('Error fetching invoices:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!customerId && !!companyId,
+  });
+
+  // Fetch customer documents
+  const { data: documents = [], isLoading: loadingDocuments } = useCustomerDocuments(customerId);
+  const uploadDocument = useUploadCustomerDocument();
+  const deleteDocument = useDeleteCustomerDocument();
+  const downloadDocument = useDownloadCustomerDocument();
+
+  // Fetch traffic violations
+  const { data: trafficViolations = [], isLoading: loadingViolations } = useQuery({
+    queryKey: ['customer-traffic-violations', customerId, companyId],
+    queryFn: async () => {
+      if (!customerId || !companyId) return [];
+
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select(`
+          *,
+          contract:contracts!contract_id(
+            id,
+            contract_number,
+            customer_id
+          ),
+          vehicle:vehicles!vehicle_id(
+            id,
+            make,
+            model,
+            plate_number
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('violation_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching traffic violations:', error);
+        return [];
+      }
+
+      const customerViolations = data?.filter(
+        v => v.contract?.customer_id === customerId
+      ) || [];
+
+      return customerViolations;
+    },
+    enabled: !!customerId && !!companyId,
+  });
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const activeContracts = contracts.filter(c => c.status === 'active').length;
+    const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    const totalContractAmount = contracts
+      .filter(c => c.status === 'active')
+      .reduce((sum, c) => sum + (c.contract_amount || 0), 0);
+    const totalPaid = contracts
+      .filter(c => c.status === 'active')
+      .reduce((sum, c) => sum + (c.total_paid || 0), 0);
+    const outstandingAmount = totalContractAmount - totalPaid;
+
+    const paidOnTime = payments.filter(p => p.payment_status === 'completed').length;
+    const commitmentRate = payments.length > 0 ? Math.round((paidOnTime / payments.length) * 100) : 100;
+
+    return {
+      activeContracts,
+      outstandingAmount,
+      commitmentRate,
+      totalPayments,
+    };
+  }, [contracts, payments]);
+
+  // Format customer name
+  const customerName = useMemo(() => {
+    if (!customer) return 'غير محدد';
+    if (customer.customer_type === 'corporate') {
+      return customer.company_name_ar || customer.company_name || 'شركة';
+    }
+    const firstName = customer.first_name_ar || customer.first_name || '';
+    const lastName = customer.last_name_ar || customer.last_name || '';
+    const name = `${firstName} ${lastName}`.trim();
+    return name || 'غير محدد';
+  }, [customer]);
+
+  // Format contracts for display
+  const formattedContracts = useMemo(() => {
+    return contracts.map(contract => {
+      const vehicleName = contract.vehicle
+        ? `${contract.vehicle.make} ${contract.vehicle.model} ${contract.vehicle.year || ''}`
+        : 'غير محدد';
+
+      const endDate = contract.end_date ? new Date(contract.end_date) : null;
+      const daysRemaining = endDate ? differenceInDays(endDate, new Date()) : 0;
+
+      return {
+        id: contract.id,
+        vehicle: contract.vehicle,
+        vehicleName,
+        contractNumber: contract.contract_number,
+        startDate: contract.start_date,
+        endDate: contract.end_date,
+        monthlyAmount: contract.monthly_amount || 0,
+        status: contract.status,
+        paymentStatus: (contract.total_paid || 0) >= (contract.contract_amount || 0) ? 'paid' : 'pending',
+        daysRemaining,
+      };
+    });
+  }, [contracts]);
+
+  // Format payments for display
+  const formattedPayments = useMemo(() => {
+    return payments.map(payment => ({
+      id: payment.id,
+      paymentNumber: payment.payment_number || payment.id.substring(0, 8),
+      date: payment.payment_date || payment.created_at,
+      contractNumber: payment.contract_id || '-',
+      amount: payment.amount || 0,
+      paymentMethod: payment.payment_method || 'غير محدد',
+      status: payment.payment_status === 'completed' ? 'paid' : payment.payment_status === 'pending' ? 'pending' : 'failed',
+    }));
+  }, [payments]);
+
+  // Event handlers
+  const handleBack = useCallback(() => {
+    navigate('/customers');
+  }, [navigate]);
+
+  const handleEdit = useCallback(() => {
+    setIsEditDialogOpen(true);
+  }, []);
+
+  const handleEditSuccess = useCallback((updatedCustomer: any) => {
+    toast({
+      title: 'تم التحديث بنجاح',
+      description: 'تم تحديث بيانات العميل بنجاح',
+    });
+
+    queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });
+    queryClient.invalidateQueries({ queryKey: ['customer-contracts', customerId] });
+
+    setIsEditDialogOpen(false);
+  }, [toast, queryClient, customerId, companyId]);
+
+  const handleDelete = useCallback(() => {
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!customerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم الحذف بنجاح',
+        description: 'تم حذف العميل بنجاح',
+      });
+
+      navigate('/customers');
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل حذف العميل',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  }, [customerId, navigate, toast, companyId]);
+
+  const handleArchive = useCallback(() => {
+    setIsArchiveDialogOpen(true);
+  }, []);
+
+  const confirmArchive = useCallback(async () => {
+    if (!customerId) return;
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ is_active: false })
+        .eq('id', customerId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم الأرشفة بنجاح',
+        description: 'تم أرشفة العميل بنجاح',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل أرشفة العميل',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsArchiveDialogOpen(false);
+    }
+  }, [customerId, companyId, queryClient, toast]);
+
+  const handleGenerateReport = useCallback(async () => {
+    if (!customer || !customerId) return;
+
+    toast({
+      title: 'جاري إنشاء التقرير',
+      description: 'يرجى الانتظار...',
+    });
+
+    const { generateCustomerReport } = await import('@/hooks/useCustomerPDFReport');
+    const result = await generateCustomerReport(customerId);
+
+    if (result.success) {
+      toast({
+        title: 'تم إنشاء التقرير',
+        description: `تم تنزيل ${result.fileName}`,
+      });
+    } else {
+      toast({
+        title: 'فشل إنشاء التقرير',
+        description: result.error || 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    }
+  }, [customerId, customer, toast]);
+
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !customerId) return;
+
+    const file = files[0];
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'خطأ',
+        description: 'حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    uploadDocument.mutate({
+      customer_id: customerId,
+      document_type: selectedDocumentType,
+      document_name: file.name,
+      file: file,
+    });
+
+    event.target.value = '';
+  }, [customerId, selectedDocumentType, uploadDocument, toast]);
+
+  const handleUploadClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleDeleteDocument = useCallback((documentId: string) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+      deleteDocument.mutate(documentId);
+    }
+  }, [deleteDocument]);
+
+  const handleDownloadDocument = useCallback((document: any) => {
+    downloadDocument.mutate(document);
+  }, [downloadDocument]);
+
+  const handleViewContract = useCallback((contractId: string) => {
+    navigate(`/contracts/${contractId}`);
+  }, [navigate]);
+
+  const handleRenewContract = useCallback((contract: any) => {
+    navigate(`/contracts?renew=${contract.id}`);
+  }, [navigate]);
+
+  const handleContinuePayment = useCallback((contract: any) => {
+    setSelectedContract(contract);
+    setIsPaymentDialogOpen(true);
+  }, []);
+
+  const handleViewPayment = useCallback((payment: any) => {
+    setSelectedPayment(payment);
+  }, []);
+
+  const handleNextPage = useCallback(() => {
+    setCurrentPage(prev => prev + 1);
+  }, []);
+
+  const handlePreviousPage = useCallback(() => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const handleViewVehicle = useCallback((vehicleId: string) => {
+    navigate(`/vehicles/${vehicleId}`);
+  }, [navigate]);
+
+  const handleNotifications = useCallback(() => {
+    navigate('/notifications');
+  }, [navigate]);
+
+  const handleSettings = useCallback(() => {
+    navigate('/settings');
+  }, [navigate]);
+
+  const isLoading = loadingCustomer || loadingContracts || loadingPayments;
+
+  useEffect(() => {
+    console.log('🔍 [CustomerDetailsPage] Debug:', {
+      customerId,
+      companyId,
+      isLoading,
+      isAuthenticating,
+      hasCustomer: !!customer,
+      customerError: customerError?.message,
+    });
+  }, [customerId, companyId, isLoading, isAuthenticating, customer, customerError]);
+
+  if (isAuthenticating || !companyId || isLoading) {
+    return <PageSkeletonFallback />;
+  }
+
+  if (!companyId) {
+    console.error('❌ [CustomerDetailsPage] Company ID is missing');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
+        <motion.div
+          variants={scaleIn}
+          initial="hidden"
+          animate="visible"
+          className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-md w-full border border-slate-200 dark:border-slate-700 shadow-xl"
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-white" strokeWidth={2} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+              خطأ في تحديد الشركة
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              لم يتم العثور على معلومات الشركة. يرجى تسجيل الدخول مرة أخرى.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={handleBack} variant="outline" className="rounded-xl">
+                العودة
+              </Button>
+              <Button
+                onClick={() => window.location.href = '/auth'}
+                className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 rounded-xl"
+              >
+                تسجيل الدخول
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (customerError || !customer) {
+    console.error('❌ [CustomerDetailsPage] Error or no customer:', {
+      error: customerError,
+      errorMessage: customerError?.message,
+      hasCustomer: !!customer,
+      customerId,
+      companyId,
+    });
+
+    let errorMessage = 'لم يتم العثور على هذا العميل';
+    if (customerError) {
+      if (customerError instanceof Error) {
+        errorMessage = customerError.message;
+      } else if (typeof customerError === 'object' && 'message' in customerError) {
+        errorMessage = String(customerError.message);
+      }
+    }
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
+        <motion.div
+          variants={scaleIn}
+          initial="hidden"
+          animate="visible"
+          className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-md w-full border border-slate-200 dark:border-slate-700 shadow-xl"
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center mx-auto mb-4">
+              <FileX className="w-8 h-8 text-white" strokeWidth={2} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+              خطأ في تحميل بيانات العميل
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              {errorMessage}
+            </p>
+            {!customerId && (
+              <p className="text-sm text-rose-600 dark:text-rose-400 mb-4 font-medium">
+                ⚠️ معرف العميل مفقود
+              </p>
+            )}
+            <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 mb-6 text-right">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 font-medium">تفاصيل تقنية:</p>
+              <p className="text-xs font-mono text-slate-600 dark:text-slate-400">Customer ID: {customerId || 'N/A'}</p>
+              <p className="text-xs font-mono text-slate-600 dark:text-slate-400">Company ID: {companyId || 'N/A'}</p>
+            </div>
+            <Button
+              onClick={handleBack}
+              className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 rounded-xl w-full"
+            >
+              العودة لصفحة العملاء
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const getInitials = (name: string): string => {
+    if (!name || name === 'غير محدد') return '؟';
+    const names = name.split(' ').filter(n => n.length > 0);
+    if (names.length === 0) return '؟';
+    return names
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const tabs = [
+    { id: 'personal-info', label: 'معلومات العميل', icon: User, count: 0 },
+    { id: 'phones', label: 'أرقام الهاتف', icon: Phone, count: 0 },
+    { id: 'contracts', label: 'العقود', icon: FileText, count: formattedContracts.length },
+    { id: 'vehicles', label: 'السيارات', icon: Car, count: formattedContracts.length },
+    { id: 'invoices', label: 'الفواتير', icon: Wallet, count: customerInvoices.length },
+    { id: 'payments', label: 'المدفوعات', icon: CreditCard, count: formattedPayments.length },
+    { id: 'documents', label: 'المستندات', icon: Folder, count: documents.length },
+    { id: 'violations', label: 'المخالفات', icon: AlertTriangle, count: trafficViolations.length },
+    { id: 'notes', label: 'CRM والملاحظات', icon: MessageSquare, count: 0 },
+    { id: 'followups', label: 'المتابعات', icon: Bell, count: 0 },
+    { id: 'activity', label: 'سجل النشاط', icon: Activity, count: 0 },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" dir="rtl">
+      {/* Navigation Bar */}
+      <motion.nav
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-700 fixed top-0 left-0 right-0 z-50 shadow-sm"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-4">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleBack}
+                  className="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <ArrowRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                </Button>
+              </motion.div>
+              <div>
+                <h1 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  تفاصيل العميل
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  إدارة ومتابعة بيانات العميل
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Quick Action Buttons */}
+              {customer?.phone && (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`tel:${customer.phone}`, '_self')}
+                            className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 rounded-xl"
+                          >
+                            <Phone className="w-4 h-4" />
+                            <span className="hidden sm:inline">اتصال</span>
+                          </Button>
+                        </motion.div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>اتصال بالعميل مباشرة</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const whatsappNumber = customer.whatsapp || customer.phone;
+                              const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
+                              window.open(`https://wa.me/${cleanedNumber}`, '_blank');
+                            }}
+                            className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 rounded-xl"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span className="hidden sm:inline">واتساب</span>
+                          </Button>
+                        </motion.div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>مراسلة عبر واتساب</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/customers/crm?customer=${customerId}`)}
+                        className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 rounded-xl"
+                      >
+                        <Activity className="w-4 h-4" />
+                        <span className="hidden sm:inline">CRM</span>
+                      </Button>
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>إدارة علاقات العميل</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <span className="text-slate-300 dark:text-slate-600 mx-1">|</span>
+
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 relative"
+                  onClick={handleNotifications}
+                >
+                  <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                  <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full animate-pulse"></span>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                  onClick={handleSettings}
+                >
+                  <Settings className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                </Button>
+              </motion.div>
+              <Avatar className="w-9 h-9 cursor-pointer rounded-xl">
+                <AvatarFallback className="bg-gradient-to-br from-rose-500 to-rose-600 text-white text-sm font-bold rounded-xl">
+                  ك
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          </div>
+        </div>
+      </motion.nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* Customer Profile Header */}
+          <motion.div
+            variants={fadeInUp}
+            className="bg-white dark:bg-slate-900 rounded-2xl p-6 mb-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300"
+          >
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-start gap-5">
+                <motion.div
+                  whileHover={{ scale: 1.05, rotate: 5 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  <Avatar className="w-20 h-20 rounded-2xl flex-shrink-0 ring-4 ring-rose-100 dark:ring-rose-900/30">
+                    <AvatarFallback className="bg-gradient-to-br from-rose-500 to-rose-600 text-white text-2xl font-bold rounded-2xl">
+                      {getInitials(customerName)}
+                    </AvatarFallback>
+                  </Avatar>
+                </motion.div>
+
+                <div>
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    <h2 className="text-2xl font-bold bg-gradient-to-br from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+                      {customerName}
+                    </h2>
+                    <Badge className={cn(
+                      "flex items-center gap-1.5 rounded-full px-3 py-1 font-medium",
+                      customer.is_active
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                    )}>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {customer.is_active ? 'نشط' : 'غير نشط'}
+                    </Badge>
+                    {customer.is_vip && (
+                      <Badge className="bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 dark:from-amber-900/30 dark:to-amber-800/30 dark:text-amber-400 flex items-center gap-1.5 rounded-full px-3 py-1 font-medium">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        عميل مميز
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-5 text-sm text-slate-600 dark:text-slate-400 flex-wrap">
+                    <span className="flex items-center gap-1.5 font-mono">
+                      <Hash className="w-4 h-4" />
+                      {customer.customer_code || customer.id.substring(0, 8)}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4" />
+                      التسجيل: {customer.created_at ? format(new Date(customer.created_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      آخر نشاط: {customer.updated_at ? format(new Date(customer.updated_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleEdit}
+                    className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl shadow-lg shadow-rose-500/20"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    تعديل البيانات
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateReport}
+                    className="gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <FileText className="w-4 h-4" />
+                    إنشاء تقرير
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    onClick={handleArchive}
+                    className="gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <Archive className="w-4 h-4" />
+                    أرشفة
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    className="gap-2 border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    حذف
+                  </Button>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Missing Data Warnings */}
+          <MissingDataWarnings customer={customer} />
+
+          {/* Stats Cards */}
+          <motion.div
+            variants={containerVariants}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+          >
+            <StatsCard
+              icon={FileText}
+              label="عقود نشطة"
+              value={stats.activeContracts}
+              gradient="text-blue-600"
+              iconBg="bg-blue-50 dark:bg-blue-950/30"
+            />
+            <StatsCard
+              icon={Wallet}
+              label="المبلغ المستحق"
+              value={stats.outstandingAmount.toLocaleString('en-US')}
+              suffix="ر.س"
+              gradient="text-amber-600"
+              iconBg="bg-amber-50 dark:bg-amber-950/30"
+              trend="يستحق خلال 30 يوم"
+            />
+            <StatsCard
+              icon={TrendingUp}
+              label="نسبة الالتزام"
+              value={`${stats.commitmentRate}%`}
+              gradient="text-emerald-600"
+              iconBg="bg-emerald-50 dark:bg-emerald-950/30"
+              progress={stats.commitmentRate}
+            />
+            <StatsCard
+              icon={CreditCard}
+              label="إجمالي المدفوعات"
+              value={stats.totalPayments.toLocaleString('en-US')}
+              suffix="ر.س"
+              gradient="text-purple-600"
+              iconBg="bg-purple-50 dark:bg-purple-950/30"
+              trend={`${payments.length} دفعة مكتملة`}
+            />
+          </motion.div>
+
+          {/* Personal Information */}
+          <motion.div
+            variants={fadeInUp}
+            className="bg-white dark:bg-slate-900 rounded-2xl p-6 mb-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center">
+                <User className="w-5 h-5 text-white" strokeWidth={2} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                المعلومات الشخصية
+              </h3>
+            </div>
+
+            <motion.div
+              variants={containerVariants}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              <InfoItem
+                icon={Mail}
+                label="البريد الإلكتروني"
+                value={customer.email || '-'}
+                iconBg="bg-blue-50 dark:bg-blue-950/30"
+                iconGradient="text-blue-600"
+              />
+              <InfoItem
+                icon={Phone}
+                label="رقم الجوال"
+                value={customer.phone || '-'}
+                iconBg="bg-emerald-50 dark:bg-emerald-950/30"
+                iconGradient="text-emerald-600"
+              />
+              <InfoItem
+                icon={MapPin}
+                label="العنوان"
+                value={customer.address || '-'}
+                iconBg="bg-purple-50 dark:bg-purple-950/30"
+                iconGradient="text-purple-600"
+              />
+              <InfoItem
+                icon={Cake}
+                label="تاريخ الميلاد"
+                value={customer.date_of_birth || '-'}
+                iconBg="bg-amber-50 dark:bg-amber-950/30"
+                iconGradient="text-amber-600"
+              />
+              <InfoItem
+                icon={CreditCard}
+                label="رقم الهوية"
+                value={customer.national_id || '-'}
+                iconBg="bg-rose-50 dark:bg-rose-950/30"
+                iconGradient="text-rose-600"
+              />
+              <InfoItem
+                icon={Briefcase}
+                label="نوع العميل"
+                value={customer.customer_type === 'individual' ? 'فرد' : customer.customer_type === 'corporate' ? 'شركة' : '-'}
+                iconBg="bg-cyan-50 dark:bg-cyan-950/30"
+                iconGradient="text-cyan-600"
+              />
+            </motion.div>
+          </motion.div>
+
+          {/* Tabs Section */}
+          <motion.div
+            variants={fadeInUp}
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden"
+          >
+            {/* Tab Navigation */}
+            <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 overflow-x-auto">
+              <div className="flex min-w-max">
+                {tabs.map((tab, index) => (
+                  <motion.button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "relative px-6 py-4 font-semibold text-sm transition-all duration-200 flex items-center gap-2 whitespace-nowrap",
+                      activeTab === tab.id
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    )}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <tab.icon className="w-4 h-4" strokeWidth={2} />
+                    {tab.label}
+                    {tab.count > 0 && (
+                      <Badge
+                        variant={activeTab === tab.id ? "default" : "secondary"}
+                        className={cn(
+                          "mr-1 text-xs rounded-full",
+                          activeTab === tab.id
+                            ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white"
+                            : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                        )}
+                      >
+                        {tab.count}
+                      </Badge>
+                    )}
+                    {activeTab === tab.id && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-rose-500 to-rose-600"
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="p-6"
+              >
+                {/* Contracts Tab */}
+                {activeTab === 'contracts' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          العقود النشطة
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          إجمالي {formattedContracts.length} عقد نشط
+                        </p>
+                      </div>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl shadow-lg shadow-rose-500/20"
+                          onClick={() => navigate(`/contracts?customer=${customerId}`)}
+                        >
+                          <Plus className="w-4 h-4" />
+                          عقد جديد
+                        </Button>
+                      </motion.div>
+                    </div>
+
+                    <AnimatePresence>
+                      {formattedContracts.length > 0 ? (
+                        <motion.div
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="space-y-4"
+                        >
+                          {formattedContracts.map((contract, index) => (
+                            <motion.div
+                              key={contract.id}
+                              variants={itemVariants}
+                              whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                              className="group bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:border-rose-200 dark:hover:border-rose-800 transition-all duration-300 cursor-pointer"
+                              onClick={() => navigate(`/contracts/${contract.contractNumber}`)}
+                            >
+                              <div className="flex items-start justify-between mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex items-start gap-4 flex-1">
+                                  <motion.div
+                                    whileHover={{ scale: 1.05, rotate: 5 }}
+                                    className={cn(
+                                      "w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0",
+                                      index % 3 === 0 ? "bg-gradient-to-br from-blue-500 to-blue-600" :
+                                      index % 3 === 1 ? "bg-gradient-to-br from-purple-500 to-purple-600" :
+                                      "bg-gradient-to-br from-rose-500 to-rose-600"
+                                    )}
+                                  >
+                                    <Car className="w-7 h-7 text-white" strokeWidth={2} />
+                                  </motion.div>
+                                  <div className="flex-1">
+                                    <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">
+                                      {contract.vehicleName}
+                                    </h4>
+                                    <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                                      <span className="font-mono">#{contract.contractNumber}</span>
+                                      <span>•</span>
+                                      <span>بدأ في {contract.startDate ? format(new Date(contract.startDate), 'dd/MM/yyyy', { locale: ar }) : '-'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge className={cn(
+                                  "rounded-full px-3 py-1 font-medium",
+                                  contract.status === 'active'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                )}>
+                                  {contract.status === 'active' ? 'نشط' : 'قيد المراجعة'}
+                                </Badge>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div>
+                                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    المبلغ الشهري
+                                  </div>
+                                  <div className={cn(
+                                    "text-base font-bold",
+                                    index % 3 === 0 ? "text-blue-600" :
+                                    index % 3 === 1 ? "text-purple-600" :
+                                    "text-rose-600"
+                                  )}>
+                                    {contract.monthlyAmount.toLocaleString('en-US')} ر.س
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    تاريخ الانتهاء
+                                  </div>
+                                  <div className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                    {contract.endDate ? format(new Date(contract.endDate), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    المدة المتبقية
+                                  </div>
+                                  <div className={cn(
+                                    "text-base font-bold",
+                                    contract.daysRemaining <= 30 ? "text-amber-600" :
+                                    contract.daysRemaining <= 60 ? "text-yellow-600" :
+                                    "text-emerald-600"
+                                  )}>
+                                    {contract.daysRemaining} يوم
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    حالة الدفع
+                                  </div>
+                                  <div className={cn(
+                                    "text-base font-bold",
+                                    contract.paymentStatus === 'paid' ? "text-emerald-600" : "text-amber-600"
+                                  )}>
+                                    {contract.paymentStatus === 'paid' ? 'مدفوع' : 'معلق'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewContract(contract.contractNumber);
+                                  }}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  عرض التفاصيل
+                                </Button>
+                                {contract.paymentStatus === 'paid' ? (
+                                  <Button
+                                    variant="outline"
+                                    className="flex-1 gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRenewContract(contract);
+                                    }}
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
+                                    تجديد العقد
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    className="flex-1 gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 rounded-xl"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleContinuePayment(contract);
+                                    }}
+                                  >
+                                    <CreditCard className="w-4 h-4" />
+                                    متابعة الدفع
+                                  </Button>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      ) : (
+                        <EmptyState
+                          icon={FileText}
+                          title="لا توجد عقود"
+                          description="لم يتم إنشاء أي عقود لهذا العميل بعد"
+                          action={
+                            <Button
+                              className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl mt-4"
+                              onClick={() => navigate(`/contracts?customer=${customerId}`)}
+                            >
+                              <Plus className="w-4 h-4" />
+                              إنشاء عقد جديد
+                            </Button>
+                          }
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Payments Tab */}
+                {activeTab === 'payments' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          سجل المدفوعات
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          آخر {formattedPayments.length} عملية دفع
+                        </p>
+                      </div>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl shadow-lg shadow-rose-500/20"
+                          onClick={() => window.open('/payment-registration', '_blank')}
+                        >
+                          <Plus className="w-4 h-4" />
+                          تسجيل دفعة جديدة
+                        </Button>
+                      </motion.div>
+                    </div>
+
+                    <AnimatePresence>
+                      {formattedPayments.length > 0 ? (
+                        <motion.div
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="overflow-x-auto"
+                        >
+                          <table className="w-full">
+                            <thead className="bg-slate-50 dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-700">
+                              <tr>
+                                {['رقم الدفعة', 'التاريخ', 'العقد', 'المبلغ', 'طريقة الدفع', 'الحالة', 'الإجراءات'].map((header) => (
+                                  <th key={header} className="px-6 py-4 text-right text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                    {header}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                              {formattedPayments.map((payment, index) => (
+                                <motion.tr
+                                  key={payment.id}
+                                  variants={itemVariants}
+                                  whileHover={{ scale: 1.01 }}
+                                  className="transition-all duration-200 hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                                >
+                                  <td className="px-6 py-4 text-sm font-mono text-slate-900 dark:text-slate-100 font-semibold">
+                                    #{payment.paymentNumber}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                                    {payment.date ? format(new Date(payment.date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 font-mono">
+                                    #{payment.contractNumber.substring(0, 8)}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    {payment.amount.toLocaleString('en-US')} ر.س
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                    <div className="flex items-center gap-2">
+                                      {payment.paymentMethod.includes('بنك') && <Landmark className="w-4 h-4" />}
+                                      {payment.paymentMethod.includes('نقد') && <Banknote className="w-4 h-4" />}
+                                      {payment.paymentMethod.includes('بطاقة') && <CreditCard className="w-4 h-4" />}
+                                      {payment.paymentMethod.includes('محفظة') && <Smartphone className="w-4 h-4" />}
+                                      {payment.paymentMethod}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <Badge className={cn(
+                                      "rounded-full px-3 py-1 font-medium",
+                                      payment.status === 'paid'
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                      payment.status === 'pending'
+                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                    )}>
+                                      {payment.status === 'paid' ? 'مدفوع' : payment.status === 'pending' ? 'معلق' : 'فشل'}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="gap-2 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                      onClick={() => handleViewPayment(payment)}
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                      عرض
+                                    </Button>
+                                  </td>
+                                </motion.tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </motion.div>
+                      ) : (
+                        <EmptyState
+                          icon={CreditCard}
+                          title="لا توجد مدفوعات"
+                          description="لم يتم تسجيل أي مدفوعات لهذا العميل بعد"
+                          action={
+                            <Button
+                              className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl mt-4"
+                              onClick={() => window.open('/payment-registration', '_blank')}
+                            >
+                              <Plus className="w-4 h-4" />
+                              تسجيل دفعة جديدة
+                            </Button>
+                          }
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Vehicles Tab */}
+                {activeTab === 'vehicles' && (
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        السيارات المؤجرة
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        جميع السيارات الحالية والسابقة
+                      </p>
+                    </div>
+
+                    <AnimatePresence>
+                      {formattedContracts.length > 0 ? (
+                        <motion.div
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                        >
+                          {formattedContracts.map((contract, index) => (
+                            <motion.div
+                              key={contract.id}
+                              variants={itemVariants}
+                              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                              className="group bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300"
+                            >
+                              <div className="flex items-start gap-3 mb-4">
+                                <motion.div
+                                  whileHover={{ scale: 1.05, rotate: 5 }}
+                                  className={cn(
+                                    "w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0",
+                                    index % 3 === 0 ? "bg-gradient-to-br from-blue-500 to-blue-600" :
+                                    index % 3 === 1 ? "bg-gradient-to-br from-purple-500 to-purple-600" :
+                                    "bg-gradient-to-br from-rose-500 to-rose-600"
+                                  )}
+                                >
+                                  <Car className="w-7 h-7 text-white" strokeWidth={2} />
+                                </motion.div>
+                                <div className="flex-1">
+                                  <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
+                                    {contract.vehicle?.make} {contract.vehicle?.model}
+                                  </h4>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    موديل {contract.vehicle?.year}
+                                  </p>
+                                  <Badge className="mt-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full px-3 py-1 text-xs font-medium">
+                                    نشط
+                                  </Badge>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-500 dark:text-slate-400">اللوحة:</span>
+                                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                                    {contract.vehicle?.plate_number || '-'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-500 dark:text-slate-400">العقد:</span>
+                                  <span className="font-mono font-semibold text-slate-900 dark:text-slate-100">
+                                    #{contract.contractNumber}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-500 dark:text-slate-400">المدة:</span>
+                                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {contract.daysRemaining} يوم متبقي
+                                  </span>
+                                </div>
+                              </div>
+
+                              <Button
+                                variant="outline"
+                                className="w-full mt-4 gap-2 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                onClick={() => handleViewVehicle(contract.vehicle?.id || '')}
+                              >
+                                <Eye className="w-4 h-4" />
+                                عرض التفاصيل
+                              </Button>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      ) : (
+                        <EmptyState
+                          icon={Car}
+                          title="لا توجد سيارات"
+                          description="لم يتم استئجار أي سيارات من قبل هذا العميل"
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Documents Tab */}
+                {activeTab === 'documents' && (
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        المستندات والملفات
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        {documents.length > 0
+                          ? `${documents.length} مستند مرفوع`
+                          : 'لا توجد مستندات مرفوعة'}
+                      </p>
+                    </div>
+
+                    {/* Upload Area */}
+                    <motion.div
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.01 }}
+                      className="relative group cursor-pointer border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-rose-400 dark:hover:border-rose-600 rounded-2xl p-8 text-center transition-all duration-300 mb-6"
+                      onClick={handleUploadClick}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/0 to-rose-600/0 group-hover:from-rose-500/5 group-hover:to-rose-600/5 rounded-2xl transition-all duration-300" />
+                      <div className="relative">
+                        <motion.div
+                          whileHover={{ scale: 1.05, rotate: 5 }}
+                          className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950/30 dark:to-rose-900/30 flex items-center justify-center mx-auto mb-4"
+                        >
+                          <Upload className="w-8 h-8 text-rose-600 dark:text-rose-400" strokeWidth={2} />
+                        </motion.div>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                          رفع مستند جديد
+                        </h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                          اختر نوع المستند ثم اضغط لاختيار الملف
+                        </p>
+
+                        <div className="flex items-center justify-center gap-4 mb-4">
+                          <select
+                            value={selectedDocumentType}
+                            onChange={(e) => setSelectedDocumentType(e.target.value)}
+                            className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="identity">بطاقة الهوية</option>
+                            <option value="license">رخصة القيادة</option>
+                            <option value="contract">عقد</option>
+                            <option value="invoice">فاتورة</option>
+                            <option value="receipt">إيصال</option>
+                            <option value="insurance">تأمين</option>
+                            <option value="other">أخرى</option>
+                          </select>
+                        </div>
+
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileSelect}
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        />
+
+                        <Button
+                          className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUploadClick();
+                          }}
+                          disabled={uploadDocument.isPending}
+                        >
+                          <Upload className="w-4 h-4" />
+                          {uploadDocument.isPending ? 'جاري الرفع...' : 'اختر ملف'}
+                        </Button>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
+                          الصيغ المدعومة: PDF, JPG, PNG, DOC, DOCX (حتى 10MB)
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    {/* Documents List */}
+                    <AnimatePresence>
+                      {loadingDocuments ? (
+                        <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                          جاري تحميل المستندات...
+                        </div>
+                      ) : documents.length > 0 ? (
+                        <motion.div
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="space-y-3"
+                        >
+                          {documents.map((doc) => (
+                            <motion.div
+                              key={doc.id}
+                              variants={itemVariants}
+                              whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                              className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:border-rose-200 dark:hover:border-rose-800 transition-all duration-300"
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-4 flex-1">
+                                  <motion.div
+                                    whileHover={{ scale: 1.05, rotate: 5 }}
+                                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600"
+                                  >
+                                    <FileText className="w-6 h-6 text-white" strokeWidth={2} />
+                                  </motion.div>
+                                  <div className="flex-1">
+                                    <h4 className="font-bold text-slate-900 dark:text-slate-100 mb-1">
+                                      {doc.document_name}
+                                    </h4>
+                                    <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full px-3 py-1 text-xs font-medium">
+                                        {doc.document_type === 'identity' ? 'هوية' :
+                                         doc.document_type === 'license' ? 'رخصة' :
+                                         doc.document_type === 'contract' ? 'عقد' :
+                                         doc.document_type === 'invoice' ? 'فاتورة' :
+                                         doc.document_type === 'receipt' ? 'إيصال' :
+                                         doc.document_type === 'insurance' ? 'تأمين' :
+                                         'أخرى'}
+                                      </Badge>
+                                      <span>•</span>
+                                      <span>{format(new Date(doc.uploaded_at), 'dd/MM/yyyy', { locale: ar })}</span>
+                                      {doc.file_size && (
+                                        <>
+                                          <span>•</span>
+                                          <span>{(doc.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                                        </>
+                                      )}
+                                    </div>
+                                    {doc.notes && (
+                                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">{doc.notes}</p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                    disabled={downloadDocument.isPending}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    تحميل
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg"
+                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    disabled={deleteDocument.isPending}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    حذف
+                                  </Button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      ) : (
+                        <EmptyState
+                          icon={Folder}
+                          title="لا توجد مستندات"
+                          description="لم يتم رفع أي مستندات لهذا العميل بعد"
+                          action={
+                            <Button
+                              className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 gap-2 rounded-xl mt-4"
+                              onClick={handleUploadClick}
+                            >
+                              <Upload className="w-4 h-4" />
+                              رفع مستند جديد
+                            </Button>
+                          }
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Violations Tab */}
+                {activeTab === 'violations' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          المخالفات المرورية
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          إجمالي {trafficViolations.length} مخالفة مسجلة
+                        </p>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {loadingViolations ? (
+                        <div className="flex items-center justify-center py-8">
+                          <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+                          <span className="mr-2 text-slate-500 dark:text-slate-400">جاري تحميل المخالفات...</span>
+                        </div>
+                      ) : trafficViolations.length > 0 ? (
+                        <motion.div
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="space-y-4"
+                        >
+                          {trafficViolations.map((violation: any, index: number) => (
+                            <motion.div
+                              key={violation.id}
+                              variants={itemVariants}
+                              whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                              className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300"
+                            >
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-start gap-4">
+                                  <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    className={cn(
+                                      "w-12 h-12 rounded-xl flex items-center justify-center",
+                                      violation.status === 'paid'
+                                        ? "bg-emerald-100 dark:bg-emerald-950/30"
+                                        : violation.status === 'pending'
+                                          ? "bg-amber-100 dark:bg-amber-950/30"
+                                          : "bg-red-100 dark:bg-red-950/30"
+                                    )}
+                                  >
+                                    <AlertTriangle className={cn(
+                                      "w-6 h-6",
+                                      violation.status === 'paid'
+                                        ? "text-emerald-600 dark:text-emerald-400"
+                                        : violation.status === 'pending'
+                                          ? "text-amber-600 dark:text-amber-400"
+                                          : "text-red-600 dark:text-red-400"
+                                    )} strokeWidth={2} />
+                                  </motion.div>
+                                  <div>
+                                    <h4 className="font-bold text-slate-900 dark:text-slate-100">
+                                      {violation.violation_type}
+                                    </h4>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                      رقم المخالفة: {violation.violation_number}
+                                    </p>
+                                    {violation.vehicle && (
+                                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        المركبة: {violation.vehicle.make} {violation.vehicle.model} - {violation.vehicle.plate_number}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Badge className={cn(
+                                  "rounded-full px-3 py-1 font-medium",
+                                  violation.status === 'paid'
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                    : violation.status === 'pending'
+                                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                      : "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+                                )}>
+                                  {violation.status === 'paid' ? 'مدفوعة' : violation.status === 'pending' ? 'قيد السداد' : 'غير مدفوعة'}
+                                </Badge>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    تاريخ المخالفة
+                                  </p>
+                                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {violation.violation_date
+                                      ? format(new Date(violation.violation_date), 'dd/MM/yyyy', { locale: ar })
+                                      : '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    الموقع
+                                  </p>
+                                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {violation.location || '-'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    المبلغ
+                                  </p>
+                                  <p className="font-bold text-rose-600 dark:text-rose-400">
+                                    {violation.fine_amount?.toLocaleString()} ر.ق
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    الجهة المصدرة
+                                  </p>
+                                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {violation.issuing_authority || '-'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {violation.violation_description && (
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                                    الوصف
+                                  </p>
+                                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                                    {violation.violation_description}
+                                  </p>
+                                </div>
+                              )}
+
+                              {violation.contract && (
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    onClick={() => navigate(`/contracts/${violation.contract.contract_number}`)}
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    عرض العقد #{violation.contract.contract_number}
+                                  </Button>
+                                </div>
+                              )}
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      ) : (
+                        <EmptyState
+                          icon={AlertTriangle}
+                          title="لا توجد مخالفات"
+                          description="لم يتم تسجيل أي مخالفات على عقود هذا العميل"
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Personal Info Tab */}
+                {activeTab === 'personal-info' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <PersonalInfoTab customer={customer} />
+                  </motion.div>
+                )}
+
+                {/* Phone Numbers Tab */}
+                {activeTab === 'phones' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <PhoneNumbersTab customer={customer} />
+                  </motion.div>
+                )}
+
+                {/* Invoices Tab */}
+                {activeTab === 'invoices' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          الفواتير
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          {customerInvoices.length} فاتورة
+                        </p>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {loadingInvoices ? (
+                        <div className="flex items-center justify-center py-8">
+                          <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+                        </div>
+                      ) : customerInvoices.length > 0 ? (
+                        <motion.div
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          className="space-y-3"
+                        >
+                          {customerInvoices.map((invoice, index) => {
+                            const outstanding = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
+                            const isPaid = invoice.payment_status === 'paid';
+                            const isOverdue = !isPaid && invoice.due_date && new Date(invoice.due_date) < new Date();
+
+                            return (
+                              <motion.div
+                                key={invoice.id}
+                                variants={itemVariants}
+                                whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                                className={cn(
+                                  "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
+                                  isPaid ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" :
+                                  isOverdue ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800" :
+                                  "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                                )}
+                                onClick={() => navigate(`/finance/invoices/${invoice.id}`)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={cn(
+                                    "w-10 h-10 rounded-lg flex items-center justify-center",
+                                    isPaid ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" :
+                                    isOverdue ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" :
+                                    "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                                  )}>
+                                    <FileText className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-slate-900 dark:text-slate-100">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                      {invoice.created_at ? format(new Date(invoice.created_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-left">
+                                  <p className={cn(
+                                    "font-bold",
+                                    isPaid ? "text-emerald-600 dark:text-emerald-400" : isOverdue ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
+                                  )}>
+                                    {invoice.total_amount?.toLocaleString()} ر.ق
+                                  </p>
+                                  <Badge className={cn(
+                                    "text-[10px]",
+                                    isPaid ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                                    isOverdue ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                                    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                  )}>
+                                    {isPaid ? 'مسدد' : isOverdue ? 'متأخر' : 'مستحق'}
+                                  </Badge>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </motion.div>
+                      ) : (
+                        <EmptyState
+                          icon={Wallet}
+                          title="لا توجد فواتير"
+                          description="لم يتم إصدار أي فواتير لهذا العميل"
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Notes/CRM Tab */}
+                {activeTab === 'notes' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <NotesTab
+                      customerId={customerId || ''}
+                      customerPhone={customer?.phone || customer?.mobile_number}
+                    />
+                  </motion.div>
+                )}
+
+                {/* Followups Tab */}
+                {activeTab === 'followups' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <FollowupsTab
+                      customerId={customerId || ''}
+                      companyId={companyId || ''}
+                    />
+                  </motion.div>
+                )}
+
+                {/* Activity Tab */}
+                {activeTab === 'activity' && (
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        سجل النشاط
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        آخر الأنشطة والتحديثات
+                      </p>
+                    </div>
+
+                    <EmptyState
+                      icon={Activity}
+                      title="لا توجد أنشطة"
+                      description="لم يتم تسجيل أي أنشطة لهذا العميل بعد"
+                    />
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      </main>
+
+      {/* Payment Dialog */}
+      <UnifiedPaymentForm
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        type="customer_payment"
+        customerId={customerId}
+        contractId={selectedContract?.id}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['customer-payments', customerId] });
+          queryClient.invalidateQueries({ queryKey: ['customer-details', customerId, companyId] });
+          setSelectedContract(null);
+        }}
+      />
+
+      {/* Delete Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-md rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" strokeWidth={2} />
+              تأكيد حذف العميل
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-slate-600 dark:text-slate-400 mt-4">
+              هل أنت متأكد من حذف العميل <span className="font-bold text-slate-900 dark:text-slate-100">{customerName}</span>؟
+              <br />
+              <br />
+              <span className="text-rose-600 dark:text-rose-400 font-semibold">⚠️ تحذير:</span> سيتم حذف جميع البيانات المرتبطة بالعميل بشكل نهائي ولن يمكن استعادتها.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 mt-4">
+            <AlertDialogCancel className="mt-0 rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 rounded-xl"
+            >
+              نعم، احذف العميل
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Archive Dialog */}
+      <AlertDialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <AlertDialogContent className="max-w-md rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+              <Archive className="w-5 h-5" strokeWidth={2} />
+              تأكيد أرشفة العميل
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-slate-600 dark:text-slate-400 mt-4">
+              هل أنت متأكد من أرشفة العميل <span className="font-bold text-slate-900 dark:text-slate-100">{customerName}</span>؟
+              <br />
+              <br />
+              سيتم تعطيل العميل ولن يظهر في القائمة الرئيسية. يمكنك إلغاء الأرشفة لاحقاً إذا أردت.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 mt-4">
+            <AlertDialogCancel className="mt-0 rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmArchive}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 rounded-xl"
+            >
+              نعم، أرشف العميل
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-blue-600" strokeWidth={2} />
+              تعديل بيانات العميل
+            </DialogTitle>
+            <DialogDescription>
+              قم بتعديل معلومات العميل {customerName}
+            </DialogDescription>
+          </DialogHeader>
+          {customer && (
+            <EnhancedCustomerForm
+              mode="edit"
+              editingCustomer={customer}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setIsEditDialogOpen(false)}
+              context="standalone"
+              integrationMode="dialog"
+              showDuplicateCheck={false}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Details Dialog */}
+      {selectedPayment && (
+        <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
+          <DialogContent className="max-w-lg rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-blue-600" strokeWidth={2} />
+                تفاصيل الدفعة
+              </DialogTitle>
+              <DialogDescription>
+                معلومات تفصيلية عن الدفعة رقم #{selectedPayment.paymentNumber}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">رقم الدفعة</div>
+                  <div className="text-base font-semibold font-mono text-slate-900 dark:text-slate-100">
+                    #{selectedPayment.paymentNumber}
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">التاريخ</div>
+                  <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                    {selectedPayment.date ? format(new Date(selectedPayment.date), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">المبلغ</div>
+                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {selectedPayment.amount.toLocaleString('en-US')} ر.س
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">طريقة الدفع</div>
+                  <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                    {selectedPayment.paymentMethod}
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">رقم العقد</div>
+                  <div className="text-base font-semibold font-mono text-slate-900 dark:text-slate-100">
+                    #{selectedPayment.contractNumber.substring(0, 8)}
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">الحالة</div>
+                  <Badge className={cn(
+                    "rounded-full px-3 py-1 font-medium",
+                    selectedPayment.status === 'paid'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                    selectedPayment.status === 'pending'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  )}>
+                    {selectedPayment.status === 'paid' ? 'مدفوع' : selectedPayment.status === 'pending' ? 'معلق' : 'فشل'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedPayment(null)} className="rounded-xl">
+                إغلاق
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+};
+
+export default CustomerDetailsPage;

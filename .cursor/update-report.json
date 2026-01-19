@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-11-04T13:06:56.737Z",
+  "summary": {
+    "customersUpdated": 2,
+    "customersCreated": 0,
+    "vehiclesUpdated": 0,
+    "contractsUpdated": 21,
+    "contractsCreated": 0,
+    "contractsReactivated": 23,
+    "contractsMatched": 102,
+    "unmatched": [
+      "ازهري حكيم    | 153 974 (Vehicle not found)",
+      "احمد تاج | 185 485 (Invalid date)",
+      "انور الدهبي   | 599 720 (Vehicle not found)",
+      "مصطفى بالقايد 5892 | 603 353 (Vehicle not found)",
+      "احمد تاج | 648144 (Invalid date)"
+    ]
+  },
+  "unmatched": [
+    "ازهري حكيم    | 153 974 (Vehicle not found)",
+    "احمد تاج | 185 485 (Invalid date)",
+    "انور الدهبي   | 599 720 (Vehicle not found)",
+    "مصطفى بالقايد 5892 | 603 353 (Vehicle not found)",
+    "احمد تاج | 648144 (Invalid date)"
+  ]
+}

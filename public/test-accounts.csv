@@ -1,0 +1,11 @@
+المستوى,رقم الحساب,الوصف,الوصف بالإنجليزي
+1,1,الأصول,Assets
+2,11,الأصول المتداولة,Current Assets
+3,111,النقدية وما يعادلها,Cash and Cash Equivalents
+4,1101,النقدية,Cash
+5,11101,الصندوق الرئيسي,Main Cash Fund
+5,11102,عهدة نقدية دائمة,Permanent Cash Custody
+5,11103,عهدة نقدية مؤقتة,Temporary Cash Custody
+3,112,البنوك,Banks
+4,11201,بنوك محلية بالدينار الكويتي,Local Banks in Kuwaiti Dinar (KWD)
+5,1120101,حساب البنك التجاري حساب رقم,CBK Account No

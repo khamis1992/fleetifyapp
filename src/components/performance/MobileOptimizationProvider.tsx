@@ -1,0 +1,378 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
+import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
+
+interface MobileOptimizationProviderProps {
+  children: React.ReactNode;
+}
+
+export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProps> = ({ children }) => {
+  const { isMobile } = useSimpleBreakpoint();
+  const { config, updateConfig, memoryUsage } = usePerformanceOptimization();
+  const [isLowPowerMode, setIsLowPowerMode] = useState(false);
+  const [connectionQuality, setConnectionQuality] = useState<'slow' | 'fast' | 'unknown'>('unknown');
+
+  // Detect device capabilities
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const connection = (navigator as any).connection ||
+                      (navigator as any).mozConnection ||
+                      (navigator as any).webkitConnection;
+
+    const handleConnectionChange = () => {
+      const newType = connection?.effectiveType;
+      setConnectionQuality(
+        newType === 'slow-2g' || newType === '2g' ? 'slow' : 'fast'
+      );
+    };
+
+    const detectDeviceCapabilities = () => {
+      // Detect low power mode (approximate)
+      const isLowEnd = navigator.hardwareConcurrency <= 2 ||
+                       (navigator as any).deviceMemory <= 2;
+      setIsLowPowerMode(isLowEnd);
+
+      // Detect connection quality
+      if (connection) {
+        const effectiveType = connection.effectiveType;
+        setConnectionQuality(
+          effectiveType === 'slow-2g' || effectiveType === '2g' ? 'slow' : 'fast'
+        );
+
+        connection.addEventListener('change', handleConnectionChange);
+      }
+    };
+
+    detectDeviceCapabilities();
+
+    return () => {
+      if (connection) {
+        connection.removeEventListener('change', handleConnectionChange);
+      }
+    };
+  }, [isMobile]);
+
+  // Auto-adjust performance settings based on device
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const optimizedConfig = {
+      ...config,
+      enableLazyLoading: true,
+      imageOptimization: true,
+      enableVirtualization: true,
+      maxConcurrentImages: isLowPowerMode ? 2 : memoryUsage > 80 ? 3 : 5,
+      memoryThreshold: isLowPowerMode ? 50 : 100
+    };
+
+    updateConfig(optimizedConfig);
+  }, [isMobile, isLowPowerMode, memoryUsage]);
+
+  // Reduce animations on low-end devices
+  useEffect(() => {
+    if (!isMobile || !isLowPowerMode) return;
+
+    const style = document.createElement('style');
+    style.id = 'mobile-performance-optimizations';
+    style.textContent = `
+      /* Disable expensive animations on low-end devices */
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      
+      /* Optimize transforms */
+      .transform {
+        will-change: auto !important;
+      }
+      
+      /* Reduce shadow complexity */
+      .shadow-lg, .shadow-xl, .shadow-2xl {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+      }
+      
+      /* Disable blur effects */
+      .backdrop-blur {
+        backdrop-filter: none !important;
+      }
+    `;
+    
+    document.head.appendChild(style);
+
+    return () => {
+      const existingStyle = document.getElementById('mobile-performance-optimizations');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, [isMobile, isLowPowerMode]);
+
+  // Handle memory pressure
+  const handleMemoryPressure = useCallback(() => {
+    if (memoryUsage > 90) {
+      // Force garbage collection if available
+      if ('gc' in window && typeof (window as any).gc === 'function') {
+        (window as any).gc();
+      }
+
+      // Clear some caches - with proper error handling for multi-tab scenarios
+      if ('caches' in window) {
+        try {
+          caches.open('dynamic-cache').then(cache => {
+            cache.keys().then(keys => {
+              // Remove half of the cached items
+              const itemsToRemove = keys.slice(0, Math.floor(keys.length / 2));
+              itemsToRemove.forEach(key => cache.delete(key));
+            }).catch(() => {
+              // Silently ignore cache key errors
+            });
+          }).catch(() => {
+            // Silently ignore cache open errors (common in multi-tab scenarios)
+          });
+        } catch {
+          // Silently ignore CacheStorage errors
+        }
+      }
+
+      // Update performance config to be more aggressive
+      updateConfig({
+        ...config,
+        maxConcurrentImages: 1,
+        enableVirtualization: true,
+        imageOptimization: true
+      });
+    }
+  }, [memoryUsage, config]);
+
+  useEffect(() => {
+    if (memoryUsage > 80) {
+      const timer = setTimeout(handleMemoryPressure, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [memoryUsage, handleMemoryPressure]);
+
+  // Register service worker for PWA features
+  useEffect(() => {
+    if (!isMobile || !('serviceWorker' in navigator)) return;
+
+    let registration: ServiceWorkerRegistration | null = null;
+    const handleUpdateFound = () => {
+      if (!registration) return;
+      const newWorker = registration.installing;
+      if (newWorker) {
+        const handleStateChange = () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔧 New Service Worker available');
+            // Optionally show update notification
+          }
+        };
+        newWorker.addEventListener('statechange', handleStateChange);
+      }
+    };
+
+    const registerSW = async () => {
+      try {
+        // First, verify sw.js is actually a JavaScript file, not HTML
+        const swCheck = await fetch('/sw.js', { 
+          method: 'HEAD',
+          cache: 'no-cache' // Force fresh check, not cached response
+        }).catch(() => null);
+        
+        if (!swCheck || !swCheck.ok) {
+          console.log('🔧 Service Worker file not available, skipping registration');
+          return;
+        }
+        
+        // Check Content-Type header to ensure it's JavaScript
+        const contentType = swCheck.headers.get('content-type');
+        if (contentType && !contentType.includes('javascript')) {
+          console.log('🔧 Service Worker has incorrect MIME type, skipping registration. This will be fixed on next deployment.');
+          return;
+        }
+        
+        registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/',
+          updateViaCache: 'none'
+        });
+
+        console.log('🔧 Service Worker registered successfully');
+
+        // Listen for updates
+        registration.addEventListener('updatefound', handleUpdateFound);
+
+      } catch (error: any) {
+        // Silently handle service worker registration failures
+        // Service worker is optional and non-critical for app functionality
+        if (error?.name === 'SecurityError' || error?.message?.includes('MIME type')) {
+          console.log('🔧 Service Worker registration skipped (unsupported MIME type or security policy)');
+        } else {
+          console.log('🔧 Service Worker not available:', error?.message || 'Unknown error');
+        }
+      }
+    };
+
+    registerSW();
+
+    return () => {
+      if (registration) {
+        registration.removeEventListener('updatefound', handleUpdateFound);
+      }
+    };
+  }, [isMobile]);
+
+  // Preload critical resources
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const preloadCriticalResources = () => {
+      // Fonts are loaded via Google Fonts in index.html, no need to preload local fonts
+      
+      // Preconnect to external domains
+      const preconnectDomains = [
+        'https://fonts.googleapis.com',
+        'https://fonts.gstatic.com'
+      ];
+
+      preconnectDomains.forEach(domain => {
+        const link = document.createElement('link');
+        link.rel = 'preconnect';
+        link.href = domain;
+        link.crossOrigin = 'anonymous';
+        document.head.appendChild(link);
+      });
+    };
+
+    preloadCriticalResources();
+  }, [isMobile]);
+
+  // Optimize viewport and meta tags for mobile
+  useEffect(() => {
+    if (!isMobile) return;
+
+    // Set optimal viewport
+    let viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (!viewportMeta) {
+      viewportMeta = document.createElement('meta');
+      viewportMeta.setAttribute('name', 'viewport');
+      document.head.appendChild(viewportMeta);
+    }
+    
+    viewportMeta.setAttribute('content', 
+      'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover'
+    );
+
+    // Add mobile-specific meta tags
+    const mobileMetaTags = [
+      { name: 'mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+      { name: 'format-detection', content: 'telephone=no' },
+      { name: 'msapplication-tap-highlight', content: 'no' }
+    ];
+
+    mobileMetaTags.forEach(({ name, content }) => {
+      let meta = document.querySelector(`meta[name="${name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    });
+
+    // Add CSS for mobile optimizations
+    const mobileCSS = document.createElement('style');
+    mobileCSS.id = 'mobile-optimizations';
+    mobileCSS.textContent = `
+      /* Improve touch targets */
+      button, a, [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      
+      /* CRITICAL: Enable scrolling on mobile */
+      html, body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100% !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
+      }
+      
+      #root {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        min-height: 100vh !important;
+        height: auto !important;
+      }
+      
+      /* Only apply overscroll to body, not all elements */
+      body {
+        overscroll-behavior-y: contain;
+      }
+      
+      /* Ensure main scrolls */
+      main {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 100px !important;
+      }
+      
+      /* Reduce repaints */
+      .transform-gpu {
+        transform: translateZ(0);
+        will-change: transform;
+      }
+      
+      /* Safe area handling */
+      .safe-top {
+        padding-top: env(safe-area-inset-top);
+      }
+      
+      .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      
+      /* Prevent zoom on inputs */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+      
+      /* Optimize for mobile performance */
+      img {
+        image-rendering: auto;
+        image-rendering: crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+      }
+    `;
+    
+    document.head.appendChild(mobileCSS);
+
+    return () => {
+      const style = document.getElementById('mobile-optimizations');
+      if (style) {
+        style.remove();
+      }
+    };
+  }, [isMobile]);
+
+  return (
+    <>
+      {children}
+      {isMobile && (
+        <div id="mobile-performance-indicator" style={{ display: 'none' }}>
+          {/* Hidden div for performance monitoring */}
+          <span data-memory-usage={memoryUsage} />
+          <span data-connection-quality={connectionQuality} />
+          <span data-low-power-mode={isLowPowerMode} />
+        </div>
+      )}
+    </>
+  );
+};
+
+export default MobileOptimizationProvider;

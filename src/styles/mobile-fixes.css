@@ -1,0 +1,363 @@
+/**
+ * Mobile Responsive Fixes
+ * Targeted fixes for specific mobile issues without breaking existing design
+ */
+
+/* ==========================================
+   Mobile-Only Media Query
+   ========================================== */
+@media (max-width: 768px) {
+  
+  /* ==========================================
+     1. SIDEBAR - Hide on mobile
+     ========================================== */
+  aside[class*="sidebar"],
+  nav[class*="sidebar"],
+  [class*="Sidebar"],
+  .sidebar {
+    display: none;
+  }
+  
+  /* Main content should take full width when sidebar is hidden */
+  main {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+  }
+  
+  /* ==========================================
+     2. PAGE TITLES - Reduce size
+     ========================================== */
+  h1 {
+    font-size: 24px;
+    line-height: 1.3;
+  }
+  
+  h2 {
+    font-size: 20px;
+    line-height: 1.4;
+  }
+  
+  h3 {
+    font-size: 18px;
+    line-height: 1.4;
+  }
+  
+  /* Dashboard title specifically */
+  [class*="dashboard"] h1,
+  [class*="Dashboard"] h1 {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+  
+  /* ==========================================
+     3. SPACING - Reduce padding/margins
+     ========================================== */
+  
+  /* Page containers */
+  .container,
+  [class*="Container"] {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  /* Cards */
+  [class*="card"],
+  [class*="Card"] {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  /* Sections */
+  section {
+    padding: 16px 12px;
+  }
+  
+  /* ==========================================
+     4. TABLES - Horizontal scroll
+     ========================================== */
+  
+  /* Table wrapper */
+  .table-container,
+  [class*="table-container"],
+  [class*="TableContainer"] {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Tables */
+  table {
+    min-width: 600px;
+    font-size: 14px;
+  }
+  
+  table th,
+  table td {
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+  
+  /* ==========================================
+     5. BUTTONS - Ensure touch-friendly size
+     ========================================== */
+  
+  button,
+  [role="button"],
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 16px;
+    font-size: 15px;
+  }
+  
+  /* Button groups - stack vertically */
+  .button-group,
+  [class*="ButtonGroup"] {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .button-group button {
+    width: 100%;
+  }
+  
+  /* ==========================================
+     6. FORMS - Prevent iOS zoom
+     ========================================== */
+  
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  
+  /* ==========================================
+     7. GRIDS - Single column on mobile
+     ========================================== */
+  
+  /* Dashboard stats grid */
+  [class*="stats-grid"],
+  [class*="StatsGrid"],
+  [class*="dashboard-grid"] {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* General grids */
+  .grid,
+  [class*="Grid"] {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* ==========================================
+     8. BOTTOM NAVIGATION - Fix spacing
+     ========================================== */
+  
+  [class*="bottom-nav"],
+  [class*="BottomNav"] {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0;
+    gap: 4px;
+  }
+  
+  [class*="bottom-nav"] button,
+  [class*="BottomNav"] button {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 6px;
+    font-size: 11px;
+  }
+  
+  [class*="bottom-nav"] svg,
+  [class*="BottomNav"] svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* ==========================================
+     9. MODALS/DIALOGS - Full screen on mobile
+     ========================================== */
+  
+  [role="dialog"],
+  .modal,
+  [class*="Modal"],
+  [class*="Dialog"] {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  /* ==========================================
+     10. CHARTS - Responsive sizing
+     ========================================== */
+  
+  [class*="chart"],
+  [class*="Chart"],
+  .recharts-wrapper {
+    width: 100%;
+    height: auto;
+    min-height: 250px;
+  }
+  
+  /* ==========================================
+     11. IMAGES - Responsive
+     ========================================== */
+  
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* ==========================================
+     12. OVERFLOW & SCROLL - Critical Mobile Fixes
+     ========================================== */
+  
+  /* Root elements must allow scrolling */
+  html {
+    overflow-x: hidden;
+    overflow-y: scroll !important;
+    height: auto !important;
+    min-height: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  body {
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh;
+    max-width: 100vw;
+    position: relative;
+    /* Prevent iOS rubber-band scroll issues */
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Main content areas MUST scroll */
+  main {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Add padding for fixed bottom navigation */
+    padding-bottom: 80px !important;
+  }
+  
+  /* Flex containers should not block scroll */
+  .flex-1 {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix for pages with fixed height - CRITICAL */
+  [class*="min-h-screen"] {
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+  
+  [class*="h-screen"] {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: auto !important;
+  }
+  
+  /* Desktop layout containers on mobile */
+  .min-h-screen.flex {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+  
+  /* Specific fix for CRM page */
+  [data-page="crm"] {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+  
+  /* Ensure outlet/children content scrolls */
+  [class*="Outlet"],
+  [class*="outlet"] {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Remove any touch-action restrictions that block scrolling */
+  * {
+    touch-action: pan-x pan-y !important;
+  }
+  
+  /* But allow pinch zoom on specific elements */
+  img, .zoomable {
+    touch-action: manipulation !important;
+  }
+  
+  /* ==========================================
+     13. HEADER - Compact on mobile
+     ========================================== */
+  
+  header {
+    padding: 12px;
+  }
+  
+  header h1 {
+    font-size: 20px;
+  }
+  
+  /* ==========================================
+     14. FILTERS - Stack vertically
+     ========================================== */
+  
+  .filters,
+  [class*="Filters"],
+  [class*="filter-group"] {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* ==========================================
+     15. PAGINATION - Touch-friendly
+     ========================================== */
+  
+  .pagination button,
+  [class*="Pagination"] button {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+  }
+}
+
+/* ==========================================
+   Very Small Screens (< 375px)
+   ========================================== */
+@media (max-width: 374px) {
+  h1 {
+    font-size: 20px;
+  }
+  
+  h2 {
+    font-size: 18px;
+  }
+  
+  h3 {
+    font-size: 16px;
+  }
+  
+  .container,
+  [class*="Container"] {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}

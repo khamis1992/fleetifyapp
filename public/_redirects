@@ -1,0 +1,10 @@
+# Serve static assets directly
+/assets/*  /assets/:splat  200
+/chunks/*  /chunks/:splat  200
+/pages/*   /pages/:splat   200
+/components/*  /components/:splat  200
+/images/*  /images/:splat  200
+/fonts/*   /fonts/:splat   200
+
+# Fallback to index.html for client-side routing
+/*  /index.html  200

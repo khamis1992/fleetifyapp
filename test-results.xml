@@ -1,0 +1,64 @@
+<testsuites id="" name="" tests="30" failures="0" skipped="0" errors="0" time="50.410314">
+<testsuite name="financial-system.spec.ts" timestamp="2026-01-15T18:33:01.456Z" hostname="chromium" tests="30" failures="0" skipped="0" time="166.577" errors="0">
+<testcase name="Financial System E2E Tests › Phase 1: Test Data Setup › should create test customer" classname="financial-system.spec.ts" time="8.344">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 1: Test Data Setup › should create test vehicle" classname="financial-system.spec.ts" time="11.601">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 1: Test Data Setup › should verify finance dashboard loads correctly" classname="financial-system.spec.ts" time="8.351">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 2: Payment Methods › should process cash payment successfully" classname="financial-system.spec.ts" time="7.555">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 2: Payment Methods › should process check payment successfully" classname="financial-system.spec.ts" time="5.228">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 2: Payment Methods › should process bank transfer payment successfully" classname="financial-system.spec.ts" time="5.59">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 2: Payment Methods › should process credit card payment successfully" classname="financial-system.spec.ts" time="5.856">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 2: Payment Methods › should process online transfer payment successfully" classname="financial-system.spec.ts" time="5.263">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 3: Payment Status Scenarios › should handle full payment and update invoice status to paid" classname="financial-system.spec.ts" time="5.395">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 3: Payment Status Scenarios › should handle partial payment and update invoice status correctly" classname="financial-system.spec.ts" time="5.456">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 3: Payment Status Scenarios › should handle multiple partial payments until fully paid" classname="financial-system.spec.ts" time="6.066">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 3: Payment Status Scenarios › should calculate and apply late payment penalty" classname="financial-system.spec.ts" time="5.397">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 3: Payment Status Scenarios › should handle payment cancellation correctly" classname="financial-system.spec.ts" time="5.453">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 4: Journal Entry Integration › should create journal entry automatically when payment is made" classname="financial-system.spec.ts" time="5.528">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 4: Journal Entry Integration › should verify journal entry is balanced (debit = credit)" classname="financial-system.spec.ts" time="6.708">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 4: Journal Entry Integration › should reverse journal entry when payment is cancelled" classname="financial-system.spec.ts" time="5.588">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 4: Journal Entry Integration › should update account balances correctly" classname="financial-system.spec.ts" time="4.749">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 5: Edge Cases › should prevent duplicate payments" classname="financial-system.spec.ts" time="5.512">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 5: Edge Cases › should handle bounced check correctly" classname="financial-system.spec.ts" time="5.904">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 5: Edge Cases › should handle overpayment gracefully" classname="financial-system.spec.ts" time="7.475">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 5: Edge Cases › should validate payment amount is positive" classname="financial-system.spec.ts" time="6.105">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 5: Edge Cases › should handle payment with missing required fields" classname="financial-system.spec.ts" time="5.667">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 6: Verification and Cleanup › should verify invoice-payment relationship is correct" classname="financial-system.spec.ts" time="5.605">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 6: Verification and Cleanup › should verify customer balance is accurate" classname="financial-system.spec.ts" time="5.637">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 6: Verification and Cleanup › should verify financial reports are accurate" classname="financial-system.spec.ts" time="5.75">
+</testcase>
+<testcase name="Financial System E2E Tests › Phase 6: Verification and Cleanup › should verify all test data can be found" classname="financial-system.spec.ts" time="10.752">
+</testcase>
+<testcase name="Financial System API Tests › should verify payment types are correctly defined" classname="financial-system.spec.ts" time="0.016">
+</testcase>
+<testcase name="Financial System API Tests › should verify test data generators work correctly" classname="financial-system.spec.ts" time="0.011">
+</testcase>
+<testcase name="Financial System API Tests › should verify payment calculations are correct" classname="financial-system.spec.ts" time="0.004">
+</testcase>
+<testcase name="Financial System API Tests › should verify monthly invoices are generated correctly" classname="financial-system.spec.ts" time="0.011">
+</testcase>
+</testsuite>
+</testsuites>

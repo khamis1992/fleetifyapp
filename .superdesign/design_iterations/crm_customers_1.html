@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة العملاء والمتابعات - FleetifyApp CRM</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Flowbite -->
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="crm_theme_1.css">
+    
+    <style>
+        /* إضافة الحركات والتأثيرات المخصصة */
+        @keyframes pageLoad {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .animate-page-load {
+            animation: pageLoad 0.6s ease-out;
+        }
+
+        .animate-slide-down {
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .customer-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .customer-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 10px 20px -3px hsl(240 5% 15% / 0.10), 0 4px 8px -2px hsl(240 5% 15% / 0.06);
+            border-color: oklch(0.5800 0.1650 155 / 0.3);
+        }
+
+        .btn-action {
+            transition: all 0.2s ease-out;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .btn-action:active {
+            transform: translateY(0) scale(0.96);
+        }
+
+        .call-now-btn {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .timeline-entry {
+            transition: all 0.35s ease-out;
+        }
+
+        .timeline-entry:hover {
+            transform: translateX(8px);
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, 
+                oklch(0.9500 0.0060 240) 0%, 
+                oklch(0.9700 0.0040 240) 50%, 
+                oklch(0.9500 0.0060 240) 100%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        .stat-card {
+            transition: all 0.3s ease-out;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px hsl(240 5% 15% / 0.08);
+        }
+
+        .badge {
+            transition: all 0.2s ease-out;
+        }
+
+        .badge:hover {
+            transform: scale(1.05);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: oklch(0.9500 0.0060 240);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: oklch(0.8000 0.0100 240);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: oklch(0.7000 0.0120 240);
+        }
+
+        /* RTL Adjustments */
+        .timeline-connector {
+            right: 15px;
+        }
+
+        /* Status indicators */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 6px;
+        }
+
+        .status-dot.active {
+            background-color: oklch(0.6500 0.1600 145);
+            box-shadow: 0 0 8px oklch(0.6500 0.1600 145 / 0.6);
+        }
+
+        .status-dot.pending {
+            background-color: oklch(0.7800 0.1500 75);
+            box-shadow: 0 0 8px oklch(0.7800 0.1500 75 / 0.6);
+        }
+
+        /* Phone number RTL */
+        .phone-number {
+            direction: ltr;
+            unicode-bidi: bidi-override;
+        }
+
+        /* Modal animations */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Priority badges */
+        .priority-high {
+            background-color: oklch(0.9700 0.0500 25);
+            color: oklch(0.5500 0.2200 25);
+        }
+
+        .priority-medium {
+            background-color: oklch(0.9700 0.0500 75);
+            color: oklch(0.7800 0.1500 75);
+        }
+
+        .priority-low {
+            background-color: oklch(0.9700 0.0500 230);
+            color: oklch(0.6200 0.1400 230);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Main Container -->
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm animate-slide-down">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- Right Side: Menu & Title -->
+                    <div class="flex items-center gap-4">
+                        <button class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                            <i data-lucide="menu" class="w-6 h-6 text-gray-700"></i>
+                        </button>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900">إدارة العملاء والمتابعات</h1>
+                            <p class="text-sm text-gray-500">نظام إدارة علاقات العملاء</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Left Side: Notifications & User -->
+                    <div class="flex items-center gap-4">
+                        <button class="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                            <i data-lucide="bell" class="w-6 h-6 text-gray-700"></i>
+                            <span class="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        <div class="flex items-center gap-3 pr-4 border-r border-gray-200">
+                            <div class="text-right">
+                                <p class="text-sm font-semibold text-gray-900">أحمد الإداري</p>
+                                <p class="text-xs text-gray-500">مدير علاقات العملاء</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-semibold">
+                                أ
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Section -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-scale-in" style="animation-delay: 0.1s;">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Stat Card 1 -->
+                <div class="stat-card bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-1">العملاء النشطين</p>
+                            <p class="text-3xl font-bold text-gray-900">156</p>
+                            <p class="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i>
+                                +12% من الشهر الماضي
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+                            <i data-lucide="users" class="w-7 h-7 text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="stat-card bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-1">مكالمات اليوم</p>
+                            <p class="text-3xl font-bold text-gray-900">42</p>
+                            <p class="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                                <i data-lucide="phone" class="w-3 h-3"></i>
+                                15 متبقية
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i data-lucide="phone-call" class="w-7 h-7 text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="stat-card bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-1">متابعات معلقة</p>
+                            <p class="text-3xl font-bold text-gray-900">18</p>
+                            <p class="text-xs text-orange-600 mt-2 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                5 عاجلة
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+                            <i data-lucide="clock" class="w-7 h-7 text-orange-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stat Card 4 -->
+                <div class="stat-card bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 mb-1">مكتملة هذا الشهر</p>
+                            <p class="text-3xl font-bold text-gray-900">128</p>
+                            <p class="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                معدل إنجاز 94%
+                            </p>
+                        </div>
+                        <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+                            <i data-lucide="check-square" class="w-7 h-7 text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <!-- Filters & Actions Bar -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                    <!-- Search -->
+                    <div class="flex-1 w-full lg:max-w-md">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                            <input 
+                                type="text" 
+                                placeholder="بحث عن عميل بالاسم أو رقم الجوال..."
+                                class="w-full pr-10 pl-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Filters & Actions -->
+                    <div class="flex gap-3 w-full lg:w-auto">
+                        <select class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                            <option>جميع الحالات</option>
+                            <option>عقود نشطة</option>
+                            <option>قريبة من الانتهاء</option>
+                            <option>منتهية</option>
+                        </select>
+                        
+                        <select class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                            <option>آخر 7 أيام</option>
+                            <option>آخر 30 يوم</option>
+                            <option>آخر 3 أشهر</option>
+                            <option>الكل</option>
+                        </select>
+
+                        <button class="btn-action px-6 py-2.5 bg-green-600 text-white rounded-lg font-semibold flex items-center gap-2 shadow-sm hover:bg-green-700">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                            متابعة جديدة
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers List -->
+            <div class="space-y-4">
+                <!-- Customer Card 1 -->
+                <div class="customer-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in" style="animation-delay: 0.3s;">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-4 flex-1">
+                                <!-- Avatar -->
+                                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                                    م.أ
+                                </div>
+                                
+                                <!-- Info -->
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <h3 class="text-lg font-bold text-gray-900">محمد أحمد السعيد</h3>
+                                        <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 flex items-center gap-1">
+                                            <span class="status-dot active"></span>
+                                            عقد نشط
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                            <span class="phone-number font-mono">0512345678</span>
+                                        </span>
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                                            عقد #2024-156
+                                        </span>
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                                            ينتهي في 15 مايو 2025
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Last Contact -->
+                            <div class="text-left shrink-0">
+                                <p class="text-xs text-gray-500 mb-1">آخر اتصال</p>
+                                <p class="text-sm font-semibold text-gray-900">منذ 3 أيام</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 mb-4">
+                            <button class="btn-action call-now-btn flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-green-700">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                                اتصال الآن
+                            </button>
+                            <button class="btn-action flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-blue-700" onclick="toggleCustomerDetails('customer1')">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                عرض السجل
+                            </button>
+                            <button class="btn-action flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-orange-600" onclick="openAddNoteModal()">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                إضافة ملاحظة
+                            </button>
+                            <button class="btn-action px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200">
+                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Recent Activity Summary -->
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <i data-lucide="activity" class="w-4 h-4 text-green-600"></i>
+                                آخر المتابعات
+                            </h4>
+                            <div class="space-y-2">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i data-lucide="phone" class="w-3 h-3 text-green-600"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-700"><span class="font-semibold">2025-01-15:</span> تم الاتصال - طلب تمديد العقد لمدة 6 أشهر إضافية</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <i data-lucide="message-square" class="w-3 h-3 text-blue-600"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-700"><span class="font-semibold">2025-01-10:</span> رسالة SMS - تذكير بالدفعة القادمة (5000 ريال)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expandable Details -->
+                        <div id="customer1-details" class="hidden mt-4 border-t border-gray-200 pt-4">
+                            <!-- Timeline -->
+                            <h4 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="clock" class="w-5 h-5 text-green-600"></i>
+                                سجل المتابعات الكامل
+                            </h4>
+                            <div class="space-y-4 relative">
+                                <!-- Timeline Line -->
+                                <div class="absolute top-0 bottom-0 right-[15px] w-0.5 bg-gray-200"></div>
+
+                                <!-- Timeline Entry 1 -->
+                                <div class="timeline-entry flex gap-4 relative">
+                                    <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white shrink-0 relative z-10 shadow-sm">
+                                        <i data-lucide="phone" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-sm font-bold text-gray-900">مكالمة هاتفية</span>
+                                                <span class="text-xs text-gray-500">المدة: 5 دقائق</span>
+                                            </div>
+                                            <span class="text-xs text-gray-500">2025-01-15 | 15:30</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-2">
+                                            <strong>الموظف:</strong> أحمد الإداري
+                                        </p>
+                                        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                            <p class="text-sm text-gray-800 mb-2"><strong>💬 الملاحظات:</strong></p>
+                                            <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                                                <li>العميل طلب تمديد العقد لمدة 6 أشهر إضافية</li>
+                                                <li>تم الاتفاق على موعد لزيارة المكتب يوم الأربعاء</li>
+                                                <li>يحتاج عرض سعر خاص للتمديد</li>
+                                            </ul>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="priority-medium px-3 py-1 rounded-full text-xs font-semibold">
+                                                الإجراء: إعداد عرض سعر
+                                            </span>
+                                            <button class="text-xs text-blue-600 hover:text-blue-700 font-semibold">تعديل</button>
+                                            <button class="text-xs text-red-600 hover:text-red-700 font-semibold">حذف</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Timeline Entry 2 -->
+                                <div class="timeline-entry flex gap-4 relative">
+                                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 relative z-10 shadow-sm">
+                                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-bold text-gray-900">رسالة SMS</span>
+                                            <span class="text-xs text-gray-500">2025-01-10 | 10:00</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-2">
+                                            <strong>الموظف:</strong> النظام التلقائي
+                                        </p>
+                                        <div class="bg-blue-50 rounded-lg p-3 mb-2">
+                                            <p class="text-sm text-gray-800"><strong>📱 المحتوى:</strong></p>
+                                            <p class="text-sm text-gray-700 mt-1">تذكير: دفعة الإيجار القادمة مستحقة في 25-01-2025. المبلغ: 5000 ريال</p>
+                                        </div>
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                            <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                            تم الإرسال
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Timeline Entry 3 -->
+                                <div class="timeline-entry flex gap-4 relative">
+                                    <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white shrink-0 relative z-10 shadow-sm">
+                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-bold text-gray-900">اجتماع في المكتب</span>
+                                            <span class="text-xs text-gray-500">2025-01-05 | 14:00</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 mb-2">
+                                            <strong>الحضور:</strong> العميل، مدير المبيعات، مدير العلاقات
+                                        </p>
+                                        <div class="bg-gray-50 rounded-lg p-3">
+                                            <p class="text-sm text-gray-700">مناقشة شروط العقد الحالي وإمكانية الترقية لباقة أكبر مع خصم خاص.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Card 2 -->
+                <div class="customer-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in" style="animation-delay: 0.4s;">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-4 flex-1">
+                                <!-- Avatar -->
+                                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                                    ف.خ
+                                </div>
+                                
+                                <!-- Info -->
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <h3 class="text-lg font-bold text-gray-900">فاطمة خالد العتيبي</h3>
+                                        <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 flex items-center gap-1">
+                                            <span class="status-dot active"></span>
+                                            عقد نشط
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                            <span class="phone-number font-mono">0551234567</span>
+                                        </span>
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                                            عقد #2024-189
+                                        </span>
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                                            ينتهي في 20 يونيو 2025
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Last Contact -->
+                            <div class="text-left shrink-0">
+                                <p class="text-xs text-gray-500 mb-1">آخر اتصال</p>
+                                <p class="text-sm font-semibold text-gray-900">منذ يوم واحد</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 mb-4">
+                            <button class="btn-action call-now-btn flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-green-700">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                                اتصال الآن
+                            </button>
+                            <button class="btn-action flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-blue-700" onclick="toggleCustomerDetails('customer2')">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                عرض السجل
+                            </button>
+                            <button class="btn-action flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-orange-600" onclick="openAddNoteModal()">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                إضافة ملاحظة
+                            </button>
+                            <button class="btn-action px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200">
+                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Pending Follow-up Alert -->
+                        <div class="bg-orange-50 border-r-4 border-orange-500 rounded-lg p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                                    <i data-lucide="bell" class="w-5 h-5 text-orange-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-orange-900 mb-1">متابعة معلقة</p>
+                                    <p class="text-sm text-orange-700">اتصال مجدول اليوم الساعة 3:00 مساءً - متابعة طلب الصيانة</p>
+                                </div>
+                                <button class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition-colors">
+                                    تأكيد
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Expandable Details -->
+                        <div id="customer2-details" class="hidden mt-4 border-t border-gray-200 pt-4">
+                            <p class="text-gray-600 text-center py-8">سجل المتابعات فارغ. قم بإضافة أول متابعة.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Card 3 -->
+                <div class="customer-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in" style="animation-delay: 0.5s;">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-4 flex-1">
+                                <!-- Avatar -->
+                                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+                                    ع.س
+                                </div>
+                                
+                                <!-- Info -->
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <h3 class="text-lg font-bold text-gray-900">عبدالله سعد القحطاني</h3>
+                                        <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 flex items-center gap-1">
+                                            <span class="status-dot pending"></span>
+                                            قريب الانتهاء
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                            <span class="phone-number font-mono">0501234567</span>
+                                        </span>
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                                            عقد #2024-078
+                                        </span>
+                                        <span class="flex items-center gap-1.5 text-orange-600">
+                                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                                            ينتهي في 5 فبراير 2025
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Last Contact -->
+                            <div class="text-left shrink-0">
+                                <p class="text-xs text-gray-500 mb-1">آخر اتصال</p>
+                                <p class="text-sm font-semibold text-red-600">منذ 5 أيام</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3 mb-4">
+                            <button class="btn-action call-now-btn flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-green-700">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                                اتصال الآن
+                            </button>
+                            <button class="btn-action flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-blue-700" onclick="toggleCustomerDetails('customer3')">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                عرض السجل
+                            </button>
+                            <button class="btn-action flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm hover:bg-orange-600" onclick="openAddNoteModal()">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                إضافة ملاحظة
+                            </button>
+                            <button class="btn-action px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200">
+                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Warning Alert -->
+                        <div class="bg-red-50 border-r-4 border-red-500 rounded-lg p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-red-900 mb-1">يحتاج متابعة عاجلة</p>
+                                    <p class="text-sm text-red-700">لم يتم الاتصال منذ أسبوع - العقد ينتهي خلال 10 أيام</p>
+                                </div>
+                                <button class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">
+                                    اتصال الآن
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Expandable Details -->
+                        <div id="customer3-details" class="hidden mt-4 border-t border-gray-200 pt-4">
+                            <p class="text-gray-600 text-center py-8">تحميل البيانات...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-center gap-2 mt-8 animate-fade-in" style="animation-delay: 0.6s;">
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    السابق
+                </button>
+                <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold">1</button>
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">2</button>
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">3</button>
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">4</button>
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">5</button>
+                <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    التالي
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div id="addNoteModal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div class="modal-backdrop fixed inset-0 bg-black/40" onclick="closeAddNoteModal()"></div>
+        
+        <!-- Modal Content -->
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Header -->
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-6 h-6 text-green-600"></i>
+                            إضافة متابعة جديدة
+                        </h3>
+                        <button onclick="closeAddNoteModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <i data-lucide="x" class="w-6 h-6 text-gray-500"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="p-6 space-y-6">
+                    <!-- Communication Type -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">نوع المتابعة</label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <label class="relative flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="commType" value="phone" class="peer sr-only" checked>
+                                <div class="peer-checked:border-green-500 peer-checked:bg-green-50 absolute inset-0 border-2 rounded-lg transition-all"></div>
+                                <i data-lucide="phone" class="w-5 h-5 text-gray-600 relative z-10"></i>
+                                <span class="text-sm font-medium text-gray-700 relative z-10">مكالمة</span>
+                            </label>
+                            <label class="relative flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="commType" value="message" class="peer sr-only">
+                                <div class="peer-checked:border-green-500 peer-checked:bg-green-50 absolute inset-0 border-2 rounded-lg transition-all"></div>
+                                <i data-lucide="message-square" class="w-5 h-5 text-gray-600 relative z-10"></i>
+                                <span class="text-sm font-medium text-gray-700 relative z-10">رسالة</span>
+                            </label>
+                            <label class="relative flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="commType" value="meeting" class="peer sr-only">
+                                <div class="peer-checked:border-green-500 peer-checked:bg-green-50 absolute inset-0 border-2 rounded-lg transition-all"></div>
+                                <i data-lucide="users" class="w-5 h-5 text-gray-600 relative z-10"></i>
+                                <span class="text-sm font-medium text-gray-700 relative z-10">اجتماع</span>
+                            </label>
+                            <label class="relative flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="commType" value="note" class="peer sr-only">
+                                <div class="peer-checked:border-green-500 peer-checked:bg-green-50 absolute inset-0 border-2 rounded-lg transition-all"></div>
+                                <i data-lucide="file-text" class="w-5 h-5 text-gray-600 relative z-10"></i>
+                                <span class="text-sm font-medium text-gray-700 relative z-10">ملاحظة</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date & Time -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">التاريخ</label>
+                            <input type="date" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">الوقت</label>
+                            <input type="time" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">الملاحظات والتفاصيل</label>
+                        <textarea rows="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all resize-none" placeholder="اكتب تفاصيل المتابعة هنا...&#10;&#10;مثال:&#10;- تم مناقشة تجديد العقد&#10;- العميل مهتم بترقية الباقة&#10;- طلب عرض سعر خاص"></textarea>
+                    </div>
+
+                    <!-- Action Required -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">الإجراء المطلوب (اختياري)</label>
+                        <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
+                            <option value="">لا يوجد</option>
+                            <option value="quote">إعداد عرض سعر</option>
+                            <option value="contract">تجهيز عقد جديد</option>
+                            <option value="payment">متابعة الدفعة</option>
+                            <option value="maintenance">جدولة صيانة</option>
+                            <option value="renewal">تجديد العقد</option>
+                        </select>
+                    </div>
+
+                    <!-- Schedule Follow-up -->
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label class="flex items-center gap-3 mb-4 cursor-pointer">
+                            <input type="checkbox" class="w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-2 focus:ring-green-500">
+                            <span class="text-sm font-semibold text-gray-900">جدولة متابعة قادمة</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">تاريخ المتابعة</label>
+                                <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">وقت المتابعة</label>
+                                <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-2xl flex gap-3 justify-end">
+                    <button onclick="closeAddNoteModal()" class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                        إلغاء
+                    </button>
+                    <button class="px-6 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-sm">
+                        حفظ المتابعة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Toggle Customer Details
+        function toggleCustomerDetails(customerId) {
+            const details = document.getElementById(`${customerId}-details`);
+            if (details) {
+                details.classList.toggle('hidden');
+            }
+        }
+
+        // Open Add Note Modal
+        function openAddNoteModal() {
+            document.getElementById('addNoteModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close Add Note Modal
+        function closeAddNoteModal() {
+            document.getElementById('addNoteModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAddNoteModal();
+            }
+        });
+
+        // Simulate loading animations on page load
+        window.addEventListener('load', () => {
+            // Re-initialize icons after animations
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
+
+

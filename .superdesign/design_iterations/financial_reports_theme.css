@@ -1,0 +1,468 @@
+/* Financial Reports Theme - FleetifyApp Design System
+ * استخدام نفس ألوان النظام الحالي
+ * تاريخ الإنشاء: 2 نوفمبر 2025
+ */
+
+:root {
+  /* ========================================
+   * نظام الألوان من FleetifyApp الحالي
+   * ======================================== */
+  
+  /* خلفيات رمادية احترافية */
+  --background: 0 0% 96%;
+  --background-soft: 0 0% 94%;
+  --foreground: 0 0% 15%;
+  
+  /* نظام البطاقات النظيف */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 15%;
+  --card-hover: 0 0% 98%;
+  --card-glass: 0 0% 100% / 0.9;
+  
+  /* أحمر غامق أساسي */
+  --primary: 0 70% 45%;
+  --primary-foreground: 0 0% 100%;
+  --primary-dark: 0 70% 35%;
+  --primary-light: 0 70% 55%;
+  --primary-glow: 0 70% 45% / 0.2;
+  
+  /* نظام برتقالي احترافي للتمييز */
+  --accent: 25 90% 92%;
+  --accent-foreground: 0 0% 15%;
+  --accent-light: 25 90% 95%;
+  --accent-muted: 25 90% 85%;
+  --accent-dark: 25 85% 55%;
+  
+  /* رمادي ثانوي محايد */
+  --secondary: 0 0% 85%;
+  --secondary-foreground: 0 0% 15%;
+  --secondary-dark: 0 0% 80%;
+  
+  /* عناصر خافتة */
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 45%;
+  
+  /* ألوان الحالات - برتقالي احترافي للتحذيرات */
+  --success: 142 56% 42%;
+  --success-foreground: 0 0% 100%;
+  --success-light: 142 56% 95%;
+  
+  --warning: 25 85% 55%;
+  --warning-foreground: 0 0% 100%;
+  --warning-light: 25 85% 95%;
+  
+  --destructive: 0 65% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --destructive-light: 0 65% 95%;
+  
+  /* حدود ومدخلات نظيفة */
+  --border: 0 0% 85%;
+  --input: 0 0% 98%;
+  --input-border: 0 0% 80%;
+  --input-focus: 0 70% 45%;
+  --ring: 0 70% 45%;
+  
+  /* ========================================
+   * تدرجات أنيقة
+   * ======================================== */
+  --gradient-primary: linear-gradient(135deg, hsl(0 70% 35%), hsl(0 70% 45%));
+  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 94%) 100%);
+  --gradient-hero: linear-gradient(135deg, hsl(0 0% 96%) 0%, hsl(0 0% 94%) 50%, hsl(25 90% 95%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(25 90% 95%), hsl(25 90% 85%));
+  
+  /* تدرجات التقارير المالية */
+  --gradient-report-header: linear-gradient(135deg, hsl(0 70% 45%) 0%, hsl(0 70% 35%) 100%);
+  --gradient-stats-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+  --gradient-table-header: linear-gradient(180deg, hsl(0 0% 98%) 0%, hsl(0 0% 96%) 100%);
+  
+  /* ========================================
+   * ظلال نظيفة
+   * ======================================== */
+  --shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
+  --shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
+  --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+  --shadow-glow: 0 0 20px hsl(0 70% 45% / 0.2);
+  
+  /* ظلال خاصة بالتقارير */
+  --shadow-report-card: 0 2px 8px 0 hsl(0 0% 15% / 0.06);
+  --shadow-table: 0 1px 3px 0 hsl(0 0% 15% / 0.04);
+  
+  /* ========================================
+   * انتقالات سلسة احترافية
+   * ======================================== */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-micro: all 0.15s ease-out;
+  
+  /* ========================================
+   * نظام الخطوط العربية
+   * ======================================== */
+  --font-cairo: 'Cairo', sans-serif;
+  --font-tajawal: 'Tajawal', sans-serif;
+  --font-amiri: 'Amiri', serif;
+  --font-noto-kufi: 'Noto Kufi Arabic', sans-serif;
+  --font-reem-kufi: 'Reem Kufi', sans-serif;
+  
+  /* ========================================
+   * الحجوم والمسافات
+   * ======================================== */
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  
+  --spacing: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* ========================================
+   * ألوان خاصة بالتقارير المالية
+   * ======================================== */
+  
+  /* ألوان للأرقام الموجبة والسالبة */
+  --profit-color: 142 56% 42%;        /* أخضر للأرباح */
+  --loss-color: 0 65% 51%;            /* أحمر للخسائر */
+  --neutral-color: 0 0% 45%;          /* رمادي للقيم المحايدة */
+  
+  /* ألوان تمييز الصفوف */
+  --row-odd: 0 0% 100%;
+  --row-even: 0 0% 98%;
+  --row-hover: 25 90% 95%;
+  
+  /* ألوان الأيقونات */
+  --icon-primary: 0 70% 45%;
+  --icon-secondary: 0 0% 45%;
+  --icon-success: 142 56% 42%;
+  --icon-warning: 25 85% 55%;
+  --icon-danger: 0 65% 51%;
+  
+  /* ألوان Badge */
+  --badge-active: 142 56% 95%;
+  --badge-active-text: 142 56% 30%;
+  --badge-pending: 25 85% 95%;
+  --badge-pending-text: 25 85% 35%;
+  --badge-inactive: 0 0% 92%;
+  --badge-inactive-text: 0 0% 45%;
+}
+
+/* ========================================
+ * تصميم العناصر الأساسية
+ * ======================================== */
+
+body {
+  font-family: var(--font-cairo) !important;
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  direction: rtl !important;
+  text-align: right !important;
+  line-height: 1.6 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-cairo) !important;
+  font-weight: 700 !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+h1 {
+  font-size: 2rem !important;
+  line-height: 1.2 !important;
+}
+
+h2 {
+  font-size: 1.5rem !important;
+  line-height: 1.3 !important;
+}
+
+h3 {
+  font-size: 1.25rem !important;
+  line-height: 1.4 !important;
+}
+
+/* ========================================
+ * تصميم البطاقات
+ * ======================================== */
+
+.report-card {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-report-card) !important;
+  padding: var(--spacing-lg) !important;
+  transition: var(--transition-smooth) !important;
+}
+
+.report-card:hover {
+  box-shadow: var(--shadow-elevated) !important;
+  transform: translateY(-2px) !important;
+}
+
+.stats-card {
+  background: var(--gradient-stats-card) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--spacing-lg) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: var(--transition-smooth) !important;
+}
+
+.stats-card:hover {
+  box-shadow: var(--shadow-elevated) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+}
+
+/* ========================================
+ * تصميم الأزرار
+ * ======================================== */
+
+.btn-primary {
+  background: var(--gradient-primary) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border: none !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: var(--radius) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: var(--transition-smooth) !important;
+  box-shadow: var(--shadow-subtle) !important;
+}
+
+.btn-primary:hover {
+  box-shadow: var(--shadow-elevated) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-secondary {
+  background: hsl(var(--secondary)) !important;
+  color: hsl(var(--secondary-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: var(--radius) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: var(--transition-smooth) !important;
+}
+
+.btn-secondary:hover {
+  background: hsl(var(--secondary-dark)) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ========================================
+ * تصميم الجداول
+ * ======================================== */
+
+.financial-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  background: hsl(var(--card)) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-table) !important;
+}
+
+.financial-table thead {
+  background: var(--gradient-table-header) !important;
+}
+
+.financial-table th {
+  padding: 1rem !important;
+  text-align: right !important;
+  font-weight: 700 !important;
+  color: hsl(var(--foreground)) !important;
+  font-size: 0.875rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 2px solid hsl(var(--border)) !important;
+}
+
+.financial-table tbody tr {
+  transition: var(--transition-micro) !important;
+  border-bottom: 1px solid hsl(var(--border) / 0.5) !important;
+}
+
+.financial-table tbody tr:nth-child(odd) {
+  background: hsl(var(--row-odd)) !important;
+}
+
+.financial-table tbody tr:nth-child(even) {
+  background: hsl(var(--row-even)) !important;
+}
+
+.financial-table tbody tr:hover {
+  background: hsl(var(--row-hover)) !important;
+  transform: translateX(-2px) !important;
+}
+
+.financial-table td {
+  padding: 0.875rem 1rem !important;
+  text-align: right !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ========================================
+ * تصميم الأرقام والقيم المالية
+ * ======================================== */
+
+.amount-positive {
+  color: hsl(var(--profit-color)) !important;
+  font-weight: 600 !important;
+}
+
+.amount-negative {
+  color: hsl(var(--loss-color)) !important;
+  font-weight: 600 !important;
+}
+
+.amount-neutral {
+  color: hsl(var(--neutral-color)) !important;
+  font-weight: 500 !important;
+}
+
+.currency-symbol {
+  font-size: 0.875em !important;
+  margin-right: 0.25rem !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* ========================================
+ * تصميم Badges والعلامات
+ * ======================================== */
+
+.badge {
+  display: inline-block !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.badge-success {
+  background: hsl(var(--badge-active)) !important;
+  color: hsl(var(--badge-active-text)) !important;
+}
+
+.badge-warning {
+  background: hsl(var(--badge-pending)) !important;
+  color: hsl(var(--badge-pending-text)) !important;
+}
+
+.badge-inactive {
+  background: hsl(var(--badge-inactive)) !important;
+  color: hsl(var(--badge-inactive-text)) !important;
+}
+
+/* ========================================
+ * تصميم الأيقونات
+ * ======================================== */
+
+.icon-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.75rem !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--gradient-primary) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  box-shadow: var(--shadow-subtle) !important;
+}
+
+.icon-success {
+  color: hsl(var(--icon-success)) !important;
+}
+
+.icon-warning {
+  color: hsl(var(--icon-warning)) !important;
+}
+
+.icon-danger {
+  color: hsl(var(--icon-danger)) !important;
+}
+
+/* ========================================
+ * تصميم التبويبات
+ * ======================================== */
+
+.tabs-container {
+  display: flex !important;
+  gap: 0.5rem !important;
+  border-bottom: 2px solid hsl(var(--border)) !important;
+  margin-bottom: var(--spacing-xl) !important;
+  overflow-x: auto !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.tab-item {
+  padding: 0.75rem 1.25rem !important;
+  border-radius: var(--radius) var(--radius) 0 0 !important;
+  background: transparent !important;
+  color: hsl(var(--muted-foreground)) !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: var(--transition-micro) !important;
+  white-space: nowrap !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+}
+
+.tab-item:hover {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.tab-item.active {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--primary)) !important;
+  border-bottom-color: hsl(var(--primary)) !important;
+}
+
+/* ========================================
+ * Responsive Design
+ * ======================================== */
+
+@media (max-width: 768px) {
+  .report-card {
+    padding: var(--spacing-md) !important;
+  }
+  
+  .financial-table {
+    font-size: 0.875rem !important;
+  }
+  
+  .financial-table th,
+  .financial-table td {
+    padding: 0.5rem !important;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  .tabs-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-card {
+    padding: var(--spacing-md) !important;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100% !important;
+    padding: 0.875rem !important;
+  }
+}

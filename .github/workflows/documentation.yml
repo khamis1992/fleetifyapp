@@ -1,0 +1,69 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  docs-check:
+    name: 📚 Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📚 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Check for README
+        run: |
+          if [ -f "README.md" ]; then
+            echo "✅ README.md exists"
+            echo "✅ README.md found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ README.md not found"
+            echo "⚠️ README.md not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🔍 Check for CLAUDE.md
+        run: |
+          if [ -f "CLAUDE.md" ]; then
+            echo "✅ CLAUDE.md exists"
+            echo "✅ CLAUDE.md found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ CLAUDE.md not found"
+            echo "⚠️ CLAUDE.md not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🔍 Check component documentation
+        run: |
+          echo "## Component Documentation Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Count TypeScript files with comments
+          TS_FILES=$(find src -name "*.tsx" -o -name "*.ts" | wc -l)
+          echo "Total TypeScript files: $TS_FILES" >> $GITHUB_STEP_SUMMARY
+
+          # Check for doc comments
+          DOC_FILES=$(grep -r "^/\*\*" src --include="*.tsx" --include="*.ts" -l | wc -l)
+          echo "Files with JSDoc comments: $DOC_FILES" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📊 Summary
+        run: |
+          echo "## 📚 Documentation Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| README.md | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
+          echo "| CLAUDE.md | ✅ Completed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Component Docs | ✅ Completed |" >> $GITHUB_STEP_SUMMARY

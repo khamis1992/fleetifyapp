@@ -1,0 +1,150 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build:ci
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Add and sync Android platform
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Create keystore for release build
+        if: github.event.inputs.build_type == 'release' || github.ref_type == 'tag'
+        env:
+          KEYSTORE_FILE: ${{ secrets.ANDROID_KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_FILE" ]; then
+            echo "$KEYSTORE_FILE" | base64 --decode > android/app/release.keystore
+            echo "RELEASE_STORE_FILE=release.keystore" >> $GITHUB_ENV
+            echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
+          else
+            echo "Warning: Keystore secrets not found, building debug APK"
+          fi
+
+      - name: Build APK (Debug)
+        if: github.event.inputs.build_type != 'release' && github.ref_type != 'tag'
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Build APK (Release)
+        if: github.event.inputs.build_type == 'release' || github.ref_type == 'tag'
+        env:
+          RELEASE_STORE_FILE: ${{ env.RELEASE_STORE_FILE }}
+          RELEASE_KEY_ALIAS: ${{ env.RELEASE_KEY_ALIAS }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          if [ -n "$RELEASE_STORE_FILE" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            echo "Keystore not configured, building debug APK"
+            ./gradlew assembleDebug --no-daemon
+          fi
+
+      - name: Upload APK (Debug)
+        if: github.event.inputs.build_type != 'release' && github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fleetify-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload APK (Release)
+        if: github.event.inputs.build_type == 'release' || github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fleetify-release-apk
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 90
+
+      - name: Get APK info
+        run: |
+          if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            echo "## Debug APK" >> $GITHUB_STEP_SUMMARY
+            echo "- Size: $(du -h android/app/build/outputs/apk/debug/app-debug.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+            echo "- MD5: $(md5sum android/app/build/outputs/apk/debug/app-debug.apk | cut -d' ' -f1)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            echo "## Release APK" >> $GITHUB_STEP_SUMMARY
+            echo "- Size: $(du -h android/app/build/outputs/apk/release/app-release.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+            echo "- MD5: $(md5sum android/app/build/outputs/apk/release/app-release.apk | cut -d' ' -f1)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/debug/app-debug.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

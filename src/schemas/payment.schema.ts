@@ -1,0 +1,93 @@
+import { z } from 'zod';
+
+// Base payment schema
+export const basePaymentSchema = z.object({
+  payment_number: z.string().optional(), // سيتم توليده تلقائياً إذا لم يُحدد
+  payment_date: z.string().min(1, 'تاريخ الدفع مطلوب'),
+  amount: z.number().min(0.001, 'المبلغ يجب أن يكون أكبر من صفر'),
+  payment_method: z.enum(['cash', 'check', 'bank_transfer', 'credit_card', 'debit_card'], {
+    required_error: 'طريقة الدفع مطلوبة',
+  }),
+  reference_number: z.string().optional(),
+  check_number: z.string().optional(),
+  bank_account: z.string().optional(),
+  currency: z.string().default('QAR'),
+  notes: z.string().optional(),
+});
+
+// Customer payment (receipt) schema
+export const customerPaymentSchema = basePaymentSchema.extend({
+  customer_id: z.string().uuid('معرف العميل غير صحيح'),
+  invoice_id: z.string().uuid().optional(),
+  contract_id: z.string().uuid().optional(),
+  type: z.literal('receipt'),
+});
+
+// Vendor payment schema  
+export const vendorPaymentSchema = basePaymentSchema.extend({
+  vendor_id: z.string().uuid('معرف المورد غير صحيح'),
+  purchase_order_id: z.string().uuid().optional(),
+  description: z.string().optional(),
+  type: z.literal('payment'),
+});
+
+// Invoice payment schema
+export const invoicePaymentSchema = basePaymentSchema.extend({
+  invoice_id: z.string().uuid('معرف الفاتورة غير صحيح'),
+  customer_id: z.string().uuid().optional(),
+  vendor_id: z.string().uuid().optional(),
+  type: z.literal('invoice_payment'),
+});
+
+// Unified payment schema that handles all payment types
+export const unifiedPaymentSchema = z.discriminatedUnion('type', [
+  customerPaymentSchema,
+  vendorPaymentSchema,
+  invoicePaymentSchema,
+]);
+
+// Helper to transform empty strings to undefined for optional UUID fields
+const optionalUuid = z.string().optional().transform(val => 
+  val && val.length > 0 ? val : undefined
+).pipe(z.string().uuid().optional());
+
+// Enhanced payment schema with additional fields
+export const enhancedPaymentSchema = basePaymentSchema.extend({
+  cost_center_id: optionalUuid,
+  bank_id: optionalUuid,
+  account_id: optionalUuid,
+  customer_id: optionalUuid,
+  vendor_id: optionalUuid,
+  invoice_id: optionalUuid,
+  contract_id: optionalUuid,
+  purchase_order_id: optionalUuid,
+  type: z.enum(['receipt', 'payment', 'invoice_payment']),
+  transaction_type: z.enum(['customer_payment', 'vendor_payment', 'invoice_payment']).optional(),
+  payment_status: z.enum(['pending', 'completed', 'cancelled']).default('completed'),
+});
+
+// Journal entry preview schema for payments
+export const paymentJournalPreviewSchema = z.object({
+  entry_number: z.string(),
+  entry_date: z.string(),
+  description: z.string(),
+  total_amount: z.number(),
+  lines: z.array(z.object({
+    line_number: z.number(),
+    account_name: z.string(),
+    account_code: z.string(),
+    cost_center_name: z.string().optional(),
+    description: z.string(),
+    debit_amount: z.number(),
+    credit_amount: z.number(),
+  })),
+});
+
+// Type exports for payment schemas
+export type BasePaymentData = z.infer<typeof basePaymentSchema>;
+export type CustomerPaymentData = z.infer<typeof customerPaymentSchema>;
+export type VendorPaymentData = z.infer<typeof vendorPaymentSchema>;
+export type InvoicePaymentData = z.infer<typeof invoicePaymentSchema>;
+export type UnifiedPaymentData = z.infer<typeof unifiedPaymentSchema>;
+export type EnhancedPaymentData = z.infer<typeof enhancedPaymentSchema>;
+export type PaymentJournalPreview = z.infer<typeof paymentJournalPreviewSchema>;

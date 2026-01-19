@@ -1,0 +1,2258 @@
+### Page state
+- Page URL: http://localhost:8080/fleet/traffic-violations
+- Page Title: Traffic Violations - FleetifyApp
+- Page Snapshot:
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - button [ref=e6] [cursor=pointer]:
+          - img [ref=e7]
+        - generic [ref=e8]: Fleetify
+        - button [ref=e9] [cursor=pointer]:
+          - img [ref=e10]
+      - main [ref=e13]:
+        - generic [ref=e14]:
+          - navigation "Breadcrumb" [ref=e15]:
+            - link "لوحة التحكم" [ref=e16] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e17]
+              - generic [ref=e20]: لوحة التحكم
+            - img [ref=e21]
+            - link "إدارة الأسطول" [ref=e23] [cursor=pointer]:
+              - /url: /fleet
+            - img [ref=e24]
+            - generic [ref=e26]: المخالفات المرورية
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]:
+                - img [ref=e40]
+                - generic [ref=e42]:
+                  - heading "إدارة المخالفات المرورية" [level=1] [ref=e43]
+                  - paragraph [ref=e44]: نظام تتبع وإدارة غرامات المركبات
+              - generic [ref=e45]:
+                - button "تحديث" [ref=e46] [cursor=pointer]:
+                  - img [ref=e47]
+                  - generic [ref=e52]: تحديث
+                - button "طباعة التقرير" [ref=e53] [cursor=pointer]:
+                  - img [ref=e54]
+                  - generic [ref=e58]: طباعة التقرير
+                - button "تسجيل مخالفة" [ref=e59] [cursor=pointer]:
+                  - img [ref=e60]
+                  - text: تسجيل مخالفة
+            - main [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]:
+                  - generic [ref=e65]:
+                    - generic [ref=e66]:
+                      - paragraph [ref=e67]: إجمالي المخالفات
+                      - paragraph [ref=e68]: 1,000
+                      - paragraph [ref=e69]: QAR 636,200.00
+                    - img [ref=e71]
+                  - generic [ref=e74]:
+                    - generic [ref=e75]:
+                      - paragraph [ref=e76]: مبالغ غير مسددة
+                      - paragraph [ref=e77]: QAR 636,200.00
+                      - paragraph [ref=e78]: 1000 مخالفة
+                    - img [ref=e80]
+                  - generic [ref=e83]:
+                    - generic [ref=e84]:
+                      - paragraph [ref=e85]: مبالغ مسددة
+                      - paragraph [ref=e86]: QAR 0.00
+                      - paragraph [ref=e87]: 0 مخالفة
+                    - img [ref=e89]
+                  - generic [ref=e93]:
+                    - generic [ref=e94]:
+                      - paragraph [ref=e95]: نسبة التحصيل
+                      - paragraph [ref=e96]: 0%
+                      - paragraph [ref=e97]: "متوسط المخالفة: QAR 636.20"
+                    - img [ref=e99]
+                  - generic [ref=e102]:
+                    - generic [ref=e103]:
+                      - img [ref=e104]
+                      - generic [ref=e107]: "0"
+                    - generic [ref=e108]:
+                      - generic [ref=e109]: ضعيف
+                      - generic [ref=e110]: مؤشر الإدارة
+                - generic [ref=e112]:
+                  - img [ref=e113]
+                  - generic [ref=e115]:
+                    - text: "تنبيهات هامة:"
+                    - generic [ref=e116]: 🔴 1000 مخالفة متأخرة (>30 يوم)
+                    - generic [ref=e117]: 🟠 109 مخالفة بمبلغ عالي
+                  - button "إرسال تذكيرات" [ref=e118] [cursor=pointer]:
+                    - img [ref=e119]
+                    - text: إرسال تذكيرات
+                - generic [ref=e122]:
+                  - heading "ملخص سريع" [level=3] [ref=e123]:
+                    - img [ref=e124]
+                    - text: ملخص سريع
+                  - generic [ref=e126]:
+                    - generic [ref=e127]:
+                      - generic [ref=e128]: "93"
+                      - generic [ref=e129]: قيد المراجعة
+                    - generic [ref=e130]:
+                      - generic [ref=e131]: "907"
+                      - generic [ref=e132]: مؤكدة
+                    - generic [ref=e133]:
+                      - generic [ref=e134]: "0"
+                      - generic [ref=e135]: ملغاة
+                    - generic [ref=e136]:
+                      - generic [ref=e137]: "99"
+                      - generic [ref=e138]: مركبات متكررة
+                    - generic [ref=e139]:
+                      - generic [ref=e140]: "65"
+                      - generic [ref=e141]: عملاء متكررين
+              - generic [ref=e142]:
+                - heading "تنبيهات المخالفات (5)" [level=3] [ref=e144]:
+                  - img [ref=e145]
+                  - text: تنبيهات المخالفات (5)
+                - generic [ref=e147]:
+                  - generic [ref=e149]:
+                    - img [ref=e151]
+                    - generic [ref=e154]:
+                      - generic [ref=e155]:
+                        - generic [ref=e156]: مخالفات متأخرة
+                        - generic [ref=e157]: "1000"
+                      - paragraph [ref=e158]: 1000 مخالفة غير مسددة منذ أكثر من 30 يوم
+                    - button [ref=e159] [cursor=pointer]:
+                      - img [ref=e160]
+                  - generic [ref=e163]:
+                    - img [ref=e165]
+                    - generic [ref=e167]:
+                      - generic [ref=e168]:
+                        - generic [ref=e169]: مخالفات بمبالغ عالية
+                        - generic [ref=e170]: "845"
+                      - paragraph [ref=e171]: 845 مخالفة بمبلغ 500 ر.ق أو أكثر
+                    - button [ref=e172] [cursor=pointer]:
+                      - img [ref=e173]
+                  - generic [ref=e176]:
+                    - img [ref=e178]
+                    - generic [ref=e182]:
+                      - generic [ref=e183]:
+                        - generic [ref=e184]: مركبات متكررة
+                        - generic [ref=e185]: "74"
+                      - paragraph [ref=e186]: 74 مركبة لديها أكثر من 3 مخالفات
+                  - generic [ref=e188]:
+                    - img [ref=e190]
+                    - generic [ref=e193]:
+                      - generic [ref=e194]:
+                        - generic [ref=e195]: عملاء متكررين
+                        - generic [ref=e196]: "42"
+                      - paragraph [ref=e197]: 42 عميل لديه أكثر من 3 مخالفات
+                  - generic [ref=e199]:
+                    - img [ref=e201]
+                    - generic [ref=e204]:
+                      - generic [ref=e205]:
+                        - generic [ref=e206]: مخالفات قيد المراجعة
+                        - generic [ref=e207]: "93"
+                      - paragraph [ref=e208]: 93 مخالفة تحتاج للتأكيد
+                    - button [ref=e209] [cursor=pointer]:
+                      - img [ref=e210]
+                - generic [ref=e212]:
+                  - heading "🚗 أكثر المركبات مخالفات" [level=4] [ref=e213]
+                  - generic [ref=e214]:
+                    - generic [ref=e215] [cursor=pointer]:
+                      - generic [ref=e216]:
+                        - generic [ref=e217]: "1"
+                        - generic [ref=e218]:
+                          - generic [ref=e219]: "856925"
+                          - generic [ref=e220]: Bestune B70s
+                      - generic [ref=e221]:
+                        - generic [ref=e222]: 48 مخالفة
+                        - generic [ref=e223]: QAR 25,100.00
+                    - generic [ref=e224] [cursor=pointer]:
+                      - generic [ref=e225]:
+                        - generic [ref=e226]: "2"
+                        - generic [ref=e227]:
+                          - generic [ref=e228]: "186246"
+                          - generic [ref=e229]: hongqi H9
+                      - generic [ref=e230]:
+                        - generic [ref=e231]: 37 مخالفة
+                        - generic [ref=e232]: QAR 17,700.00
+                    - generic [ref=e233] [cursor=pointer]:
+                      - generic [ref=e234]:
+                        - generic [ref=e235]: "3"
+                        - generic [ref=e236]:
+                          - generic [ref=e237]: "857051"
+                          - generic [ref=e238]: Bestune B70s
+                      - generic [ref=e239]:
+                        - generic [ref=e240]: 33 مخالفة
+                        - generic [ref=e241]: QAR 22,300.00
+              - generic [ref=e243]:
+                - tablist [ref=e245]:
+                  - tab "قائمة المخالفات" [selected] [ref=e246] [cursor=pointer]:
+                    - img [ref=e247]
+                    - text: قائمة المخالفات
+                  - tab "استيراد PDF" [ref=e248] [cursor=pointer]:
+                    - img [ref=e249]
+                    - text: استيراد PDF
+                  - tab "التقارير" [ref=e252] [cursor=pointer]:
+                    - img [ref=e253]
+                    - text: التقارير
+                - tabpanel "قائمة المخالفات" [ref=e254]:
+                  - generic [ref=e255]:
+                    - generic [ref=e256]:
+                      - img [ref=e257]
+                      - 'textbox "بحث: رقم المخالفة، المركبة، العميل..." [ref=e260]'
+                    - generic [ref=e261]:
+                      - generic [ref=e262]:
+                        - img
+                        - combobox [ref=e263] [cursor=pointer]:
+                          - option "جميع المركبات" [selected]
+                          - option "Bestune T33 - 10064"
+                          - option "Bestune T33 - 10171"
+                          - option "Bestune T33 - 10172"
+                          - option "Bestune T33 - 10173"
+                          - option "Bestune T33 - 10174"
+                          - option "Bestune T33 - 10176"
+                          - option "Bestune T33 - 10189"
+                          - option "Bestune T33 - 10197"
+                          - option "changan Alsvin - 10663"
+                          - option "changan Alsvin - 10664"
+                          - option "changan Alsvin - 10665"
+                          - option "changan Alsvin - 10666"
+                          - option "changan Alsvin - 10667"
+                          - option "changan alsvin - 10668"
+                          - option "changan Alsvin - 10669"
+                          - option "changan Alsvin - 10670"
+                          - option "changan Alsvin - 10671"
+                          - option "changan Alsvin - 10672"
+                          - option "changan Alsvin - 10849"
+                          - option "changan Alsvin - 10850"
+                          - option "changan Alsvin - 10851"
+                          - option "changan Alsvin - 10852"
+                          - option "changan Alsvin - 10853"
+                          - option "changan Alsvin - 10854"
+                          - option "changan Alsvin - 10855"
+                          - option "changan Alsvin - 10856"
+                          - option "changan Alsvin - 10857"
+                          - option "changan Alsvin - 10858"
+                          - option "Bestune T33 - 11473"
+                          - option "Unknown Unknown - 153 974"
+                          - option "Bestune B70 - 17216"
+                          - option "Bestune T77 - 185 485"
+                          - option "Unknown Unknown - 185 513"
+                          - option "Unknown Unknown - 185 573"
+                          - option "Bestune T77 - 185513"
+                          - option "Bestune T77 - 185573"
+                          - option "hongqi H9 - 186246"
+                          - option "Bestune B70s - 21849"
+                          - option "Bestune B70s - 21860"
+                          - option "Bestune T33 - 21875"
+                          - option "testt test - 234"
+                          - option "dongfeng A30 - 2633"
+                          - option "dongfeng A30 - 2634"
+                          - option "dongfeng A30 - 2635"
+                          - option "dongfeng A60 max - 2636"
+                          - option "dongfeng A30 - 2637"
+                          - option "Bestune T77 - 2766"
+                          - option "Bestune T77 - 2767"
+                          - option "Bestune T77 - 2768"
+                          - option "Bestune T77 - 2769"
+                          - option "Bestune T77 - 2770"
+                          - option "Bestune T77 - 2771"
+                          - option "Bestune T77 - 2772"
+                          - option "Bestune T77 - 2773"
+                          - option "Bestune T77 - 2774"
+                          - option "Bestune T77 - 2775"
+                          - option "Bestune T77 - 2776"
+                          - option "Bestune T77 - 2777"
+                          - option "Bestune T77 - 2778"
+                          - option "Bestune T77 - 2779"
+                          - option "Bestune T77 - 2780"
+                          - option "Bestune T77 - 2781"
+                          - option "Bestune T77 - 2782"
+                          - option "Bestune T77 - 2783"
+                          - option "Bestune T77 - 2784"
+                          - option "Bestune T77 - 2798"
+                          - option "MG5 MG5 - 335485"
+                          - option "MG5 MG5 - 335750"
+                          - option "Bestune B70 - 381247"
+                          - option "GAC GS3 - 4014"
+                          - option "GAC GS3 - 4015"
+                          - option "GAC GS3 - 4016"
+                          - option "GAC GS3 - 4017"
+                          - option "GAC GS3 - 4018"
+                          - option "MG5 MG5 - 521207"
+                          - option "MG5 MG5 - 548682"
+                          - option "Bestune B70 - 556199"
+                          - option "MG5 MG5 - 557098"
+                          - option "Bestune T33 - 563829"
+                          - option "MG5 MG5 - 570468"
+                          - option "Bestune T77 pro - 5888"
+                          - option "Bestune T77 - 5889"
+                          - option "Bestune T77 pro - 5890"
+                          - option "Bestune T77 - 5891"
+                          - option "Bestune T77 - 5892"
+                          - option "Bestune T77 pro - 5893"
+                          - option "Bestune T77 - 5894"
+                          - option "Bestune T77 pro - 5895"
+                          - option "Bestune T77 pro - 5896"
+                          - option "Bestune T77 pro - 5897"
+                          - option "Bestune T77 pro - 5898"
+                          - option "Bestune T77 pro - 5899"
+                          - option "Bestune T77 pro - 5900"
+                          - option "Bestune T77 pro - 5901"
+                          - option "Unknown Unknown - 599 720"
+                          - option "Bestune B70 - 602448"
+                          - option "Unknown Unknown - 603 353"
+                          - option "Bestune B70 - 646507"
+                          - option "Bestune B70 - 648144"
+                          - option "Bestune B70 - 676281"
+                          - option "Bestune B70 - 692801"
+                          - option "Bestune T77 pro - 7034"
+                          - option "Bestune T77 pro - 7035"
+                          - option "Bestune T77 pro - 7036"
+                          - option "Bestune T77 pro - 7037"
+                          - option "Bestune T77 pro - 7038"
+                          - option "Bestune T77 pro - 7039"
+                          - option "Bestune T77 - 7040"
+                          - option "Bestune T77 pro - 7041"
+                          - option "Bestune T77 pro - 7042"
+                          - option "Bestune T77 pro - 7043"
+                          - option "Bestune T77 pro - 7053"
+                          - option "Bestune T77 pro - 7054"
+                          - option "Bestune T77 pro - 7055"
+                          - option "Bestune T77 pro - 7056"
+                          - option "Bestune T77 pro - 7057"
+                          - option "Bestune T77 pro - 7058"
+                          - option "Bestune T77 pro - 7059"
+                          - option "Bestune T77 pro - 7060"
+                          - option "Bestune T77 - 7061"
+                          - option "Bestune B70 - 706150"
+                          - option "Bestune T77 pro - 7062"
+                          - option "Bestune T77 pro - 7063"
+                          - option "Bestune T77 pro - 7064"
+                          - option "Bestune T77 pro - 7065"
+                          - option "Bestune T77 pro - 7066"
+                          - option "Bestune T77 pro - 7067"
+                          - option "Bestune T77 pro - 7068"
+                          - option "Bestune T77 pro - 7069"
+                          - option "Bestune T77 pro - 7070"
+                          - option "Bestune T77 pro - 7071"
+                          - option "Bestune T77 pro - 7072"
+                          - option "Bestune T77 pro - 7073"
+                          - option "Bestune T77 pro - 7074"
+                          - option "Bestune T77 pro - 7075"
+                          - option "Bestune T77 pro - 7076"
+                          - option "Bestune T77 - 7077"
+                          - option "Bestune T77 pro - 7078"
+                          - option "Bestune B70 - 711289"
+                          - option "Bestune B70 - 711464"
+                          - option "Bestune B70 - 718325"
+                          - option "Bestune B70 - 721440"
+                          - option "Bestune T33 - 721894"
+                          - option "Bestune B70 - 722134"
+                          - option "Bestune B70 - 725473"
+                          - option "MG5 MG5 - 739649"
+                          - option "MG5 MG5 - 741277"
+                          - option "MG5 MG5 - 742320"
+                          - option "MG5 MG5 - 746956"
+                          - option "MG5 MG5 - 749403"
+                          - option "MG5 MG5 - 749762"
+                          - option "MG5 MG5 - 751340"
+                          - option "MG5 MG5 - 751425"
+                          - option "MG5 MG5 - 752724"
+                          - option "MG5 MG5 - 754436"
+                          - option "MG5 MG5 - 754705"
+                          - option "MG5 MG5 - 756104"
+                          - option "MG5 MG5 - 757935"
+                          - option "MG5 MG5 - 761292"
+                          - option "MG5 MG5 - 816508"
+                          - option "MG5 MG5 - 817009"
+                          - option "MG5 MG5 - 819027"
+                          - option "GAC GS3 - 8203"
+                          - option "GAC GS3 - 8204"
+                          - option "GAC GS3 - 8205"
+                          - option "GAC GS3 - 8206"
+                          - option "GAC GS3 - 8207"
+                          - option "GAC GS3 - 8208"
+                          - option "GAC GS3 - 8209"
+                          - option "GAC GS3 - 8210"
+                          - option "GAC GS3 - 8211"
+                          - option "GAC GS3 - 8212"
+                          - option "GAC GS3 - 8213"
+                          - option "GAC GS3 - 8214"
+                          - option "MG5 MG5 - 821873"
+                          - option "MG5 MG5 - 822389"
+                          - option "Ford TERRITORY - 846485"
+                          - option "Ford TERRITORY - 846508"
+                          - option "Ford TERRITORY - 846560"
+                          - option "Ford TERRITORY - 847059"
+                          - option "Ford TERRITORY - 847099"
+                          - option "Ford TERRITORY - 847601"
+                          - option "Ford TERRITORY - 847932"
+                          - option "Ford TERRITORY - 847941"
+                          - option "Ford TERRITORY - 847987"
+                          - option "Ford TERRITORY - 848014"
+                          - option "Bestune B70s - 856589"
+                          - option "Bestune B70s - 856715"
+                          - option "Bestune B70s - 856718"
+                          - option "Bestune B70s - 856878"
+                          - option "Bestune B70s - 856925"
+                          - option "Bestune B70s - 857045"
+                          - option "Bestune B70s - 857051"
+                          - option "Bestune T33 - 862165"
+                          - option "Bestune T33 - 862169"
+                          - option "Bestune B70 - 893405"
+                          - option "Bestune B70 - 893406"
+                          - option "Bestune B70 - 893407"
+                          - option "Bestune B70 - 893408"
+                          - option "Bestune B70 - 893409"
+                          - option "Bestune B70 - 893410"
+                          - option "Bestune B70 - 893411"
+                          - option "Bestune T99 - 906077"
+                          - option "Bestune T33 - 9255"
+                          - option "Bestune T33 - 9890"
+                          - option "Bestune T33 - 9891"
+                          - option "Bestune T33 - 9894"
+                          - option "Bestune T33 - 9902"
+                          - option "Bestune T33 - 9905"
+                          - option "Bestune T33 - 9999"
+                          - option "Toyota Camry - TEST-123"
+                          - option "تويوتا كامري - TEST-12345"
+                          - option "تجربة تجربة - أ ب ج 1342"
+                        - img
+                      - generic [ref=e264]:
+                        - img
+                        - combobox [ref=e265] [cursor=pointer]:
+                          - option "جميع العملاء" [selected]
+                          - option "ABDALLA ABDALLA"
+                          - option "abdelazim pro"
+                          - option "abdelghani abboud"
+                          - option "ABDELJALIL HATTACH"
+                          - option "abdelkader abdelkader"
+                          - option "ABDELLATIF ELHADAD"
+                          - option "Abdemoniem ismail mahmoud Mohamed"
+                          - option "abduaziz almhauod"
+                          - option "ABDUL AZIZ WAIGA"
+                          - option "ABDULRAHMAN ALGHAIATHI"
+                          - option "abrar zaib"
+                          - option "achraf saadaoui"
+                          - option "ahmed arsheen"
+                          - option "ahmed abdalla mahmoud abdalla mahmoud abdalla"
+                          - option "ahmed ali mohamed bakhit"
+                          - option "ahmed MASGHOUNI"
+                          - option "ahmed ali mawlod abdalla"
+                          - option "ahmed fadil"
+                          - option "AHMED ABBAS ELDAWO ELHASHMI"
+                          - option "AHMED BEN DHAOU"
+                          - option "alaeddine dabech"
+                          - option "ALI ABBAS"
+                          - option "amir ben fredj"
+                          - option "awol ibrahim"
+                          - option "awuah baffour"
+                          - option "AYMEN NASRA"
+                          - option "azhari hakim khalid hakim"
+                          - option "bannour rekaia"
+                          - option "clement gyamerah"
+                          - option "DEO SSENYANJA"
+                          - option "dtrgfgdfg"
+                          - option "emmanuel darko"
+                          - option "eric naiko"
+                          - option "faisal iqbal"
+                          - option "foster ngo"
+                          - option "frank williams"
+                          - option "GIRISHKUMAR KARTHIKEYAN"
+                          - option "HABIB KHELIFI"
+                          - option "HAMIDA BOUZIANE"
+                          - option "Hamza Serunga"
+                          - option "hamze hussein"
+                          - option "HANENE JELASSI"
+                          - option "hany mohamed"
+                          - option "Haq Nawaz Rahim Bakhsh"
+                          - option "hassan sharif"
+                          - option "haytham zarrouk"
+                          - option "haythem souissi"
+                          - option "hosni maatallah"
+                          - option "HOSSEM DHAHRI 2"
+                          - option "imran farhad"
+                          - option "josef ado"
+                          - option "kaies ayari"
+                          - option "KAMIL ALTAHIR"
+                          - option "KHAfgfgfgfgMIS AL-JABOR"
+                          - option "KHAMIS AL-JABORrttttrrrr"
+                          - option "KIBROM"
+                          - option "KOSAY HAMMAMI"
+                          - option "mahamoud maan dabboussi"
+                          - option "mahdi yousif"
+                          - option "mahmoud jassem alsaleh"
+                          - option "MAMOUN AHMED"
+                          - option "marwen safsafi"
+                          - option "MEHRAN TABIB TABIB HUSSAIN"
+                          - option "mohamed ahmed"
+                          - option "mohamed shikh"
+                          - option "mohamed abdalla"
+                          - option "mohamed elnakhli"
+                          - option "mohamed ncibi"
+                          - option "MOHAMED AMINE SALEM"
+                          - option "mohamed nawaz"
+                          - option "Mohammad ibrar Abdul hanan"
+                          - option "MOHAMMAD ADNAN SWAID"
+                          - option "mohammed houssem dib"
+                          - option "Mohammed ali Fetoui"
+                          - option "Mohammed Muslim"
+                          - option "MOHAMMED ULLAH"
+                          - option "MOHAMMED ABDALLAH"
+                          - option "mokhtar alil"
+                          - option "MONCEF SAIBI"
+                          - option "mouheb ouni"
+                          - option "mounir lechelache"
+                          - option "MOURAD BARHOUMI"
+                          - option "mubarek golcha"
+                          - option "muhammad mahmood"
+                          - option "MUHAMMAD ALI KHALID"
+                          - option "mustafa almustafa"
+                          - option "nabil fargalla"
+                          - option "Nacer Lahcene"
+                          - option "OASIM HALDER"
+                          - option "olusegun onadairo"
+                          - option "OSAMA GRESS"
+                          - option "osmane mohamed"
+                          - 'option "oussama` bouguerra"'
+                          - option "prince nkansah"
+                          - option "QFORCE SECURITY SERVICE"
+                          - option "radhwan mdini"
+                          - option "RAFIK BELKACEM"
+                          - option "raphael denu"
+                          - option "RAVI"
+                          - option "saber dhibi"
+                          - option "sabri mbarki"
+                          - option "saddam el falah"
+                          - option "saeed al-hebabi"
+                          - option "said chenouf"
+                          - option "saidi ababa"
+                          - option "SAIF ramzan"
+                          - option "sajjad gul"
+                          - option "salah masaad"
+                          - option "Salih abdullah mohamed Ahmad"
+                          - option "samuel yeboah"
+                          - option "SAYED I.A ELSAYED"
+                          - option "sead logomo"
+                          - option "shadrack saky"
+                          - option "shahid rehman"
+                          - option "snoonu snoonu"
+                          - option "Sofiene Ben salah"
+                          - option "SOUFIANE BESSAOUDI"
+                          - option "Suman Kumar shah"
+                          - option "syed jan"
+                          - option "tarak tunisia"
+                          - option "tarek rahali"
+                          - option "tarek boutemedjet"
+                          - option "VARUN KUMAR C CHAUHAN"
+                          - option "walid hassan"
+                          - option "WALID CHOURABI"
+                          - option "wassim chatmen"
+                          - option "Yassine Serhani"
+                          - option "yosr chamkhi"
+                          - option "ZAINUDEEN MOHAMED IZADEEN"
+                          - option "zied fares"
+                          - option "ZINELABIDINE BADRA"
+                          - option "أمير عبد الرحمان"
+                          - option "إبراهيم خضر"
+                          - option "إسماعيل أحمد عبد الله"
+                          - option "ابراهيم يعقوب"
+                          - option "احمد جمعة"
+                          - option "احمد عبدالله محمد"
+                          - option "احمد الشيخ الصديق"
+                          - option "احمد تاج"
+                          - option "احمد السيد بابكر"
+                          - option "احمد الطاهر ادريس"
+                          - option "اختبار العقد"
+                          - option "ادم صالح جبريل"
+                          - option "ازهري حكيم"
+                          - option "اسلام عثمان محمدين"
+                          - option "الصادق دياب"
+                          - option "امين محمد شوشان"
+                          - option "انور محمد ابراهيم"
+                          - option "انور جدبيني."
+                          - option "انور الدهبي"
+                          - option "انور الجنبيني- (حمزة)"
+                          - option "ايمن خليفة حمادي"
+                          - option "ايهاب عبد الله"
+                          - option "بدر الدين خليفي"
+                          - option "بلال اليعقوبي"
+                          - option "تجربة ثانية"
+                          - option "ثامر محمد السيد"
+                          - option "جابر دستا"
+                          - option "جاسم محمد الصالح"
+                          - option "حسان بو علاقي"
+                          - option "حسن الفكي"
+                          - option "حمدي ثانث"
+                          - option "حمزة بادو"
+                          - option "حمزة البشير يانس"
+                          - option "خبيب رضا السحابي"
+                          - option "خميس الجبر"
+                          - option "رمزي بعزاوي"
+                          - option "زكرياء بن احمد"
+                          - option "زياد اليحمدي"
+                          - option "سامي عبد الله"
+                          - option "سعيد الهلالي"
+                          - option "سيف الدولة عيسى"
+                          - option "سيف الدين محمد صالح"
+                          - option "شرف الدين المجيد"
+                          - option "شرفي العبد الله"
+                          - option "شيهاب"
+                          - option "صابر محمد"
+                          - option "صدام مصطفى سعيد"
+                          - option "عائشة سالم المري"
+                          - option "عاطف منصور"
+                          - option "عبد الحميد عترون"
+                          - option "عبد العزيز محمد"
+                          - option "عبد الغفور درار"
+                          - option "عبد العزيز سامي"
+                          - option "عبد العزيز جرفال"
+                          - option "عبد الله عمر برهان"
+                          - option "عبد الحنان"
+                          - option "عبد الرحيم شاكر"
+                          - option "عبد الصمد بن عزوز"
+                          - option "عبد الله العلواني"
+                          - option "عبد الرزاق الهنديس يس"
+                          - option "عبدالغفور درار"
+                          - option "عبدالمنعم حمدي"
+                          - option "عثمان عبيريزة"
+                          - option "عدنان محمد شودر"
+                          - option "عصام ابراهيم عبد الله"
+                          - option "عصام المزوغي"
+                          - option "عصام احمد عبد الدايم"
+                          - option "عقبة قصعاوي"
+                          - option "علا الدين حسين"
+                        - img
+                      - generic [ref=e266]:
+                        - button "الكل" [ref=e267] [cursor=pointer]
+                        - button "مسددة" [ref=e268] [cursor=pointer]
+                        - button "غير مسددة" [ref=e269] [cursor=pointer]
+                        - button "جزئي" [ref=e270] [cursor=pointer]
+                  - table [ref=e272]:
+                    - rowgroup [ref=e273]:
+                      - row "رقم المخالفة / التاريخ المركبة العميل التفاصيل القيمة الحالة الإجراءات" [ref=e274]:
+                        - columnheader "رقم المخالفة / التاريخ" [ref=e275]
+                        - columnheader "المركبة" [ref=e276]
+                        - columnheader "العميل" [ref=e277]
+                        - columnheader "التفاصيل" [ref=e278]
+                        - columnheader "القيمة" [ref=e279]
+                        - columnheader "الحالة" [ref=e280]
+                        - columnheader "الإجراءات" [ref=e281]
+                    - rowgroup [ref=e282]:
+                      - row "3302285079 19/10/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e283] [cursor=pointer]:
+                        - cell "3302285079 19/10/2025" [ref=e284]:
+                          - generic [ref=e285]: "3302285079"
+                          - generic [ref=e286]:
+                            - img [ref=e287]
+                            - text: 19/10/2025
+                        - cell "غير معروف" [ref=e289]:
+                          - generic [ref=e290]:
+                            - img [ref=e292]
+                            - generic [ref=e296]: غير معروف
+                        - cell "غير محدد" [ref=e297]:
+                          - generic [ref=e298]:
+                            - img [ref=e300]
+                            - generic [ref=e303]: غير محدد
+                        - cell "traffic" [ref=e304]:
+                          - generic [ref=e305]: traffic
+                        - cell "QAR 500.00" [ref=e306]
+                        - cell "غير مسددة قيد المراجعة" [ref=e307]:
+                          - generic [ref=e308]:
+                            - img [ref=e309]
+                            - text: غير مسددة
+                          - generic [ref=e311]: قيد المراجعة
+                        - cell [ref=e312]:
+                          - generic [ref=e313]:
+                            - button "عرض التفاصيل" [ref=e314]:
+                              - img [ref=e315]
+                            - button "إضافة دفعة" [ref=e318]:
+                              - img [ref=e319]
+                            - button "تعديل" [ref=e321]:
+                              - img [ref=e322]
+                            - button "حذف" [ref=e325]:
+                              - img [ref=e326]
+                      - row "3302291783 17/10/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e329] [cursor=pointer]:
+                        - cell "3302291783 17/10/2025" [ref=e330]:
+                          - generic [ref=e331]: "3302291783"
+                          - generic [ref=e332]:
+                            - img [ref=e333]
+                            - text: 17/10/2025
+                        - cell "غير معروف" [ref=e335]:
+                          - generic [ref=e336]:
+                            - img [ref=e338]
+                            - generic [ref=e342]: غير معروف
+                        - cell "غير محدد" [ref=e343]:
+                          - generic [ref=e344]:
+                            - img [ref=e346]
+                            - generic [ref=e349]: غير محدد
+                        - cell "traffic" [ref=e350]:
+                          - generic [ref=e351]: traffic
+                        - cell "QAR 300.00" [ref=e352]
+                        - cell "غير مسددة قيد المراجعة" [ref=e353]:
+                          - generic [ref=e354]:
+                            - img [ref=e355]
+                            - text: غير مسددة
+                          - generic [ref=e357]: قيد المراجعة
+                        - cell [ref=e358]:
+                          - generic [ref=e359]:
+                            - button "عرض التفاصيل" [ref=e360]:
+                              - img [ref=e361]
+                            - button "إضافة دفعة" [ref=e364]:
+                              - img [ref=e365]
+                            - button "تعديل" [ref=e367]:
+                              - img [ref=e368]
+                            - button "حذف" [ref=e371]:
+                              - img [ref=e372]
+                      - row "3302270143 17/10/2025 غير معروف غير محدد traffic QAR 1,000.00 غير مسددة قيد المراجعة" [ref=e375] [cursor=pointer]:
+                        - cell "3302270143 17/10/2025" [ref=e376]:
+                          - generic [ref=e377]: "3302270143"
+                          - generic [ref=e378]:
+                            - img [ref=e379]
+                            - text: 17/10/2025
+                        - cell "غير معروف" [ref=e381]:
+                          - generic [ref=e382]:
+                            - img [ref=e384]
+                            - generic [ref=e388]: غير معروف
+                        - cell "غير محدد" [ref=e389]:
+                          - generic [ref=e390]:
+                            - img [ref=e392]
+                            - generic [ref=e395]: غير محدد
+                        - cell "traffic" [ref=e396]:
+                          - generic [ref=e397]: traffic
+                        - cell "QAR 1,000.00" [ref=e398]
+                        - cell "غير مسددة قيد المراجعة" [ref=e399]:
+                          - generic [ref=e400]:
+                            - img [ref=e401]
+                            - text: غير مسددة
+                          - generic [ref=e403]: قيد المراجعة
+                        - cell [ref=e404]:
+                          - generic [ref=e405]:
+                            - button "عرض التفاصيل" [ref=e406]:
+                              - img [ref=e407]
+                            - button "إضافة دفعة" [ref=e410]:
+                              - img [ref=e411]
+                            - button "تعديل" [ref=e413]:
+                              - img [ref=e414]
+                            - button "حذف" [ref=e417]:
+                              - img [ref=e418]
+                      - row "3302155951 02/10/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e421] [cursor=pointer]:
+                        - cell "3302155951 02/10/2025" [ref=e422]:
+                          - generic [ref=e423]: "3302155951"
+                          - generic [ref=e424]:
+                            - img [ref=e425]
+                            - text: 02/10/2025
+                        - cell "غير معروف" [ref=e427]:
+                          - generic [ref=e428]:
+                            - img [ref=e430]
+                            - generic [ref=e434]: غير معروف
+                        - cell "غير محدد" [ref=e435]:
+                          - generic [ref=e436]:
+                            - img [ref=e438]
+                            - generic [ref=e441]: غير محدد
+                        - cell "traffic" [ref=e442]:
+                          - generic [ref=e443]: traffic
+                        - cell "QAR 500.00" [ref=e444]
+                        - cell "غير مسددة قيد المراجعة" [ref=e445]:
+                          - generic [ref=e446]:
+                            - img [ref=e447]
+                            - text: غير مسددة
+                          - generic [ref=e449]: قيد المراجعة
+                        - cell [ref=e450]:
+                          - generic [ref=e451]:
+                            - button "عرض التفاصيل" [ref=e452]:
+                              - img [ref=e453]
+                            - button "إضافة دفعة" [ref=e456]:
+                              - img [ref=e457]
+                            - button "تعديل" [ref=e459]:
+                              - img [ref=e460]
+                            - button "حذف" [ref=e463]:
+                              - img [ref=e464]
+                      - row "3301777925 18/10/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e467] [cursor=pointer]:
+                        - cell "3301777925 18/10/2024" [ref=e468]:
+                          - generic [ref=e469]: "3301777925"
+                          - generic [ref=e470]:
+                            - img [ref=e471]
+                            - text: 18/10/2024
+                        - cell "غير معروف" [ref=e473]:
+                          - generic [ref=e474]:
+                            - img [ref=e476]
+                            - generic [ref=e480]: غير معروف
+                        - cell "غير محدد" [ref=e481]:
+                          - generic [ref=e482]:
+                            - img [ref=e484]
+                            - generic [ref=e487]: غير محدد
+                        - cell "traffic" [ref=e488]:
+                          - generic [ref=e489]: traffic
+                        - cell "QAR 500.00" [ref=e490]
+                        - cell "غير مسددة قيد المراجعة" [ref=e491]:
+                          - generic [ref=e492]:
+                            - img [ref=e493]
+                            - text: غير مسددة
+                          - generic [ref=e495]: قيد المراجعة
+                        - cell [ref=e496]:
+                          - generic [ref=e497]:
+                            - button "عرض التفاصيل" [ref=e498]:
+                              - img [ref=e499]
+                            - button "إضافة دفعة" [ref=e502]:
+                              - img [ref=e503]
+                            - button "تعديل" [ref=e505]:
+                              - img [ref=e506]
+                            - button "حذف" [ref=e509]:
+                              - img [ref=e510]
+                      - row "3301661659 16/07/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e513] [cursor=pointer]:
+                        - cell "3301661659 16/07/2025" [ref=e514]:
+                          - generic [ref=e515]: "3301661659"
+                          - generic [ref=e516]:
+                            - img [ref=e517]
+                            - text: 16/07/2025
+                        - cell "غير معروف" [ref=e519]:
+                          - generic [ref=e520]:
+                            - img [ref=e522]
+                            - generic [ref=e526]: غير معروف
+                        - cell "غير محدد" [ref=e527]:
+                          - generic [ref=e528]:
+                            - img [ref=e530]
+                            - generic [ref=e533]: غير محدد
+                        - cell "traffic" [ref=e534]:
+                          - generic [ref=e535]: traffic
+                        - cell "QAR 500.00" [ref=e536]
+                        - cell "غير مسددة قيد المراجعة" [ref=e537]:
+                          - generic [ref=e538]:
+                            - img [ref=e539]
+                            - text: غير مسددة
+                          - generic [ref=e541]: قيد المراجعة
+                        - cell [ref=e542]:
+                          - generic [ref=e543]:
+                            - button "عرض التفاصيل" [ref=e544]:
+                              - img [ref=e545]
+                            - button "إضافة دفعة" [ref=e548]:
+                              - img [ref=e549]
+                            - button "تعديل" [ref=e551]:
+                              - img [ref=e552]
+                            - button "حذف" [ref=e555]:
+                              - img [ref=e556]
+                      - row "3302138005 01/10/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e559] [cursor=pointer]:
+                        - cell "3302138005 01/10/2025" [ref=e560]:
+                          - generic [ref=e561]: "3302138005"
+                          - generic [ref=e562]:
+                            - img [ref=e563]
+                            - text: 01/10/2025
+                        - cell "غير معروف" [ref=e565]:
+                          - generic [ref=e566]:
+                            - img [ref=e568]
+                            - generic [ref=e572]: غير معروف
+                        - cell "غير محدد" [ref=e573]:
+                          - generic [ref=e574]:
+                            - img [ref=e576]
+                            - generic [ref=e579]: غير محدد
+                        - cell "traffic" [ref=e580]:
+                          - generic [ref=e581]: traffic
+                        - cell "QAR 500.00" [ref=e582]
+                        - cell "غير مسددة قيد المراجعة" [ref=e583]:
+                          - generic [ref=e584]:
+                            - img [ref=e585]
+                            - text: غير مسددة
+                          - generic [ref=e587]: قيد المراجعة
+                        - cell [ref=e588]:
+                          - generic [ref=e589]:
+                            - button "عرض التفاصيل" [ref=e590]:
+                              - img [ref=e591]
+                            - button "إضافة دفعة" [ref=e594]:
+                              - img [ref=e595]
+                            - button "تعديل" [ref=e597]:
+                              - img [ref=e598]
+                            - button "حذف" [ref=e601]:
+                              - img [ref=e602]
+                      - row "3302140220 01/10/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e605] [cursor=pointer]:
+                        - cell "3302140220 01/10/2025" [ref=e606]:
+                          - generic [ref=e607]: "3302140220"
+                          - generic [ref=e608]:
+                            - img [ref=e609]
+                            - text: 01/10/2025
+                        - cell "غير معروف" [ref=e611]:
+                          - generic [ref=e612]:
+                            - img [ref=e614]
+                            - generic [ref=e618]: غير معروف
+                        - cell "غير محدد" [ref=e619]:
+                          - generic [ref=e620]:
+                            - img [ref=e622]
+                            - generic [ref=e625]: غير محدد
+                        - cell "traffic" [ref=e626]:
+                          - generic [ref=e627]: traffic
+                        - cell "QAR 500.00" [ref=e628]
+                        - cell "غير مسددة قيد المراجعة" [ref=e629]:
+                          - generic [ref=e630]:
+                            - img [ref=e631]
+                            - text: غير مسددة
+                          - generic [ref=e633]: قيد المراجعة
+                        - cell [ref=e634]:
+                          - generic [ref=e635]:
+                            - button "عرض التفاصيل" [ref=e636]:
+                              - img [ref=e637]
+                            - button "إضافة دفعة" [ref=e640]:
+                              - img [ref=e641]
+                            - button "تعديل" [ref=e643]:
+                              - img [ref=e644]
+                            - button "حذف" [ref=e647]:
+                              - img [ref=e648]
+                      - row "3301689772 30/07/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e651] [cursor=pointer]:
+                        - cell "3301689772 30/07/2025" [ref=e652]:
+                          - generic [ref=e653]: "3301689772"
+                          - generic [ref=e654]:
+                            - img [ref=e655]
+                            - text: 30/07/2025
+                        - cell "غير معروف" [ref=e657]:
+                          - generic [ref=e658]:
+                            - img [ref=e660]
+                            - generic [ref=e664]: غير معروف
+                        - cell "غير محدد" [ref=e665]:
+                          - generic [ref=e666]:
+                            - img [ref=e668]
+                            - generic [ref=e671]: غير محدد
+                        - cell "traffic" [ref=e672]:
+                          - generic [ref=e673]: traffic
+                        - cell "QAR 500.00" [ref=e674]
+                        - cell "غير مسددة قيد المراجعة" [ref=e675]:
+                          - generic [ref=e676]:
+                            - img [ref=e677]
+                            - text: غير مسددة
+                          - generic [ref=e679]: قيد المراجعة
+                        - cell [ref=e680]:
+                          - generic [ref=e681]:
+                            - button "عرض التفاصيل" [ref=e682]:
+                              - img [ref=e683]
+                            - button "إضافة دفعة" [ref=e686]:
+                              - img [ref=e687]
+                            - button "تعديل" [ref=e689]:
+                              - img [ref=e690]
+                            - button "حذف" [ref=e693]:
+                              - img [ref=e694]
+                      - row "3302017795 15/09/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e697] [cursor=pointer]:
+                        - cell "3302017795 15/09/2025" [ref=e698]:
+                          - generic [ref=e699]: "3302017795"
+                          - generic [ref=e700]:
+                            - img [ref=e701]
+                            - text: 15/09/2025
+                        - cell "غير معروف" [ref=e703]:
+                          - generic [ref=e704]:
+                            - img [ref=e706]
+                            - generic [ref=e710]: غير معروف
+                        - cell "غير محدد" [ref=e711]:
+                          - generic [ref=e712]:
+                            - img [ref=e714]
+                            - generic [ref=e717]: غير محدد
+                        - cell "traffic" [ref=e718]:
+                          - generic [ref=e719]: traffic
+                        - cell "QAR 300.00" [ref=e720]
+                        - cell "غير مسددة قيد المراجعة" [ref=e721]:
+                          - generic [ref=e722]:
+                            - img [ref=e723]
+                            - text: غير مسددة
+                          - generic [ref=e725]: قيد المراجعة
+                        - cell [ref=e726]:
+                          - generic [ref=e727]:
+                            - button "عرض التفاصيل" [ref=e728]:
+                              - img [ref=e729]
+                            - button "إضافة دفعة" [ref=e732]:
+                              - img [ref=e733]
+                            - button "تعديل" [ref=e735]:
+                              - img [ref=e736]
+                            - button "حذف" [ref=e739]:
+                              - img [ref=e740]
+                      - row "3302248688 15/10/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e743] [cursor=pointer]:
+                        - cell "3302248688 15/10/2025" [ref=e744]:
+                          - generic [ref=e745]: "3302248688"
+                          - generic [ref=e746]:
+                            - img [ref=e747]
+                            - text: 15/10/2025
+                        - cell "غير معروف" [ref=e749]:
+                          - generic [ref=e750]:
+                            - img [ref=e752]
+                            - generic [ref=e756]: غير معروف
+                        - cell "غير محدد" [ref=e757]:
+                          - generic [ref=e758]:
+                            - img [ref=e760]
+                            - generic [ref=e763]: غير محدد
+                        - cell "traffic" [ref=e764]:
+                          - generic [ref=e765]: traffic
+                        - cell "QAR 500.00" [ref=e766]
+                        - cell "غير مسددة قيد المراجعة" [ref=e767]:
+                          - generic [ref=e768]:
+                            - img [ref=e769]
+                            - text: غير مسددة
+                          - generic [ref=e771]: قيد المراجعة
+                        - cell [ref=e772]:
+                          - generic [ref=e773]:
+                            - button "عرض التفاصيل" [ref=e774]:
+                              - img [ref=e775]
+                            - button "إضافة دفعة" [ref=e778]:
+                              - img [ref=e779]
+                            - button "تعديل" [ref=e781]:
+                              - img [ref=e782]
+                            - button "حذف" [ref=e785]:
+                              - img [ref=e786]
+                      - row "3301723944 04/08/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e789] [cursor=pointer]:
+                        - cell "3301723944 04/08/2025" [ref=e790]:
+                          - generic [ref=e791]: "3301723944"
+                          - generic [ref=e792]:
+                            - img [ref=e793]
+                            - text: 04/08/2025
+                        - cell "غير معروف" [ref=e795]:
+                          - generic [ref=e796]:
+                            - img [ref=e798]
+                            - generic [ref=e802]: غير معروف
+                        - cell "غير محدد" [ref=e803]:
+                          - generic [ref=e804]:
+                            - img [ref=e806]
+                            - generic [ref=e809]: غير محدد
+                        - cell "traffic" [ref=e810]:
+                          - generic [ref=e811]: traffic
+                        - cell "QAR 500.00" [ref=e812]
+                        - cell "غير مسددة قيد المراجعة" [ref=e813]:
+                          - generic [ref=e814]:
+                            - img [ref=e815]
+                            - text: غير مسددة
+                          - generic [ref=e817]: قيد المراجعة
+                        - cell [ref=e818]:
+                          - generic [ref=e819]:
+                            - button "عرض التفاصيل" [ref=e820]:
+                              - img [ref=e821]
+                            - button "إضافة دفعة" [ref=e824]:
+                              - img [ref=e825]
+                            - button "تعديل" [ref=e827]:
+                              - img [ref=e828]
+                            - button "حذف" [ref=e831]:
+                              - img [ref=e832]
+                      - row "3301687394 29/07/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e835] [cursor=pointer]:
+                        - cell "3301687394 29/07/2025" [ref=e836]:
+                          - generic [ref=e837]: "3301687394"
+                          - generic [ref=e838]:
+                            - img [ref=e839]
+                            - text: 29/07/2025
+                        - cell "غير معروف" [ref=e841]:
+                          - generic [ref=e842]:
+                            - img [ref=e844]
+                            - generic [ref=e848]: غير معروف
+                        - cell "غير محدد" [ref=e849]:
+                          - generic [ref=e850]:
+                            - img [ref=e852]
+                            - generic [ref=e855]: غير محدد
+                        - cell "traffic" [ref=e856]:
+                          - generic [ref=e857]: traffic
+                        - cell "QAR 500.00" [ref=e858]
+                        - cell "غير مسددة قيد المراجعة" [ref=e859]:
+                          - generic [ref=e860]:
+                            - img [ref=e861]
+                            - text: غير مسددة
+                          - generic [ref=e863]: قيد المراجعة
+                        - cell [ref=e864]:
+                          - generic [ref=e865]:
+                            - button "عرض التفاصيل" [ref=e866]:
+                              - img [ref=e867]
+                            - button "إضافة دفعة" [ref=e870]:
+                              - img [ref=e871]
+                            - button "تعديل" [ref=e873]:
+                              - img [ref=e874]
+                            - button "حذف" [ref=e877]:
+                              - img [ref=e878]
+                      - row "3301296377 27/07/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e881] [cursor=pointer]:
+                        - cell "3301296377 27/07/2024" [ref=e882]:
+                          - generic [ref=e883]: "3301296377"
+                          - generic [ref=e884]:
+                            - img [ref=e885]
+                            - text: 27/07/2024
+                        - cell "غير معروف" [ref=e887]:
+                          - generic [ref=e888]:
+                            - img [ref=e890]
+                            - generic [ref=e894]: غير معروف
+                        - cell "غير محدد" [ref=e895]:
+                          - generic [ref=e896]:
+                            - img [ref=e898]
+                            - generic [ref=e901]: غير محدد
+                        - cell "traffic" [ref=e902]:
+                          - generic [ref=e903]: traffic
+                        - cell "QAR 500.00" [ref=e904]
+                        - cell "غير مسددة قيد المراجعة" [ref=e905]:
+                          - generic [ref=e906]:
+                            - img [ref=e907]
+                            - text: غير مسددة
+                          - generic [ref=e909]: قيد المراجعة
+                        - cell [ref=e910]:
+                          - generic [ref=e911]:
+                            - button "عرض التفاصيل" [ref=e912]:
+                              - img [ref=e913]
+                            - button "إضافة دفعة" [ref=e916]:
+                              - img [ref=e917]
+                            - button "تعديل" [ref=e919]:
+                              - img [ref=e920]
+                            - button "حذف" [ref=e923]:
+                              - img [ref=e924]
+                      - row "3301648245 25/07/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e927] [cursor=pointer]:
+                        - cell "3301648245 25/07/2025" [ref=e928]:
+                          - generic [ref=e929]: "3301648245"
+                          - generic [ref=e930]:
+                            - img [ref=e931]
+                            - text: 25/07/2025
+                        - cell "غير معروف" [ref=e933]:
+                          - generic [ref=e934]:
+                            - img [ref=e936]
+                            - generic [ref=e940]: غير معروف
+                        - cell "غير محدد" [ref=e941]:
+                          - generic [ref=e942]:
+                            - img [ref=e944]
+                            - generic [ref=e947]: غير محدد
+                        - cell "traffic" [ref=e948]:
+                          - generic [ref=e949]: traffic
+                        - cell "QAR 500.00" [ref=e950]
+                        - cell "غير مسددة قيد المراجعة" [ref=e951]:
+                          - generic [ref=e952]:
+                            - img [ref=e953]
+                            - text: غير مسددة
+                          - generic [ref=e955]: قيد المراجعة
+                        - cell [ref=e956]:
+                          - generic [ref=e957]:
+                            - button "عرض التفاصيل" [ref=e958]:
+                              - img [ref=e959]
+                            - button "إضافة دفعة" [ref=e962]:
+                              - img [ref=e963]
+                            - button "تعديل" [ref=e965]:
+                              - img [ref=e966]
+                            - button "حذف" [ref=e969]:
+                              - img [ref=e970]
+                      - row "3301645423 22/07/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e973] [cursor=pointer]:
+                        - cell "3301645423 22/07/2025" [ref=e974]:
+                          - generic [ref=e975]: "3301645423"
+                          - generic [ref=e976]:
+                            - img [ref=e977]
+                            - text: 22/07/2025
+                        - cell "غير معروف" [ref=e979]:
+                          - generic [ref=e980]:
+                            - img [ref=e982]
+                            - generic [ref=e986]: غير معروف
+                        - cell "غير محدد" [ref=e987]:
+                          - generic [ref=e988]:
+                            - img [ref=e990]
+                            - generic [ref=e993]: غير محدد
+                        - cell "traffic" [ref=e994]:
+                          - generic [ref=e995]: traffic
+                        - cell "QAR 300.00" [ref=e996]
+                        - cell "غير مسددة قيد المراجعة" [ref=e997]:
+                          - generic [ref=e998]:
+                            - img [ref=e999]
+                            - text: غير مسددة
+                          - generic [ref=e1001]: قيد المراجعة
+                        - cell [ref=e1002]:
+                          - generic [ref=e1003]:
+                            - button "عرض التفاصيل" [ref=e1004]:
+                              - img [ref=e1005]
+                            - button "إضافة دفعة" [ref=e1008]:
+                              - img [ref=e1009]
+                            - button "تعديل" [ref=e1011]:
+                              - img [ref=e1012]
+                            - button "حذف" [ref=e1015]:
+                              - img [ref=e1016]
+                      - row "3301294193 27/07/2024 غير معروف غير محدد traffic QAR 6,000.00 غير مسددة قيد المراجعة" [ref=e1019] [cursor=pointer]:
+                        - cell "3301294193 27/07/2024" [ref=e1020]:
+                          - generic [ref=e1021]: "3301294193"
+                          - generic [ref=e1022]:
+                            - img [ref=e1023]
+                            - text: 27/07/2024
+                        - cell "غير معروف" [ref=e1025]:
+                          - generic [ref=e1026]:
+                            - img [ref=e1028]
+                            - generic [ref=e1032]: غير معروف
+                        - cell "غير محدد" [ref=e1033]:
+                          - generic [ref=e1034]:
+                            - img [ref=e1036]
+                            - generic [ref=e1039]: غير محدد
+                        - cell "traffic" [ref=e1040]:
+                          - generic [ref=e1041]: traffic
+                        - cell "QAR 6,000.00" [ref=e1042]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1043]:
+                          - generic [ref=e1044]:
+                            - img [ref=e1045]
+                            - text: غير مسددة
+                          - generic [ref=e1047]: قيد المراجعة
+                        - cell [ref=e1048]:
+                          - generic [ref=e1049]:
+                            - button "عرض التفاصيل" [ref=e1050]:
+                              - img [ref=e1051]
+                            - button "إضافة دفعة" [ref=e1054]:
+                              - img [ref=e1055]
+                            - button "تعديل" [ref=e1057]:
+                              - img [ref=e1058]
+                            - button "حذف" [ref=e1061]:
+                              - img [ref=e1062]
+                      - row "3301490746 30/06/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e1065] [cursor=pointer]:
+                        - cell "3301490746 30/06/2025" [ref=e1066]:
+                          - generic [ref=e1067]: "3301490746"
+                          - generic [ref=e1068]:
+                            - img [ref=e1069]
+                            - text: 30/06/2025
+                        - cell "غير معروف" [ref=e1071]:
+                          - generic [ref=e1072]:
+                            - img [ref=e1074]
+                            - generic [ref=e1078]: غير معروف
+                        - cell "غير محدد" [ref=e1079]:
+                          - generic [ref=e1080]:
+                            - img [ref=e1082]
+                            - generic [ref=e1085]: غير محدد
+                        - cell "traffic" [ref=e1086]:
+                          - generic [ref=e1087]: traffic
+                        - cell "QAR 300.00" [ref=e1088]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1089]:
+                          - generic [ref=e1090]:
+                            - img [ref=e1091]
+                            - text: غير مسددة
+                          - generic [ref=e1093]: قيد المراجعة
+                        - cell [ref=e1094]:
+                          - generic [ref=e1095]:
+                            - button "عرض التفاصيل" [ref=e1096]:
+                              - img [ref=e1097]
+                            - button "إضافة دفعة" [ref=e1100]:
+                              - img [ref=e1101]
+                            - button "تعديل" [ref=e1103]:
+                              - img [ref=e1104]
+                            - button "حذف" [ref=e1107]:
+                              - img [ref=e1108]
+                      - row "3301655311 26/07/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1111] [cursor=pointer]:
+                        - cell "3301655311 26/07/2025" [ref=e1112]:
+                          - generic [ref=e1113]: "3301655311"
+                          - generic [ref=e1114]:
+                            - img [ref=e1115]
+                            - text: 26/07/2025
+                        - cell "غير معروف" [ref=e1117]:
+                          - generic [ref=e1118]:
+                            - img [ref=e1120]
+                            - generic [ref=e1124]: غير معروف
+                        - cell "غير محدد" [ref=e1125]:
+                          - generic [ref=e1126]:
+                            - img [ref=e1128]
+                            - generic [ref=e1131]: غير محدد
+                        - cell "traffic" [ref=e1132]:
+                          - generic [ref=e1133]: traffic
+                        - cell "QAR 500.00" [ref=e1134]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1135]:
+                          - generic [ref=e1136]:
+                            - img [ref=e1137]
+                            - text: غير مسددة
+                          - generic [ref=e1139]: قيد المراجعة
+                        - cell [ref=e1140]:
+                          - generic [ref=e1141]:
+                            - button "عرض التفاصيل" [ref=e1142]:
+                              - img [ref=e1143]
+                            - button "إضافة دفعة" [ref=e1146]:
+                              - img [ref=e1147]
+                            - button "تعديل" [ref=e1149]:
+                              - img [ref=e1150]
+                            - button "حذف" [ref=e1153]:
+                              - img [ref=e1154]
+                      - row "3301283683 11/06/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e1157] [cursor=pointer]:
+                        - cell "3301283683 11/06/2025" [ref=e1158]:
+                          - generic [ref=e1159]: "3301283683"
+                          - generic [ref=e1160]:
+                            - img [ref=e1161]
+                            - text: 11/06/2025
+                        - cell "غير معروف" [ref=e1163]:
+                          - generic [ref=e1164]:
+                            - img [ref=e1166]
+                            - generic [ref=e1170]: غير معروف
+                        - cell "غير محدد" [ref=e1171]:
+                          - generic [ref=e1172]:
+                            - img [ref=e1174]
+                            - generic [ref=e1177]: غير محدد
+                        - cell "traffic" [ref=e1178]:
+                          - generic [ref=e1179]: traffic
+                        - cell "QAR 300.00" [ref=e1180]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1181]:
+                          - generic [ref=e1182]:
+                            - img [ref=e1183]
+                            - text: غير مسددة
+                          - generic [ref=e1185]: قيد المراجعة
+                        - cell [ref=e1186]:
+                          - generic [ref=e1187]:
+                            - button "عرض التفاصيل" [ref=e1188]:
+                              - img [ref=e1189]
+                            - button "إضافة دفعة" [ref=e1192]:
+                              - img [ref=e1193]
+                            - button "تعديل" [ref=e1195]:
+                              - img [ref=e1196]
+                            - button "حذف" [ref=e1199]:
+                              - img [ref=e1200]
+                      - row "3301284146 24/07/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1203] [cursor=pointer]:
+                        - cell "3301284146 24/07/2024" [ref=e1204]:
+                          - generic [ref=e1205]: "3301284146"
+                          - generic [ref=e1206]:
+                            - img [ref=e1207]
+                            - text: 24/07/2024
+                        - cell "غير معروف" [ref=e1209]:
+                          - generic [ref=e1210]:
+                            - img [ref=e1212]
+                            - generic [ref=e1216]: غير معروف
+                        - cell "غير محدد" [ref=e1217]:
+                          - generic [ref=e1218]:
+                            - img [ref=e1220]
+                            - generic [ref=e1223]: غير محدد
+                        - cell "traffic" [ref=e1224]:
+                          - generic [ref=e1225]: traffic
+                        - cell "QAR 500.00" [ref=e1226]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1227]:
+                          - generic [ref=e1228]:
+                            - img [ref=e1229]
+                            - text: غير مسددة
+                          - generic [ref=e1231]: قيد المراجعة
+                        - cell [ref=e1232]:
+                          - generic [ref=e1233]:
+                            - button "عرض التفاصيل" [ref=e1234]:
+                              - img [ref=e1235]
+                            - button "إضافة دفعة" [ref=e1238]:
+                              - img [ref=e1239]
+                            - button "تعديل" [ref=e1241]:
+                              - img [ref=e1242]
+                            - button "حذف" [ref=e1245]:
+                              - img [ref=e1246]
+                      - row "3301274652 11/06/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e1249] [cursor=pointer]:
+                        - cell "3301274652 11/06/2025" [ref=e1250]:
+                          - generic [ref=e1251]: "3301274652"
+                          - generic [ref=e1252]:
+                            - img [ref=e1253]
+                            - text: 11/06/2025
+                        - cell "غير معروف" [ref=e1255]:
+                          - generic [ref=e1256]:
+                            - img [ref=e1258]
+                            - generic [ref=e1262]: غير معروف
+                        - cell "غير محدد" [ref=e1263]:
+                          - generic [ref=e1264]:
+                            - img [ref=e1266]
+                            - generic [ref=e1269]: غير محدد
+                        - cell "traffic" [ref=e1270]:
+                          - generic [ref=e1271]: traffic
+                        - cell "QAR 300.00" [ref=e1272]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1273]:
+                          - generic [ref=e1274]:
+                            - img [ref=e1275]
+                            - text: غير مسددة
+                          - generic [ref=e1277]: قيد المراجعة
+                        - cell [ref=e1278]:
+                          - generic [ref=e1279]:
+                            - button "عرض التفاصيل" [ref=e1280]:
+                              - img [ref=e1281]
+                            - button "إضافة دفعة" [ref=e1284]:
+                              - img [ref=e1285]
+                            - button "تعديل" [ref=e1287]:
+                              - img [ref=e1288]
+                            - button "حذف" [ref=e1291]:
+                              - img [ref=e1292]
+                      - row "3301508458 05/09/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1295] [cursor=pointer]:
+                        - cell "3301508458 05/09/2024" [ref=e1296]:
+                          - generic [ref=e1297]: "3301508458"
+                          - generic [ref=e1298]:
+                            - img [ref=e1299]
+                            - text: 05/09/2024
+                        - cell "غير معروف" [ref=e1301]:
+                          - generic [ref=e1302]:
+                            - img [ref=e1304]
+                            - generic [ref=e1308]: غير معروف
+                        - cell "غير محدد" [ref=e1309]:
+                          - generic [ref=e1310]:
+                            - img [ref=e1312]
+                            - generic [ref=e1315]: غير محدد
+                        - cell "traffic" [ref=e1316]:
+                          - generic [ref=e1317]: traffic
+                        - cell "QAR 500.00" [ref=e1318]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1319]:
+                          - generic [ref=e1320]:
+                            - img [ref=e1321]
+                            - text: غير مسددة
+                          - generic [ref=e1323]: قيد المراجعة
+                        - cell [ref=e1324]:
+                          - generic [ref=e1325]:
+                            - button "عرض التفاصيل" [ref=e1326]:
+                              - img [ref=e1327]
+                            - button "إضافة دفعة" [ref=e1330]:
+                              - img [ref=e1331]
+                            - button "تعديل" [ref=e1333]:
+                              - img [ref=e1334]
+                            - button "حذف" [ref=e1337]:
+                              - img [ref=e1338]
+                      - row "3300871790 10/05/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1341] [cursor=pointer]:
+                        - cell "3300871790 10/05/2024" [ref=e1342]:
+                          - generic [ref=e1343]: "3300871790"
+                          - generic [ref=e1344]:
+                            - img [ref=e1345]
+                            - text: 10/05/2024
+                        - cell "غير معروف" [ref=e1347]:
+                          - generic [ref=e1348]:
+                            - img [ref=e1350]
+                            - generic [ref=e1354]: غير معروف
+                        - cell "غير محدد" [ref=e1355]:
+                          - generic [ref=e1356]:
+                            - img [ref=e1358]
+                            - generic [ref=e1361]: غير محدد
+                        - cell "traffic" [ref=e1362]:
+                          - generic [ref=e1363]: traffic
+                        - cell "QAR 500.00" [ref=e1364]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1365]:
+                          - generic [ref=e1366]:
+                            - img [ref=e1367]
+                            - text: غير مسددة
+                          - generic [ref=e1369]: قيد المراجعة
+                        - cell [ref=e1370]:
+                          - generic [ref=e1371]:
+                            - button "عرض التفاصيل" [ref=e1372]:
+                              - img [ref=e1373]
+                            - button "إضافة دفعة" [ref=e1376]:
+                              - img [ref=e1377]
+                            - button "تعديل" [ref=e1379]:
+                              - img [ref=e1380]
+                            - button "حذف" [ref=e1383]:
+                              - img [ref=e1384]
+                      - row "3301213965 02/06/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1387] [cursor=pointer]:
+                        - cell "3301213965 02/06/2025" [ref=e1388]:
+                          - generic [ref=e1389]: "3301213965"
+                          - generic [ref=e1390]:
+                            - img [ref=e1391]
+                            - text: 02/06/2025
+                        - cell "غير معروف" [ref=e1393]:
+                          - generic [ref=e1394]:
+                            - img [ref=e1396]
+                            - generic [ref=e1400]: غير معروف
+                        - cell "غير محدد" [ref=e1401]:
+                          - generic [ref=e1402]:
+                            - img [ref=e1404]
+                            - generic [ref=e1407]: غير محدد
+                        - cell "traffic" [ref=e1408]:
+                          - generic [ref=e1409]: traffic
+                        - cell "QAR 500.00" [ref=e1410]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1411]:
+                          - generic [ref=e1412]:
+                            - img [ref=e1413]
+                            - text: غير مسددة
+                          - generic [ref=e1415]: قيد المراجعة
+                        - cell [ref=e1416]:
+                          - generic [ref=e1417]:
+                            - button "عرض التفاصيل" [ref=e1418]:
+                              - img [ref=e1419]
+                            - button "إضافة دفعة" [ref=e1422]:
+                              - img [ref=e1423]
+                            - button "تعديل" [ref=e1425]:
+                              - img [ref=e1426]
+                            - button "حذف" [ref=e1429]:
+                              - img [ref=e1430]
+                      - row "3301204953 09/07/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1433] [cursor=pointer]:
+                        - cell "3301204953 09/07/2024" [ref=e1434]:
+                          - generic [ref=e1435]: "3301204953"
+                          - generic [ref=e1436]:
+                            - img [ref=e1437]
+                            - text: 09/07/2024
+                        - cell "غير معروف" [ref=e1439]:
+                          - generic [ref=e1440]:
+                            - img [ref=e1442]
+                            - generic [ref=e1446]: غير معروف
+                        - cell "غير محدد" [ref=e1447]:
+                          - generic [ref=e1448]:
+                            - img [ref=e1450]
+                            - generic [ref=e1453]: غير محدد
+                        - cell "traffic" [ref=e1454]:
+                          - generic [ref=e1455]: traffic
+                        - cell "QAR 500.00" [ref=e1456]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1457]:
+                          - generic [ref=e1458]:
+                            - img [ref=e1459]
+                            - text: غير مسددة
+                          - generic [ref=e1461]: قيد المراجعة
+                        - cell [ref=e1462]:
+                          - generic [ref=e1463]:
+                            - button "عرض التفاصيل" [ref=e1464]:
+                              - img [ref=e1465]
+                            - button "إضافة دفعة" [ref=e1468]:
+                              - img [ref=e1469]
+                            - button "تعديل" [ref=e1471]:
+                              - img [ref=e1472]
+                            - button "حذف" [ref=e1475]:
+                              - img [ref=e1476]
+                      - row "3301096454 20/06/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1479] [cursor=pointer]:
+                        - cell "3301096454 20/06/2024" [ref=e1480]:
+                          - generic [ref=e1481]: "3301096454"
+                          - generic [ref=e1482]:
+                            - img [ref=e1483]
+                            - text: 20/06/2024
+                        - cell "غير معروف" [ref=e1485]:
+                          - generic [ref=e1486]:
+                            - img [ref=e1488]
+                            - generic [ref=e1492]: غير معروف
+                        - cell "غير محدد" [ref=e1493]:
+                          - generic [ref=e1494]:
+                            - img [ref=e1496]
+                            - generic [ref=e1499]: غير محدد
+                        - cell "traffic" [ref=e1500]:
+                          - generic [ref=e1501]: traffic
+                        - cell "QAR 500.00" [ref=e1502]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1503]:
+                          - generic [ref=e1504]:
+                            - img [ref=e1505]
+                            - text: غير مسددة
+                          - generic [ref=e1507]: قيد المراجعة
+                        - cell [ref=e1508]:
+                          - generic [ref=e1509]:
+                            - button "عرض التفاصيل" [ref=e1510]:
+                              - img [ref=e1511]
+                            - button "إضافة دفعة" [ref=e1514]:
+                              - img [ref=e1515]
+                            - button "تعديل" [ref=e1517]:
+                              - img [ref=e1518]
+                            - button "حذف" [ref=e1521]:
+                              - img [ref=e1522]
+                      - row "3301067242 13/06/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1525] [cursor=pointer]:
+                        - cell "3301067242 13/06/2024" [ref=e1526]:
+                          - generic [ref=e1527]: "3301067242"
+                          - generic [ref=e1528]:
+                            - img [ref=e1529]
+                            - text: 13/06/2024
+                        - cell "غير معروف" [ref=e1531]:
+                          - generic [ref=e1532]:
+                            - img [ref=e1534]
+                            - generic [ref=e1538]: غير معروف
+                        - cell "غير محدد" [ref=e1539]:
+                          - generic [ref=e1540]:
+                            - img [ref=e1542]
+                            - generic [ref=e1545]: غير محدد
+                        - cell "traffic" [ref=e1546]:
+                          - generic [ref=e1547]: traffic
+                        - cell "QAR 500.00" [ref=e1548]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1549]:
+                          - generic [ref=e1550]:
+                            - img [ref=e1551]
+                            - text: غير مسددة
+                          - generic [ref=e1553]: قيد المراجعة
+                        - cell [ref=e1554]:
+                          - generic [ref=e1555]:
+                            - button "عرض التفاصيل" [ref=e1556]:
+                              - img [ref=e1557]
+                            - button "إضافة دفعة" [ref=e1560]:
+                              - img [ref=e1561]
+                            - button "تعديل" [ref=e1563]:
+                              - img [ref=e1564]
+                            - button "حذف" [ref=e1567]:
+                              - img [ref=e1568]
+                      - row "3301082531 18/05/2025 غير معروف غير محدد traffic QAR 6,000.00 غير مسددة قيد المراجعة" [ref=e1571] [cursor=pointer]:
+                        - cell "3301082531 18/05/2025" [ref=e1572]:
+                          - generic [ref=e1573]: "3301082531"
+                          - generic [ref=e1574]:
+                            - img [ref=e1575]
+                            - text: 18/05/2025
+                        - cell "غير معروف" [ref=e1577]:
+                          - generic [ref=e1578]:
+                            - img [ref=e1580]
+                            - generic [ref=e1584]: غير معروف
+                        - cell "غير محدد" [ref=e1585]:
+                          - generic [ref=e1586]:
+                            - img [ref=e1588]
+                            - generic [ref=e1591]: غير محدد
+                        - cell "traffic" [ref=e1592]:
+                          - generic [ref=e1593]: traffic
+                        - cell "QAR 6,000.00" [ref=e1594]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1595]:
+                          - generic [ref=e1596]:
+                            - img [ref=e1597]
+                            - text: غير مسددة
+                          - generic [ref=e1599]: قيد المراجعة
+                        - cell [ref=e1600]:
+                          - generic [ref=e1601]:
+                            - button "عرض التفاصيل" [ref=e1602]:
+                              - img [ref=e1603]
+                            - button "إضافة دفعة" [ref=e1606]:
+                              - img [ref=e1607]
+                            - button "تعديل" [ref=e1609]:
+                              - img [ref=e1610]
+                            - button "حذف" [ref=e1613]:
+                              - img [ref=e1614]
+                      - row "3300860415 19/04/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1617] [cursor=pointer]:
+                        - cell "3300860415 19/04/2025" [ref=e1618]:
+                          - generic [ref=e1619]: "3300860415"
+                          - generic [ref=e1620]:
+                            - img [ref=e1621]
+                            - text: 19/04/2025
+                        - cell "غير معروف" [ref=e1623]:
+                          - generic [ref=e1624]:
+                            - img [ref=e1626]
+                            - generic [ref=e1630]: غير معروف
+                        - cell "غير محدد" [ref=e1631]:
+                          - generic [ref=e1632]:
+                            - img [ref=e1634]
+                            - generic [ref=e1637]: غير محدد
+                        - cell "traffic" [ref=e1638]:
+                          - generic [ref=e1639]: traffic
+                        - cell "QAR 500.00" [ref=e1640]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1641]:
+                          - generic [ref=e1642]:
+                            - img [ref=e1643]
+                            - text: غير مسددة
+                          - generic [ref=e1645]: قيد المراجعة
+                        - cell [ref=e1646]:
+                          - generic [ref=e1647]:
+                            - button "عرض التفاصيل" [ref=e1648]:
+                              - img [ref=e1649]
+                            - button "إضافة دفعة" [ref=e1652]:
+                              - img [ref=e1653]
+                            - button "تعديل" [ref=e1655]:
+                              - img [ref=e1656]
+                            - button "حذف" [ref=e1659]:
+                              - img [ref=e1660]
+                      - row "3301219179 03/06/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1663] [cursor=pointer]:
+                        - cell "3301219179 03/06/2025" [ref=e1664]:
+                          - generic [ref=e1665]: "3301219179"
+                          - generic [ref=e1666]:
+                            - img [ref=e1667]
+                            - text: 03/06/2025
+                        - cell "غير معروف" [ref=e1669]:
+                          - generic [ref=e1670]:
+                            - img [ref=e1672]
+                            - generic [ref=e1676]: غير معروف
+                        - cell "غير محدد" [ref=e1677]:
+                          - generic [ref=e1678]:
+                            - img [ref=e1680]
+                            - generic [ref=e1683]: غير محدد
+                        - cell "traffic" [ref=e1684]:
+                          - generic [ref=e1685]: traffic
+                        - cell "QAR 500.00" [ref=e1686]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1687]:
+                          - generic [ref=e1688]:
+                            - img [ref=e1689]
+                            - text: غير مسددة
+                          - generic [ref=e1691]: قيد المراجعة
+                        - cell [ref=e1692]:
+                          - generic [ref=e1693]:
+                            - button "عرض التفاصيل" [ref=e1694]:
+                              - img [ref=e1695]
+                            - button "إضافة دفعة" [ref=e1698]:
+                              - img [ref=e1699]
+                            - button "تعديل" [ref=e1701]:
+                              - img [ref=e1702]
+                            - button "حذف" [ref=e1705]:
+                              - img [ref=e1706]
+                      - row "3301194910 01/06/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1709] [cursor=pointer]:
+                        - cell "3301194910 01/06/2025" [ref=e1710]:
+                          - generic [ref=e1711]: "3301194910"
+                          - generic [ref=e1712]:
+                            - img [ref=e1713]
+                            - text: 01/06/2025
+                        - cell "غير معروف" [ref=e1715]:
+                          - generic [ref=e1716]:
+                            - img [ref=e1718]
+                            - generic [ref=e1722]: غير معروف
+                        - cell "غير محدد" [ref=e1723]:
+                          - generic [ref=e1724]:
+                            - img [ref=e1726]
+                            - generic [ref=e1729]: غير محدد
+                        - cell "traffic" [ref=e1730]:
+                          - generic [ref=e1731]: traffic
+                        - cell "QAR 500.00" [ref=e1732]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1733]:
+                          - generic [ref=e1734]:
+                            - img [ref=e1735]
+                            - text: غير مسددة
+                          - generic [ref=e1737]: قيد المراجعة
+                        - cell [ref=e1738]:
+                          - generic [ref=e1739]:
+                            - button "عرض التفاصيل" [ref=e1740]:
+                              - img [ref=e1741]
+                            - button "إضافة دفعة" [ref=e1744]:
+                              - img [ref=e1745]
+                            - button "تعديل" [ref=e1747]:
+                              - img [ref=e1748]
+                            - button "حذف" [ref=e1751]:
+                              - img [ref=e1752]
+                      - row "3301138911 22/05/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1755] [cursor=pointer]:
+                        - cell "3301138911 22/05/2025" [ref=e1756]:
+                          - generic [ref=e1757]: "3301138911"
+                          - generic [ref=e1758]:
+                            - img [ref=e1759]
+                            - text: 22/05/2025
+                        - cell "غير معروف" [ref=e1761]:
+                          - generic [ref=e1762]:
+                            - img [ref=e1764]
+                            - generic [ref=e1768]: غير معروف
+                        - cell "غير محدد" [ref=e1769]:
+                          - generic [ref=e1770]:
+                            - img [ref=e1772]
+                            - generic [ref=e1775]: غير محدد
+                        - cell "traffic" [ref=e1776]:
+                          - generic [ref=e1777]: traffic
+                        - cell "QAR 500.00" [ref=e1778]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1779]:
+                          - generic [ref=e1780]:
+                            - img [ref=e1781]
+                            - text: غير مسددة
+                          - generic [ref=e1783]: قيد المراجعة
+                        - cell [ref=e1784]:
+                          - generic [ref=e1785]:
+                            - button "عرض التفاصيل" [ref=e1786]:
+                              - img [ref=e1787]
+                            - button "إضافة دفعة" [ref=e1790]:
+                              - img [ref=e1791]
+                            - button "تعديل" [ref=e1793]:
+                              - img [ref=e1794]
+                            - button "حذف" [ref=e1797]:
+                              - img [ref=e1798]
+                      - row "3300689666 28/03/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1801] [cursor=pointer]:
+                        - cell "3300689666 28/03/2025" [ref=e1802]:
+                          - generic [ref=e1803]: "3300689666"
+                          - generic [ref=e1804]:
+                            - img [ref=e1805]
+                            - text: 28/03/2025
+                        - cell "غير معروف" [ref=e1807]:
+                          - generic [ref=e1808]:
+                            - img [ref=e1810]
+                            - generic [ref=e1814]: غير معروف
+                        - cell "غير محدد" [ref=e1815]:
+                          - generic [ref=e1816]:
+                            - img [ref=e1818]
+                            - generic [ref=e1821]: غير محدد
+                        - cell "traffic" [ref=e1822]:
+                          - generic [ref=e1823]: traffic
+                        - cell "QAR 500.00" [ref=e1824]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1825]:
+                          - generic [ref=e1826]:
+                            - img [ref=e1827]
+                            - text: غير مسددة
+                          - generic [ref=e1829]: قيد المراجعة
+                        - cell [ref=e1830]:
+                          - generic [ref=e1831]:
+                            - button "عرض التفاصيل" [ref=e1832]:
+                              - img [ref=e1833]
+                            - button "إضافة دفعة" [ref=e1836]:
+                              - img [ref=e1837]
+                            - button "تعديل" [ref=e1839]:
+                              - img [ref=e1840]
+                            - button "حذف" [ref=e1843]:
+                              - img [ref=e1844]
+                      - row "3300809393 30/04/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1847] [cursor=pointer]:
+                        - cell "3300809393 30/04/2024" [ref=e1848]:
+                          - generic [ref=e1849]: "3300809393"
+                          - generic [ref=e1850]:
+                            - img [ref=e1851]
+                            - text: 30/04/2024
+                        - cell "غير معروف" [ref=e1853]:
+                          - generic [ref=e1854]:
+                            - img [ref=e1856]
+                            - generic [ref=e1860]: غير معروف
+                        - cell "غير محدد" [ref=e1861]:
+                          - generic [ref=e1862]:
+                            - img [ref=e1864]
+                            - generic [ref=e1867]: غير محدد
+                        - cell "traffic" [ref=e1868]:
+                          - generic [ref=e1869]: traffic
+                        - cell "QAR 500.00" [ref=e1870]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1871]:
+                          - generic [ref=e1872]:
+                            - img [ref=e1873]
+                            - text: غير مسددة
+                          - generic [ref=e1875]: قيد المراجعة
+                        - cell [ref=e1876]:
+                          - generic [ref=e1877]:
+                            - button "عرض التفاصيل" [ref=e1878]:
+                              - img [ref=e1879]
+                            - button "إضافة دفعة" [ref=e1882]:
+                              - img [ref=e1883]
+                            - button "تعديل" [ref=e1885]:
+                              - img [ref=e1886]
+                            - button "حذف" [ref=e1889]:
+                              - img [ref=e1890]
+                      - row "3300641588 01/04/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e1893] [cursor=pointer]:
+                        - cell "3300641588 01/04/2024" [ref=e1894]:
+                          - generic [ref=e1895]: "3300641588"
+                          - generic [ref=e1896]:
+                            - img [ref=e1897]
+                            - text: 01/04/2024
+                        - cell "غير معروف" [ref=e1899]:
+                          - generic [ref=e1900]:
+                            - img [ref=e1902]
+                            - generic [ref=e1906]: غير معروف
+                        - cell "غير محدد" [ref=e1907]:
+                          - generic [ref=e1908]:
+                            - img [ref=e1910]
+                            - generic [ref=e1913]: غير محدد
+                        - cell "traffic" [ref=e1914]:
+                          - generic [ref=e1915]: traffic
+                        - cell "QAR 500.00" [ref=e1916]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1917]:
+                          - generic [ref=e1918]:
+                            - img [ref=e1919]
+                            - text: غير مسددة
+                          - generic [ref=e1921]: قيد المراجعة
+                        - cell [ref=e1922]:
+                          - generic [ref=e1923]:
+                            - button "عرض التفاصيل" [ref=e1924]:
+                              - img [ref=e1925]
+                            - button "إضافة دفعة" [ref=e1928]:
+                              - img [ref=e1929]
+                            - button "تعديل" [ref=e1931]:
+                              - img [ref=e1932]
+                            - button "حذف" [ref=e1935]:
+                              - img [ref=e1936]
+                      - row "3300627706 16/03/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e1939] [cursor=pointer]:
+                        - cell "3300627706 16/03/2025" [ref=e1940]:
+                          - generic [ref=e1941]: "3300627706"
+                          - generic [ref=e1942]:
+                            - img [ref=e1943]
+                            - text: 16/03/2025
+                        - cell "غير معروف" [ref=e1945]:
+                          - generic [ref=e1946]:
+                            - img [ref=e1948]
+                            - generic [ref=e1952]: غير معروف
+                        - cell "غير محدد" [ref=e1953]:
+                          - generic [ref=e1954]:
+                            - img [ref=e1956]
+                            - generic [ref=e1959]: غير محدد
+                        - cell "traffic" [ref=e1960]:
+                          - generic [ref=e1961]: traffic
+                        - cell "QAR 300.00" [ref=e1962]
+                        - cell "غير مسددة قيد المراجعة" [ref=e1963]:
+                          - generic [ref=e1964]:
+                            - img [ref=e1965]
+                            - text: غير مسددة
+                          - generic [ref=e1967]: قيد المراجعة
+                        - cell [ref=e1968]:
+                          - generic [ref=e1969]:
+                            - button "عرض التفاصيل" [ref=e1970]:
+                              - img [ref=e1971]
+                            - button "إضافة دفعة" [ref=e1974]:
+                              - img [ref=e1975]
+                            - button "تعديل" [ref=e1977]:
+                              - img [ref=e1978]
+                            - button "حذف" [ref=e1981]:
+                              - img [ref=e1982]
+                      - row "3300812942 29/03/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e1985] [cursor=pointer]:
+                        - cell "3300812942 29/03/2025" [ref=e1986]:
+                          - generic [ref=e1987]: "3300812942"
+                          - generic [ref=e1988]:
+                            - img [ref=e1989]
+                            - text: 29/03/2025
+                        - cell "غير معروف" [ref=e1991]:
+                          - generic [ref=e1992]:
+                            - img [ref=e1994]
+                            - generic [ref=e1998]: غير معروف
+                        - cell "غير محدد" [ref=e1999]:
+                          - generic [ref=e2000]:
+                            - img [ref=e2002]
+                            - generic [ref=e2005]: غير محدد
+                        - cell "traffic" [ref=e2006]:
+                          - generic [ref=e2007]: traffic
+                        - cell "QAR 300.00" [ref=e2008]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2009]:
+                          - generic [ref=e2010]:
+                            - img [ref=e2011]
+                            - text: غير مسددة
+                          - generic [ref=e2013]: قيد المراجعة
+                        - cell [ref=e2014]:
+                          - generic [ref=e2015]:
+                            - button "عرض التفاصيل" [ref=e2016]:
+                              - img [ref=e2017]
+                            - button "إضافة دفعة" [ref=e2020]:
+                              - img [ref=e2021]
+                            - button "تعديل" [ref=e2023]:
+                              - img [ref=e2024]
+                            - button "حذف" [ref=e2027]:
+                              - img [ref=e2028]
+                      - row "3300627696 16/03/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e2031] [cursor=pointer]:
+                        - cell "3300627696 16/03/2025" [ref=e2032]:
+                          - generic [ref=e2033]: "3300627696"
+                          - generic [ref=e2034]:
+                            - img [ref=e2035]
+                            - text: 16/03/2025
+                        - cell "غير معروف" [ref=e2037]:
+                          - generic [ref=e2038]:
+                            - img [ref=e2040]
+                            - generic [ref=e2044]: غير معروف
+                        - cell "غير محدد" [ref=e2045]:
+                          - generic [ref=e2046]:
+                            - img [ref=e2048]
+                            - generic [ref=e2051]: غير محدد
+                        - cell "traffic" [ref=e2052]:
+                          - generic [ref=e2053]: traffic
+                        - cell "QAR 300.00" [ref=e2054]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2055]:
+                          - generic [ref=e2056]:
+                            - img [ref=e2057]
+                            - text: غير مسددة
+                          - generic [ref=e2059]: قيد المراجعة
+                        - cell [ref=e2060]:
+                          - generic [ref=e2061]:
+                            - button "عرض التفاصيل" [ref=e2062]:
+                              - img [ref=e2063]
+                            - button "إضافة دفعة" [ref=e2066]:
+                              - img [ref=e2067]
+                            - button "تعديل" [ref=e2069]:
+                              - img [ref=e2070]
+                            - button "حذف" [ref=e2073]:
+                              - img [ref=e2074]
+                      - row "3300632201 28/03/2024 غير معروف غير محدد traffic QAR 600.00 غير مسددة قيد المراجعة" [ref=e2077] [cursor=pointer]:
+                        - cell "3300632201 28/03/2024" [ref=e2078]:
+                          - generic [ref=e2079]: "3300632201"
+                          - generic [ref=e2080]:
+                            - img [ref=e2081]
+                            - text: 28/03/2024
+                        - cell "غير معروف" [ref=e2083]:
+                          - generic [ref=e2084]:
+                            - img [ref=e2086]
+                            - generic [ref=e2090]: غير معروف
+                        - cell "غير محدد" [ref=e2091]:
+                          - generic [ref=e2092]:
+                            - img [ref=e2094]
+                            - generic [ref=e2097]: غير محدد
+                        - cell "traffic" [ref=e2098]:
+                          - generic [ref=e2099]: traffic
+                        - cell "QAR 600.00" [ref=e2100]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2101]:
+                          - generic [ref=e2102]:
+                            - img [ref=e2103]
+                            - text: غير مسددة
+                          - generic [ref=e2105]: قيد المراجعة
+                        - cell [ref=e2106]:
+                          - generic [ref=e2107]:
+                            - button "عرض التفاصيل" [ref=e2108]:
+                              - img [ref=e2109]
+                            - button "إضافة دفعة" [ref=e2112]:
+                              - img [ref=e2113]
+                            - button "تعديل" [ref=e2115]:
+                              - img [ref=e2116]
+                            - button "حذف" [ref=e2119]:
+                              - img [ref=e2120]
+                      - row "3300602436 15/03/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e2123] [cursor=pointer]:
+                        - cell "3300602436 15/03/2025" [ref=e2124]:
+                          - generic [ref=e2125]: "3300602436"
+                          - generic [ref=e2126]:
+                            - img [ref=e2127]
+                            - text: 15/03/2025
+                        - cell "غير معروف" [ref=e2129]:
+                          - generic [ref=e2130]:
+                            - img [ref=e2132]
+                            - generic [ref=e2136]: غير معروف
+                        - cell "غير محدد" [ref=e2137]:
+                          - generic [ref=e2138]:
+                            - img [ref=e2140]
+                            - generic [ref=e2143]: غير محدد
+                        - cell "traffic" [ref=e2144]:
+                          - generic [ref=e2145]: traffic
+                        - cell "QAR 500.00" [ref=e2146]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2147]:
+                          - generic [ref=e2148]:
+                            - img [ref=e2149]
+                            - text: غير مسددة
+                          - generic [ref=e2151]: قيد المراجعة
+                        - cell [ref=e2152]:
+                          - generic [ref=e2153]:
+                            - button "عرض التفاصيل" [ref=e2154]:
+                              - img [ref=e2155]
+                            - button "إضافة دفعة" [ref=e2158]:
+                              - img [ref=e2159]
+                            - button "تعديل" [ref=e2161]:
+                              - img [ref=e2162]
+                            - button "حذف" [ref=e2165]:
+                              - img [ref=e2166]
+                      - row "3300634930 18/03/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e2169] [cursor=pointer]:
+                        - cell "3300634930 18/03/2025" [ref=e2170]:
+                          - generic [ref=e2171]: "3300634930"
+                          - generic [ref=e2172]:
+                            - img [ref=e2173]
+                            - text: 18/03/2025
+                        - cell "غير معروف" [ref=e2175]:
+                          - generic [ref=e2176]:
+                            - img [ref=e2178]
+                            - generic [ref=e2182]: غير معروف
+                        - cell "غير محدد" [ref=e2183]:
+                          - generic [ref=e2184]:
+                            - img [ref=e2186]
+                            - generic [ref=e2189]: غير محدد
+                        - cell "traffic" [ref=e2190]:
+                          - generic [ref=e2191]: traffic
+                        - cell "QAR 500.00" [ref=e2192]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2193]:
+                          - generic [ref=e2194]:
+                            - img [ref=e2195]
+                            - text: غير مسددة
+                          - generic [ref=e2197]: قيد المراجعة
+                        - cell [ref=e2198]:
+                          - generic [ref=e2199]:
+                            - button "عرض التفاصيل" [ref=e2200]:
+                              - img [ref=e2201]
+                            - button "إضافة دفعة" [ref=e2204]:
+                              - img [ref=e2205]
+                            - button "تعديل" [ref=e2207]:
+                              - img [ref=e2208]
+                            - button "حذف" [ref=e2211]:
+                              - img [ref=e2212]
+                      - row "3300618960 27/03/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e2215] [cursor=pointer]:
+                        - cell "3300618960 27/03/2024" [ref=e2216]:
+                          - generic [ref=e2217]: "3300618960"
+                          - generic [ref=e2218]:
+                            - img [ref=e2219]
+                            - text: 27/03/2024
+                        - cell "غير معروف" [ref=e2221]:
+                          - generic [ref=e2222]:
+                            - img [ref=e2224]
+                            - generic [ref=e2228]: غير معروف
+                        - cell "غير محدد" [ref=e2229]:
+                          - generic [ref=e2230]:
+                            - img [ref=e2232]
+                            - generic [ref=e2235]: غير محدد
+                        - cell "traffic" [ref=e2236]:
+                          - generic [ref=e2237]: traffic
+                        - cell "QAR 500.00" [ref=e2238]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2239]:
+                          - generic [ref=e2240]:
+                            - img [ref=e2241]
+                            - text: غير مسددة
+                          - generic [ref=e2243]: قيد المراجعة
+                        - cell [ref=e2244]:
+                          - generic [ref=e2245]:
+                            - button "عرض التفاصيل" [ref=e2246]:
+                              - img [ref=e2247]
+                            - button "إضافة دفعة" [ref=e2250]:
+                              - img [ref=e2251]
+                            - button "تعديل" [ref=e2253]:
+                              - img [ref=e2254]
+                            - button "حذف" [ref=e2257]:
+                              - img [ref=e2258]
+                      - row "3300531780 02/03/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e2261] [cursor=pointer]:
+                        - cell "3300531780 02/03/2025" [ref=e2262]:
+                          - generic [ref=e2263]: "3300531780"
+                          - generic [ref=e2264]:
+                            - img [ref=e2265]
+                            - text: 02/03/2025
+                        - cell "غير معروف" [ref=e2267]:
+                          - generic [ref=e2268]:
+                            - img [ref=e2270]
+                            - generic [ref=e2274]: غير معروف
+                        - cell "غير محدد" [ref=e2275]:
+                          - generic [ref=e2276]:
+                            - img [ref=e2278]
+                            - generic [ref=e2281]: غير محدد
+                        - cell "traffic" [ref=e2282]:
+                          - generic [ref=e2283]: traffic
+                        - cell "QAR 300.00" [ref=e2284]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2285]:
+                          - generic [ref=e2286]:
+                            - img [ref=e2287]
+                            - text: غير مسددة
+                          - generic [ref=e2289]: قيد المراجعة
+                        - cell [ref=e2290]:
+                          - generic [ref=e2291]:
+                            - button "عرض التفاصيل" [ref=e2292]:
+                              - img [ref=e2293]
+                            - button "إضافة دفعة" [ref=e2296]:
+                              - img [ref=e2297]
+                            - button "تعديل" [ref=e2299]:
+                              - img [ref=e2300]
+                            - button "حذف" [ref=e2303]:
+                              - img [ref=e2304]
+                      - row "3300117629 15/01/2024 غير معروف غير محدد traffic QAR 6,000.00 غير مسددة قيد المراجعة" [ref=e2307] [cursor=pointer]:
+                        - cell "3300117629 15/01/2024" [ref=e2308]:
+                          - generic [ref=e2309]: "3300117629"
+                          - generic [ref=e2310]:
+                            - img [ref=e2311]
+                            - text: 15/01/2024
+                        - cell "غير معروف" [ref=e2313]:
+                          - generic [ref=e2314]:
+                            - img [ref=e2316]
+                            - generic [ref=e2320]: غير معروف
+                        - cell "غير محدد" [ref=e2321]:
+                          - generic [ref=e2322]:
+                            - img [ref=e2324]
+                            - generic [ref=e2327]: غير محدد
+                        - cell "traffic" [ref=e2328]:
+                          - generic [ref=e2329]: traffic
+                        - cell "QAR 6,000.00" [ref=e2330]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2331]:
+                          - generic [ref=e2332]:
+                            - img [ref=e2333]
+                            - text: غير مسددة
+                          - generic [ref=e2335]: قيد المراجعة
+                        - cell [ref=e2336]:
+                          - generic [ref=e2337]:
+                            - button "عرض التفاصيل" [ref=e2338]:
+                              - img [ref=e2339]
+                            - button "إضافة دفعة" [ref=e2342]:
+                              - img [ref=e2343]
+                            - button "تعديل" [ref=e2345]:
+                              - img [ref=e2346]
+                            - button "حذف" [ref=e2349]:
+                              - img [ref=e2350]
+                      - row "3300571500 08/03/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e2353] [cursor=pointer]:
+                        - cell "3300571500 08/03/2025" [ref=e2354]:
+                          - generic [ref=e2355]: "3300571500"
+                          - generic [ref=e2356]:
+                            - img [ref=e2357]
+                            - text: 08/03/2025
+                        - cell "غير معروف" [ref=e2359]:
+                          - generic [ref=e2360]:
+                            - img [ref=e2362]
+                            - generic [ref=e2366]: غير معروف
+                        - cell "غير محدد" [ref=e2367]:
+                          - generic [ref=e2368]:
+                            - img [ref=e2370]
+                            - generic [ref=e2373]: غير محدد
+                        - cell "traffic" [ref=e2374]:
+                          - generic [ref=e2375]: traffic
+                        - cell "QAR 300.00" [ref=e2376]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2377]:
+                          - generic [ref=e2378]:
+                            - img [ref=e2379]
+                            - text: غير مسددة
+                          - generic [ref=e2381]: قيد المراجعة
+                        - cell [ref=e2382]:
+                          - generic [ref=e2383]:
+                            - button "عرض التفاصيل" [ref=e2384]:
+                              - img [ref=e2385]
+                            - button "إضافة دفعة" [ref=e2388]:
+                              - img [ref=e2389]
+                            - button "تعديل" [ref=e2391]:
+                              - img [ref=e2392]
+                            - button "حذف" [ref=e2395]:
+                              - img [ref=e2396]
+                      - row "3300448447 29/02/2024 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e2399] [cursor=pointer]:
+                        - cell "3300448447 29/02/2024" [ref=e2400]:
+                          - generic [ref=e2401]: "3300448447"
+                          - generic [ref=e2402]:
+                            - img [ref=e2403]
+                            - text: 29/02/2024
+                        - cell "غير معروف" [ref=e2405]:
+                          - generic [ref=e2406]:
+                            - img [ref=e2408]
+                            - generic [ref=e2412]: غير معروف
+                        - cell "غير محدد" [ref=e2413]:
+                          - generic [ref=e2414]:
+                            - img [ref=e2416]
+                            - generic [ref=e2419]: غير محدد
+                        - cell "traffic" [ref=e2420]:
+                          - generic [ref=e2421]: traffic
+                        - cell "QAR 500.00" [ref=e2422]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2423]:
+                          - generic [ref=e2424]:
+                            - img [ref=e2425]
+                            - text: غير مسددة
+                          - generic [ref=e2427]: قيد المراجعة
+                        - cell [ref=e2428]:
+                          - generic [ref=e2429]:
+                            - button "عرض التفاصيل" [ref=e2430]:
+                              - img [ref=e2431]
+                            - button "إضافة دفعة" [ref=e2434]:
+                              - img [ref=e2435]
+                            - button "تعديل" [ref=e2437]:
+                              - img [ref=e2438]
+                            - button "حذف" [ref=e2441]:
+                              - img [ref=e2442]
+                      - row "2400172689 07/10/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e2445] [cursor=pointer]:
+                        - cell "2400172689 07/10/2025" [ref=e2446]:
+                          - generic [ref=e2447]: "2400172689"
+                          - generic [ref=e2448]:
+                            - img [ref=e2449]
+                            - text: 07/10/2025
+                        - cell "غير معروف" [ref=e2451]:
+                          - generic [ref=e2452]:
+                            - img [ref=e2454]
+                            - generic [ref=e2458]: غير معروف
+                        - cell "غير محدد" [ref=e2459]:
+                          - generic [ref=e2460]:
+                            - img [ref=e2462]
+                            - generic [ref=e2465]: غير محدد
+                        - cell "traffic" [ref=e2466]:
+                          - generic [ref=e2467]: traffic
+                        - cell "QAR 300.00" [ref=e2468]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2469]:
+                          - generic [ref=e2470]:
+                            - img [ref=e2471]
+                            - text: غير مسددة
+                          - generic [ref=e2473]: قيد المراجعة
+                        - cell [ref=e2474]:
+                          - generic [ref=e2475]:
+                            - button "عرض التفاصيل" [ref=e2476]:
+                              - img [ref=e2477]
+                            - button "إضافة دفعة" [ref=e2480]:
+                              - img [ref=e2481]
+                            - button "تعديل" [ref=e2483]:
+                              - img [ref=e2484]
+                            - button "حذف" [ref=e2487]:
+                              - img [ref=e2488]
+                      - row "3300570158 10/03/2025 غير معروف غير محدد traffic QAR 300.00 غير مسددة قيد المراجعة" [ref=e2491] [cursor=pointer]:
+                        - cell "3300570158 10/03/2025" [ref=e2492]:
+                          - generic [ref=e2493]: "3300570158"
+                          - generic [ref=e2494]:
+                            - img [ref=e2495]
+                            - text: 10/03/2025
+                        - cell "غير معروف" [ref=e2497]:
+                          - generic [ref=e2498]:
+                            - img [ref=e2500]
+                            - generic [ref=e2504]: غير معروف
+                        - cell "غير محدد" [ref=e2505]:
+                          - generic [ref=e2506]:
+                            - img [ref=e2508]
+                            - generic [ref=e2511]: غير محدد
+                        - cell "traffic" [ref=e2512]:
+                          - generic [ref=e2513]: traffic
+                        - cell "QAR 300.00" [ref=e2514]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2515]:
+                          - generic [ref=e2516]:
+                            - img [ref=e2517]
+                            - text: غير مسددة
+                          - generic [ref=e2519]: قيد المراجعة
+                        - cell [ref=e2520]:
+                          - generic [ref=e2521]:
+                            - button "عرض التفاصيل" [ref=e2522]:
+                              - img [ref=e2523]
+                            - button "إضافة دفعة" [ref=e2526]:
+                              - img [ref=e2527]
+                            - button "تعديل" [ref=e2529]:
+                              - img [ref=e2530]
+                            - button "حذف" [ref=e2533]:
+                              - img [ref=e2534]
+                      - row "2400135637 31/07/2025 غير معروف غير محدد traffic QAR 500.00 غير مسددة قيد المراجعة" [ref=e2537] [cursor=pointer]:
+                        - cell "2400135637 31/07/2025" [ref=e2538]:
+                          - generic [ref=e2539]: "2400135637"
+                          - generic [ref=e2540]:
+                            - img [ref=e2541]
+                            - text: 31/07/2025
+                        - cell "غير معروف" [ref=e2543]:
+                          - generic [ref=e2544]:
+                            - img [ref=e2546]
+                            - generic [ref=e2550]: غير معروف
+                        - cell "غير محدد" [ref=e2551]:
+                          - generic [ref=e2552]:
+                            - img [ref=e2554]
+                            - generic [ref=e2557]: غير محدد
+                        - cell "traffic" [ref=e2558]:
+                          - generic [ref=e2559]: traffic
+                        - cell "QAR 500.00" [ref=e2560]
+                        - cell "غير مسددة قيد المراجعة" [ref=e2561]:
+                          - generic [ref=e2562]:
+                            - img [ref=e2563]
+                            - text: غير مسددة
+                          - generic [ref=e2565]: قيد المراجعة
+                        - cell [ref=e2566]:
+                          - generic [ref=e2567]:
+                            - button "عرض التفاصيل" [ref=e2568]:
+                              - img [ref=e2569]
+                            - button "إضافة دفعة" [ref=e2572]:
+                              - img [ref=e2573]
+                            - button "تعديل" [ref=e2575]:
+                              - img [ref=e2576]
+                            - button "حذف" [ref=e2579]:
+                              - img [ref=e2580]
+                  - generic [ref=e2583]: "عرض 50 من 50 مخالفة (الصفحة 1 من 21 - الإجمالي: 1,003 مخالفة)"
+                  - generic [ref=e2584]:
+                    - generic [ref=e2585]: 1 - 50 من 1,003
+                    - generic [ref=e2586]:
+                      - button "الأولى" [disabled]
+                      - button "السابق" [disabled]
+                      - generic [ref=e2587]:
+                        - button "1" [ref=e2588] [cursor=pointer]
+                        - button "2" [ref=e2589] [cursor=pointer]
+                        - button "3" [ref=e2590] [cursor=pointer]
+                        - button "4" [ref=e2591] [cursor=pointer]
+                        - button "5" [ref=e2592] [cursor=pointer]
+                      - button "التالي" [ref=e2593] [cursor=pointer]
+                      - button "الأخيرة" [ref=e2594] [cursor=pointer]
+    - region "Notifications alt+T"
+  - generic [ref=e2595]:
+    - img [ref=e2597]
+    - button "Open Tanstack query devtools" [ref=e2645] [cursor=pointer]:
+      - img [ref=e2646]
+```

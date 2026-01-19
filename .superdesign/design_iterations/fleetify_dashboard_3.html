@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fleetify - لوحة التحكم</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { 'cairo': ['Cairo', 'sans-serif'] },
+          colors: {
+            coral: { 50: '#fef5f3', 100: '#fde8e4', 200: '#fcd5cd', 300: '#f9b5a8', 400: '#f38b75', 500: '#e85a4f', 600: '#d44332' },
+            neutral: { 50: '#fafaf9', 100: '#f5f5f4', 150: '#f0efed', 200: '#e7e5e4', 300: '#d6d3d1', 400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c', 800: '#292524', 900: '#1c1917' }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    * { font-family: 'Cairo', sans-serif !important; }
+    body { background: #f0efed !important; min-height: 100vh !important; }
+    
+    .card {
+      background: white !important;
+      border-radius: 1.25rem !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      transition: all 0.2s ease !important;
+    }
+    .card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.08) !important; }
+    
+    .btn-coral {
+      background: #e85a4f !important;
+      color: white !important;
+      border-radius: 2rem !important;
+      padding: 0.5rem 1.25rem !important;
+      font-weight: 600 !important;
+      font-size: 0.875rem !important;
+    }
+    .btn-coral:hover { background: #d44332 !important; }
+    
+    .pill {
+      background: #f5f5f4 !important;
+      color: #44403c !important;
+      border-radius: 2rem !important;
+      padding: 0.375rem 0.875rem !important;
+      font-size: 0.75rem !important;
+      font-weight: 500 !important;
+    }
+    .pill.active { background: #1c1917 !important; color: white !important; }
+    
+    .stat-value {
+      font-size: 2rem !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      color: #1c1917 !important;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem !important;
+      color: #78716c !important;
+      font-weight: 500 !important;
+    }
+    
+    .icon-box {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .progress-bar {
+      height: 0.375rem;
+      background: #e7e5e4;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 1rem;
+    }
+    
+    .status-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+    }
+    
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 1rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+    }
+    .badge-success { background: #dcfce7; color: #16a34a; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-danger { background: #fee2e2; color: #dc2626; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in { animation: fadeIn 0.4s ease forwards; }
+    .delay-1 { animation-delay: 0.05s; opacity: 0; }
+    .delay-2 { animation-delay: 0.1s; opacity: 0; }
+    .delay-3 { animation-delay: 0.15s; opacity: 0; }
+    .delay-4 { animation-delay: 0.2s; opacity: 0; }
+    .delay-5 { animation-delay: 0.25s; opacity: 0; }
+    .delay-6 { animation-delay: 0.3s; opacity: 0; }
+  </style>
+</head>
+<body class="font-cairo p-5" dir="rtl">
+  
+  <div class="max-w-[1400px] mx-auto">
+    
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6 animate-in">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center">
+          <span class="text-white font-bold text-lg">F</span>
+        </div>
+        <div>
+          <h1 class="font-bold text-neutral-900 text-lg">Fleetify</h1>
+          <p class="text-xs text-neutral-400">إدارة أساطيل السيارات</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-neutral-200">
+          <span class="text-2xl font-bold text-neutral-900">26</span>
+          <div class="text-right">
+            <p class="text-xs font-medium text-neutral-700">الأربعاء</p>
+            <p class="text-[10px] text-neutral-400">نوفمبر 2025</p>
+          </div>
+        </div>
+        <button class="btn-coral flex items-center gap-2">
+          <span>عرض المهام</span>
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </button>
+        <div class="flex items-center gap-3 px-3 py-2 bg-white rounded-xl border border-neutral-200">
+          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" class="w-8 h-8 rounded-full object-cover">
+          <div class="text-right">
+            <p class="text-sm font-semibold text-neutral-900">أحمد العراف</p>
+            <p class="text-[10px] text-neutral-400">مدير العمليات</p>
+          </div>
+        </div>
+        <button class="p-2.5 bg-white rounded-xl border border-neutral-200 hover:bg-neutral-50">
+          <i data-lucide="search" class="w-4 h-4 text-neutral-500"></i>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Bento Grid -->
+    <div class="grid grid-cols-12 gap-4">
+      
+      <!-- ====== ROW 1: Stats Cards ====== -->
+      
+      <!-- إجمالي المركبات -->
+      <div class="col-span-3 card p-5 animate-in delay-1">
+        <div class="flex items-center justify-between mb-4">
+          <div class="icon-box bg-coral-100">
+            <i data-lucide="car" class="w-5 h-5 text-coral-600"></i>
+          </div>
+          <span class="badge badge-success">
+            <i data-lucide="trending-up" class="w-3 h-3"></i>
+            +12%
+          </span>
+        </div>
+        <p class="stat-label mb-1">إجمالي المركبات</p>
+        <p class="stat-value mb-3">510</p>
+        <div class="flex items-center justify-between text-[11px] text-neutral-500 mb-1.5">
+          <span>نشاط المركبات</span>
+          <span class="font-semibold text-coral-600">85%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill bg-coral-500" style="width: 85%"></div>
+        </div>
+        <p class="text-[10px] text-neutral-400 mt-2">434 مركبة نشطة</p>
+      </div>
+      
+      <!-- العقود النشطة -->
+      <div class="col-span-3 card p-5 animate-in delay-2">
+        <div class="flex items-center justify-between mb-4">
+          <div class="icon-box bg-blue-100">
+            <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
+          </div>
+          <span class="badge badge-success">
+            <i data-lucide="trending-up" class="w-3 h-3"></i>
+            +8%
+          </span>
+        </div>
+        <p class="stat-label mb-1">العقود النشطة</p>
+        <p class="stat-value mb-3">245</p>
+        <div class="flex items-center justify-between text-[11px] text-neutral-500 mb-1.5">
+          <span>معدل الإكمال</span>
+          <span class="font-semibold text-blue-600">78%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill bg-blue-500" style="width: 78%"></div>
+        </div>
+        <p class="text-[10px] text-neutral-400 mt-2">78% من الإجمالي</p>
+      </div>
+      
+      <!-- إجمالي العملاء -->
+      <div class="col-span-3 card p-5 animate-in delay-3">
+        <div class="flex items-center justify-between mb-4">
+          <div class="icon-box bg-green-100">
+            <i data-lucide="users" class="w-5 h-5 text-green-600"></i>
+          </div>
+          <span class="badge badge-success">
+            <i data-lucide="trending-up" class="w-3 h-3"></i>
+            +15%
+          </span>
+        </div>
+        <p class="stat-label mb-1">إجمالي العملاء</p>
+        <p class="stat-value mb-3">781</p>
+        <div class="flex items-center justify-between text-[11px] text-neutral-500 mb-1.5">
+          <span>رضا العملاء</span>
+          <span class="font-semibold text-green-600">92%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill bg-green-500" style="width: 92%"></div>
+        </div>
+        <p class="text-[10px] text-neutral-400 mt-2">92% معدل الرضا</p>
+      </div>
+      
+      <!-- إيرادات الشهر -->
+      <div class="col-span-3 card p-5 animate-in delay-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="icon-box bg-amber-100">
+            <i data-lucide="banknote" class="w-5 h-5 text-amber-600"></i>
+          </div>
+          <span class="badge badge-success">
+            <i data-lucide="trending-up" class="w-3 h-3"></i>
+            +22%
+          </span>
+        </div>
+        <p class="stat-label mb-1">إيرادات الشهر</p>
+        <p class="stat-value mb-1">125,000</p>
+        <p class="text-xs text-neutral-400 mb-3">ريال قطري</p>
+        <div class="flex items-center gap-2">
+          <i data-lucide="trending-up" class="w-4 h-4 text-green-500"></i>
+          <span class="text-xs text-green-600 font-medium">نمو 22% هذا الشهر</span>
+        </div>
+      </div>
+      
+      <!-- ====== ROW 2: Charts ====== -->
+      
+      <!-- الأداء المالي - Area Chart -->
+      <div class="col-span-5 card p-5 animate-in delay-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-bold text-neutral-900">الأداء المالي</h3>
+            <p class="text-xs text-neutral-400">تحليل الإيرادات والأرباح</p>
+          </div>
+          <div class="flex gap-1">
+            <button class="pill active">شهري</button>
+            <button class="pill">أسبوعي</button>
+            <button class="pill">يومي</button>
+          </div>
+        </div>
+        <div class="h-44">
+          <canvas id="revenueChart"></canvas>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-neutral-100">
+          <div class="text-center">
+            <p class="text-lg font-bold text-green-600">+22%</p>
+            <p class="text-[10px] text-neutral-500">معدل النمو</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-bold text-blue-600">125K</p>
+            <p class="text-[10px] text-neutral-500">الإيرادات</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-bold text-purple-600">245</p>
+            <p class="text-[10px] text-neutral-500">العقود</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- حالة الأسطول - Donut -->
+      <div class="col-span-3 card p-5 animate-in delay-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-neutral-900">حالة الأسطول</h3>
+          <span class="badge" style="background: #e85a4f; color: white;">68% إشغال</span>
+        </div>
+        <div class="h-36 relative flex items-center justify-center">
+          <canvas id="fleetDonut"></canvas>
+          <div class="absolute text-center">
+            <p class="text-2xl font-bold text-neutral-900">510</p>
+            <p class="text-[10px] text-neutral-400">إجمالي</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <div class="flex items-center gap-2 p-2 bg-neutral-50 rounded-lg">
+            <div class="status-dot bg-green-500"></div>
+            <div>
+              <p class="text-xs font-bold text-neutral-900">163</p>
+              <p class="text-[10px] text-neutral-400">متاح</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-2 bg-neutral-50 rounded-lg">
+            <div class="status-dot bg-coral-500"></div>
+            <div>
+              <p class="text-xs font-bold text-neutral-900">280</p>
+              <p class="text-[10px] text-neutral-400">مؤجر</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-2 bg-neutral-50 rounded-lg">
+            <div class="status-dot bg-amber-500"></div>
+            <div>
+              <p class="text-xs font-bold text-neutral-900">42</p>
+              <p class="text-[10px] text-neutral-400">صيانة</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-2 bg-neutral-50 rounded-lg">
+            <div class="status-dot bg-blue-500"></div>
+            <div>
+              <p class="text-xs font-bold text-neutral-900">25</p>
+              <p class="text-[10px] text-neutral-400">محجوز</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- تحليل العملاء - Bar Chart -->
+      <div class="col-span-4 card p-5 animate-in delay-5">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-neutral-900">تحليل العملاء</h3>
+            <p class="text-xs text-neutral-400">أداء واتجاهات العملاء</p>
+          </div>
+          <select class="pill text-[10px] border-0">
+            <option>هذا الشهر</option>
+          </select>
+        </div>
+        <div class="h-32">
+          <canvas id="customersChart"></canvas>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <div class="text-center p-2 bg-blue-50 rounded-lg">
+            <p class="text-lg font-bold text-blue-600">781</p>
+            <p class="text-[10px] text-neutral-500">إجمالي العملاء</p>
+          </div>
+          <div class="text-center p-2 bg-green-50 rounded-lg">
+            <p class="text-lg font-bold text-green-600">92%</p>
+            <p class="text-[10px] text-neutral-500">معدل الرضا</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ====== ROW 3: Operations ====== -->
+      
+      <!-- جدول الصيانة -->
+      <div class="col-span-4 card p-5 animate-in delay-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-neutral-900">جدول الصيانة</h3>
+          <span class="badge badge-warning">
+            <i data-lucide="clock" class="w-3 h-3"></i>
+            5 قريباً
+          </span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3 p-2.5 bg-red-50 rounded-lg border-r-3 border-red-500">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>
+            <div class="flex-1">
+              <p class="text-xs font-semibold text-neutral-900">ABC-1234</p>
+              <p class="text-[10px] text-neutral-500">فحص دوري - متأخر يوم</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-2.5 bg-amber-50 rounded-lg border-r-3 border-amber-500">
+            <i data-lucide="wrench" class="w-4 h-4 text-amber-600"></i>
+            <div class="flex-1">
+              <p class="text-xs font-semibold text-neutral-900">XYZ-5678</p>
+              <p class="text-[10px] text-neutral-500">تغيير زيت - غداً</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-2.5 bg-yellow-50 rounded-lg border-r-3 border-yellow-500">
+            <i data-lucide="wrench" class="w-4 h-4 text-yellow-600"></i>
+            <div class="flex-1">
+              <p class="text-xs font-semibold text-neutral-900">DEF-9012</p>
+              <p class="text-[10px] text-neutral-500">فحص إطارات - بعد 3 أيام</p>
+            </div>
+          </div>
+        </div>
+        <button class="w-full mt-3 py-2 text-xs font-semibold text-coral-600 bg-coral-50 rounded-lg hover:bg-coral-100">
+          عرض جميع الصيانات (5)
+        </button>
+      </div>
+      
+      <!-- أداء المركبات -->
+      <div class="col-span-4 card p-5 animate-in delay-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-neutral-900">أداء المركبات</h3>
+          <i data-lucide="trending-up" class="w-4 h-4 text-green-500"></i>
+        </div>
+        <div class="h-28">
+          <canvas id="performanceChart"></canvas>
+        </div>
+        <div class="space-y-2 mt-3">
+          <div class="flex items-center justify-between p-2 bg-neutral-50 rounded-lg">
+            <span class="text-xs text-neutral-600">معدل الإشغال</span>
+            <span class="text-xs font-bold text-neutral-900">68%</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-neutral-50 rounded-lg">
+            <span class="text-xs text-neutral-600">المركبات المؤجرة</span>
+            <span class="text-xs font-bold text-neutral-900">280</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-neutral-50 rounded-lg">
+            <span class="text-xs text-neutral-600">كفاءة الأسطول</span>
+            <span class="text-xs font-bold text-green-600">ممتاز</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- توقعات الإيرادات -->
+      <div class="col-span-4 card p-5 animate-in delay-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-neutral-900">توقعات الإيرادات</h3>
+          <div class="icon-box bg-coral-100">
+            <i data-lucide="brain" class="w-4 h-4 text-coral-600"></i>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-neutral-500">الشهر الحالي</span>
+              <span class="text-sm font-bold text-neutral-900">125,000 QAR</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill bg-coral-500" style="width: 80%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-neutral-500">توقع الشهر القادم</span>
+              <span class="text-sm font-bold text-green-600">152,500 QAR</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill bg-green-500" style="width: 97%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 p-3 bg-coral-50 rounded-xl">
+          <p class="text-xs font-semibold text-neutral-900 mb-2">العوامل المؤثرة:</p>
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <i data-lucide="arrow-up" class="w-3 h-3 text-green-500"></i>
+              <span class="text-[11px] text-neutral-600">العامل الموسمي (+8%)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i data-lucide="arrow-up" class="w-3 h-3 text-green-500"></i>
+              <span class="text-[11px] text-neutral-600">عقود جديدة (+12%)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i data-lucide="arrow-down" class="w-3 h-3 text-red-500"></i>
+              <span class="text-[11px] text-neutral-600">تأثير الصيانة (-2%)</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 text-center p-2 bg-green-50 rounded-lg">
+          <p class="text-xl font-bold text-green-600">+22%</p>
+          <p class="text-[10px] text-neutral-500">نمو متوقع</p>
+        </div>
+      </div>
+      
+      <!-- ====== ROW 4: Calendar & Activities ====== -->
+      
+      <!-- تقويم الحجوزات -->
+      <div class="col-span-5 card p-5 animate-in delay-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-neutral-900">تقويم الحجوزات</h3>
+          <button class="text-xs text-coral-600 font-medium flex items-center gap-1">
+            <i data-lucide="calendar" class="w-3 h-3"></i>
+            عرض الشهر
+          </button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center mb-2">
+          <span class="text-[10px] text-neutral-400 font-medium">الأحد</span>
+          <span class="text-[10px] text-neutral-400 font-medium">الإثنين</span>
+          <span class="text-[10px] text-neutral-400 font-medium">الثلاثاء</span>
+          <span class="text-[10px] text-neutral-400 font-medium">الأربعاء</span>
+          <span class="text-[10px] text-neutral-400 font-medium">الخميس</span>
+          <span class="text-[10px] text-neutral-400 font-medium">الجمعة</span>
+          <span class="text-[10px] text-neutral-400 font-medium">السبت</span>
+        </div>
+        <div class="grid grid-cols-7 gap-1">
+          <div class="aspect-square rounded-lg bg-green-50 border border-green-200 flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-green-700">24</span>
+            <span class="text-[9px] text-green-600">45%</span>
+          </div>
+          <div class="aspect-square rounded-lg bg-yellow-50 border border-yellow-200 flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-yellow-700">25</span>
+            <span class="text-[9px] text-yellow-600">62%</span>
+          </div>
+          <div class="aspect-square rounded-lg bg-blue-100 border-2 border-blue-500 flex flex-col items-center justify-center">
+            <span class="text-xs font-bold text-blue-700">26</span>
+            <span class="text-[9px] text-blue-600">اليوم</span>
+          </div>
+          <div class="aspect-square rounded-lg bg-orange-50 border border-orange-200 flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-orange-700">27</span>
+            <span class="text-[9px] text-orange-600">78%</span>
+          </div>
+          <div class="aspect-square rounded-lg bg-red-50 border border-red-200 flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-red-700">28</span>
+            <span class="text-[9px] text-red-600">92%</span>
+          </div>
+          <div class="aspect-square rounded-lg bg-red-50 border border-red-200 flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-red-700">29</span>
+            <span class="text-[9px] text-red-600">ممتلئ</span>
+          </div>
+          <div class="aspect-square rounded-lg bg-orange-50 border border-orange-200 flex flex-col items-center justify-center">
+            <span class="text-xs font-semibold text-orange-700">30</span>
+            <span class="text-[9px] text-orange-600">85%</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-center gap-3 mt-3 text-[10px]">
+          <div class="flex items-center gap-1"><div class="w-2 h-2 rounded bg-green-200"></div><span class="text-neutral-500">&lt;50%</span></div>
+          <div class="flex items-center gap-1"><div class="w-2 h-2 rounded bg-yellow-200"></div><span class="text-neutral-500">50-70%</span></div>
+          <div class="flex items-center gap-1"><div class="w-2 h-2 rounded bg-orange-200"></div><span class="text-neutral-500">70-90%</span></div>
+          <div class="flex items-center gap-1"><div class="w-2 h-2 rounded bg-red-200"></div><span class="text-neutral-500">≥90%</span></div>
+        </div>
+        <div class="mt-3 p-3 bg-blue-50 rounded-xl">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-neutral-900">ملخص الأسبوع</span>
+            <span class="text-[10px] text-neutral-400">24 - 30 نوفمبر</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="text-center">
+              <p class="text-lg font-bold text-blue-600">72%</p>
+              <p class="text-[10px] text-neutral-500">متوسط الإشغال</p>
+            </div>
+            <div class="text-center">
+              <p class="text-lg font-bold text-green-600">45</p>
+              <p class="text-[10px] text-neutral-500">عقود نشطة</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- النشاطات الأخيرة -->
+      <div class="col-span-4 card p-5 animate-in delay-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-neutral-900">النشاطات الأخيرة</h3>
+          <button class="text-xs text-coral-600 font-medium">عرض الكل</button>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-neutral-900">تم إنشاء عقد جديد #1234</p>
+              <p class="text-[10px] text-neutral-400">منذ 5 دقائق</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-neutral-900">تم تسجيل دفعة 2,500 QAR</p>
+              <p class="text-[10px] text-neutral-400">منذ 15 دقيقة</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-neutral-900">عميل جديد: شركة الخليج</p>
+              <p class="text-[10px] text-neutral-400">منذ ساعة</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-neutral-900">تحديث مركبة ABC-1234</p>
+              <p class="text-[10px] text-neutral-400">منذ ساعتين</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <div class="flex-1">
+              <p class="text-xs font-medium text-neutral-900">اكتمال صيانة XYZ-5678</p>
+              <p class="text-[10px] text-neutral-400">منذ 3 ساعات</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="col-span-3 card p-5 animate-in delay-6">
+        <h3 class="font-bold text-neutral-900 mb-4">إجراءات سريعة</h3>
+        <div class="space-y-2">
+          <button class="w-full flex items-center gap-3 p-3 bg-coral-50 rounded-xl hover:bg-coral-100 transition-colors">
+            <div class="icon-box bg-coral-500">
+              <i data-lucide="plus" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="text-sm font-medium text-neutral-900">عقد جديد</span>
+          </button>
+          <button class="w-full flex items-center gap-3 p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-colors">
+            <div class="icon-box bg-blue-500">
+              <i data-lucide="user-plus" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="text-sm font-medium text-neutral-900">عميل جديد</span>
+          </button>
+          <button class="w-full flex items-center gap-3 p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-colors">
+            <div class="icon-box bg-green-500">
+              <i data-lucide="car" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="text-sm font-medium text-neutral-900">مركبة جديدة</span>
+          </button>
+          <button class="w-full flex items-center gap-3 p-3 bg-neutral-50 rounded-xl hover:bg-neutral-100 transition-colors">
+            <div class="icon-box bg-amber-500">
+              <i data-lucide="receipt" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="text-sm font-medium text-neutral-900">فاتورة جديدة</span>
+          </button>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+  
+  <script>
+    lucide.createIcons();
+    
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const gradient = revenueCtx.createLinearGradient(0, 0, 0, 180);
+    gradient.addColorStop(0, 'rgba(232, 90, 79, 0.3)');
+    gradient.addColorStop(1, 'rgba(232, 90, 79, 0)');
+    
+    new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+        datasets: [{
+          data: [85, 92, 88, 105, 115, 125],
+          fill: true,
+          backgroundColor: gradient,
+          borderColor: '#e85a4f',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 3,
+          pointBackgroundColor: '#e85a4f'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: true, grid: { display: false }, ticks: { font: { size: 9 }, color: '#78716c' } },
+          y: { display: true, grid: { color: '#f5f5f4' }, ticks: { font: { size: 9 }, color: '#78716c', callback: v => v + 'K' } }
+        }
+      }
+    });
+    
+    // Fleet Donut
+    new Chart(document.getElementById('fleetDonut'), {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [163, 280, 42, 25],
+          backgroundColor: ['#22c55e', '#e85a4f', '#f59e0b', '#3b82f6'],
+          borderWidth: 0,
+          cutout: '70%'
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+    
+    // Customers Chart
+    new Chart(document.getElementById('customersChart'), {
+      type: 'bar',
+      data: {
+        labels: ['أس1', 'أس2', 'أس3', 'أس4', 'أس5'],
+        datasets: [
+          { data: [15, 22, 18, 28, 24], backgroundColor: '#3b82f6', borderRadius: 4 },
+          { data: [8, 12, 10, 15, 18], backgroundColor: '#22c55e', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { stacked: true, display: false },
+          y: { stacked: true, display: false }
+        }
+      }
+    });
+    
+    // Performance Chart
+    new Chart(document.getElementById('performanceChart'), {
+      type: 'line',
+      data: {
+        labels: ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'],
+        datasets: [{
+          data: [63, 65, 66, 68, 70, 73, 75],
+          borderColor: '#e85a4f',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 2,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false, min: 50, max: 100 } }
+      }
+    });
+  </script>
+  
+</body>
+</html>
+

@@ -1,0 +1,131 @@
+import * as React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { AdminOnly, SuperAdminOnly } from '@/components/common/PermissionGuard';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+
+import { PRIMARY_NAVIGATION, SETTINGS_ITEMS } from '@/navigation/navigationConfig';
+import {
+  DollarSign,
+  LogOut,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  UserCog,
+  Shield,
+  Headphones,
+} from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from '@/components/ui/button';
+import { LazyImage } from '@/components/common/LazyImage';
+import { cn } from '@/lib/utils';
+
+export function EnhancedSidebar() {
+  const { signOut } = useAuth();
+  const { state, isMobile, toggleSidebar } = useSidebar();
+  const collapsed = state === 'collapsed';
+  const location = useLocation();
+  const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
+  const scrollDirection = useScrollDirection();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Sidebar side="right" className="border-l border-sidebar-border bg-sidebar-background">
+        {/* Header with Toggle Button */}
+        <SidebarHeader className="border-b border-sidebar-border p-4">
+          <div className="flex items-center justify-between">
+            <LazyImage 
+              src="/receipts/logo.png" 
+              alt="Fleetify Logo" 
+              className="filter brightness-0 invert"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
+        </SidebarHeader>
+
+        {/* Navigation */}
+        <SidebarContent className="px-3 py-4">
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/60 mb-2">
+              القائمة الرئيسية
+            </SidebarGroupLabel>
+            <SidebarMenu className="space-y-1">
+              {PRIMARY_NAVIGATION.map((section) => (
+                <SidebarMenuItem key={section.id}>
+                  <NavLink 
+                    to={section.href}
+                    className={({ isActive }) => 
+                      isActive 
+                        ? "bg-gradient-to-l from-coral-500/20 to-orange-500/10 text-coral-600 font-semibold" 
+                        : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground"
+                    }
+                  >
+                    <section.icon className="h-5 w-5" />
+                    <span>{section.name}</span>
+                  </NavLink>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        </SidebarContent>
+
+        {/* Footer */}
+        <SidebarFooter className="border-t border-sidebar-border p-4">
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 ml-2" />
+              تسجيل الخروج
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+              onClick={() => window.open('https://fleetify-support.saas')}
+            >
+              <Headphones className="h-4 w-4 ml-2" />
+              الدعم الفني
+            </Button>
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+    </TooltipProvider>
+  );
+}

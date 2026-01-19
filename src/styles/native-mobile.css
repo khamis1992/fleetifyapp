@@ -1,0 +1,609 @@
+/**
+ * Native Mobile App Styles
+ * iOS and Android inspired design system for mobile web
+ */
+
+/* ==========================================
+   Native Mobile Variables
+   ========================================== */
+:root {
+  /* Native Mobile Spacing */
+  --native-header-height: 64px;
+  --native-bottom-nav-height: 68px;
+  --native-card-radius: 16px;
+  --native-sheet-radius: 24px;
+  --native-input-radius: 12px;
+  
+  /* Native Shadows (iOS-inspired) */
+  --native-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --native-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --native-shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+  --native-shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.16), 0 8px 16px rgba(0, 0, 0, 0.12);
+  
+  /* Native iOS Blur */
+  --native-blur-light: blur(20px) saturate(180%);
+  --native-blur-heavy: blur(40px) saturate(200%);
+  
+  /* Native Transitions */
+  --native-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --native-transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --native-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --native-transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* Native Touch Feedback */
+  --native-ripple-duration: 600ms;
+  --native-active-scale: 0.97;
+  
+  /* Native Background Blur (iOS style) */
+  --native-bg-blur: rgba(255, 255, 255, 0.88);
+  --native-bg-blur-dark: rgba(0, 0, 0, 0.72);
+  
+  /* Native Card Background */
+  --native-card-bg: rgba(255, 255, 255, 0.98);
+  --native-card-border: rgba(0, 0, 0, 0.06);
+}
+
+/* ==========================================
+   Native Mobile App Container
+   ========================================== */
+@media (max-width: 768px) {
+  /* Remove default scrollbar for cleaner look */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent pull-to-refresh on iOS when not wanted */
+  body {
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Native-like smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ==========================================
+   Native Mobile Header
+   ========================================== */
+.native-mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--native-header-height);
+  
+  /* iOS-style blur background */
+  background: var(--native-bg-blur);
+  backdrop-filter: var(--native-blur-light);
+  -webkit-backdrop-filter: var(--native-blur-light);
+  
+  /* Subtle border */
+  border-bottom: 1px solid var(--native-card-border);
+  
+  /* Smooth shadow on scroll */
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  transition: box-shadow var(--native-transition-base);
+}
+
+.native-mobile-header.scrolled {
+  box-shadow: var(--native-shadow-md);
+}
+
+/* Header with gradient (optional) */
+.native-mobile-header-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(248, 250, 252, 0.95) 100%
+  );
+  backdrop-filter: var(--native-blur-light);
+  -webkit-backdrop-filter: var(--native-blur-light);
+}
+
+/* ==========================================
+   Native Mobile Bottom Navigation
+   ========================================== */
+.native-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  
+  /* iOS-style blur background */
+  background: var(--native-bg-blur);
+  backdrop-filter: var(--native-blur-light);
+  -webkit-backdrop-filter: var(--native-blur-light);
+  
+  /* Top border */
+  border-top: 1px solid var(--native-card-border);
+  
+  /* Shadow */
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  
+  /* Safe area support */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.native-bottom-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 60px;
+  padding: 8px 12px;
+  
+  /* Smooth transition */
+  transition: all var(--native-transition-base);
+  
+  /* Touch feedback */
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.native-bottom-nav-item:active {
+  transform: scale(var(--native-active-scale));
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+}
+
+.native-bottom-nav-item.active {
+  color: hsl(var(--primary));
+}
+
+/* Active indicator */
+.native-bottom-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: hsl(var(--primary));
+  border-radius: 0 0 3px 3px;
+}
+
+/* ==========================================
+   Native Mobile Cards
+   ========================================== */
+.native-card {
+  background: var(--native-card-bg);
+  border-radius: var(--native-card-radius);
+  border: 1px solid var(--native-card-border);
+  box-shadow: var(--native-shadow-sm);
+  transition: all var(--native-transition-base);
+  overflow: hidden;
+}
+
+.native-card:hover,
+.native-card:active {
+  box-shadow: var(--native-shadow-md);
+  transform: translateY(-1px);
+}
+
+.native-card.pressable:active {
+  transform: scale(var(--native-active-scale));
+}
+
+/* Card with gradient background */
+.native-card-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(248, 250, 252, 1) 100%
+  );
+}
+
+/* Elevated card (more shadow) */
+.native-card-elevated {
+  box-shadow: var(--native-shadow-lg);
+}
+
+/* ==========================================
+   Native Mobile Buttons
+   ========================================== */
+.native-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: var(--native-input-radius);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.5;
+  
+  /* Smooth transition */
+  transition: all var(--native-transition-base);
+  
+  /* Touch feedback */
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Prevent text selection on press */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.native-button:active {
+  transform: scale(var(--native-active-scale));
+}
+
+/* Primary button with gradient */
+.native-button-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+  color: white;
+  box-shadow: 0 4px 12px hsla(var(--primary), 0.3);
+}
+
+.native-button-primary:hover {
+  box-shadow: 0 6px 16px hsla(var(--primary), 0.4);
+}
+
+/* ==========================================
+   Native Mobile Input Fields
+   ========================================== */
+.native-input {
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--native-input-radius);
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  font-size: 16px; /* Prevent zoom on iOS */
+  line-height: 1.5;
+  
+  /* Smooth transition */
+  transition: all var(--native-transition-base);
+}
+
+.native-input:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsla(var(--primary), 0.1);
+  background: white;
+}
+
+/* ==========================================
+   Native Mobile Bottom Sheet
+   ========================================== */
+.native-bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  
+  background: white;
+  border-radius: var(--native-sheet-radius) var(--native-sheet-radius) 0 0;
+  box-shadow: var(--native-shadow-xl);
+  
+  /* Animation */
+  animation: slide-up var(--native-transition-spring) both;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Sheet handle (pull indicator) */
+.native-sheet-handle {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+/* ==========================================
+   Native Mobile Ripple Effect
+   ========================================== */
+.native-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.native-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width var(--native-ripple-duration), height var(--native-ripple-duration);
+}
+
+.native-ripple:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* ==========================================
+   Native Mobile Lists
+   ========================================== */
+.native-list {
+  background: white;
+  border-radius: var(--native-card-radius);
+  overflow: hidden;
+}
+
+.native-list-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transition: background var(--native-transition-fast);
+}
+
+.native-list-item:last-child {
+  border-bottom: none;
+}
+
+.native-list-item:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================
+   Native Mobile Dividers
+   ========================================== */
+.native-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 16px 0;
+}
+
+.native-divider-thick {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  margin: 0;
+}
+
+/* ==========================================
+   Native Mobile Badges/Pills
+   ========================================== */
+.native-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.native-badge-primary {
+  background: hsla(var(--primary), 0.15);
+  color: hsl(var(--primary));
+}
+
+.native-badge-success {
+  background: hsla(var(--success), 0.15);
+  color: hsl(var(--success));
+}
+
+.native-badge-warning {
+  background: hsla(var(--warning), 0.15);
+  color: hsl(var(--warning));
+}
+
+.native-badge-danger {
+  background: hsla(var(--destructive), 0.15);
+  color: hsl(var(--destructive));
+}
+
+/* ==========================================
+   Native Mobile Loading States
+   ========================================== */
+.native-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.04) 0%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Native spinner */
+.native-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(0, 0, 0, 0.1);
+  border-top-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: native-spin 0.8s linear infinite;
+}
+
+@keyframes native-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================
+   Native Mobile Pull to Refresh
+   ========================================== */
+.native-pull-refresh {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  transition: all var(--native-transition-base);
+}
+
+.native-pull-refresh.pulling {
+  top: 10px;
+}
+
+/* ==========================================
+   Native Mobile Floating Action Button
+   ========================================== */
+.native-fab {
+  position: fixed;
+  bottom: calc(var(--native-bottom-nav-height) + env(safe-area-inset-bottom) + 16px);
+  right: 16px;
+  z-index: 40;
+  
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+  box-shadow: 0 8px 24px hsla(var(--primary), 0.4);
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  transition: all var(--native-transition-spring);
+  cursor: pointer;
+}
+
+.native-fab:active {
+  transform: scale(0.92);
+}
+
+.native-fab:hover {
+  box-shadow: 0 12px 32px hsla(var(--primary), 0.5);
+  transform: translateY(-2px);
+}
+
+/* ==========================================
+   Native Mobile Typography
+   ========================================== */
+@media (max-width: 768px) {
+  .native-title {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+  }
+  
+  .native-heading {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.3px;
+  }
+  
+  .native-subheading {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  
+  .native-body {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  
+  .native-caption {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: rgba(0, 0, 0, 0.6);
+  }
+  
+  .native-label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ==========================================
+   Native Mobile Accessibility
+   ========================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .native-card {
+    border: 2px solid rgba(0, 0, 0, 0.2);
+  }
+  
+  .native-button {
+    border: 2px solid currentColor;
+  }
+}
+
+/* ==========================================
+   Native Mobile Dark Mode Support
+   ========================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --native-bg-blur: rgba(28, 28, 30, 0.88);
+    --native-card-bg: rgba(44, 44, 46, 0.98);
+    --native-card-border: rgba(255, 255, 255, 0.12);
+  }
+  
+  .native-card {
+    background: var(--native-card-bg);
+    border-color: var(--native-card-border);
+  }
+  
+  .native-input {
+    background: rgba(44, 44, 46, 0.98);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+  
+  .native-list-item {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+}
+

@@ -1,0 +1,11 @@
+❌ لا تستخدم هذا الملف!
+❌ DO NOT USE THIS FILE!
+
+هذا الملف يحتوي على خطأ (يستخدم full_name_ar غير الموجود)
+
+✅ استخدم بدلاً منه:
+   .cursor/fix_currency_names_CORRECTED.sql
+
+أو:
+   .cursor/APPLY_ALL_PENDING_MIGRATIONS.sql
+

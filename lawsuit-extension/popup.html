@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام رفع الدعاوى</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      width: 380px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      direction: rtl;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .status-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+    
+    .status-dot.ready {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    
+    .status-dot.no-data {
+      background: #f59e0b;
+    }
+    
+    .status-text {
+      font-weight: 600;
+    }
+    
+    .data-preview {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+    }
+    
+    .data-preview p {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .data-preview .label {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .data-preview .value {
+      font-weight: 600;
+      max-width: 200px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+    
+    .btn-outline:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+    
+    .separator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+    }
+    
+    .separator::before,
+    .separator::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    .icon {
+      font-size: 18px;
+    }
+    
+    .loading {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚖️ نظام رفع الدعاوى التلقائي</h1>
+    <p>شركة العراف لتأجير السيارات</p>
+  </div>
+  
+  <div class="content">
+    <!-- حالة البيانات -->
+    <div class="status-box">
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">جاري التحميل...</span>
+      </div>
+      <div class="data-preview" id="dataPreview">
+        <p class="empty">لا توجد بيانات محفوظة</p>
+      </div>
+    </div>
+    
+    <!-- الأزرار -->
+    <div class="actions">
+      <button class="btn btn-primary" id="fillBtn" disabled>
+        <span class="icon">📋</span>
+        ملء البيانات في تقاضي
+      </button>
+      
+      <div class="separator">أو</div>
+      
+      <button class="btn btn-secondary" id="openAlarafBtn">
+        <span class="icon">🚗</span>
+        فتح صفحة العقود المتأخرة
+      </button>
+      
+      <button class="btn btn-outline" id="openTaqadiBtn">
+        <span class="icon">⚖️</span>
+        فتح موقع تقاضي
+      </button>
+      
+      <button class="btn btn-danger" id="clearBtn" style="display: none;">
+        <span class="icon">🗑️</span>
+        مسح البيانات
+      </button>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>الإصدار 1.0.0 | <a href="https://www.alaraf.online" target="_blank">alaraf.online</a></p>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

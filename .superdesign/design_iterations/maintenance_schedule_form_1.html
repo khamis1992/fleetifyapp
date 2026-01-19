@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>جدولة الصيانة - Alaraf Car Rental</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="maintenance_schedule_theme.css">
+  <style>
+    * {
+      font-family: var(--font-sans) !important;
+    }
+    
+    body {
+      background: var(--background) !important;
+      color: var(--foreground) !important;
+      direction: rtl !important;
+    }
+    
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: oklch(0% 0% 0% / 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      animation: overlayFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes overlayFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .dialog-content {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-2xl);
+      max-width: 56rem;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      z-index: 51;
+      animation: dialogSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes dialogSlideIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+    
+    .dialog-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, var(--primary) 0%, oklch(0.58 0.20 25) 100%);
+      color: white;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s ease;
+      animation: stepSlideIn 0.4s ease-out;
+    }
+    
+    @keyframes stepSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .step-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+    
+    .form-label-icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: var(--primary);
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      color: var(--foreground);
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+    
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px oklch(0.52 0.19 25 / 0.1);
+      transform: scale(1.01);
+    }
+    
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-primary:hover {
+      background: oklch(0.48 0.20 25);
+      transform: scale(1.02);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .btn-primary:active {
+      transform: scale(0.95);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--foreground);
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .btn-secondary:hover {
+      background: var(--muted);
+      transform: scale(0.97);
+    }
+    
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s ease;
+    }
+    
+    .btn-close:hover {
+      background: oklch(1.0 0 0 / 0.2);
+      transform: rotate(90deg);
+    }
+    
+    .checkbox-wrapper {
+      display: flex;
+      align-items: start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: oklch(0.98 0.04 55);
+      border: 1px solid var(--status-warning);
+      border-radius: var(--radius);
+      margin-top: 1rem;
+    }
+    
+    .checkbox-input {
+      width: 1.25rem;
+      height: 1.25rem;
+      accent-color: var(--primary);
+      cursor: pointer;
+      margin-top: 0.125rem;
+    }
+    
+    .checkbox-label {
+      flex: 1;
+    }
+    
+    .checkbox-title {
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 0.25rem;
+    }
+    
+    .checkbox-description {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+    
+    .step-progress {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+    
+    .icon-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      background: oklch(0.98 0.04 27);
+      border-radius: var(--radius-sm);
+      margin-left: 0.5rem;
+    }
+    
+    .icon-wrapper svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <!-- Dialog Overlay -->
+  <div class="dialog-overlay"></div>
+  
+  <!-- Dialog Content -->
+  <div class="dialog-content">
+    <!-- Header -->
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div class="icon-wrapper">
+            <i data-lucide="wrench"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0;">جدولة الصيانة</h2>
+            <p style="font-size: 0.875rem; margin: 0.25rem 0 0 0; opacity: 0.9;">جدولة صيانة جديدة لمركبة</p>
+          </div>
+        </div>
+        <button class="btn-close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Form Content -->
+    <form style="padding: 1.5rem;">
+      <!-- Step 1: Basic Information -->
+      <div class="step-card">
+        <div class="step-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="step-number">1</span>
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">المعلومات الأساسية</h3>
+          </div>
+          <span class="step-progress">1/4</span>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i data-lucide="car" class="form-label-icon"></i>
+            <span>المركبة *</span>
+          </label>
+          <select class="form-select">
+            <option>اختر المركبة</option>
+            <option>1234 - Toyota Camry</option>
+            <option>5678 - Honda Accord</option>
+          </select>
+        </div>
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="wrench" class="form-label-icon"></i>
+              <span>نوع الصيانة *</span>
+            </label>
+            <select class="form-select">
+              <option>اختر النوع</option>
+              <option>صيانة دورية</option>
+              <option>تغيير زيت</option>
+              <option>خدمة الإطارات</option>
+              <option>خدمة الفرامل</option>
+              <option>إصلاح المحرك</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="zap" class="form-label-icon"></i>
+              <span>الأولوية</span>
+            </label>
+            <select class="form-select">
+              <option>منخفضة</option>
+              <option selected>متوسطة</option>
+              <option>عالية</option>
+              <option>عاجلة</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i data-lucide="file-text" class="form-label-icon"></i>
+            <span>الوصف *</span>
+          </label>
+          <textarea class="form-textarea" placeholder="وصف أعمال الصيانة المطلوبة..."></textarea>
+        </div>
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="calendar" class="form-label-icon"></i>
+              <span>التاريخ المحدد</span>
+            </label>
+            <input type="date" class="form-input" />
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="dollar-sign" class="form-label-icon"></i>
+              <span>التكلفة المقدرة (د.ك)</span>
+            </label>
+            <input type="number" step="0.001" placeholder="0.000" class="form-input" />
+          </div>
+        </div>
+      </div>
+      
+      <!-- Step 2: Financial Information -->
+      <div class="step-card">
+        <div class="step-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="step-number">2</span>
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">المعلومات المالية</h3>
+          </div>
+          <span class="step-progress">2/4</span>
+        </div>
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="dollar-sign" class="form-label-icon"></i>
+              <span>مبلغ الضريبة (د.ك)</span>
+            </label>
+            <input type="number" step="0.001" placeholder="0.000" class="form-input" />
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="credit-card" class="form-label-icon"></i>
+              <span>طريقة الدفع</span>
+            </label>
+            <select class="form-select">
+              <option selected>نقد</option>
+              <option>تحويل بنكي</option>
+              <option>شيك</option>
+              <option>بطاقة ائتمان</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i data-lucide="file-text" class="form-label-icon"></i>
+            <span>رقم الفاتورة</span>
+          </label>
+          <input type="text" placeholder="رقم الفاتورة من مزود الخدمة" class="form-input" />
+        </div>
+      </div>
+      
+      <!-- Step 3: Service Provider -->
+      <div class="step-card">
+        <div class="step-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="step-number">3</span>
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">مزود الخدمة</h3>
+          </div>
+          <span class="step-progress">3/4</span>
+        </div>
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="building" class="form-label-icon"></i>
+              <span>مزود الخدمة</span>
+            </label>
+            <input type="text" placeholder="اسم الشركة أو الميكانيكي" class="form-input" />
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">
+              <i data-lucide="phone" class="form-label-icon"></i>
+              <span>معلومات التواصل</span>
+            </label>
+            <input type="text" placeholder="رقم الهاتف أو البريد الإلكتروني" class="form-input" />
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i data-lucide="wrench" class="form-label-icon"></i>
+            <span>القطع المراد استبدالها</span>
+          </label>
+          <input type="text" placeholder="اذكر القطع مفصولة بفواصل" class="form-input" />
+        </div>
+      </div>
+      
+      <!-- Step 4: Additional Settings -->
+      <div class="step-card">
+        <div class="step-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="step-number">4</span>
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">إعدادات إضافية</h3>
+          </div>
+          <span class="step-progress">4/4</span>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i data-lucide="building-2" class="form-label-icon"></i>
+            <span>مركز التكلفة</span>
+          </label>
+          <select class="form-select">
+            <option>اختر مركز التكلفة</option>
+            <option>مركز الصيانة الرئيسي</option>
+            <option>مركز الصيانة الفرعي</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">
+            <i data-lucide="file-text" class="form-label-icon"></i>
+            <span>ملاحظات إضافية</span>
+          </label>
+          <textarea class="form-textarea" placeholder="أي ملاحظات إضافية أو تعليمات خاصة..."></textarea>
+        </div>
+        
+        <div class="checkbox-wrapper">
+          <input type="checkbox" class="checkbox-input" id="moveToMaintenance" checked />
+          <label for="moveToMaintenance" class="checkbox-label">
+            <div class="checkbox-title">نقل المركبة إلى قسم الصيانة تلقائياً</div>
+            <div class="checkbox-description">
+              عند تفعيل هذا الخيار، ستختفي المركبة من قائمة الأسطول وتظهر في قسم الصيانة حتى انتهاء الصيانة
+            </div>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Form Actions -->
+      <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <button type="button" class="btn-secondary">
+          إلغاء
+        </button>
+        <button type="submit" class="btn-primary">
+          <i data-lucide="check"></i>
+          <span>جدولة الصيانة</span>
+        </button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+    
+    // Add animations
+    document.querySelectorAll('.step-card').forEach((card, index) => {
+      card.style.animationDelay = `${index * 100}ms`;
+    });
+  </script>
+</body>
+</html>

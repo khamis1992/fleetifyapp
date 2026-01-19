@@ -1,0 +1,208 @@
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import {
+  Settings as SettingsIcon,
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  Lock,
+  ChevronRight,
+  Crown,
+  CreditCard,
+  FileSignature,
+  GraduationCap
+} from 'lucide-react';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { toast } from 'sonner';
+import { PageHelp } from "@/components/help";
+import { SettingsPageHelpContent } from "@/components/help/content";
+
+const Settings: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { restart: restartOnboardingTour } = useOnboarding();
+
+  const settingsOptions = [
+    {
+      title: "الملف الشخصي",
+      description: "إدارة معلوماتك الشخصية والوظيفية",
+      icon: User,
+      action: () => navigate('/profile'),
+      available: true
+    },
+    {
+      title: "الإشعارات",
+      description: "إعدادات الإشعارات والتنبيهات",
+      icon: Bell,
+      action: () => {},
+      available: false
+    },
+    {
+      title: "الأمان والخصوصية",
+      description: "إعدادات كلمة المرور والأمان",
+      icon: Shield,
+      action: () => navigate('/profile#password-section'),
+      available: true
+    },
+    {
+      title: "إعادة جولة التعريف",
+      description: "ابدأ جولة تعريفية سريعة بميزات التطبيق",
+      icon: GraduationCap,
+      action: () => {
+        restartOnboardingTour();
+        toast.success('تم بدء جولة التعريف', {
+          description: 'سيتم توجيهك خلال الميزات الرئيسية للتطبيق'
+        });
+        navigate('/dashboard');
+      },
+      available: true
+    },
+    {
+      title: "إعدادات الهوية البصرية",
+      description: "تخصيص الشعار والألوان والعناصر البصرية",
+      icon: Palette,
+      action: () => navigate('/settings/advanced'),
+      available: true
+    },
+    {
+      title: "اللغة والمنطقة",
+      description: "إعدادات اللغة والمنطقة الزمنية",
+      icon: Globe,
+      action: () => {},
+      available: false
+    },
+    {
+      title: "الصلاحيات",
+      description: "عرض صلاحياتك في النظام",
+      icon: Lock,
+      action: () => navigate('/hr/users'),
+      available: true
+    },
+    {
+      title: "إدارة الاشتراك",
+      description: "إدارة خطة الاشتراك والميزات",
+      icon: Crown,
+      action: () => navigate('/subscription'),
+      available: true
+    },
+    {
+      title: "إعدادات الحسابات المحاسبية",
+      description: "إدارة إعدادات الحسابات المحاسبية للعملاء",
+      icon: CreditCard,
+      action: () => navigate('/settings/customer-accounts'),
+      available: true
+    },
+    {
+      title: "إعدادات التوقيع الإلكتروني",
+      description: "تحكم في إعدادات التوقيع الإلكتروني للعقود والمستندات",
+      icon: FileSignature,
+      action: () => navigate('/settings/electronic-signature'),
+      available: true
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+      <div className="container mx-auto py-6 px-4 max-w-4xl">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+              <SettingsIcon className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">الإعدادات</h1>
+              <p className="text-slate-600">إدارة إعدادات حسابك والتطبيق</p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* User Info Card */}
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <CardHeader>
+              <CardTitle className="text-slate-900">معلومات المستخدم</CardTitle>
+              <CardDescription className="text-slate-600">معلومات أساسية عن حسابك</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">الاسم</p>
+                  <p className="text-lg text-slate-900">
+                    {user?.profile?.first_name_ar || user?.profile?.first_name} {user?.profile?.last_name_ar || user?.profile?.last_name}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-600">البريد الإلكتروني</p>
+                  <p className="text-lg text-slate-900">{user?.email}</p>
+                </div>
+                {user?.profile?.position && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-600">المنصب</p>
+                    <p className="text-lg text-slate-900">{user.profile.position}</p>
+                  </div>
+                )}
+                {user?.company && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-600">الشركة</p>
+                    <p className="text-lg text-slate-900">{user.company.name_ar || user.company.name}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Settings Options */}
+          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <CardHeader>
+              <CardTitle className="text-slate-900">إعدادات التطبيق</CardTitle>
+              <CardDescription className="text-slate-600">خيارات تخصيص التطبيق وإعداداته</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {settingsOptions.map((option, index) => {
+                  const IconComponent = option.icon;
+                  return (
+                    <div key={index}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between h-auto p-4 hover:bg-teal-50/50 hover:border-teal-500/30 rounded-2xl transition-all"
+                        onClick={option.action}
+                        disabled={!option.available}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-xl ${option.available ? 'bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20' : 'bg-slate-200'}`}>
+                            <IconComponent className={`h-4 w-4 ${option.available ? 'text-white' : 'text-slate-400'}`} />
+                          </div>
+                          <div className="text-right flex-1">
+                            <div className={`font-medium text-slate-900 ${!option.available && 'text-slate-400'}`}>
+                              {option.title}
+                              {!option.available && <span className="text-xs ml-2 text-slate-400">(قريباً)</span>}
+                            </div>
+                            <div className="text-sm text-slate-600">
+                              {option.description}
+                            </div>
+                          </div>
+                        </div>
+                        {option.available && <ChevronRight className="h-4 w-4 text-slate-600" />}
+                      </Button>
+                      {index < settingsOptions.length - 1 && <Separator className="my-2 bg-slate-200/50" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Settings;

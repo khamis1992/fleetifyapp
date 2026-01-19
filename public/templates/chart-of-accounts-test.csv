@@ -1,0 +1,14 @@
+المستوى,رقم الحساب,الوصف,الوصف بالإنجليزي
+1,1,الأصول,Assets
+2,11,الأصول المتداولة,Current Assets
+3,111,النقدية وما يعادلها,Cash and Cash Equivalents
+4,11101,النقدية,Cash
+5,1110101,الصندوق النقدي الرئيسي,Main Cash Fund
+5,1110102,عهدة نقدية دائمة,Permanent Cash Custody
+5,1110103,عهدة نقدية مؤقتة,Temporary Cash Custody
+3,112,البنوك,Banks
+4,11201,البنك المركزي,Central Bank
+4,11202,البنوك التجارية,Commercial Banks
+3,113,العملاء التجاريون,Trade Customers
+4,11301,عملاء محليون,Local Customers
+4,11302,عملاء خارجيون,Foreign Customers

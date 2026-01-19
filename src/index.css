@@ -1,0 +1,1259 @@
+/* Native Mobile App Styles - Import must be first */
+@import './styles/native-mobile.css';
+@import './styles/mobile-fixes.css';
+@import './styles/mobile-native-pages.css';
+
+/* Leaflet Map CSS */
+@import 'leaflet/dist/leaflet.css';
+
+/* Custom Leaflet Popup Styles */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 200px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom marker styles */
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* RTL support for map controls */
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: white !important;
+  color: #1e293b !important;
+  border: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #f1f5f9 !important;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Border Beam Animation */
+@keyframes border-beam {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+/* Success Light Animation Variable */
+@layer base {
+  :root {
+    --success-light: 142 56% 95%;
+    --warning-light: 25 85% 95%;
+    --primary-dark: 175 84% 32%;
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow));
+    --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+  }
+}
+
+/* KW Rent Flow ERP - Professional Design System 
+Inspired by Kuwait business environment with premium colors and gradients.
+All colors MUST be HSL.
+*/
+
+@layer base {
+  /* Maintenance Page Animations */
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slideInUp 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+  
+  .stats-card {
+    animation: slideInUp 0.4s ease-out forwards;
+  }
+  
+  .row-hover {
+    transition: all 0.2s ease;
+  }
+  
+  .row-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px -2px hsl(0 0% 0% / 0.1);
+  }
+
+  :root {
+    /* Light Grey Professional Base */
+    --background: 0 0% 96%;
+    --background-soft: 0 0% 94%;
+    --foreground: 0 0% 15%;
+    
+    /* Clean Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+    --card-hover: 0 0% 98%;
+    --card-glass: 0 0% 100% / 0.9;
+    
+    /* Teal Primary - اللون الأساسي للنظام (أخضر تركوازي) */
+    --primary: 174 80% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 175 84% 32%;
+    --primary-light: 173 75% 48%;
+    --primary-glow: 174 80% 40% / 0.2;
+    
+    /* Professional Orange Accent System */
+    --accent: 25 90% 92%;
+    --accent-foreground: 0 0% 15%;
+    --accent-light: 25 90% 95%;
+    --accent-muted: 25 90% 85%;
+    
+    /* Neutral Secondary */
+    --secondary: 0 0% 85%;
+    --secondary-foreground: 0 0% 15%;
+    --secondary-dark: 0 0% 80%;
+    
+    /* Interactive Elements */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+    
+    /* Muted Elements */
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 45%;
+    
+    /* Status Colors - Professional Orange for Warnings */
+    --success: 142 56% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 25 85% 55%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 65% 51%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Clean Borders and Inputs */
+    --border: 0 0% 85%;
+    --input: 0 0% 98%;
+    --input-border: 0 0% 80%;
+    --input-focus: 174 80% 40%;
+    --ring: 174 80% 40%;
+    
+    /* Elegant Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)));
+    --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 50%, hsl(var(--accent-light)) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(var(--card-glass)), hsl(var(--card) / 0.8));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-light)), hsl(var(--accent-muted)));
+    
+    /* Chat-specific gradients */
+    --gradient-chat-user: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
+    --gradient-chat-ai: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-chat-container: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+    --gradient-chat-input: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
+    --gradient-chat-header: linear-gradient(135deg, hsl(var(--accent-light)) 0%, hsl(var(--accent-muted)) 100%);
+    
+    /* Clean Shadows */
+    --shadow-subtle: 0 1px 3px 0 hsl(0 0% 15% / 0.08), 0 1px 2px -1px hsl(0 0% 15% / 0.08);
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 15% / 0.08), 0 2px 4px -2px hsl(0 0% 15% / 0.08);
+    --shadow-elevated: 0 10px 15px -3px hsl(0 0% 15% / 0.1), 0 4px 6px -4px hsl(0 0% 15% / 0.1);
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow));
+    --shadow-glass: 0 8px 32px hsl(0 0% 15% / 0.06);
+    
+    /* Chat-specific shadows */
+    --shadow-chat-bubble: 0 4px 12px hsl(0 0% 15% / 0.08), 0 2px 6px hsl(0 0% 15% / 0.04);
+    --shadow-chat-container: 0 8px 25px hsl(0 0% 15% / 0.12), 0 4px 10px hsl(0 0% 15% / 0.08);
+    --shadow-chat-input: 0 2px 8px hsl(var(--primary) / 0.1);
+    --shadow-chat-glow: 0 0 30px hsl(var(--primary) / 0.15);
+    
+    /* Smooth Professional Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-glass: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-micro: all 0.15s ease-out;
+    
+    --radius: 0.75rem;
+
+    /* Charcoal Sidebar Variables */
+    --sidebar-background: 0 0% 20%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 174 80% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 30%;
+    --sidebar-ring: 174 80% 40%;
+    /* Mobile-specific colors */
+    --mobile-navbar: var(--background);
+    --mobile-tab: var(--card);
+    --mobile-tab-active: var(--primary);
+    --mobile-overlay: 0 0% 0% / 0.8;
+    --mobile-touch: var(--accent);
+    
+    /* Mobile touch target sizes */
+    --touch-target-min: 44px;
+    --touch-target-recommended: 48px;
+    --touch-target-comfortable: 56px;
+    --touch-spacing: 8px;
+    
+    /* Mobile typography scales */
+    --mobile-h1: 1.5rem; /* 24px */
+    --mobile-h2: 1.25rem; /* 20px */
+    --mobile-h3: 1.125rem; /* 18px */
+    --mobile-body: 1rem; /* 16px - Prevents zoom on iOS */
+    --mobile-body-sm: 0.875rem; /* 14px */
+    --mobile-line-height: 1.6;
+    
+    /* Mobile spacing scale */
+    --mobile-spacing-xs: 0.5rem; /* 8px */
+    --mobile-spacing-sm: 0.75rem; /* 12px */
+    --mobile-spacing-md: 1rem; /* 16px */
+    --mobile-spacing-lg: 1.25rem; /* 20px */
+    --mobile-spacing-xl: 1.5rem; /* 24px */
+    
+    /* Mobile padding defaults */
+    --mobile-container-padding: 1rem; /* 16px */
+    --mobile-button-padding: 0.75rem 1rem; /* 12px 16px */
+    
+    /* Safe area insets (for notch devices) */
+    --safe-area-top: env(safe-area-inset-top, 0);
+    --safe-area-right: env(safe-area-inset-right, 0);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0);
+    --safe-area-left: env(safe-area-inset-left, 0);
+    
+    /* Touch feedback colors */
+    --touch-target: var(--primary);
+    --touch-active: var(--primary-light);
+    --touch-ghost: var(--accent);
+    
+    /* Responsive state colors */
+    --responsive-highlight: var(--primary);
+    --responsive-surface: var(--card);
+    --responsive-interactive: var(--accent);
+  }
+
+  .dark {
+    /* Dark mode adjustments */
+    --background: 220 25% 8%;
+    --background-soft: 220 25% 10%;
+    --foreground: 220 15% 95%;
+    
+    --card: 220 25% 10%;
+    --card-foreground: 220 15% 95%;
+    --card-hover: 220 25% 12%;
+    
+    --popover: 220 25% 10%;
+    --popover-foreground: 220 15% 95%;
+    
+    --primary: 210 100% 25%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 210 100% 35%;
+    --primary-glow: 210 100% 40%;
+    
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 220 15% 95%;
+    --secondary-dark: 220 15% 12%;
+    
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 15% 65%;
+    
+    --accent: 45 85% 60%;
+    --accent-foreground: 220 25% 8%;
+    --accent-light: 45 85% 70%;
+    --accent-muted: 45 85% 15%;
+    
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 210 100% 25%;
+    
+    /* Update gradients for dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-light)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--accent)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--background-soft)) 100%);
+    
+    /* Dark mode sidebar */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Dark mode touch and responsive colors */
+    --touch-target: var(--primary);
+    --touch-active: var(--primary-light);
+    --responsive-highlight: var(--primary);
+    --responsive-surface: var(--card);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-cairo;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    direction: rtl;
+    text-align: right;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Arabic Typography System with proper text rendering */
+  .arabic-heading-xl {
+    @apply font-cairo font-bold text-7xl leading-tight;
+    font-size: 4.5rem;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: normal;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-heading-lg {
+    @apply font-cairo font-bold text-5xl leading-tight;
+    font-size: 3rem;
+    line-height: 1.2;
+    letter-spacing: 0.015em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-heading-md {
+    @apply font-tajawal font-semibold text-3xl leading-snug;
+    font-size: 2rem;
+    line-height: 1.3;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-heading-sm {
+    @apply font-tajawal font-semibold text-xl leading-relaxed;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-body-lg {
+    @apply font-cairo text-lg leading-loose;
+    font-size: 1.25rem;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-body {
+    @apply font-cairo text-base leading-relaxed;
+    font-size: 1.125rem;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-body-sm {
+    @apply font-tajawal text-sm leading-relaxed;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-display {
+    @apply font-amiri font-bold text-6xl leading-none;
+    font-size: 4rem;
+    line-height: 1.05;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+
+  .arabic-accent {
+    @apply font-reem-kufi font-medium;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Custom utilities for gradients */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .bg-gradient-card {
+    background: var(--gradient-card);
+  }
+  
+  .bg-gradient-muted {
+    background: var(--gradient-muted);
+  }
+  
+  /* Chat-specific gradient utilities */
+  .bg-gradient-chat-user {
+    background: var(--gradient-chat-user);
+  }
+  
+  .bg-gradient-chat-ai {
+    background: var(--gradient-chat-ai);
+  }
+  
+  .bg-gradient-chat-container {
+    background: var(--gradient-chat-container);
+  }
+  
+  .bg-gradient-chat-input {
+    background: var(--gradient-chat-input);
+  }
+  
+  .bg-gradient-chat-header {
+    background: var(--gradient-chat-header);
+  }
+  
+  /* Custom shadow utilities */
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  /* Chat-specific shadow utilities */
+  .shadow-chat-bubble {
+    box-shadow: var(--shadow-chat-bubble);
+  }
+  
+  .shadow-chat-container {
+    box-shadow: var(--shadow-chat-container);
+  }
+  
+  .shadow-chat-input {
+    box-shadow: var(--shadow-chat-input);
+  }
+  
+  .shadow-chat-glow {
+    box-shadow: var(--shadow-chat-glow);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+  
+  .transition-fast {
+    transition: var(--transition-fast);
+  }
+  
+}
+
+@layer utilities {
+  /* Custom transition utilities */
+  .transition-glow {
+    transition: var(--transition-glow);
+  }
+
+  /* Mobile touch target utilities */
+  .touch-target {
+    min-height: var(--touch-target-min);
+    min-width: var(--touch-target-min);
+  }
+
+  .touch-target-lg {
+    min-height: var(--touch-target-comfortable);
+    min-width: var(--touch-target-comfortable);
+  }
+
+  .touch-spacing {
+    gap: var(--touch-spacing);
+  }
+
+  /* Safe area utilities for notch devices */
+  .safe-area-top {
+    padding-top: var(--safe-area-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: var(--safe-area-left);
+  }
+
+  .safe-area-right {
+    padding-right: var(--safe-area-right);
+  }
+
+  .safe-area-all {
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+    padding-left: var(--safe-area-left);
+    padding-right: var(--safe-area-right);
+  }
+
+  /* Mobile container utilities */
+  .mobile-container {
+    padding: var(--mobile-container-padding);
+  }
+
+  .mobile-container-wide {
+    padding: var(--mobile-container-padding);
+    max-width: 100%;
+  }
+
+  /* Mobile padding utilities */
+  .mobile-p-xs {
+    @apply p-2;
+  }
+
+  .mobile-p-sm {
+    @apply p-3;
+  }
+
+  .mobile-p-md {
+    @apply p-4;
+  }
+
+  .mobile-p-lg {
+    @apply p-5;
+  }
+
+  /* Mobile spacing utilities */
+  .mobile-gap-xs {
+    @apply gap-2;
+  }
+
+  .mobile-gap-sm {
+    @apply gap-3;
+  }
+
+  .mobile-gap-md {
+    @apply gap-4;
+  }
+
+  .mobile-gap-lg {
+    @apply gap-5;
+  }
+
+  /* Mobile responsive utilities */
+  @media (max-width: 640px) {
+    .mobile-only {
+      display: block;
+    }
+
+    .mobile-hidden {
+      display: none;
+    }
+
+    .mobile-full-width {
+      width: 100vw;
+      margin-left: calc(-1 * var(--safe-area-left));
+      margin-right: calc(-1 * var(--safe-area-right));
+    }
+
+    /* Stack buttons vertically on mobile */
+    .mobile-stack {
+      @apply flex flex-col gap-3;
+    }
+
+    /* Full-width buttons on mobile */
+    .mobile-btn {
+      @apply w-full h-12 rounded-lg;
+    }
+
+    /* Mobile form layout */
+    .mobile-form-group {
+      @apply space-y-3 mb-4;
+    }
+
+    .mobile-form-label {
+      @apply block text-sm font-medium mb-2;
+    }
+
+    .mobile-form-input {
+      @apply w-full h-12 px-4 py-3 text-base rounded-lg border;
+    }
+
+    /* Mobile card layout */
+    .mobile-card {
+      @apply bg-card rounded-lg border border-border p-4 mb-3;
+    }
+
+    /* Mobile list utilities */
+    .mobile-list {
+      @apply space-y-2;
+    }
+
+    .mobile-list-item {
+      @apply p-3 border-b border-border last:border-b-0;
+    }
+
+    /* Mobile header utilities */
+    .mobile-header {
+      @apply sticky top-0 z-10 bg-card border-b border-border px-4 py-4 safe-area-top;
+    }
+
+    /* Mobile bottom action bar */
+    .mobile-action-bar {
+      @apply fixed bottom-0 left-0 right-0 bg-gradient-to-t from-card to-card/80 border-t border-border p-4 safe-area-bottom;
+    }
+  }
+
+  @media (min-width: 641px) {
+    .mobile-only {
+      display: none;
+    }
+
+    .mobile-hidden {
+      display: block;
+    }
+  }
+
+  /* Touch feedback utilities */
+  .touch-feedback {
+    @apply active:scale-95 active:opacity-80 transition-transform duration-100;
+  }
+
+  .touch-feedback-subtle {
+    @apply active:scale-98 transition-transform duration-150;
+  }
+
+  /* Mobile scroll utilities */
+  .mobile-scroll-x {
+    @apply overflow-x-auto overflow-y-hidden snap-x snap-mandatory;
+  }
+
+  .mobile-scroll-y {
+    @apply overflow-y-auto overscroll-contain;
+  }
+
+  /* Haptic feedback */
+  .haptic-light {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .haptic-medium {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .haptic-heavy {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+@layer components {
+  /* Enhanced interactive elements */
+  .card-hover {
+    @apply transition-smooth hover:shadow-elevated hover:-translate-y-1;
+  }
+  
+  .stat-card {
+    @apply bg-gradient-card border-0 shadow-card transition-smooth hover:shadow-elevated hover:scale-[1.02];
+  }
+  
+  /* Fix for form button interactions - prevent CSS transform issues */
+  .form-button-container {
+    @apply relative;
+    transform: none !important;
+    will-change: auto;
+  }
+  
+  .form-button-container button {
+    @apply relative;
+    transform: none !important;
+    pointer-events: auto !important;
+    z-index: 10;
+    transition: var(--transition-micro);
+  }
+  
+  .form-button-container button:hover {
+    transform: translateY(-1px) !important;
+  }
+  
+  .form-button-container button:active {
+    transform: translateY(0) !important;
+  }
+  
+  /* Prevent scale animations on form elements during duplicate checks */
+  .duplicate-check-active .form-button-container button {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .glass-card {
+    @apply bg-background/95 border border-border/50;
+  }
+  
+  .glow-on-hover {
+    @apply transition-glow hover:shadow-glow;
+  }
+  
+  /* Enhanced gradients with animation */
+  .bg-gradient-animated {
+    background: linear-gradient(-45deg, hsl(var(--primary)), hsl(var(--primary-light)), hsl(var(--accent)), hsl(var(--primary-glow)));
+    background-size: 400% 400%;
+    animation: gradient-shift 8s ease infinite;
+  }
+  
+  /* Activity indicators */
+  .pulse-glow {
+    @apply animate-pulse;
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  
+  .shimmer {
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+}
+
+@layer base {
+  /* Keyframes */
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+  
+  @keyframes bounce-in {
+    0% { transform: scale(0.3) translateY(50px); opacity: 0; }
+    50% { transform: scale(1.05) translateY(-10px); }
+    70% { transform: scale(0.9) translateY(5px); }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  
+  @keyframes gravity-pull {
+    0% { transform: translateX(0) translateY(0) scale(1); }
+    20% { transform: translateX(15px) translateY(-10px) scale(0.8); }
+    40% { transform: translateX(25px) translateY(15px) scale(0.6); }
+    60% { transform: translateX(20px) translateY(25px) scale(0.7); }
+    80% { transform: translateX(5px) translateY(10px) scale(0.9); }
+    100% { transform: translateX(0) translateY(0) scale(1); }
+  }
+  
+  @keyframes gravity-pull-reverse {
+    0% { transform: translateX(0) translateY(0) scale(1); }
+    20% { transform: translateX(-15px) translateY(-10px) scale(0.8); }
+    40% { transform: translateX(-25px) translateY(15px) scale(0.6); }
+    60% { transform: translateX(-20px) translateY(25px) scale(0.7); }
+    80% { transform: translateX(-5px) translateY(10px) scale(0.9); }
+    100% { transform: translateX(0) translateY(0) scale(1); }
+  }
+
+  /* Report print styles */
+  @media print {
+    @page {
+      size: A4;
+      margin: 20mm;
+    }
+    
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: white;
+      color: #333;
+    }
+    
+    .page {
+      page-break-after: always;
+    }
+    
+    .no-break {
+      page-break-inside: avoid;
+    }
+  }
+  
+  @keyframes dot-escape {
+    0% { transform: translateX(0) translateY(0) scale(1); opacity: 1; }
+    15% { transform: translateX(0) translateY(0) scale(0.8); opacity: 0.9; }
+    30% { transform: translateX(20px) translateY(-15px) scale(0.6); opacity: 0.6; }
+    50% { transform: translateX(35px) translateY(-25px) scale(0.4); opacity: 0.3; }
+    70% { transform: translateX(25px) translateY(-10px) scale(0.7); opacity: 0.7; }
+    85% { transform: translateX(10px) translateY(-5px) scale(0.9); opacity: 0.9; }
+    100% { transform: translateX(0) translateY(0) scale(1); opacity: 1; }
+  }
+  
+  @keyframes dot-escape-reverse {
+    0% { transform: translateX(0) translateY(0) scale(1); opacity: 1; }
+    15% { transform: translateX(0) translateY(0) scale(0.8); opacity: 0.9; }
+    30% { transform: translateX(-20px) translateY(15px) scale(0.6); opacity: 0.6; }
+    50% { transform: translateX(-35px) translateY(25px) scale(0.4); opacity: 0.3; }
+    70% { transform: translateX(-25px) translateY(10px) scale(0.7); opacity: 0.7; }
+    85% { transform: translateX(-10px) translateY(5px) scale(0.9); opacity: 0.9; }
+    100% { transform: translateX(0) translateY(0) scale(1); opacity: 1; }
+  }
+  
+  @keyframes hole-appear {
+    0% { opacity: 0; transform: scale(0); }
+    20% { opacity: 0; transform: scale(0); }
+    40% { opacity: 1; transform: scale(1.2); }
+    60% { opacity: 1; transform: scale(1); }
+    80% { opacity: 0.5; transform: scale(0.8); }
+    100% { opacity: 0; transform: scale(0); }
+  }
+  
+  @keyframes particle-float {
+    0% { transform: translateX(0) translateY(0) scale(1); opacity: 0.8; }
+    25% { transform: translateX(5px) translateY(-10px) scale(0.9); opacity: 0.6; }
+    50% { transform: translateX(10px) translateY(-15px) scale(0.8); opacity: 0.4; }
+    75% { transform: translateX(5px) translateY(-10px) scale(0.9); opacity: 0.6; }
+    100% { transform: translateX(0) translateY(0) scale(1); opacity: 0.8; }
+  }
+  
+  /* RTL support and Arabic text improvements */
+  * {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  [dir="rtl"] {
+    text-align: right;
+  }
+  
+  [dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+  }
+  
+  /* Performance optimization: Disable blur during initial load */
+  body.loading .backdrop-blur,
+  body.loading .backdrop-blur-sm,
+  body.loading .backdrop-blur-md,
+  body.loading .backdrop-blur-lg {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Also simplify backgrounds during load */
+  body.loading [class*="bg-card/"],
+  body.loading [class*="bg-background/"] {
+    opacity: 1 !important;
+  }
+  
+  body.loading .bg-card\/50,
+  body.loading .bg-card\/60,
+  body.loading .bg-card\/70,
+  body.loading .bg-card\/80,
+  body.loading .bg-card\/90 {
+    background-color: hsl(var(--card)) !important;
+  }
+  
+  body.loading .bg-background\/50,
+  body.loading .bg-background\/60,
+  body.loading .bg-background\/70,
+  body.loading .bg-background\/80,
+  body.loading .bg-background\/90 {
+    background-color: hsl(var(--background)) !important;
+  }
+  
+  /* Re-enable blur after load */
+  body:not(.loading) .backdrop-blur {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  body:not(.loading) .backdrop-blur-sm {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  body:not(.loading) .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  body:not(.loading) .backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: backdrop-filter 0.3s ease;
+  }
+  
+  /* Enhanced Arabic font support with better rendering */
+  * {
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-display: swap;
+  }
+
+  /* Ensure proper text display for Arabic content */
+  .text-container {
+    width: 100%;
+    max-width: 100%;
+    word-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  /* Fix for text truncation in containers */
+  .content-container {
+    min-height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  /* Ensure headings have enough space */
+  h1, h2, h3, h4, h5, h6 {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    hyphens: none;
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+}
+
+  /* Mobile-first typography utilities */
+  @media (max-width: 640px) {
+    h1 {
+      font-size: var(--mobile-h1);
+      line-height: var(--mobile-line-height);
+    }
+
+    h2 {
+      font-size: var(--mobile-h2);
+      line-height: var(--mobile-line-height);
+    }
+
+    h3 {
+      font-size: var(--mobile-h3);
+      line-height: var(--mobile-line-height);
+    }
+
+    body {
+      font-size: var(--mobile-body);
+      line-height: var(--mobile-line-height);
+    }
+
+    /* Prevent iOS from zooming on input focus */
+    input, textarea, select {
+      font-size: 16px !important;
+      line-height: var(--mobile-line-height) !important;
+    }
+  }
+
+  /* RTL Support for Vehicle Form */
+  [dir="rtl"] .vehicle-form-content * {
+    text-align: right;
+    direction: rtl;
+  }
+
+  [dir="rtl"] .vehicle-form-content input,
+  [dir="rtl"] .vehicle-form-content textarea,
+  [dir="rtl"] .vehicle-form-content select {
+    text-align: right;
+    direction: rtl;
+  }
+
+  [dir="rtl"] .vehicle-form-content label {
+    text-align: right;
+    justify-content: flex-end;
+  }
+
+  /* Vehicle diagram specific fixes */
+  .vehicle-diagram-container {
+    transform: none !important;
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  .vehicle-diagram-container img {
+    transform: none !important;
+    will-change: auto;
+  }
+
+  /* Prevent unwanted transforms on vehicle condition components */
+  [class*="VehicleCondition"] {
+    transform: none !important;
+  }
+
+  /* Damage points styling */
+  .damage-point {
+    transform: translate(-50%, -50%) !important;
+    will-change: auto;
+  }
+  
+  /* Financial Reports Animations */
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slideInUp 0.4s ease-out forwards;
+  }
+  
+  /* Stagger delays for sequential animations */
+  .stagger-1 {
+    animation-delay: 0.1s;
+    opacity: 0;
+  }
+  
+  .stagger-2 {
+    animation-delay: 0.2s;
+    opacity: 0;
+  }
+  
+  .stagger-3 {
+    animation-delay: 0.3s;
+    opacity: 0;
+  }
+  
+  .stagger-4 {
+    animation-delay: 0.4s;
+    opacity: 0;
+  }
+  
+  .stagger-5 {
+    animation-delay: 0.5s;
+    opacity: 0;
+  }
+
+  /* World-Class Dashboard Styles */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .number-display {
+    background: linear-gradient(135deg, hsl(174, 80%, 40%), hsl(173, 75%, 48%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .badge-premium {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .badge-success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+    color: rgb(22, 163, 74);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .badge-warning {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(251, 146, 60, 0.05));
+    color: rgb(234, 88, 12);
+    border: 1px solid rgba(251, 146, 60, 0.3);
+  }
+
+  .badge-destructive {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.05));
+    color: rgb(220, 38, 38);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+  }
+
+  .nav-pill {
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-weight: 500;
+    font-size: 13px;
+    background: white;
+    border: 1px solid hsl(0, 0%, 92%);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .nav-pill.active {
+    background: linear-gradient(135deg, hsl(174, 80%, 40%), hsl(175, 84%, 32%));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 8px hsl(174, 80%, 40% / 0.25);
+  }
+
+  .nav-pill:not(.active):hover {
+    background: hsl(0, 0%, 97%);
+    border-color: hsl(174, 80%, 40%);
+    color: hsl(174, 80%, 40%);
+  }
+
+  .chart-glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ==========================================
+   CRITICAL: Mobile Scroll Fix
+   Must be at the END to override everything
+   ========================================== */
+@media (max-width: 768px) {
+  /* Force scroll on ALL mobile devices */
+  html, body {
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100% !important;
+    position: relative !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+  }
+  
+  /* CRITICAL: Override Radix UI scroll lock */
+  body[data-scroll-locked] {
+    overflow: auto !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Fix for root element */
+  #root {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Main containers must scroll */
+  main, 
+  [class*="flex-1"],
+  [class*="min-h-screen"] {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Remove any fixed positioning that blocks scroll */
+  .min-h-screen.flex {
+    position: relative !important;
+    overflow: visible !important;
+  }
+  
+  /* Ensure content padding for bottom nav */
+  main {
+    padding-bottom: 100px !important;
+  }
+  
+  /* Prevent any element from blocking touch scroll */
+  * {
+    touch-action: pan-y pan-x !important;
+  }
+}

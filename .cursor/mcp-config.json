@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "security-scanner": {
+      "command": "node",
+      "args": [
+        "scripts/security-scanner.js",
+        "--scan-all",
+        "--output",
+        "json"
+      ],
+      "env": {}
+    }
+  }
+}
+

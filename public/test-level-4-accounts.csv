@@ -1,0 +1,15 @@
+المستوى,رقم الحساب,الوصف,الوصف بالانجليزي
+1,1,الأصول,Assets
+2,11,الأصول المتداولة,Current Assets
+3,111,النقدية وما يعادلها,Cash and Cash Equivalents
+4,1101,الصندوق,Cash Fund
+5,11101,الصندوق الرئيسي,Main Cash Fund
+4,1102,البنوك,Banks
+5,11102,البنك الأهلي,National Bank
+3,112,المخزون,Inventory
+4,1121,مخزون المواد الخام,Raw Materials Inventory
+4,1122,مخزون البضاعة الجاهزة,Finished Goods Inventory
+2,12,الأصول الثابتة,Fixed Assets
+3,121,المباني والمنشآت,Buildings and Structures
+4,1211,المباني,Buildings
+4,1212,الأراضي,Land

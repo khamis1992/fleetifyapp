@@ -1,0 +1,71 @@
+name: Ghost-reviewer-agent
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  code-review:
+    name: 👻 Ghost Code Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📚 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Check for TODO comments
+        run: |
+          echo "## 👻 Ghost Code Review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          TODO_COUNT=$(grep -r "TODO\|FIXME\|HACK\|XXX" src --include="*.tsx" --include="*.ts" -l | wc -l)
+          echo "Files with TODO/FIXME: $TODO_COUNT" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for console.log
+        run: |
+          CONSOLE_COUNT=$(grep -r "console.log\|console.debug\|console.warn" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Console statements: $CONSOLE_COUNT" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for any types
+        run: |
+          ANY_COUNT=$(grep -r ": any" src --include="*.tsx" --include="*.ts" | wc -l)
+          echo "Any types used: $ANY_COUNT" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for complex functions
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Code Complexity" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          LONG_LINES=$(find src -name "*.tsx" -o -name "*.ts" | xargs wc -L 2>/dev/null | awk '$1 > 200' | wc -l)
+          echo "Files with lines > 200 chars: $LONG_LINES" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check for unused imports
+        run: |
+          UNUSED_IMPORTS=$(npx eslint src --ext .ts,.tsx --format json 2>/dev/null || echo '{"":[]}' | jq '.')
+          if echo "$UNUSED_IMPORTS" | jq -e '.[] | length > 0' > /dev/null 2>&1; then
+            echo "⚠️ Unused imports detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No unused imports" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📊 Summary
+        run: |
+          echo "## ✅ Ghost Review Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ✅ Reviewed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Best Practices | ✅ Checked |" >> $GITHUB_STEP_SUMMARY

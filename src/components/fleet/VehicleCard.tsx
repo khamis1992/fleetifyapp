@@ -1,0 +1,154 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Car, MoreVertical, Wrench, Edit, Trash2, Eye } from "lucide-react"
+import { Vehicle } from "@/hooks/useVehicles"
+import { VehicleForm } from "./VehicleForm"
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
+import { useRolePermissions } from "@/hooks/useRolePermissions"
+
+interface VehicleCardProps {
+  vehicle: Vehicle
+}
+
+const statusColors = {
+  available: "bg-green-100 text-green-800",
+  rented: "bg-blue-100 text-blue-800", 
+  maintenance: "bg-yellow-100 text-yellow-800",
+  out_of_service: "bg-red-100 text-red-800",
+  reserved: "bg-purple-100 text-purple-800",
+  accident: "bg-red-100 text-red-800",
+  stolen: "bg-slate-100 text-slate-800",
+  police_station: "bg-amber-100 text-amber-800"
+}
+
+const statusLabels = {
+  available: "متاحة",
+  rented: "مؤجرة",
+  maintenance: "قيد الصيانة", 
+  out_of_service: "خارج الخدمة",
+  reserved: "محجوزة",
+  reserved_employee: "محجوزة لموظف",
+  accident: "حادث",
+  stolen: "مسروقة",
+  police_station: "في مركز الشرطة"
+}
+
+export function VehicleCard({ vehicle }: VehicleCardProps) {
+  const navigate = useNavigate()
+  const [showEditForm, setShowEditForm] = useState(false)
+  const { hasPermission } = useRolePermissions()
+
+  const status = vehicle.status || 'available'
+  const { formatCurrency } = useCurrencyFormatter()
+  
+  const canEdit = hasPermission('edit_vehicles')
+  const canDelete = hasPermission('delete_vehicles')
+  
+  const handleViewDetails = () => {
+    navigate(`/fleet/vehicles/${vehicle.id}`)
+  }
+
+  return (
+    <>
+      <Card className="hover:shadow-md transition-shadow">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Car className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">{vehicle.plate_number}</CardTitle>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge className={statusColors[status]}>
+                {statusLabels[status]}
+              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleViewDetails}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    عرض التفاصيل
+                  </DropdownMenuItem>
+                  {canEdit && (
+                    <DropdownMenuItem onClick={() => setShowEditForm(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      تعديل المركبة
+                    </DropdownMenuItem>
+                  )}
+                  {status === 'available' && (
+                    <DropdownMenuItem onClick={() => navigate(`/fleet/maintenance?vehicle=${vehicle.id}`)}>
+                      <Wrench className="h-4 w-4 mr-2" />
+                      جدولة الصيانة
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && (
+                    <DropdownMenuItem className="text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      إلغاء التفعيل
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-2">
+          <div className="text-lg font-semibold">
+            {vehicle.make} {vehicle.model}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            السنة: {vehicle.year} • اللون: {vehicle.color}
+          </div>
+          
+          {vehicle.current_mileage && (
+            <div className="text-sm text-muted-foreground">
+              المسافة المقطوعة: {vehicle.current_mileage?.toLocaleString()} كم
+            </div>
+          )}
+          
+          {vehicle.last_maintenance_date && (
+            <div className="text-sm text-muted-foreground">
+              آخر صيانة: {new Date(vehicle.last_maintenance_date).toLocaleDateString()}
+            </div>
+          )}
+        </CardContent>
+
+        <CardFooter className="pt-3">
+          <div className="flex justify-between items-center w-full">
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">
+                {vehicle.daily_rate && `${formatCurrency(vehicle.daily_rate)}/day`}
+              </div>
+              {vehicle.minimum_rental_price && vehicle.enforce_minimum_price && (
+                <div className="text-xs text-orange-600 font-medium">
+                  حد أدنى: {formatCurrency(vehicle.minimum_rental_price)}
+                </div>
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleViewDetails}
+            >
+              عرض التفاصيل
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+
+      <VehicleForm 
+        vehicle={vehicle}
+        open={showEditForm}
+        onOpenChange={setShowEditForm}
+      />
+    </>
+  )
+}

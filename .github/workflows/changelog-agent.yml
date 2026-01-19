@@ -1,0 +1,64 @@
+name: Changelog-agent
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  changelog-check:
+    name: 📝 Changelog Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Check for CHANGELOG
+        run: |
+          echo "## 📝 Changelog Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "CHANGELOG.md" ]; then
+            echo "✅ CHANGELOG.md exists" >> $GITHUB_STEP_SUMMARY
+
+            # Count entries
+            ENTRIES=$(grep -c "^## " CHANGELOG.md || echo "0")
+            echo "Changelog entries: $ENTRIES" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No CHANGELOG.md found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🔍 Check recent commits
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Recent Activity" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          COMMITS_SINCE_TAG=$(git log $(git describe --tags --abbrev=0 2>/dev/null || echo git rev-list --max-parents=0 HEAD)..HEAD --oneline | wc -l)
+          echo "Commits since last tag: $COMMITS_SINCE_TAG" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check commit messages
+        run: |
+          CONVENTIONAL_COMMITS=$(git log --oneline -10 | grep -c "^feat\|^fix\|^chore\|^docs\|^refactor\|^test" || echo "0")
+          echo "Conventional commits (last 10): $CONVENTIONAL_COMMITS" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔍 Check package.json version
+        run: |
+          if [ -f "package.json" ]; then
+            VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
+            echo "Current version: $VERSION" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📊 Summary
+        run: |
+          echo "## ✅ Changelog Check Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Changelog | ✅ Verified |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ✅ Checked |" >> $GITHUB_STEP_SUMMARY

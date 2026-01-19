@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التقارير المالية - FleetifyApp</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Theme CSS -->
+    <link rel="stylesheet" href="financial_reports_theme.css">
+    
+    <style>
+        /* إضافة الحركات المخصصة */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+        
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes iconFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+        
+        .animate-slide-up {
+            animation: slideInUp 0.4s ease-out forwards;
+        }
+        
+        .animate-slide-right {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .animate-icon-float {
+            animation: iconFloat 2s ease-in-out infinite;
+        }
+        
+        .animate-count-up {
+            animation: countUp 0.8s ease-out forwards;
+        }
+        
+        .animate-pulse-glow {
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+        
+        /* تأخير تدريجي للعناصر */
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        .stagger-5 { animation-delay: 0.5s; }
+        .stagger-6 { animation-delay: 0.6s; }
+        .stagger-7 { animation-delay: 0.7s; }
+        .stagger-8 { animation-delay: 0.8s; }
+        
+        /* تحسين التمرير */
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+        
+        /* تأثير hover للصفوف */
+        .table-row-hover:hover {
+            background: hsl(25 90% 95%) !important;
+            transform: translateX(-2px);
+        }
+        
+        /* تأثير active للتبويبات */
+        .tab-active {
+            border-bottom: 3px solid hsl(0 70% 45%);
+            color: hsl(0 70% 45%);
+            background: hsl(0 0% 100%);
+        }
+    </style>
+</head>
+<body class="bg-background smooth-scroll">
+    <!-- Container -->
+    <div class="min-h-screen p-4 md:p-6 lg:p-8">
+        
+        <!-- Breadcrumb -->
+        <nav class="mb-6 animate-fade-in">
+            <ol class="flex items-center gap-2 text-sm">
+                <li>
+                    <a href="#" class="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        النظام المالي
+                    </a>
+                </li>
+                <li>
+                    <i data-lucide="chevron-left" class="w-4 h-4 text-muted-foreground"></i>
+                </li>
+                <li class="text-foreground font-semibold">
+                    التقارير المالية
+                </li>
+            </ol>
+        </nav>
+        
+        <!-- Header -->
+        <div class="mb-8 animate-slide-up">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="icon-container animate-icon-float">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h1 class="text-2xl md:text-3xl font-bold text-foreground">التقارير المالية</h1>
+                            <button class="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                                <i data-lucide="help-circle" class="w-5 h-5 text-muted-foreground"></i>
+                            </button>
+                        </div>
+                        <p class="text-muted-foreground">الميزانية العمومية وقائمة الدخل والتقارير التحليلية</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn-secondary flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4"></i>
+                        تصفية
+                    </button>
+                    <button class="btn-primary flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        تصدير
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Stat Card 1 -->
+            <div class="stats-card animate-slide-up stagger-1">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-2.5 rounded-lg bg-primary/10">
+                        <i data-lucide="file-bar-chart" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <span class="text-xs font-medium text-success bg-success-light px-2 py-1 rounded-full">
+                        +12%
+                    </span>
+                </div>
+                <p class="text-sm text-muted-foreground mb-1">التقارير المتاحة</p>
+                <div class="flex items-end gap-2">
+                    <h3 class="text-3xl font-bold text-foreground animate-count-up">8</h3>
+                    <span class="text-xs text-muted-foreground mb-1">نوع تقرير</span>
+                </div>
+            </div>
+            
+            <!-- Stat Card 2 -->
+            <div class="stats-card animate-slide-up stagger-2">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-2.5 rounded-lg bg-warning/10">
+                        <i data-lucide="calendar" class="w-5 h-5 text-warning"></i>
+                    </div>
+                    <span class="text-xs font-medium text-muted-foreground">
+                        محدث
+                    </span>
+                </div>
+                <p class="text-sm text-muted-foreground mb-1">آخر تحديث</p>
+                <div class="flex items-end gap-2">
+                    <h3 class="text-3xl font-bold text-foreground animate-count-up">اليوم</h3>
+                    <span class="text-xs text-muted-foreground mb-1">02/11/2025</span>
+                </div>
+            </div>
+            
+            <!-- Stat Card 3 -->
+            <div class="stats-card animate-slide-up stagger-3">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="p-2.5 rounded-lg bg-success/10">
+                        <i data-lucide="clock" class="w-5 h-5 text-success"></i>
+                    </div>
+                    <button class="text-xs font-medium text-primary hover:underline">
+                        تخصيص
+                    </button>
+                </div>
+                <p class="text-sm text-muted-foreground mb-1">الفترة المشمولة</p>
+                <div class="flex items-end gap-2">
+                    <h3 class="text-3xl font-bold text-foreground animate-count-up">هذا الشهر</h3>
+                    <span class="text-xs text-muted-foreground mb-1">نوفمبر 2025</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs Navigation -->
+        <div class="mb-6 animate-slide-up stagger-4">
+            <div class="tabs-container">
+                <button class="tab-item tab-active" onclick="switchTab(event, 'enhanced')">
+                    <i data-lucide="sparkles" class="w-4 h-4 inline ml-1"></i>
+                    التقارير المحسّنة
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'payroll')">
+                    <i data-lucide="users" class="w-4 h-4 inline ml-1"></i>
+                    الرواتب
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'cost-centers')">
+                    <i data-lucide="building" class="w-4 h-4 inline ml-1"></i>
+                    مراكز التكلفة
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'receivables')">
+                    <i data-lucide="trending-up" class="w-4 h-4 inline ml-1"></i>
+                    المدينة
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'payables')">
+                    <i data-lucide="trending-down" class="w-4 h-4 inline ml-1"></i>
+                    الدائنة
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'cash-flow')">
+                    <i data-lucide="banknote" class="w-4 h-4 inline ml-1"></i>
+                    التدفقات النقدية
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'income')">
+                    <i data-lucide="pie-chart" class="w-4 h-4 inline ml-1"></i>
+                    قائمة الدخل
+                </button>
+                <button class="tab-item" onclick="switchTab(event, 'balance')">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 inline ml-1"></i>
+                    الميزانية
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="animate-slide-up stagger-5">
+            
+            <!-- Balance Sheet Tab (Active by default for demo) -->
+            <div id="balance-tab" class="tab-content">
+                <div class="report-card">
+                    <!-- Report Header -->
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-border">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <i data-lucide="bar-chart-3" class="w-5 h-5 text-primary"></i>
+                                <h2 class="text-xl font-bold text-foreground">الميزانية العمومية</h2>
+                            </div>
+                            <p class="text-sm text-muted-foreground">
+                                عرض الأصول والخصوم وحقوق الملكية كما في 02/11/2025
+                            </p>
+                        </div>
+                        <button class="btn-primary flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            تحميل التقرير
+                        </button>
+                    </div>
+                    
+                    <!-- Balance Sheet Content -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <!-- Assets Section -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-4 pb-3 border-b-2 border-primary">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-primary"></i>
+                                <h3 class="text-lg font-bold text-foreground">الأصول</h3>
+                            </div>
+                            
+                            <table class="financial-table">
+                                <tbody>
+                                    <tr class="table-row-hover">
+                                        <td class="font-medium">النقدية وما في حكمها</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">450,000.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="font-medium">حسابات مدينة</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">320,500.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="font-medium">مخزون</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">185,750.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="font-medium">أصول ثابتة</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">890,250.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="font-medium">استثمارات طويلة الأجل</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">125,000.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-gradient-accent font-bold">
+                                        <td class="text-lg">إجمالي الأصول</td>
+                                        <td class="text-left text-lg">
+                                            <span class="amount-positive animate-pulse-glow">1,971,500.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Liabilities & Equity Section -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-4 pb-3 border-b-2 border-warning">
+                                <i data-lucide="trending-down" class="w-5 h-5 text-warning"></i>
+                                <h3 class="text-lg font-bold text-foreground">الخصوم وحقوق الملكية</h3>
+                            </div>
+                            
+                            <table class="financial-table">
+                                <tbody>
+                                    <!-- Liabilities -->
+                                    <tr class="bg-muted/50">
+                                        <td colspan="2" class="font-bold text-foreground">الخصوم</td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="pr-8 font-medium">حسابات دائنة</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-neutral">285,400.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="pr-8 font-medium">قروض قصيرة الأجل</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-neutral">150,000.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="pr-8 font-medium">قروض طويلة الأجل</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-neutral">350,000.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Equity -->
+                                    <tr class="bg-muted/50">
+                                        <td colspan="2" class="font-bold text-foreground">حقوق الملكية</td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="pr-8 font-medium">رأس المال</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">1,000,000.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="table-row-hover">
+                                        <td class="pr-8 font-medium">أرباح محتجزة</td>
+                                        <td class="text-left font-semibold">
+                                            <span class="amount-positive">186,100.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                    
+                                    <tr class="bg-gradient-accent font-bold">
+                                        <td class="text-lg">إجمالي الخصوم وحقوق الملكية</td>
+                                        <td class="text-left text-lg">
+                                            <span class="amount-positive animate-pulse-glow">1,971,500.00</span>
+                                            <span class="currency-symbol">ر.ق</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Balance Verification -->
+                    <div class="mt-6 p-4 rounded-lg bg-success-light border border-success/20">
+                        <div class="flex items-center gap-2">
+                            <div class="p-2 rounded-lg bg-success text-white">
+                                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-success">الميزانية متوازنة</p>
+                                <p class="text-sm text-muted-foreground">إجمالي الأصول = إجمالي الخصوم وحقوق الملكية</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Income Statement Tab -->
+            <div id="income-tab" class="tab-content hidden">
+                <div class="report-card">
+                    <!-- Report Header -->
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-border">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <i data-lucide="pie-chart" class="w-5 h-5 text-success"></i>
+                                <h2 class="text-xl font-bold text-foreground">قائمة الدخل</h2>
+                            </div>
+                            <p class="text-sm text-muted-foreground">
+                                عرض الإيرادات والمصروفات للفترة المنتهية في 02/11/2025
+                            </p>
+                        </div>
+                        <button class="btn-primary flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            تحميل التقرير
+                        </button>
+                    </div>
+                    
+                    <!-- Income Statement Content -->
+                    <div class="max-w-4xl mx-auto">
+                        <table class="financial-table">
+                            <tbody>
+                                <!-- Revenue Section -->
+                                <tr class="bg-success/10">
+                                    <td colspan="2" class="font-bold text-success text-base">
+                                        <i data-lucide="trending-up" class="w-4 h-4 inline ml-1"></i>
+                                        الإيرادات
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">إيرادات المبيعات</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-positive">850,000.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">إيرادات الخدمات</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-positive">320,500.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">إيرادات أخرى</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-positive">45,250.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="bg-success/20 font-bold border-b-2 border-success">
+                                    <td class="text-base">إجمالي الإيرادات</td>
+                                    <td class="text-left text-base">
+                                        <span class="amount-positive">1,215,750.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Expenses Section -->
+                                <tr class="bg-destructive/10">
+                                    <td colspan="2" class="font-bold text-destructive text-base pt-6">
+                                        <i data-lucide="trending-down" class="w-4 h-4 inline ml-1"></i>
+                                        المصروفات
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">تكلفة المبيعات</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-negative">520,000.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">مصروفات إدارية</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-negative">185,400.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">مصروفات تسويقية</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-negative">125,850.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="table-row-hover">
+                                    <td class="pr-8 font-medium">مصروفات تشغيلية</td>
+                                    <td class="text-left font-semibold">
+                                        <span class="amount-negative">98,400.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                <tr class="bg-destructive/20 font-bold border-b-2 border-destructive">
+                                    <td class="text-base">إجمالي المصروفات</td>
+                                    <td class="text-left text-base">
+                                        <span class="amount-negative">929,650.00</span>
+                                        <span class="currency-symbol">ر.ق</span>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Net Profit -->
+                                <tr class="bg-gradient-primary text-white">
+                                    <td class="text-xl font-bold py-6">صافي الربح</td>
+                                    <td class="text-left text-xl font-bold py-6">
+                                        <span class="animate-pulse-glow">286,100.00</span>
+                                        <span class="text-sm opacity-80 mr-1">ر.ق</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- Profit Margin Info -->
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-4 rounded-lg bg-success-light border border-success/20">
+                                <p class="text-xs text-muted-foreground mb-1">هامش الربح الإجمالي</p>
+                                <p class="text-2xl font-bold text-success">57.2%</p>
+                            </div>
+                            <div class="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                                <p class="text-xs text-muted-foreground mb-1">هامش الربح التشغيلي</p>
+                                <p class="text-2xl font-bold text-primary">23.5%</p>
+                            </div>
+                            <div class="p-4 rounded-lg bg-warning-light border border-warning/20">
+                                <p class="text-xs text-muted-foreground mb-1">هامش الربح الصافي</p>
+                                <p class="text-2xl font-bold text-warning">23.5%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Other tabs would be here (placeholder) -->
+            <div id="enhanced-tab" class="tab-content hidden">
+                <div class="report-card">
+                    <div class="text-center py-12">
+                        <i data-lucide="sparkles" class="w-16 h-16 mx-auto mb-4 text-primary animate-icon-float"></i>
+                        <h3 class="text-xl font-bold mb-2">التقارير المحسّنة</h3>
+                        <p class="text-muted-foreground">سيتم عرض المحتوى هنا</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Tab switching functionality
+        function switchTab(event, tabName) {
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab-item');
+            tabs.forEach(tab => {
+                tab.classList.remove('tab-active');
+            });
+            
+            // Add active class to clicked tab
+            event.currentTarget.classList.add('tab-active');
+            
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            const selectedContent = document.getElementById(tabName + '-tab');
+            if (selectedContent) {
+                selectedContent.classList.remove('hidden');
+                // Re-trigger animations
+                selectedContent.classList.remove('animate-slide-up');
+                void selectedContent.offsetWidth; // Trigger reflow
+                selectedContent.classList.add('animate-slide-up');
+            }
+            
+            // Re-initialize icons
+            lucide.createIcons();
+        }
+        
+        // Number count-up animation
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value.toLocaleString('ar-QA');
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // Animate stats on page load
+        window.addEventListener('load', () => {
+            const stats = document.querySelectorAll('.animate-count-up');
+            stats.forEach((stat, index) => {
+                setTimeout(() => {
+                    const value = parseInt(stat.textContent) || 8;
+                    animateValue(stat, 0, value, 800);
+                }, index * 100);
+            });
+        });
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add hover effect to table rows
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

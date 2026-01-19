@@ -1,0 +1,89 @@
+{
+  "contractId": "c1d24b06-dd18-4f6a-8126-c83efaeddfb7",
+  "agreementNumber": "C-ALF-0025",
+  "defendantName": "ياسين سرحان كمال بن عايد",
+  "defendantId": "-",
+  "defendantPhone": "71002048",
+  "vehicleInfo": "Bestune T77 2023",
+  "vehiclePlate": "2780",
+  "caseTitle": "مطالبة مالية-إيجار سيارة-ياسين سرحان كمال بن عايد",
+  "facts": "بتاريخ ٢٩‏/١٢‏/٢٠٢٣ أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ياسين سرحان كمال بن عايد (المدعى عليه) وذلك لاستئجار سيارة Bestune T77 2023. وقد التزمت المدعية بتسليم السيارة المؤجرة للمدعى عليه في حالة جيدة وصالحة للاستخدام، إلا أن المدعى عليه أخل بالتزاماته التعاقدية وامتنع عن سداد الإيجارات المستحقة عليه. وبالرغم من المطالبات الودية المتكررة، إلا أن المدعى عليه لم يقم بسداد المبالغ المستحقة والتي بلغت ٢٦٬٣٥٥ ريال قطري. بالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (5) مخالفة بإجمالي مبلغ (١٬٦٠٠) ريال قطري، والتي لم يقم بسدادها حتى تاريخه.",
+  "requests": "1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (٢٣٬١٠٠) ريال قطري قيمة الإيجارات المتأخرة. 2. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (١٬٦٠٠) ريال قطري قيمة المخالفات المرورية غير المسددة (عدد 5 مخالفة). 3. إلزام المدعى عليه بالفوائد القانونية من تاريخ الاستحقاق وحتى تمام السداد. 4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.",
+  "amount": "26355",
+  "amountFormatted": "٢٦٬٣٥٥",
+  "amountInWords": "ستة وعشرون ألف وثلاثمائة وخمسة وخمسون ريال قطري",
+  "breakdown": {
+    "overdue": 23100,
+    "lateFee": 1155,
+    "violations": 1600,
+    "violationsCount": 5,
+    "adminFee": 500,
+    "total": 26355
+  },
+  "documents": [
+    {
+      "name": "السجل التجاري",
+      "type": "commercial_registration",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/commercial_registration.pdf",
+      "localPath": "temp/السجل_التجاري.pdf"
+    },
+    {
+      "name": "شهادة IBAN البنكي",
+      "type": "iban_certificate",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/iban_certificate.pdf",
+      "localPath": "temp/شهادة_IBAN.pdf"
+    },
+    {
+      "name": "البطاقة الشخصية للوكيل",
+      "type": "owner_id",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/owner_id.pdf",
+      "localPath": "temp/البطاقة_الشخصية.pdf"
+    },
+    {
+      "name": "الوكالة أو التوقيع المخول",
+      "type": "signature_authorization",
+      "required": true,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/signature_authorization.pdf",
+      "localPath": "temp/التوقيع_المخول.pdf"
+    },
+    {
+      "name": "قيد تأسيس المنشأة",
+      "type": "establishment_record",
+      "required": false,
+      "url": "https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/company-documents/24bc0b21-4e2d-4413-9842-31719a3669f4/establishment_record.pdf",
+      "localPath": "temp/قيد_التأسيس.pdf"
+    },
+    {
+      "name": "المذكرة الشارحة",
+      "type": "explanatory_memo",
+      "required": true,
+      "generated": true,
+      "localPath": "temp/المذكرة_الشارحة.pdf"
+    },
+    {
+      "name": "كشف المستندات",
+      "type": "documents_list",
+      "required": true,
+      "generated": true,
+      "localPath": "temp/كشف_المستندات.pdf"
+    },
+    {
+      "name": "كشف المطالبات",
+      "type": "claims_statement",
+      "required": true,
+      "generated": true,
+      "localPath": "temp/كشف_المطالبات.pdf"
+    },
+    {
+      "name": "عقد الإيجار",
+      "type": "rental_contract",
+      "required": true,
+      "contractSpecific": true,
+      "localPath": "temp/عقد_الإيجار.pdf"
+    }
+  ],
+  "createdAt": "2025-12-31T17:27:33.778Z"
+}

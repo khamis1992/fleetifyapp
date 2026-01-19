@@ -1,0 +1,353 @@
+{
+  "version": "2.0.0",
+  "monitoring": {
+    "enabled": true,
+    "sampleRate": 0.1,
+    "apmIntegration": true,
+    "errorTracking": true,
+    "businessMetrics": true
+  },
+  "budgets": [
+    {
+      "name": "resource-sizes",
+      "resourceSizes": [
+        {
+          "resourceType": "script",
+          "budget": 600,
+          "warning": 500,
+          "critical": 800,
+          "unit": "KB"
+        },
+        {
+          "resourceType": "stylesheet",
+          "budget": 50,
+          "warning": 40,
+          "critical": 75,
+          "unit": "KB"
+        },
+        {
+          "resourceType": "image",
+          "budget": 200,
+          "warning": 150,
+          "critical": 300,
+          "unit": "KB"
+        },
+        {
+          "resourceType": "font",
+          "budget": 100,
+          "warning": 80,
+          "critical": 150,
+          "unit": "KB"
+        },
+        {
+          "resourceType": "total",
+          "budget": 1000,
+          "warning": 800,
+          "critical": 1500,
+          "unit": "KB"
+        }
+      ]
+    },
+    {
+      "name": "core-web-vitals",
+      "timings": [
+        {
+          "metric": "first-contentful-paint",
+          "budget": 2000,
+          "warning": 1800,
+          "critical": 3000,
+          "unit": "ms"
+        },
+        {
+          "metric": "largest-contentful-paint",
+          "budget": 2500,
+          "warning": 2200,
+          "critical": 4000,
+          "unit": "ms"
+        },
+        {
+          "metric": "first-input-delay",
+          "budget": 100,
+          "warning": 200,
+          "critical": 300,
+          "unit": "ms"
+        },
+        {
+          "metric": "cumulative-layout-shift",
+          "budget": 0.1,
+          "warning": 0.15,
+          "critical": 0.25,
+          "unit": "score"
+        },
+        {
+          "metric": "total-blocking-time",
+          "budget": 300,
+          "warning": 400,
+          "critical": 600,
+          "unit": "ms"
+        }
+      ]
+    },
+    {
+      "name": "application-timing",
+      "timings": [
+        {
+          "metric": "interactive",
+          "budget": 3000,
+          "warning": 4000,
+          "critical": 5000,
+          "unit": "ms"
+        },
+        {
+          "metric": "speed-index",
+          "budget": 3000,
+          "warning": 4000,
+          "critical": 5000,
+          "unit": "ms"
+        },
+        {
+          "metric": "time-to-first-byte",
+          "budget": 800,
+          "warning": 1200,
+          "critical": 2000,
+          "unit": "ms"
+        }
+      ]
+    }
+  ],
+  "targets": {
+    "performance": {
+      "fcp": 2000,
+      "lcp": 2500,
+      "fid": 100,
+      "cls": 0.1,
+      "tbt": 300,
+      "tti": 3000,
+      "si": 3000,
+      "ttfb": 800
+    },
+    "bundle": {
+      "javascript": 600,
+      "css": 50,
+      "images": 200,
+      "fonts": 100,
+      "total": 1000
+    },
+    "scores": {
+      "performance": 85,
+      "accessibility": 90,
+      "best-practices": 90,
+      "seo": 90,
+      "pwa": 85
+    },
+    "infrastructure": {
+      "api-response-time": 2000,
+      "database-query-time": 1000,
+      "error-rate": 0.01,
+      "uptime": 99.9,
+      "cpu-usage": 80,
+      "memory-usage": 85
+    },
+    "business": {
+      "page-load-abandonment": 0.2,
+      "form-completion": 0.95,
+      "user-satisfaction": 90,
+      "conversion-rate": 0.05
+    }
+  },
+  "thresholds": {
+    "error": {
+      "fcp": 3000,
+      "tti": 5000,
+      "bundle": 1500,
+      "api-response-time": 5000,
+      "database-query-time": 2000,
+      "error-rate": 0.05,
+      "memory-usage": 90
+    },
+    "warning": {
+      "fcp": 2500,
+      "tti": 4000,
+      "bundle": 1200,
+      "api-response-time": 3000,
+      "database-query-time": 1500,
+      "error-rate": 0.02,
+      "memory-usage": 75
+    }
+  },
+  "monitoring": {
+    "alerting": {
+      "enabled": true,
+      "channels": ["email", "slack", "webhook"],
+      "rules": [
+        {
+          "name": "Performance Degradation",
+          "condition": "lcp > 3000 OR tti > 5000",
+          "severity": "high",
+          "cooldown": 300000
+        },
+        {
+          "name": "Error Rate Spike",
+          "condition": "error_rate > 0.05",
+          "severity": "critical",
+          "cooldown": 60000
+        },
+        {
+          "name": "Bundle Size Exceeded",
+          "condition": "total_bundle_size > 1500",
+          "severity": "medium",
+          "cooldown": 300000
+        }
+      ]
+    },
+    "tracking": {
+      "user-interactions": true,
+      "api-performance": true,
+      "render-performance": true,
+      "memory-usage": true,
+      "network-requests": true,
+      "database-queries": true
+    },
+    "reporting": {
+      "daily-summary": true,
+      "weekly-report": true,
+      "monthly-analysis": true,
+      "real-time-dashboard": true
+    },
+    "retention": {
+      "metrics": 30,
+      "errors": 90,
+      "traces": 7,
+      "logs": 90,
+      "business-metrics": 365
+    },
+    "sampling": {
+      "performance": 0.1,
+      "user-interactions": 0.01,
+      "network-requests": 0.1,
+      "business-metrics": 1.0
+    }
+  },
+  "integration": {
+    "apm": {
+      "enabled": true,
+      "service": "custom",
+      "tracing": true,
+      "profiling": false
+    },
+    "error-tracking": {
+      "enabled": true,
+      "service": "custom",
+      "context-capture": true,
+      "stack-traces": true,
+      "source-maps": false
+    },
+    "analytics": {
+      "enabled": true,
+      "privacy": true,
+      "anonymization": true,
+      "compliance": "gdpr"
+    },
+    "notification": {
+      "email": {
+        "enabled": true,
+        "recipients": ["admin@fleetify.com"],
+        "templates": true
+      },
+      "slack": {
+        "enabled": false,
+        "webhook": "",
+        "channel": "#monitoring"
+      },
+      "webhook": {
+        "enabled": false,
+        "url": "",
+        "retry-policy": "exponential"
+      }
+    }
+  },
+  "optimization": {
+    "automatic": {
+      "bundle-analysis": true,
+      "code-splitting": true,
+      "lazy-loading": true,
+      "image-optimization": true,
+      "caching-strategies": true
+    },
+    "alerts": {
+      "performance-regression": true,
+      "bundle-size-increase": true,
+      "memory-leaks": true,
+      "security-vulnerabilities": true
+    }
+  },
+  "environments": {
+    "development": {
+      "enabled": true,
+      "verbose": true,
+      "sampling": 1.0,
+      "alerting": false
+    },
+    "staging": {
+      "enabled": true,
+      "verbose": false,
+      "sampling": 0.5,
+      "alerting": true
+    },
+    "production": {
+      "enabled": true,
+      "verbose": false,
+      "sampling": 0.1,
+      "alerting": true
+    }
+  },
+  "customMetrics": [
+    {
+      "name": "fleet-operation-completion",
+      "type": "business",
+      "unit": "count",
+      "description": "Number of fleet operations completed successfully"
+    },
+    {
+      "name": "contract-processing-time",
+      "type": "performance",
+      "unit": "ms",
+      "description": "Time taken to process rental contracts"
+    },
+    {
+      "name": "vehicle-maintenance-compliance",
+      "type": "business",
+      "unit": "percentage",
+      "description": "Percentage of vehicles with up-to-date maintenance"
+    },
+    {
+      "name": "user-session-duration",
+      "type": "user",
+      "unit": "seconds",
+      "description": "Average duration of user sessions"
+    },
+    {
+      "name": "api-endpoint-reliability",
+      "type": "infrastructure",
+      "unit": "percentage",
+      "description": "Success rate of API endpoints"
+    }
+  ],
+  "dashboards": {
+    "real-time": {
+      "refresh-interval": 30000,
+      "metrics": ["response-time", "error-rate", "active-users", "memory-usage"],
+      "alerts": true
+    },
+    "historical": {
+      "time-ranges": ["1h", "24h", "7d", "30d"],
+      "aggregation": ["avg", "min", "max", "p95", "p99"],
+      "comparison": ["previous-period", "same-day-last-week"]
+    },
+    "business": {
+      "metrics": ["revenue", "active-users", "conversion-rate", "customer-satisfaction"],
+      "alerts": true,
+      "forecasts": true
+    }
+  }
+}

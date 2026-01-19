@@ -1,0 +1,3107 @@
+[
+  {
+    "customer_name": "فادي السعيد",
+    "vehicle_number": "21849",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "فادي السعيد",
+    "vehicle_number": "21849",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "فادي السعيد",
+    "vehicle_number": "21849",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "فادي السعيد",
+    "vehicle_number": "21849",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "21860",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "21860",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "21860",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "21860",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "725473",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "556199",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "556199",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "محمد العويني",
+    "vehicle_number": "556199",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عقبة  قصعاوي",
+    "vehicle_number": "381247",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "648144",
+    "payment_date": "2025-09-01",
+    "amount": 2000.0,
+    "month": 9,
+    "payment_details": "2000",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "648144",
+    "payment_date": "2025-09-01",
+    "amount": 2000.0,
+    "month": 9,
+    "payment_details": "2000",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "648144",
+    "payment_date": "2025-07-01",
+    "amount": 3500.0,
+    "month": 7,
+    "payment_details": "3500",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "648144",
+    "payment_date": "2025-08-01",
+    "amount": 3500.0,
+    "month": 8,
+    "payment_details": "3500",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "185 485",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "185 485",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد تاج",
+    "vehicle_number": "185485",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "حمزة بادو",
+    "vehicle_number": "676281",
+    "payment_date": "2025-09-01",
+    "amount": 1050.0,
+    "month": 9,
+    "payment_details": "1050",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حمزة بادو",
+    "vehicle_number": "676281",
+    "payment_date": "2025-09-01",
+    "amount": 1050.0,
+    "month": 9,
+    "payment_details": "1050",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حمزة بادو",
+    "vehicle_number": "676281",
+    "payment_date": "2025-07-01",
+    "amount": 1050.0,
+    "month": 7,
+    "payment_details": "1050",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "حمزة بادو",
+    "vehicle_number": "676281",
+    "payment_date": "2025-08-01",
+    "amount": 1050.0,
+    "month": 8,
+    "payment_details": "1050",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مروان باكير",
+    "vehicle_number": "706150",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "مروان باكير",
+    "vehicle_number": "706150",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "مروان باكير",
+    "vehicle_number": "706150",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "مروان باكير",
+    "vehicle_number": "706150",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "حمدي ثابث",
+    "vehicle_number": "722134",
+    "payment_date": "2025-07-01",
+    "amount": 1620.0,
+    "month": 7,
+    "payment_details": "1620",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "صابر محمد",
+    "vehicle_number": "856589",
+    "payment_date": "2025-09-01",
+    "amount": 1850.0,
+    "month": 9,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "صابر محمد",
+    "vehicle_number": "856589",
+    "payment_date": "2025-07-01",
+    "amount": 1850.0,
+    "month": 7,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "صابر محمد",
+    "vehicle_number": "856589",
+    "payment_date": "2025-08-01",
+    "amount": 1850.0,
+    "month": 8,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "انور الجنبيني- (حمزة)",
+    "vehicle_number": "856715",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "انور الجنبيني- (حمزة)",
+    "vehicle_number": "856715",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حسان بو علاقي",
+    "vehicle_number": "856718",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حسان بو علاقي",
+    "vehicle_number": "856718",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حسان بو علاقي",
+    "vehicle_number": "856718",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "حسان بو علاقي",
+    "vehicle_number": "856718",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد مسلم",
+    "vehicle_number": "856878",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد مسلم",
+    "vehicle_number": "856878",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد مسلم",
+    "vehicle_number": "856878",
+    "payment_date": "2025-07-01",
+    "amount": 2100.0,
+    "month": 7,
+    "payment_details": "2100",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "محمد مسلم",
+    "vehicle_number": "856878",
+    "payment_date": "2025-08-01",
+    "amount": 2100.0,
+    "month": 8,
+    "payment_details": "2100",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عاطف منصور",
+    "vehicle_number": "856925",
+    "payment_date": "2025-09-01",
+    "amount": 1850.0,
+    "month": 9,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عاطف منصور",
+    "vehicle_number": "856925",
+    "payment_date": "2025-09-01",
+    "amount": 1850.0,
+    "month": 9,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عاطف منصور",
+    "vehicle_number": "856925",
+    "payment_date": "2025-07-01",
+    "amount": 1850.0,
+    "month": 7,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عاطف منصور",
+    "vehicle_number": "856925",
+    "payment_date": "2025-08-01",
+    "amount": 1850.0,
+    "month": 8,
+    "payment_details": "1850",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عمارة الخروبي",
+    "vehicle_number": "857045",
+    "payment_date": "2025-09-01",
+    "amount": 2000.0,
+    "month": 9,
+    "payment_details": "2000",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عمارة الخروبي",
+    "vehicle_number": "857045",
+    "payment_date": "2025-09-01",
+    "amount": 2000.0,
+    "month": 9,
+    "payment_details": "2000",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عمارة الخروبي",
+    "vehicle_number": "857045",
+    "payment_date": "2025-07-01",
+    "amount": 2000.0,
+    "month": 7,
+    "payment_details": "2000",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عمارة الخروبي",
+    "vehicle_number": "857045",
+    "payment_date": "2025-08-01",
+    "amount": 2000.0,
+    "month": 8,
+    "payment_details": "2000",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "سيف الدين محمد صالح",
+    "vehicle_number": "893406",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "سيف الدين محمد صالح",
+    "vehicle_number": "893406",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "سيف الدين محمد صالح",
+    "vehicle_number": "893406",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "سيف الدين محمد صالح",
+    "vehicle_number": "893406",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عبد الصمد بن عزوز",
+    "vehicle_number": "893409",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الصمد بن عزوز",
+    "vehicle_number": "893409",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الصمد بن عزوز",
+    "vehicle_number": "893409",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عبد الصمد بن عزوز",
+    "vehicle_number": "893409",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عمار عبد العزيز الغزي",
+    "vehicle_number": "893410",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB7010دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عمار عبد العزيز الغزي",
+    "vehicle_number": "893410",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عمار عبد العزيز الغزي",
+    "vehicle_number": "893410",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عمار عبد العزيز الغزي",
+    "vehicle_number": "893410",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "قصعاوي عقبة",
+    "vehicle_number": "381247",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "قصعاوي عقبة",
+    "vehicle_number": "381247",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "قصعاوي عقبة",
+    "vehicle_number": "381247",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد عوض",
+    "vehicle_number": "725473",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB709دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد عوض",
+    "vehicle_number": "725473",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "محمد عوض",
+    "vehicle_number": "725473",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "علام الدين",
+    "vehicle_number": "893411",
+    "payment_date": "2025-07-01",
+    "amount": 1650.0,
+    "month": 7,
+    "payment_details": "1650",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "مهدي الشريف",
+    "vehicle_number": "721440",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "مهدي الشريف",
+    "vehicle_number": "862165",
+    "payment_date": "2025-09-01",
+    "amount": 33670.0,
+    "month": 9,
+    "payment_details": "33670129",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "مهدي الشريف",
+    "vehicle_number": "862165",
+    "payment_date": "2025-08-01",
+    "amount": 33670.0,
+    "month": 8,
+    "payment_details": "33670129",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مهدي الشريف",
+    "vehicle_number": "862165",
+    "payment_date": "2025-09-01",
+    "amount": 33670.0,
+    "month": 9,
+    "payment_details": "33670129",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور الجنبيني",
+    "vehicle_number": "856715",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "انور الجنبيني",
+    "vehicle_number": "856715",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNEB70دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "علاء الدين حسين",
+    "vehicle_number": "9255",
+    "payment_date": "2025-09-01",
+    "amount": 77456.0,
+    "month": 9,
+    "payment_details": "77456423",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "علاء الدين حسين",
+    "vehicle_number": "9255",
+    "payment_date": "2025-07-01",
+    "amount": 77456.0,
+    "month": 7,
+    "payment_details": "77456423",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "علاء الدين حسين",
+    "vehicle_number": "9255",
+    "payment_date": "2025-08-01",
+    "amount": 77456.0,
+    "month": 8,
+    "payment_details": "77456423",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "علاء الدين حسين",
+    "vehicle_number": "9255",
+    "payment_date": "2025-09-01",
+    "amount": 77456.0,
+    "month": 9,
+    "payment_details": "77456423",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور محمد ابراهيم",
+    "vehicle_number": "10172",
+    "payment_date": "2025-09-01",
+    "amount": 70561.0,
+    "month": 9,
+    "payment_details": "70561365",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور محمد ابراهيم",
+    "vehicle_number": "10172",
+    "payment_date": "2025-07-01",
+    "amount": 70561.0,
+    "month": 7,
+    "payment_details": "70561365",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "انور محمد ابراهيم",
+    "vehicle_number": "10172",
+    "payment_date": "2025-08-01",
+    "amount": 70561.0,
+    "month": 8,
+    "payment_details": "70561365",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "انور محمد ابراهيم",
+    "vehicle_number": "10172",
+    "payment_date": "2025-09-01",
+    "amount": 70561.0,
+    "month": 9,
+    "payment_details": "70561365",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد الشيخ الصديق",
+    "vehicle_number": "10197",
+    "payment_date": "2025-09-01",
+    "amount": 50118.0,
+    "month": 9,
+    "payment_details": "50118063",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد الشيخ الصديق",
+    "vehicle_number": "10197",
+    "payment_date": "2025-07-01",
+    "amount": 50118.0,
+    "month": 7,
+    "payment_details": "50118063",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "احمد الشيخ الصديق",
+    "vehicle_number": "10197",
+    "payment_date": "2025-08-01",
+    "amount": 50118.0,
+    "month": 8,
+    "payment_details": "50118063",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "احمد الشيخ الصديق",
+    "vehicle_number": "10197",
+    "payment_date": "2025-09-01",
+    "amount": 50118.0,
+    "month": 9,
+    "payment_details": "50118063",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "عماد العياري",
+    "vehicle_number": "11473",
+    "payment_date": "2025-09-01",
+    "amount": 66071.0,
+    "month": 9,
+    "payment_details": "66071051",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "عماد العياري",
+    "vehicle_number": "11473",
+    "payment_date": "2025-07-01",
+    "amount": 66071.0,
+    "month": 7,
+    "payment_details": "66071051",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عماد العياري",
+    "vehicle_number": "11473",
+    "payment_date": "2025-08-01",
+    "amount": 66071.0,
+    "month": 8,
+    "payment_details": "66071051",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عماد العياري",
+    "vehicle_number": "11473",
+    "payment_date": "2025-09-01",
+    "amount": 66071.0,
+    "month": 9,
+    "payment_details": "66071051",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "شرف الدين المجيد",
+    "vehicle_number": "721894",
+    "payment_date": "2025-09-01",
+    "amount": 71101.0,
+    "month": 9,
+    "payment_details": "71101506",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "شرف الدين المجيد",
+    "vehicle_number": "721894",
+    "payment_date": "2025-07-01",
+    "amount": 71101.0,
+    "month": 7,
+    "payment_details": "71101506",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "شرف الدين المجيد",
+    "vehicle_number": "721894",
+    "payment_date": "2025-08-01",
+    "amount": 71101.0,
+    "month": 8,
+    "payment_details": "71101506",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "شرف الدين المجيد",
+    "vehicle_number": "721894",
+    "payment_date": "2025-09-01",
+    "amount": 71101.0,
+    "month": 9,
+    "payment_details": "71101506",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "862169",
+    "payment_date": "2025-09-01",
+    "amount": 31310.0,
+    "month": 9,
+    "payment_details": "31310330",
+    "file_source": "BUSTUNET33دفعاتشهر10سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "862169",
+    "payment_date": "2025-07-01",
+    "amount": 31310.0,
+    "month": 7,
+    "payment_details": "31310330",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "862169",
+    "payment_date": "2025-08-01",
+    "amount": 31310.0,
+    "month": 8,
+    "payment_details": "31310330",
+    "file_source": "BUSTUNET33دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "862169",
+    "payment_date": "2025-09-01",
+    "amount": 31310.0,
+    "month": 9,
+    "payment_details": "31310330",
+    "file_source": "BUSTUNET33دفعاتشهر9سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "4018",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "4018",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "4018",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عبد الرحيم شاكر",
+    "vehicle_number": "4018",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد عبد الله سلمان",
+    "vehicle_number": "862165",
+    "payment_date": "2025-07-01",
+    "amount": 55554.0,
+    "month": 7,
+    "payment_details": "55554627",
+    "file_source": "BUSTUNET33دفعاتشهر7.docx"
+  },
+  {
+    "customer_name": "محمد محمد احمد",
+    "vehicle_number": "2766",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد محمد احمد",
+    "vehicle_number": "2766",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد محمد احمد",
+    "vehicle_number": "2766",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد محمد احمد",
+    "vehicle_number": "2766",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عبد الغفور درار",
+    "vehicle_number": "2767",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الغفور درار",
+    "vehicle_number": "2767",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الغفور درار",
+    "vehicle_number": "2767",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد الغفور درار",
+    "vehicle_number": "2767",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عبد العزيز محمد",
+    "vehicle_number": "2768",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد العزيز محمد",
+    "vehicle_number": "2768",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد العزيز محمد",
+    "vehicle_number": "2768",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد العزيز محمد",
+    "vehicle_number": "2768",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "وضاح عبد الله",
+    "vehicle_number": "2769",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "وضاح عبد الله",
+    "vehicle_number": "2769",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "وضاح عبد الله",
+    "vehicle_number": "2769",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "وضاح عبد الله",
+    "vehicle_number": "2769",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "خبيب رضا السحابي",
+    "vehicle_number": "2770",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "خبيب رضا السحابي",
+    "vehicle_number": "2770",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "خبيب رضا السحابي",
+    "vehicle_number": "2770",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "إسماعيل أحمد عبد الله",
+    "vehicle_number": "2772",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "إسماعيل أحمد عبد الله",
+    "vehicle_number": "2772",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مجد ي بخيت",
+    "vehicle_number": "2773",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ابراهيم يعقوب",
+    "vehicle_number": "2774",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ابراهيم يعقوب",
+    "vehicle_number": "2774",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ابراهيم يعقوب",
+    "vehicle_number": "2774",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ابراهيم يعقوب",
+    "vehicle_number": "2774",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "انور جدبيني.",
+    "vehicle_number": "2775",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور جدبيني.",
+    "vehicle_number": "2775",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور جدبيني.",
+    "vehicle_number": "2775",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "هيثم خليفة بنعلي",
+    "vehicle_number": "2776",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "بلال اليعقوبي",
+    "vehicle_number": "2778",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "بلال اليعقوبي",
+    "vehicle_number": "2778",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "بلال اليعقوبي",
+    "vehicle_number": "2778",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "بلال اليعقوبي",
+    "vehicle_number": "2778",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "*حجز* مختار عليل",
+    "vehicle_number": "2779",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "*حجز* مختار عليل",
+    "vehicle_number": "2779",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "شرفي العبد الله",
+    "vehicle_number": "2782",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "شرفي العبد الله",
+    "vehicle_number": "2782",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "شرفي العبد الله",
+    "vehicle_number": "2782",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "شرفي العبد الله",
+    "vehicle_number": "2782",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "صدام مصطفي سعيد",
+    "vehicle_number": "2783",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "صدام مصطفي سعيد",
+    "vehicle_number": "2783",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "صدام مصطفي سعيد",
+    "vehicle_number": "2783",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "صدام مصطفي سعيد",
+    "vehicle_number": "2783",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عثمان عبيريزة",
+    "vehicle_number": "2784",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عثمان عبيريزة",
+    "vehicle_number": "2784",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عثمان عبيريزة",
+    "vehicle_number": "2784",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عثمان عبيريزة",
+    "vehicle_number": "2784",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد عبد الله",
+    "vehicle_number": "2798",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد عبد الله",
+    "vehicle_number": "2798",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد عبد الله",
+    "vehicle_number": "2798",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد عبد الله",
+    "vehicle_number": "2798",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ايمن  خليفة حمادي",
+    "vehicle_number": "5889",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ايمن  خليفة حمادي",
+    "vehicle_number": "5889",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ايمن  خليفة حمادي",
+    "vehicle_number": "5889",
+    "payment_date": "2025-07-01",
+    "amount": 2100.0,
+    "month": 7,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ايمن  خليفة حمادي",
+    "vehicle_number": "5889",
+    "payment_date": "2025-08-01",
+    "amount": 2100.0,
+    "month": 8,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عبد العزيز جرفال",
+    "vehicle_number": "5890",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد العزيز جرفال",
+    "vehicle_number": "5890",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد العزيز جرفال",
+    "vehicle_number": "5890",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد العزيز جرفال",
+    "vehicle_number": "5890",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "امين محمد شوشان",
+    "vehicle_number": "5893",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "امين محمد شوشان",
+    "vehicle_number": "5893",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "امين محمد شوشان",
+    "vehicle_number": "5893",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "امين محمد شوشان",
+    "vehicle_number": "5893",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مختار الامين",
+    "vehicle_number": "5896",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مختار الامين",
+    "vehicle_number": "5896",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مختار الامين",
+    "vehicle_number": "5896",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مختار الامين",
+    "vehicle_number": "5896",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "فراس منير النصراوي",
+    "vehicle_number": "5897",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد سرالختم",
+    "vehicle_number": "5898",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد سرالختم",
+    "vehicle_number": "5898",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد سرالختم",
+    "vehicle_number": "5898",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "احمد السيد بابكر",
+    "vehicle_number": "5899",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد السيد بابكر",
+    "vehicle_number": "5899",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "احمد السيد بابكر",
+    "vehicle_number": "5899",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "احمد السيد بابكر",
+    "vehicle_number": "5899",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد احمد عمر سماني",
+    "vehicle_number": "7034",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد احمد عمر سماني",
+    "vehicle_number": "7034",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد احمد عمر سماني",
+    "vehicle_number": "7034",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد احمد عمر سماني",
+    "vehicle_number": "7034",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عصام ابراهيم عبد الله",
+    "vehicle_number": "7036",
+    "payment_date": "2025-09-01",
+    "amount": 1550.0,
+    "month": 9,
+    "payment_details": "1550",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عصام ابراهيم عبد الله",
+    "vehicle_number": "7036",
+    "payment_date": "2025-09-01",
+    "amount": 1550.0,
+    "month": 9,
+    "payment_details": "1550",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عصام ابراهيم عبد الله",
+    "vehicle_number": "7036",
+    "payment_date": "2025-07-01",
+    "amount": 1550.0,
+    "month": 7,
+    "payment_details": "1550",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عصام ابراهيم عبد الله",
+    "vehicle_number": "7036",
+    "payment_date": "2025-08-01",
+    "amount": 1550.0,
+    "month": 8,
+    "payment_details": "1550",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ثامر",
+    "vehicle_number": "7038",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ثامر",
+    "vehicle_number": "7038",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ثامر",
+    "vehicle_number": "7038",
+    "payment_date": "2025-07-01",
+    "amount": 2100.0,
+    "month": 7,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ثامر",
+    "vehicle_number": "7038",
+    "payment_date": "2025-08-01",
+    "amount": 2100.0,
+    "month": 8,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عبد الله عمر برهان",
+    "vehicle_number": "7039",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الله عمر برهان",
+    "vehicle_number": "7039",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الله عمر برهان",
+    "vehicle_number": "7039",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد الله عمر برهان",
+    "vehicle_number": "7039",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "رمزي بعزاوي",
+    "vehicle_number": "7041",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "حمزة البشير يانس",
+    "vehicle_number": "7043",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "حمزة البشير يانس",
+    "vehicle_number": "7043",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "حمزة البشير يانس",
+    "vehicle_number": "7043",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "حمزة البشير يانس",
+    "vehicle_number": "7043",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مهدي أسامة حامد",
+    "vehicle_number": "7053",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مهدي أسامة حامد",
+    "vehicle_number": "7053",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مهدي أسامة حامد",
+    "vehicle_number": "7053",
+    "payment_date": "2025-08-01",
+    "amount": 1800.0,
+    "month": 8,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7054",
+    "payment_date": "2025-09-01",
+    "amount": 1650.0,
+    "month": 9,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7054",
+    "payment_date": "2025-09-01",
+    "amount": 1650.0,
+    "month": 9,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7054",
+    "payment_date": "2025-07-01",
+    "amount": 1650.0,
+    "month": 7,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7054",
+    "payment_date": "2025-08-01",
+    "amount": 1650.0,
+    "month": 8,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مجدي محمد  عباس",
+    "vehicle_number": "7056",
+    "payment_date": "2025-09-01",
+    "amount": 1650.0,
+    "month": 9,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مجدي محمد  عباس",
+    "vehicle_number": "7056",
+    "payment_date": "2025-09-01",
+    "amount": 1650.0,
+    "month": 9,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مجدي محمد  عباس",
+    "vehicle_number": "7056",
+    "payment_date": "2025-07-01",
+    "amount": 1650.0,
+    "month": 7,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مجدي محمد  عباس",
+    "vehicle_number": "7056",
+    "payment_date": "2025-08-01",
+    "amount": 1650.0,
+    "month": 8,
+    "payment_details": "1650",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد فوأد شوشان",
+    "vehicle_number": "7058",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد فوأد شوشان",
+    "vehicle_number": "7058",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد فوأد شوشان",
+    "vehicle_number": "7058",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد فوأد شوشان",
+    "vehicle_number": "7058",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عمر مرايحي",
+    "vehicle_number": "7059",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عمر مرايحي",
+    "vehicle_number": "7059",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عمر مرايحي",
+    "vehicle_number": "7059",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عمر مرايحي",
+    "vehicle_number": "7059",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "*** نور راقية   ** * مطلوبة",
+    "vehicle_number": "7060",
+    "payment_date": "2025-08-01",
+    "amount": 30743.0,
+    "month": 8,
+    "payment_details": "30743344",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد المختار بنباشة",
+    "vehicle_number": "7062",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد المختار بنباشة",
+    "vehicle_number": "7062",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد المختار بنباشة",
+    "vehicle_number": "7062",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد المختار بنباشة",
+    "vehicle_number": "7062",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مهند حمودة الظاهر",
+    "vehicle_number": "7063",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مهند حمودة الظاهر",
+    "vehicle_number": "7063",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عوض الكريم",
+    "vehicle_number": "7066",
+    "payment_date": "2025-09-01",
+    "amount": 2550.0,
+    "month": 9,
+    "payment_details": "2550",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عوض الكريم",
+    "vehicle_number": "7066",
+    "payment_date": "2025-09-01",
+    "amount": 2550.0,
+    "month": 9,
+    "payment_details": "2550",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عوض الكريم",
+    "vehicle_number": "7066",
+    "payment_date": "2025-07-01",
+    "amount": 2550.0,
+    "month": 7,
+    "payment_details": "2550",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عوض الكريم",
+    "vehicle_number": "7066",
+    "payment_date": "2025-08-01",
+    "amount": 2550.0,
+    "month": 8,
+    "payment_details": "2550",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ياسر ربيع محمد برهان",
+    "vehicle_number": "7068",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ياسر ربيع محمد برهان",
+    "vehicle_number": "7068",
+    "payment_date": "2025-09-01",
+    "amount": 2100.0,
+    "month": 9,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ياسر ربيع محمد برهان",
+    "vehicle_number": "7068",
+    "payment_date": "2025-07-01",
+    "amount": 2100.0,
+    "month": 7,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ياسر ربيع محمد برهان",
+    "vehicle_number": "7068",
+    "payment_date": "2025-08-01",
+    "amount": 2100.0,
+    "month": 8,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عصام المزوغي",
+    "vehicle_number": "7069",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عصام المزوغي",
+    "vehicle_number": "7069",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عصام المزوغي",
+    "vehicle_number": "7069",
+    "payment_date": "2025-07-01",
+    "amount": 1800.0,
+    "month": 7,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عصام المزوغي",
+    "vehicle_number": "7069",
+    "payment_date": "2025-08-01",
+    "amount": 1800.0,
+    "month": 8,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "يوسف العبيدي لخليل",
+    "vehicle_number": "7072",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "يوسف العبيدي لخليل",
+    "vehicle_number": "7072",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "يوسف العبيدي لخليل",
+    "vehicle_number": "7072",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "يوسف العبيدي لخليل",
+    "vehicle_number": "7072",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7074",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7074",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7074",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمود جاسم  الصالح",
+    "vehicle_number": "7074",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ادم صالح جبريل",
+    "vehicle_number": "7077",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ادم صالح جبريل",
+    "vehicle_number": "7077",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ادم صالح جبريل",
+    "vehicle_number": "7077",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ادم صالح جبريل",
+    "vehicle_number": "7077",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد الشريف",
+    "vehicle_number": "7078",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد الشريف",
+    "vehicle_number": "7078",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد الشريف",
+    "vehicle_number": "7078",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد الشريف",
+    "vehicle_number": "7078",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "الصادق دياب",
+    "vehicle_number": "185 513",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "الصادق دياب",
+    "vehicle_number": "185 513",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "الصادق دياب",
+    "vehicle_number": "185513",
+    "payment_date": "2025-07-01",
+    "amount": 1800.0,
+    "month": 7,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "الصادق دياب",
+    "vehicle_number": "185513",
+    "payment_date": "2025-08-01",
+    "amount": 1800.0,
+    "month": 8,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ايهاب عبد الله",
+    "vehicle_number": "185 573",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ايهاب عبد الله",
+    "vehicle_number": "185 573",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ايهاب عبد الله",
+    "vehicle_number": "185573",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ايهاب عبد الله",
+    "vehicle_number": "185573",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مصطفى بالقايد 5892",
+    "vehicle_number": "603 353",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مصطفى بالقايد 5892",
+    "vehicle_number": "603 353",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور الدهبي  7055",
+    "vehicle_number": "599 720",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "انور الدهبي  7055",
+    "vehicle_number": "599 720",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ازهري حكيم   7065",
+    "vehicle_number": "153 974",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(10)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ازهري حكيم   7065",
+    "vehicle_number": "153 974",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ازهري حكيم   7065",
+    "vehicle_number": "153974",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ماهر محمد",
+    "vehicle_number": "2771",
+    "payment_date": "2025-09-01",
+    "amount": 2200.0,
+    "month": 9,
+    "payment_details": "2200",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "ماهر محمد",
+    "vehicle_number": "2771",
+    "payment_date": "2025-07-01",
+    "amount": 2200.0,
+    "month": 7,
+    "payment_details": "2200",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ماهر محمد",
+    "vehicle_number": "2771",
+    "payment_date": "2025-08-01",
+    "amount": 2200.0,
+    "month": 8,
+    "payment_details": "2200",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "مجدي بخيت",
+    "vehicle_number": "2773",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مجدي بخيت",
+    "vehicle_number": "2773",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مجدي بخيت",
+    "vehicle_number": "2773",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد سعيد أبو فهد",
+    "vehicle_number": "2776",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "مطعم كبابريل",
+    "vehicle_number": "5897",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "الصحبي البشير الهاني",
+    "vehicle_number": "7041",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الكريم عادل",
+    "vehicle_number": "7067",
+    "payment_date": "2025-09-01",
+    "amount": 1750.0,
+    "month": 9,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر(9)سبتمبر.docx"
+  },
+  {
+    "customer_name": "عبد الكريم عادل",
+    "vehicle_number": "7067",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد الكريم عادل",
+    "vehicle_number": "7067",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "طارق بوتمجب",
+    "vehicle_number": "2770",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد سعيد محمد",
+    "vehicle_number": "2776",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "محمد سعيد محمد",
+    "vehicle_number": "2776",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "انور جدبيني",
+    "vehicle_number": "2775",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "*****   مختار عليل",
+    "vehicle_number": "2779",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "ياسين سرحان",
+    "vehicle_number": "2780",
+    "payment_date": "2025-07-01",
+    "amount": 2100.0,
+    "month": 7,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "اسماعيل احمد عبد الله",
+    "vehicle_number": "2772",
+    "payment_date": "2025-07-01",
+    "amount": 1750.0,
+    "month": 7,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "اسماعيل احمد عبد الله",
+    "vehicle_number": "2772",
+    "payment_date": "2025-08-01",
+    "amount": 1750.0,
+    "month": 8,
+    "payment_details": "1750",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "نبيل عوض فرج الله",
+    "vehicle_number": "5898",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد الله علواني",
+    "vehicle_number": "5894",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مصطفى بلقايد5892",
+    "vehicle_number": "603353",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مصطفى بلقايد5892",
+    "vehicle_number": "603353",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "*** نور راقية     ***مطلوبة",
+    "vehicle_number": "7060",
+    "payment_date": "2025-07-01",
+    "amount": 30743.0,
+    "month": 7,
+    "payment_details": "30743344مطلوب",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مهدي حامد",
+    "vehicle_number": "7053",
+    "payment_date": "2025-07-01",
+    "amount": 1800.0,
+    "month": 7,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "انور علي الدهبي 7055",
+    "vehicle_number": "599720",
+    "payment_date": "2025-07-01",
+    "amount": 1800.0,
+    "month": 7,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مهند حمودة الظاهر",
+    "vehicle_number": "7063",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "مهند حمودة الظاهر",
+    "vehicle_number": "7063",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "ازهري حكيم   7065",
+    "vehicle_number": "7065",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "عبد الحنان",
+    "vehicle_number": "7061",
+    "payment_date": "2025-07-01",
+    "amount": 2100.0,
+    "month": 7,
+    "payment_details": "2100",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "احمد عبد الله محمود",
+    "vehicle_number": "7041",
+    "payment_date": "2025-07-01",
+    "amount": 1550.0,
+    "month": 7,
+    "payment_details": "1550",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "احمد تاج في الشرطة",
+    "vehicle_number": "185485",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "BUSTUNET77دفعاتشهر7(Repaired).docx"
+  },
+  {
+    "customer_name": "*حجز *   مختار عليل",
+    "vehicle_number": "2779",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "انور علي الدهبي 7055",
+    "vehicle_number": "599720",
+    "payment_date": "2025-08-01",
+    "amount": 1800.0,
+    "month": 8,
+    "payment_details": "1800",
+    "file_source": "BUSTUNET77دفعاتشهر8.docx"
+  },
+  {
+    "customer_name": "إبراهيم خضر",
+    "vehicle_number": "4015",
+    "payment_date": "2025-09-01",
+    "amount": 1000.0,
+    "month": 9,
+    "payment_details": "1000",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "إبراهيم خضر",
+    "vehicle_number": "4015",
+    "payment_date": "2025-09-01",
+    "amount": 1000.0,
+    "month": 9,
+    "payment_details": "1000",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "إبراهيم خضر",
+    "vehicle_number": "4015",
+    "payment_date": "2025-08-01",
+    "amount": 1000.0,
+    "month": 8,
+    "payment_details": "1000",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "سامي عبد الله",
+    "vehicle_number": "4016",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "سامي عبد الله",
+    "vehicle_number": "4016",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "سامي عبد الله",
+    "vehicle_number": "4016",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "سامي عبد الله",
+    "vehicle_number": "4016",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد عماد النعماني",
+    "vehicle_number": "8203",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد صالح  فرج حامد",
+    "vehicle_number": "8206",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد صالح  فرج حامد",
+    "vehicle_number": "8206",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد صالح  فرج حامد",
+    "vehicle_number": "8206",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "حسن الفكي",
+    "vehicle_number": "8207",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حسن الفكي",
+    "vehicle_number": "8207",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "حسن الفكي",
+    "vehicle_number": "8207",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "حسن الفكي",
+    "vehicle_number": "8207",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عصام  احمد عبد الدايم",
+    "vehicle_number": "8208",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عصام  احمد عبد الدايم",
+    "vehicle_number": "8208",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عصام  احمد عبد الدايم",
+    "vehicle_number": "8208",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عصام  احمد عبد الدايم",
+    "vehicle_number": "8208",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد سليم",
+    "vehicle_number": "8211",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد سليم",
+    "vehicle_number": "8211",
+    "payment_date": "2025-09-01",
+    "amount": 1600.0,
+    "month": 9,
+    "payment_details": "1600",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "محمد سليم",
+    "vehicle_number": "8211",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "محمد سليم",
+    "vehicle_number": "8211",
+    "payment_date": "2025-08-01",
+    "amount": 1600.0,
+    "month": 8,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "عمر محمد الفكي",
+    "vehicle_number": "8212",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عمر محمد الفكي",
+    "vehicle_number": "8212",
+    "payment_date": "2025-09-01",
+    "amount": 1500.0,
+    "month": 9,
+    "payment_details": "1500",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "عمر محمد الفكي",
+    "vehicle_number": "8212",
+    "payment_date": "2025-07-01",
+    "amount": 1500.0,
+    "month": 7,
+    "payment_details": "1500",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "عمر محمد الفكي",
+    "vehicle_number": "8212",
+    "payment_date": "2025-08-01",
+    "amount": 1500.0,
+    "month": 8,
+    "payment_details": "1500",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "يحي هلال الصخري",
+    "vehicle_number": "8213",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "يحي هلال الصخري",
+    "vehicle_number": "8213",
+    "payment_date": "2025-09-01",
+    "amount": 1700.0,
+    "month": 9,
+    "payment_details": "1700",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "يحي هلال الصخري",
+    "vehicle_number": "8213",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "يحي هلال الصخري",
+    "vehicle_number": "8213",
+    "payment_date": "2025-08-01",
+    "amount": 1700.0,
+    "month": 8,
+    "payment_details": "1700",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "زياد اليحمدي",
+    "vehicle_number": "8214",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "GACGS3(10)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "زياد اليحمدي",
+    "vehicle_number": "8214",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "زياد اليحمدي",
+    "vehicle_number": "8214",
+    "payment_date": "2025-07-01",
+    "amount": 1800.0,
+    "month": 7,
+    "payment_details": "1800",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "زياد اليحمدي",
+    "vehicle_number": "8214",
+    "payment_date": "2025-08-01",
+    "amount": 1800.0,
+    "month": 8,
+    "payment_details": "1800",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "فارس محمد سليمان",
+    "vehicle_number": "8203",
+    "payment_date": "2025-09-01",
+    "amount": 1800.0,
+    "month": 9,
+    "payment_details": "1800",
+    "file_source": "GACGS3(9)دفعاتشهرسبتمبر.docx"
+  },
+  {
+    "customer_name": "فارس محمد سليمان",
+    "vehicle_number": "8203",
+    "payment_date": "2025-07-01",
+    "amount": 1800.0,
+    "month": 7,
+    "payment_details": "1800",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "فارس محمد سليمان",
+    "vehicle_number": "8203",
+    "payment_date": "2025-08-01",
+    "amount": 1800.0,
+    "month": 8,
+    "payment_details": "1800",
+    "file_source": "GACGS3دفوعاتشهر8.docx"
+  },
+  {
+    "customer_name": "محمد صالح  فرج حامد",
+    "vehicle_number": "8206",
+    "payment_date": "2025-07-01",
+    "amount": 1600.0,
+    "month": 7,
+    "payment_details": "1600",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  },
+  {
+    "customer_name": "هاشم عبد العظيم",
+    "vehicle_number": "8209",
+    "payment_date": "2025-07-01",
+    "amount": 1700.0,
+    "month": 7,
+    "payment_details": "1700",
+    "file_source": "GACGS3دفوعاتشهر7.docx"
+  }
+]

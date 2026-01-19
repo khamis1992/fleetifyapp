@@ -1,0 +1,230 @@
+### Page state
+- Page URL: http://localhost:8080/fleet/traffic-violations
+- Page Title: Traffic Violations - FleetifyApp
+- Page Snapshot:
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - button [ref=e6] [cursor=pointer]:
+          - img [ref=e7]
+        - generic [ref=e8]: Fleetify
+        - button [ref=e9] [cursor=pointer]:
+          - img [ref=e10]
+      - main [ref=e13]:
+        - generic [ref=e14]:
+          - navigation "Breadcrumb" [ref=e15]:
+            - link "لوحة التحكم" [ref=e16] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e17]
+              - generic [ref=e20]: لوحة التحكم
+            - img [ref=e21]
+            - link "إدارة الأسطول" [ref=e23] [cursor=pointer]:
+              - /url: /fleet
+            - img [ref=e24]
+            - generic [ref=e26]: المخالفات المرورية
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - generic [ref=e35]:
+                - img [ref=e37]
+                - generic [ref=e39]:
+                  - heading "إدارة المخالفات المرورية" [level=1] [ref=e40]
+                  - paragraph [ref=e41]: نظام تتبع وإدارة غرامات المركبات
+              - generic [ref=e42]:
+                - button "تحديث" [ref=e43] [cursor=pointer]:
+                  - img [ref=e44]
+                  - generic [ref=e49]: تحديث
+                - button "طباعة التقرير" [ref=e50] [cursor=pointer]:
+                  - img [ref=e51]
+                  - generic [ref=e55]: طباعة التقرير
+                - button "تسجيل مخالفة" [ref=e56] [cursor=pointer]:
+                  - img [ref=e57]
+                  - text: تسجيل مخالفة
+            - main [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]:
+                  - generic [ref=e62]:
+                    - generic [ref=e63]:
+                      - paragraph [ref=e64]: إجمالي المخالفات
+                      - paragraph [ref=e65]: 1,000
+                      - paragraph [ref=e66]: QAR 636,200.00
+                    - img [ref=e68]
+                  - generic [ref=e71]:
+                    - generic [ref=e72]:
+                      - paragraph [ref=e73]: مبالغ غير مسددة
+                      - paragraph [ref=e74]: QAR 636,200.00
+                      - paragraph [ref=e75]: 1000 مخالفة
+                    - img [ref=e77]
+                  - generic [ref=e80]:
+                    - generic [ref=e81]:
+                      - paragraph [ref=e82]: مبالغ مسددة
+                      - paragraph [ref=e83]: QAR 0.00
+                      - paragraph [ref=e84]: 0 مخالفة
+                    - img [ref=e86]
+                  - generic [ref=e90]:
+                    - generic [ref=e91]:
+                      - paragraph [ref=e92]: نسبة التحصيل
+                      - paragraph [ref=e93]: 0%
+                      - paragraph [ref=e94]: "متوسط المخالفة: QAR 636.20"
+                    - img [ref=e96]
+                  - generic [ref=e99]:
+                    - generic [ref=e100]:
+                      - img [ref=e101]
+                      - generic [ref=e104]: "0"
+                    - generic [ref=e105]:
+                      - generic [ref=e106]: ضعيف
+                      - generic [ref=e107]: مؤشر الإدارة
+                - generic [ref=e109]:
+                  - img [ref=e110]
+                  - generic [ref=e112]:
+                    - text: "تنبيهات هامة:"
+                    - generic [ref=e113]: 🔴 1000 مخالفة متأخرة (>30 يوم)
+                    - generic [ref=e114]: 🟠 109 مخالفة بمبلغ عالي
+                  - button "إرسال تذكيرات" [ref=e115] [cursor=pointer]:
+                    - img [ref=e116]
+                    - text: إرسال تذكيرات
+                - generic [ref=e119]:
+                  - heading "ملخص سريع" [level=3] [ref=e120]:
+                    - img [ref=e121]
+                    - text: ملخص سريع
+                  - generic [ref=e123]:
+                    - generic [ref=e124]:
+                      - generic [ref=e125]: "93"
+                      - generic [ref=e126]: قيد المراجعة
+                    - generic [ref=e127]:
+                      - generic [ref=e128]: "907"
+                      - generic [ref=e129]: مؤكدة
+                    - generic [ref=e130]:
+                      - generic [ref=e131]: "0"
+                      - generic [ref=e132]: ملغاة
+                    - generic [ref=e133]:
+                      - generic [ref=e134]: "99"
+                      - generic [ref=e135]: مركبات متكررة
+                    - generic [ref=e136]:
+                      - generic [ref=e137]: "65"
+                      - generic [ref=e138]: عملاء متكررين
+              - generic [ref=e139]:
+                - heading "تنبيهات المخالفات (5)" [level=3] [ref=e141]:
+                  - img [ref=e142]
+                  - text: تنبيهات المخالفات (5)
+                - generic [ref=e144]:
+                  - generic [ref=e146]:
+                    - img [ref=e148]
+                    - generic [ref=e151]:
+                      - generic [ref=e152]:
+                        - generic [ref=e153]: مخالفات متأخرة
+                        - generic [ref=e154]: "1000"
+                      - paragraph [ref=e155]: 1000 مخالفة غير مسددة منذ أكثر من 30 يوم
+                    - button [ref=e156] [cursor=pointer]:
+                      - img [ref=e157]
+                  - generic [ref=e160]:
+                    - img [ref=e162]
+                    - generic [ref=e164]:
+                      - generic [ref=e165]:
+                        - generic [ref=e166]: مخالفات بمبالغ عالية
+                        - generic [ref=e167]: "845"
+                      - paragraph [ref=e168]: 845 مخالفة بمبلغ 500 ر.ق أو أكثر
+                    - button [ref=e169] [cursor=pointer]:
+                      - img [ref=e170]
+                  - generic [ref=e173]:
+                    - img [ref=e175]
+                    - generic [ref=e179]:
+                      - generic [ref=e180]:
+                        - generic [ref=e181]: مركبات متكررة
+                        - generic [ref=e182]: "74"
+                      - paragraph [ref=e183]: 74 مركبة لديها أكثر من 3 مخالفات
+                  - generic [ref=e185]:
+                    - img [ref=e187]
+                    - generic [ref=e190]:
+                      - generic [ref=e191]:
+                        - generic [ref=e192]: عملاء متكررين
+                        - generic [ref=e193]: "42"
+                      - paragraph [ref=e194]: 42 عميل لديه أكثر من 3 مخالفات
+                  - generic [ref=e196]:
+                    - img [ref=e198]
+                    - generic [ref=e201]:
+                      - generic [ref=e202]:
+                        - generic [ref=e203]: مخالفات قيد المراجعة
+                        - generic [ref=e204]: "93"
+                      - paragraph [ref=e205]: 93 مخالفة تحتاج للتأكيد
+                    - button [ref=e206] [cursor=pointer]:
+                      - img [ref=e207]
+                - generic [ref=e209]:
+                  - heading "🚗 أكثر المركبات مخالفات" [level=4] [ref=e210]
+                  - generic [ref=e211]:
+                    - generic [ref=e212] [cursor=pointer]:
+                      - generic [ref=e213]:
+                        - generic [ref=e214]: "1"
+                        - generic [ref=e215]:
+                          - generic [ref=e216]: "856925"
+                          - generic [ref=e217]: Bestune B70s
+                      - generic [ref=e218]:
+                        - generic [ref=e219]: 48 مخالفة
+                        - generic [ref=e220]: QAR 25,100.00
+                    - generic [ref=e221] [cursor=pointer]:
+                      - generic [ref=e222]:
+                        - generic [ref=e223]: "2"
+                        - generic [ref=e224]:
+                          - generic [ref=e225]: "186246"
+                          - generic [ref=e226]: hongqi H9
+                      - generic [ref=e227]:
+                        - generic [ref=e228]: 37 مخالفة
+                        - generic [ref=e229]: QAR 17,700.00
+                    - generic [ref=e230] [cursor=pointer]:
+                      - generic [ref=e231]:
+                        - generic [ref=e232]: "3"
+                        - generic [ref=e233]:
+                          - generic [ref=e234]: "857051"
+                          - generic [ref=e235]: Bestune B70s
+                      - generic [ref=e236]:
+                        - generic [ref=e237]: 33 مخالفة
+                        - generic [ref=e238]: QAR 22,300.00
+              - generic [ref=e240]:
+                - tablist [ref=e242]:
+                  - tab "قائمة المخالفات" [ref=e243] [cursor=pointer]:
+                    - img [ref=e244]
+                    - text: قائمة المخالفات
+                  - tab "استيراد PDF" [selected] [ref=e245] [cursor=pointer]:
+                    - img [ref=e246]
+                    - text: استيراد PDF
+                  - tab "التقارير" [ref=e249] [cursor=pointer]:
+                    - img [ref=e250]
+                    - text: التقارير
+                - tabpanel "استيراد PDF" [ref=e2691]:
+                  - generic [ref=e2692]:
+                    - img [ref=e2694]
+                    - heading "استيراد مخالفات من PDF" [level=3] [ref=e2697]
+                    - paragraph [ref=e2698]: قم بتحميل ملف PDF يحتوي على المخالفات المرورية وسيتم استخراجها تلقائياً
+                    - generic [ref=e2700]:
+                      - generic [ref=e2701]:
+                        - heading "استيراد المخالفات المرورية" [level=3] [ref=e2702]:
+                          - img [ref=e2703]
+                          - text: استيراد المخالفات المرورية
+                        - paragraph [ref=e2706]:
+                          - text: Upload and process PDF or image files for traffic violations and automatically extract data
+                          - text: ✅ Images (JPG, PNG) preferred for best results
+                      - generic [ref=e2708]:
+                        - tablist [ref=e2709]:
+                          - tab "Upload Files" [ref=e2710] [cursor=pointer]
+                          - tab "Process Data" [selected] [ref=e2720] [cursor=pointer]
+                          - tab "Review & Save" [ref=e2757] [cursor=pointer]
+                          - tab "Statistics" [ref=e2758] [cursor=pointer]
+                        - tabpanel "Process Data" [ref=e2739]:
+                          - alert [ref=e2922]:
+                            - img [ref=e2923]
+                            - generic [ref=e2925]: Will extract data from files and automatically link to vehicles and contracts in the system. Images (JPG, PNG) work best. PDF files may not work correctly.
+                          - generic [ref=e2926]:
+                            - button "Processing..." [disabled]:
+                              - img
+                              - text: Processing...
+                          - generic [ref=e2931]:
+                            - img [ref=e2932]
+                            - paragraph [ref=e2937]: Extracting data from files...
+                            - paragraph [ref=e2938]: Please wait, this may take a few minutes
+    - region "Notifications alt+T"
+  - generic [ref=e2592]:
+    - img [ref=e2594]
+    - button "Open Tanstack query devtools" [ref=e2642] [cursor=pointer]:
+      - img [ref=e2643]
+```

@@ -1,0 +1,246 @@
+/* ========== Legal Cases Tracking - Custom Animations ========== */
+
+@keyframes pageLoad {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes statCardLoad {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes urgentGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
+}
+
+@keyframes tabSlide {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animation Classes */
+.animate-page-load {
+    animation: pageLoad 500ms ease-out forwards;
+}
+
+.animate-stat-card {
+    animation: statCardLoad 400ms ease-out forwards;
+}
+
+.animate-tab-content {
+    animation: tabSlide 350ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.urgent-pulse {
+    animation: badgePulse 1.5s infinite;
+}
+
+.urgent-glow {
+    animation: urgentGlow 2s infinite;
+}
+
+/* Stat Card Enhancements */
+.stat-card-enhanced {
+    background: white;
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card-enhanced:hover {
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary));
+}
+
+.stat-card-icon-enhanced {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+}
+
+/* Table Row Hover */
+.table-row-hover-enhanced:hover {
+    background: rgb(249, 250, 251);
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+    transform: translateX(-2px);
+    transition: all 0.2s ease;
+}
+
+/* Badge Enhancements */
+.badge-enhanced {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.badge-enhanced:hover {
+    transform: scale(1.05);
+    box-shadow: 0 1px 3px 0px rgba(0, 0, 0, 0.06);
+}
+
+/* Status Badges with Pulse Dot */
+.status-badge-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Gradient Header */
+.legal-header-gradient {
+    background: linear-gradient(to bottom right, 
+        hsl(var(--primary) / 0.05), 
+        hsl(var(--primary) / 0.02), 
+        white);
+    border: 1px solid hsl(var(--primary) / 0.1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgb(243, 244, 246);
+    border-radius: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+}
+
+/* Priority Colors */
+.priority-urgent {
+    background-color: hsl(var(--destructive) / 0.1);
+    color: hsl(var(--destructive));
+}
+
+.priority-high {
+    background-color: rgba(251, 146, 60, 0.1);
+    color: rgb(234, 88, 12);
+}
+
+.priority-medium {
+    background-color: rgba(250, 204, 21, 0.1);
+    color: rgb(202, 138, 4);
+}
+
+.priority-low {
+    background-color: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+}
+
+/* Status Colors */
+.status-active {
+    background-color: rgb(240, 253, 244);
+    color: rgb(22, 163, 74);
+}
+
+.status-suspended {
+    background-color: rgb(254, 243, 237);
+    color: rgb(234, 88, 12);
+}
+
+.status-closed {
+    background-color: rgb(249, 250, 251);
+    color: rgb(107, 114, 128);
+}
+
+.status-onhold {
+    background-color: rgb(250, 245, 255);
+    color: rgb(147, 51, 234);
+}
+
+/* Avatar Gradients */
+.avatar-gradient-blue {
+    background: linear-gradient(to bottom right, hsl(var(--primary) / 0.8), hsl(var(--primary)));
+}
+
+.avatar-gradient-purple {
+    background: linear-gradient(to bottom right, rgb(192, 132, 252), rgb(147, 51, 234));
+}
+
+.avatar-gradient-green {
+    background: linear-gradient(to bottom right, rgb(134, 239, 172), rgb(22, 163, 74));
+}
+
+.avatar-gradient-yellow {
+    background: linear-gradient(to bottom right, rgb(253, 224, 71), rgb(202, 138, 4));
+}
+
+.avatar-gradient-orange {
+    background: linear-gradient(to bottom right, rgb(251, 146, 60), rgb(234, 88, 12));
+}
+
+.avatar-gradient-indigo {
+    background: linear-gradient(to bottom right, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.9));
+}
+
+/* Responsive Tabs */
+@media (max-width: 768px) {
+    .tab-list-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+

@@ -1,0 +1,247 @@
+/**
+ * PWA Configuration
+ * 
+ * Manages Progressive Web App features including:
+ * - Service Worker registration
+ * - Install prompts
+ * - Update notifications
+ * - Offline support
+ */
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+
+/**
+ * Initialize PWA features
+ */
+export const initializePWA = (): void => {
+  // Listen for beforeinstallprompt event
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    console.log('✅ PWA: Install prompt ready');
+  });
+
+  // Listen for app installed event
+  window.addEventListener('appinstalled', () => {
+    console.log('✅ PWA: App installed successfully');
+    deferredPrompt = null;
+  });
+
+  // Register service worker if supported
+  if ('serviceWorker' in navigator) {
+    registerServiceWorker();
+  }
+
+  // Check if running as installed PWA
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('✅ PWA: Running as installed app');
+  }
+};
+
+/**
+ * Register service worker with multi-tab safety
+ */
+const registerServiceWorker = async (): Promise<void> => {
+  try {
+    // Check if already registered to avoid conflicts
+    const existingRegistration = await navigator.serviceWorker.getRegistration('/');
+    if (existingRegistration) {
+      console.log('✅ Service Worker already registered:', existingRegistration.scope);
+      // Just listen for updates, don't re-register
+      existingRegistration.addEventListener('updatefound', () => {
+        const newWorker = existingRegistration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('🔄 New version available! Please refresh.');
+              window.dispatchEvent(new CustomEvent('pwa-update-available'));
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    // Register new service worker
+    const registration = await navigator.serviceWorker.register('/sw.js', {
+      scope: '/',
+    });
+
+    console.log('✅ Service Worker registered:', registration.scope);
+
+    // Check for updates on page load (with delay to avoid conflicts)
+    setTimeout(() => {
+      registration.update().catch(() => {
+        // Silently ignore update errors (common in multi-tab scenarios)
+      });
+    }, 1000);
+
+    // Listen for updates
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      if (newWorker) {
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔄 New version available! Please refresh.');
+            // Dispatch custom event for update notification
+            window.dispatchEvent(new CustomEvent('pwa-update-available'));
+          }
+        });
+      }
+    });
+  } catch (error) {
+    // Silently handle service worker registration failures
+    // This is common when multiple tabs are open
+    if (import.meta.env.DEV) {
+      console.log('⚠️ Service Worker registration skipped:', (error as Error).message);
+    }
+  }
+};
+
+/**
+ * Show install prompt
+ */
+export const showInstallPrompt = async (): Promise<boolean> => {
+  if (!deferredPrompt) {
+    console.log('⚠️ Install prompt not available');
+    return false;
+  }
+
+  try {
+    // Show the install prompt
+    await deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+
+    console.log(`User response to install prompt: ${outcome}`);
+
+    // Clear the deferred prompt
+    deferredPrompt = null;
+
+    return outcome === 'accepted';
+  } catch (error) {
+    console.error('Error showing install prompt:', error);
+    return false;
+  }
+};
+
+/**
+ * Check if install prompt is available
+ */
+export const isInstallPromptAvailable = (): boolean => {
+  return deferredPrompt !== null;
+};
+
+/**
+ * Check if app is installed
+ */
+export const isAppInstalled = (): boolean => {
+  // Check if running as standalone app
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    return true;
+  }
+
+  // Check if running in iOS standalone mode
+  if ((window.navigator as any).standalone === true) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Update service worker
+ */
+export const updateServiceWorker = async (): Promise<void> => {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration) {
+      await registration.update();
+      console.log('✅ Service Worker updated');
+    }
+  } catch (error) {
+    console.error('Error updating service worker:', error);
+  }
+};
+
+/**
+ * Skip waiting and activate new service worker
+ */
+export const skipWaitingAndActivate = async (): Promise<void> => {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration && registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      console.log('✅ Activating new service worker...');
+      
+      // Reload page after activation (only in production)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (import.meta.env.PROD) {
+          console.log('✅ Service worker controller changed, reloading...');
+          window.location.reload();
+        } else {
+          console.log('✅ Service worker controller changed (dev mode - no reload)');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error activating service worker:', error);
+  }
+};
+
+/**
+ * Get PWA installation status
+ */
+export const getPWAStatus = () => {
+  return {
+    isInstalled: isAppInstalled(),
+    isInstallPromptAvailable: isInstallPromptAvailable(),
+    isServiceWorkerSupported: 'serviceWorker' in navigator,
+    isStandalone: window.matchMedia('(display-mode: standalone)').matches,
+  };
+};
+
+/**
+ * Share content using Web Share API
+ */
+export const shareContent = async (data: {
+  title?: string;
+  text?: string;
+  url?: string;
+}): Promise<boolean> => {
+  if (!navigator.share) {
+    console.log('⚠️ Web Share API not supported');
+    return false;
+  }
+
+  try {
+    await navigator.share(data);
+    return true;
+  } catch (error) {
+    if ((error as Error).name !== 'AbortError') {
+      console.error('Error sharing:', error);
+    }
+    return false;
+  }
+};
+
+// Initialize PWA on module load
+if (typeof window !== 'undefined') {
+  initializePWA();
+}

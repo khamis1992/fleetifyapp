@@ -1,0 +1,4340 @@
+### Page state
+- Page URL: https://www.alaraf.online/contracts
+- Page Title: Contracts - FleetifyApp
+- Page Snapshot:
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e1460]:
+    - complementary [ref=e1461]:
+      - generic [ref=e1462]:
+        - generic [ref=e1463]:
+          - img [ref=e1465]
+          - generic [ref=e1469]: Fleetify
+        - button "تصغير" [ref=e1470] [cursor=pointer]:
+          - img [ref=e1471]
+      - navigation [ref=e1474]:
+        - list [ref=e1476]:
+          - listitem [ref=e1477]:
+            - link "الرئيسية" [ref=e1478] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e1479]
+              - generic [ref=e1484]: الرئيسية
+        - generic [ref=e1486]:
+          - generic [ref=e1487]: التشغيل
+          - list [ref=e1488]:
+            - listitem [ref=e1489]:
+              - generic [ref=e1490]:
+                - button "إدارة العملاء" [ref=e1491] [cursor=pointer]:
+                  - img [ref=e1492]
+                  - generic [ref=e1497]: إدارة العملاء
+                  - img [ref=e1498]
+                - list [ref=e1500]:
+                  - listitem [ref=e1501]:
+                    - link "قائمة العملاء" [ref=e1502] [cursor=pointer]:
+                      - /url: /customers
+                      - img [ref=e1503]
+                      - generic [ref=e1504]: قائمة العملاء
+                  - listitem [ref=e1505]:
+                    - link "إدارة العلاقات (CRM)" [ref=e1506] [cursor=pointer]:
+                      - /url: /customers/crm
+                      - img [ref=e1507]
+                      - generic [ref=e1509]: إدارة العلاقات (CRM)
+            - listitem [ref=e1510]:
+              - generic [ref=e1511]:
+                - button "إدارة الأسطول" [ref=e1512] [cursor=pointer]:
+                  - img [ref=e1513]
+                  - generic [ref=e1517]: إدارة الأسطول
+                  - img [ref=e1518]
+                - list [ref=e1520]:
+                  - listitem [ref=e1521]:
+                    - link "المركبات" [ref=e1522] [cursor=pointer]:
+                      - /url: /fleet
+                      - img [ref=e1523]
+                      - generic [ref=e1527]: المركبات
+                  - listitem [ref=e1528]:
+                    - link "الصيانة" [ref=e1529] [cursor=pointer]:
+                      - /url: /fleet/maintenance
+                      - img [ref=e1530]
+                      - generic [ref=e1532]: الصيانة
+                  - listitem [ref=e1533]:
+                    - link "الحجوزات" [ref=e1534] [cursor=pointer]:
+                      - /url: /fleet/reservations
+                      - img [ref=e1535]
+                      - generic [ref=e1537]: الحجوزات
+                  - listitem [ref=e1538]:
+                    - link "المخالفات المرورية" [ref=e1539] [cursor=pointer]:
+                      - /url: /fleet/traffic-violations
+                      - img [ref=e1540]
+                      - generic [ref=e1542]: المخالفات المرورية
+                  - listitem [ref=e1543]:
+                    - link "تقارير الأسطول" [ref=e1544] [cursor=pointer]:
+                      - /url: /fleet/reports
+                      - img [ref=e1545]
+                      - generic [ref=e1547]: تقارير الأسطول
+            - listitem [ref=e1548]:
+              - button "العروض والعقود" [ref=e1550] [cursor=pointer]:
+                - img [ref=e1551]
+                - generic [ref=e1554]: العروض والعقود
+                - img [ref=e1555]
+        - generic [ref=e1558]:
+          - generic [ref=e1559]: الإدارة
+          - list [ref=e1560]:
+            - listitem [ref=e1561]:
+              - link "المالية" [ref=e1562] [cursor=pointer]:
+                - /url: /finance/hub
+                - img [ref=e1563]
+                - generic [ref=e1566]: المالية
+            - listitem [ref=e1567]:
+              - button "الموارد البشرية" [ref=e1569] [cursor=pointer]:
+                - img [ref=e1570]
+                - generic [ref=e1574]: الموارد البشرية
+                - img [ref=e1575]
+            - listitem [ref=e1577]:
+              - button "الشؤون القانونية" [ref=e1579] [cursor=pointer]:
+                - img [ref=e1580]
+                - generic [ref=e1582]: الشؤون القانونية
+                - img [ref=e1583]
+            - listitem [ref=e1585]:
+              - button "العمليات" [ref=e1587] [cursor=pointer]:
+                - img [ref=e1588]
+                - generic [ref=e1593]: العمليات
+                - img [ref=e1594]
+        - generic [ref=e1597]:
+          - generic [ref=e1598]: النظام
+          - list [ref=e1599]:
+            - listitem [ref=e1600]:
+              - link "إدارة المهام" [ref=e1601] [cursor=pointer]:
+                - /url: /tasks
+                - img [ref=e1602]
+                - generic [ref=e1605]: إدارة المهام
+            - listitem [ref=e1606]:
+              - link "التقارير" [ref=e1607] [cursor=pointer]:
+                - /url: /reports
+                - img [ref=e1608]
+                - generic [ref=e1610]: التقارير
+            - listitem [ref=e1611]:
+              - link "الإعدادات" [ref=e1612] [cursor=pointer]:
+                - /url: /settings
+                - img [ref=e1613]
+                - generic [ref=e1616]: الإعدادات
+      - generic [ref=e1618]:
+        - generic [ref=e1619]: KH
+        - generic [ref=e1620]:
+          - generic [ref=e1621]:
+            - paragraph [ref=e1622]: khamis-1992
+            - paragraph [ref=e1623]: khamis-1992@hotmail.com
+          - button "تسجيل الخروج" [ref=e1624] [cursor=pointer]:
+            - img [ref=e1625]
+    - main [ref=e1628]:
+      - generic [ref=e1629]:
+        - navigation "Breadcrumb" [ref=e1630]:
+          - link "لوحة التحكم" [ref=e1631] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e1632]
+            - generic [ref=e1635]: لوحة التحكم
+          - img [ref=e1636]
+          - generic [ref=e1638]: العقود
+        - generic [ref=e1639]:
+          - generic [ref=e1640]:
+            - generic [ref=e1643]:
+              - generic [ref=e1644]:
+                - img [ref=e1646]
+                - generic [ref=e1649]:
+                  - heading "إدارة العقود" [level=1] [ref=e1650]
+                  - paragraph [ref=e1651]: إدارة ومتابعة جميع عقود الإيجار
+              - generic [ref=e1652]:
+                - button "إنشاء عقد جديد" [ref=e1653] [cursor=pointer]:
+                  - img [ref=e1654]
+                  - text: إنشاء عقد جديد
+                - button "عقود ايجار" [ref=e1655] [cursor=pointer]:
+                  - img [ref=e1656]
+                  - text: عقود ايجار
+                - button "إرسال تنبيهات" [ref=e1658] [cursor=pointer]:
+                  - img [ref=e1659]
+                  - generic [ref=e1661]: إرسال تنبيهات
+                - button "تصدير" [ref=e1662] [cursor=pointer]:
+                  - img [ref=e1663]
+                  - generic [ref=e1666]: تصدير
+                - button [ref=e1667] [cursor=pointer]:
+                  - img [ref=e1668]
+            - generic [ref=e1673]:
+              - generic [ref=e1674]:
+                - generic [ref=e1675]:
+                  - generic [ref=e1676]:
+                    - img [ref=e1678]
+                    - generic [ref=e1681]: نشط
+                  - paragraph [ref=e1682]: "66"
+                  - paragraph [ref=e1683]: العقود النشطة
+                - generic [ref=e1684]:
+                  - generic [ref=e1685]:
+                    - img [ref=e1687]
+                    - generic [ref=e1691]: مسودات
+                  - paragraph [ref=e1692]: "82"
+                  - paragraph [ref=e1693]: بانتظار الإكمال
+                - generic [ref=e1694]:
+                  - generic [ref=e1695]:
+                    - img [ref=e1697]
+                    - generic [ref=e1700]: مراجعة
+                  - paragraph [ref=e1701]: "0"
+                  - paragraph [ref=e1702]: قيد المراجعة
+                - generic [ref=e1703]:
+                  - generic [ref=e1704]:
+                    - img [ref=e1706]
+                    - generic [ref=e1710]: ملغية
+                  - paragraph [ref=e1711]: "75"
+                  - paragraph [ref=e1712]: العقود الملغية
+              - generic [ref=e1714]:
+                - generic [ref=e1715]:
+                  - paragraph [ref=e1716]: إجمالي الإيرادات الشهرية المتوقعة
+                  - heading "108,100 ر.ق" [level=2] [ref=e1717]
+                  - paragraph [ref=e1718]: من 66 عقد نشط
+                - img [ref=e1720]
+              - button "البحث والفلاتر" [ref=e1724] [cursor=pointer]:
+                - generic [ref=e1725]:
+                  - img [ref=e1726]
+                  - generic [ref=e1729]: البحث والفلاتر
+                - img [ref=e1730]
+              - generic [ref=e1732]:
+                - generic [ref=e1734]:
+                  - button "جميع العقود" [ref=e1735] [cursor=pointer]
+                  - button "النشطة" [ref=e1736] [cursor=pointer]
+                  - button "الملغية" [ref=e1737] [cursor=pointer]
+                  - button "تنبيهات الانتهاء" [ref=e1738] [cursor=pointer]
+                  - button "إعدادات الغرامات" [ref=e1739] [cursor=pointer]
+                - generic [ref=e1742]:
+                  - generic [ref=e1743] [cursor=pointer]:
+                    - generic [ref=e1744]:
+                      - generic [ref=e1745]:
+                        - img [ref=e1747]
+                        - generic [ref=e1750]:
+                          - heading "CON-25-5FEMJQ" [level=4] [ref=e1751]
+                          - generic [ref=e1752]:
+                            - img [ref=e1753]
+                            - generic [ref=e1756]: زكرياء بن احمد
+                          - generic [ref=e1757]:
+                            - img [ref=e1758]
+                            - generic [ref=e1762]: Bestune T77 pro 2023 | 7071
+                      - generic [ref=e1763]:
+                        - img [ref=e1764]
+                        - text: نشط
+                    - generic [ref=e1767]:
+                      - generic [ref=e1768]:
+                        - paragraph [ref=e1769]: تاريخ البداية
+                        - paragraph [ref=e1770]: November 1, 2025
+                      - generic [ref=e1771]:
+                        - paragraph [ref=e1772]: تاريخ الانتهاء
+                        - paragraph [ref=e1773]: June 1, 2028
+                      - generic [ref=e1774]:
+                        - paragraph [ref=e1775]: القيمة الشهرية
+                        - paragraph [ref=e1776]: 1,500 ر.ق
+                    - generic [ref=e1777]:
+                      - button "عرض" [ref=e1778]:
+                        - img [ref=e1779]
+                        - text: عرض
+                      - button "تعديل" [ref=e1782]:
+                        - img [ref=e1783]
+                        - text: تعديل
+                      - button "تجديد" [ref=e1786]:
+                        - img [ref=e1787]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e1792]:
+                        - img [ref=e1793]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e1797]:
+                        - img [ref=e1798]
+                        - text: المزيد
+                  - generic [ref=e1802] [cursor=pointer]:
+                    - generic [ref=e1803]:
+                      - generic [ref=e1804]:
+                        - img [ref=e1806]
+                        - generic [ref=e1809]:
+                          - heading "CON-25-VLGZM9" [level=4] [ref=e1810]
+                          - generic [ref=e1811]:
+                            - img [ref=e1812]
+                            - generic [ref=e1815]: زكرياء بن احمد
+                          - generic [ref=e1816]:
+                            - img [ref=e1817]
+                            - generic [ref=e1821]: غير محدد
+                      - generic [ref=e1822]:
+                        - img [ref=e1823]
+                        - text: نشط
+                    - generic [ref=e1826]:
+                      - generic [ref=e1827]:
+                        - paragraph [ref=e1828]: تاريخ البداية
+                        - paragraph [ref=e1829]: November 1, 2025
+                      - generic [ref=e1830]:
+                        - paragraph [ref=e1831]: تاريخ الانتهاء
+                        - paragraph [ref=e1832]: June 1, 2028
+                      - generic [ref=e1833]:
+                        - paragraph [ref=e1834]: القيمة الشهرية
+                        - paragraph [ref=e1835]: 1,500 ر.ق
+                    - generic [ref=e1836]:
+                      - button "عرض" [ref=e1837]:
+                        - img [ref=e1838]
+                        - text: عرض
+                      - button "تعديل" [ref=e1841]:
+                        - img [ref=e1842]
+                        - text: تعديل
+                      - button "تجديد" [ref=e1845]:
+                        - img [ref=e1846]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e1851]:
+                        - img [ref=e1852]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e1856]:
+                        - img [ref=e1857]
+                        - text: المزيد
+                  - generic [ref=e1861] [cursor=pointer]:
+                    - generic [ref=e1862]:
+                      - generic [ref=e1863]:
+                        - img [ref=e1865]
+                        - generic [ref=e1868]:
+                          - heading "CON-25-NTZ8FK" [level=4] [ref=e1869]
+                          - generic [ref=e1870]:
+                            - img [ref=e1871]
+                            - generic [ref=e1874]: محمود جاسم الصالح
+                          - generic [ref=e1875]:
+                            - img [ref=e1876]
+                            - generic [ref=e1880]: Bestune T77 pro 2023 | 7074
+                      - generic [ref=e1881]:
+                        - img [ref=e1882]
+                        - text: نشط
+                    - generic [ref=e1885]:
+                      - generic [ref=e1886]:
+                        - paragraph [ref=e1887]: تاريخ البداية
+                        - paragraph [ref=e1888]: November 14, 2024
+                      - generic [ref=e1889]:
+                        - paragraph [ref=e1890]: تاريخ الانتهاء
+                        - paragraph [ref=e1891]: November 14, 2027
+                      - generic [ref=e1892]:
+                        - paragraph [ref=e1893]: القيمة الشهرية
+                        - paragraph [ref=e1894]: 1,600 ر.ق
+                    - generic [ref=e1895]:
+                      - button "عرض" [ref=e1896]:
+                        - img [ref=e1897]
+                        - text: عرض
+                      - button "تعديل" [ref=e1900]:
+                        - img [ref=e1901]
+                        - text: تعديل
+                      - button "تجديد" [ref=e1904]:
+                        - img [ref=e1905]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e1910]:
+                        - img [ref=e1911]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e1915]:
+                        - img [ref=e1916]
+                        - text: المزيد
+                  - generic [ref=e1920] [cursor=pointer]:
+                    - generic [ref=e1921]:
+                      - generic [ref=e1922]:
+                        - img [ref=e1924]
+                        - generic [ref=e1927]:
+                          - heading "CON-25-ZV0RA7" [level=4] [ref=e1928]
+                          - generic [ref=e1929]:
+                            - img [ref=e1930]
+                            - generic [ref=e1933]: عبد الرزاق الهنديس يس
+                          - generic [ref=e1934]:
+                            - img [ref=e1935]
+                            - generic [ref=e1939]: GAC GS3 2024 | 4016
+                      - generic [ref=e1940]:
+                        - img [ref=e1941]
+                        - text: نشط
+                    - generic [ref=e1944]:
+                      - generic [ref=e1945]:
+                        - paragraph [ref=e1946]: تاريخ البداية
+                        - paragraph [ref=e1947]: December 19, 2025
+                      - generic [ref=e1948]:
+                        - paragraph [ref=e1949]: تاريخ الانتهاء
+                        - paragraph [ref=e1950]: June 1, 2028
+                      - generic [ref=e1951]:
+                        - paragraph [ref=e1952]: القيمة الشهرية
+                        - paragraph [ref=e1953]: 1,600 ر.ق
+                    - generic [ref=e1954]:
+                      - button "عرض" [ref=e1955]:
+                        - img [ref=e1956]
+                        - text: عرض
+                      - button "تعديل" [ref=e1959]:
+                        - img [ref=e1960]
+                        - text: تعديل
+                      - button "تجديد" [ref=e1963]:
+                        - img [ref=e1964]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e1969]:
+                        - img [ref=e1970]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e1974]:
+                        - img [ref=e1975]
+                        - text: المزيد
+                  - generic [ref=e1979] [cursor=pointer]:
+                    - generic [ref=e1980]:
+                      - generic [ref=e1981]:
+                        - img [ref=e1983]
+                        - generic [ref=e1986]:
+                          - heading "CON-25-001" [level=4] [ref=e1987]
+                          - generic [ref=e1988]:
+                            - img [ref=e1989]
+                            - generic [ref=e1992]: KHAMIS AL-JABOReeee
+                          - generic [ref=e1993]:
+                            - img [ref=e1994]
+                            - generic [ref=e1998]: testt test 2024 | 234
+                      - generic [ref=e1999]:
+                        - img [ref=e2000]
+                        - text: منتهي
+                    - generic [ref=e2004]:
+                      - generic [ref=e2005]:
+                        - paragraph [ref=e2006]: تاريخ البداية
+                        - paragraph [ref=e2007]: December 1, 2025
+                      - generic [ref=e2008]:
+                        - paragraph [ref=e2009]: تاريخ الانتهاء
+                        - paragraph [ref=e2010]: December 27, 2025
+                      - generic [ref=e2011]:
+                        - paragraph [ref=e2012]: القيمة الشهرية
+                        - paragraph [ref=e2013]: 1,500 ر.ق
+                    - generic [ref=e2014]:
+                      - button "عرض" [ref=e2015]:
+                        - img [ref=e2016]
+                        - text: عرض
+                      - button "تعديل" [ref=e2019]:
+                        - img [ref=e2020]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2023]:
+                        - img [ref=e2024]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2029]:
+                        - img [ref=e2030]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2034]:
+                        - img [ref=e2035]
+                        - text: المزيد
+                  - generic [ref=e2039] [cursor=pointer]:
+                    - generic [ref=e2040]:
+                      - generic [ref=e2041]:
+                        - img [ref=e2043]
+                        - generic [ref=e2046]:
+                          - heading "LTO202431" [level=4] [ref=e2047]
+                          - generic [ref=e2048]:
+                            - img [ref=e2049]
+                            - generic [ref=e2052]: Abdulhanna abulhashem
+                          - generic [ref=e2053]:
+                            - img [ref=e2054]
+                            - generic [ref=e2058]: Bestune T77 2023 | 7061
+                      - generic [ref=e2059]:
+                        - img [ref=e2060]
+                        - text: نشط
+                    - generic [ref=e2063]:
+                      - generic [ref=e2064]:
+                        - paragraph [ref=e2065]: تاريخ البداية
+                        - paragraph [ref=e2066]: March 16, 2024
+                      - generic [ref=e2067]:
+                        - paragraph [ref=e2068]: تاريخ الانتهاء
+                        - paragraph [ref=e2069]: March 16, 2027
+                      - generic [ref=e2070]:
+                        - paragraph [ref=e2071]: القيمة الشهرية
+                        - paragraph [ref=e2072]: 2,100 ر.ق
+                    - generic [ref=e2073]:
+                      - button "عرض" [ref=e2074]:
+                        - img [ref=e2075]
+                        - text: عرض
+                      - button "تعديل" [ref=e2078]:
+                        - img [ref=e2079]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2082]:
+                        - img [ref=e2083]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2088]:
+                        - img [ref=e2089]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2093]:
+                        - img [ref=e2094]
+                        - text: المزيد
+                  - generic [ref=e2098] [cursor=pointer]:
+                    - generic [ref=e2099]:
+                      - generic [ref=e2100]:
+                        - img [ref=e2102]
+                        - generic [ref=e2105]:
+                          - heading "LTO202434" [level=4] [ref=e2106]
+                          - generic [ref=e2107]:
+                            - img [ref=e2108]
+                            - generic [ref=e2111]: Haq Nawaz Rahim Bakhsh
+                          - generic [ref=e2112]:
+                            - img [ref=e2113]
+                            - generic [ref=e2117]: GAC GS3 2024 | 8204
+                      - generic [ref=e2118]:
+                        - img [ref=e2119]
+                        - text: نشط
+                    - generic [ref=e2122]:
+                      - generic [ref=e2123]:
+                        - paragraph [ref=e2124]: تاريخ البداية
+                        - paragraph [ref=e2125]: December 16, 2023
+                      - generic [ref=e2126]:
+                        - paragraph [ref=e2127]: تاريخ الانتهاء
+                        - paragraph [ref=e2128]: December 16, 2026
+                      - generic [ref=e2129]:
+                        - paragraph [ref=e2130]: القيمة الشهرية
+                        - paragraph [ref=e2131]: 0 ر.ق
+                    - generic [ref=e2132]:
+                      - button "عرض" [ref=e2133]:
+                        - img [ref=e2134]
+                        - text: عرض
+                      - button "تعديل" [ref=e2137]:
+                        - img [ref=e2138]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2141]:
+                        - img [ref=e2142]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2147]:
+                        - img [ref=e2148]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2152]:
+                        - img [ref=e2153]
+                        - text: المزيد
+                  - generic [ref=e2157] [cursor=pointer]:
+                    - generic [ref=e2158]:
+                      - generic [ref=e2159]:
+                        - img [ref=e2161]
+                        - generic [ref=e2164]:
+                          - heading "AGR-202504-422586" [level=4] [ref=e2165]
+                          - generic [ref=e2166]:
+                            - img [ref=e2167]
+                            - generic [ref=e2170]: قسورة عبد الرحيم
+                          - generic [ref=e2171]:
+                            - img [ref=e2172]
+                            - generic [ref=e2176]: changan Alsvin 2024 | 10858
+                      - generic [ref=e2177]:
+                        - img [ref=e2178]
+                        - text: نشط
+                    - generic [ref=e2181]:
+                      - generic [ref=e2182]:
+                        - paragraph [ref=e2183]: تاريخ البداية
+                        - paragraph [ref=e2184]: May 1, 2025
+                      - generic [ref=e2185]:
+                        - paragraph [ref=e2186]: تاريخ الانتهاء
+                        - paragraph [ref=e2187]: February 6, 2028
+                      - generic [ref=e2188]:
+                        - paragraph [ref=e2189]: القيمة الشهرية
+                        - paragraph [ref=e2190]: 1,500 ر.ق
+                    - generic [ref=e2191]:
+                      - button "عرض" [ref=e2192]:
+                        - img [ref=e2193]
+                        - text: عرض
+                      - button "تعديل" [ref=e2196]:
+                        - img [ref=e2197]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2200]:
+                        - img [ref=e2201]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2206]:
+                        - img [ref=e2207]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2211]:
+                        - img [ref=e2212]
+                        - text: المزيد
+                  - generic [ref=e2216] [cursor=pointer]:
+                    - generic [ref=e2217]:
+                      - generic [ref=e2218]:
+                        - img [ref=e2220]
+                        - generic [ref=e2223]:
+                          - heading "LTO2024134" [level=4] [ref=e2224]
+                          - generic [ref=e2225]:
+                            - img [ref=e2226]
+                            - generic [ref=e2229]: olusegun onadairo
+                          - generic [ref=e2230]:
+                            - img [ref=e2231]
+                            - generic [ref=e2235]: Bestune T77 pro 2023 | 7062
+                      - generic [ref=e2236]:
+                        - img [ref=e2237]
+                        - text: ملغي
+                    - generic [ref=e2241]:
+                      - generic [ref=e2242]:
+                        - paragraph [ref=e2243]: تاريخ البداية
+                        - paragraph [ref=e2244]: April 23, 2024
+                      - generic [ref=e2245]:
+                        - paragraph [ref=e2246]: تاريخ الانتهاء
+                        - paragraph [ref=e2247]: April 24, 2027
+                      - generic [ref=e2248]:
+                        - paragraph [ref=e2249]: القيمة الشهرية
+                        - paragraph [ref=e2250]: 0 ر.ق
+                    - generic [ref=e2251]:
+                      - button "عرض" [ref=e2252]:
+                        - img [ref=e2253]
+                        - text: عرض
+                      - button "تعديل" [ref=e2256]:
+                        - img [ref=e2257]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2260]:
+                        - img [ref=e2261]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2266]:
+                        - img [ref=e2267]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2271]:
+                        - img [ref=e2272]
+                        - text: المزيد
+                  - generic [ref=e2276] [cursor=pointer]:
+                    - generic [ref=e2277]:
+                      - generic [ref=e2278]:
+                        - img [ref=e2280]
+                        - generic [ref=e2283]:
+                          - heading "330" [level=4] [ref=e2284]
+                          - generic [ref=e2285]:
+                            - img [ref=e2286]
+                            - generic [ref=e2289]: yahia sakhri
+                          - generic [ref=e2290]:
+                            - img [ref=e2291]
+                            - generic [ref=e2295]: Bestune T77 pro 2023 | 7062
+                      - generic [ref=e2296]:
+                        - img [ref=e2297]
+                        - text: ملغي
+                    - generic [ref=e2301]:
+                      - generic [ref=e2302]:
+                        - paragraph [ref=e2303]: تاريخ البداية
+                        - paragraph [ref=e2304]: October 17, 2024
+                      - generic [ref=e2305]:
+                        - paragraph [ref=e2306]: تاريخ الانتهاء
+                        - paragraph [ref=e2307]: October 30, 2024
+                      - generic [ref=e2308]:
+                        - paragraph [ref=e2309]: القيمة الشهرية
+                        - paragraph [ref=e2310]: 0 ر.ق
+                    - generic [ref=e2311]:
+                      - button "عرض" [ref=e2312]:
+                        - img [ref=e2313]
+                        - text: عرض
+                      - button "تعديل" [ref=e2316]:
+                        - img [ref=e2317]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2320]:
+                        - img [ref=e2321]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2326]:
+                        - img [ref=e2327]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2331]:
+                        - img [ref=e2332]
+                        - text: المزيد
+                  - generic [ref=e2336] [cursor=pointer]:
+                    - generic [ref=e2337]:
+                      - generic [ref=e2338]:
+                        - img [ref=e2340]
+                        - generic [ref=e2343]:
+                          - heading "LTO2024116" [level=4] [ref=e2344]
+                          - generic [ref=e2345]:
+                            - img [ref=e2346]
+                            - generic [ref=e2349]: ALI ABBAS
+                          - generic [ref=e2350]:
+                            - img [ref=e2351]
+                            - generic [ref=e2355]: Bestune T77 pro 2023 | 5898
+                      - generic [ref=e2356]:
+                        - img [ref=e2357]
+                        - text: نشط
+                    - generic [ref=e2360]:
+                      - generic [ref=e2361]:
+                        - paragraph [ref=e2362]: تاريخ البداية
+                        - paragraph [ref=e2363]: April 4, 2024
+                      - generic [ref=e2364]:
+                        - paragraph [ref=e2365]: تاريخ الانتهاء
+                        - paragraph [ref=e2366]: March 5, 2027
+                      - generic [ref=e2367]:
+                        - paragraph [ref=e2368]: القيمة الشهرية
+                        - paragraph [ref=e2369]: 0 ر.ق
+                    - generic [ref=e2370]:
+                      - button "عرض" [ref=e2371]:
+                        - img [ref=e2372]
+                        - text: عرض
+                      - button "تعديل" [ref=e2375]:
+                        - img [ref=e2376]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2379]:
+                        - img [ref=e2380]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2385]:
+                        - img [ref=e2386]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2390]:
+                        - img [ref=e2391]
+                        - text: المزيد
+                  - generic [ref=e2395] [cursor=pointer]:
+                    - generic [ref=e2396]:
+                      - generic [ref=e2397]:
+                        - img [ref=e2399]
+                        - generic [ref=e2402]:
+                          - heading "Ret-2018207" [level=4] [ref=e2403]
+                          - generic [ref=e2404]:
+                            - img [ref=e2405]
+                            - generic [ref=e2408]: snoonu snoonu
+                          - generic [ref=e2409]:
+                            - img [ref=e2410]
+                            - generic [ref=e2414]: Bestune B70 2023 | 893410
+                      - generic [ref=e2415]:
+                        - img [ref=e2416]
+                        - text: نشط
+                    - generic [ref=e2419]:
+                      - generic [ref=e2420]:
+                        - paragraph [ref=e2421]: تاريخ البداية
+                        - paragraph [ref=e2422]: June 2, 2024
+                      - generic [ref=e2423]:
+                        - paragraph [ref=e2424]: تاريخ الانتهاء
+                        - paragraph [ref=e2425]: August 31, 2024
+                      - generic [ref=e2426]:
+                        - paragraph [ref=e2427]: القيمة الشهرية
+                        - paragraph [ref=e2428]: 0 ر.ق
+                    - generic [ref=e2429]:
+                      - button "عرض" [ref=e2430]:
+                        - img [ref=e2431]
+                        - text: عرض
+                      - button "تعديل" [ref=e2434]:
+                        - img [ref=e2435]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2438]:
+                        - img [ref=e2439]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2444]:
+                        - img [ref=e2445]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2449]:
+                        - img [ref=e2450]
+                        - text: المزيد
+                  - generic [ref=e2454] [cursor=pointer]:
+                    - generic [ref=e2455]:
+                      - generic [ref=e2456]:
+                        - img [ref=e2458]
+                        - generic [ref=e2461]:
+                          - heading "LTO2024150" [level=4] [ref=e2462]
+                          - generic [ref=e2463]:
+                            - img [ref=e2464]
+                            - generic [ref=e2467]: HABIB KHELIFI
+                          - generic [ref=e2468]:
+                            - img [ref=e2469]
+                            - generic [ref=e2473]: GAC GS3 2024 | 8204
+                      - generic [ref=e2474]:
+                        - img [ref=e2475]
+                        - text: نشط
+                    - generic [ref=e2478]:
+                      - generic [ref=e2479]:
+                        - paragraph [ref=e2480]: تاريخ البداية
+                        - paragraph [ref=e2481]: May 7, 2024
+                      - generic [ref=e2482]:
+                        - paragraph [ref=e2483]: تاريخ الانتهاء
+                        - paragraph [ref=e2484]: June 1, 2027
+                      - generic [ref=e2485]:
+                        - paragraph [ref=e2486]: القيمة الشهرية
+                        - paragraph [ref=e2487]: 2,000 ر.ق
+                    - generic [ref=e2488]:
+                      - button "عرض" [ref=e2489]:
+                        - img [ref=e2490]
+                        - text: عرض
+                      - button "تعديل" [ref=e2493]:
+                        - img [ref=e2494]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2497]:
+                        - img [ref=e2498]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2503]:
+                        - img [ref=e2504]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2508]:
+                        - img [ref=e2509]
+                        - text: المزيد
+                  - generic [ref=e2513] [cursor=pointer]:
+                    - generic [ref=e2514]:
+                      - generic [ref=e2515]:
+                        - img [ref=e2517]
+                        - generic [ref=e2520]:
+                          - heading "Ret-2018191" [level=4] [ref=e2521]
+                          - generic [ref=e2522]:
+                            - img [ref=e2523]
+                            - generic [ref=e2526]: snoonu snoonu
+                          - generic [ref=e2527]:
+                            - img [ref=e2528]
+                            - generic [ref=e2532]: Bestune T77 2023 | 2781
+                      - generic [ref=e2533]:
+                        - img [ref=e2534]
+                        - text: نشط
+                    - generic [ref=e2537]:
+                      - generic [ref=e2538]:
+                        - paragraph [ref=e2539]: تاريخ البداية
+                        - paragraph [ref=e2540]: June 2, 2024
+                      - generic [ref=e2541]:
+                        - paragraph [ref=e2542]: تاريخ الانتهاء
+                        - paragraph [ref=e2543]: June 30, 2024
+                      - generic [ref=e2544]:
+                        - paragraph [ref=e2545]: القيمة الشهرية
+                        - paragraph [ref=e2546]: 0 ر.ق
+                    - generic [ref=e2547]:
+                      - button "عرض" [ref=e2548]:
+                        - img [ref=e2549]
+                        - text: عرض
+                      - button "تعديل" [ref=e2552]:
+                        - img [ref=e2553]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2556]:
+                        - img [ref=e2557]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2562]:
+                        - img [ref=e2563]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2567]:
+                        - img [ref=e2568]
+                        - text: المزيد
+                  - generic [ref=e2572] [cursor=pointer]:
+                    - generic [ref=e2573]:
+                      - generic [ref=e2574]:
+                        - img [ref=e2576]
+                        - generic [ref=e2579]:
+                          - heading "AGR-950558-871" [level=4] [ref=e2580]
+                          - generic [ref=e2581]:
+                            - img [ref=e2582]
+                            - generic [ref=e2585]: عبد اللله العلواني
+                          - generic [ref=e2586]:
+                            - img [ref=e2587]
+                            - generic [ref=e2591]: Bestune T33 2022 | 9902
+                      - generic [ref=e2592]:
+                        - img [ref=e2593]
+                        - text: نشط
+                    - generic [ref=e2596]:
+                      - generic [ref=e2597]:
+                        - paragraph [ref=e2598]: تاريخ البداية
+                        - paragraph [ref=e2599]: April 15, 2025
+                      - generic [ref=e2600]:
+                        - paragraph [ref=e2601]: تاريخ الانتهاء
+                        - paragraph [ref=e2602]: April 15, 2028
+                      - generic [ref=e2603]:
+                        - paragraph [ref=e2604]: القيمة الشهرية
+                        - paragraph [ref=e2605]: 1,400 ر.ق
+                    - generic [ref=e2606]:
+                      - button "عرض" [ref=e2607]:
+                        - img [ref=e2608]
+                        - text: عرض
+                      - button "تعديل" [ref=e2611]:
+                        - img [ref=e2612]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2615]:
+                        - img [ref=e2616]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2621]:
+                        - img [ref=e2622]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2626]:
+                        - img [ref=e2627]
+                        - text: المزيد
+                  - generic [ref=e2631] [cursor=pointer]:
+                    - generic [ref=e2632]:
+                      - generic [ref=e2633]:
+                        - img [ref=e2635]
+                        - generic [ref=e2638]:
+                          - heading "LTO2024308" [level=4] [ref=e2639]
+                          - generic [ref=e2640]:
+                            - img [ref=e2641]
+                            - generic [ref=e2644]: wassim chatmen
+                          - generic [ref=e2645]:
+                            - img [ref=e2646]
+                            - generic [ref=e2650]: Bestune T33 2022 | 10064
+                      - generic [ref=e2651]:
+                        - img [ref=e2652]
+                        - text: نشط
+                    - generic [ref=e2655]:
+                      - generic [ref=e2656]:
+                        - paragraph [ref=e2657]: تاريخ البداية
+                        - paragraph [ref=e2658]: September 12, 2024
+                      - generic [ref=e2659]:
+                        - paragraph [ref=e2660]: تاريخ الانتهاء
+                        - paragraph [ref=e2661]: November 30, 2024
+                      - generic [ref=e2662]:
+                        - paragraph [ref=e2663]: القيمة الشهرية
+                        - paragraph [ref=e2664]: 1,050 ر.ق
+                    - generic [ref=e2665]:
+                      - button "عرض" [ref=e2666]:
+                        - img [ref=e2667]
+                        - text: عرض
+                      - button "تعديل" [ref=e2670]:
+                        - img [ref=e2671]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2674]:
+                        - img [ref=e2675]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2680]:
+                        - img [ref=e2681]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2685]:
+                        - img [ref=e2686]
+                        - text: المزيد
+                  - generic [ref=e2690] [cursor=pointer]:
+                    - generic [ref=e2691]:
+                      - generic [ref=e2692]:
+                        - img [ref=e2694]
+                        - generic [ref=e2697]:
+                          - heading "LTO2024325" [level=4] [ref=e2698]
+                          - generic [ref=e2699]:
+                            - img [ref=e2700]
+                            - generic [ref=e2703]: mohamed ahmed
+                          - generic [ref=e2704]:
+                            - img [ref=e2705]
+                            - generic [ref=e2709]: Bestune B70 2023 | 711289
+                      - generic [ref=e2710]:
+                        - img [ref=e2711]
+                        - text: نشط
+                    - generic [ref=e2714]:
+                      - generic [ref=e2715]:
+                        - paragraph [ref=e2716]: تاريخ البداية
+                        - paragraph [ref=e2717]: September 26, 2024
+                      - generic [ref=e2718]:
+                        - paragraph [ref=e2719]: تاريخ الانتهاء
+                        - paragraph [ref=e2720]: September 1, 2027
+                      - generic [ref=e2721]:
+                        - paragraph [ref=e2722]: القيمة الشهرية
+                        - paragraph [ref=e2723]: 0 ر.ق
+                    - generic [ref=e2724]:
+                      - button "عرض" [ref=e2725]:
+                        - img [ref=e2726]
+                        - text: عرض
+                      - button "تعديل" [ref=e2729]:
+                        - img [ref=e2730]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2733]:
+                        - img [ref=e2734]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2739]:
+                        - img [ref=e2740]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2744]:
+                        - img [ref=e2745]
+                        - text: المزيد
+                  - generic [ref=e2749] [cursor=pointer]:
+                    - generic [ref=e2750]:
+                      - generic [ref=e2751]:
+                        - img [ref=e2753]
+                        - generic [ref=e2756]:
+                          - heading "LTO2024335" [level=4] [ref=e2757]
+                          - generic [ref=e2758]:
+                            - img [ref=e2759]
+                            - generic [ref=e2762]: mahmoud jassem alsaleh
+                          - generic [ref=e2763]:
+                            - img [ref=e2764]
+                            - generic [ref=e2768]: Bestune T77 pro 2023 | 7074
+                      - generic [ref=e2769]:
+                        - img [ref=e2770]
+                        - text: نشط
+                    - generic [ref=e2773]:
+                      - generic [ref=e2774]:
+                        - paragraph [ref=e2775]: تاريخ البداية
+                        - paragraph [ref=e2776]: November 16, 2024
+                      - generic [ref=e2777]:
+                        - paragraph [ref=e2778]: تاريخ الانتهاء
+                        - paragraph [ref=e2779]: November 1, 2027
+                      - generic [ref=e2780]:
+                        - paragraph [ref=e2781]: القيمة الشهرية
+                        - paragraph [ref=e2782]: 1,500 ر.ق
+                    - generic [ref=e2783]:
+                      - button "عرض" [ref=e2784]:
+                        - img [ref=e2785]
+                        - text: عرض
+                      - button "تعديل" [ref=e2788]:
+                        - img [ref=e2789]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2792]:
+                        - img [ref=e2793]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2798]:
+                        - img [ref=e2799]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2803]:
+                        - img [ref=e2804]
+                        - text: المزيد
+                  - generic [ref=e2808] [cursor=pointer]:
+                    - generic [ref=e2809]:
+                      - generic [ref=e2810]:
+                        - img [ref=e2812]
+                        - generic [ref=e2815]:
+                          - heading "LTO2024230" [level=4] [ref=e2816]
+                          - generic [ref=e2817]:
+                            - img [ref=e2818]
+                            - generic [ref=e2821]: hamdi thabet
+                          - generic [ref=e2822]:
+                            - img [ref=e2823]
+                            - generic [ref=e2827]: Bestune B70 2023 | 722134
+                      - generic [ref=e2828]:
+                        - img [ref=e2829]
+                        - text: نشط
+                    - generic [ref=e2832]:
+                      - generic [ref=e2833]:
+                        - paragraph [ref=e2834]: تاريخ البداية
+                        - paragraph [ref=e2835]: June 15, 2024
+                      - generic [ref=e2836]:
+                        - paragraph [ref=e2837]: تاريخ الانتهاء
+                        - paragraph [ref=e2838]: June 30, 2025
+                      - generic [ref=e2839]:
+                        - paragraph [ref=e2840]: القيمة الشهرية
+                        - paragraph [ref=e2841]: 1,260 ر.ق
+                    - generic [ref=e2842]:
+                      - button "عرض" [ref=e2843]:
+                        - img [ref=e2844]
+                        - text: عرض
+                      - button "تعديل" [ref=e2847]:
+                        - img [ref=e2848]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2851]:
+                        - img [ref=e2852]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2857]:
+                        - img [ref=e2858]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2862]:
+                        - img [ref=e2863]
+                        - text: المزيد
+                  - generic [ref=e2867] [cursor=pointer]:
+                    - generic [ref=e2868]:
+                      - generic [ref=e2869]:
+                        - img [ref=e2871]
+                        - generic [ref=e2874]:
+                          - heading "LTO2024256" [level=4] [ref=e2875]
+                          - generic [ref=e2876]:
+                            - img [ref=e2877]
+                            - generic [ref=e2880]: mohamed abdalla
+                          - generic [ref=e2881]:
+                            - img [ref=e2882]
+                            - generic [ref=e2886]: Bestune B70 2023 | 648144
+                      - generic [ref=e2887]:
+                        - img [ref=e2888]
+                        - text: نشط
+                    - generic [ref=e2891]:
+                      - generic [ref=e2892]:
+                        - paragraph [ref=e2893]: تاريخ البداية
+                        - paragraph [ref=e2894]: July 23, 2024
+                      - generic [ref=e2895]:
+                        - paragraph [ref=e2896]: تاريخ الانتهاء
+                        - paragraph [ref=e2897]: January 7, 2027
+                      - generic [ref=e2898]:
+                        - paragraph [ref=e2899]: القيمة الشهرية
+                        - paragraph [ref=e2900]: 0 ر.ق
+                    - generic [ref=e2901]:
+                      - button "عرض" [ref=e2902]:
+                        - img [ref=e2903]
+                        - text: عرض
+                      - button "تعديل" [ref=e2906]:
+                        - img [ref=e2907]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2910]:
+                        - img [ref=e2911]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2916]:
+                        - img [ref=e2917]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2921]:
+                        - img [ref=e2922]
+                        - text: المزيد
+                  - generic [ref=e2926] [cursor=pointer]:
+                    - generic [ref=e2927]:
+                      - generic [ref=e2928]:
+                        - img [ref=e2930]
+                        - generic [ref=e2933]:
+                          - heading "LTO202442" [level=4] [ref=e2934]
+                          - generic [ref=e2935]:
+                            - img [ref=e2936]
+                            - generic [ref=e2939]: WALID CHOURABI
+                          - generic [ref=e2940]:
+                            - img [ref=e2941]
+                            - generic [ref=e2945]: Ford TERRITORY 2023 | 846560
+                      - generic [ref=e2946]:
+                        - img [ref=e2947]
+                        - text: نشط
+                    - generic [ref=e2950]:
+                      - generic [ref=e2951]:
+                        - paragraph [ref=e2952]: تاريخ البداية
+                        - paragraph [ref=e2953]: December 23, 2023
+                      - generic [ref=e2954]:
+                        - paragraph [ref=e2955]: تاريخ الانتهاء
+                        - paragraph [ref=e2956]: June 23, 2026
+                      - generic [ref=e2957]:
+                        - paragraph [ref=e2958]: القيمة الشهرية
+                        - paragraph [ref=e2959]: 2,100 ر.ق
+                    - generic [ref=e2960]:
+                      - button "عرض" [ref=e2961]:
+                        - img [ref=e2962]
+                        - text: عرض
+                      - button "تعديل" [ref=e2965]:
+                        - img [ref=e2966]
+                        - text: تعديل
+                      - button "تجديد" [ref=e2969]:
+                        - img [ref=e2970]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e2975]:
+                        - img [ref=e2976]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e2980]:
+                        - img [ref=e2981]
+                        - text: المزيد
+                  - generic [ref=e2985] [cursor=pointer]:
+                    - generic [ref=e2986]:
+                      - generic [ref=e2987]:
+                        - img [ref=e2989]
+                        - generic [ref=e2992]:
+                          - heading "LTO2024290" [level=4] [ref=e2993]
+                          - generic [ref=e2994]:
+                            - img [ref=e2995]
+                            - generic [ref=e2998]: saddam el falah
+                          - generic [ref=e2999]:
+                            - img [ref=e3000]
+                            - generic [ref=e3004]: Bestune T99 2023 | 906077
+                      - generic [ref=e3005]:
+                        - img [ref=e3006]
+                        - text: ملغي
+                    - generic [ref=e3010]:
+                      - generic [ref=e3011]:
+                        - paragraph [ref=e3012]: تاريخ البداية
+                        - paragraph [ref=e3013]: September 4, 2024
+                      - generic [ref=e3014]:
+                        - paragraph [ref=e3015]: تاريخ الانتهاء
+                        - paragraph [ref=e3016]: August 1, 2027
+                      - generic [ref=e3017]:
+                        - paragraph [ref=e3018]: القيمة الشهرية
+                        - paragraph [ref=e3019]: 0 ر.ق
+                    - generic [ref=e3020]:
+                      - button "عرض" [ref=e3021]:
+                        - img [ref=e3022]
+                        - text: عرض
+                      - button "تعديل" [ref=e3025]:
+                        - img [ref=e3026]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3029]:
+                        - img [ref=e3030]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3035]:
+                        - img [ref=e3036]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3040]:
+                        - img [ref=e3041]
+                        - text: المزيد
+                  - generic [ref=e3045] [cursor=pointer]:
+                    - generic [ref=e3046]:
+                      - generic [ref=e3047]:
+                        - img [ref=e3049]
+                        - generic [ref=e3052]:
+                          - heading "AGR-202502-0424" [level=4] [ref=e3053]
+                          - generic [ref=e3054]:
+                            - img [ref=e3055]
+                            - generic [ref=e3058]: مؤسى حيمر
+                          - generic [ref=e3059]:
+                            - img [ref=e3060]
+                            - generic [ref=e3064]: Bestune T77 2023 | 5891
+                      - generic [ref=e3065]:
+                        - img [ref=e3066]
+                        - text: نشط
+                    - generic [ref=e3069]:
+                      - generic [ref=e3070]:
+                        - paragraph [ref=e3071]: تاريخ البداية
+                        - paragraph [ref=e3072]: February 16, 2025
+                      - generic [ref=e3073]:
+                        - paragraph [ref=e3074]: تاريخ الانتهاء
+                        - paragraph [ref=e3075]: November 16, 2035
+                      - generic [ref=e3076]:
+                        - paragraph [ref=e3077]: القيمة الشهرية
+                        - paragraph [ref=e3078]: 1,600 ر.ق
+                    - generic [ref=e3079]:
+                      - button "عرض" [ref=e3080]:
+                        - img [ref=e3081]
+                        - text: عرض
+                      - button "تعديل" [ref=e3084]:
+                        - img [ref=e3085]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3088]:
+                        - img [ref=e3089]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3094]:
+                        - img [ref=e3095]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3099]:
+                        - img [ref=e3100]
+                        - text: المزيد
+                  - generic [ref=e3104] [cursor=pointer]:
+                    - generic [ref=e3105]:
+                      - generic [ref=e3106]:
+                        - img [ref=e3108]
+                        - generic [ref=e3111]:
+                          - heading "LTO2024306" [level=4] [ref=e3112]
+                          - generic [ref=e3113]:
+                            - img [ref=e3114]
+                            - generic [ref=e3117]: tarek boutemedjet
+                          - generic [ref=e3118]:
+                            - img [ref=e3119]
+                            - generic [ref=e3123]: Bestune T33 2022 | 862169
+                      - generic [ref=e3124]:
+                        - img [ref=e3125]
+                        - text: ملغي
+                    - generic [ref=e3129]:
+                      - generic [ref=e3130]:
+                        - paragraph [ref=e3131]: تاريخ البداية
+                        - paragraph [ref=e3132]: November 9, 2024
+                      - generic [ref=e3133]:
+                        - paragraph [ref=e3134]: تاريخ الانتهاء
+                        - paragraph [ref=e3135]: January 2, 2027
+                      - generic [ref=e3136]:
+                        - paragraph [ref=e3137]: القيمة الشهرية
+                        - paragraph [ref=e3138]: 0 ر.ق
+                    - generic [ref=e3139]:
+                      - button "عرض" [ref=e3140]:
+                        - img [ref=e3141]
+                        - text: عرض
+                      - button "تعديل" [ref=e3144]:
+                        - img [ref=e3145]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3148]:
+                        - img [ref=e3149]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3154]:
+                        - img [ref=e3155]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3159]:
+                        - img [ref=e3160]
+                        - text: المزيد
+                  - generic [ref=e3164] [cursor=pointer]:
+                    - generic [ref=e3165]:
+                      - generic [ref=e3166]:
+                        - img [ref=e3168]
+                        - generic [ref=e3171]:
+                          - heading "In2018173" [level=4] [ref=e3172]
+                          - generic [ref=e3173]:
+                            - img [ref=e3174]
+                            - generic [ref=e3177]: mubarek golcha
+                          - generic [ref=e3178]:
+                            - img [ref=e3179]
+                            - generic [ref=e3183]: MG5 MG5 2024 | 570468
+                      - generic [ref=e3184]:
+                        - img [ref=e3185]
+                        - text: ملغي
+                    - generic [ref=e3189]:
+                      - generic [ref=e3190]:
+                        - paragraph [ref=e3191]: تاريخ البداية
+                        - paragraph [ref=e3192]: May 25, 2024
+                      - generic [ref=e3193]:
+                        - paragraph [ref=e3194]: تاريخ الانتهاء
+                        - paragraph [ref=e3195]: May 26, 2025
+                      - generic [ref=e3196]:
+                        - paragraph [ref=e3197]: القيمة الشهرية
+                        - paragraph [ref=e3198]: 0 ر.ق
+                    - generic [ref=e3199]:
+                      - button "عرض" [ref=e3200]:
+                        - img [ref=e3201]
+                        - text: عرض
+                      - button "تعديل" [ref=e3204]:
+                        - img [ref=e3205]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3208]:
+                        - img [ref=e3209]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3214]:
+                        - img [ref=e3215]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3219]:
+                        - img [ref=e3220]
+                        - text: المزيد
+                  - generic [ref=e3224] [cursor=pointer]:
+                    - generic [ref=e3225]:
+                      - generic [ref=e3226]:
+                        - img [ref=e3228]
+                        - generic [ref=e3231]:
+                          - heading "LTO2024298" [level=4] [ref=e3232]
+                          - generic [ref=e3233]:
+                            - img [ref=e3234]
+                            - generic [ref=e3237]: kaies ayari
+                          - generic [ref=e3238]:
+                            - img [ref=e3239]
+                            - generic [ref=e3243]: MG5 MG5 2024 | 754436
+                      - generic [ref=e3244]:
+                        - img [ref=e3245]
+                        - text: ملغي
+                    - generic [ref=e3249]:
+                      - generic [ref=e3250]:
+                        - paragraph [ref=e3251]: تاريخ البداية
+                        - paragraph [ref=e3252]: August 9, 2024
+                      - generic [ref=e3253]:
+                        - paragraph [ref=e3254]: تاريخ الانتهاء
+                        - paragraph [ref=e3255]: January 8, 2027
+                      - generic [ref=e3256]:
+                        - paragraph [ref=e3257]: القيمة الشهرية
+                        - paragraph [ref=e3258]: 0 ر.ق
+                    - generic [ref=e3259]:
+                      - button "عرض" [ref=e3260]:
+                        - img [ref=e3261]
+                        - text: عرض
+                      - button "تعديل" [ref=e3264]:
+                        - img [ref=e3265]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3268]:
+                        - img [ref=e3269]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3274]:
+                        - img [ref=e3275]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3279]:
+                        - img [ref=e3280]
+                        - text: المزيد
+                  - generic [ref=e3284] [cursor=pointer]:
+                    - generic [ref=e3285]:
+                      - generic [ref=e3286]:
+                        - img [ref=e3288]
+                        - generic [ref=e3291]:
+                          - heading "MR202484" [level=4] [ref=e3292]
+                          - generic [ref=e3293]:
+                            - img [ref=e3294]
+                            - generic [ref=e3297]: foster ngo
+                          - generic [ref=e3298]:
+                            - img [ref=e3299]
+                            - generic [ref=e3303]: MG5 MG5 2024 | 816508
+                      - generic [ref=e3304]:
+                        - img [ref=e3305]
+                        - text: ملغي
+                    - generic [ref=e3309]:
+                      - generic [ref=e3310]:
+                        - paragraph [ref=e3311]: تاريخ البداية
+                        - paragraph [ref=e3312]: February 8, 2024
+                      - generic [ref=e3313]:
+                        - paragraph [ref=e3314]: تاريخ الانتهاء
+                        - paragraph [ref=e3315]: May 1, 2024
+                      - generic [ref=e3316]:
+                        - paragraph [ref=e3317]: القيمة الشهرية
+                        - paragraph [ref=e3318]: 0 ر.ق
+                    - generic [ref=e3319]:
+                      - button "عرض" [ref=e3320]:
+                        - img [ref=e3321]
+                        - text: عرض
+                      - button "تعديل" [ref=e3324]:
+                        - img [ref=e3325]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3328]:
+                        - img [ref=e3329]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3334]:
+                        - img [ref=e3335]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3339]:
+                        - img [ref=e3340]
+                        - text: المزيد
+                  - generic [ref=e3344] [cursor=pointer]:
+                    - generic [ref=e3345]:
+                      - generic [ref=e3346]:
+                        - img [ref=e3348]
+                        - generic [ref=e3351]:
+                          - heading "LTO2024238" [level=4] [ref=e3352]
+                          - generic [ref=e3353]:
+                            - img [ref=e3354]
+                            - generic [ref=e3357]: hamze hussein
+                          - generic [ref=e3358]:
+                            - img [ref=e3359]
+                            - generic [ref=e3363]: MG5 MG5 2024 | 817009
+                      - generic [ref=e3364]:
+                        - img [ref=e3365]
+                        - text: ملغي
+                    - generic [ref=e3369]:
+                      - generic [ref=e3370]:
+                        - paragraph [ref=e3371]: تاريخ البداية
+                        - paragraph [ref=e3372]: July 7, 2024
+                      - generic [ref=e3373]:
+                        - paragraph [ref=e3374]: تاريخ الانتهاء
+                        - paragraph [ref=e3375]: June 1, 2027
+                      - generic [ref=e3376]:
+                        - paragraph [ref=e3377]: القيمة الشهرية
+                        - paragraph [ref=e3378]: 0 ر.ق
+                    - generic [ref=e3379]:
+                      - button "عرض" [ref=e3380]:
+                        - img [ref=e3381]
+                        - text: عرض
+                      - button "تعديل" [ref=e3384]:
+                        - img [ref=e3385]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3388]:
+                        - img [ref=e3389]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3394]:
+                        - img [ref=e3395]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3399]:
+                        - img [ref=e3400]
+                        - text: المزيد
+                  - generic [ref=e3404] [cursor=pointer]:
+                    - generic [ref=e3405]:
+                      - generic [ref=e3406]:
+                        - img [ref=e3408]
+                        - generic [ref=e3411]:
+                          - heading "LTO2024104" [level=4] [ref=e3412]
+                          - generic [ref=e3413]:
+                            - img [ref=e3414]
+                            - generic [ref=e3417]: RAVI
+                          - generic [ref=e3418]:
+                            - img [ref=e3419]
+                            - generic [ref=e3423]: Ford TERRITORY 2023 | 847932
+                      - generic [ref=e3424]:
+                        - img [ref=e3425]
+                        - text: نشط
+                    - generic [ref=e3428]:
+                      - generic [ref=e3429]:
+                        - paragraph [ref=e3430]: تاريخ البداية
+                        - paragraph [ref=e3431]: July 13, 2023
+                      - generic [ref=e3432]:
+                        - paragraph [ref=e3433]: تاريخ الانتهاء
+                        - paragraph [ref=e3434]: July 14, 2026
+                      - generic [ref=e3435]:
+                        - paragraph [ref=e3436]: القيمة الشهرية
+                        - paragraph [ref=e3437]: 2,268 ر.ق
+                    - generic [ref=e3438]:
+                      - button "عرض" [ref=e3439]:
+                        - img [ref=e3440]
+                        - text: عرض
+                      - button "تعديل" [ref=e3443]:
+                        - img [ref=e3444]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3447]:
+                        - img [ref=e3448]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3453]:
+                        - img [ref=e3454]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3458]:
+                        - img [ref=e3459]
+                        - text: المزيد
+                  - generic [ref=e3463] [cursor=pointer]:
+                    - generic [ref=e3464]:
+                      - generic [ref=e3465]:
+                        - img [ref=e3467]
+                        - generic [ref=e3470]:
+                          - heading "MR202476" [level=4] [ref=e3471]
+                          - generic [ref=e3472]:
+                            - img [ref=e3473]
+                            - generic [ref=e3476]: clement gyamerah
+                          - generic [ref=e3477]:
+                            - img [ref=e3478]
+                            - generic [ref=e3482]: MG5 MG5 2024 | 819027
+                      - generic [ref=e3483]:
+                        - img [ref=e3484]
+                        - text: ملغي
+                    - generic [ref=e3488]:
+                      - generic [ref=e3489]:
+                        - paragraph [ref=e3490]: تاريخ البداية
+                        - paragraph [ref=e3491]: February 3, 2024
+                      - generic [ref=e3492]:
+                        - paragraph [ref=e3493]: تاريخ الانتهاء
+                        - paragraph [ref=e3494]: August 31, 2024
+                      - generic [ref=e3495]:
+                        - paragraph [ref=e3496]: القيمة الشهرية
+                        - paragraph [ref=e3497]: 0 ر.ق
+                    - generic [ref=e3498]:
+                      - button "عرض" [ref=e3499]:
+                        - img [ref=e3500]
+                        - text: عرض
+                      - button "تعديل" [ref=e3503]:
+                        - img [ref=e3504]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3507]:
+                        - img [ref=e3508]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3513]:
+                        - img [ref=e3514]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3518]:
+                        - img [ref=e3519]
+                        - text: المزيد
+                  - generic [ref=e3523] [cursor=pointer]:
+                    - generic [ref=e3524]:
+                      - generic [ref=e3525]:
+                        - img [ref=e3527]
+                        - generic [ref=e3530]:
+                          - heading "LTO2024113" [level=4] [ref=e3531]
+                          - generic [ref=e3532]:
+                            - img [ref=e3533]
+                            - generic [ref=e3536]: mokhtar alil
+                          - generic [ref=e3537]:
+                            - img [ref=e3538]
+                            - generic [ref=e3542]: Bestune B70 2023 | 893410
+                      - generic [ref=e3543]:
+                        - img [ref=e3544]
+                        - text: نشط
+                    - generic [ref=e3547]:
+                      - generic [ref=e3548]:
+                        - paragraph [ref=e3549]: تاريخ البداية
+                        - paragraph [ref=e3550]: April 2, 2024
+                      - generic [ref=e3551]:
+                        - paragraph [ref=e3552]: تاريخ الانتهاء
+                        - paragraph [ref=e3553]: May 1, 2027
+                      - generic [ref=e3554]:
+                        - paragraph [ref=e3555]: القيمة الشهرية
+                        - paragraph [ref=e3556]: 0 ر.ق
+                    - generic [ref=e3557]:
+                      - button "عرض" [ref=e3558]:
+                        - img [ref=e3559]
+                        - text: عرض
+                      - button "تعديل" [ref=e3562]:
+                        - img [ref=e3563]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3566]:
+                        - img [ref=e3567]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3572]:
+                        - img [ref=e3573]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3577]:
+                        - img [ref=e3578]
+                        - text: المزيد
+                  - generic [ref=e3582] [cursor=pointer]:
+                    - generic [ref=e3583]:
+                      - generic [ref=e3584]:
+                        - img [ref=e3586]
+                        - generic [ref=e3589]:
+                          - heading "AGR-202504-402280" [level=4] [ref=e3590]
+                          - generic [ref=e3591]:
+                            - img [ref=e3592]
+                            - generic [ref=e3595]: فادي السعيد
+                          - generic [ref=e3596]:
+                            - img [ref=e3597]
+                            - generic [ref=e3601]: Bestune B70s 2023 | 856715
+                      - generic [ref=e3602]:
+                        - img [ref=e3603]
+                        - text: نشط
+                    - generic [ref=e3606]:
+                      - generic [ref=e3607]:
+                        - paragraph [ref=e3608]: تاريخ البداية
+                        - paragraph [ref=e3609]: February 8, 2025
+                      - generic [ref=e3610]:
+                        - paragraph [ref=e3611]: تاريخ الانتهاء
+                        - paragraph [ref=e3612]: January 5, 2028
+                      - generic [ref=e3613]:
+                        - paragraph [ref=e3614]: القيمة الشهرية
+                        - paragraph [ref=e3615]: 1,700 ر.ق
+                    - generic [ref=e3616]:
+                      - button "عرض" [ref=e3617]:
+                        - img [ref=e3618]
+                        - text: عرض
+                      - button "تعديل" [ref=e3621]:
+                        - img [ref=e3622]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3625]:
+                        - img [ref=e3626]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3631]:
+                        - img [ref=e3632]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3636]:
+                        - img [ref=e3637]
+                        - text: المزيد
+                  - generic [ref=e3641] [cursor=pointer]:
+                    - generic [ref=e3642]:
+                      - generic [ref=e3643]:
+                        - img [ref=e3645]
+                        - generic [ref=e3648]:
+                          - heading "AGR-592533-558" [level=4] [ref=e3649]
+                          - generic [ref=e3650]:
+                            - img [ref=e3651]
+                            - generic [ref=e3654]: احمد عبدالله محمد
+                          - generic [ref=e3655]:
+                            - img [ref=e3656]
+                            - generic [ref=e3660]: Bestune T77 pro 2023 | 7041
+                      - generic [ref=e3661]:
+                        - img [ref=e3662]
+                        - text: نشط
+                    - generic [ref=e3665]:
+                      - generic [ref=e3666]:
+                        - paragraph [ref=e3667]: تاريخ البداية
+                        - paragraph [ref=e3668]: December 29, 2024
+                      - generic [ref=e3669]:
+                        - paragraph [ref=e3670]: تاريخ الانتهاء
+                        - paragraph [ref=e3671]: December 29, 2027
+                      - generic [ref=e3672]:
+                        - paragraph [ref=e3673]: القيمة الشهرية
+                        - paragraph [ref=e3674]: 1,550 ر.ق
+                    - generic [ref=e3675]:
+                      - button "عرض" [ref=e3676]:
+                        - img [ref=e3677]
+                        - text: عرض
+                      - button "تعديل" [ref=e3680]:
+                        - img [ref=e3681]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3684]:
+                        - img [ref=e3685]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3690]:
+                        - img [ref=e3691]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3695]:
+                        - img [ref=e3696]
+                        - text: المزيد
+                  - generic [ref=e3700] [cursor=pointer]:
+                    - generic [ref=e3701]:
+                      - generic [ref=e3702]:
+                        - img [ref=e3704]
+                        - generic [ref=e3707]:
+                          - heading "LT0RO02" [level=4] [ref=e3708]
+                          - generic [ref=e3709]:
+                            - img [ref=e3710]
+                            - generic [ref=e3713]: KHAMIS AL-JABOReeee
+                          - generic [ref=e3714]:
+                            - img [ref=e3715]
+                            - generic [ref=e3719]: Toyota Camry 2023 | TEST-123
+                      - generic [ref=e3720]:
+                        - img [ref=e3721]
+                        - text: ملغي
+                    - generic [ref=e3725]:
+                      - generic [ref=e3726]:
+                        - paragraph [ref=e3727]: تاريخ البداية
+                        - paragraph [ref=e3728]: June 8, 2025
+                      - generic [ref=e3729]:
+                        - paragraph [ref=e3730]: تاريخ الانتهاء
+                        - paragraph [ref=e3731]: September 30, 2025
+                      - generic [ref=e3732]:
+                        - paragraph [ref=e3733]: القيمة الشهرية
+                        - paragraph [ref=e3734]: 1,500 ر.ق
+                    - generic [ref=e3735]:
+                      - button "عرض" [ref=e3736]:
+                        - img [ref=e3737]
+                        - text: عرض
+                      - button "تعديل" [ref=e3740]:
+                        - img [ref=e3741]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3744]:
+                        - img [ref=e3745]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3750]:
+                        - img [ref=e3751]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3755]:
+                        - img [ref=e3756]
+                        - text: المزيد
+                  - generic [ref=e3760] [cursor=pointer]:
+                    - generic [ref=e3761]:
+                      - generic [ref=e3762]:
+                        - img [ref=e3764]
+                        - generic [ref=e3767]:
+                          - heading "LTO202494" [level=4] [ref=e3768]
+                          - generic [ref=e3769]:
+                            - img [ref=e3770]
+                            - generic [ref=e3773]: KOSAY HAMMAMI
+                          - generic [ref=e3774]:
+                            - img [ref=e3775]
+                            - generic [ref=e3779]: Bestune T33 2022 | 10197
+                      - generic [ref=e3780]:
+                        - img [ref=e3781]
+                        - text: نشط
+                    - generic [ref=e3784]:
+                      - generic [ref=e3785]:
+                        - paragraph [ref=e3786]: تاريخ البداية
+                        - paragraph [ref=e3787]: April 15, 2024
+                      - generic [ref=e3788]:
+                        - paragraph [ref=e3789]: تاريخ الانتهاء
+                        - paragraph [ref=e3790]: January 3, 2027
+                      - generic [ref=e3791]:
+                        - paragraph [ref=e3792]: القيمة الشهرية
+                        - paragraph [ref=e3793]: 0 ر.ق
+                    - generic [ref=e3794]:
+                      - button "عرض" [ref=e3795]:
+                        - img [ref=e3796]
+                        - text: عرض
+                      - button "تعديل" [ref=e3799]:
+                        - img [ref=e3800]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3803]:
+                        - img [ref=e3804]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3809]:
+                        - img [ref=e3810]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3814]:
+                        - img [ref=e3815]
+                        - text: المزيد
+                  - generic [ref=e3819] [cursor=pointer]:
+                    - generic [ref=e3820]:
+                      - generic [ref=e3821]:
+                        - img [ref=e3823]
+                        - generic [ref=e3826]:
+                          - heading "Ret-2018229" [level=4] [ref=e3827]
+                          - generic [ref=e3828]:
+                            - img [ref=e3829]
+                            - generic [ref=e3832]: snoonu snoonu
+                          - generic [ref=e3833]:
+                            - img [ref=e3834]
+                            - generic [ref=e3838]: MG5 MG5 2024 | 751340
+                      - generic [ref=e3839]:
+                        - img [ref=e3840]
+                        - text: ملغي
+                    - generic [ref=e3844]:
+                      - generic [ref=e3845]:
+                        - paragraph [ref=e3846]: تاريخ البداية
+                        - paragraph [ref=e3847]: June 6, 2024
+                      - generic [ref=e3848]:
+                        - paragraph [ref=e3849]: تاريخ الانتهاء
+                        - paragraph [ref=e3850]: August 31, 2024
+                      - generic [ref=e3851]:
+                        - paragraph [ref=e3852]: القيمة الشهرية
+                        - paragraph [ref=e3853]: 0 ر.ق
+                    - generic [ref=e3854]:
+                      - button "عرض" [ref=e3855]:
+                        - img [ref=e3856]
+                        - text: عرض
+                      - button "تعديل" [ref=e3859]:
+                        - img [ref=e3860]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3863]:
+                        - img [ref=e3864]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3869]:
+                        - img [ref=e3870]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3874]:
+                        - img [ref=e3875]
+                        - text: المزيد
+                  - generic [ref=e3879] [cursor=pointer]:
+                    - generic [ref=e3880]:
+                      - generic [ref=e3881]:
+                        - img [ref=e3883]
+                        - generic [ref=e3886]:
+                          - heading "LTO2024235" [level=4] [ref=e3887]
+                          - generic [ref=e3888]:
+                            - img [ref=e3889]
+                            - generic [ref=e3892]: amir ben fredj
+                          - generic [ref=e3893]:
+                            - img [ref=e3894]
+                            - generic [ref=e3898]: Bestune T77 2023 | 2773
+                      - generic [ref=e3899]:
+                        - img [ref=e3900]
+                        - text: نشط
+                    - generic [ref=e3903]:
+                      - generic [ref=e3904]:
+                        - paragraph [ref=e3905]: تاريخ البداية
+                        - paragraph [ref=e3906]: February 7, 2024
+                      - generic [ref=e3907]:
+                        - paragraph [ref=e3908]: تاريخ الانتهاء
+                        - paragraph [ref=e3909]: January 7, 2027
+                      - generic [ref=e3910]:
+                        - paragraph [ref=e3911]: القيمة الشهرية
+                        - paragraph [ref=e3912]: 0 ر.ق
+                    - generic [ref=e3913]:
+                      - button "عرض" [ref=e3914]:
+                        - img [ref=e3915]
+                        - text: عرض
+                      - button "تعديل" [ref=e3918]:
+                        - img [ref=e3919]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3922]:
+                        - img [ref=e3923]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3928]:
+                        - img [ref=e3929]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3933]:
+                        - img [ref=e3934]
+                        - text: المزيد
+                  - generic [ref=e3938] [cursor=pointer]:
+                    - generic [ref=e3939]:
+                      - generic [ref=e3940]:
+                        - img [ref=e3942]
+                        - generic [ref=e3945]:
+                          - heading "In2018166" [level=4] [ref=e3946]
+                          - generic [ref=e3947]:
+                            - img [ref=e3948]
+                            - generic [ref=e3951]: awol ibrahim
+                          - generic [ref=e3952]:
+                            - img [ref=e3953]
+                            - generic [ref=e3957]: changan Alsvin 2024 | 10669
+                      - generic [ref=e3958]:
+                        - img [ref=e3959]
+                        - text: نشط
+                    - generic [ref=e3962]:
+                      - generic [ref=e3963]:
+                        - paragraph [ref=e3964]: تاريخ البداية
+                        - paragraph [ref=e3965]: May 19, 2024
+                      - generic [ref=e3966]:
+                        - paragraph [ref=e3967]: تاريخ الانتهاء
+                        - paragraph [ref=e3968]: May 20, 2025
+                      - generic [ref=e3969]:
+                        - paragraph [ref=e3970]: القيمة الشهرية
+                        - paragraph [ref=e3971]: 0 ر.ق
+                    - generic [ref=e3972]:
+                      - button "عرض" [ref=e3973]:
+                        - img [ref=e3974]
+                        - text: عرض
+                      - button "تعديل" [ref=e3977]:
+                        - img [ref=e3978]
+                        - text: تعديل
+                      - button "تجديد" [ref=e3981]:
+                        - img [ref=e3982]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e3987]:
+                        - img [ref=e3988]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e3992]:
+                        - img [ref=e3993]
+                        - text: المزيد
+                  - generic [ref=e3997] [cursor=pointer]:
+                    - generic [ref=e3998]:
+                      - generic [ref=e3999]:
+                        - img [ref=e4001]
+                        - generic [ref=e4004]:
+                          - heading "LTO2024271" [level=4] [ref=e4005]
+                          - generic [ref=e4006]:
+                            - img [ref=e4007]
+                            - generic [ref=e4010]: ahmed elwasila
+                          - generic [ref=e4011]:
+                            - img [ref=e4012]
+                            - generic [ref=e4016]: Bestune T33 2022 | 10189
+                      - generic [ref=e4017]:
+                        - img [ref=e4018]
+                        - text: نشط
+                    - generic [ref=e4021]:
+                      - generic [ref=e4022]:
+                        - paragraph [ref=e4023]: تاريخ البداية
+                        - paragraph [ref=e4024]: October 8, 2024
+                      - generic [ref=e4025]:
+                        - paragraph [ref=e4026]: تاريخ الانتهاء
+                        - paragraph [ref=e4027]: January 7, 2027
+                      - generic [ref=e4028]:
+                        - paragraph [ref=e4029]: القيمة الشهرية
+                        - paragraph [ref=e4030]: 1,250 ر.ق
+                    - generic [ref=e4031]:
+                      - button "عرض" [ref=e4032]:
+                        - img [ref=e4033]
+                        - text: عرض
+                      - button "تعديل" [ref=e4036]:
+                        - img [ref=e4037]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4040]:
+                        - img [ref=e4041]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4046]:
+                        - img [ref=e4047]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4051]:
+                        - img [ref=e4052]
+                        - text: المزيد
+                  - generic [ref=e4056] [cursor=pointer]:
+                    - generic [ref=e4057]:
+                      - generic [ref=e4058]:
+                        - img [ref=e4060]
+                        - generic [ref=e4063]:
+                          - heading "AGR-202502-0426" [level=4] [ref=e4064]
+                          - generic [ref=e4065]:
+                            - img [ref=e4066]
+                            - generic [ref=e4069]: محمد العويني
+                          - generic [ref=e4070]:
+                            - img [ref=e4071]
+                            - generic [ref=e4075]: Bestune B70s 2023 | 21860
+                      - generic [ref=e4076]:
+                        - img [ref=e4077]
+                        - text: نشط
+                    - generic [ref=e4080]:
+                      - generic [ref=e4081]:
+                        - paragraph [ref=e4082]: تاريخ البداية
+                        - paragraph [ref=e4083]: February 16, 2025
+                      - generic [ref=e4084]:
+                        - paragraph [ref=e4085]: تاريخ الانتهاء
+                        - paragraph [ref=e4086]: November 16, 2035
+                      - generic [ref=e4087]:
+                        - paragraph [ref=e4088]: القيمة الشهرية
+                        - paragraph [ref=e4089]: 1,600 ر.ق
+                    - generic [ref=e4090]:
+                      - button "عرض" [ref=e4091]:
+                        - img [ref=e4092]
+                        - text: عرض
+                      - button "تعديل" [ref=e4095]:
+                        - img [ref=e4096]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4099]:
+                        - img [ref=e4100]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4105]:
+                        - img [ref=e4106]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4110]:
+                        - img [ref=e4111]
+                        - text: المزيد
+                  - generic [ref=e4115] [cursor=pointer]:
+                    - generic [ref=e4116]:
+                      - generic [ref=e4117]:
+                        - img [ref=e4119]
+                        - generic [ref=e4122]:
+                          - heading "In2018115" [level=4] [ref=e4123]
+                          - generic [ref=e4124]:
+                            - img [ref=e4125]
+                            - generic [ref=e4128]: emmanuel darko
+                          - generic [ref=e4129]:
+                            - img [ref=e4130]
+                            - generic [ref=e4134]: MG5 MG5 2024 | 746956
+                      - generic [ref=e4135]:
+                        - img [ref=e4136]
+                        - text: ملغي
+                    - generic [ref=e4140]:
+                      - generic [ref=e4141]:
+                        - paragraph [ref=e4142]: تاريخ البداية
+                        - paragraph [ref=e4143]: February 29, 2024
+                      - generic [ref=e4144]:
+                        - paragraph [ref=e4145]: تاريخ الانتهاء
+                        - paragraph [ref=e4146]: May 1, 2024
+                      - generic [ref=e4147]:
+                        - paragraph [ref=e4148]: القيمة الشهرية
+                        - paragraph [ref=e4149]: 0 ر.ق
+                    - generic [ref=e4150]:
+                      - button "عرض" [ref=e4151]:
+                        - img [ref=e4152]
+                        - text: عرض
+                      - button "تعديل" [ref=e4155]:
+                        - img [ref=e4156]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4159]:
+                        - img [ref=e4160]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4165]:
+                        - img [ref=e4166]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4170]:
+                        - img [ref=e4171]
+                        - text: المزيد
+                  - generic [ref=e4175] [cursor=pointer]:
+                    - generic [ref=e4176]:
+                      - generic [ref=e4177]:
+                        - img [ref=e4179]
+                        - generic [ref=e4182]:
+                          - heading "MR202489" [level=4] [ref=e4183]
+                          - generic [ref=e4184]:
+                            - img [ref=e4185]
+                            - generic [ref=e4188]: samuel yeboah
+                          - generic [ref=e4189]:
+                            - img [ref=e4190]
+                            - generic [ref=e4194]: MG5 MG5 2024 | 754436
+                      - generic [ref=e4195]:
+                        - img [ref=e4196]
+                        - text: ملغي
+                    - generic [ref=e4200]:
+                      - generic [ref=e4201]:
+                        - paragraph [ref=e4202]: تاريخ البداية
+                        - paragraph [ref=e4203]: February 10, 2024
+                      - generic [ref=e4204]:
+                        - paragraph [ref=e4205]: تاريخ الانتهاء
+                        - paragraph [ref=e4206]: May 1, 2024
+                      - generic [ref=e4207]:
+                        - paragraph [ref=e4208]: القيمة الشهرية
+                        - paragraph [ref=e4209]: 0 ر.ق
+                    - generic [ref=e4210]:
+                      - button "عرض" [ref=e4211]:
+                        - img [ref=e4212]
+                        - text: عرض
+                      - button "تعديل" [ref=e4215]:
+                        - img [ref=e4216]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4219]:
+                        - img [ref=e4220]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4225]:
+                        - img [ref=e4226]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4230]:
+                        - img [ref=e4231]
+                        - text: المزيد
+                  - generic [ref=e4235] [cursor=pointer]:
+                    - generic [ref=e4236]:
+                      - generic [ref=e4237]:
+                        - img [ref=e4239]
+                        - generic [ref=e4242]:
+                          - heading "MR202482" [level=4] [ref=e4243]
+                          - generic [ref=e4244]:
+                            - img [ref=e4245]
+                            - generic [ref=e4248]: josef ado
+                          - generic [ref=e4249]:
+                            - img [ref=e4250]
+                            - generic [ref=e4254]: changan Alsvin 2024 | 10855
+                      - generic [ref=e4255]:
+                        - img [ref=e4256]
+                        - text: نشط
+                    - generic [ref=e4259]:
+                      - generic [ref=e4260]:
+                        - paragraph [ref=e4261]: تاريخ البداية
+                        - paragraph [ref=e4262]: January 2, 2024
+                      - generic [ref=e4263]:
+                        - paragraph [ref=e4264]: تاريخ الانتهاء
+                        - paragraph [ref=e4265]: May 1, 2024
+                      - generic [ref=e4266]:
+                        - paragraph [ref=e4267]: القيمة الشهرية
+                        - paragraph [ref=e4268]: 0 ر.ق
+                    - generic [ref=e4269]:
+                      - button "عرض" [ref=e4270]:
+                        - img [ref=e4271]
+                        - text: عرض
+                      - button "تعديل" [ref=e4274]:
+                        - img [ref=e4275]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4278]:
+                        - img [ref=e4279]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4284]:
+                        - img [ref=e4285]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4289]:
+                        - img [ref=e4290]
+                        - text: المزيد
+                  - generic [ref=e4294] [cursor=pointer]:
+                    - generic [ref=e4295]:
+                      - generic [ref=e4296]:
+                        - img [ref=e4298]
+                        - generic [ref=e4301]:
+                          - heading "LTO202443" [level=4] [ref=e4302]
+                          - generic [ref=e4303]:
+                            - img [ref=e4304]
+                            - generic [ref=e4307]: Mohammad ibrar Abdul hanan
+                          - generic [ref=e4308]:
+                            - img [ref=e4309]
+                            - generic [ref=e4313]: GAC GS3 2024 | 8208
+                      - generic [ref=e4314]:
+                        - img [ref=e4315]
+                        - text: نشط
+                    - generic [ref=e4318]:
+                      - generic [ref=e4319]:
+                        - paragraph [ref=e4320]: تاريخ البداية
+                        - paragraph [ref=e4321]: January 15, 2024
+                      - generic [ref=e4322]:
+                        - paragraph [ref=e4323]: تاريخ الانتهاء
+                        - paragraph [ref=e4324]: August 15, 2026
+                      - generic [ref=e4325]:
+                        - paragraph [ref=e4326]: القيمة الشهرية
+                        - paragraph [ref=e4327]: 0 ر.ق
+                    - generic [ref=e4328]:
+                      - button "عرض" [ref=e4329]:
+                        - img [ref=e4330]
+                        - text: عرض
+                      - button "تعديل" [ref=e4333]:
+                        - img [ref=e4334]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4337]:
+                        - img [ref=e4338]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4343]:
+                        - img [ref=e4344]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4348]:
+                        - img [ref=e4349]
+                        - text: المزيد
+                  - generic [ref=e4353] [cursor=pointer]:
+                    - generic [ref=e4354]:
+                      - generic [ref=e4355]:
+                        - img [ref=e4357]
+                        - generic [ref=e4360]:
+                          - heading "MR202479" [level=4] [ref=e4361]
+                          - generic [ref=e4362]:
+                            - img [ref=e4363]
+                            - generic [ref=e4366]: emmanuel darko
+                          - generic [ref=e4367]:
+                            - img [ref=e4368]
+                            - generic [ref=e4372]: Bestune T33 2022 | 10064
+                      - generic [ref=e4373]:
+                        - img [ref=e4374]
+                        - text: نشط
+                    - generic [ref=e4377]:
+                      - generic [ref=e4378]:
+                        - paragraph [ref=e4379]: تاريخ البداية
+                        - paragraph [ref=e4380]: February 29, 2024
+                      - generic [ref=e4381]:
+                        - paragraph [ref=e4382]: تاريخ الانتهاء
+                        - paragraph [ref=e4383]: January 5, 2024
+                      - generic [ref=e4384]:
+                        - paragraph [ref=e4385]: القيمة الشهرية
+                        - paragraph [ref=e4386]: 0 ر.ق
+                    - generic [ref=e4387]:
+                      - button "عرض" [ref=e4388]:
+                        - img [ref=e4389]
+                        - text: عرض
+                      - button "تعديل" [ref=e4392]:
+                        - img [ref=e4393]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4396]:
+                        - img [ref=e4397]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4402]:
+                        - img [ref=e4403]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4407]:
+                        - img [ref=e4408]
+                        - text: المزيد
+                  - generic [ref=e4412] [cursor=pointer]:
+                    - generic [ref=e4413]:
+                      - generic [ref=e4414]:
+                        - img [ref=e4416]
+                        - generic [ref=e4419]:
+                          - heading "MR202477" [level=4] [ref=e4420]
+                          - generic [ref=e4421]:
+                            - img [ref=e4422]
+                            - generic [ref=e4425]: shadrack saky
+                          - generic [ref=e4426]:
+                            - img [ref=e4427]
+                            - generic [ref=e4431]: MG5 MG5 2024 | 749403
+                      - generic [ref=e4432]:
+                        - img [ref=e4433]
+                        - text: ملغي
+                    - generic [ref=e4437]:
+                      - generic [ref=e4438]:
+                        - paragraph [ref=e4439]: تاريخ البداية
+                        - paragraph [ref=e4440]: February 10, 2024
+                      - generic [ref=e4441]:
+                        - paragraph [ref=e4442]: تاريخ الانتهاء
+                        - paragraph [ref=e4443]: May 1, 2024
+                      - generic [ref=e4444]:
+                        - paragraph [ref=e4445]: القيمة الشهرية
+                        - paragraph [ref=e4446]: 0 ر.ق
+                    - generic [ref=e4447]:
+                      - button "عرض" [ref=e4448]:
+                        - img [ref=e4449]
+                        - text: عرض
+                      - button "تعديل" [ref=e4452]:
+                        - img [ref=e4453]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4456]:
+                        - img [ref=e4457]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4462]:
+                        - img [ref=e4463]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4467]:
+                        - img [ref=e4468]
+                        - text: المزيد
+                  - generic [ref=e4472] [cursor=pointer]:
+                    - generic [ref=e4473]:
+                      - generic [ref=e4474]:
+                        - img [ref=e4476]
+                        - generic [ref=e4479]:
+                          - heading "LTO2024237" [level=4] [ref=e4480]
+                          - generic [ref=e4481]:
+                            - img [ref=e4482]
+                            - generic [ref=e4485]: hany mohamed
+                          - generic [ref=e4486]:
+                            - img [ref=e4487]
+                            - generic [ref=e4491]: GAC GS3 2024 | 8208
+                      - generic [ref=e4492]:
+                        - img [ref=e4493]
+                        - text: نشط
+                    - generic [ref=e4496]:
+                      - generic [ref=e4497]:
+                        - paragraph [ref=e4498]: تاريخ البداية
+                        - paragraph [ref=e4499]: July 6, 2024
+                      - generic [ref=e4500]:
+                        - paragraph [ref=e4501]: تاريخ الانتهاء
+                        - paragraph [ref=e4502]: July 7, 2027
+                      - generic [ref=e4503]:
+                        - paragraph [ref=e4504]: القيمة الشهرية
+                        - paragraph [ref=e4505]: 0 ر.ق
+                    - generic [ref=e4506]:
+                      - button "عرض" [ref=e4507]:
+                        - img [ref=e4508]
+                        - text: عرض
+                      - button "تعديل" [ref=e4511]:
+                        - img [ref=e4512]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4515]:
+                        - img [ref=e4516]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4521]:
+                        - img [ref=e4522]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4526]:
+                        - img [ref=e4527]
+                        - text: المزيد
+                  - generic [ref=e4531] [cursor=pointer]:
+                    - generic [ref=e4532]:
+                      - generic [ref=e4533]:
+                        - img [ref=e4535]
+                        - generic [ref=e4538]:
+                          - heading "LTO2024239" [level=4] [ref=e4539]
+                          - generic [ref=e4540]:
+                            - img [ref=e4541]
+                            - generic [ref=e4544]: محمد بابكر محمد علي يوسف
+                          - generic [ref=e4545]:
+                            - img [ref=e4546]
+                            - generic [ref=e4550]: changan Alsvin 2024 | 10669
+                      - generic [ref=e4551]:
+                        - img [ref=e4552]
+                        - text: نشط
+                    - generic [ref=e4555]:
+                      - generic [ref=e4556]:
+                        - paragraph [ref=e4557]: تاريخ البداية
+                        - paragraph [ref=e4558]: July 8, 2024
+                      - generic [ref=e4559]:
+                        - paragraph [ref=e4560]: تاريخ الانتهاء
+                        - paragraph [ref=e4561]: July 9, 2027
+                      - generic [ref=e4562]:
+                        - paragraph [ref=e4563]: القيمة الشهرية
+                        - paragraph [ref=e4564]: 1,650 ر.ق
+                    - generic [ref=e4565]:
+                      - button "عرض" [ref=e4566]:
+                        - img [ref=e4567]
+                        - text: عرض
+                      - button "تعديل" [ref=e4570]:
+                        - img [ref=e4571]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4574]:
+                        - img [ref=e4575]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4580]:
+                        - img [ref=e4581]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4585]:
+                        - img [ref=e4586]
+                        - text: المزيد
+                  - generic [ref=e4590] [cursor=pointer]:
+                    - generic [ref=e4591]:
+                      - generic [ref=e4592]:
+                        - img [ref=e4594]
+                        - generic [ref=e4597]:
+                          - heading "LTO2024289" [level=4] [ref=e4598]
+                          - generic [ref=e4599]:
+                            - img [ref=e4600]
+                            - generic [ref=e4603]: mahmoud jassem alsaleh
+                          - generic [ref=e4604]:
+                            - img [ref=e4605]
+                            - generic [ref=e4609]: Bestune T77 2023 | 2769
+                      - generic [ref=e4610]:
+                        - img [ref=e4611]
+                        - text: نشط
+                    - generic [ref=e4614]:
+                      - generic [ref=e4615]:
+                        - paragraph [ref=e4616]: تاريخ البداية
+                        - paragraph [ref=e4617]: September 4, 2024
+                      - generic [ref=e4618]:
+                        - paragraph [ref=e4619]: تاريخ الانتهاء
+                        - paragraph [ref=e4620]: August 1, 2027
+                      - generic [ref=e4621]:
+                        - paragraph [ref=e4622]: القيمة الشهرية
+                        - paragraph [ref=e4623]: 0 ر.ق
+                    - generic [ref=e4624]:
+                      - button "عرض" [ref=e4625]:
+                        - img [ref=e4626]
+                        - text: عرض
+                      - button "تعديل" [ref=e4629]:
+                        - img [ref=e4630]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4633]:
+                        - img [ref=e4634]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4639]:
+                        - img [ref=e4640]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4644]:
+                        - img [ref=e4645]
+                        - text: المزيد
+                  - generic [ref=e4649] [cursor=pointer]:
+                    - generic [ref=e4650]:
+                      - generic [ref=e4651]:
+                        - img [ref=e4653]
+                        - generic [ref=e4656]:
+                          - heading "LTO2024244" [level=4] [ref=e4657]
+                          - generic [ref=e4658]:
+                            - img [ref=e4659]
+                            - generic [ref=e4662]: ايهاب عبد الله
+                          - generic [ref=e4663]:
+                            - img [ref=e4664]
+                            - generic [ref=e4668]: Bestune B70s 2023 | 856715
+                      - generic [ref=e4669]:
+                        - img [ref=e4670]
+                        - text: نشط
+                    - generic [ref=e4673]:
+                      - generic [ref=e4674]:
+                        - paragraph [ref=e4675]: تاريخ البداية
+                        - paragraph [ref=e4676]: July 10, 2024
+                      - generic [ref=e4677]:
+                        - paragraph [ref=e4678]: تاريخ الانتهاء
+                        - paragraph [ref=e4679]: September 1, 2027
+                      - generic [ref=e4680]:
+                        - paragraph [ref=e4681]: القيمة الشهرية
+                        - paragraph [ref=e4682]: 1,786 ر.ق
+                    - generic [ref=e4683]:
+                      - button "عرض" [ref=e4684]:
+                        - img [ref=e4685]
+                        - text: عرض
+                      - button "تعديل" [ref=e4688]:
+                        - img [ref=e4689]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4692]:
+                        - img [ref=e4693]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4698]:
+                        - img [ref=e4699]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4703]:
+                        - img [ref=e4704]
+                        - text: المزيد
+                  - generic [ref=e4708] [cursor=pointer]:
+                    - generic [ref=e4709]:
+                      - generic [ref=e4710]:
+                        - img [ref=e4712]
+                        - generic [ref=e4715]:
+                          - heading "In2018172" [level=4] [ref=e4716]
+                          - generic [ref=e4717]:
+                            - img [ref=e4718]
+                            - generic [ref=e4721]: sead logomo
+                          - generic [ref=e4722]:
+                            - img [ref=e4723]
+                            - generic [ref=e4727]: MG5 MG5 2024 | 749403
+                      - generic [ref=e4728]:
+                        - img [ref=e4729]
+                        - text: ملغي
+                    - generic [ref=e4733]:
+                      - generic [ref=e4734]:
+                        - paragraph [ref=e4735]: تاريخ البداية
+                        - paragraph [ref=e4736]: May 23, 2024
+                      - generic [ref=e4737]:
+                        - paragraph [ref=e4738]: تاريخ الانتهاء
+                        - paragraph [ref=e4739]: May 24, 2025
+                      - generic [ref=e4740]:
+                        - paragraph [ref=e4741]: القيمة الشهرية
+                        - paragraph [ref=e4742]: 0 ر.ق
+                    - generic [ref=e4743]:
+                      - button "عرض" [ref=e4744]:
+                        - img [ref=e4745]
+                        - text: عرض
+                      - button "تعديل" [ref=e4748]:
+                        - img [ref=e4749]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4752]:
+                        - img [ref=e4753]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4758]:
+                        - img [ref=e4759]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4763]:
+                        - img [ref=e4764]
+                        - text: المزيد
+                  - generic [ref=e4768] [cursor=pointer]:
+                    - generic [ref=e4769]:
+                      - generic [ref=e4770]:
+                        - img [ref=e4772]
+                        - generic [ref=e4775]:
+                          - heading "LTO202454" [level=4] [ref=e4776]
+                          - generic [ref=e4777]:
+                            - img [ref=e4778]
+                            - generic [ref=e4781]: VARUN KUMAR C CHAUHAN
+                          - generic [ref=e4782]:
+                            - img [ref=e4783]
+                            - generic [ref=e4787]: Bestune B70s 2023 | 856925
+                      - generic [ref=e4788]:
+                        - img [ref=e4789]
+                        - text: نشط
+                    - generic [ref=e4792]:
+                      - generic [ref=e4793]:
+                        - paragraph [ref=e4794]: تاريخ البداية
+                        - paragraph [ref=e4795]: March 12, 2024
+                      - generic [ref=e4796]:
+                        - paragraph [ref=e4797]: تاريخ الانتهاء
+                        - paragraph [ref=e4798]: March 12, 2027
+                      - generic [ref=e4799]:
+                        - paragraph [ref=e4800]: القيمة الشهرية
+                        - paragraph [ref=e4801]: 0 ر.ق
+                    - generic [ref=e4802]:
+                      - button "عرض" [ref=e4803]:
+                        - img [ref=e4804]
+                        - text: عرض
+                      - button "تعديل" [ref=e4807]:
+                        - img [ref=e4808]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4811]:
+                        - img [ref=e4812]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4817]:
+                        - img [ref=e4818]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4822]:
+                        - img [ref=e4823]
+                        - text: المزيد
+                  - generic [ref=e4827] [cursor=pointer]:
+                    - generic [ref=e4828]:
+                      - generic [ref=e4829]:
+                        - img [ref=e4831]
+                        - generic [ref=e4834]:
+                          - heading "Ret-2018208" [level=4] [ref=e4835]
+                          - generic [ref=e4836]:
+                            - img [ref=e4837]
+                            - generic [ref=e4840]: snoonu snoonu
+                          - generic [ref=e4841]:
+                            - img [ref=e4842]
+                            - generic [ref=e4846]: Bestune B70 2023 | 706150
+                      - generic [ref=e4847]:
+                        - img [ref=e4848]
+                        - text: ملغي
+                    - generic [ref=e4852]:
+                      - generic [ref=e4853]:
+                        - paragraph [ref=e4854]: تاريخ البداية
+                        - paragraph [ref=e4855]: June 2, 2024
+                      - generic [ref=e4856]:
+                        - paragraph [ref=e4857]: تاريخ الانتهاء
+                        - paragraph [ref=e4858]: August 31, 2024
+                      - generic [ref=e4859]:
+                        - paragraph [ref=e4860]: القيمة الشهرية
+                        - paragraph [ref=e4861]: 0 ر.ق
+                    - generic [ref=e4862]:
+                      - button "عرض" [ref=e4863]:
+                        - img [ref=e4864]
+                        - text: عرض
+                      - button "تعديل" [ref=e4867]:
+                        - img [ref=e4868]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4871]:
+                        - img [ref=e4872]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4877]:
+                        - img [ref=e4878]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4882]:
+                        - img [ref=e4883]
+                        - text: المزيد
+                  - generic [ref=e4887] [cursor=pointer]:
+                    - generic [ref=e4888]:
+                      - generic [ref=e4889]:
+                        - img [ref=e4891]
+                        - generic [ref=e4894]:
+                          - heading "AGR-202504-423180" [level=4] [ref=e4895]
+                          - generic [ref=e4896]:
+                            - img [ref=e4897]
+                            - generic [ref=e4900]: عبد الله برهام
+                          - generic [ref=e4901]:
+                            - img [ref=e4902]
+                            - generic [ref=e4906]: Bestune T77 pro 2023 | 7039
+                      - generic [ref=e4907]:
+                        - img [ref=e4908]
+                        - text: ملغي
+                    - generic [ref=e4912]:
+                      - generic [ref=e4913]:
+                        - paragraph [ref=e4914]: تاريخ البداية
+                        - paragraph [ref=e4915]: April 1, 2025
+                      - generic [ref=e4916]:
+                        - paragraph [ref=e4917]: تاريخ الانتهاء
+                        - paragraph [ref=e4918]: February 7, 2028
+                      - generic [ref=e4919]:
+                        - paragraph [ref=e4920]: القيمة الشهرية
+                        - paragraph [ref=e4921]: 1,600 ر.ق
+                    - generic [ref=e4922]:
+                      - button "عرض" [ref=e4923]:
+                        - img [ref=e4924]
+                        - text: عرض
+                      - button "تعديل" [ref=e4927]:
+                        - img [ref=e4928]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4931]:
+                        - img [ref=e4932]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4937]:
+                        - img [ref=e4938]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e4942]:
+                        - img [ref=e4943]
+                        - text: المزيد
+                  - generic [ref=e4947] [cursor=pointer]:
+                    - generic [ref=e4948]:
+                      - generic [ref=e4949]:
+                        - img [ref=e4951]
+                        - generic [ref=e4954]:
+                          - heading "AGR-202504-424958" [level=4] [ref=e4955]
+                          - generic [ref=e4956]:
+                            - img [ref=e4957]
+                            - generic [ref=e4960]: محمد محمد احمد
+                          - generic [ref=e4961]:
+                            - img [ref=e4962]
+                            - generic [ref=e4966]: Bestune T77 2023 | 2766
+                      - generic [ref=e4967]:
+                        - img [ref=e4968]
+                        - text: ملغي
+                    - generic [ref=e4972]:
+                      - generic [ref=e4973]:
+                        - paragraph [ref=e4974]: تاريخ البداية
+                        - paragraph [ref=e4975]: February 1, 2025
+                      - generic [ref=e4976]:
+                        - paragraph [ref=e4977]: تاريخ الانتهاء
+                        - paragraph [ref=e4978]: February 10, 2028
+                      - generic [ref=e4979]:
+                        - paragraph [ref=e4980]: القيمة الشهرية
+                        - paragraph [ref=e4981]: 1,650 ر.ق
+                    - generic [ref=e4982]:
+                      - button "عرض" [ref=e4983]:
+                        - img [ref=e4984]
+                        - text: عرض
+                      - button "تعديل" [ref=e4987]:
+                        - img [ref=e4988]
+                        - text: تعديل
+                      - button "تجديد" [ref=e4991]:
+                        - img [ref=e4992]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e4997]:
+                        - img [ref=e4998]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5002]:
+                        - img [ref=e5003]
+                        - text: المزيد
+                  - generic [ref=e5007] [cursor=pointer]:
+                    - generic [ref=e5008]:
+                      - generic [ref=e5009]:
+                        - img [ref=e5011]
+                        - generic [ref=e5014]:
+                          - heading "LTO202437" [level=4] [ref=e5015]
+                          - generic [ref=e5016]:
+                            - img [ref=e5017]
+                            - generic [ref=e5020]: Hamza BADOU
+                          - generic [ref=e5021]:
+                            - img [ref=e5022]
+                            - generic [ref=e5026]: Bestune B70 2023 | 676281
+                      - generic [ref=e5027]:
+                        - img [ref=e5028]
+                        - text: نشط
+                    - generic [ref=e5031]:
+                      - generic [ref=e5032]:
+                        - paragraph [ref=e5033]: تاريخ البداية
+                        - paragraph [ref=e5034]: January 1, 2024
+                      - generic [ref=e5035]:
+                        - paragraph [ref=e5036]: تاريخ الانتهاء
+                        - paragraph [ref=e5037]: January 1, 2027
+                      - generic [ref=e5038]:
+                        - paragraph [ref=e5039]: القيمة الشهرية
+                        - paragraph [ref=e5040]: 1,060 ر.ق
+                    - generic [ref=e5041]:
+                      - button "عرض" [ref=e5042]:
+                        - img [ref=e5043]
+                        - text: عرض
+                      - button "تعديل" [ref=e5046]:
+                        - img [ref=e5047]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5050]:
+                        - img [ref=e5051]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5056]:
+                        - img [ref=e5057]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5061]:
+                        - img [ref=e5062]
+                        - text: المزيد
+                  - generic [ref=e5066] [cursor=pointer]:
+                    - generic [ref=e5067]:
+                      - generic [ref=e5068]:
+                        - img [ref=e5070]
+                        - generic [ref=e5073]:
+                          - heading "AGR-202504-415263" [level=4] [ref=e5074]
+                          - generic [ref=e5075]:
+                            - img [ref=e5076]
+                            - generic [ref=e5079]: عبد الصمد بن عزوز
+                          - generic [ref=e5080]:
+                            - img [ref=e5081]
+                            - generic [ref=e5085]: Bestune B70 2023 | 893409
+                      - generic [ref=e5086]:
+                        - img [ref=e5087]
+                        - text: نشط
+                    - generic [ref=e5090]:
+                      - generic [ref=e5091]:
+                        - paragraph [ref=e5092]: تاريخ البداية
+                        - paragraph [ref=e5093]: March 1, 2025
+                      - generic [ref=e5094]:
+                        - paragraph [ref=e5095]: تاريخ الانتهاء
+                        - paragraph [ref=e5096]: January 25, 2028
+                      - generic [ref=e5097]:
+                        - paragraph [ref=e5098]: القيمة الشهرية
+                        - paragraph [ref=e5099]: 1,650 ر.ق
+                    - generic [ref=e5100]:
+                      - button "عرض" [ref=e5101]:
+                        - img [ref=e5102]
+                        - text: عرض
+                      - button "تعديل" [ref=e5105]:
+                        - img [ref=e5106]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5109]:
+                        - img [ref=e5110]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5115]:
+                        - img [ref=e5116]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5120]:
+                        - img [ref=e5121]
+                        - text: المزيد
+                  - generic [ref=e5125] [cursor=pointer]:
+                    - generic [ref=e5126]:
+                      - generic [ref=e5127]:
+                        - img [ref=e5129]
+                        - generic [ref=e5132]:
+                          - heading "LTO2024115" [level=4] [ref=e5133]
+                          - generic [ref=e5134]:
+                            - img [ref=e5135]
+                            - generic [ref=e5138]: YASSER SOLIMAN
+                          - generic [ref=e5139]:
+                            - img [ref=e5140]
+                            - generic [ref=e5144]: Bestune T77 pro 2023 | 7068
+                      - generic [ref=e5145]:
+                        - img [ref=e5146]
+                        - text: نشط
+                    - generic [ref=e5149]:
+                      - generic [ref=e5150]:
+                        - paragraph [ref=e5151]: تاريخ البداية
+                        - paragraph [ref=e5152]: April 4, 2024
+                      - generic [ref=e5153]:
+                        - paragraph [ref=e5154]: تاريخ الانتهاء
+                        - paragraph [ref=e5155]: March 4, 2027
+                      - generic [ref=e5156]:
+                        - paragraph [ref=e5157]: القيمة الشهرية
+                        - paragraph [ref=e5158]: 2,100 ر.ق
+                    - generic [ref=e5159]:
+                      - button "عرض" [ref=e5160]:
+                        - img [ref=e5161]
+                        - text: عرض
+                      - button "تعديل" [ref=e5164]:
+                        - img [ref=e5165]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5168]:
+                        - img [ref=e5169]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5174]:
+                        - img [ref=e5175]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5179]:
+                        - img [ref=e5180]
+                        - text: المزيد
+                  - generic [ref=e5184] [cursor=pointer]:
+                    - generic [ref=e5185]:
+                      - generic [ref=e5186]:
+                        - img [ref=e5188]
+                        - generic [ref=e5191]:
+                          - heading "LTO202430" [level=4] [ref=e5192]
+                          - generic [ref=e5193]:
+                            - img [ref=e5194]
+                            - generic [ref=e5197]: Hamza Serunga
+                          - generic [ref=e5198]:
+                            - img [ref=e5199]
+                            - generic [ref=e5203]: GAC GS3 2024 | 8205
+                      - generic [ref=e5204]:
+                        - img [ref=e5205]
+                        - text: نشط
+                    - generic [ref=e5208]:
+                      - generic [ref=e5209]:
+                        - paragraph [ref=e5210]: تاريخ البداية
+                        - paragraph [ref=e5211]: March 17, 2024
+                      - generic [ref=e5212]:
+                        - paragraph [ref=e5213]: تاريخ الانتهاء
+                        - paragraph [ref=e5214]: February 17, 2027
+                      - generic [ref=e5215]:
+                        - paragraph [ref=e5216]: القيمة الشهرية
+                        - paragraph [ref=e5217]: 0 ر.ق
+                    - generic [ref=e5218]:
+                      - button "عرض" [ref=e5219]:
+                        - img [ref=e5220]
+                        - text: عرض
+                      - button "تعديل" [ref=e5223]:
+                        - img [ref=e5224]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5227]:
+                        - img [ref=e5228]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5233]:
+                        - img [ref=e5234]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5238]:
+                        - img [ref=e5239]
+                        - text: المزيد
+                  - generic [ref=e5243] [cursor=pointer]:
+                    - generic [ref=e5244]:
+                      - generic [ref=e5245]:
+                        - img [ref=e5247]
+                        - generic [ref=e5250]:
+                          - heading "LTO202459" [level=4] [ref=e5251]
+                          - generic [ref=e5252]:
+                            - img [ref=e5253]
+                            - generic [ref=e5256]: Yassine Serhani
+                          - generic [ref=e5257]:
+                            - img [ref=e5258]
+                            - generic [ref=e5262]: Bestune T77 2023 | 2780
+                      - generic [ref=e5263]:
+                        - img [ref=e5264]
+                        - text: نشط
+                    - generic [ref=e5267]:
+                      - generic [ref=e5268]:
+                        - paragraph [ref=e5269]: تاريخ البداية
+                        - paragraph [ref=e5270]: December 29, 2023
+                      - generic [ref=e5271]:
+                        - paragraph [ref=e5272]: تاريخ الانتهاء
+                        - paragraph [ref=e5273]: June 29, 2026
+                      - generic [ref=e5274]:
+                        - paragraph [ref=e5275]: القيمة الشهرية
+                        - paragraph [ref=e5276]: 2,100 ر.ق
+                    - generic [ref=e5277]:
+                      - button "عرض" [ref=e5278]:
+                        - img [ref=e5279]
+                        - text: عرض
+                      - button "تعديل" [ref=e5282]:
+                        - img [ref=e5283]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5286]:
+                        - img [ref=e5287]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5292]:
+                        - img [ref=e5293]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5297]:
+                        - img [ref=e5298]
+                        - text: المزيد
+                  - generic [ref=e5302] [cursor=pointer]:
+                    - generic [ref=e5303]:
+                      - generic [ref=e5304]:
+                        - img [ref=e5306]
+                        - generic [ref=e5309]:
+                          - heading "Ret-2018203" [level=4] [ref=e5310]
+                          - generic [ref=e5311]:
+                            - img [ref=e5312]
+                            - generic [ref=e5315]: snoonu snoonu
+                          - generic [ref=e5316]:
+                            - img [ref=e5317]
+                            - generic [ref=e5321]: Bestune T77 2023 | 2777
+                      - generic [ref=e5322]:
+                        - img [ref=e5323]
+                        - text: نشط
+                    - generic [ref=e5326]:
+                      - generic [ref=e5327]:
+                        - paragraph [ref=e5328]: تاريخ البداية
+                        - paragraph [ref=e5329]: June 3, 2024
+                      - generic [ref=e5330]:
+                        - paragraph [ref=e5331]: تاريخ الانتهاء
+                        - paragraph [ref=e5332]: August 31, 2024
+                      - generic [ref=e5333]:
+                        - paragraph [ref=e5334]: القيمة الشهرية
+                        - paragraph [ref=e5335]: 0 ر.ق
+                    - generic [ref=e5336]:
+                      - button "عرض" [ref=e5337]:
+                        - img [ref=e5338]
+                        - text: عرض
+                      - button "تعديل" [ref=e5341]:
+                        - img [ref=e5342]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5345]:
+                        - img [ref=e5346]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5351]:
+                        - img [ref=e5352]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5356]:
+                        - img [ref=e5357]
+                        - text: المزيد
+                  - generic [ref=e5361] [cursor=pointer]:
+                    - generic [ref=e5362]:
+                      - generic [ref=e5363]:
+                        - img [ref=e5365]
+                        - generic [ref=e5368]:
+                          - heading "LTO2024301" [level=4] [ref=e5369]
+                          - generic [ref=e5370]:
+                            - img [ref=e5371]
+                            - generic [ref=e5374]: ahmed ali mohamed bakhit
+                          - generic [ref=e5375]:
+                            - img [ref=e5376]
+                            - generic [ref=e5380]: MG5 MG5 2024 | 821873
+                      - generic [ref=e5381]:
+                        - img [ref=e5382]
+                        - text: ملغي
+                    - generic [ref=e5386]:
+                      - generic [ref=e5387]:
+                        - paragraph [ref=e5388]: تاريخ البداية
+                        - paragraph [ref=e5389]: September 8, 2024
+                      - generic [ref=e5390]:
+                        - paragraph [ref=e5391]: تاريخ الانتهاء
+                        - paragraph [ref=e5392]: August 1, 2027
+                      - generic [ref=e5393]:
+                        - paragraph [ref=e5394]: القيمة الشهرية
+                        - paragraph [ref=e5395]: 0 ر.ق
+                    - generic [ref=e5396]:
+                      - button "عرض" [ref=e5397]:
+                        - img [ref=e5398]
+                        - text: عرض
+                      - button "تعديل" [ref=e5401]:
+                        - img [ref=e5402]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5405]:
+                        - img [ref=e5406]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5411]:
+                        - img [ref=e5412]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5416]:
+                        - img [ref=e5417]
+                        - text: المزيد
+                  - generic [ref=e5421] [cursor=pointer]:
+                    - generic [ref=e5422]:
+                      - generic [ref=e5423]:
+                        - img [ref=e5425]
+                        - generic [ref=e5428]:
+                          - heading "LTO2024269" [level=4] [ref=e5429]
+                          - generic [ref=e5430]:
+                            - img [ref=e5431]
+                            - generic [ref=e5434]: muhammad mahmood
+                          - generic [ref=e5435]:
+                            - img [ref=e5436]
+                            - generic [ref=e5440]: Bestune B70 2023 | 648144
+                      - generic [ref=e5441]:
+                        - img [ref=e5442]
+                        - text: نشط
+                    - generic [ref=e5445]:
+                      - generic [ref=e5446]:
+                        - paragraph [ref=e5447]: تاريخ البداية
+                        - paragraph [ref=e5448]: August 8, 2024
+                      - generic [ref=e5449]:
+                        - paragraph [ref=e5450]: تاريخ الانتهاء
+                        - paragraph [ref=e5451]: July 15, 2027
+                      - generic [ref=e5452]:
+                        - paragraph [ref=e5453]: القيمة الشهرية
+                        - paragraph [ref=e5454]: 0 ر.ق
+                    - generic [ref=e5455]:
+                      - button "عرض" [ref=e5456]:
+                        - img [ref=e5457]
+                        - text: عرض
+                      - button "تعديل" [ref=e5460]:
+                        - img [ref=e5461]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5464]:
+                        - img [ref=e5465]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5470]:
+                        - img [ref=e5471]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5475]:
+                        - img [ref=e5476]
+                        - text: المزيد
+                  - generic [ref=e5480] [cursor=pointer]:
+                    - generic [ref=e5481]:
+                      - generic [ref=e5482]:
+                        - img [ref=e5484]
+                        - generic [ref=e5487]:
+                          - heading "AGR-202504-405141" [level=4] [ref=e5488]
+                          - generic [ref=e5489]:
+                            - img [ref=e5490]
+                            - generic [ref=e5493]: عمر محمد الفكي
+                          - generic [ref=e5494]:
+                            - img [ref=e5495]
+                            - generic [ref=e5499]: GAC GS3 2024 | 8212
+                      - generic [ref=e5500]:
+                        - img [ref=e5501]
+                        - text: ملغي
+                    - generic [ref=e5505]:
+                      - generic [ref=e5506]:
+                        - paragraph [ref=e5507]: تاريخ البداية
+                        - paragraph [ref=e5508]: March 1, 2025
+                      - generic [ref=e5509]:
+                        - paragraph [ref=e5510]: تاريخ الانتهاء
+                        - paragraph [ref=e5511]: January 9, 2028
+                      - generic [ref=e5512]:
+                        - paragraph [ref=e5513]: القيمة الشهرية
+                        - paragraph [ref=e5514]: 1,600 ر.ق
+                    - generic [ref=e5515]:
+                      - button "عرض" [ref=e5516]:
+                        - img [ref=e5517]
+                        - text: عرض
+                      - button "تعديل" [ref=e5520]:
+                        - img [ref=e5521]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5524]:
+                        - img [ref=e5525]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5530]:
+                        - img [ref=e5531]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5535]:
+                        - img [ref=e5536]
+                        - text: المزيد
+                  - generic [ref=e5540] [cursor=pointer]:
+                    - generic [ref=e5541]:
+                      - generic [ref=e5542]:
+                        - img [ref=e5544]
+                        - generic [ref=e5547]:
+                          - heading "LTO2024334" [level=4] [ref=e5548]
+                          - generic [ref=e5549]:
+                            - img [ref=e5550]
+                            - generic [ref=e5553]: ahmed abdalla mahmoud abdalla mahmoud abdalla
+                          - generic [ref=e5554]:
+                            - img [ref=e5555]
+                            - generic [ref=e5559]: Bestune T77 pro 2023 | 7063
+                      - generic [ref=e5560]:
+                        - img [ref=e5561]
+                        - text: نشط
+                    - generic [ref=e5564]:
+                      - generic [ref=e5565]:
+                        - paragraph [ref=e5566]: تاريخ البداية
+                        - paragraph [ref=e5567]: November 9, 2024
+                      - generic [ref=e5568]:
+                        - paragraph [ref=e5569]: تاريخ الانتهاء
+                        - paragraph [ref=e5570]: October 1, 2027
+                      - generic [ref=e5571]:
+                        - paragraph [ref=e5572]: القيمة الشهرية
+                        - paragraph [ref=e5573]: 1,750 ر.ق
+                    - generic [ref=e5574]:
+                      - button "عرض" [ref=e5575]:
+                        - img [ref=e5576]
+                        - text: عرض
+                      - button "تعديل" [ref=e5579]:
+                        - img [ref=e5580]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5583]:
+                        - img [ref=e5584]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5589]:
+                        - img [ref=e5590]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5594]:
+                        - img [ref=e5595]
+                        - text: المزيد
+                  - generic [ref=e5599] [cursor=pointer]:
+                    - generic [ref=e5600]:
+                      - generic [ref=e5601]:
+                        - img [ref=e5603]
+                        - generic [ref=e5606]:
+                          - heading "AGR-202504-413489" [level=4] [ref=e5607]
+                          - generic [ref=e5608]:
+                            - img [ref=e5609]
+                            - generic [ref=e5612]: علم الدين جمعة
+                          - generic [ref=e5613]:
+                            - img [ref=e5614]
+                            - generic [ref=e5618]: Bestune T77 pro 2023 | 7056
+                      - generic [ref=e5619]:
+                        - img [ref=e5620]
+                        - text: نشط
+                    - generic [ref=e5623]:
+                      - generic [ref=e5624]:
+                        - paragraph [ref=e5625]: تاريخ البداية
+                        - paragraph [ref=e5626]: March 1, 2025
+                      - generic [ref=e5627]:
+                        - paragraph [ref=e5628]: تاريخ الانتهاء
+                        - paragraph [ref=e5629]: January 22, 2028
+                      - generic [ref=e5630]:
+                        - paragraph [ref=e5631]: القيمة الشهرية
+                        - paragraph [ref=e5632]: 1,500 ر.ق
+                    - generic [ref=e5633]:
+                      - button "عرض" [ref=e5634]:
+                        - img [ref=e5635]
+                        - text: عرض
+                      - button "تعديل" [ref=e5638]:
+                        - img [ref=e5639]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5642]:
+                        - img [ref=e5643]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5648]:
+                        - img [ref=e5649]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5653]:
+                        - img [ref=e5654]
+                        - text: المزيد
+                  - generic [ref=e5658] [cursor=pointer]:
+                    - generic [ref=e5659]:
+                      - generic [ref=e5660]:
+                        - img [ref=e5662]
+                        - generic [ref=e5665]:
+                          - heading "LTO2024313" [level=4] [ref=e5666]
+                          - generic [ref=e5667]:
+                            - img [ref=e5668]
+                            - generic [ref=e5671]: marwen safsafi
+                          - generic [ref=e5672]:
+                            - img [ref=e5673]
+                            - generic [ref=e5677]: Bestune T33 2022 | 9905
+                      - generic [ref=e5678]:
+                        - img [ref=e5679]
+                        - text: نشط
+                    - generic [ref=e5682]:
+                      - generic [ref=e5683]:
+                        - paragraph [ref=e5684]: تاريخ البداية
+                        - paragraph [ref=e5685]: October 4, 2024
+                      - generic [ref=e5686]:
+                        - paragraph [ref=e5687]: تاريخ الانتهاء
+                        - paragraph [ref=e5688]: December 1, 2024
+                      - generic [ref=e5689]:
+                        - paragraph [ref=e5690]: القيمة الشهرية
+                        - paragraph [ref=e5691]: 1,250 ر.ق
+                    - generic [ref=e5692]:
+                      - button "عرض" [ref=e5693]:
+                        - img [ref=e5694]
+                        - text: عرض
+                      - button "تعديل" [ref=e5697]:
+                        - img [ref=e5698]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5701]:
+                        - img [ref=e5702]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5707]:
+                        - img [ref=e5708]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5712]:
+                        - img [ref=e5713]
+                        - text: المزيد
+                  - generic [ref=e5717] [cursor=pointer]:
+                    - generic [ref=e5718]:
+                      - generic [ref=e5719]:
+                        - img [ref=e5721]
+                        - generic [ref=e5724]:
+                          - heading "LTO202413" [level=4] [ref=e5725]
+                          - generic [ref=e5726]:
+                            - img [ref=e5727]
+                            - generic [ref=e5730]: HAMIDA BOUZIANE
+                          - generic [ref=e5731]:
+                            - img [ref=e5732]
+                            - generic [ref=e5736]: Bestune T33 2022 | 721894
+                      - generic [ref=e5737]:
+                        - img [ref=e5738]
+                        - text: نشط
+                    - generic [ref=e5741]:
+                      - generic [ref=e5742]:
+                        - paragraph [ref=e5743]: تاريخ البداية
+                        - paragraph [ref=e5744]: February 14, 2024
+                      - generic [ref=e5745]:
+                        - paragraph [ref=e5746]: تاريخ الانتهاء
+                        - paragraph [ref=e5747]: February 14, 2027
+                      - generic [ref=e5748]:
+                        - paragraph [ref=e5749]: القيمة الشهرية
+                        - paragraph [ref=e5750]: 0 ر.ق
+                    - generic [ref=e5751]:
+                      - button "عرض" [ref=e5752]:
+                        - img [ref=e5753]
+                        - text: عرض
+                      - button "تعديل" [ref=e5756]:
+                        - img [ref=e5757]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5760]:
+                        - img [ref=e5761]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5766]:
+                        - img [ref=e5767]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5771]:
+                        - img [ref=e5772]
+                        - text: المزيد
+                  - generic [ref=e5776] [cursor=pointer]:
+                    - generic [ref=e5777]:
+                      - generic [ref=e5778]:
+                        - img [ref=e5780]
+                        - generic [ref=e5783]:
+                          - heading "247" [level=4] [ref=e5784]
+                          - generic [ref=e5785]:
+                            - img [ref=e5786]
+                            - generic [ref=e5789]: MOHAMMED ABDALLAH
+                          - generic [ref=e5790]:
+                            - img [ref=e5791]
+                            - generic [ref=e5795]: GAC GS3 2024 | 8207
+                      - generic [ref=e5796]:
+                        - img [ref=e5797]
+                        - text: نشط
+                    - generic [ref=e5800]:
+                      - generic [ref=e5801]:
+                        - paragraph [ref=e5802]: تاريخ البداية
+                        - paragraph [ref=e5803]: July 14, 2024
+                      - generic [ref=e5804]:
+                        - paragraph [ref=e5805]: تاريخ الانتهاء
+                        - paragraph [ref=e5806]: June 1, 2027
+                      - generic [ref=e5807]:
+                        - paragraph [ref=e5808]: القيمة الشهرية
+                        - paragraph [ref=e5809]: 1,700 ر.ق
+                    - generic [ref=e5810]:
+                      - button "عرض" [ref=e5811]:
+                        - img [ref=e5812]
+                        - text: عرض
+                      - button "تعديل" [ref=e5815]:
+                        - img [ref=e5816]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5819]:
+                        - img [ref=e5820]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5825]:
+                        - img [ref=e5826]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5830]:
+                        - img [ref=e5831]
+                        - text: المزيد
+                  - generic [ref=e5835] [cursor=pointer]:
+                    - generic [ref=e5836]:
+                      - generic [ref=e5837]:
+                        - img [ref=e5839]
+                        - generic [ref=e5842]:
+                          - heading "Ret-2018192" [level=4] [ref=e5843]
+                          - generic [ref=e5844]:
+                            - img [ref=e5845]
+                            - generic [ref=e5848]: snoonu snoonu
+                          - generic [ref=e5849]:
+                            - img [ref=e5850]
+                            - generic [ref=e5854]: Bestune T77 2023 | 2769
+                      - generic [ref=e5855]:
+                        - img [ref=e5856]
+                        - text: نشط
+                    - generic [ref=e5859]:
+                      - generic [ref=e5860]:
+                        - paragraph [ref=e5861]: تاريخ البداية
+                        - paragraph [ref=e5862]: June 2, 2024
+                      - generic [ref=e5863]:
+                        - paragraph [ref=e5864]: تاريخ الانتهاء
+                        - paragraph [ref=e5865]: August 31, 2024
+                      - generic [ref=e5866]:
+                        - paragraph [ref=e5867]: القيمة الشهرية
+                        - paragraph [ref=e5868]: 0 ر.ق
+                    - generic [ref=e5869]:
+                      - button "عرض" [ref=e5870]:
+                        - img [ref=e5871]
+                        - text: عرض
+                      - button "تعديل" [ref=e5874]:
+                        - img [ref=e5875]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5878]:
+                        - img [ref=e5879]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5884]:
+                        - img [ref=e5885]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5889]:
+                        - img [ref=e5890]
+                        - text: المزيد
+                  - generic [ref=e5894] [cursor=pointer]:
+                    - generic [ref=e5895]:
+                      - generic [ref=e5896]:
+                        - img [ref=e5898]
+                        - generic [ref=e5901]:
+                          - heading "LTO2024292" [level=4] [ref=e5902]
+                          - generic [ref=e5903]:
+                            - img [ref=e5904]
+                            - generic [ref=e5907]: mahamoud maan dabboussi
+                          - generic [ref=e5908]:
+                            - img [ref=e5909]
+                            - generic [ref=e5913]: Bestune T33 2022 | 721894
+                      - generic [ref=e5914]:
+                        - img [ref=e5915]
+                        - text: نشط
+                    - generic [ref=e5918]:
+                      - generic [ref=e5919]:
+                        - paragraph [ref=e5920]: تاريخ البداية
+                        - paragraph [ref=e5921]: September 5, 2024
+                      - generic [ref=e5922]:
+                        - paragraph [ref=e5923]: تاريخ الانتهاء
+                        - paragraph [ref=e5924]: August 1, 2027
+                      - generic [ref=e5925]:
+                        - paragraph [ref=e5926]: القيمة الشهرية
+                        - paragraph [ref=e5927]: 1,450 ر.ق
+                    - generic [ref=e5928]:
+                      - button "عرض" [ref=e5929]:
+                        - img [ref=e5930]
+                        - text: عرض
+                      - button "تعديل" [ref=e5933]:
+                        - img [ref=e5934]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5937]:
+                        - img [ref=e5938]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e5943]:
+                        - img [ref=e5944]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e5948]:
+                        - img [ref=e5949]
+                        - text: المزيد
+                  - generic [ref=e5953] [cursor=pointer]:
+                    - generic [ref=e5954]:
+                      - generic [ref=e5955]:
+                        - img [ref=e5957]
+                        - generic [ref=e5960]:
+                          - heading "MR202462" [level=4] [ref=e5961]
+                          - generic [ref=e5962]:
+                            - img [ref=e5963]
+                            - generic [ref=e5966]: osmane mohamed
+                          - generic [ref=e5967]:
+                            - img [ref=e5968]
+                            - generic [ref=e5972]: Bestune T77 pro 2023 | 7042
+                      - generic [ref=e5973]:
+                        - img [ref=e5974]
+                        - text: نشط
+                    - generic [ref=e5977]:
+                      - generic [ref=e5978]:
+                        - paragraph [ref=e5979]: تاريخ البداية
+                        - paragraph [ref=e5980]: January 8, 2024
+                      - generic [ref=e5981]:
+                        - paragraph [ref=e5982]: تاريخ الانتهاء
+                        - paragraph [ref=e5983]: November 8, 2024
+                      - generic [ref=e5984]:
+                        - paragraph [ref=e5985]: القيمة الشهرية
+                        - paragraph [ref=e5986]: 2,100 ر.ق
+                    - generic [ref=e5987]:
+                      - button "عرض" [ref=e5988]:
+                        - img [ref=e5989]
+                        - text: عرض
+                      - button "تعديل" [ref=e5992]:
+                        - img [ref=e5993]
+                        - text: تعديل
+                      - button "تجديد" [ref=e5996]:
+                        - img [ref=e5997]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6002]:
+                        - img [ref=e6003]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6007]:
+                        - img [ref=e6008]
+                        - text: المزيد
+                  - generic [ref=e6012] [cursor=pointer]:
+                    - generic [ref=e6013]:
+                      - generic [ref=e6014]:
+                        - img [ref=e6016]
+                        - generic [ref=e6019]:
+                          - heading "319" [level=4] [ref=e6020]
+                          - generic [ref=e6021]:
+                            - img [ref=e6022]
+                            - generic [ref=e6025]: MOHAMED CHOUCHENE
+                          - generic [ref=e6026]:
+                            - img [ref=e6027]
+                            - generic [ref=e6031]: Bestune T77 pro 2023 | 7058
+                      - generic [ref=e6032]:
+                        - img [ref=e6033]
+                        - text: نشط
+                    - generic [ref=e6036]:
+                      - generic [ref=e6037]:
+                        - paragraph [ref=e6038]: تاريخ البداية
+                        - paragraph [ref=e6039]: September 22, 2024
+                      - generic [ref=e6040]:
+                        - paragraph [ref=e6041]: تاريخ الانتهاء
+                        - paragraph [ref=e6042]: September 1, 2027
+                      - generic [ref=e6043]:
+                        - paragraph [ref=e6044]: القيمة الشهرية
+                        - paragraph [ref=e6045]: 1,600 ر.ق
+                    - generic [ref=e6046]:
+                      - button "عرض" [ref=e6047]:
+                        - img [ref=e6048]
+                        - text: عرض
+                      - button "تعديل" [ref=e6051]:
+                        - img [ref=e6052]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6055]:
+                        - img [ref=e6056]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6061]:
+                        - img [ref=e6062]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6066]:
+                        - img [ref=e6067]
+                        - text: المزيد
+                  - generic [ref=e6071] [cursor=pointer]:
+                    - generic [ref=e6072]:
+                      - generic [ref=e6073]:
+                        - img [ref=e6075]
+                        - generic [ref=e6078]:
+                          - heading "Ret-2018214" [level=4] [ref=e6079]
+                          - generic [ref=e6080]:
+                            - img [ref=e6081]
+                            - generic [ref=e6084]: snoonu snoonu
+                          - generic [ref=e6085]:
+                            - img [ref=e6086]
+                            - generic [ref=e6090]: MG5 MG5 2024 | 335750
+                      - generic [ref=e6091]:
+                        - img [ref=e6092]
+                        - text: ملغي
+                    - generic [ref=e6096]:
+                      - generic [ref=e6097]:
+                        - paragraph [ref=e6098]: تاريخ البداية
+                        - paragraph [ref=e6099]: June 3, 2024
+                      - generic [ref=e6100]:
+                        - paragraph [ref=e6101]: تاريخ الانتهاء
+                        - paragraph [ref=e6102]: August 31, 2024
+                      - generic [ref=e6103]:
+                        - paragraph [ref=e6104]: القيمة الشهرية
+                        - paragraph [ref=e6105]: 0 ر.ق
+                    - generic [ref=e6106]:
+                      - button "عرض" [ref=e6107]:
+                        - img [ref=e6108]
+                        - text: عرض
+                      - button "تعديل" [ref=e6111]:
+                        - img [ref=e6112]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6115]:
+                        - img [ref=e6116]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6121]:
+                        - img [ref=e6122]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6126]:
+                        - img [ref=e6127]
+                        - text: المزيد
+                  - generic [ref=e6131] [cursor=pointer]:
+                    - generic [ref=e6132]:
+                      - generic [ref=e6133]:
+                        - img [ref=e6135]
+                        - generic [ref=e6138]:
+                          - heading "AGR-202504-419607" [level=4] [ref=e6139]
+                          - generic [ref=e6140]:
+                            - img [ref=e6141]
+                            - generic [ref=e6144]: Sofiene Ben salah
+                          - generic [ref=e6145]:
+                            - img [ref=e6146]
+                            - generic [ref=e6150]: Bestune B70 2023 | 556199
+                      - generic [ref=e6151]:
+                        - img [ref=e6152]
+                        - text: نشط
+                    - generic [ref=e6155]:
+                      - generic [ref=e6156]:
+                        - paragraph [ref=e6157]: تاريخ البداية
+                        - paragraph [ref=e6158]: February 15, 2025
+                      - generic [ref=e6159]:
+                        - paragraph [ref=e6160]: تاريخ الانتهاء
+                        - paragraph [ref=e6161]: February 1, 2028
+                      - generic [ref=e6162]:
+                        - paragraph [ref=e6163]: القيمة الشهرية
+                        - paragraph [ref=e6164]: 1,650 ر.ق
+                    - generic [ref=e6165]:
+                      - button "عرض" [ref=e6166]:
+                        - img [ref=e6167]
+                        - text: عرض
+                      - button "تعديل" [ref=e6170]:
+                        - img [ref=e6171]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6174]:
+                        - img [ref=e6175]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6180]:
+                        - img [ref=e6181]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6185]:
+                        - img [ref=e6186]
+                        - text: المزيد
+                  - generic [ref=e6190] [cursor=pointer]:
+                    - generic [ref=e6191]:
+                      - generic [ref=e6192]:
+                        - img [ref=e6194]
+                        - generic [ref=e6197]:
+                          - heading "MR2024123" [level=4] [ref=e6198]
+                          - generic [ref=e6199]:
+                            - img [ref=e6200]
+                            - generic [ref=e6203]: DEO SSENYANJA
+                          - generic [ref=e6204]:
+                            - img [ref=e6205]
+                            - generic [ref=e6209]: changan Alsvin 2024 | 10858
+                      - generic [ref=e6210]:
+                        - img [ref=e6211]
+                        - text: نشط
+                    - generic [ref=e6214]:
+                      - generic [ref=e6215]:
+                        - paragraph [ref=e6216]: تاريخ البداية
+                        - paragraph [ref=e6217]: April 13, 2024
+                      - generic [ref=e6218]:
+                        - paragraph [ref=e6219]: تاريخ الانتهاء
+                        - paragraph [ref=e6220]: May 13, 2024
+                      - generic [ref=e6221]:
+                        - paragraph [ref=e6222]: القيمة الشهرية
+                        - paragraph [ref=e6223]: 0 ر.ق
+                    - generic [ref=e6224]:
+                      - button "عرض" [ref=e6225]:
+                        - img [ref=e6226]
+                        - text: عرض
+                      - button "تعديل" [ref=e6229]:
+                        - img [ref=e6230]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6233]:
+                        - img [ref=e6234]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6239]:
+                        - img [ref=e6240]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6244]:
+                        - img [ref=e6245]
+                        - text: المزيد
+                  - generic [ref=e6249] [cursor=pointer]:
+                    - generic [ref=e6250]:
+                      - generic [ref=e6251]:
+                        - img [ref=e6253]
+                        - generic [ref=e6256]:
+                          - heading "LTO2024323" [level=4] [ref=e6257]
+                          - generic [ref=e6258]:
+                            - img [ref=e6259]
+                            - generic [ref=e6262]: ahmed abdalla mahmoud abdalla mahmoud abdalla
+                          - generic [ref=e6263]:
+                            - img [ref=e6264]
+                            - generic [ref=e6268]: MG5 MG5 2024 | 754436
+                      - generic [ref=e6269]:
+                        - img [ref=e6270]
+                        - text: ملغي
+                    - generic [ref=e6274]:
+                      - generic [ref=e6275]:
+                        - paragraph [ref=e6276]: تاريخ البداية
+                        - paragraph [ref=e6277]: September 26, 2024
+                      - generic [ref=e6278]:
+                        - paragraph [ref=e6279]: تاريخ الانتهاء
+                        - paragraph [ref=e6280]: September 1, 2027
+                      - generic [ref=e6281]:
+                        - paragraph [ref=e6282]: القيمة الشهرية
+                        - paragraph [ref=e6283]: 0 ر.ق
+                    - generic [ref=e6284]:
+                      - button "عرض" [ref=e6285]:
+                        - img [ref=e6286]
+                        - text: عرض
+                      - button "تعديل" [ref=e6289]:
+                        - img [ref=e6290]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6293]:
+                        - img [ref=e6294]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6299]:
+                        - img [ref=e6300]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6304]:
+                        - img [ref=e6305]
+                        - text: المزيد
+                  - generic [ref=e6309] [cursor=pointer]:
+                    - generic [ref=e6310]:
+                      - generic [ref=e6311]:
+                        - img [ref=e6313]
+                        - generic [ref=e6316]:
+                          - heading "LTO202417" [level=4] [ref=e6317]
+                          - generic [ref=e6318]:
+                            - img [ref=e6319]
+                            - generic [ref=e6322]: عبد الرحيم شاكر
+                          - generic [ref=e6323]:
+                            - img [ref=e6324]
+                            - generic [ref=e6328]: GAC GS3 2024 | 8213
+                      - generic [ref=e6329]:
+                        - img [ref=e6330]
+                        - text: ملغي
+                    - generic [ref=e6334]:
+                      - generic [ref=e6335]:
+                        - paragraph [ref=e6336]: تاريخ البداية
+                        - paragraph [ref=e6337]: February 8, 2024
+                      - generic [ref=e6338]:
+                        - paragraph [ref=e6339]: تاريخ الانتهاء
+                        - paragraph [ref=e6340]: February 8, 2027
+                      - generic [ref=e6341]:
+                        - paragraph [ref=e6342]: القيمة الشهرية
+                        - paragraph [ref=e6343]: 2,100 ر.ق
+                    - generic [ref=e6344]:
+                      - button "عرض" [ref=e6345]:
+                        - img [ref=e6346]
+                        - text: عرض
+                      - button "تعديل" [ref=e6349]:
+                        - img [ref=e6350]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6353]:
+                        - img [ref=e6354]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6359]:
+                        - img [ref=e6360]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6364]:
+                        - img [ref=e6365]
+                        - text: المزيد
+                  - generic [ref=e6369] [cursor=pointer]:
+                    - generic [ref=e6370]:
+                      - generic [ref=e6371]:
+                        - img [ref=e6373]
+                        - generic [ref=e6376]:
+                          - heading "LTO2024178" [level=4] [ref=e6377]
+                          - generic [ref=e6378]:
+                            - img [ref=e6379]
+                            - generic [ref=e6382]: KAMIL ALTAHIR
+                          - generic [ref=e6383]:
+                            - img [ref=e6384]
+                            - generic [ref=e6388]: MG5 MG5 2024 | 817009
+                      - generic [ref=e6389]:
+                        - img [ref=e6390]
+                        - text: ملغي
+                    - generic [ref=e6394]:
+                      - generic [ref=e6395]:
+                        - paragraph [ref=e6396]: تاريخ البداية
+                        - paragraph [ref=e6397]: May 28, 2024
+                      - generic [ref=e6398]:
+                        - paragraph [ref=e6399]: تاريخ الانتهاء
+                        - paragraph [ref=e6400]: June 30, 2027
+                      - generic [ref=e6401]:
+                        - paragraph [ref=e6402]: القيمة الشهرية
+                        - paragraph [ref=e6403]: 0 ر.ق
+                    - generic [ref=e6404]:
+                      - button "عرض" [ref=e6405]:
+                        - img [ref=e6406]
+                        - text: عرض
+                      - button "تعديل" [ref=e6409]:
+                        - img [ref=e6410]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6413]:
+                        - img [ref=e6414]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6419]:
+                        - img [ref=e6420]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6424]:
+                        - img [ref=e6425]
+                        - text: المزيد
+                  - generic [ref=e6429] [cursor=pointer]:
+                    - generic [ref=e6430]:
+                      - generic [ref=e6431]:
+                        - img [ref=e6433]
+                        - generic [ref=e6436]:
+                          - heading "LTO2024327" [level=4] [ref=e6437]
+                          - generic [ref=e6438]:
+                            - img [ref=e6439]
+                            - generic [ref=e6442]: tarek boutemedjet
+                          - generic [ref=e6443]:
+                            - img [ref=e6444]
+                            - generic [ref=e6448]: Bestune T77 2023 | 2770
+                      - generic [ref=e6449]:
+                        - img [ref=e6450]
+                        - text: نشط
+                    - generic [ref=e6453]:
+                      - generic [ref=e6454]:
+                        - paragraph [ref=e6455]: تاريخ البداية
+                        - paragraph [ref=e6456]: October 8, 2024
+                      - generic [ref=e6457]:
+                        - paragraph [ref=e6458]: تاريخ الانتهاء
+                        - paragraph [ref=e6459]: September 1, 2027
+                      - generic [ref=e6460]:
+                        - paragraph [ref=e6461]: القيمة الشهرية
+                        - paragraph [ref=e6462]: 1,750 ر.ق
+                    - generic [ref=e6463]:
+                      - button "عرض" [ref=e6464]:
+                        - img [ref=e6465]
+                        - text: عرض
+                      - button "تعديل" [ref=e6468]:
+                        - img [ref=e6469]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6472]:
+                        - img [ref=e6473]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6478]:
+                        - img [ref=e6479]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6483]:
+                        - img [ref=e6484]
+                        - text: المزيد
+                  - generic [ref=e6488] [cursor=pointer]:
+                    - generic [ref=e6489]:
+                      - generic [ref=e6490]:
+                        - img [ref=e6492]
+                        - generic [ref=e6495]:
+                          - heading "LTO2024258" [level=4] [ref=e6496]
+                          - generic [ref=e6497]:
+                            - img [ref=e6498]
+                            - generic [ref=e6501]: ABDELLATIF ELHADAD
+                          - generic [ref=e6502]:
+                            - img [ref=e6503]
+                            - generic [ref=e6507]: Bestune T77 2023 | 2783
+                      - generic [ref=e6508]:
+                        - img [ref=e6509]
+                        - text: نشط
+                    - generic [ref=e6512]:
+                      - generic [ref=e6513]:
+                        - paragraph [ref=e6514]: تاريخ البداية
+                        - paragraph [ref=e6515]: July 28, 2024
+                      - generic [ref=e6516]:
+                        - paragraph [ref=e6517]: تاريخ الانتهاء
+                        - paragraph [ref=e6518]: July 1, 2027
+                      - generic [ref=e6519]:
+                        - paragraph [ref=e6520]: القيمة الشهرية
+                        - paragraph [ref=e6521]: 0 ر.ق
+                    - generic [ref=e6522]:
+                      - button "عرض" [ref=e6523]:
+                        - img [ref=e6524]
+                        - text: عرض
+                      - button "تعديل" [ref=e6527]:
+                        - img [ref=e6528]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6531]:
+                        - img [ref=e6532]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6537]:
+                        - img [ref=e6538]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6542]:
+                        - img [ref=e6543]
+                        - text: المزيد
+                  - generic [ref=e6547] [cursor=pointer]:
+                    - generic [ref=e6548]:
+                      - generic [ref=e6549]:
+                        - img [ref=e6551]
+                        - generic [ref=e6554]:
+                          - heading "LTO2024267" [level=4] [ref=e6555]
+                          - generic [ref=e6556]:
+                            - img [ref=e6557]
+                            - generic [ref=e6560]: hamze hussein
+                          - generic [ref=e6561]:
+                            - img [ref=e6562]
+                            - generic [ref=e6566]: GAC GS3 2024 | 8208
+                      - generic [ref=e6567]:
+                        - img [ref=e6568]
+                        - text: نشط
+                    - generic [ref=e6571]:
+                      - generic [ref=e6572]:
+                        - paragraph [ref=e6573]: تاريخ البداية
+                        - paragraph [ref=e6574]: August 5, 2024
+                      - generic [ref=e6575]:
+                        - paragraph [ref=e6576]: تاريخ الانتهاء
+                        - paragraph [ref=e6577]: July 1, 2027
+                      - generic [ref=e6578]:
+                        - paragraph [ref=e6579]: القيمة الشهرية
+                        - paragraph [ref=e6580]: 2,000 ر.ق
+                    - generic [ref=e6581]:
+                      - button "عرض" [ref=e6582]:
+                        - img [ref=e6583]
+                        - text: عرض
+                      - button "تعديل" [ref=e6586]:
+                        - img [ref=e6587]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6590]:
+                        - img [ref=e6591]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6596]:
+                        - img [ref=e6597]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6601]:
+                        - img [ref=e6602]
+                        - text: المزيد
+                  - generic [ref=e6606] [cursor=pointer]:
+                    - generic [ref=e6607]:
+                      - generic [ref=e6608]:
+                        - img [ref=e6610]
+                        - generic [ref=e6613]:
+                          - heading "LTO2024272" [level=4] [ref=e6614]
+                          - generic [ref=e6615]:
+                            - img [ref=e6616]
+                            - generic [ref=e6619]: tarek rahali
+                          - generic [ref=e6620]:
+                            - img [ref=e6621]
+                            - generic [ref=e6625]: Bestune T77 pro 2023 | 7074
+                      - generic [ref=e6626]:
+                        - img [ref=e6627]
+                        - text: نشط
+                    - generic [ref=e6630]:
+                      - generic [ref=e6631]:
+                        - paragraph [ref=e6632]: تاريخ البداية
+                        - paragraph [ref=e6633]: August 14, 2024
+                      - generic [ref=e6634]:
+                        - paragraph [ref=e6635]: تاريخ الانتهاء
+                        - paragraph [ref=e6636]: January 3, 2027
+                      - generic [ref=e6637]:
+                        - paragraph [ref=e6638]: القيمة الشهرية
+                        - paragraph [ref=e6639]: 0 ر.ق
+                    - generic [ref=e6640]:
+                      - button "عرض" [ref=e6641]:
+                        - img [ref=e6642]
+                        - text: عرض
+                      - button "تعديل" [ref=e6645]:
+                        - img [ref=e6646]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6649]:
+                        - img [ref=e6650]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6655]:
+                        - img [ref=e6656]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6660]:
+                        - img [ref=e6661]
+                        - text: المزيد
+                  - generic [ref=e6665] [cursor=pointer]:
+                    - generic [ref=e6666]:
+                      - generic [ref=e6667]:
+                        - img [ref=e6669]
+                        - generic [ref=e6672]:
+                          - heading "LTO2024340" [level=4] [ref=e6673]
+                          - generic [ref=e6674]:
+                            - img [ref=e6675]
+                            - generic [ref=e6678]: ABDELAZIZ JERFEL
+                          - generic [ref=e6679]:
+                            - img [ref=e6680]
+                            - generic [ref=e6684]: Bestune T77 pro 2023 | 5890
+                      - generic [ref=e6685]:
+                        - img [ref=e6686]
+                        - text: نشط
+                    - generic [ref=e6689]:
+                      - generic [ref=e6690]:
+                        - paragraph [ref=e6691]: تاريخ البداية
+                        - paragraph [ref=e6692]: December 1, 2024
+                      - generic [ref=e6693]:
+                        - paragraph [ref=e6694]: تاريخ الانتهاء
+                        - paragraph [ref=e6695]: November 1, 2027
+                      - generic [ref=e6696]:
+                        - paragraph [ref=e6697]: القيمة الشهرية
+                        - paragraph [ref=e6698]: 1,500 ر.ق
+                    - generic [ref=e6699]:
+                      - button "عرض" [ref=e6700]:
+                        - img [ref=e6701]
+                        - text: عرض
+                      - button "تعديل" [ref=e6704]:
+                        - img [ref=e6705]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6708]:
+                        - img [ref=e6709]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6714]:
+                        - img [ref=e6715]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6719]:
+                        - img [ref=e6720]
+                        - text: المزيد
+                  - generic [ref=e6724] [cursor=pointer]:
+                    - generic [ref=e6725]:
+                      - generic [ref=e6726]:
+                        - img [ref=e6728]
+                        - generic [ref=e6731]:
+                          - heading "LTO2024273" [level=4] [ref=e6732]
+                          - generic [ref=e6733]:
+                            - img [ref=e6734]
+                            - generic [ref=e6737]: AHMED EDRISS
+                          - generic [ref=e6738]:
+                            - img [ref=e6739]
+                            - generic [ref=e6743]: changan Alsvin 2024 | 10665
+                      - generic [ref=e6744]:
+                        - img [ref=e6745]
+                        - text: نشط
+                    - generic [ref=e6748]:
+                      - generic [ref=e6749]:
+                        - paragraph [ref=e6750]: تاريخ البداية
+                        - paragraph [ref=e6751]: August 14, 2024
+                      - generic [ref=e6752]:
+                        - paragraph [ref=e6753]: تاريخ الانتهاء
+                        - paragraph [ref=e6754]: July 1, 2027
+                      - generic [ref=e6755]:
+                        - paragraph [ref=e6756]: القيمة الشهرية
+                        - paragraph [ref=e6757]: 1,750 ر.ق
+                    - generic [ref=e6758]:
+                      - button "عرض" [ref=e6759]:
+                        - img [ref=e6760]
+                        - text: عرض
+                      - button "تعديل" [ref=e6763]:
+                        - img [ref=e6764]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6767]:
+                        - img [ref=e6768]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6773]:
+                        - img [ref=e6774]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6778]:
+                        - img [ref=e6779]
+                        - text: المزيد
+                  - generic [ref=e6783] [cursor=pointer]:
+                    - generic [ref=e6784]:
+                      - generic [ref=e6785]:
+                        - img [ref=e6787]
+                        - generic [ref=e6790]:
+                          - heading "AGR-202504-403263" [level=4] [ref=e6791]
+                          - generic [ref=e6792]:
+                            - img [ref=e6793]
+                            - generic [ref=e6796]: فادي السعيد
+                          - generic [ref=e6797]:
+                            - img [ref=e6798]
+                            - generic [ref=e6802]: Bestune B70s 2023 | 21849
+                      - generic [ref=e6803]:
+                        - img [ref=e6804]
+                        - text: نشط
+                    - generic [ref=e6807]:
+                      - generic [ref=e6808]:
+                        - paragraph [ref=e6809]: تاريخ البداية
+                        - paragraph [ref=e6810]: February 8, 2025
+                      - generic [ref=e6811]:
+                        - paragraph [ref=e6812]: تاريخ الانتهاء
+                        - paragraph [ref=e6813]: January 6, 2028
+                      - generic [ref=e6814]:
+                        - paragraph [ref=e6815]: القيمة الشهرية
+                        - paragraph [ref=e6816]: 1,700 ر.ق
+                    - generic [ref=e6817]:
+                      - button "عرض" [ref=e6818]:
+                        - img [ref=e6819]
+                        - text: عرض
+                      - button "تعديل" [ref=e6822]:
+                        - img [ref=e6823]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6826]:
+                        - img [ref=e6827]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6832]:
+                        - img [ref=e6833]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6837]:
+                        - img [ref=e6838]
+                        - text: المزيد
+                  - generic [ref=e6842] [cursor=pointer]:
+                    - generic [ref=e6843]:
+                      - generic [ref=e6844]:
+                        - img [ref=e6846]
+                        - generic [ref=e6849]:
+                          - heading "AGR-202504-400949" [level=4] [ref=e6850]
+                          - generic [ref=e6851]:
+                            - img [ref=e6852]
+                            - generic [ref=e6855]: عبد المنعم
+                          - generic [ref=e6856]:
+                            - img [ref=e6857]
+                            - generic [ref=e6861]: changan alsvin 2024 | 10668
+                      - generic [ref=e6862]:
+                        - img [ref=e6863]
+                        - text: نشط
+                    - generic [ref=e6866]:
+                      - generic [ref=e6867]:
+                        - paragraph [ref=e6868]: تاريخ البداية
+                        - paragraph [ref=e6869]: January 3, 2025
+                      - generic [ref=e6870]:
+                        - paragraph [ref=e6871]: تاريخ الانتهاء
+                        - paragraph [ref=e6872]: January 4, 2028
+                      - generic [ref=e6873]:
+                        - paragraph [ref=e6874]: القيمة الشهرية
+                        - paragraph [ref=e6875]: 1,500 ر.ق
+                    - generic [ref=e6876]:
+                      - button "عرض" [ref=e6877]:
+                        - img [ref=e6878]
+                        - text: عرض
+                      - button "تعديل" [ref=e6881]:
+                        - img [ref=e6882]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6885]:
+                        - img [ref=e6886]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6891]:
+                        - img [ref=e6892]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6896]:
+                        - img [ref=e6897]
+                        - text: المزيد
+                  - generic [ref=e6901] [cursor=pointer]:
+                    - generic [ref=e6902]:
+                      - generic [ref=e6903]:
+                        - img [ref=e6905]
+                        - generic [ref=e6908]:
+                          - heading "Ret-2018196" [level=4] [ref=e6909]
+                          - generic [ref=e6910]:
+                            - img [ref=e6911]
+                            - generic [ref=e6914]: snoonu snoonu
+                          - generic [ref=e6915]:
+                            - img [ref=e6916]
+                            - generic [ref=e6920]: Bestune T77 pro 2023 | 7072
+                      - generic [ref=e6921]:
+                        - img [ref=e6922]
+                        - text: نشط
+                    - generic [ref=e6925]:
+                      - generic [ref=e6926]:
+                        - paragraph [ref=e6927]: تاريخ البداية
+                        - paragraph [ref=e6928]: June 2, 2024
+                      - generic [ref=e6929]:
+                        - paragraph [ref=e6930]: تاريخ الانتهاء
+                        - paragraph [ref=e6931]: August 31, 2024
+                      - generic [ref=e6932]:
+                        - paragraph [ref=e6933]: القيمة الشهرية
+                        - paragraph [ref=e6934]: 0 ر.ق
+                    - generic [ref=e6935]:
+                      - button "عرض" [ref=e6936]:
+                        - img [ref=e6937]
+                        - text: عرض
+                      - button "تعديل" [ref=e6940]:
+                        - img [ref=e6941]
+                        - text: تعديل
+                      - button "تجديد" [ref=e6944]:
+                        - img [ref=e6945]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e6950]:
+                        - img [ref=e6951]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e6955]:
+                        - img [ref=e6956]
+                        - text: المزيد
+                  - generic [ref=e6960] [cursor=pointer]:
+                    - generic [ref=e6961]:
+                      - generic [ref=e6962]:
+                        - img [ref=e6964]
+                        - generic [ref=e6967]:
+                          - heading "In2018180" [level=4] [ref=e6968]
+                          - generic [ref=e6969]:
+                            - img [ref=e6970]
+                            - generic [ref=e6973]: SAIF ramzan
+                          - generic [ref=e6974]:
+                            - img [ref=e6975]
+                            - generic [ref=e6979]: MG5 MG5 2024 | 749403
+                      - generic [ref=e6980]:
+                        - img [ref=e6981]
+                        - text: ملغي
+                    - generic [ref=e6985]:
+                      - generic [ref=e6986]:
+                        - paragraph [ref=e6987]: تاريخ البداية
+                        - paragraph [ref=e6988]: May 30, 2024
+                      - generic [ref=e6989]:
+                        - paragraph [ref=e6990]: تاريخ الانتهاء
+                        - paragraph [ref=e6991]: May 31, 2025
+                      - generic [ref=e6992]:
+                        - paragraph [ref=e6993]: القيمة الشهرية
+                        - paragraph [ref=e6994]: 0 ر.ق
+                    - generic [ref=e6995]:
+                      - button "عرض" [ref=e6996]:
+                        - img [ref=e6997]
+                        - text: عرض
+                      - button "تعديل" [ref=e7000]:
+                        - img [ref=e7001]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7004]:
+                        - img [ref=e7005]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7010]:
+                        - img [ref=e7011]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7015]:
+                        - img [ref=e7016]
+                        - text: المزيد
+                  - generic [ref=e7020] [cursor=pointer]:
+                    - generic [ref=e7021]:
+                      - generic [ref=e7022]:
+                        - img [ref=e7024]
+                        - generic [ref=e7027]:
+                          - heading "test 3" [level=4] [ref=e7028]
+                          - generic [ref=e7029]:
+                            - img [ref=e7030]
+                            - generic [ref=e7033]: abduaziz almhauod
+                          - generic [ref=e7034]:
+                            - img [ref=e7035]
+                            - generic [ref=e7039]: Bestune B70s 2023 | 856715
+                      - generic [ref=e7040]:
+                        - img [ref=e7041]
+                        - text: نشط
+                    - generic [ref=e7044]:
+                      - generic [ref=e7045]:
+                        - paragraph [ref=e7046]: تاريخ البداية
+                        - paragraph [ref=e7047]: May 20, 2024
+                      - generic [ref=e7048]:
+                        - paragraph [ref=e7049]: تاريخ الانتهاء
+                        - paragraph [ref=e7050]: May 21, 2024
+                      - generic [ref=e7051]:
+                        - paragraph [ref=e7052]: القيمة الشهرية
+                        - paragraph [ref=e7053]: 0 ر.ق
+                    - generic [ref=e7054]:
+                      - button "عرض" [ref=e7055]:
+                        - img [ref=e7056]
+                        - text: عرض
+                      - button "تعديل" [ref=e7059]:
+                        - img [ref=e7060]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7063]:
+                        - img [ref=e7064]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7069]:
+                        - img [ref=e7070]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7074]:
+                        - img [ref=e7075]
+                        - text: المزيد
+                  - generic [ref=e7079] [cursor=pointer]:
+                    - generic [ref=e7080]:
+                      - generic [ref=e7081]:
+                        - img [ref=e7083]
+                        - generic [ref=e7086]:
+                          - heading "LTO2024331" [level=4] [ref=e7087]
+                          - generic [ref=e7088]:
+                            - img [ref=e7089]
+                            - generic [ref=e7092]: mohamed ncibi
+                          - generic [ref=e7093]:
+                            - img [ref=e7094]
+                            - generic [ref=e7098]: MG5 MG5 2024 | 751340
+                      - generic [ref=e7099]:
+                        - img [ref=e7100]
+                        - text: ملغي
+                    - generic [ref=e7104]:
+                      - generic [ref=e7105]:
+                        - paragraph [ref=e7106]: تاريخ البداية
+                        - paragraph [ref=e7107]: October 17, 2024
+                      - generic [ref=e7108]:
+                        - paragraph [ref=e7109]: تاريخ الانتهاء
+                        - paragraph [ref=e7110]: September 1, 2027
+                      - generic [ref=e7111]:
+                        - paragraph [ref=e7112]: القيمة الشهرية
+                        - paragraph [ref=e7113]: 0 ر.ق
+                    - generic [ref=e7114]:
+                      - button "عرض" [ref=e7115]:
+                        - img [ref=e7116]
+                        - text: عرض
+                      - button "تعديل" [ref=e7119]:
+                        - img [ref=e7120]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7123]:
+                        - img [ref=e7124]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7129]:
+                        - img [ref=e7130]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7134]:
+                        - img [ref=e7135]
+                        - text: المزيد
+                  - generic [ref=e7139] [cursor=pointer]:
+                    - generic [ref=e7140]:
+                      - generic [ref=e7141]:
+                        - img [ref=e7143]
+                        - generic [ref=e7146]:
+                          - heading "Ret-201896" [level=4] [ref=e7147]
+                          - generic [ref=e7148]:
+                            - img [ref=e7149]
+                            - generic [ref=e7152]: abduaziz almhauod
+                          - generic [ref=e7153]:
+                            - img [ref=e7154]
+                            - generic [ref=e7158]: MG5 MG5 2024 | 739649
+                      - generic [ref=e7159]:
+                        - img [ref=e7160]
+                        - text: ملغي
+                    - generic [ref=e7164]:
+                      - generic [ref=e7165]:
+                        - paragraph [ref=e7166]: تاريخ البداية
+                        - paragraph [ref=e7167]: March 29, 2024
+                      - generic [ref=e7168]:
+                        - paragraph [ref=e7169]: تاريخ الانتهاء
+                        - paragraph [ref=e7170]: April 30, 2024
+                      - generic [ref=e7171]:
+                        - paragraph [ref=e7172]: القيمة الشهرية
+                        - paragraph [ref=e7173]: 0 ر.ق
+                    - generic [ref=e7174]:
+                      - button "عرض" [ref=e7175]:
+                        - img [ref=e7176]
+                        - text: عرض
+                      - button "تعديل" [ref=e7179]:
+                        - img [ref=e7180]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7183]:
+                        - img [ref=e7184]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7189]:
+                        - img [ref=e7190]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7194]:
+                        - img [ref=e7195]
+                        - text: المزيد
+                  - generic [ref=e7199] [cursor=pointer]:
+                    - generic [ref=e7200]:
+                      - generic [ref=e7201]:
+                        - img [ref=e7203]
+                        - generic [ref=e7206]:
+                          - heading "LTO2024305" [level=4] [ref=e7207]
+                          - generic [ref=e7208]:
+                            - img [ref=e7209]
+                            - generic [ref=e7212]: mohamed ahmed
+                          - generic [ref=e7213]:
+                            - img [ref=e7214]
+                            - generic [ref=e7218]: Bestune T77 pro 2023 | 7041
+                      - generic [ref=e7219]:
+                        - img [ref=e7220]
+                        - text: نشط
+                    - generic [ref=e7223]:
+                      - generic [ref=e7224]:
+                        - paragraph [ref=e7225]: تاريخ البداية
+                        - paragraph [ref=e7226]: September 11, 2024
+                      - generic [ref=e7227]:
+                        - paragraph [ref=e7228]: تاريخ الانتهاء
+                        - paragraph [ref=e7229]: August 1, 2027
+                      - generic [ref=e7230]:
+                        - paragraph [ref=e7231]: القيمة الشهرية
+                        - paragraph [ref=e7232]: 0 ر.ق
+                    - generic [ref=e7233]:
+                      - button "عرض" [ref=e7234]:
+                        - img [ref=e7235]
+                        - text: عرض
+                      - button "تعديل" [ref=e7238]:
+                        - img [ref=e7239]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7242]:
+                        - img [ref=e7243]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7248]:
+                        - img [ref=e7249]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7253]:
+                        - img [ref=e7254]
+                        - text: المزيد
+                  - generic [ref=e7258] [cursor=pointer]:
+                    - generic [ref=e7259]:
+                      - generic [ref=e7260]:
+                        - img [ref=e7262]
+                        - generic [ref=e7265]:
+                          - heading "Ret-2018212" [level=4] [ref=e7266]
+                          - generic [ref=e7267]:
+                            - img [ref=e7268]
+                            - generic [ref=e7271]: snoonu snoonu
+                          - generic [ref=e7272]:
+                            - img [ref=e7273]
+                            - generic [ref=e7277]: Bestune T33 2022 | 11473
+                      - generic [ref=e7278]:
+                        - img [ref=e7279]
+                        - text: نشط
+                    - generic [ref=e7282]:
+                      - generic [ref=e7283]:
+                        - paragraph [ref=e7284]: تاريخ البداية
+                        - paragraph [ref=e7285]: June 2, 2024
+                      - generic [ref=e7286]:
+                        - paragraph [ref=e7287]: تاريخ الانتهاء
+                        - paragraph [ref=e7288]: August 31, 2024
+                      - generic [ref=e7289]:
+                        - paragraph [ref=e7290]: القيمة الشهرية
+                        - paragraph [ref=e7291]: 0 ر.ق
+                    - generic [ref=e7292]:
+                      - button "عرض" [ref=e7293]:
+                        - img [ref=e7294]
+                        - text: عرض
+                      - button "تعديل" [ref=e7297]:
+                        - img [ref=e7298]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7301]:
+                        - img [ref=e7302]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7307]:
+                        - img [ref=e7308]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7312]:
+                        - img [ref=e7313]
+                        - text: المزيد
+                  - generic [ref=e7317] [cursor=pointer]:
+                    - generic [ref=e7318]:
+                      - generic [ref=e7319]:
+                        - img [ref=e7321]
+                        - generic [ref=e7324]:
+                          - heading "LTO2024124" [level=4] [ref=e7325]
+                          - generic [ref=e7326]:
+                            - img [ref=e7327]
+                            - generic [ref=e7330]: AMIR EL MAHDI
+                          - generic [ref=e7331]:
+                            - img [ref=e7332]
+                            - generic [ref=e7336]: Ford TERRITORY 2023 | 847099
+                      - generic [ref=e7337]:
+                        - img [ref=e7338]
+                        - text: نشط
+                    - generic [ref=e7341]:
+                      - generic [ref=e7342]:
+                        - paragraph [ref=e7343]: تاريخ البداية
+                        - paragraph [ref=e7344]: April 14, 2024
+                      - generic [ref=e7345]:
+                        - paragraph [ref=e7346]: تاريخ الانتهاء
+                        - paragraph [ref=e7347]: April 15, 2027
+                      - generic [ref=e7348]:
+                        - paragraph [ref=e7349]: القيمة الشهرية
+                        - paragraph [ref=e7350]: 2,300 ر.ق
+                    - generic [ref=e7351]:
+                      - button "عرض" [ref=e7352]:
+                        - img [ref=e7353]
+                        - text: عرض
+                      - button "تعديل" [ref=e7356]:
+                        - img [ref=e7357]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7360]:
+                        - img [ref=e7361]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7366]:
+                        - img [ref=e7367]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7371]:
+                        - img [ref=e7372]
+                        - text: المزيد
+                  - generic [ref=e7376] [cursor=pointer]:
+                    - generic [ref=e7377]:
+                      - generic [ref=e7378]:
+                        - img [ref=e7380]
+                        - generic [ref=e7383]:
+                          - heading "Ret-2018193" [level=4] [ref=e7384]
+                          - generic [ref=e7385]:
+                            - img [ref=e7386]
+                            - generic [ref=e7389]: snoonu snoonu
+                          - generic [ref=e7390]:
+                            - img [ref=e7391]
+                            - generic [ref=e7395]: Bestune B70 2023 | 556199
+                      - generic [ref=e7396]:
+                        - img [ref=e7397]
+                        - text: نشط
+                    - generic [ref=e7400]:
+                      - generic [ref=e7401]:
+                        - paragraph [ref=e7402]: تاريخ البداية
+                        - paragraph [ref=e7403]: June 2, 2024
+                      - generic [ref=e7404]:
+                        - paragraph [ref=e7405]: تاريخ الانتهاء
+                        - paragraph [ref=e7406]: August 31, 2024
+                      - generic [ref=e7407]:
+                        - paragraph [ref=e7408]: القيمة الشهرية
+                        - paragraph [ref=e7409]: 0 ر.ق
+                    - generic [ref=e7410]:
+                      - button "عرض" [ref=e7411]:
+                        - img [ref=e7412]
+                        - text: عرض
+                      - button "تعديل" [ref=e7415]:
+                        - img [ref=e7416]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7419]:
+                        - img [ref=e7420]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7425]:
+                        - img [ref=e7426]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7430]:
+                        - img [ref=e7431]
+                        - text: المزيد
+                  - generic [ref=e7435] [cursor=pointer]:
+                    - generic [ref=e7436]:
+                      - generic [ref=e7437]:
+                        - img [ref=e7439]
+                        - generic [ref=e7442]:
+                          - heading "Ret-2018190" [level=4] [ref=e7443]
+                          - generic [ref=e7444]:
+                            - img [ref=e7445]
+                            - generic [ref=e7448]: snoonu snoonu
+                          - generic [ref=e7449]:
+                            - img [ref=e7450]
+                            - generic [ref=e7454]: Bestune T77 pro 2023 | 7067
+                      - generic [ref=e7455]:
+                        - img [ref=e7456]
+                        - text: نشط
+                    - generic [ref=e7459]:
+                      - generic [ref=e7460]:
+                        - paragraph [ref=e7461]: تاريخ البداية
+                        - paragraph [ref=e7462]: June 2, 2024
+                      - generic [ref=e7463]:
+                        - paragraph [ref=e7464]: تاريخ الانتهاء
+                        - paragraph [ref=e7465]: August 31, 2024
+                      - generic [ref=e7466]:
+                        - paragraph [ref=e7467]: القيمة الشهرية
+                        - paragraph [ref=e7468]: 0 ر.ق
+                    - generic [ref=e7469]:
+                      - button "عرض" [ref=e7470]:
+                        - img [ref=e7471]
+                        - text: عرض
+                      - button "تعديل" [ref=e7474]:
+                        - img [ref=e7475]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7478]:
+                        - img [ref=e7479]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7484]:
+                        - img [ref=e7485]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7489]:
+                        - img [ref=e7490]
+                        - text: المزيد
+                  - generic [ref=e7494] [cursor=pointer]:
+                    - generic [ref=e7495]:
+                      - generic [ref=e7496]:
+                        - img [ref=e7498]
+                        - generic [ref=e7501]:
+                          - heading "AGR-202504-410464" [level=4] [ref=e7502]
+                          - generic [ref=e7503]:
+                            - img [ref=e7504]
+                            - generic [ref=e7507]: هاني براهمي
+                          - generic [ref=e7508]:
+                            - img [ref=e7509]
+                            - generic [ref=e7513]: Bestune T77 2023 | 2774
+                      - generic [ref=e7514]:
+                        - img [ref=e7515]
+                        - text: نشط
+                    - generic [ref=e7518]:
+                      - generic [ref=e7519]:
+                        - paragraph [ref=e7520]: تاريخ البداية
+                        - paragraph [ref=e7521]: February 1, 2025
+                      - generic [ref=e7522]:
+                        - paragraph [ref=e7523]: تاريخ الانتهاء
+                        - paragraph [ref=e7524]: January 17, 2028
+                      - generic [ref=e7525]:
+                        - paragraph [ref=e7526]: القيمة الشهرية
+                        - paragraph [ref=e7527]: 1,600 ر.ق
+                    - generic [ref=e7528]:
+                      - button "عرض" [ref=e7529]:
+                        - img [ref=e7530]
+                        - text: عرض
+                      - button "تعديل" [ref=e7533]:
+                        - img [ref=e7534]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7537]:
+                        - img [ref=e7538]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7543]:
+                        - img [ref=e7544]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7548]:
+                        - img [ref=e7549]
+                        - text: المزيد
+                  - generic [ref=e7553] [cursor=pointer]:
+                    - generic [ref=e7554]:
+                      - generic [ref=e7555]:
+                        - img [ref=e7557]
+                        - generic [ref=e7560]:
+                          - heading "AGR-202502-0422" [level=4] [ref=e7561]
+                          - generic [ref=e7562]:
+                            - img [ref=e7563]
+                            - generic [ref=e7566]: عبدالغفور درار
+                          - generic [ref=e7567]:
+                            - img [ref=e7568]
+                            - generic [ref=e7572]: Bestune T77 2023 | 2767
+                      - generic [ref=e7573]:
+                        - img [ref=e7574]
+                        - text: نشط
+                    - generic [ref=e7577]:
+                      - generic [ref=e7578]:
+                        - paragraph [ref=e7579]: تاريخ البداية
+                        - paragraph [ref=e7580]: February 16, 2025
+                      - generic [ref=e7581]:
+                        - paragraph [ref=e7582]: تاريخ الانتهاء
+                        - paragraph [ref=e7583]: November 16, 2035
+                      - generic [ref=e7584]:
+                        - paragraph [ref=e7585]: القيمة الشهرية
+                        - paragraph [ref=e7586]: 1,500 ر.ق
+                    - generic [ref=e7587]:
+                      - button "عرض" [ref=e7588]:
+                        - img [ref=e7589]
+                        - text: عرض
+                      - button "تعديل" [ref=e7592]:
+                        - img [ref=e7593]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7596]:
+                        - img [ref=e7597]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7602]:
+                        - img [ref=e7603]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7607]:
+                        - img [ref=e7608]
+                        - text: المزيد
+                  - generic [ref=e7612] [cursor=pointer]:
+                    - generic [ref=e7613]:
+                      - generic [ref=e7614]:
+                        - img [ref=e7616]
+                        - generic [ref=e7619]:
+                          - heading "LTO202446" [level=4] [ref=e7620]
+                          - generic [ref=e7621]:
+                            - img [ref=e7622]
+                            - generic [ref=e7625]: Salih abdullah mohamed Ahmad
+                          - generic [ref=e7626]:
+                            - img [ref=e7627]
+                            - generic [ref=e7631]: Bestune T77 2023 | 2776
+                      - generic [ref=e7632]:
+                        - img [ref=e7633]
+                        - text: نشط
+                    - generic [ref=e7636]:
+                      - generic [ref=e7637]:
+                        - paragraph [ref=e7638]: تاريخ البداية
+                        - paragraph [ref=e7639]: December 30, 2023
+                      - generic [ref=e7640]:
+                        - paragraph [ref=e7641]: تاريخ الانتهاء
+                        - paragraph [ref=e7642]: December 30, 2026
+                      - generic [ref=e7643]:
+                        - paragraph [ref=e7644]: القيمة الشهرية
+                        - paragraph [ref=e7645]: 2,100 ر.ق
+                    - generic [ref=e7646]:
+                      - button "عرض" [ref=e7647]:
+                        - img [ref=e7648]
+                        - text: عرض
+                      - button "تعديل" [ref=e7651]:
+                        - img [ref=e7652]
+                        - text: تعديل
+                      - button "تجديد" [ref=e7655]:
+                        - img [ref=e7656]
+                        - text: تجديد
+                      - button "إلغاء" [ref=e7661]:
+                        - img [ref=e7662]
+                        - text: إلغاء
+                      - button "المزيد" [ref=e7666]:
+                        - img [ref=e7667]
+                        - text: المزيد
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - heading "جاري إنشاء العقد..." [level=3]:
+                    - img
+                    - text: جاري إنشاء العقد...
+                  - progressbar
+                  - paragraph: 0 من 6 خطوات مكتملة
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: التحقق من البيانات
+                    - generic: "1"
+                  - generic:
+                    - generic:
+                      - paragraph: فحص ربط الحسابات
+                    - generic: "2"
+                  - generic:
+                    - generic:
+                      - paragraph: إنشاء العقد
+                    - generic: "3"
+                  - generic:
+                    - generic:
+                      - paragraph: تفعيل العقد وإنشاء القيد
+                    - generic: "4"
+                  - generic:
+                    - generic:
+                      - paragraph: التحقق من القيد المحاسبي
+                    - generic: "5"
+                  - generic:
+                    - generic:
+                      - paragraph: إتمام العملية
+                    - generic: "6"
+  - region "Notifications alt+T"
+```

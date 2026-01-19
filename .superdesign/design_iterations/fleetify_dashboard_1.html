@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FleetifyApp - لوحة التحكم الاحترافية</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'cairo': ['Cairo', 'Tajawal', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              200: '#fecaca',
+              300: '#fca5a5',
+              400: '#f87171',
+              500: '#b91c1c',
+              600: '#991b1b',
+              700: '#7f1d1d',
+            },
+            accent: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    * {
+      font-family: 'Cairo', 'Tajawal', sans-serif !important;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 50%, #fff7ed 100%) !important;
+      min-height: 100vh !important;
+    }
+    
+    /* Animated Background Mesh */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: 
+        radial-gradient(at 40% 20%, rgba(185, 28, 28, 0.08) 0px, transparent 50%),
+        radial-gradient(at 80% 0%, rgba(249, 115, 22, 0.06) 0px, transparent 50%),
+        radial-gradient(at 0% 50%, rgba(185, 28, 28, 0.04) 0px, transparent 50%),
+        radial-gradient(at 80% 50%, rgba(251, 146, 60, 0.05) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(220, 38, 38, 0.06) 0px, transparent 50%);
+      pointer-events: none;
+    }
+    
+    /* Floating Orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.4;
+      animation: float 20s ease-in-out infinite;
+    }
+    
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, #b91c1c, #f97316);
+      top: -10%;
+      right: -5%;
+      animation-delay: 0s;
+    }
+    
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #f97316, #fbbf24);
+      bottom: -5%;
+      left: -5%;
+      animation-delay: -5s;
+    }
+    
+    .orb-3 {
+      width: 250px;
+      height: 250px;
+      background: linear-gradient(135deg, #b91c1c, #dc2626);
+      top: 40%;
+      left: 30%;
+      animation-delay: -10s;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -30px) scale(1.05); }
+      50% { transform: translate(-20px, 20px) scale(0.95); }
+      75% { transform: translate(20px, 30px) scale(1.02); }
+    }
+    
+    /* Glass Card Effect */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.5) !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    .glass-card:hover {
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12) !important;
+      transform: translateY(-4px) !important;
+    }
+    
+    /* Stat Card Glow */
+    .stat-glow {
+      position: absolute;
+      bottom: -20px;
+      right: -20px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.4;
+      z-index: 0;
+    }
+    
+    /* Gradient Text */
+    .gradient-text {
+      background: linear-gradient(135deg, #b91c1c, #f97316) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+    }
+    
+    /* Number Animation */
+    .number-animate {
+      display: inline-block;
+      animation: countUp 1.5s ease-out forwards;
+    }
+    
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Progress Bar Animation */
+    .progress-animate {
+      animation: progressFill 1s ease-out forwards;
+    }
+    
+    @keyframes progressFill {
+      from { width: 0; }
+    }
+    
+    /* Entry Animations */
+    .animate-slide-up {
+      animation: slideUp 0.6s ease-out forwards;
+      opacity: 0;
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .stagger-1 { animation-delay: 0.1s; }
+    .stagger-2 { animation-delay: 0.2s; }
+    .stagger-3 { animation-delay: 0.3s; }
+    .stagger-4 { animation-delay: 0.4s; }
+    .stagger-5 { animation-delay: 0.5s; }
+    .stagger-6 { animation-delay: 0.6s; }
+    .stagger-7 { animation-delay: 0.7s; }
+    .stagger-8 { animation-delay: 0.8s; }
+    
+    /* Quick Action Hover */
+    .quick-action {
+      transition: all 0.2s ease !important;
+    }
+    
+    .quick-action:hover {
+      transform: translateY(-2px) !important;
+      border-color: #b91c1c !important;
+      box-shadow: 0 8px 25px rgba(185, 28, 28, 0.15) !important;
+    }
+    
+    .quick-action:hover .quick-action-icon {
+      transform: scale(1.1);
+    }
+    
+    .quick-action-icon {
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    /* Badge Shimmer */
+    .badge-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .badge-shimmer::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      100% { left: 100%; }
+    }
+    
+    /* Contract Item */
+    .contract-item {
+      transition: all 0.2s ease !important;
+    }
+    
+    .contract-item:hover {
+      background: white !important;
+      border-color: #b91c1c !important;
+      box-shadow: 0 4px 15px rgba(185, 28, 28, 0.1) !important;
+    }
+    
+    /* Activity Dot Pulse */
+    .activity-dot {
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+    }
+    
+    /* Alert Border Animation */
+    .alert-item {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .alert-item::before {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .alert-warning::before { background: #f97316; }
+    .alert-success::before { background: #22c55e; }
+    .alert-danger::before { background: #dc2626; }
+    
+    /* Chart Tooltip */
+    .chart-tooltip {
+      background: rgba(0, 0, 0, 0.9) !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 8px 12px !important;
+      color: white !important;
+    }
+    
+    /* Donut Chart Center */
+    .donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    
+    /* Notification Badge */
+    .notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      background: #dc2626;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+      border: 2px solid white;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="font-cairo min-h-screen" dir="rtl">
+  <!-- Animated Background -->
+  <div class="bg-mesh"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  
+  <!-- Main Container -->
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <!-- Header Section -->
+    <header class="flex items-center justify-between mb-8 animate-slide-up">
+      <div class="flex items-center gap-4">
+        <!-- Logo/Avatar -->
+        <div class="relative">
+          <div class="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-2xl blur-lg opacity-40"></div>
+          <div class="relative w-14 h-14 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <i data-lucide="sparkles" class="w-7 h-7 text-white"></i>
+          </div>
+        </div>
+        <!-- Welcome Text -->
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">مرحباً، أحمد 👋</h1>
+          <p class="text-sm text-gray-500">شركة العراف • لوحة التحكم الرئيسية</p>
+        </div>
+      </div>
+      
+      <!-- Header Actions -->
+      <div class="flex items-center gap-3">
+        <!-- Search -->
+        <button class="p-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200 text-gray-600 hover:bg-white hover:border-primary-500 hover:text-primary-600 transition-all">
+          <i data-lucide="search" class="w-5 h-5"></i>
+        </button>
+        
+        <!-- Notifications -->
+        <button class="relative p-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200 text-gray-600 hover:bg-white hover:border-primary-500 hover:text-primary-600 transition-all">
+          <i data-lucide="bell" class="w-5 h-5"></i>
+          <span class="notification-badge">3</span>
+        </button>
+        
+        <!-- Calendar -->
+        <button class="p-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200 text-gray-600 hover:bg-white hover:border-primary-500 hover:text-primary-600 transition-all">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+        </button>
+        
+        <!-- Theme Toggle -->
+        <button class="p-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200 text-amber-500 hover:bg-white hover:border-amber-400 transition-all">
+          <i data-lucide="sun" class="w-5 h-5"></i>
+        </button>
+        
+        <!-- Settings -->
+        <button class="p-3 rounded-xl bg-white/80 backdrop-blur border border-gray-200 text-gray-600 hover:bg-white hover:border-primary-500 hover:text-primary-600 transition-all">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </header>
+    
+    <!-- Stats Cards Section -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      
+      <!-- Vehicles Card -->
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-slide-up stagger-1">
+        <div class="stat-glow bg-gradient-to-r from-primary-500 to-primary-600"></div>
+        <div class="relative z-10">
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-4 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg shadow-primary-500/30">
+              <i data-lucide="car" class="w-7 h-7 text-white"></i>
+            </div>
+            <span class="badge-shimmer inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-200">
+              <i data-lucide="trending-up" class="w-3 h-3"></i>
+              +12%
+            </span>
+          </div>
+          <h3 class="text-sm font-medium text-gray-500 mb-1">إجمالي المركبات</h3>
+          <p class="text-4xl font-bold gradient-text number-animate">510</p>
+          <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+              <span>نشاط المركبات</span>
+              <span class="font-semibold text-primary-600">85%</span>
+            </div>
+            <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full progress-animate" style="width: 85%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Contracts Card -->
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-slide-up stagger-2">
+        <div class="stat-glow bg-gradient-to-r from-accent-500 to-accent-600"></div>
+        <div class="relative z-10">
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-4 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl shadow-lg shadow-accent-500/30">
+              <i data-lucide="file-text" class="w-7 h-7 text-white"></i>
+            </div>
+            <span class="badge-shimmer inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-200">
+              <i data-lucide="trending-up" class="w-3 h-3"></i>
+              +8%
+            </span>
+          </div>
+          <h3 class="text-sm font-medium text-gray-500 mb-1">العقود النشطة</h3>
+          <p class="text-4xl font-bold gradient-text number-animate">245</p>
+          <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+              <span>معدل الإكمال</span>
+              <span class="font-semibold text-accent-600">78%</span>
+            </div>
+            <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-accent-500 to-accent-400 rounded-full progress-animate" style="width: 78%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Customers Card -->
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-slide-up stagger-3">
+        <div class="stat-glow bg-gradient-to-r from-primary-400 to-accent-500"></div>
+        <div class="relative z-10">
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-4 bg-gradient-to-br from-primary-400 to-accent-500 rounded-2xl shadow-lg shadow-primary-400/30">
+              <i data-lucide="users" class="w-7 h-7 text-white"></i>
+            </div>
+            <span class="badge-shimmer inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-200">
+              <i data-lucide="trending-up" class="w-3 h-3"></i>
+              +15%
+            </span>
+          </div>
+          <h3 class="text-sm font-medium text-gray-500 mb-1">إجمالي العملاء</h3>
+          <p class="text-4xl font-bold gradient-text number-animate">781</p>
+          <div class="mt-4">
+            <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+              <span>رضا العملاء</span>
+              <span class="font-semibold text-green-600">92%</span>
+            </div>
+            <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full progress-animate" style="width: 92%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Revenue Card -->
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden animate-slide-up stagger-4">
+        <div class="stat-glow bg-gradient-to-r from-accent-600 to-primary-500"></div>
+        <div class="relative z-10">
+          <div class="flex items-start justify-between mb-4">
+            <div class="p-4 bg-gradient-to-br from-accent-600 to-primary-600 rounded-2xl shadow-lg shadow-accent-500/30">
+              <i data-lucide="trending-up" class="w-7 h-7 text-white"></i>
+            </div>
+            <span class="badge-shimmer inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-200">
+              <i data-lucide="trending-up" class="w-3 h-3"></i>
+              +22%
+            </span>
+          </div>
+          <h3 class="text-sm font-medium text-gray-500 mb-1">إيرادات الشهر</h3>
+          <p class="text-4xl font-bold gradient-text number-animate">125,000</p>
+          <p class="text-sm text-gray-400 mt-1">ريال قطري</p>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Quick Actions Section -->
+    <section class="mb-8 animate-slide-up stagger-5">
+      <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <i data-lucide="zap" class="w-5 h-5 text-amber-500"></i>
+        إجراءات سريعة
+      </h2>
+      <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-primary-50">
+            <i data-lucide="plus" class="w-5 h-5 text-primary-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">عقد جديد</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-blue-50">
+            <i data-lucide="user-plus" class="w-5 h-5 text-blue-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">عميل جديد</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-green-50">
+            <i data-lucide="car" class="w-5 h-5 text-green-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">مركبة جديدة</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-amber-50">
+            <i data-lucide="file-text" class="w-5 h-5 text-amber-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">فاتورة</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-rose-50">
+            <i data-lucide="wallet" class="w-5 h-5 text-rose-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">دفعة</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-indigo-50">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">التقارير</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-orange-50">
+            <i data-lucide="target" class="w-5 h-5 text-orange-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">التحصيلات</span>
+        </button>
+        
+        <button class="quick-action flex flex-col items-center gap-2 p-4 rounded-xl bg-white/80 backdrop-blur border border-gray-200">
+          <div class="quick-action-icon p-3 rounded-xl bg-gray-100">
+            <i data-lucide="settings" class="w-5 h-5 text-gray-600"></i>
+          </div>
+          <span class="text-xs font-medium text-gray-700">الإعدادات</span>
+        </button>
+      </div>
+    </section>
+    
+    <!-- Main Analytics Section -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      
+      <!-- Revenue Chart -->
+      <div class="lg:col-span-2 glass-card rounded-2xl p-6 animate-slide-up stagger-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">الأداء المالي</h3>
+            <p class="text-sm text-gray-500">تحليل الإيرادات والأرباح</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="px-4 py-2 rounded-full text-xs font-medium bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25">شهري</button>
+            <button class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-primary-500 hover:text-primary-600 transition-all">أسبوعي</button>
+            <button class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-primary-500 hover:text-primary-600 transition-all">يومي</button>
+          </div>
+        </div>
+        
+        <!-- Chart Canvas -->
+        <div class="h-72">
+          <canvas id="revenueChart"></canvas>
+        </div>
+        
+        <!-- Stats Row -->
+        <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+          <div class="text-center">
+            <p class="text-sm text-gray-500 mb-1">معدل النمو</p>
+            <p class="text-2xl font-bold text-green-600">+22%</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-gray-500 mb-1">الإيرادات الشهرية</p>
+            <p class="text-2xl font-bold text-blue-600">125K</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-gray-500 mb-1">العقود النشطة</p>
+            <p class="text-2xl font-bold text-purple-600">245</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Fleet Status Donut -->
+      <div class="glass-card rounded-2xl p-6 animate-slide-up stagger-7">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-gray-900">حالة الأسطول</h3>
+          <span class="px-3 py-1.5 rounded-full text-xs font-bold bg-green-500 text-white">68% إشغال</span>
+        </div>
+        
+        <!-- Donut Chart -->
+        <div class="relative h-52 flex items-center justify-center">
+          <canvas id="fleetDonut"></canvas>
+          <div class="donut-center">
+            <p class="text-3xl font-bold text-gray-900">510</p>
+            <p class="text-sm text-gray-500">إجمالي</p>
+          </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50">
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <div>
+              <p class="text-xs text-gray-500">متاح</p>
+              <p class="text-sm font-bold text-gray-900">163</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50">
+            <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+            <div>
+              <p class="text-xs text-gray-500">مؤجر</p>
+              <p class="text-sm font-bold text-gray-900">280</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50">
+            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+            <div>
+              <p class="text-xs text-gray-500">صيانة</p>
+              <p class="text-sm font-bold text-gray-900">42</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 p-3 rounded-xl bg-gray-50">
+            <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+            <div>
+              <p class="text-xs text-gray-500">محجوز</p>
+              <p class="text-sm font-bold text-gray-900">25</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Secondary Analytics Section -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      
+      <!-- Customers Chart -->
+      <div class="glass-card rounded-2xl p-6 animate-slide-up stagger-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">تحليل العملاء</h3>
+            <p class="text-xs text-gray-500">أداء واتجاهات العملاء</p>
+          </div>
+          <select class="px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+            <option>هذا الشهر</option>
+            <option>آخر 3 أشهر</option>
+          </select>
+        </div>
+        
+        <div class="h-48">
+          <canvas id="customersChart"></canvas>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+          <div class="text-center p-3 bg-blue-50 rounded-xl">
+            <p class="text-2xl font-bold text-blue-600">781</p>
+            <p class="text-xs text-gray-500">إجمالي العملاء</p>
+          </div>
+          <div class="text-center p-3 bg-green-50 rounded-xl">
+            <p class="text-2xl font-bold text-green-600">92%</p>
+            <p class="text-xs text-gray-500">معدل الرضا</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Performance Metrics -->
+      <div class="glass-card rounded-2xl p-6 animate-slide-up stagger-7">
+        <h3 class="text-lg font-bold text-gray-900 mb-6">مؤشرات الأداء</h3>
+        
+        <div class="space-y-5">
+          <!-- Vehicle Activity -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-gray-600 flex items-center gap-2">
+                <i data-lucide="gauge" class="w-4 h-4 text-primary-500"></i>
+                نشاط المركبات
+              </span>
+              <span class="text-sm font-bold text-gray-900">85%</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full progress-animate" style="width: 85%"></div>
+            </div>
+          </div>
+          
+          <!-- Contract Completion -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-gray-600 flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+                إكمال العقود
+              </span>
+              <span class="text-sm font-bold text-gray-900">78%</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full progress-animate" style="width: 78%"></div>
+            </div>
+          </div>
+          
+          <!-- Customer Satisfaction -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-gray-600 flex items-center gap-2">
+                <i data-lucide="star" class="w-4 h-4 text-amber-500"></i>
+                رضا العملاء
+              </span>
+              <span class="text-sm font-bold text-gray-900">92%</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full progress-animate" style="width: 92%"></div>
+            </div>
+          </div>
+          
+          <!-- Occupancy Rate -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm text-gray-600 flex items-center gap-2">
+                <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i>
+                نسبة الإشغال
+              </span>
+              <span class="text-sm font-bold text-gray-900">68%</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full progress-animate" style="width: 68%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Performance Note -->
+        <div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-100">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg">
+              <i data-lucide="flame" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900">أداء ممتاز هذا الشهر!</p>
+              <p class="text-xs text-gray-500">نمو 22% في الإيرادات مقارنة بالشهر الماضي</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Contracts -->
+      <div class="glass-card rounded-2xl p-6 animate-slide-up stagger-8">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-900">آخر العقود</h3>
+          <button class="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+            عرض الكل
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+        </div>
+        
+        <div class="space-y-3">
+          <!-- Contract 1 -->
+          <div class="contract-item flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-green-100 text-green-600">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">#1234</p>
+                <p class="text-xs text-gray-500">أحمد محمد</p>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-sm font-bold text-gray-900">4,500 QAR</p>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">نشط</span>
+            </div>
+          </div>
+          
+          <!-- Contract 2 -->
+          <div class="contract-item flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-gray-200 text-gray-600">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">#1235</p>
+                <p class="text-xs text-gray-500">سارة علي</p>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-sm font-bold text-gray-900">3,200 QAR</p>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-200 text-gray-700">مسودة</span>
+            </div>
+          </div>
+          
+          <!-- Contract 3 -->
+          <div class="contract-item flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-amber-100 text-amber-600">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">#1236</p>
+                <p class="text-xs text-gray-500">محمد خالد</p>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-sm font-bold text-gray-900">5,100 QAR</p>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">معلق</span>
+            </div>
+          </div>
+          
+          <!-- Contract 4 -->
+          <div class="contract-item flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-green-100 text-green-600">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900">#1237</p>
+                <p class="text-xs text-gray-500">فاطمة أحمد</p>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-sm font-bold text-gray-900">6,800 QAR</p>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">نشط</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Bottom Section: Alerts & Activity -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      
+      <!-- Alerts -->
+      <div class="glass-card rounded-2xl p-6 animate-slide-up stagger-7">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
+            التنبيهات والتذكيرات
+          </h3>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">5 جديدة</span>
+        </div>
+        
+        <div class="space-y-3">
+          <div class="alert-item alert-warning flex items-start gap-3 p-3 rounded-xl bg-amber-50">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 mt-0.5"></i>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">3 رخص تنتهي خلال 7 أيام</p>
+              <p class="text-xs text-gray-500">يجب تجديد الرخص قبل انتهاء الصلاحية</p>
+            </div>
+          </div>
+          
+          <div class="alert-item alert-warning flex items-start gap-3 p-3 rounded-xl bg-amber-50">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-amber-500 mt-0.5"></i>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">5 تأمينات تنتهي هذا الشهر</p>
+              <p class="text-xs text-gray-500">تحقق من التأمينات المنتهية</p>
+            </div>
+          </div>
+          
+          <div class="alert-item alert-danger flex items-start gap-3 p-3 rounded-xl bg-red-50">
+            <i data-lucide="wrench" class="w-5 h-5 text-red-500 mt-0.5"></i>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">2 صيانة مجدولة اليوم</p>
+              <p class="text-xs text-gray-500">سيارات تحتاج صيانة دورية</p>
+            </div>
+          </div>
+          
+          <div class="alert-item alert-success flex items-start gap-3 p-3 rounded-xl bg-green-50">
+            <i data-lucide="check-circle" class="w-5 h-5 text-green-500 mt-0.5"></i>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">تم تجديد 4 عقود بنجاح</p>
+              <p class="text-xs text-gray-500">اليوم الساعة 10:30 صباحاً</p>
+            </div>
+          </div>
+        </div>
+        
+        <button class="w-full mt-4 py-2.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-xl transition-all">
+          عرض جميع التنبيهات
+        </button>
+      </div>
+      
+      <!-- Activity Feed -->
+      <div class="glass-card rounded-2xl p-6 animate-slide-up stagger-8">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i>
+            آخر النشاطات
+          </h3>
+          <button class="text-sm text-primary-600 hover:text-primary-700 font-medium">عرض الكل</button>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="activity-item flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="activity-dot w-2.5 h-2.5 rounded-full bg-green-500"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">تم إنشاء عقد جديد #1234</p>
+              <p class="text-xs text-gray-500">منذ 5 دقائق</p>
+            </div>
+          </div>
+          
+          <div class="activity-item flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="activity-dot w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">تم تسجيل دفعة 2,500 QAR</p>
+              <p class="text-xs text-gray-500">منذ 15 دقيقة</p>
+            </div>
+          </div>
+          
+          <div class="activity-item flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="activity-dot w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">عميل جديد: شركة الخليج للتجارة</p>
+              <p class="text-xs text-gray-500">منذ ساعة</p>
+            </div>
+          </div>
+          
+          <div class="activity-item flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="activity-dot w-2.5 h-2.5 rounded-full bg-purple-500"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">تحديث بيانات مركبة ABC-1234</p>
+              <p class="text-xs text-gray-500">منذ ساعتين</p>
+            </div>
+          </div>
+          
+          <div class="activity-item flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+            <div class="activity-dot w-2.5 h-2.5 rounded-full bg-green-500"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">اكتمال صيانة مركبة XYZ-5678</p>
+              <p class="text-xs text-gray-500">منذ 3 ساعات</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="text-center py-6 animate-slide-up stagger-8">
+      <p class="text-sm text-gray-400">
+        FleetifyApp Dashboard • تصميم احترافي متكامل
+      </p>
+    </footer>
+  </div>
+  
+  <!-- Initialize Lucide Icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+  
+  <!-- Initialize Charts -->
+  <script>
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueGradient = revenueCtx.createLinearGradient(0, 0, 0, 300);
+    revenueGradient.addColorStop(0, 'rgba(185, 28, 28, 0.3)');
+    revenueGradient.addColorStop(1, 'rgba(185, 28, 28, 0)');
+    
+    new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+        datasets: [{
+          label: 'الإيرادات',
+          data: [85000, 92000, 88000, 105000, 115000, 125000],
+          fill: true,
+          backgroundColor: revenueGradient,
+          borderColor: '#b91c1c',
+          borderWidth: 3,
+          tension: 0.4,
+          pointBackgroundColor: '#b91c1c',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            titleFont: { family: 'Cairo' },
+            bodyFont: { family: 'Cairo' },
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return context.parsed.y.toLocaleString('ar-QA') + ' QAR';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { family: 'Cairo' }, color: '#64748b' }
+          },
+          y: {
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              font: { family: 'Cairo' },
+              color: '#64748b',
+              callback: function(value) {
+                return (value / 1000) + 'K';
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Fleet Donut Chart
+    const fleetCtx = document.getElementById('fleetDonut').getContext('2d');
+    new Chart(fleetCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['متاح', 'مؤجر', 'صيانة', 'محجوز'],
+        datasets: [{
+          data: [163, 280, 42, 25],
+          backgroundColor: ['#22c55e', '#f43f5e', '#f59e0b', '#3b82f6'],
+          borderWidth: 0,
+          cutout: '70%'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            titleFont: { family: 'Cairo' },
+            bodyFont: { family: 'Cairo' },
+            padding: 12,
+            cornerRadius: 8
+          }
+        }
+      }
+    });
+    
+    // Customers Bar Chart
+    const customersCtx = document.getElementById('customersChart').getContext('2d');
+    new Chart(customersCtx, {
+      type: 'bar',
+      data: {
+        labels: ['الأسبوع 1', 'الأسبوع 2', 'الأسبوع 3', 'الأسبوع 4', 'الأسبوع 5'],
+        datasets: [
+          {
+            label: 'عملاء جدد',
+            data: [15, 22, 18, 28, 24],
+            backgroundColor: '#3b82f6',
+            borderRadius: 8
+          },
+          {
+            label: 'عملاء متكررون',
+            data: [8, 12, 10, 15, 18],
+            backgroundColor: '#22c55e',
+            borderRadius: 8
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              font: { family: 'Cairo', size: 11 },
+              usePointStyle: true,
+              padding: 15
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            titleFont: { family: 'Cairo' },
+            bodyFont: { family: 'Cairo' },
+            padding: 12,
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { font: { family: 'Cairo', size: 10 }, color: '#64748b' }
+          },
+          y: {
+            stacked: true,
+            grid: { color: '#f1f5f9' },
+            ticks: { font: { family: 'Cairo' }, color: '#64748b' }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

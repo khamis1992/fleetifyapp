@@ -1,0 +1,909 @@
+{
+  "summary": {
+    "total_excel_contracts": 290,
+    "total_db_contracts": 301,
+    "exact_matches": 132,
+    "potential_fuzzy_matches": 32,
+    "no_matches": 126,
+    "renamed_agreements": 19
+  },
+  "renamed_agreements": [
+    {
+      "excel_contract": "LTO202451",
+      "db_contracts": [
+        "MR2024232"
+      ],
+      "customer": "ABDELJALIL HATTACH",
+      "total_amount": 14400.0,
+      "payment_count": 9
+    },
+    {
+      "excel_contract": "LTO202423",
+      "db_contracts": [
+        "AGR-202504-419607"
+      ],
+      "customer": "Sofiene Ben salah",
+      "total_amount": 9730.0,
+      "payment_count": 5
+    },
+    {
+      "excel_contract": "LTO202424",
+      "db_contracts": [
+        "LTO2024149",
+        "LTO2024113"
+      ],
+      "customer": "mokhtar alil",
+      "total_amount": 6300.0,
+      "payment_count": 5
+    },
+    {
+      "excel_contract": "LTO2024233",
+      "db_contracts": [
+        "LTO202491"
+      ],
+      "customer": "radhwan mdini",
+      "total_amount": 2734.0,
+      "payment_count": 3
+    },
+    {
+      "excel_contract": "LTO2024315",
+      "db_contracts": [
+        "LTO2024331"
+      ],
+      "customer": "mohamed ncibi",
+      "total_amount": 2100.0,
+      "payment_count": 5
+    },
+    {
+      "excel_contract": "Ret-2018183",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018186",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018187",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018188",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018194",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018197",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018198",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018201",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018206",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018211",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018223",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "Ret-2018226",
+      "db_contracts": [
+        "Ret-2018190",
+        "Ret-2018217",
+        "Ret-2018218",
+        "Ret-2018215",
+        "Ret-2018189",
+        "Ret-2018209",
+        "Ret-2018203",
+        "Ret-2018210",
+        "Ret-2018192",
+        "Ret-2018199",
+        "Ret-2018202",
+        "Ret-2018195",
+        "Ret-2018219",
+        "Ret-2018207",
+        "Ret-2018220",
+        "Ret-2018191",
+        "Ret-2018205",
+        "Ret-2018193",
+        "Ret-2018216",
+        "Ret-2018196",
+        "Ret-2018214",
+        "Ret-2018228",
+        "Ret-2018222",
+        "Ret-2018225",
+        "Ret-2018185",
+        "Ret-2018212",
+        "Ret-2018221",
+        "Ret-2018200",
+        "Ret-2018213",
+        "Ret-2018204",
+        "Ret-2018229",
+        "Ret-2018208"
+      ],
+      "customer": "snoonu snoonu",
+      "total_amount": 1600.0,
+      "payment_count": 1
+    },
+    {
+      "excel_contract": "MR2024121",
+      "db_contracts": [
+        "AGR-202504-419607"
+      ],
+      "customer": "Sofiene Ben salah",
+      "total_amount": 1000.0,
+      "payment_count": 2
+    },
+    {
+      "excel_contract": "LTO2024339",
+      "db_contracts": [
+        "LTO2024313",
+        "LTO2024299"
+      ],
+      "customer": "marwen safsafi",
+      "total_amount": 814.0,
+      "payment_count": 2
+    }
+  ],
+  "no_match_customers": [
+    {
+      "excel_lease_id": NaN,
+      "excel_customer": "khamis hashim aljabor",
+      "vehicle_number": 2635,
+      "total_amount": 66500.0,
+      "payment_count": 1
+    },
+    {
+      "excel_lease_id": "LTO2024114",
+      "excel_customer": "tarak  hamlet",
+      "vehicle_number": 9894,
+      "total_amount": 35995.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO202497",
+      "excel_customer": "MAHDI HOSNI",
+      "vehicle_number": 846508,
+      "total_amount": 31500.0,
+      "payment_count": 18
+    },
+    {
+      "excel_lease_id": "LTO202450",
+      "excel_customer": "ADAM SALIH G. MOHAMED",
+      "vehicle_number": 7077,
+      "total_amount": 29500.0,
+      "payment_count": 16
+    },
+    {
+      "excel_lease_id": "LTO2024106",
+      "excel_customer": "ravi ravi",
+      "vehicle_number": 847987,
+      "total_amount": 29484.0,
+      "payment_count": 17
+    },
+    {
+      "excel_lease_id": "LTO2024105",
+      "excel_customer": "ravi ravi",
+      "vehicle_number": 847941,
+      "total_amount": 29483.0,
+      "payment_count": 16
+    },
+    {
+      "excel_lease_id": "LTO2024107",
+      "excel_customer": "ravi ravi",
+      "vehicle_number": 848014,
+      "total_amount": 28338.0,
+      "payment_count": 17
+    },
+    {
+      "excel_lease_id": "LTO202427",
+      "excel_customer": "AYMEN HAMADI",
+      "vehicle_number": 5889,
+      "total_amount": 27900.0,
+      "payment_count": 17
+    },
+    {
+      "excel_lease_id": "LTO2024104",
+      "excel_customer": "ravi ravi",
+      "vehicle_number": 847932,
+      "total_amount": 27216.0,
+      "payment_count": 15
+    },
+    {
+      "excel_lease_id": "LTO202445",
+      "excel_customer": "Badredine Khalfi",
+      "vehicle_number": 847059,
+      "total_amount": 24900.0,
+      "payment_count": 16
+    },
+    {
+      "excel_lease_id": "LTO202420",
+      "excel_customer": "Awad el karim Abdelmonim",
+      "vehicle_number": 7066,
+      "total_amount": 22200.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO202415",
+      "excel_customer": "Zyed Yahmadi",
+      "vehicle_number": 8214,
+      "total_amount": 20000.0,
+      "payment_count": 12
+    },
+    {
+      "excel_lease_id": "LTO2024124",
+      "excel_customer": "AMIR ABDERAHMAN AHMED  EL MAHDI",
+      "vehicle_number": 847099,
+      "total_amount": 19230.0,
+      "payment_count": 12
+    },
+    {
+      "excel_lease_id": "LTO202416",
+      "excel_customer": "Abdelrahim Mohamed",
+      "vehicle_number": 4018,
+      "total_amount": 19000.0,
+      "payment_count": 12
+    },
+    {
+      "excel_lease_id": "LTO202417",
+      "excel_customer": "Abdelrahim Mohamed",
+      "vehicle_number": 8213,
+      "total_amount": 18340.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO202419",
+      "excel_customer": "Mazyad Saab",
+      "vehicle_number": 7069,
+      "total_amount": 16000.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO202431",
+      "excel_customer": "Abdulhanna  abulhashem",
+      "vehicle_number": 7061,
+      "total_amount": 15990.0,
+      "payment_count": 10
+    },
+    {
+      "excel_lease_id": "LTO2024109",
+      "excel_customer": "Abdelrahim Mohamed",
+      "vehicle_number": 9890,
+      "total_amount": 13640.0,
+      "payment_count": 10
+    },
+    {
+      "excel_lease_id": "MR202475",
+      "excel_customer": "tamer m.g el sayed",
+      "vehicle_number": 7038,
+      "total_amount": 13460.0,
+      "payment_count": 14
+    },
+    {
+      "excel_lease_id": "LTO2024115",
+      "excel_customer": "YASSER RABIE MOHAMED SOLIMAN",
+      "vehicle_number": 7068,
+      "total_amount": 13120.0,
+      "payment_count": 10
+    },
+    {
+      "excel_lease_id": "LTO202410",
+      "excel_customer": "ABDELAZIZ  JERFEL",
+      "vehicle_number": 17216,
+      "total_amount": 12847.0,
+      "payment_count": 12
+    },
+    {
+      "excel_lease_id": "MR202467",
+      "excel_customer": "omer mohammad ahmed omer",
+      "vehicle_number": 10670,
+      "total_amount": 12810.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO20242",
+      "excel_customer": "AMARA KHARROUBI",
+      "vehicle_number": 857045,
+      "total_amount": 12800.0,
+      "payment_count": 12
+    },
+    {
+      "excel_lease_id": "LTO202437",
+      "excel_customer": "Hamza BADOU",
+      "vehicle_number": 676281,
+      "total_amount": 12720.0,
+      "payment_count": 7
+    },
+    {
+      "excel_lease_id": "LTO202418",
+      "excel_customer": "Mohammad Haitham ettahar elhaddi mohamad",
+      "vehicle_number": 7075,
+      "total_amount": 12600.0,
+      "payment_count": 6
+    },
+    {
+      "excel_lease_id": "LTO2024156",
+      "excel_customer": "ahmed eldie dafelseed babker",
+      "vehicle_number": 5899,
+      "total_amount": 12590.0,
+      "payment_count": 10
+    },
+    {
+      "excel_lease_id": "LTO20243",
+      "excel_customer": "MEDHAT  OSMAN MOHAMED BAKRY",
+      "vehicle_number": 21849,
+      "total_amount": 12425.0,
+      "payment_count": 10
+    },
+    {
+      "excel_lease_id": "LTO20247",
+      "excel_customer": "Elsadigh Salih  Ibrahim Diab",
+      "vehicle_number": 185513,
+      "total_amount": 12200.0,
+      "payment_count": 8
+    },
+    {
+      "excel_lease_id": "MR202488",
+      "excel_customer": "lukman dramani",
+      "vehicle_number": 7065,
+      "total_amount": 11820.0,
+      "payment_count": 2
+    },
+    {
+      "excel_lease_id": "LTO2024142",
+      "excel_customer": "MOJEEB  ALRAHMAN AMIN ALI AMIN",
+      "vehicle_number": 7035,
+      "total_amount": 11290.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO2024255",
+      "excel_customer": "ganga ram chaudhary",
+      "vehicle_number": 10672,
+      "total_amount": 10552.0,
+      "payment_count": 9
+    },
+    {
+      "excel_lease_id": "LTO202425",
+      "excel_customer": "ANOUER MATHLOUTHI",
+      "vehicle_number": 557098,
+      "total_amount": 10500.0,
+      "payment_count": 5
+    },
+    {
+      "excel_lease_id": "LTO202499",
+      "excel_customer": "HICHEM ABDERAHIM",
+      "vehicle_number": 7035,
+      "total_amount": 10400.0,
+      "payment_count": 5
+    },
+    {
+      "excel_lease_id": "MR202462",
+      "excel_customer": "osmane haroun adam mohamed",
+      "vehicle_number": 7042,
+      "total_amount": 10350.0,
+      "payment_count": 7
+    },
+    {
+      "excel_lease_id": "LTO2024239",
+      "excel_customer": "mohamed babiker mohamed ali yousif",
+      "vehicle_number": 10669,
+      "total_amount": 9850.0,
+      "payment_count": 15
+    },
+    {
+      "excel_lease_id": "LTO2024230",
+      "excel_customer": "hamdi thabet",
+      "vehicle_number": 722134,
+      "total_amount": 9739.0,
+      "payment_count": 7
+    },
+    {
+      "excel_lease_id": "LTO2024232",
+      "excel_customer": "ABDUL AZIZ ISMAIL GANAOU WAIGA",
+      "vehicle_number": 8212,
+      "total_amount": 9730.0,
+      "payment_count": 6
+    },
+    {
+      "excel_lease_id": "LTO2024248",
+      "excel_customer": "ismail ahmed abdalla mohamed",
+      "vehicle_number": 2772,
+      "total_amount": 9600.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO2024252",
+      "excel_customer": "mahdi yousif",
+      "vehicle_number": 721440,
+      "total_amount": 9430.0,
+      "payment_count": 7
+    },
+    {
+      "excel_lease_id": "LTO2024125",
+      "excel_customer": "ANWAR M.IBRAHIM MOHAMED",
+      "vehicle_number": 10172,
+      "total_amount": 9393.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO2024273",
+      "excel_customer": "AHMED ABDALLAH TAHER EDRISS",
+      "vehicle_number": 10665,
+      "total_amount": 9200.0,
+      "payment_count": 9
+    },
+    {
+      "excel_lease_id": "LTO202414",
+      "excel_customer": "Ghazi Emmad ben meddeb",
+      "vehicle_number": 7034,
+      "total_amount": 9066.0,
+      "payment_count": 6
+    },
+    {
+      "excel_lease_id": "LTO2024263",
+      "excel_customer": "MAHDI OSAMA ELMAHADI HAMID",
+      "vehicle_number": 7053,
+      "total_amount": 9000.0,
+      "payment_count": 6
+    },
+    {
+      "excel_lease_id": "LTO2024250",
+      "excel_customer": "ABUELMAALI ALAMIN ELGAK ISMAIL",
+      "vehicle_number": 7078,
+      "total_amount": 8200.0,
+      "payment_count": 11
+    },
+    {
+      "excel_lease_id": "LTO2024119",
+      "excel_customer": "MOTAZ OMER HAG AHMED ABOSHABA",
+      "vehicle_number": 21860,
+      "total_amount": 7865.0,
+      "payment_count": 8
+    },
+    {
+      "excel_lease_id": "LTO2024262",
+      "excel_customer": "ADIL HAMID ALI ABDELKARIM",
+      "vehicle_number": 7067,
+      "total_amount": 7750.0,
+      "payment_count": 7
+    },
+    {
+      "excel_lease_id": "139",
+      "excel_customer": "omar hmem",
+      "vehicle_number": 5893,
+      "total_amount": 7610.0,
+      "payment_count": 9
+    },
+    {
+      "excel_lease_id": "LTO2024153",
+      "excel_customer": "AHMED AKKAR",
+      "vehicle_number": 335485,
+      "total_amount": 7500.0,
+      "payment_count": 3
+    },
+    {
+      "excel_lease_id": "LTO2024126",
+      "excel_customer": "MAMOUN  ALAMIN ESMAEIL AHMED",
+      "vehicle_number": 8209,
+      "total_amount": 7320.0,
+      "payment_count": 5
+    },
+    {
+      "excel_lease_id": "288",
+      "excel_customer": "AMMAR GHOZY",
+      "vehicle_number": 893410,
+      "total_amount": 7240.0,
+      "payment_count": 8
+    }
+  ]
+}

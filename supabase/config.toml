@@ -1,0 +1,55 @@
+project_id = "qwhunliohlkkahbspfiu"
+
+[functions.intelligent-contract-processor]
+verify_jwt = true
+
+[functions.set-browsed-company]
+verify_jwt = true
+
+[functions.send-account-invitation]
+verify_jwt = false
+
+[functions.process-monthly-depreciation]
+verify_jwt = false
+
+[functions.refresh-stats-cache]
+verify_jwt = false
+
+[functions.quotation-approval]
+verify_jwt = false
+
+[functions.legal-ai-api]
+verify_jwt = false
+
+[functions.legal-ai-enhanced]
+verify_jwt = true
+
+[functions.self-learning-ai]
+verify_jwt = true
+
+[functions.intelligent-clarification]
+verify_jwt = true
+
+[functions.clarification-learning]
+verify_jwt = true
+
+[functions.ai-self-evaluation]
+verify_jwt = true
+
+[functions.openai-chat]
+verify_jwt = true
+
+[functions.transfer-user-company]
+verify_jwt = true
+
+[functions.sync-document-alerts]
+verify_jwt = false
+
+[functions.extract-traffic-violations]
+verify_jwt = false
+
+[functions.scan-invoice]
+verify_jwt = true
+
+[functions.financial-analysis-ai]
+verify_jwt = true
