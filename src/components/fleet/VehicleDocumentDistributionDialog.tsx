@@ -1095,7 +1095,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
             <ScanSearch className="w-5 h-5 text-teal-600" />
             توزيع المستندات وتحديث البيانات
           </DialogTitle>
-          <DialogDescription className="space-y-1">
+          <div className="text-sm text-muted-foreground space-y-1">
             <span>قم برفع صور استمارات المركبات:</span>
             <ul className="list-disc list-inside text-xs space-y-0.5 mt-1 mr-2">
               <li>يستخدم النظام <strong>Google Cloud Vision</strong> للتعرف بدقة عالية</li>
@@ -1106,7 +1106,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
               <Database className="w-3 h-3" />
               <span className="text-xs font-medium">OCR عبر Supabase Edge Function</span>
             </div>
-          </DialogDescription>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">

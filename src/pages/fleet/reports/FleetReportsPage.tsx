@@ -574,7 +574,7 @@ const FleetReportsPage: React.FC = () => {
                 <div className="space-y-3 max-h-[300px] overflow-y-auto">
                   {topProfitableVehicles?.map((vehicle, idx) => (
                     <div 
-                      key={vehicle.id}
+                      key={vehicle.id || `vehicle-${idx}`}
                       className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors"
                     >
                       <div className="flex items-center gap-3">

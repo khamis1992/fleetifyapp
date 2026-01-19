@@ -92,22 +92,24 @@ export const useMaintenanceReport = (filters?: ReportFilters) => {
     queryFn: async (): Promise<MaintenanceReportData[]> => {
       if (!companyId) return [];
       
-      let query = supabase
-        .from('maintenance')
+      // استخدام جدول vehicle_maintenance مع فلتر company_id مباشرة
+      const { data, error } = await supabase
+        .from('vehicle_maintenance')
         .select(`
           *,
-          vehicles!inner(plate_number, company_id)
+          vehicles(plate_number)
         `)
-        .eq('vehicles.company_id', companyId);
+        .eq('company_id', companyId);
       
-      const { data, error } = await query;
-      
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching maintenance report:', error);
+        return [];
+      }
       
       return (data || []).map(m => ({
         id: m.id,
         vehicle_id: m.vehicle_id,
-        plate_number: m.vehicles?.plate_number || 'غير محدد',
+        plate_number: (m.vehicles as any)?.plate_number || 'غير محدد',
         maintenance_type: m.maintenance_type,
         scheduled_date: m.scheduled_date,
         completed_date: m.completed_date,
@@ -194,7 +196,7 @@ export const useMonthlyRevenue = () => {
       
       // جلب الصيانة للتكاليف
       const { data: maintenance } = await supabase
-        .from('maintenance')
+        .from('vehicle_maintenance')
         .select('estimated_cost, scheduled_date')
         .eq('company_id', companyId);
       
