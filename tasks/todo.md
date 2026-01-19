@@ -108,3 +108,36 @@ Pages keep loading forever when navigating between them, requiring hard refresh 
 - `src/components/router/RouteProvider.tsx`
 - `src/components/router/RouteRenderer.tsx`
 - `src/components/common/ProtectedRoute.tsx`
+
+---
+
+# Vehicle Comprehensive Report Feature
+
+## Goal
+Add a "Vehicle Report" button to the vehicle details page to generate a comprehensive report including traffic violations, contracts, and responsible persons, specifically for managing impounded vehicles.
+
+## Phases (Todo)
+- [x] Create VehicleComprehensiveReportDialog component for generating the report
+- [x] Add "Vehicle Report" button to VehicleDetailsPage
+- [x] Integrate VehicleComprehensiveReportDialog into VehicleDetailsPage
+
+## Review
+
+### Changes Made:
+1. **Created `src/components/fleet/VehicleComprehensiveReportDialog.tsx`**:
+   - Fetches detailed vehicle data, contracts, and traffic violations (from `penalties` table).
+   - Generates a printable HTML report with sections for:
+     - Vehicle Information
+     - Traffic Violations (with responsible customer/company)
+     - Contracts History
+     - Financial Summary (Total Unpaid Fines)
+   - Includes printing functionality.
+
+2. **Modified `src/components/fleet/VehicleDetailsPage.tsx`**:
+   - Added "Vehicle Report" button in the header.
+   - Added state to manage report dialog visibility.
+   - Integrated the report dialog component.
+
+### Files Touched:
+- `src/components/fleet/VehicleComprehensiveReportDialog.tsx` (New)
+- `src/components/fleet/VehicleDetailsPage.tsx` (Modified)

@@ -42,6 +42,7 @@ import { VehicleInsurancePanel } from './VehicleInsurancePanel';
 import { VehicleForm } from './VehicleForm';
 import { MaintenanceForm } from './MaintenanceForm';
 import { TrafficViolationForm } from './TrafficViolationForm';
+import { VehicleComprehensiveReportDialog } from './VehicleComprehensiveReportDialog';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -63,6 +64,7 @@ const VehicleDetailsPage = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [showViolationForm, setShowViolationForm] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
   const queryClient = useQueryClient();
 
   // جلب بيانات المركبة من قاعدة البيانات
@@ -331,6 +333,15 @@ const VehicleDetailsPage = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setShowReportDialog(true)}
+              >
+                <FileText className="w-4 h-4" />
+                تقرير مركبة
+              </Button>
+
               <Button 
                 type="button"
                 onClick={handleEdit} 
@@ -658,6 +669,15 @@ const VehicleDetailsPage = () => {
           <TrafficViolationForm onSuccess={handleViolationSuccess} vehicleId={vehicleId} />
         </DialogContent>
       </Dialog>
+
+      {/* Vehicle Comprehensive Report Dialog */}
+      {vehicleId && (
+        <VehicleComprehensiveReportDialog 
+          open={showReportDialog} 
+          onOpenChange={setShowReportDialog} 
+          vehicleId={vehicleId} 
+        />
+      )}
     </div>
   );
 };
