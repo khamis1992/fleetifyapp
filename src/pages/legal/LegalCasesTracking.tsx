@@ -1063,7 +1063,7 @@ export const LegalCasesTracking: React.FC = () => {
           </Button>
           <Button
             onClick={() => setShowCaseWizard(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl text-sm hover:from-rose-600 hover:to-rose-700 shadow-md transition-all"
+            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-sm hover:bg-teal-700 shadow-md transition-all"
           >
             <Plus size={16} />
             <span>تسجيل قضية جديدة</span>
@@ -1795,8 +1795,8 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl blur-xl opacity-20" />
-              <div className="relative bg-gradient-to-br from-rose-500 to-rose-600 p-3 rounded-xl shadow-lg">
+              <div className="absolute inset-0 bg-teal-600 rounded-xl blur-xl opacity-20" />
+              <div className="relative bg-teal-600 p-3 rounded-xl shadow-lg">
                 <Gavel className="text-white" size={24} />
               </div>
             </div>
@@ -1818,7 +1818,7 @@ export const LegalCasesTracking: React.FC = () => {
             <Button
               onClick={() => setShowCaseWizard(true)}
               size="sm"
-              className="gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md"
+              className="gap-2 bg-teal-600 hover:bg-teal-700 shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">قضية جديدة</span>

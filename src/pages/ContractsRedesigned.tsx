@@ -599,7 +599,7 @@ function ContractsRedesigned() {
           <StatusBadge status={contract.status} />
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-white/50 rounded-3xl">
+        <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-[rgba(230,230,230,0.5)] rounded-3xl">
           <div>
             <p className="text-xs text-slate-500 mb-1">تاريخ البداية</p>
             <p className="font-semibold text-slate-900 text-sm">{formatDateInGregorian(contract.start_date)}</p>

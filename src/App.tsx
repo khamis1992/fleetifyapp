@@ -18,7 +18,8 @@ import { FinanceProvider } from '@/contexts/FinanceContext';
 import { AIChatProvider } from '@/contexts/AIChatContext';
 
 // UI Components
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -226,6 +227,7 @@ const App: React.FC = () => {
 
                               {/* Global Toast Notifications */}
                               <Toaster />
+                              <SonnerToaster />
                             </div>
                           </RouteErrorBoundary>
                         </RouteProvider>

@@ -1270,7 +1270,7 @@ export default function CarRentalScheduler() {
               </div>
               <button 
                 onClick={handleNewDriver} 
-                className="bg-rose-500 hover:bg-coral-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2"
+                className="bg-[#0d9488] hover:bg-coral-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm transition flex items-center gap-2 border border-black"
               >
                 <Plus className="w-5 h-5" /> إضافة سائق
               </button>

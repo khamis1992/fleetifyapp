@@ -285,7 +285,7 @@ const FleetReportsPage: React.FC = () => {
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-coral-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -384,28 +384,28 @@ const FleetReportsPage: React.FC = () => {
           <TabsList className="w-full justify-start bg-white rounded-2xl p-1 shadow-sm gap-1 overflow-x-auto">
             <TabsTrigger 
               value="overview" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
             >
               <BarChart3 className="w-4 h-4" />
               نظرة عامة
             </TabsTrigger>
             <TabsTrigger 
               value="financial" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
             >
               <DollarSign className="w-4 h-4" />
               التحليل المالي
             </TabsTrigger>
             <TabsTrigger 
               value="maintenance" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
             >
               <Wrench className="w-4 h-4" />
               الصيانة
             </TabsTrigger>
             <TabsTrigger 
               value="insurance" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white gap-2"
+              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
             >
               <Shield className="w-4 h-4" />
               التأمين والتسجيل

@@ -266,7 +266,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
           <PopoverTrigger asChild>
             <Button
               size="sm"
-              className="h-9 bg-gradient-to-r from-violet-500 to-cyan-500 hover:from-violet-600 hover:to-cyan-600"
+              className="h-9 bg-teal-600 hover:bg-teal-700"
             >
               <Download className="w-4 h-4 ml-1" />
               تصدير

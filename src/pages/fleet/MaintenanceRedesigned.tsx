@@ -686,7 +686,7 @@ export default function MaintenanceRedesigned() {
               <Button
                 size="sm"
                 onClick={handleCreateNew}
-                className="bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white gap-2 rounded-xl shadow-lg shadow-sky-500/20"
+                className="bg-teal-600 hover:bg-teal-700 text-white gap-2 rounded-xl shadow-lg shadow-teal-500/20"
               >
                 <Plus className="w-4 h-4" />
                 صيانة جديدة

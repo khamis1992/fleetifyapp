@@ -347,7 +347,7 @@ const WelcomeMessage: React.FC<{
       animate={{ opacity: 1, y: 0 }}
       className="text-center py-6 px-4"
     >
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
         <Bot className="h-8 w-8 text-white" />
       </div>
       
@@ -625,7 +625,7 @@ export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideF
               className="fixed bottom-6 left-6 z-[9999] w-[380px] max-w-[calc(100vw-48px)] h-[600px] max-h-[calc(100vh-100px)] bg-neutral-50 rounded-2xl shadow-2xl border border-neutral-200 overflow-hidden flex flex-col"
             >
               {/* Header */}
-              <div className="bg-gradient-to-l from-blue-500 to-indigo-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
+              <div className="bg-teal-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                     <Bot className="h-5 w-5 text-white" />
@@ -735,11 +735,6 @@ export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideF
                     </Button>
                   )}
                 </div>
-                
-                {/* Powered by */}
-                <p className="text-[10px] text-neutral-400 text-center mt-2">
-                  مدعوم بـ GLM-4.6 AI 🤖
-                </p>
               </div>
             </motion.div>
           </>

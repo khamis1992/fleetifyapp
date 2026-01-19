@@ -40,10 +40,13 @@ export class CRMErrorBoundary extends Component<Props, State> {
           <p className="text-red-700 text-center mb-6 max-w-md">
             {this.state.error?.message || 'نعتذر عن هذا الخطأ. يرجى المحاولة مرة أخرى.'}
           </p>
-          <Button onClick={() => window.location.reload()} variant="destructive">
+          <button 
+            onClick={() => window.location.reload()} 
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap bg-[rgba(0,168,150,1)] text-white shadow-md hover:opacity-90"
+          >
             <RefreshCw className="w-4 h-4 mr-2" />
             إعادة التحميل
-          </Button>
+          </button>
         </div>
       );
     }

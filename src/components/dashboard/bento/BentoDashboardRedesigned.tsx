@@ -463,7 +463,7 @@ const BentoDashboardRedesigned: React.FC = () => {
             {/* Left - Logo & Date */}
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
                   <Activity className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-bold text-neutral-900">لوحة التحكم</span>

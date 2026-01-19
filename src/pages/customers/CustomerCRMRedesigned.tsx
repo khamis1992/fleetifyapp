@@ -965,7 +965,7 @@ export default function CustomerCRMRedesigned() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Title & Description */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-rose-500 rounded-xl flex items-center justify-center shadow-lg shadow-rose-200">
+                <div className="w-12 h-12 bg-[rgba(0,168,150,1)] rounded-xl flex items-center justify-center shadow-lg shadow-teal-200">
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
