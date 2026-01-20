@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
 
 interface VehicleDocumentsPanelProps {
   vehicleId: string;
@@ -208,6 +209,7 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
   const [showForm, setShowForm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<VehicleDocumentFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { data: documentFiles = [], isLoading } = useVehicleDocumentFiles(vehicleId);
@@ -326,6 +328,12 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
     const expiry = new Date(expiryDate);
     const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     return expiry <= thirtyDaysFromNow;
+  };
+
+  const isImageFile = (fileName: string | null) => {
+    if (!fileName) return false;
+    const ext = fileName.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '');
   };
 
   // دمج الوثائق من المصدرين
@@ -482,21 +490,37 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
               </div>
               <div className="absolute inset-0 bg-gradient-to-br from-teal-900/80 to-teal-800/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                 {doc.document_url && (
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      downloadDocument.mutate(doc);
-                    }}
-                  >
-                    <Download className="w-4 h-4 text-white" />
-                  </Button>
+                  <>
+                    {/* Preview button for images */}
+                    {isImageFile(doc.document_name) && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewDocument(doc);
+                        }}
+                      >
+                        <Eye className="w-4 h-4 text-white" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadDocument.mutate(doc);
+                      }}
+                    >
+                      <Download className="w-4 h-4 text-white" />
+                    </Button>
+                  </>
                 )}
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
+                <Button
+                  size="sm"
+                  variant="secondary"
                   className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -649,6 +673,15 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Image Preview Dialog */}
+      <ImagePreviewDialog
+        open={!!previewDocument}
+        onOpenChange={(open) => !open && setPreviewDocument(null)}
+        imageUrl={previewDocument?.document_url}
+        alt={previewDocument?.document_name || 'وثيقة'}
+        fileName={previewDocument?.document_name || undefined}
+      />
     </motion.div>
   );
 }

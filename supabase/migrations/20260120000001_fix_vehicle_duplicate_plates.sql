@@ -24,9 +24,18 @@ WHERE id IN (
 );
 
 -- Step 3: Add unique constraint
-ALTER TABLE vehicles
-ADD CONSTRAINT vehicles_company_plate_unique
-UNIQUE (company_id, LOWER(TRIM(plate_number)));
+DO $$
+BEGIN
+  -- Check if constraint already exists
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'vehicles_company_plate_unique'
+  ) THEN
+    ALTER TABLE vehicles
+    ADD CONSTRAINT vehicles_company_plate_unique
+    UNIQUE (company_id, LOWER(TRIM(plate_number)));
+  END IF;
+END $$;
 
 -- Step 4: Create index for faster lookups (if it doesn't exist)
 CREATE INDEX IF NOT EXISTS idx_vehicles_company_plate
