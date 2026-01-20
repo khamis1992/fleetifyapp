@@ -286,6 +286,7 @@ export function useVehicleCSVUpload() {
         counts.set(p, (counts.get(p) || 0) + 1)
       })
       const processedSeen = new Map<string, number>()
+      const platesToInsert = new Set<string>() // Track plates we're about to insert
 
       // Filter valid records and prepare batches
       const validRecords: Array<{ rowFix: any; payload: any }> = []
@@ -311,19 +312,26 @@ export function useVehicleCSVUpload() {
 
         const plateKey = normalizePlate(fixed.plate_number)
         if (plateKey) {
-          const seenCount = (processedSeen.get(plateKey) || 0) + 1
-          processedSeen.set(plateKey, seenCount)
-          if ((counts.get(plateKey) || 0) > 1 && seenCount > 1) {
-            results.skipped++
-            results.errors.push({ row: rowFix.rowNumber, message: `تم التخطي لأن رقم اللوحة مكرر داخل الملف: ${fixed.plate_number}` })
-            continue
-          }
-
+          // Check if plate already exists in database
           if (existingPlates.has(plateKey)) {
             results.skipped++
             results.errors.push({ row: rowFix.rowNumber, message: `تم التخطي لأن رقم اللوحة موجود مسبقاً لهذه الشركة: ${fixed.plate_number}` })
             continue
           }
+
+          // Check if we've already processed this plate in the current batch
+          if (platesToInsert.has(plateKey)) {
+            results.skipped++
+            results.errors.push({ row: rowFix.rowNumber, message: `تم التخطي لأن رقم اللوحة مكرر داخل الملف: ${fixed.plate_number}` })
+            continue
+          }
+
+          // Mark this plate as being processed
+          platesToInsert.add(plateKey)
+
+          // Update seen count for reporting
+          const seenCount = (processedSeen.get(plateKey) || 0) + 1
+          processedSeen.set(plateKey, seenCount)
         }
 
         // Prepare payload for batch insert
@@ -496,6 +504,7 @@ export function useVehicleCSVUpload() {
         counts.set(key, (counts.get(key) || 0) + 1)
       })
       const processedSeen = new Map<string, number>()
+      const platesToInsert = new Set<string>() // Track plates we're about to insert
 
       const existingPlates = useUpsert ? new Set<string>() : await fetchExistingPlates(targetCompanyId)
 
@@ -506,17 +515,7 @@ export function useVehicleCSVUpload() {
         try {
           const plateKey = normalizePlate(vehicleData.plate_number)
           if (plateKey) {
-            const seenCount = (processedSeen.get(plateKey) || 0) + 1
-            processedSeen.set(plateKey, seenCount)
-            if ((counts.get(plateKey) || 0) > 1 && seenCount > 1) {
-              uploadResults.skipped++
-              uploadResults.errors.push({
-                row: vehicleData.rowNumber || i + 1,
-                message: `تم التخطي لأن رقم اللوحة مكرر داخل الملف: ${vehicleData.plate_number}`
-              })
-              continue
-            }
-
+            // Check if plate already exists in database
             if (!useUpsert && existingPlates.has(plateKey)) {
               uploadResults.skipped++
               uploadResults.errors.push({
@@ -525,6 +524,23 @@ export function useVehicleCSVUpload() {
               })
               continue
             }
+
+            // Check if we've already processed this plate in the current batch
+            if (platesToInsert.has(plateKey)) {
+              uploadResults.skipped++
+              uploadResults.errors.push({
+                row: vehicleData.rowNumber || i + 1,
+                message: `تم التخطي لأن رقم اللوحة مكرر داخل الملف: ${vehicleData.plate_number}`
+              })
+              continue
+            }
+
+            // Mark this plate as being processed
+            platesToInsert.add(plateKey)
+
+            // Update seen count for reporting
+            const seenCount = (processedSeen.get(plateKey) || 0) + 1
+            processedSeen.set(plateKey, seenCount)
           }
 
           const payload = {

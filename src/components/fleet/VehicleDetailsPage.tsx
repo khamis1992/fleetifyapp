@@ -44,6 +44,7 @@ import { MaintenanceForm } from './MaintenanceForm';
 import { TrafficViolationForm } from './TrafficViolationForm';
 import { VehicleComprehensiveReportDialog } from './VehicleComprehensiveReportDialog';
 import { VehicleStatusChangeDialog } from './VehicleStatusChangeDialog';
+import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -67,6 +68,7 @@ const VehicleDetailsPage = () => {
   const [showViolationForm, setShowViolationForm] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const queryClient = useQueryClient();
 
   // جلب بيانات المركبة من قاعدة البيانات
@@ -376,7 +378,10 @@ const VehicleDetailsPage = () => {
             <div className="flex flex-col lg:flex-row gap-6">
               {/* صورة المركبة */}
               <div className="lg:w-1/3">
-                <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden">
+                <div
+                  className="aspect-video bg-slate-100 rounded-lg overflow-hidden cursor-pointer hover:ring-4 hover:ring-[#00A896]/30 transition-all"
+                  onClick={() => vehicleImage && setShowImagePreview(true)}
+                >
                   {vehicleImage ? (
                     <img
                       src={vehicleImage}
@@ -389,6 +394,11 @@ const VehicleDetailsPage = () => {
                     </div>
                   )}
                 </div>
+                {vehicleImage && (
+                  <p className="text-xs text-slate-500 text-center mt-2">
+                    انقر على الصورة للمعاينة
+                  </p>
+                )}
               </div>
 
               {/* معلومات المركبة */}
@@ -705,6 +715,14 @@ const VehicleDetailsPage = () => {
           }}
         />
       )}
+
+      {/* Image Preview Dialog */}
+      <ImagePreviewDialog
+        open={showImagePreview}
+        onOpenChange={setShowImagePreview}
+        imageUrl={vehicleImage}
+        alt={vehicleName}
+      />
     </div>
   );
 };
