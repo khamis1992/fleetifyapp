@@ -203,8 +203,10 @@ export function useCSVUpload() {
       profile_company_id: user?.profile?.company_id,
       has_company: !!user?.company?.id
     });
-    
-    if (!user?.company?.id) {
+
+    const targetCompanyId = companyId || user?.company?.id;
+
+    if (!targetCompanyId) {
       console.error('📝 [CSV] Company ID not available. User data:', {
         user_id: user?.id,
         email: user?.email,
@@ -221,7 +223,7 @@ export function useCSVUpload() {
     try {
       const text = await file.text()
       const data = parseCSV(text)
-      
+
       if (data.length === 0) {
         throw new Error('الملف فارغ أو غير صحيح')
       }
@@ -233,11 +235,12 @@ export function useCSVUpload() {
         errors: []
       }
 
+      // First pass: validate all records and prepare valid ones
+      const validRecords: Array<{ customerData: any; payload: any }> = []
+
       for (let i = 0; i < data.length; i++) {
         const customerData = data[i]
         const validation = validateCustomerData(customerData, customerData.rowNumber)
-
-        setProgress(Math.round(((i + 1) / data.length) * 100))
 
         if (!validation.isValid) {
           results.failed++
@@ -248,67 +251,127 @@ export function useCSVUpload() {
           continue
         }
 
+        const customerPayload = {
+          customer_type: customerData.customer_type,
+          first_name: customerData.first_name || undefined,
+          last_name: customerData.last_name || undefined,
+          first_name_ar: customerData.first_name_ar || undefined,
+          last_name_ar: customerData.last_name_ar || undefined,
+          company_name: customerData.company_name || undefined,
+          company_name_ar: customerData.company_name_ar || undefined,
+          email: customerData.email || undefined,
+          phone: customerData.phone,
+          alternative_phone: customerData.alternative_phone || undefined,
+          national_id: customerData.national_id || undefined,
+          passport_number: customerData.passport_number || undefined,
+          license_number: customerData.license_number || undefined,
+          license_expiry: customerData.license_expiry || undefined,
+          address: customerData.address || undefined,
+          address_ar: customerData.address_ar || undefined,
+          city: customerData.city || undefined,
+          country: customerData.country || undefined,
+          date_of_birth: customerData.date_of_birth || undefined,
+          credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
+          emergency_contact_name: customerData.emergency_contact_name || undefined,
+          emergency_contact_phone: customerData.emergency_contact_phone || undefined,
+          notes: customerData.notes || undefined,
+          company_id: targetCompanyId,
+          is_active: true,
+          created_by: user?.id
+        }
+
+        validRecords.push({ customerData, payload: customerPayload })
+      }
+
+      // Batch insert - process in chunks of 50 for better performance
+      const BATCH_SIZE = 50
+      const totalBatches = Math.ceil(validRecords.length / BATCH_SIZE)
+      let processedBatches = 0
+
+      console.log(`📝 [CSV] Processing ${validRecords.length} valid customers in ${totalBatches} batches`)
+
+      for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+        const startIdx = batchNum * BATCH_SIZE
+        const endIdx = Math.min(startIdx + BATCH_SIZE, validRecords.length)
+        const batch = validRecords.slice(startIdx, endIdx)
+
+        console.log(`📝 [CSV] Processing batch ${batchNum + 1}/${totalBatches} (${batch.length} records)`)
+
         try {
-          const customerPayload: CustomerFormData = {
-            customer_type: customerData.customer_type,
-            first_name: customerData.first_name || undefined,
-            last_name: customerData.last_name || undefined,
-            first_name_ar: customerData.first_name_ar || undefined,
-            last_name_ar: customerData.last_name_ar || undefined,
-            company_name: customerData.company_name || undefined,
-            company_name_ar: customerData.company_name_ar || undefined,
-            email: customerData.email || undefined,
-            phone: customerData.phone,
-            alternative_phone: customerData.alternative_phone || undefined,
-            national_id: customerData.national_id || undefined,
-            passport_number: customerData.passport_number || undefined,
-            license_number: customerData.license_number || undefined,
-            license_expiry: customerData.license_expiry || undefined,
-            address: customerData.address || undefined,
-            address_ar: customerData.address_ar || undefined,
-            city: customerData.city || undefined,
-            country: customerData.country || undefined,
-            date_of_birth: customerData.date_of_birth || undefined,
-            credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
-            emergency_contact_name: customerData.emergency_contact_name || undefined,
-            emergency_contact_phone: customerData.emergency_contact_phone || undefined,
-            notes: customerData.notes || undefined,
-          }
-
-          console.log(`📝 [CSV] Inserting customer row ${customerData.rowNumber} for company ${user.company.id}`);
-
-          const { error } = await supabase
+          const { error, data: insertedData } = await supabase
             .from('customers')
-            .insert({
-              ...customerPayload,
-              company_id: user.company.id,
-              is_active: true,
-              created_by: user.id
-            })
+            .insert(batch.map(r => r.payload))
+            .select()
 
           if (error) {
-            console.error(`📝 [CSV] Database error for row ${customerData.rowNumber}:`, error);
-            results.failed++
-            results.errors.push({
-              row: customerData.rowNumber,
-              message: `خطأ في قاعدة البيانات: ${error.message}`
-            })
+            // If batch insert fails, try individual inserts for this batch
+            console.error(`❌ [CSV] Batch ${batchNum + 1} failed, trying individual inserts:`, error)
+
+            for (const record of batch) {
+              try {
+                const { error: singleError } = await supabase
+                  .from('customers')
+                  .insert(record.payload)
+
+                if (singleError) {
+                  console.error(`❌ [CSV] Individual insert failed for row ${record.customerData.rowNumber}:`, singleError)
+                  results.failed++
+                  results.errors.push({
+                    row: record.customerData.rowNumber,
+                    message: `خطأ في قاعدة البيانات: ${singleError.message}`
+                  })
+                } else {
+                  console.log(`✅ [CSV] Successfully inserted customer row ${record.customerData.rowNumber}`)
+                  results.successful++
+                }
+              } catch (err: unknown) {
+                console.error(`❌ [CSV] Unexpected error for row ${record.customerData.rowNumber}:`, err)
+                results.failed++
+                results.errors.push({
+                  row: record.customerData.rowNumber,
+                  message: `خطأ غير متوقع: ${err.message}`
+                })
+              }
+            }
           } else {
-            console.log(`📝 [CSV] Successfully inserted customer row ${customerData.rowNumber}`);
-            results.successful++
+            // Batch successful
+            console.log(`✅ [CSV] Batch ${batchNum + 1} inserted successfully (${insertedData.length} records)`)
+            results.successful += batch.length
           }
         } catch (error: unknown) {
-          console.error(`📝 [CSV] Unexpected error for row ${customerData.rowNumber}:`, error);
-          results.failed++
-          results.errors.push({
-            row: customerData.rowNumber,
-            message: `خطأ غير متوقع: ${error.message}`
-          })
+          console.error(`❌ [CSV] Unexpected error in batch ${batchNum + 1}:`, error)
+          // Try individual inserts
+          for (const record of batch) {
+            try {
+              const { error: singleError } = await supabase
+                .from('customers')
+                .insert(record.payload)
+
+              if (singleError) {
+                results.failed++
+                results.errors.push({
+                  row: record.customerData.rowNumber,
+                  message: singleError.message
+                })
+              } else {
+                results.successful++
+              }
+            } catch (err: unknown) {
+              results.failed++
+              results.errors.push({
+                row: record.customerData.rowNumber,
+                message: err.message || 'خطأ غير متوقع'
+              })
+            }
+          }
         }
+
+        processedBatches++
+        setProgress(Math.round((processedBatches / totalBatches) * 100))
       }
 
       setResults(results)
-      
+
     } catch (error: unknown) {
       toast.error(`خطأ في معالجة الملف: ${error.message}`)
       throw error
@@ -321,10 +384,12 @@ export function useCSVUpload() {
   // دالة رفع ذكية للعملاء
   const smartUploadCustomers = async (fixedData: unknown[]) => {
     console.log('Smart upload started with data:', fixedData);
-    
+
+    const targetCompanyId = companyId || user?.company?.id || '24bc0b21-4e2d-4413-9842-31719a3669f4';
+
     setIsUploading(true);
     setProgress(0);
-    
+
     const uploadResults: CSVUploadResults = {
       total: fixedData.length,
       successful: 0,
@@ -334,65 +399,128 @@ export function useCSVUpload() {
 
     try {
       console.log(`Processing ${fixedData.length} customers...`);
-      
+
+      // Prepare all records
+      const validRecords: Array<{ customerData: any; payload: any }> = []
+
       for (let i = 0; i < fixedData.length; i++) {
         const customerData = fixedData[i];
-        setProgress(((i + 1) / fixedData.length) * 100);
-        
+
+        const customerPayload = {
+          customer_type: customerData.customer_type,
+          first_name: customerData.first_name || undefined,
+          last_name: customerData.last_name || undefined,
+          first_name_ar: customerData.first_name_ar || undefined,
+          last_name_ar: customerData.last_name_ar || undefined,
+          company_name: customerData.company_name || undefined,
+          company_name_ar: customerData.company_name_ar || undefined,
+          email: customerData.email || undefined,
+          phone: customerData.phone,
+          alternative_phone: customerData.alternative_phone || undefined,
+          national_id: customerData.national_id || undefined,
+          passport_number: customerData.passport_number || undefined,
+          license_number: customerData.license_number || undefined,
+          license_expiry: customerData.license_expiry || undefined,
+          address: customerData.address || undefined,
+          address_ar: customerData.address_ar || undefined,
+          city: customerData.city || undefined,
+          country: customerData.country || undefined,
+          date_of_birth: customerData.date_of_birth || undefined,
+          credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
+          emergency_contact_name: customerData.emergency_contact_name || undefined,
+          emergency_contact_phone: customerData.emergency_contact_phone || undefined,
+          notes: customerData.notes || undefined,
+          company_id: targetCompanyId,
+          is_active: true,
+          created_by: user?.id
+        };
+
+        validRecords.push({ customerData, payload: customerPayload })
+      }
+
+      // Batch insert - process in chunks of 50 for better performance
+      const BATCH_SIZE = 50
+      const totalBatches = Math.ceil(validRecords.length / BATCH_SIZE)
+      let processedBatches = 0
+
+      for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+        const startIdx = batchNum * BATCH_SIZE
+        const endIdx = Math.min(startIdx + BATCH_SIZE, validRecords.length)
+        const batch = validRecords.slice(startIdx, endIdx)
+
+        console.log(`Processing batch ${batchNum + 1}/${totalBatches} (${batch.length} records)`)
+
         try {
-          const customerPayload = {
-            customer_type: customerData.customer_type,
-            first_name: customerData.first_name || undefined,
-            last_name: customerData.last_name || undefined,
-            first_name_ar: customerData.first_name_ar || undefined,
-            last_name_ar: customerData.last_name_ar || undefined,
-            company_name: customerData.company_name || undefined,
-            company_name_ar: customerData.company_name_ar || undefined,
-            email: customerData.email || undefined,
-            phone: customerData.phone,
-            alternative_phone: customerData.alternative_phone || undefined,
-            national_id: customerData.national_id || undefined,
-            passport_number: customerData.passport_number || undefined,
-            license_number: customerData.license_number || undefined,
-            license_expiry: customerData.license_expiry || undefined,
-            address: customerData.address || undefined,
-            address_ar: customerData.address_ar || undefined,
-            city: customerData.city || undefined,
-            country: customerData.country || undefined,
-            date_of_birth: customerData.date_of_birth || undefined,
-            credit_limit: customerData.credit_limit ? Number(customerData.credit_limit) : undefined,
-            emergency_contact_name: customerData.emergency_contact_name || undefined,
-            emergency_contact_phone: customerData.emergency_contact_phone || undefined,
-            notes: customerData.notes || undefined,
-            company_id: '24bc0b21-4e2d-4413-9842-31719a3669f4', // العراف لتاجير السيارات
-            is_active: true,
-            created_by: user?.id
-          };
-
-          console.log(`Inserting customer ${i + 1}:`, customerPayload);
-
-          const { data, error } = await supabase
+          const { error, data } = await supabase
             .from('customers')
-            .insert([customerPayload])
-            .select();
+            .insert(batch.map(r => r.payload))
+            .select()
 
           if (error) {
-            console.error(`Error inserting customer ${i + 1}:`, error);
-            throw error;
+            // If batch insert fails, try individual inserts for this batch
+            console.error(`Batch ${batchNum + 1} failed, trying individual inserts:`, error)
+
+            for (const record of batch) {
+              try {
+                const { error: singleError } = await supabase
+                  .from('customers')
+                  .insert(record.payload)
+
+                if (singleError) {
+                  console.error(`Individual insert failed for row ${record.customerData.rowNumber || 'N/A'}:`, singleError)
+                  uploadResults.failed++
+                  uploadResults.errors.push({
+                    row: record.customerData.rowNumber || validRecords.indexOf(record) + 1,
+                    message: singleError.message
+                  })
+                } else {
+                  uploadResults.successful++
+                }
+              } catch (err: unknown) {
+                uploadResults.failed++
+                uploadResults.errors.push({
+                  row: record.customerData.rowNumber || validRecords.indexOf(record) + 1,
+                  message: err.message
+                })
+              }
+            }
+          } else {
+            // Batch successful
+            console.log(`Batch ${batchNum + 1} inserted successfully (${data.length} records)`)
+            uploadResults.successful += batch.length
           }
-          
-          console.log(`Customer ${i + 1} inserted successfully:`, data);
-          uploadResults.successful++;
         } catch (error: unknown) {
-          console.error(`Failed to insert customer ${i + 1}:`, error);
-          uploadResults.failed++;
-          uploadResults.errors.push({
-            row: customerData.rowNumber || i + 1,
-            message: error.message
-          });
+          console.error(`Unexpected error in batch ${batchNum + 1}:`, error)
+          // Try individual inserts
+          for (const record of batch) {
+            try {
+              const { error: singleError } = await supabase
+                .from('customers')
+                .insert(record.payload)
+
+              if (singleError) {
+                uploadResults.failed++
+                uploadResults.errors.push({
+                  row: record.customerData.rowNumber || validRecords.indexOf(record) + 1,
+                  message: singleError.message
+                })
+              } else {
+                uploadResults.successful++
+              }
+            } catch (err: unknown) {
+              uploadResults.failed++
+              uploadResults.errors.push({
+                row: record.customerData.rowNumber || validRecords.indexOf(record) + 1,
+                message: err.message || 'Unexpected error'
+              })
+            }
+          }
         }
+
+        processedBatches++
+        setProgress(Math.round((processedBatches / totalBatches) * 100))
       }
-      
+
       console.log('Upload completed. Results:', uploadResults);
     } finally {
       setIsUploading(false);

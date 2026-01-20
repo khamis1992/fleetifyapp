@@ -259,7 +259,7 @@ export function useVehicleCSVUpload() {
     try {
       const text = await file.text()
       const rawData = parseCSV(text)
-      
+
       if (rawData.length === 0) {
         throw new Error('الملف فارغ أو غير صحيح')
       }
@@ -287,11 +287,12 @@ export function useVehicleCSVUpload() {
       })
       const processedSeen = new Map<string, number>()
 
+      // Filter valid records and prepare batches
+      const validRecords: Array<{ rowFix: any; payload: any }> = []
+
       for (let i = 0; i < fixedRows.length; i++) {
         const rowFix = fixedRows[i]
         const fixed = rowFix.fixedData
-
-        setProgress(Math.round(((i + 1) / fixedRows.length) * 100))
 
         // أخطاء التنظيف/التحقق الأولي
         if (rowFix.hasErrors) {
@@ -325,61 +326,113 @@ export function useVehicleCSVUpload() {
           }
         }
 
+        // Prepare payload for batch insert
+        const vehiclePayload = {
+          plate_number: fixed.plate_number,
+          make: fixed.make,
+          model: fixed.model,
+          year: typeof fixed.year === 'number' ? fixed.year : Number(fixed.year),
+          color: fixed.color || undefined,
+          color_ar: fixed.color_ar || undefined,
+          vin_number: fixed.vin_number || undefined,
+          registration_number: fixed.registration_number || undefined,
+          insurance_policy: fixed.insurance_policy || undefined,
+          insurance_expiry: fixed.insurance_expiry || undefined,
+          license_expiry: fixed.license_expiry || undefined,
+          status: normalizeStatus(fixed.status) || 'available',
+          daily_rate: typeof fixed.daily_rate === 'number' ? fixed.daily_rate : (fixed.daily_rate ? Number(fixed.daily_rate) : undefined),
+          weekly_rate: typeof fixed.weekly_rate === 'number' ? fixed.weekly_rate : (fixed.weekly_rate ? Number(fixed.weekly_rate) : undefined),
+          monthly_rate: typeof fixed.monthly_rate === 'number' ? fixed.monthly_rate : (fixed.monthly_rate ? Number(fixed.monthly_rate) : undefined),
+          deposit_amount: typeof fixed.deposit_amount === 'number' ? fixed.deposit_amount : (fixed.deposit_amount ? Number(fixed.deposit_amount) : undefined),
+          minimum_rental_price: typeof fixed.minimum_rental_price === 'number' ? fixed.minimum_rental_price : (fixed.minimum_rental_price ? Number(fixed.minimum_rental_price) : undefined),
+          enforce_minimum_price: typeof fixed.enforce_minimum_price === 'boolean'
+            ? fixed.enforce_minimum_price
+            : (fixed.enforce_minimum_price ? ['true', '1'].includes(String(fixed.enforce_minimum_price).toLowerCase()) : false),
+          fuel_type: fixed.fuel_type || undefined,
+          transmission_type: fixed.transmission_type || undefined,
+          seating_capacity: typeof fixed.seating_capacity === 'number' ? fixed.seating_capacity : (fixed.seating_capacity ? Number(fixed.seating_capacity) : undefined),
+          notes: fixed.notes || undefined,
+          company_id: companyId,
+          is_active: true
+        }
+
+        validRecords.push({ rowFix, payload: vehiclePayload })
+      }
+
+      // Batch insert - process in chunks of 50 for better performance
+      const BATCH_SIZE = 50
+      const totalBatches = Math.ceil(validRecords.length / BATCH_SIZE)
+      let processedBatches = 0
+
+      for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+        const startIdx = batchNum * BATCH_SIZE
+        const endIdx = Math.min(startIdx + BATCH_SIZE, validRecords.length)
+        const batch = validRecords.slice(startIdx, endIdx)
+
+        console.log(`🔄 [VEHICLE_CSV_UPLOAD] Processing batch ${batchNum + 1}/${totalBatches} (${batch.length} records)`)
+
         try {
-          const vehiclePayload = {
-            plate_number: fixed.plate_number,
-            make: fixed.make,
-            model: fixed.model,
-            year: typeof fixed.year === 'number' ? fixed.year : Number(fixed.year),
-            color: fixed.color || undefined,
-            color_ar: fixed.color_ar || undefined,
-            vin_number: fixed.vin_number || undefined,
-            registration_number: fixed.registration_number || undefined,
-            insurance_policy: fixed.insurance_policy || undefined,
-            insurance_expiry: fixed.insurance_expiry || undefined,
-            license_expiry: fixed.license_expiry || undefined,
-            status: normalizeStatus(fixed.status) || 'available',
-            daily_rate: typeof fixed.daily_rate === 'number' ? fixed.daily_rate : (fixed.daily_rate ? Number(fixed.daily_rate) : undefined),
-            weekly_rate: typeof fixed.weekly_rate === 'number' ? fixed.weekly_rate : (fixed.weekly_rate ? Number(fixed.weekly_rate) : undefined),
-            monthly_rate: typeof fixed.monthly_rate === 'number' ? fixed.monthly_rate : (fixed.monthly_rate ? Number(fixed.monthly_rate) : undefined),
-            deposit_amount: typeof fixed.deposit_amount === 'number' ? fixed.deposit_amount : (fixed.deposit_amount ? Number(fixed.deposit_amount) : undefined),
-            minimum_rental_price: typeof fixed.minimum_rental_price === 'number' ? fixed.minimum_rental_price : (fixed.minimum_rental_price ? Number(fixed.minimum_rental_price) : undefined),
-            enforce_minimum_price: typeof fixed.enforce_minimum_price === 'boolean'
-              ? fixed.enforce_minimum_price
-              : (fixed.enforce_minimum_price ? ['true', '1'].includes(String(fixed.enforce_minimum_price).toLowerCase()) : false),
-            fuel_type: fixed.fuel_type || undefined,
-            transmission_type: fixed.transmission_type || undefined,
-            seating_capacity: typeof fixed.seating_capacity === 'number' ? fixed.seating_capacity : (fixed.seating_capacity ? Number(fixed.seating_capacity) : undefined),
-            notes: fixed.notes || undefined,
-            company_id: companyId,
-            is_active: true
-          }
-
-          console.log(`🔄 [VEHICLE_CSV_UPLOAD] Inserting row ${rowFix.rowNumber}:`, {
-            plate_number: vehiclePayload.plate_number,
-            company_id: vehiclePayload.company_id
-          })
-
-          const { error } = await supabase
+          const { error, data } = await supabase
             .from('vehicles')
-            .insert(vehiclePayload)
+            .insert(batch.map(r => r.payload))
+            .select()
 
           if (error) {
-            console.error(`❌ [VEHICLE_CSV_UPLOAD] Database error for row ${rowFix.rowNumber}:`, error)
-            results.failed++
-            const message = (error.code === '23505' && String(error.message).toLowerCase().includes('plate'))
-              ? `لا يمكن الإدراج لأن رقم اللوحة موجود مسبقاً: ${fixed.plate_number}`
-              : `خطأ في قاعدة البيانات: ${error.message}`
-            results.errors.push({ row: rowFix.rowNumber, message })
+            // If batch insert fails, try individual inserts for this batch
+            console.error(`❌ [VEHICLE_CSV_UPLOAD] Batch ${batchNum + 1} failed, trying individual inserts:`, error)
+
+            for (const record of batch) {
+              try {
+                const { error: singleError } = await supabase
+                  .from('vehicles')
+                  .insert(record.payload)
+
+                if (singleError) {
+                  console.error(`❌ [VEHICLE_CSV_UPLOAD] Individual insert failed for row ${record.rowFix.rowNumber}:`, singleError)
+                  results.failed++
+                  const message = (singleError.code === '23505' && String(singleError.message).toLowerCase().includes('plate'))
+                    ? `لا يمكن الإدراج لأن رقم اللوحة موجود مسبقاً: ${record.payload.plate_number}`
+                    : `خطأ في قاعدة البيانات: ${singleError.message}`
+                  results.errors.push({ row: record.rowFix.rowNumber, message })
+                } else {
+                  console.log(`✅ [VEHICLE_CSV_UPLOAD] Successfully inserted row ${record.rowFix.rowNumber}`)
+                  results.successful++
+                }
+              } catch (err: unknown) {
+                console.error(`❌ [VEHICLE_CSV_UPLOAD] Unexpected error for row ${record.rowFix.rowNumber}:`, err)
+                results.failed++
+                results.errors.push({ row: record.rowFix.rowNumber, message: `خطأ غير متوقع: ${err.message}` })
+              }
+            }
           } else {
-            console.log(`✅ [VEHICLE_CSV_UPLOAD] Successfully inserted row ${rowFix.rowNumber}`)
-            results.successful++
+            // Batch successful
+            console.log(`✅ [VEHICLE_CSV_UPLOAD] Batch ${batchNum + 1} inserted successfully (${data.length} records)`)
+            results.successful += batch.length
           }
         } catch (error: unknown) {
-          console.error(`❌ [VEHICLE_CSV_UPLOAD] Unexpected error for row ${rowFix.rowNumber}:`, error)
-          results.failed++
-          results.errors.push({ row: rowFix.rowNumber, message: `خطأ غير متوقع: ${error.message}` })
+          console.error(`❌ [VEHICLE_CSV_UPLOAD] Unexpected error in batch ${batchNum + 1}:`, error)
+          // Try individual inserts
+          for (const record of batch) {
+            try {
+              const { error: singleError } = await supabase
+                .from('vehicles')
+                .insert(record.payload)
+
+              if (singleError) {
+                results.failed++
+                results.errors.push({ row: record.rowFix.rowNumber, message: singleError.message })
+              } else {
+                results.successful++
+              }
+            } catch (err: unknown) {
+              results.failed++
+              results.errors.push({ row: record.rowFix.rowNumber, message: err.message || 'خطأ غير متوقع' })
+            }
+          }
         }
+
+        processedBatches++
+        setProgress(Math.round((processedBatches / totalBatches) * 100))
       }
 
       console.log('📈 [VEHICLE_CSV_UPLOAD] Final results:', results)
