@@ -40,6 +40,7 @@ import {
   Edit3,
   Trash2,
   Download,
+  IdCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,7 @@ import {
   CustomerSplitView,
 } from '@/components/customers';
 import CustomerExportDialog from '@/components/customers/CustomerExportDialog';
+import CustomerDocumentDistributionDialog from '@/components/customers/CustomerDocumentDistributionDialog';
 
 // ===== Professional Stat Card =====
 interface ProStatCardProps {
@@ -636,6 +638,7 @@ const CustomersPageRedesigned: React.FC = () => {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showDocumentDistribution, setShowDocumentDistribution] = useState(false);
 
   // Filters
   const filters: CustomerFilters = {
@@ -830,6 +833,17 @@ const CustomersPageRedesigned: React.FC = () => {
               >
                 <Download className="w-4 h-4" />
                 تصدير
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDocumentDistribution(true)}
+                disabled={isLoading}
+                className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+              >
+                <IdCard className="w-4 h-4" />
+                توزيع البطاقات
               </Button>
 
               <Button
@@ -1099,6 +1113,11 @@ const CustomersPageRedesigned: React.FC = () => {
         onOpenChange={setShowExportDialog}
         companyId={companyId!}
         filters={filters}
+      />
+
+      <CustomerDocumentDistributionDialog
+        open={showDocumentDistribution}
+        onOpenChange={setShowDocumentDistribution}
       />
 
       {/* Delete Dialog */}
