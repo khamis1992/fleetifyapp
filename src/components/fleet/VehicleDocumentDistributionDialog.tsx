@@ -1278,6 +1278,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
     let successCount = 0;
     let errorCount = 0;
     let dataUpdatedCount = 0;
+    const updatedVehicleIds = new Set<string>();
 
     for (const file of matchedFiles) {
       try {
@@ -1316,10 +1317,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
         ));
 
         successCount++;
-
-        queryClient.invalidateQueries({
-          queryKey: ['vehicle-document-files', file.matchedVehicle!.id]
-        });
+        updatedVehicleIds.add(file.matchedVehicle!.id);
       } catch (error: any) {
         console.error('Upload error:', error);
         setFiles(prev => prev.map(f =>
@@ -1328,6 +1326,15 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
         errorCount++;
       }
     }
+
+    // Batch invalidate all queries at the end to avoid race conditions
+    for (const vehicleId of updatedVehicleIds) {
+      queryClient.invalidateQueries({
+        queryKey: ['vehicle-document-files', vehicleId]
+      });
+    }
+    // Also invalidate the general vehicles list
+    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
 
     setIsUploading(false);
 
