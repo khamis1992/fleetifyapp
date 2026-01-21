@@ -85,6 +85,41 @@ export interface DocumentsListData {
   }[];
 }
 
+// واجهة بيانات بلاغ سرقة المركبة
+export interface CriminalComplaintData {
+  customerName: string;
+  customerNationality?: string;
+  customerId: string;
+  customerMobile?: string;
+  contractDate: string;
+  contractEndDate: string;
+  vehicleType: string;
+  plateNumber: string;
+  plateType?: string;
+  manufactureYear?: string;
+  chassisNumber?: string;
+}
+
+// واجهة بيانات طلب تحويل المخالفات
+export interface ViolationsTransferData {
+  customerName: string;
+  customerId: string;
+  customerMobile?: string;
+  contractNumber: string;
+  contractDate: string;
+  contractEndDate: string;
+  vehicleType: string;
+  plateNumber: string;
+  violations: {
+    violationNumber: string;
+    violationDate: string;
+    violationType: string;
+    location?: string;
+    fineAmount: number;
+  }[];
+  totalFines: number;
+}
+
 /**
  * توليد أنماط CSS الموحدة للكتب الرسمية
  */
@@ -102,97 +137,128 @@ function getOfficialLetterStyles(): string {
         color-adjust: exact !important;
       }
       
-      body {
-        margin: 0;
-        padding: 0;
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        overflow: visible !important;
       }
       
       .letter-container {
         width: 100% !important;
-        max-width: none !important;
+        max-width: 100% !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 10mm !important;
         border: none !important;
         box-shadow: none !important;
+        overflow: visible !important;
       }
       
       .no-print {
         display: none !important;
       }
+      
+      p, div, span, td, th, li {
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+      }
+      
+      table {
+        width: 100% !important;
+        table-layout: fixed !important;
+      }
+    }
+    
+    * {
+      box-sizing: border-box;
     }
     
     body {
       font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
-      font-size: 14px;
+      font-size: 12pt;
       line-height: 1.8;
       color: #000;
       background: #fff;
       margin: 0;
-      padding: 20px;
+      padding: 15px;
       direction: rtl;
+      width: 100%;
+      max-width: 210mm;
+      margin: 0 auto;
     }
     
     .letter-container {
-      max-width: 210mm;
+      width: 100%;
+      max-width: 180mm;
       margin: 0 auto;
-      padding: 20px 30px;
+      padding: 15px 20px;
       background: #fff;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      width: 100%;
       border-bottom: 3px double #1e3a5f;
       padding-bottom: 15px;
       margin-bottom: 15px;
+      overflow: hidden;
+    }
+    
+    .header::after {
+      content: "";
+      display: table;
+      clear: both;
     }
     
     .company-ar {
-      flex: 1;
+      float: right;
+      width: 35%;
       text-align: right;
     }
     
     .company-ar h1 {
       color: #1e3a5f;
       margin: 0;
-      font-size: 20px;
+      font-size: 16px;
       font-weight: bold;
     }
     
     .company-ar p {
       color: #000;
       margin: 2px 0;
-      font-size: 11px;
+      font-size: 10px;
     }
     
     .logo-container {
-      flex: 0 0 130px;
+      float: right;
+      width: 25%;
       text-align: center;
-      padding: 0 15px;
+      padding: 0 10px;
     }
     
     .logo-container img {
-      max-height: 70px;
-      max-width: 120px;
+      max-height: 60px;
+      max-width: 100px;
     }
     
     .company-en {
-      flex: 1;
+      float: left;
+      width: 35%;
       text-align: left;
     }
     
     .company-en h1 {
       color: #1e3a5f;
       margin: 0;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: bold;
     }
     
     .company-en p {
       color: #000;
       margin: 2px 0;
-      font-size: 10px;
+      font-size: 9px;
     }
     
     .address-bar {
@@ -205,11 +271,25 @@ function getOfficialLetterStyles(): string {
     }
     
     .ref-date {
-      display: flex;
-      justify-content: space-between;
+      width: 100%;
       margin-bottom: 20px;
-      font-size: 13px;
+      font-size: 12px;
       color: #000;
+      overflow: hidden;
+    }
+    
+    .ref-date::after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+    
+    .ref-date > div:first-child {
+      float: right;
+    }
+    
+    .ref-date > div:last-child {
+      float: left;
     }
     
     .recipient-box {
@@ -252,12 +332,15 @@ function getOfficialLetterStyles(): string {
     
     .content {
       text-align: justify;
-      margin-bottom: 25px;
-      font-size: 14px;
+      margin-bottom: 20px;
+      font-size: 12pt;
       color: #000;
-      padding: 15px;
+      padding: 12px;
       background: #fafafa;
       border: 1px solid #e0e0e0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
     }
     
     .content p {
@@ -296,79 +379,87 @@ function getOfficialLetterStyles(): string {
     
     .signature-section {
       margin-top: 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
+      width: 100%;
+      overflow: hidden;
+    }
+    
+    .signature-section::after {
+      content: "";
+      display: table;
+      clear: both;
     }
     
     .stamp-area {
+      float: left;
       text-align: center;
-      width: 120px;
+      width: 100px;
     }
     
     .stamp-circle {
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
       border: 2px dashed #999;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto;
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center;
     }
     
     .stamp-circle span {
       color: #666;
-      font-size: 10px;
+      font-size: 9px;
     }
     
     .signatory {
+      float: right;
       text-align: center;
-      flex: 1;
+      width: 200px;
     }
     
     .signatory .company-name {
       color: #1e3a5f;
       font-weight: bold;
-      font-size: 15px;
-      margin-bottom: 35px;
+      font-size: 14px;
+      margin-bottom: 30px;
     }
     
     .signatory .line {
       border-top: 2px solid #1e3a5f;
-      width: 200px;
+      width: 180px;
       margin: 0 auto;
       padding-top: 8px;
     }
     
     .signatory .name {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
       color: #000;
       margin: 0;
     }
     
     .signatory .title {
-      font-size: 12px;
+      font-size: 11px;
       color: #000;
       margin-top: 3px;
     }
     
     .sign-area {
+      float: left;
       text-align: center;
-      width: 120px;
+      width: 100px;
+      margin-left: 20px;
     }
     
     .sign-line {
-      width: 100px;
-      height: 50px;
+      width: 80px;
+      height: 40px;
       border-bottom: 2px solid #999;
       margin: 0 auto 8px auto;
     }
     
     .sign-area span {
       color: #666;
-      font-size: 10px;
+      font-size: 9px;
     }
     
     .footer {
@@ -384,14 +475,17 @@ function getOfficialLetterStyles(): string {
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
-      font-size: 12px;
+      margin: 15px 0;
+      font-size: 11px;
+      table-layout: fixed;
     }
     
     th, td {
       border: 1px solid #333;
-      padding: 10px 8px;
+      padding: 8px 6px;
       text-align: right;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     
     th {
@@ -426,55 +520,75 @@ function getOfficialLetterStyles(): string {
 
     .info-box {
       background: #f5f5f5;
-      padding: 15px;
-      margin-bottom: 20px;
+      padding: 12px;
+      margin-bottom: 15px;
       border-radius: 5px;
     }
     
     .info-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    
+    .info-row::after {
+      content: "";
+      display: table;
+      clear: both;
     }
     
     .info-label {
       font-weight: bold;
       color: #555;
+      float: right;
+      width: 120px;
+    }
+    
+    .info-row > span:last-child {
+      float: right;
+      margin-right: 10px;
     }
 
     .summary {
-      margin-top: 30px;
-      padding: 20px;
-      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      margin-top: 25px;
+      padding: 15px;
+      background: #1e3a5f;
       color: white;
       border-radius: 8px;
     }
     
     .summary h3 {
-      margin: 0 0 15px;
-      font-size: 16pt;
+      margin: 0 0 12px;
+      font-size: 14pt;
     }
     
     .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
+      width: 100%;
+      overflow: hidden;
+    }
+    
+    .summary-grid::after {
+      content: "";
+      display: table;
+      clear: both;
     }
     
     .summary-item {
+      float: right;
+      width: 30%;
       text-align: center;
-      padding: 10px;
+      padding: 8px;
+      margin: 0 1.5%;
       background: rgba(255,255,255,0.1);
       border-radius: 5px;
     }
     
     .summary-value {
-      font-size: 18pt;
+      font-size: 16pt;
       font-weight: bold;
     }
     
     .summary-label {
-      font-size: 10pt;
+      font-size: 9pt;
       opacity: 0.9;
     }
 
@@ -1080,9 +1194,320 @@ export interface DocumentPortfolioData {
   totalAmount: number;
   // المستندات المختلفة
   claimsStatementHtml?: string; // كشف المطالبات المالية - HTML كامل
+  criminalComplaintHtml?: string; // بلاغ سرقة المركبة - HTML كامل
+  violationsTransferHtml?: string; // طلب تحويل المخالفات - HTML كامل
   contractImageUrl?: string; // عقد الإيجار - رابط صورة
   ibanImageUrl?: string; // شهادة IBAN - رابط صورة
   commercialRegisterUrl?: string; // السجل التجاري - رابط صورة
+}
+
+/**
+ * توليد طلب تحويل المخالفات المرورية
+ */
+export function generateViolationsTransferHtml(data: ViolationsTransferData): string {
+  const refNumber = generateRefNumber();
+  const currentDate = formatDateAr();
+
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>طلب تحويل مخالفات مرورية - ${COMPANY_INFO.name_ar}</title>
+  <style>${getOfficialLetterStyles()}</style>
+</head>
+<body>
+  <div class="letter-container">
+    ${generateOfficialHeader(refNumber, currentDate)}
+    
+    <!-- المرسل إليه -->
+    <div class="recipient-box">
+      <p><strong>إلى / </strong> الإدارة العامة للمرور</p>
+      <p style="margin-right: 40px;">قسم المخالفات المرورية</p>
+      <p style="margin-right: 40px;">الدوحة - دولة قطر</p>
+    </div>
+    
+    <!-- التحية -->
+    <p class="salutation">السلام عليكم ورحمة الله وبركاته،</p>
+    <p class="salutation" style="margin-top: 0;">تحية طيبة وبعد،،،</p>
+    
+    <!-- الموضوع -->
+    <div class="subject-box">
+      <strong>الموضوع: </strong>طلب تحويل مخالفات مرورية من مالك المركبة إلى المستأجر
+    </div>
+    
+    <!-- المقدمة -->
+    <div class="content">
+      <p>
+        نحن <strong>${COMPANY_INFO.name_ar}</strong>، نتقدم إلى سعادتكم بطلب تحويل المخالفات المرورية المسجلة على المركبة المملوكة لشركتنا إلى المستأجر الذي كان يقودها وقت ارتكاب المخالفات، وذلك استناداً إلى عقد الإيجار المبرم بيننا.
+      </p>
+    </div>
+    
+    <!-- بيانات المستأجر -->
+    <div class="info-box">
+      <div class="section-title">بيانات المستأجر (المسؤول عن المخالفات)</div>
+      <div class="info-row">
+        <span class="info-label">الاسم:</span>
+        <span>${data.customerName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم الهوية:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.customerId}</span>
+      </div>
+      ${data.customerMobile ? `
+      <div class="info-row">
+        <span class="info-label">رقم الجوال:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.customerMobile}</span>
+      </div>
+      ` : ''}
+    </div>
+    
+    <!-- بيانات العقد والمركبة -->
+    <div class="info-box">
+      <div class="section-title">بيانات العقد والمركبة</div>
+      <div class="info-row">
+        <span class="info-label">رقم العقد:</span>
+        <span>${data.contractNumber}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">فترة العقد:</span>
+        <span>${data.contractDate} - ${data.contractEndDate}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">نوع المركبة:</span>
+        <span>${data.vehicleType}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم اللوحة:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.plateNumber}</span>
+      </div>
+    </div>
+    
+    <!-- جدول المخالفات -->
+    <div class="section">
+      <div class="section-title">المخالفات المطلوب تحويلها</div>
+      <table>
+        <thead>
+          <tr>
+            <th>م</th>
+            <th>رقم المخالفة</th>
+            <th>تاريخ المخالفة</th>
+            <th>نوع المخالفة</th>
+            <th>المبلغ (ر.ق)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.violations.map((v, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${v.violationNumber}</td>
+              <td>${v.violationDate}</td>
+              <td>${v.violationType}</td>
+              <td style="direction: ltr; unicode-bidi: embed;">${v.fineAmount.toLocaleString('en-US')}</td>
+            </tr>
+          `).join('')}
+          <tr class="total-row">
+            <td colspan="4"><strong>إجمالي المخالفات</strong></td>
+            <td style="direction: ltr; unicode-bidi: embed;"><strong>${data.totalFines.toLocaleString('en-US')} ر.ق</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- السند القانوني -->
+    <div class="content">
+      <p>
+        <strong>السند القانوني:</strong> استناداً إلى المادة (3) من قانون المرور القطري رقم (19) لسنة 2007 والتي تنص على أن "مستعمل المركبة يكون مسؤولاً عن المخالفات التي ترتكب أثناء استعماله لها"، وحيث أن المخالفات المذكورة أعلاه قد ارتكبت خلال فترة الإيجار من قبل المستأجر المذكور، فإننا نطلب تحويل هذه المخالفات إلى اسمه.
+      </p>
+    </div>
+    
+    <!-- الطلب -->
+    <div class="section">
+      <div class="section-title">الطلب</div>
+      <div class="content" style="margin-top: 0;">
+        <p>
+          نرجو من سعادتكم التكرم بالموافقة على تحويل المخالفات المرورية المذكورة أعلاه من سجل الشركة إلى سجل المستأجر المذكور، مع إرفاق نسخة من عقد الإيجار كإثبات.
+        </p>
+      </div>
+    </div>
+    
+    <!-- المرفقات -->
+    <div class="attachments">
+      <strong>📎 المرفقات:</strong>
+      <ul>
+        <li>صورة من عقد الإيجار</li>
+        <li>صورة من الهوية الشخصية للمستأجر</li>
+        <li>كشف بالمخالفات المرورية</li>
+      </ul>
+    </div>
+    
+    ${generateSignatureSection()}
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
+ * توليد بلاغ جنائي بواقعة امتناع عن تسليم مركبة
+ */
+export function generateCriminalComplaintHtml(data: CriminalComplaintData): string {
+  const refNumber = generateRefNumber();
+  const currentDate = formatDateAr();
+
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>بلاغ جنائي - ${COMPANY_INFO.name_ar}</title>
+  <style>${getOfficialLetterStyles()}</style>
+</head>
+<body>
+  <div class="letter-container">
+    ${generateOfficialHeader(refNumber, currentDate)}
+    
+    <!-- المرسل إليه -->
+    <div class="recipient-box">
+      <p><strong>إلى / </strong> السيد / رئيس النيابة العامة</p>
+      <p style="margin-right: 40px;">الدوحة - دولة قطر</p>
+    </div>
+    
+    <!-- التحية -->
+    <p class="salutation">السلام عليكم ورحمة الله وبركاته،</p>
+    <p class="salutation" style="margin-top: 0;">تحية طيبة وبعد،،،</p>
+    
+    <!-- الموضوع -->
+    <div class="subject-box">
+      <strong>الموضوع: </strong>بلاغ جنائي بواقعة امتناع عن تسليم مركبة بعد انتهاء عقد الإيجار
+    </div>
+    
+    <!-- بيانات المشكو في حقه -->
+    <div class="info-box">
+      <div class="section-title">بيانات المشكو في حقه</div>
+      <div class="info-row">
+        <span class="info-label">الاسم:</span>
+        <span>${data.customerName}</span>
+      </div>
+      ${data.customerNationality ? `
+      <div class="info-row">
+        <span class="info-label">الجنسية:</span>
+        <span>${data.customerNationality}</span>
+      </div>
+      ` : ''}
+      <div class="info-row">
+        <span class="info-label">رقم الهوية:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.customerId}</span>
+      </div>
+      ${data.customerMobile ? `
+      <div class="info-row">
+        <span class="info-label">رقم الجوال:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.customerMobile}</span>
+      </div>
+      ` : ''}
+    </div>
+    
+    <!-- بيانات المركبة -->
+    <div class="info-box">
+      <div class="section-title">بيانات المركبة</div>
+      <div class="info-row">
+        <span class="info-label">نوع المركبة:</span>
+        <span>${data.vehicleType}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم اللوحة:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.plateNumber}</span>
+      </div>
+      ${data.plateType ? `
+      <div class="info-row">
+        <span class="info-label">نوع اللوحة:</span>
+        <span>${data.plateType}</span>
+      </div>
+      ` : ''}
+      ${data.manufactureYear ? `
+      <div class="info-row">
+        <span class="info-label">سنة الصنع:</span>
+        <span>${data.manufactureYear}</span>
+      </div>
+      ` : ''}
+      ${data.chassisNumber ? `
+      <div class="info-row">
+        <span class="info-label">رقم الشاسيه:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.chassisNumber}</span>
+      </div>
+      ` : ''}
+    </div>
+    
+    <!-- الوقائع -->
+    <div class="content">
+      <p>
+        نتقدم إلى سعادتكم بهذا البلاغ ضد الشخص المذكور أعلاه، حيث قام باستئجار مركبة من شركتنا بموجب عقد إيجار قانوني مؤرخ بتاريخ <strong>${data.contractDate}</strong>، وانتهت مدة العقد بتاريخ <strong>${data.contractEndDate}</strong>، إلا أنه امتنع عن تسليم المركبة رغم انتهاء العلاقة التعاقدية.
+      </p>
+      <p>
+        ورغم محاولاتنا المتكررة للتواصل معه ومطالبته بإعادة المركبة بالطرق الودية والرسمية، فقد رفض تسليمها دون أي مسوغ قانوني، ولا تزال المركبة بحوزته حتى تاريخه، الأمر الذي يشكل تعدياً على حقوق الشركة وضرراً مادياً مباشراً.
+      </p>
+      <p>
+        ويُعد هذا التصرف استيلاءً غير مشروع على مال مملوك للغير، وإساءة استعمال للثقة، واحتفاظاً بالمركبة دون وجه حق بعد انتهاء سبب الحيازة القانونية.
+      </p>
+    </div>
+    
+    <!-- السند القانوني -->
+    <div class="section">
+      <div class="section-title" style="background: #1e3a5f;">السند القانوني</div>
+      <table>
+        <thead>
+          <tr>
+            <th>القانون</th>
+            <th>المادة</th>
+            <th>التهمة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>قانون العقوبات القطري</td>
+            <td>المادة (321)</td>
+            <td>جريمة خيانة الأمانة - الاستيلاء على مال منقول مملوك للغير</td>
+          </tr>
+          <tr>
+            <td>قانون العقوبات القطري</td>
+            <td>المادة (324)</td>
+            <td>إساءة استعمال الأمانة - الاحتفاظ بالمركبة بعد انتهاء سبب الحيازة</td>
+          </tr>
+          <tr>
+            <td>قانون العقوبات القطري</td>
+            <td>المادة (333)</td>
+            <td>الاستيلاء غير المشروع على مال منقول</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- الطلبات -->
+    <div class="section">
+      <div class="section-title">الطلبات</div>
+      <ol style="margin: 15px 30px; line-height: 2;">
+        <li>قيد البلاغ ضد المشكو في حقه بالوصف القانوني الصحيح</li>
+        <li>إصدار أمر بضبط وإحضار المركبة</li>
+        <li>اتخاذ الإجراءات الجزائية اللازمة بحق المتهم</li>
+        <li>إلزام المتهم بإعادة المركبة وتعويض الشركة عن كافة الأضرار</li>
+      </ol>
+    </div>
+    
+    <!-- المرفقات -->
+    <div class="attachments">
+      <strong>📎 المرفقات:</strong>
+      <ul>
+        <li>صورة من عقد الإيجار</li>
+        <li>صورة من البطاقة الشخصية للمستأجر</li>
+        <li>ما يثبت المطالبة بإعادة المركبة (مراسلات / إشعارات)</li>
+      </ul>
+    </div>
+    
+    ${generateSignatureSection()}
+  </div>
+</body>
+</html>
+  `;
 }
 
 /**
@@ -1101,6 +1526,12 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
   }
   if (data.claimsStatementHtml) {
     documentsList.push({ title: 'كشف المطالبات المالية', pageNum: pageNum++ });
+  }
+  if (data.criminalComplaintHtml) {
+    documentsList.push({ title: 'بلاغ سرقة المركبة', pageNum: pageNum++ });
+  }
+  if (data.violationsTransferHtml) {
+    documentsList.push({ title: 'طلب تحويل المخالفات', pageNum: pageNum++ });
   }
   if (data.ibanImageUrl) {
     documentsList.push({ title: 'شهادة IBAN', pageNum: pageNum++ });
@@ -1124,6 +1555,38 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
     // استخراج محتوى body
     const bodyMatch = data.claimsStatementHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
     claimsBody = bodyMatch ? bodyMatch[1] : data.claimsStatementHtml;
+  }
+
+  // استخراج الأنماط ومحتوى body من بلاغ سرقة المركبة
+  let complaintStyles = '';
+  let complaintBody = '';
+  
+  if (data.criminalComplaintHtml) {
+    // استخراج الأنماط
+    const styleMatches = data.criminalComplaintHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+    complaintStyles = styleMatches.map(s => {
+      return s.replace(/<style[^>]*>/i, '<style>').replace(/body\s*\{/g, '.complaint-content {');
+    }).join('\n');
+    
+    // استخراج محتوى body
+    const bodyMatch = data.criminalComplaintHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    complaintBody = bodyMatch ? bodyMatch[1] : data.criminalComplaintHtml;
+  }
+
+  // استخراج الأنماط ومحتوى body من طلب تحويل المخالفات
+  let violationsTransferStyles = '';
+  let violationsTransferBody = '';
+  
+  if (data.violationsTransferHtml) {
+    // استخراج الأنماط
+    const styleMatches = data.violationsTransferHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+    violationsTransferStyles = styleMatches.map(s => {
+      return s.replace(/<style[^>]*>/i, '<style>').replace(/body\s*\{/g, '.violations-transfer-content {');
+    }).join('\n');
+    
+    // استخراج محتوى body
+    const bodyMatch = data.violationsTransferHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    violationsTransferBody = bodyMatch ? bodyMatch[1] : data.violationsTransferHtml;
   }
 
   return `
@@ -1298,8 +1761,16 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
     .claims-content {
       padding: 20px;
     }
+    .complaint-content {
+      padding: 20px;
+    }
+    .violations-transfer-content {
+      padding: 20px;
+    }
   </style>
   ${claimsStyles}
+  ${complaintStyles}
+  ${violationsTransferStyles}
 </head>
 <body>
   <!-- صفحة الغلاف -->
@@ -1416,13 +1887,41 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
   </div>
   ` : ''}
   
+  ${data.criminalComplaintHtml ? `
+  <!-- بلاغ سرقة المركبة -->
+  <div class="page-break"></div>
+  <div class="doc-page">
+    <div class="doc-header">
+      <h2>بلاغ سرقة المركبة</h2>
+      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml].filter(Boolean).length + 1}</span>
+    </div>
+    <div class="doc-content complaint-content">
+      ${complaintBody}
+    </div>
+  </div>
+  ` : ''}
+  
+  ${data.violationsTransferHtml ? `
+  <!-- طلب تحويل المخالفات -->
+  <div class="page-break"></div>
+  <div class="doc-page">
+    <div class="doc-header">
+      <h2>طلب تحويل المخالفات المرورية</h2>
+      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml, data.criminalComplaintHtml].filter(Boolean).length + 1}</span>
+    </div>
+    <div class="doc-content violations-transfer-content">
+      ${violationsTransferBody}
+    </div>
+  </div>
+  ` : ''}
+  
   ${data.ibanImageUrl ? `
   <!-- شهادة IBAN -->
   <div class="page-break"></div>
   <div class="doc-page">
     <div class="doc-header">
       <h2>شهادة IBAN</h2>
-      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml].filter(Boolean).length + 1}</span>
+      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml, data.criminalComplaintHtml, data.violationsTransferHtml].filter(Boolean).length + 1}</span>
     </div>
     <div class="doc-content">
       <img src="${data.ibanImageUrl}" alt="شهادة IBAN" />
@@ -1436,7 +1935,7 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
   <div class="doc-page">
     <div class="doc-header">
       <h2>السجل التجاري</h2>
-      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml, data.ibanImageUrl].filter(Boolean).length + 1}</span>
+      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml, data.criminalComplaintHtml, data.violationsTransferHtml, data.ibanImageUrl].filter(Boolean).length + 1}</span>
     </div>
     <div class="doc-content">
       <img src="${data.commercialRegisterUrl}" alt="السجل التجاري" />

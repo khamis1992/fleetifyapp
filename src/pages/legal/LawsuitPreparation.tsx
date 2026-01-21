@@ -63,6 +63,8 @@ import {
   generateDocumentsListHtml,
   generateClaimsStatementHtml,
   generateDocumentPortfolioHtml,
+  generateCriminalComplaintHtml,
+  generateViolationsTransferHtml,
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
@@ -121,6 +123,16 @@ export default function LawsuitPreparationPage() {
   const [isUploadingContract, setIsUploadingContract] = useState(false);
   const [existingContractDoc, setExistingContractDoc] = useState<{ file_path: string; document_name: string } | null>(null);
   const [isGeneratingPortfolio, setIsGeneratingPortfolio] = useState(false);
+  
+  // المستندات الداعمة الجديدة
+  const [criminalComplaintUrl, setCriminalComplaintUrl] = useState<string | null>(null);
+  const [isGeneratingComplaint, setIsGeneratingComplaint] = useState(false);
+  const [violationsTransferUrl, setViolationsTransferUrl] = useState<string | null>(null);
+  const [isGeneratingTransfer, setIsGeneratingTransfer] = useState(false);
+  
+  // خيارات المستندات الداعمة (اختياري) - للحافظة
+  const [includeCriminalComplaint, setIncludeCriminalComplaint] = useState(false);
+  const [includeViolationsTransfer, setIncludeViolationsTransfer] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -564,6 +576,95 @@ export default function LawsuitPreparationPage() {
     toast.success('✅ تم توليد كشف المخالفات المرورية!');
   }, [trafficViolations, contract, calculations]);
 
+  // توليد بلاغ سرقة المركبة
+  const generateCriminalComplaint = useCallback(() => {
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد...');
+      return;
+    }
+
+    setIsGeneratingComplaint(true);
+    const customer = (contract as any)?.customers;
+    const vehicle = (contract as any)?.vehicles;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+
+    const complaintHtml = generateCriminalComplaintHtml({
+      customerName,
+      customerNationality: customer?.nationality || '',
+      customerId: customer?.national_id || '-',
+      customerMobile: customer?.phone || customer?.mobile || '',
+      contractDate: contract?.start_date 
+        ? new Date(contract.start_date).toLocaleDateString('ar-QA') 
+        : '-',
+      contractEndDate: contract?.end_date 
+        ? new Date(contract.end_date).toLocaleDateString('ar-QA') 
+        : '-',
+      vehicleType: vehicle 
+        ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() 
+        : '-',
+      plateNumber: vehicle?.plate_number || '-',
+      plateType: 'خصوصي',
+      manufactureYear: vehicle?.year?.toString() || '',
+      chassisNumber: vehicle?.vin || '',
+    });
+
+    openLetterForPrint(complaintHtml);
+    setCriminalComplaintUrl('generated');
+    setIsGeneratingComplaint(false);
+    setIncludeCriminalComplaint(true); // تفعيل التضمين في الحافظة تلقائياً
+    toast.success('✅ تم توليد بلاغ سرقة المركبة!');
+  }, [contract]);
+
+  // توليد طلب تحويل المخالفات
+  const generateViolationsTransfer = useCallback(() => {
+    if (!contract || !trafficViolations?.length) {
+      toast.error('لا توجد مخالفات مرورية');
+      return;
+    }
+
+    setIsGeneratingTransfer(true);
+    const customer = (contract as any)?.customers;
+    const vehicle = (contract as any)?.vehicles;
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+      : 'غير معروف';
+
+    const transferHtml = generateViolationsTransferHtml({
+      customerName,
+      customerId: customer?.national_id || '-',
+      customerMobile: customer?.phone || customer?.mobile || '',
+      contractNumber: contract?.contract_number || '-',
+      contractDate: contract?.start_date 
+        ? new Date(contract.start_date).toLocaleDateString('ar-QA') 
+        : '-',
+      contractEndDate: contract?.end_date 
+        ? new Date(contract.end_date).toLocaleDateString('ar-QA') 
+        : '-',
+      vehicleType: vehicle 
+        ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() 
+        : '-',
+      plateNumber: vehicle?.plate_number || '-',
+      violations: trafficViolations.map(v => ({
+        violationNumber: v.violation_number || '-',
+        violationDate: v.violation_date 
+          ? new Date(v.violation_date).toLocaleDateString('ar-QA') 
+          : '-',
+        violationType: v.violation_type || 'مخالفة مرورية',
+        location: v.location || '',
+        fineAmount: v.fine_amount || 0,
+      })),
+      totalFines: trafficViolations.reduce((sum, v) => sum + (v.fine_amount || 0), 0),
+    });
+
+    openLetterForPrint(transferHtml);
+    setViolationsTransferUrl('generated');
+    setIsGeneratingTransfer(false);
+    setIncludeViolationsTransfer(true); // تفعيل التضمين في الحافظة تلقائياً
+    toast.success('✅ تم توليد طلب تحويل المخالفات!');
+  }, [contract, trafficViolations]);
+
   // توليد حافظة المستندات الموحدة - ملف HTML واحد
   const generateDocumentPortfolio = useCallback(async () => {
     if (!contract) {
@@ -581,6 +682,7 @@ export default function LawsuitPreparationPage() {
     
     try {
       const customer = (contract as any)?.customers;
+      const vehicle = (contract as any)?.vehicles;
       const customerName = customer 
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
         : 'غير معروف';
@@ -599,6 +701,61 @@ export default function LawsuitPreparationPage() {
         return;
       }
 
+      // توليد بلاغ سرقة المركبة (اختياري)
+      let criminalComplaintHtml: string | undefined;
+      if (includeCriminalComplaint) {
+        criminalComplaintHtml = generateCriminalComplaintHtml({
+          customerName,
+          customerNationality: customer?.nationality || '',
+          customerId: customer?.national_id || '-',
+          customerMobile: customer?.phone || customer?.mobile || '',
+          contractDate: contract?.start_date 
+            ? new Date(contract.start_date).toLocaleDateString('ar-QA') 
+            : '-',
+          contractEndDate: contract?.end_date 
+            ? new Date(contract.end_date).toLocaleDateString('ar-QA') 
+            : '-',
+          vehicleType: vehicle 
+            ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() 
+            : '-',
+          plateNumber: vehicle?.plate_number || '-',
+          plateType: 'خصوصي',
+          manufactureYear: vehicle?.year?.toString() || '',
+          chassisNumber: vehicle?.vin || '',
+        });
+      }
+
+      // توليد طلب تحويل المخالفات (اختياري - إذا كانت هناك مخالفات)
+      let violationsTransferHtml: string | undefined;
+      if (includeViolationsTransfer && trafficViolations && trafficViolations.length > 0) {
+        violationsTransferHtml = generateViolationsTransferHtml({
+          customerName,
+          customerId: customer?.national_id || '-',
+          customerMobile: customer?.phone || customer?.mobile || '',
+          contractNumber: contract?.contract_number || '-',
+          contractDate: contract?.start_date 
+            ? new Date(contract.start_date).toLocaleDateString('ar-QA') 
+            : '-',
+          contractEndDate: contract?.end_date 
+            ? new Date(contract.end_date).toLocaleDateString('ar-QA') 
+            : '-',
+          vehicleType: vehicle 
+            ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim() 
+            : '-',
+          plateNumber: vehicle?.plate_number || '-',
+          violations: trafficViolations.map(v => ({
+            violationNumber: v.violation_number || '-',
+            violationDate: v.violation_date 
+              ? new Date(v.violation_date).toLocaleDateString('ar-QA') 
+              : '-',
+            violationType: v.violation_type || 'مخالفة مرورية',
+            location: v.location || '',
+            fineAmount: v.fine_amount || 0,
+          })),
+          totalFines: trafficViolations.reduce((sum, v) => sum + (v.fine_amount || 0), 0),
+        });
+      }
+
       // جلب روابط المستندات
       const ibanCert = getDocByType('iban_certificate');
       const commercialReg = getDocByType('commercial_register');
@@ -606,6 +763,8 @@ export default function LawsuitPreparationPage() {
       console.log('📄 المستندات المتاحة:', {
         عقد_الإيجار: !!contractFileUrl,
         كشف_المطالبات: !!claimsHtml,
+        بلاغ_السرقة: !!criminalComplaintHtml,
+        طلب_تحويل_المخالفات: !!violationsTransferHtml,
         شهادة_IBAN: !!ibanCert?.file_url,
         السجل_التجاري: !!commercialReg?.file_url
       });
@@ -619,6 +778,8 @@ export default function LawsuitPreparationPage() {
         // المستندات
         contractImageUrl: contractFileUrl || undefined,
         claimsStatementHtml: claimsHtml,
+        criminalComplaintHtml: criminalComplaintHtml,
+        violationsTransferHtml: violationsTransferHtml,
         ibanImageUrl: ibanCert?.file_url || undefined,
         commercialRegisterUrl: commercialReg?.file_url || undefined,
       });
@@ -631,7 +792,7 @@ export default function LawsuitPreparationPage() {
     } finally {
       setIsGeneratingPortfolio(false);
     }
-  }, [contract, taqadiData, calculations, claimsStatementUrl, contractFileUrl, getDocByType]);
+  }, [contract, taqadiData, calculations, claimsStatementUrl, contractFileUrl, getDocByType, trafficViolations, includeCriminalComplaint, includeViolationsTransfer]);
 
   // بدء الأتمتة
   const startAutomation = useCallback(async () => {
@@ -847,12 +1008,40 @@ export default function LawsuitPreparationPage() {
         onGenerate: generateViolationsList,
         isGenerating: isGeneratingViolations,
       }] : []),
+      // بلاغ سرقة المركبة (اختياري)
+      {
+        id: 'criminal-complaint',
+        name: 'بلاغ سرقة المركبة',
+        description: criminalComplaintUrl ? '✅ جاهز' : 'بلاغ جنائي للنيابة العامة',
+        status: criminalComplaintUrl ? 'ready' : 'pending',
+        type: 'optional' as const,
+        category: 'generated' as const,
+        url: criminalComplaintUrl,
+        onGenerate: generateCriminalComplaint,
+        isGenerating: isGeneratingComplaint,
+      },
+      // طلب تحويل المخالفات (اختياري - إذا توجد مخالفات)
+      ...(calculations.violationsCount > 0 ? [{
+        id: 'violations-transfer',
+        name: 'طلب تحويل المخالفات',
+        description: violationsTransferUrl ? '✅ جاهز' : `طلب لإدارة المرور (${calculations.violationsCount} مخالفة)`,
+        status: violationsTransferUrl ? 'ready' : 'pending',
+        type: 'optional' as const,
+        category: 'generated' as const,
+        url: violationsTransferUrl,
+        onGenerate: generateViolationsTransfer,
+        isGenerating: isGeneratingTransfer,
+      }] : []),
     ];
   }, [
     memoUrl, claimsStatementUrl, docsListUrl, violationsListUrl, contractFileUrl,
+    criminalComplaintUrl, violationsTransferUrl,
     legalDocs, calculations, contract, overdueInvoices,
     isGeneratingMemo, isGeneratingClaims, isGeneratingDocsList, isUploadingContract,
-    isGeneratingViolations, generateViolationsList, existingContractDoc, uploadContractFile,
+    isGeneratingViolations, generateViolationsList, 
+    isGeneratingComplaint, generateCriminalComplaint,
+    isGeneratingTransfer, generateViolationsTransfer,
+    existingContractDoc, uploadContractFile,
   ]);
 
   // حساب التقدم
@@ -1476,6 +1665,53 @@ export default function LawsuitPreparationPage() {
                     </div>
                   </div>
                 ))}
+              
+              {/* خيارات تضمين في الحافظة */}
+              <Separator className="my-4" />
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground font-medium">تضمين في حافظة المستندات:</p>
+                <div className="flex flex-col gap-2">
+                  <label className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                    criminalComplaintUrl ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={includeCriminalComplaint}
+                      onChange={(e) => setIncludeCriminalComplaint(e.target.checked)}
+                      disabled={!criminalComplaintUrl}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">بلاغ سرقة المركبة</span>
+                      <p className="text-xs text-muted-foreground">
+                        {criminalComplaintUrl ? '✅ جاهز للتضمين' : '⏳ يجب توليده أولاً'}
+                      </p>
+                    </div>
+                  </label>
+                  <label className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                    violationsTransferUrl ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={includeViolationsTransfer}
+                      onChange={(e) => setIncludeViolationsTransfer(e.target.checked)}
+                      disabled={!violationsTransferUrl}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">طلب تحويل المخالفات</span>
+                      <p className="text-xs text-muted-foreground">
+                        {violationsTransferUrl 
+                          ? '✅ جاهز للتضمين' 
+                          : trafficViolations && trafficViolations.length > 0 
+                            ? '⏳ يجب توليده أولاً'
+                            : 'لا توجد مخالفات مرورية'
+                        }
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
