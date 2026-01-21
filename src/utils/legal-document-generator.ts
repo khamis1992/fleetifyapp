@@ -209,7 +209,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     name_en: companyInfo.name_en || 'AL-ARAF CAR RENTAL L.L.C',
     logo: '/receipts/logo.png',
     address: companyInfo.address || 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-    phone: '+974 3141 1919',
+    phone: '31411919',
     email: 'info@alaraf.qa',
     cr: companyInfo.cr_number || '146832',
     authorized_signatory: 'أسامة أحمد البشرى',

@@ -39,6 +39,7 @@ import {
   Eye,
   Upload,
   FolderDown,
+  FolderOpen,
   ArrowLeft,
   FileWarning,
   FileStack,
@@ -61,6 +62,7 @@ import {
 import {
   generateDocumentsListHtml,
   generateClaimsStatementHtml,
+  generateDocumentPortfolioHtml,
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
@@ -118,6 +120,7 @@ export default function LawsuitPreparationPage() {
   const [contractFileUrl, setContractFileUrl] = useState<string | null>(null);
   const [isUploadingContract, setIsUploadingContract] = useState(false);
   const [existingContractDoc, setExistingContractDoc] = useState<{ file_path: string; document_name: string } | null>(null);
+  const [isGeneratingPortfolio, setIsGeneratingPortfolio] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -474,13 +477,20 @@ export default function LawsuitPreparationPage() {
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
 
-    const invoicesData = overdueInvoices.map((inv) => ({
-      invoiceNumber: inv.invoice_number || '-',
-      dueDate: inv.due_date,
-      totalAmount: inv.total_amount || 0,
-      paidAmount: inv.paid_amount || 0,
-      daysLate: Math.floor((new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)),
-    }));
+    const invoicesData = overdueInvoices.map((inv) => {
+      const daysLate = Math.floor((new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24));
+      const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
+      // حساب الغرامة: 120 ر.ق لكل يوم بحد أقصى 3000 ر.ق
+      const penalty = remaining > 0 ? Math.min(daysLate * 120, 3000) : 0;
+      return {
+        invoiceNumber: inv.invoice_number || '-',
+        dueDate: inv.due_date,
+        totalAmount: inv.total_amount || 0,
+        paidAmount: inv.paid_amount || 0,
+        daysLate,
+        penalty,
+      };
+    });
 
     const violationsData = trafficViolations.map((v) => ({
       violationNumber: v.violation_number || '-',
@@ -490,15 +500,17 @@ export default function LawsuitPreparationPage() {
       fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
     }));
 
+    const totalPenalties = invoicesData.reduce((sum, inv) => sum + (inv.penalty || 0), 0);
     const claimsHtml = generateClaimsStatementHtml({
       customerName,
       nationalId: customer?.national_id || '-',
+      phone: customer?.phone || customer?.mobile || '',
       contractNumber: contract?.contract_number || '-',
       contractStartDate: contract?.start_date || '',
       contractEndDate: contract?.end_date || '',
       invoices: invoicesData,
       violations: violationsData,
-      totalOverdue: calculations.overdueRent + calculations.violationsFines,
+      totalOverdue: calculations.overdueRent + calculations.violationsFines + totalPenalties,
       amountInWords: calculations.amountInWords,
       caseTitle: taqadiData?.caseTitle,
     });
@@ -535,6 +547,7 @@ export default function LawsuitPreparationPage() {
     const violationsHtml = generateClaimsStatementHtml({
       customerName,
       nationalId: customer?.national_id || '-',
+      phone: customer?.phone || customer?.mobile || '',
       contractNumber: contract?.contract_number || '-',
       contractStartDate: contract?.start_date || '',
       contractEndDate: contract?.end_date || '',
@@ -550,6 +563,75 @@ export default function LawsuitPreparationPage() {
     setIsGeneratingViolations(false);
     toast.success('✅ تم توليد كشف المخالفات المرورية!');
   }, [trafficViolations, contract, calculations]);
+
+  // توليد حافظة المستندات الموحدة - ملف HTML واحد
+  const generateDocumentPortfolio = useCallback(async () => {
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد...');
+      return;
+    }
+
+    // التحقق من وجود كشف المطالبات المالية
+    if (!claimsStatementUrl) {
+      toast.error('يرجى توليد كشف المطالبات المالية أولاً');
+      return;
+    }
+
+    setIsGeneratingPortfolio(true);
+    
+    try {
+      const customer = (contract as any)?.customers;
+      const customerName = customer 
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+        : 'غير معروف';
+
+      // جلب محتوى كشف المطالبات من الـ blob URL
+      let claimsHtml = '';
+      try {
+        const response = await fetch(claimsStatementUrl);
+        if (!response.ok) throw new Error('Failed to fetch claims');
+        claimsHtml = await response.text();
+        console.log('✅ تم جلب كشف المطالبات، الحجم:', claimsHtml.length, 'حرف');
+      } catch (err) {
+        console.error('❌ خطأ في جلب كشف المطالبات:', err);
+        toast.error('تعذر جلب كشف المطالبات المالية');
+        setIsGeneratingPortfolio(false);
+        return;
+      }
+
+      // جلب روابط المستندات
+      const ibanCert = getDocByType('iban_certificate');
+      const commercialReg = getDocByType('commercial_register');
+
+      console.log('📄 المستندات المتاحة:', {
+        عقد_الإيجار: !!contractFileUrl,
+        كشف_المطالبات: !!claimsHtml,
+        شهادة_IBAN: !!ibanCert?.file_url,
+        السجل_التجاري: !!commercialReg?.file_url
+      });
+
+      // توليد الحافظة
+      const portfolioHtml = generateDocumentPortfolioHtml({
+        caseTitle: taqadiData?.caseTitle || `قضية مطالبة مالية ضد ${customerName}`,
+        customerName,
+        contractNumber: contract?.contract_number || '-',
+        totalAmount: calculations.overdueRent + calculations.violationsFines + calculations.lateFees,
+        // المستندات
+        contractImageUrl: contractFileUrl || undefined,
+        claimsStatementHtml: claimsHtml,
+        ibanImageUrl: ibanCert?.file_url || undefined,
+        commercialRegisterUrl: commercialReg?.file_url || undefined,
+      });
+
+      openLetterForPrint(portfolioHtml);
+      toast.success('✅ تم توليد حافظة المستندات!');
+    } catch (error) {
+      console.error('Error generating portfolio:', error);
+      toast.error('حدث خطأ أثناء توليد حافظة المستندات');
+    } finally {
+      setIsGeneratingPortfolio(false);
+    }
+  }, [contract, taqadiData, calculations, claimsStatementUrl, contractFileUrl, getDocByType]);
 
   // بدء الأتمتة
   const startAutomation = useCallback(async () => {
@@ -1530,6 +1612,26 @@ export default function LawsuitPreparationPage() {
                   <>
                     <FileStack className="h-5 w-5 ml-2" />
                     توليد جميع المستندات
+                  </>
+                )}
+              </Button>
+
+              <Button
+                size="lg"
+                onClick={generateDocumentPortfolio}
+                disabled={isGeneratingPortfolio || !claimsStatementUrl}
+                title={!claimsStatementUrl ? 'يرجى توليد كشف المطالبات المالية أولاً' : ''}
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50"
+              >
+                {isGeneratingPortfolio ? (
+                  <>
+                    <LoadingSpinner className="h-5 w-5 ml-2" />
+                    جاري التوليد...
+                  </>
+                ) : (
+                  <>
+                    <FolderOpen className="h-5 w-5 ml-2" />
+                    حافظة المستندات
                   </>
                 )}
               </Button>

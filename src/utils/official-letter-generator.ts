@@ -9,7 +9,7 @@ const COMPANY_INFO = {
   name_en: 'AL-ARAF CAR RENTAL L.L.C',
   logo: '/receipts/logo.png',
   address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-  phone: '+974 3141 1919',
+  phone: '31411919',
   email: 'info@alaraf.qa',
   cr: 'س.ت: 146832',
   authorized_signatory: 'أسامة أحمد البشرى',
@@ -50,6 +50,7 @@ export interface OfficialLetterData {
 export interface ClaimsStatementData {
   customerName: string;
   nationalId: string;
+  phone?: string;
   contractNumber: string;
   contractStartDate: string;
   contractEndDate: string;
@@ -59,6 +60,7 @@ export interface ClaimsStatementData {
     totalAmount: number;
     paidAmount: number;
     daysLate: number;
+    penalty?: number;
   }[];
   violations?: {
     violationNumber: string;
@@ -864,6 +866,31 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
 }
 
 /**
+ * تنسيق الأرقام بالإنجليزية
+ */
+function formatNumberEn(num: number): string {
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
+ * تنسيق التاريخ بالإنجليزية
+ */
+function formatDateEn(dateStr: string): string {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/**
+ * تنسيق رقم الهاتف (إزالة رمز الدولة والمسافات)
+ */
+function formatPhoneNumber(phone: string): string {
+  if (!phone) return '-';
+  // إزالة +974 أو 974 من البداية والمسافات
+  return phone.replace(/^\+?974\s*/, '').replace(/\s+/g, '');
+}
+
+/**
  * توليد كشف المطالبات المالية
  */
 export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
@@ -895,54 +922,66 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
       </div>
       <div class="info-row">
         <span class="info-label">رقم الهوية:</span>
-        <span>${data.nationalId || '-'}</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${data.nationalId || '-'}</span>
       </div>
+      ${data.phone ? `
+      <div class="info-row">
+        <span class="info-label">رقم الجوال:</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${formatPhoneNumber(data.phone)}</span>
+      </div>
+      ` : ''}
       <div class="info-row">
         <span class="info-label">رقم العقد:</span>
         <span>${data.contractNumber || '-'}</span>
       </div>
       <div class="info-row">
         <span class="info-label">فترة العقد:</span>
-        <span>${data.contractStartDate ? new Date(data.contractStartDate).toLocaleDateString('ar-QA') : '-'} إلى ${data.contractEndDate ? new Date(data.contractEndDate).toLocaleDateString('ar-QA') : '-'}</span>
+        <span style="direction: ltr; unicode-bidi: embed;">${formatDateEn(data.contractStartDate)} - ${formatDateEn(data.contractEndDate)}</span>
       </div>
     </div>
     
     <!-- جدول الفواتير -->
     ${data.invoices.length > 0 ? `
     <div class="section">
-      <div class="section-title">تفصيل الفواتير المتأخرة</div>
+      <div class="section-title">تفصيل الفواتير المستحقة</div>
       <table>
         <thead>
           <tr>
             <th>م</th>
             <th>رقم الفاتورة</th>
             <th>تاريخ الاستحقاق</th>
-            <th>أيام التأخير</th>
-            <th>المبلغ الكلي</th>
+            <th>مبلغ الإيجار</th>
+            <th style="text-align: center;">الغرامة<br><small style="font-weight: normal; font-size: 7pt; display: block; text-align: center;">(حسب ما هو منصوص في العقد)</small></th>
             <th>المدفوع</th>
             <th>المتبقي</th>
+            <th>الإجمالي</th>
           </tr>
         </thead>
         <tbody>
           ${data.invoices.map((inv, i) => {
             const remaining = inv.totalAmount - inv.paidAmount;
+            const penalty = inv.penalty || 0;
+            const total = remaining + penalty;
             return `
               <tr>
                 <td>${i + 1}</td>
                 <td>${inv.invoiceNumber || '-'}</td>
-                <td>${new Date(inv.dueDate).toLocaleDateString('ar-QA')}</td>
-                <td class="days-late">${inv.daysLate} يوم</td>
-                <td>${inv.totalAmount.toLocaleString('ar-QA')} ر.ق</td>
-                <td>${inv.paidAmount.toLocaleString('ar-QA')} ر.ق</td>
-                <td class="amount">${remaining.toLocaleString('ar-QA')} ر.ق</td>
+                <td style="direction: ltr; unicode-bidi: embed;">${formatDateEn(inv.dueDate)}</td>
+                <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.totalAmount)}</td>
+                <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(penalty)}</td>
+                <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.paidAmount)}</td>
+                <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(remaining)}</td>
+                <td class="amount" style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(total)}</td>
               </tr>
             `;
           }).join('')}
           <tr class="total-row">
-            <td colspan="4">إجمالي الفواتير</td>
-            <td>${data.invoices.reduce((s, i) => s + i.totalAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
-            <td>${data.invoices.reduce((s, i) => s + i.paidAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
-            <td class="amount">${data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0).toLocaleString('ar-QA')} ر.ق</td>
+            <td colspan="3">المجموع</td>
+            <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + i.totalAmount, 0))}</td>
+            <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + (i.penalty || 0), 0))}</td>
+            <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + i.paidAmount, 0))}</td>
+            <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0))}</td>
+            <td class="amount" style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount) + (i.penalty || 0), 0))} ر.ق</td>
           </tr>
         </tbody>
       </table>
@@ -969,15 +1008,15 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
             <tr>
               <td>${i + 1}</td>
               <td>${v.violationNumber}</td>
-              <td>${v.violationDate ? new Date(v.violationDate).toLocaleDateString('ar-QA') : '-'}</td>
+              <td style="direction: ltr; unicode-bidi: embed;">${formatDateEn(v.violationDate)}</td>
               <td>${v.violationType}</td>
               <td>${v.location}</td>
-              <td class="amount">${v.fineAmount.toLocaleString('ar-QA')} ر.ق</td>
+              <td class="amount" style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(v.fineAmount)}</td>
             </tr>
           `).join('')}
           <tr class="total-row" style="background: #d32f2f !important; color: #fff !important;">
             <td colspan="5" style="color: #fff !important;">إجمالي المخالفات المرورية</td>
-            <td class="amount" style="color: #fff !important;">${data.violations.reduce((s, v) => s + v.fineAmount, 0).toLocaleString('ar-QA')} ر.ق</td>
+            <td class="amount" style="color: #fff !important; direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.violations.reduce((s, v) => s + v.fineAmount, 0))} ر.ق</td>
           </tr>
         </tbody>
       </table>
@@ -991,7 +1030,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
         ${data.invoices.length > 0 ? `
         <div class="summary-item">
           <div class="summary-value">${data.invoices.length}</div>
-          <div class="summary-label">عدد الفواتير المتأخرة</div>
+          <div class="summary-label">عدد الفواتير المستحقة</div>
         </div>
         ` : ''}
         ${data.violations && data.violations.length > 0 ? `
@@ -1001,7 +1040,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
         </div>
         ` : ''}
         <div class="summary-item">
-          <div class="summary-value">${data.totalOverdue.toLocaleString('ar-QA')}</div>
+          <div class="summary-value" style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.totalOverdue)}</div>
           <div class="summary-label">إجمالي المبالغ المستحقة (ر.ق)</div>
         </div>
         <div class="summary-item">
@@ -1028,5 +1067,384 @@ export function openLetterForPrint(html: string): void {
     printWindow.document.close();
     printWindow.focus();
   }
+}
+
+/**
+ * واجهة بيانات حافظة المستندات
+ */
+export interface DocumentPortfolioData {
+  caseTitle: string;
+  customerName: string;
+  contractNumber: string;
+  caseNumber?: string;
+  totalAmount: number;
+  // المستندات المختلفة
+  claimsStatementHtml?: string; // كشف المطالبات المالية - HTML كامل
+  contractImageUrl?: string; // عقد الإيجار - رابط صورة
+  ibanImageUrl?: string; // شهادة IBAN - رابط صورة
+  commercialRegisterUrl?: string; // السجل التجاري - رابط صورة
+}
+
+/**
+ * توليد حافظة المستندات الموحدة - ملف HTML واحد يحتوي على جميع المستندات
+ */
+export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): string {
+  const refNumber = generateRefNumber();
+  const currentDate = formatDateAr();
+  
+  // بناء قائمة المستندات المتاحة
+  const documentsList: { title: string; pageNum: number }[] = [];
+  let pageNum = 2;
+  
+  if (data.contractImageUrl) {
+    documentsList.push({ title: 'عقد الإيجار', pageNum: pageNum++ });
+  }
+  if (data.claimsStatementHtml) {
+    documentsList.push({ title: 'كشف المطالبات المالية', pageNum: pageNum++ });
+  }
+  if (data.ibanImageUrl) {
+    documentsList.push({ title: 'شهادة IBAN', pageNum: pageNum++ });
+  }
+  if (data.commercialRegisterUrl) {
+    documentsList.push({ title: 'السجل التجاري', pageNum: pageNum++ });
+  }
+
+  // استخراج الأنماط ومحتوى body من كشف المطالبات
+  let claimsStyles = '';
+  let claimsBody = '';
+  
+  if (data.claimsStatementHtml) {
+    // استخراج الأنماط
+    const styleMatches = data.claimsStatementHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+    claimsStyles = styleMatches.map(s => {
+      // إضافة prefix للأنماط لتجنب التعارض
+      return s.replace(/<style[^>]*>/i, '<style>').replace(/body\s*\{/g, '.claims-content {');
+    }).join('\n');
+    
+    // استخراج محتوى body
+    const bodyMatch = data.claimsStatementHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    claimsBody = bodyMatch ? bodyMatch[1] : data.claimsStatementHtml;
+  }
+
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>حافظة مستندات - ${data.customerName}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
+    }
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .page-break { page-break-before: always; }
+      body { margin: 0; padding: 0; }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
+      direction: rtl;
+      background: #fff;
+      color: #000;
+      line-height: 1.8;
+      font-size: 14px;
+    }
+    
+    /* صفحة الغلاف */
+    .cover-page {
+      padding: 20px 30px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px double #1e3a5f;
+      padding-bottom: 15px;
+      margin-bottom: 15px;
+    }
+    .company-ar h1 { color: #1e3a5f; margin: 0; font-size: 20px; }
+    .company-ar p { color: #000; margin: 2px 0; font-size: 11px; }
+    .logo-container { flex: 0 0 130px; text-align: center; padding: 0 15px; }
+    .logo-container img { max-height: 70px; max-width: 120px; }
+    .company-en { text-align: left; }
+    .company-en h1 { color: #1e3a5f; margin: 0; font-size: 14px; }
+    .company-en p { color: #000; margin: 2px 0; font-size: 11px; }
+    .address-bar {
+      background: #f0f4f8;
+      padding: 8px 15px;
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      margin-bottom: 20px;
+      border: 1px solid #d0d7de;
+    }
+    .portfolio-title {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .portfolio-title h1 {
+      font-size: 28px;
+      padding: 15px 40px;
+      border: 3px solid #1e3a5f;
+      display: inline-block;
+    }
+    .portfolio-title h2 {
+      font-size: 18px;
+      color: #1e3a5f;
+      margin-top: 15px;
+    }
+    .ref-bar {
+      display: flex;
+      justify-content: space-between;
+      background: #1e3a5f;
+      color: white;
+      padding: 10px 20px;
+      margin: 20px 0;
+    }
+    .case-info {
+      background: #f8fafc;
+      border: 1px solid #d0d7de;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .case-info-header {
+      background: #1e3a5f;
+      color: white;
+      padding: 8px 15px;
+      margin: -20px -20px 15px -20px;
+      font-weight: bold;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    .info-item label { display: block; font-size: 11px; color: #666; }
+    .info-item span { font-size: 14px; font-weight: 600; }
+    .index-section { margin-top: 25px; }
+    .index-section h3 {
+      font-size: 14px;
+      color: #1e3a5f;
+      border-bottom: 2px solid #1e3a5f;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+    }
+    .index-table { width: 100%; border-collapse: collapse; }
+    .index-table th {
+      background: #1e3a5f;
+      color: white;
+      padding: 10px;
+      text-align: right;
+    }
+    .index-table td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .index-table tr:nth-child(even) { background: #f8f8f8; }
+    .signature-area {
+      margin-top: auto;
+      padding-top: 30px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .signature-box { text-align: center; }
+    .signature-line { width: 150px; border-top: 1px solid #000; margin-bottom: 5px; }
+    .stamp-box {
+      width: 90px;
+      height: 90px;
+      border: 2px dashed #999;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 10px;
+    }
+    
+    /* صفحات المستندات */
+    .doc-page {
+      padding: 20px 30px;
+    }
+    .doc-header {
+      background: #1e3a5f;
+      color: white;
+      padding: 15px 25px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .doc-header h2 { margin: 0; font-size: 18px; }
+    .doc-number {
+      background: rgba(255,255,255,0.2);
+      padding: 5px 15px;
+      font-size: 12px;
+    }
+    .doc-content {
+      border: 1px solid #ddd;
+      min-height: 500px;
+    }
+    .doc-content img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .claims-content {
+      padding: 20px;
+    }
+  </style>
+  ${claimsStyles}
+</head>
+<body>
+  <!-- صفحة الغلاف -->
+  <div class="cover-page">
+    <div class="header">
+      <div class="company-ar">
+        <h1>${COMPANY_INFO.name_ar}</h1>
+        <p>ذ.م.م</p>
+        <p>${COMPANY_INFO.cr}</p>
+      </div>
+      <div class="logo-container">
+        <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" onerror="this.style.display='none'" />
+      </div>
+      <div class="company-en" dir="ltr">
+        <h1>${COMPANY_INFO.name_en}</h1>
+        <p>C.R: 146832</p>
+      </div>
+    </div>
+    
+    <div class="address-bar">
+      ${COMPANY_INFO.address}<br/>
+      هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
+    </div>
+    
+    <div class="portfolio-title">
+      <h1>حافظة مستندات</h1>
+      <h2>${data.caseTitle || 'قضية مطالبة مالية'}</h2>
+    </div>
+    
+    <div class="ref-bar">
+      <div><strong>الرقم المرجعي:</strong> ${refNumber}</div>
+      <div><strong>التاريخ:</strong> ${currentDate}</div>
+    </div>
+    
+    <div class="case-info">
+      <div class="case-info-header">بيانات الدعوى</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>المدعى عليه</label>
+          <span>${data.customerName}</span>
+        </div>
+        <div class="info-item">
+          <label>رقم العقد</label>
+          <span>${data.contractNumber}</span>
+        </div>
+        <div class="info-item">
+          <label>المبلغ المطالب به</label>
+          <span style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.totalAmount)} ر.ق</span>
+        </div>
+        <div class="info-item">
+          <label>عدد المستندات</label>
+          <span>${documentsList.length} مستند</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="index-section">
+      <h3>فهرس المستندات</h3>
+      <table class="index-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">م</th>
+            <th>المستند</th>
+            <th style="width: 80px;">الصفحة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${documentsList.map((doc, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${doc.title}</td>
+              <td>${doc.pageNum}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="signature-area">
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <p>${COMPANY_INFO.authorized_signatory}</p>
+        <p style="color: #666; font-size: 11px;">${COMPANY_INFO.authorized_title}</p>
+      </div>
+      <div class="stamp-box">ختم الشركة</div>
+    </div>
+  </div>
+  
+  ${data.contractImageUrl ? `
+  <!-- عقد الإيجار -->
+  <div class="page-break"></div>
+  <div class="doc-page">
+    <div class="doc-header">
+      <h2>عقد الإيجار</h2>
+      <span class="doc-number">مستند رقم 1</span>
+    </div>
+    <div class="doc-content">
+      <img src="${data.contractImageUrl}" alt="عقد الإيجار" />
+    </div>
+  </div>
+  ` : ''}
+  
+  ${data.claimsStatementHtml ? `
+  <!-- كشف المطالبات المالية -->
+  <div class="page-break"></div>
+  <div class="doc-page">
+    <div class="doc-header">
+      <h2>كشف المطالبات المالية</h2>
+      <span class="doc-number">مستند رقم ${data.contractImageUrl ? '2' : '1'}</span>
+    </div>
+    <div class="doc-content claims-content">
+      ${claimsBody}
+    </div>
+  </div>
+  ` : ''}
+  
+  ${data.ibanImageUrl ? `
+  <!-- شهادة IBAN -->
+  <div class="page-break"></div>
+  <div class="doc-page">
+    <div class="doc-header">
+      <h2>شهادة IBAN</h2>
+      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml].filter(Boolean).length + 1}</span>
+    </div>
+    <div class="doc-content">
+      <img src="${data.ibanImageUrl}" alt="شهادة IBAN" />
+    </div>
+  </div>
+  ` : ''}
+  
+  ${data.commercialRegisterUrl ? `
+  <!-- السجل التجاري -->
+  <div class="page-break"></div>
+  <div class="doc-page">
+    <div class="doc-header">
+      <h2>السجل التجاري</h2>
+      <span class="doc-number">مستند رقم ${[data.contractImageUrl, data.claimsStatementHtml, data.ibanImageUrl].filter(Boolean).length + 1}</span>
+    </div>
+    <div class="doc-content">
+      <img src="${data.commercialRegisterUrl}" alt="السجل التجاري" />
+    </div>
+  </div>
+  ` : ''}
+</body>
+</html>
+  `;
 }
 
