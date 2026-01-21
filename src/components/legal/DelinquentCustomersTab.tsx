@@ -58,6 +58,7 @@ import {
   CreditCard,
   Star,
   Trash2,
+  Gavel,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -845,6 +846,7 @@ export const DelinquentCustomersTab: React.FC = () => {
               { id: 'active', label: 'نشط', count: customers?.filter(c => c.contract_status === 'active').length || 0, color: 'green' },
               { id: 'cancelled', label: 'ملغي', count: customers?.filter(c => c.contract_status === 'cancelled').length || 0, color: 'red' },
               { id: 'closed', label: 'مغلق', count: customers?.filter(c => c.contract_status === 'closed').length || 0, color: 'gray' },
+              { id: 'under_legal_procedure', label: 'إجراء قانوني', count: customers?.filter(c => c.contract_status === 'under_legal_procedure').length || 0, color: 'violet' },
             ].filter(f => f.count > 0).map(({ id, label, count, color }) => (
               <button
                 key={id}
@@ -855,14 +857,19 @@ export const DelinquentCustomersTab: React.FC = () => {
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all",
                   contractStatusFilter === id
-                    ? id === 'cancelled' ? 'bg-red-500 text-white' : id === 'closed' ? 'bg-slate-500 text-white' : 'bg-green-500 text-white'
+                    ? id === 'cancelled' ? 'bg-red-500 text-white' 
+                    : id === 'closed' ? 'bg-slate-500 text-white' 
+                    : id === 'under_legal_procedure' ? 'bg-violet-500 text-white'
+                    : 'bg-green-500 text-white'
                     : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' 
                     : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                    : id === 'under_legal_procedure' ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
                     : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
                 )}
               >
                 {id === 'cancelled' && <X className="w-3 h-3" />}
                 {id === 'closed' && <CheckCircle className="w-3 h-3" />}
+                {id === 'under_legal_procedure' && <Gavel className="w-3 h-3" />}
                 {label}
                 <span className="bg-white/20 px-1 rounded text-[10px]">{count}</span>
               </button>
@@ -949,6 +956,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                   <SelectItem value="active">نشط</SelectItem>
                   <SelectItem value="cancelled">ملغي</SelectItem>
                   <SelectItem value="closed">مغلق</SelectItem>
+                  <SelectItem value="under_legal_procedure">تحت الإجراء القانوني</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1006,12 +1014,10 @@ export const DelinquentCustomersTab: React.FC = () => {
               />
             </div>
             <div className="col-span-3">العميل</div>
-            <div className="col-span-2">العقد / المركبة</div>
+            <div className="col-span-3">العقد / المركبة</div>
             <div className="col-span-2">المستحقات</div>
             <div className="col-span-1">التواصل</div>
-            <div className="col-span-1">التأخير</div>
-            <div className="col-span-1">المخاطر</div>
-            <div className="col-span-1 text-center">الإجراءات</div>
+            <div className="col-span-2 text-center">الإجراءات</div>
           </div>
         </div>
 
@@ -1119,7 +1125,7 @@ export const DelinquentCustomersTab: React.FC = () => {
                       </div>
 
                       {/* Contract/Vehicle */}
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <div className="flex flex-col gap-1">
                           <button
                             onClick={(e) => {
@@ -1188,61 +1194,8 @@ export const DelinquentCustomersTab: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Days Overdue */}
-                      <div className="col-span-1">
-                        <div className={cn(
-                          "flex items-center justify-center w-14 h-14 rounded-xl text-sm font-bold",
-                          customer.days_overdue > 90
-                            ? "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-rose-500/30"
-                            : customer.days_overdue > 60
-                              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-amber-500/30"
-                              : customer.days_overdue > 30
-                                ? "bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30"
-                                : "bg-slate-800 text-white"
-                        )}>
-                          {customer.days_overdue}
-                        </div>
-                      </div>
-
-                      {/* Risk */}
-                      <div className="col-span-1">
-                        <div className="flex flex-col gap-1.5">
-                          <Badge className={cn(
-                            "text-xs font-medium",
-                            customer.risk_level === 'CRITICAL' && "bg-red-100 text-red-700 border-red-200",
-                            customer.risk_level === 'HIGH' && "bg-orange-100 text-orange-700 border-orange-200",
-                            customer.risk_level === 'MEDIUM' && "bg-amber-100 text-amber-700 border-amber-200",
-                            customer.risk_level === 'LOW' && "bg-emerald-100 text-emerald-700 border-emerald-200",
-                            !customer.risk_level && "bg-slate-100 text-slate-700 border-slate-200"
-                          )}>
-                            {customer.risk_level === 'CRITICAL' ? 'حرج' :
-                             customer.risk_level === 'HIGH' ? 'عالي' :
-                             customer.risk_level === 'MEDIUM' ? 'متوسط' :
-                             customer.risk_level === 'LOW' ? 'منخفض' : 'مراقبة'}
-                          </Badge>
-                          <div className="flex items-center gap-1">
-                            <div className="w-10 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${Math.min(customer.risk_score || 0, 100)}%` }}
-                                transition={{ duration: 0.8, delay: index * 0.05 + 0.2 }}
-                                className={cn(
-                                  "h-full rounded-full",
-                                  customer.risk_level === 'CRITICAL' && "bg-gradient-to-r from-red-500 to-red-400",
-                                  customer.risk_level === 'HIGH' && "bg-gradient-to-r from-orange-500 to-orange-400",
-                                  customer.risk_level === 'MEDIUM' && "bg-gradient-to-r from-amber-500 to-amber-400",
-                                  customer.risk_level === 'LOW' && "bg-gradient-to-r from-emerald-500 to-emerald-400",
-                                  !customer.risk_level && "bg-gradient-to-r from-slate-500 to-slate-400"
-                                )}
-                              />
-                            </div>
-                            <span className="text-[10px] text-slate-400">{customer.risk_score || 0}%</span>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Actions */}
-                      <div className="col-span-1 text-center">
+                      <div className="col-span-2 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
@@ -1272,29 +1225,6 @@ export const DelinquentCustomersTab: React.FC = () => {
                             <CreditCard className="w-4 h-4" />
                           </Button>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Risk Progress Bar at Bottom */}
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                      <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                        <span>مستوى المخاطرة</span>
-                        <span>{customer.risk_score || 0}%</span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(customer.risk_score || 0, 100)}%` }}
-                          transition={{ duration: 0.8, delay: index * 0.05 + 0.3 }}
-                          className={cn(
-                            "h-full rounded-full",
-                            customer.risk_level === 'CRITICAL' && "bg-gradient-to-r from-red-500 to-red-400",
-                            customer.risk_level === 'HIGH' && "bg-gradient-to-r from-orange-500 to-orange-400",
-                            customer.risk_level === 'MEDIUM' && "bg-gradient-to-r from-amber-500 to-amber-400",
-                            customer.risk_level === 'LOW' && "bg-gradient-to-r from-emerald-500 to-emerald-400",
-                            !customer.risk_level && "bg-gradient-to-r from-slate-500 to-slate-400"
-                          )}
-                        />
                       </div>
                     </div>
                   </div>

@@ -247,17 +247,26 @@ const QuickSummary: React.FC<QuickSummaryProps> = ({
 
 // ===== Alerts Panel =====
 interface AlertsPanelProps {
+  insuranceExpired: number;
   insuranceExpiringSoon: number;
+  registrationExpired: number;
   registrationExpiringSoon: number;
   serviceOverdue: number;
 }
 
 const AlertsPanel: React.FC<AlertsPanelProps> = ({
+  insuranceExpired,
   insuranceExpiringSoon,
+  registrationExpired,
   registrationExpiringSoon,
   serviceOverdue,
 }) => {
-  const totalAlerts = insuranceExpiringSoon + registrationExpiringSoon + serviceOverdue;
+  // إجمالي التأمين (منتهي + ينتهي قريباً)
+  const totalInsurance = insuranceExpired + insuranceExpiringSoon;
+  // إجمالي الفحص (منتهي + ينتهي قريباً)
+  const totalRegistration = registrationExpired + registrationExpiringSoon;
+  // إجمالي التنبيهات
+  const totalAlerts = totalInsurance + totalRegistration + serviceOverdue;
 
   return (
     <div className="bg-white rounded-[1.25rem] p-5 shadow-sm border border-neutral-100">
@@ -277,34 +286,52 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({
         {/* Insurance Alert */}
         <div className={cn(
           'flex items-center justify-between p-3 rounded-xl transition-colors',
-          insuranceExpiringSoon > 0 ? 'bg-red-50' : 'bg-neutral-50'
+          totalInsurance > 0 ? 'bg-red-50' : 'bg-neutral-50'
         )}>
           <div className="flex items-center gap-3">
-            <Shield className={cn('w-5 h-5', insuranceExpiringSoon > 0 ? 'text-red-500' : 'text-neutral-400')} />
-            <span className="text-sm text-neutral-700">تأمين ينتهي قريباً</span>
+            <Shield className={cn('w-5 h-5', totalInsurance > 0 ? 'text-red-500' : 'text-neutral-400')} />
+            <div className="flex flex-col">
+              <span className="text-sm text-neutral-700">تأمين منتهي أو ينتهي قريباً</span>
+              {totalInsurance > 0 && (
+                <span className="text-[10px] text-neutral-500">
+                  {insuranceExpired > 0 && `${insuranceExpired} منتهي`}
+                  {insuranceExpired > 0 && insuranceExpiringSoon > 0 && ' • '}
+                  {insuranceExpiringSoon > 0 && `${insuranceExpiringSoon} ينتهي قريباً`}
+                </span>
+              )}
+            </div>
           </div>
           <span className={cn(
             'text-lg font-bold',
-            insuranceExpiringSoon > 0 ? 'text-red-600' : 'text-neutral-400'
+            totalInsurance > 0 ? 'text-red-600' : 'text-neutral-400'
           )}>
-            {insuranceExpiringSoon}
+            {totalInsurance}
           </span>
         </div>
 
         {/* Registration Alert */}
         <div className={cn(
           'flex items-center justify-between p-3 rounded-xl transition-colors',
-          registrationExpiringSoon > 0 ? 'bg-amber-50' : 'bg-neutral-50'
+          totalRegistration > 0 ? 'bg-amber-50' : 'bg-neutral-50'
         )}>
           <div className="flex items-center gap-3">
-            <FileWarning className={cn('w-5 h-5', registrationExpiringSoon > 0 ? 'text-amber-500' : 'text-neutral-400')} />
-            <span className="text-sm text-neutral-700">فحص دوري ينتهي</span>
+            <FileWarning className={cn('w-5 h-5', totalRegistration > 0 ? 'text-amber-500' : 'text-neutral-400')} />
+            <div className="flex flex-col">
+              <span className="text-sm text-neutral-700">فحص منتهي أو ينتهي قريباً</span>
+              {totalRegistration > 0 && (
+                <span className="text-[10px] text-neutral-500">
+                  {registrationExpired > 0 && `${registrationExpired} منتهي`}
+                  {registrationExpired > 0 && registrationExpiringSoon > 0 && ' • '}
+                  {registrationExpiringSoon > 0 && `${registrationExpiringSoon} ينتهي قريباً`}
+                </span>
+              )}
+            </div>
           </div>
           <span className={cn(
             'text-lg font-bold',
-            registrationExpiringSoon > 0 ? 'text-amber-600' : 'text-neutral-400'
+            totalRegistration > 0 ? 'text-amber-600' : 'text-neutral-400'
           )}>
-            {registrationExpiringSoon}
+            {totalRegistration}
           </span>
         </div>
 
@@ -451,7 +478,9 @@ export const FleetSmartDashboard: React.FC<FleetSmartDashboardProps> = ({
 
         {/* Alerts Panel */}
         <AlertsPanel
+          insuranceExpired={stats.insuranceExpired}
           insuranceExpiringSoon={stats.insuranceExpiringSoon}
+          registrationExpired={stats.registrationExpired}
           registrationExpiringSoon={stats.registrationExpiringSoon}
           serviceOverdue={stats.serviceOverdue}
         />

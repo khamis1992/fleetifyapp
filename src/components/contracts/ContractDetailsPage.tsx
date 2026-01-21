@@ -1355,7 +1355,11 @@ const ContractDetailsPage = () => {
 
               {/* تبويب المستندات */}
               <TabsContent value="documents" className="mt-0">
-                <ContractDocuments contractId={contract.id} />
+                <ContractDocuments 
+                  contractId={contract.id} 
+                  customerId={contract.customer_id} 
+                  vehicleId={contract.vehicle_id}
+                />
               </TabsContent>
 
               {/* تبويب الجدول الزمني */}

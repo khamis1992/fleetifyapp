@@ -24,7 +24,9 @@ interface VehicleStats {
   totalMonthlyRevenue: number; // إجمالي الإيرادات الشهرية
   
   // التنبيهات
+  insuranceExpired: number; // تأمين منتهي
   insuranceExpiringSoon: number; // تأمين ينتهي قريباً
+  registrationExpired: number; // فحص دوري منتهي
   registrationExpiringSoon: number; // فحص دوري ينتهي قريباً
   serviceOverdue: number; // صيانة متأخرة
   
@@ -109,25 +111,35 @@ export const useVehicleStats = () => {
 
       if (expiringError) throw expiringError;
 
+      let insuranceExpired = 0;
       let insuranceExpiringSoon = 0;
+      let registrationExpired = 0;
       let registrationExpiringSoon = 0;
       let serviceOverdue = 0;
 
       expiringVehicles?.forEach(v => {
-        // التأمين: يجب أن يكون لم ينته بعد وأن ينتهي خلال 30 يوم
+        // التأمين
         if (v.insurance_expiry) {
           const expiry = new Date(v.insurance_expiry);
           expiry.setHours(0, 0, 0, 0);
-          if (expiry >= today && expiry <= thirtyDaysLater) {
+          if (expiry < today) {
+            // منتهي
+            insuranceExpired++;
+          } else if (expiry <= thirtyDaysLater) {
+            // ينتهي قريباً (خلال 30 يوم)
             insuranceExpiringSoon++;
           }
         }
         
-        // الفحص الدوري: يجب أن يكون لم ينته بعد وأن ينتهي خلال 30 يوم
+        // الفحص الدوري
         if (v.registration_expiry) {
           const expiry = new Date(v.registration_expiry);
           expiry.setHours(0, 0, 0, 0);
-          if (expiry >= today && expiry <= thirtyDaysLater) {
+          if (expiry < today) {
+            // منتهي
+            registrationExpired++;
+          } else if (expiry <= thirtyDaysLater) {
+            // ينتهي قريباً (خلال 30 يوم)
             registrationExpiringSoon++;
           }
         }
@@ -164,7 +176,7 @@ export const useVehicleStats = () => {
       ) || 0;
 
       // حساب Fleet Health Score
-      const alertsCount = insuranceExpiringSoon + registrationExpiringSoon + serviceOverdue;
+      const alertsCount = insuranceExpired + insuranceExpiringSoon + registrationExpired + registrationExpiringSoon + serviceOverdue;
       const problemVehicles = maintenanceVehicles + outOfServiceVehicles + accidentVehicles + policeStationVehicles;
       
       let healthScore = 100;
@@ -187,7 +199,9 @@ export const useVehicleStats = () => {
         utilizationRate,
         averageRevenuePerVehicle,
         totalMonthlyRevenue,
+        insuranceExpired,
         insuranceExpiringSoon,
+        registrationExpired,
         registrationExpiringSoon,
         serviceOverdue,
         totalMaintenanceCost,

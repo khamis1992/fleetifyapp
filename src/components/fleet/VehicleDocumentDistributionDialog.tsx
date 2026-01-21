@@ -1024,6 +1024,7 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
   const [hasResumeState, setHasResumeState] = useState(false);
   const [showRetryFailed, setShowRetryFailed] = useState(false);
   const [visibleFileCount, setVisibleFileCount] = useState(50);
+  const [activeTab, setActiveTab] = useState<'all' | 'matched' | 'failed'>('all');
 
   // جلب جميع المركبات
   const { data: vehicles = [] } = useQuery({
@@ -1282,8 +1283,11 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
     for (const file of matchedFiles) {
       try {
+        // 2. Upload to storage with unique name to prevent overwrites
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 8);
         const fileExt = file.file.name.split('.').pop();
-        const fileName = `vehicle-documents/${file.matchedVehicle!.id}/${Date.now()}_registration.${fileExt}`;
+        const fileName = `vehicle-documents/${file.matchedVehicle!.id}/${timestamp}_${randomId}_registration.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('documents')
@@ -1294,12 +1298,14 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
 
         if (uploadError) throw uploadError;
 
+        // 3. Insert to database with unique document name
+        const uniqueDocumentName = `استمارة المركبة - ${file.matchedVehicle!.plate_number} - ${timestamp}`;
         const { error: dbError } = await supabase
           .from('vehicle_documents')
           .insert({
             vehicle_id: file.matchedVehicle!.id,
             document_type: 'registration',
-            document_name: `استمارة المركبة - ${file.matchedVehicle!.plate_number}`,
+            document_name: uniqueDocumentName,
             document_url: fileName,
             is_active: true,
           });
@@ -1635,159 +1641,144 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
     }
   };
 
+  // تصفية الملفات حسب التبويب النشط
+  const filteredFiles = React.useMemo(() => {
+    switch (activeTab) {
+      case 'matched':
+        return files.filter(f => f.status === 'matched' || f.status === 'uploaded');
+      case 'failed':
+        return files.filter(f => f.status === 'error' || f.status === 'not_found');
+      default:
+        return files;
+    }
+  }, [files, activeTab]);
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <ScanSearch className="w-5 h-5 text-teal-600" />
-            توزيع المستندات وتحديث البيانات
-          </DialogTitle>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <span>قم برفع صور استمارات المركبات:</span>
-            <ul className="list-disc list-inside text-xs space-y-0.5 mt-1 mr-2">
-              <li>يستخدم النظام OCR متقدم مع دعم للصور غير الواضحة</li>
-              <li>إذا استغرت المعالجة وقتاً طويلاً، سيتم التحويل التلقائي لطريقة بديلة</li>
-              <li>يتم معالجة صورتين في كل مرة لضمان الجودة</li>
-              <li>إمكانية الاستئناف عند الانقطاع</li>
-              <li>إعادة محاولة تلقائية عند الفشل</li>
-              <li>استخراج: رقم اللوحة، رقم الهيكل، المحرك، التواريخ</li>
-            </ul>
-            <div className="flex items-center gap-1 text-blue-600 mt-2">
-              <Database className="w-3 h-3" />
-              <span className="text-xs font-medium">OCR عبر Supabase Edge Function + Tesseract Fallback</span>
+      <DialogContent className="sm:max-w-[950px] max-h-[90vh] p-0 gap-0 overflow-hidden">
+        {/* Header مبسط وأنيق */}
+        <div className="bg-gradient-to-l from-teal-600 to-teal-700 px-6 py-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <ScanSearch className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">توزيع استمارات المركبات</h2>
+                <p className="text-teal-100 text-sm">رفع ومطابقة تلقائية باستخدام OCR</p>
+              </div>
             </div>
+            {files.length > 0 && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg">
+                  <FileImage className="w-4 h-4" />
+                  <span>{stats.total} ملف</span>
+                </div>
+                {stats.matched > 0 && (
+                  <div className="flex items-center gap-2 bg-green-500/30 px-3 py-1.5 rounded-lg">
+                    <Check className="w-4 h-4" />
+                    <span>{stats.matched} مطابق</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </DialogHeader>
+        </div>
 
-        <div className="space-y-4">
-          {/* منطقة السحب والإفلات */}
+        <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-180px)]">
+          {/* منطقة السحب والإفلات - تصميم محسن */}
           <div
             {...getRootProps()}
             className={cn(
-              "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
+              "relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-300",
               isDragActive
-                ? "border-teal-500 bg-teal-50 scale-[1.02] shadow-lg"
-                : "border-slate-200 bg-slate-50/50 hover:border-teal-400 hover:bg-teal-50/50"
+                ? "border-teal-500 bg-teal-50 scale-[1.01] shadow-lg shadow-teal-500/20"
+                : "border-slate-200 bg-gradient-to-b from-slate-50 to-white hover:border-teal-400 hover:shadow-md"
             )}
           >
             <input {...getInputProps()} />
             <motion.div
-              animate={isDragActive ? { scale: 1.1 } : { scale: 1 }}
-              transition={{ duration: 0.2 }}
+              animate={isDragActive ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="flex flex-col items-center"
             >
-              <Upload className={cn(
-                "w-10 h-10 mx-auto mb-3 transition-colors",
-                isDragActive ? "text-teal-600" : "text-slate-400"
-              )} />
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-colors",
+                isDragActive ? "bg-teal-500 text-white" : "bg-slate-100 text-slate-400"
+              )}>
+                <Upload className="w-8 h-8" />
+              </div>
+              {isDragActive ? (
+                <p className="text-lg font-medium text-teal-700">أفلت الملفات هنا...</p>
+              ) : (
+                <>
+                  <p className="text-base font-medium text-slate-700">اسحب وأفلت صور الاستمارات</p>
+                  <p className="text-sm text-slate-400 mt-1">أو اضغط لاختيار الملفات</p>
+                  <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                    <Badge variant="outline" className="bg-white">PNG</Badge>
+                    <Badge variant="outline" className="bg-white">JPG</Badge>
+                    <Badge variant="outline" className="bg-white">WebP</Badge>
+                  </div>
+                </>
+              )}
             </motion.div>
-            {isDragActive ? (
-              <p className="text-sm font-medium text-teal-700">
-                أفلت الملفات هنا...
-              </p>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-slate-700">
-                  اسحب وأفلت صور الاستمارات هنا
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  أو اضغط لاختيار الملفات (PNG, JPG, JPEG, WebP)
-                </p>
-              </>
-            )}
           </div>
 
-          {/* شريط الإحصائيات */}
+          {/* شريط التقدم والتحكم - تصميم محسن */}
           {files.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 md:gap-4 p-3 bg-slate-50 rounded-xl">
-              <div className="flex items-center gap-2">
-                <FileImage className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium">{stats.total} ملف</span>
-              </div>
-              {stats.matched > 0 && (
-                <Badge className="bg-green-100 text-green-700">
-                  <Check className="w-3 h-3 ml-1" />
-                  {stats.matched} مطابق
-                </Badge>
-              )}
-              {stats.withData > 0 && (
-                <Badge className="bg-blue-100 text-blue-700">
-                  <Database className="w-3 h-3 ml-1" />
-                  {stats.withData} بيانات
-                </Badge>
-              )}
-              {stats.error > 0 && (
-                <Badge className="bg-red-100 text-red-700">
-                  <AlertTriangle className="w-3 h-3 ml-1" />
-                  {stats.error} فشل
-                </Badge>
-              )}
-              {stats.skipped > 0 && (
-                <Badge className="bg-slate-200 text-slate-700">
-                  <SkipForward className="w-3 h-3 ml-1" />
-                  {stats.skipped} متخطي
-                </Badge>
-              )}
-              {stats.uploaded > 0 && (
-                <Badge className="bg-emerald-100 text-emerald-700">
-                  <FileCheck className="w-3 h-3 ml-1" />
-                  {stats.uploaded} تم رفعه
-                </Badge>
-              )}
-              <div className="flex-1" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFiles}
-                className="text-slate-500 hover:text-red-500"
-              >
-                <Trash2 className="w-4 h-4 ml-1" />
-                مسح الكل
-              </Button>
-            </div>
-          )}
-
-          {/* شريط التحكم والمعالجة */}
-          {files.length > 0 && (
-            <div className="space-y-3">
-              {/* شريط التقدم الرئيسي */}
+            <div className="space-y-4">
+              {/* شريط التقدم */}
               {(processingStatus === 'processing' || processingStatus === 'paused' || processingStatus === 'completed') && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      {processingStatus === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-teal-600" />}
-                      {processingStatus === 'paused' && <Pause className="w-4 h-4 text-amber-600" />}
-                      {processingStatus === 'completed' && <Check className="w-4 h-4 text-green-600" />}
-                      <span className="text-slate-600">
-                        {processingStatus === 'processing' && 'جاري المعالجة...'}
-                        {processingStatus === 'paused' && 'متوقف مؤقتاً'}
-                        {processingStatus === 'completed' && 'اكتملت المعالجة'}
-                      </span>
-                    </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-slate-50 rounded-xl p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {estimatedTime > 0 && (
-                        <span className="text-xs text-slate-500">
-                          الوقت المتبقي: {formatTime(estimatedTime)}
-                        </span>
+                      {processingStatus === 'processing' && (
+                        <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+                        </div>
                       )}
-                      <span className="text-teal-600 font-medium">{overallProgress}%</span>
+                      {processingStatus === 'paused' && (
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                          <Pause className="w-4 h-4 text-amber-600" />
+                        </div>
+                      )}
+                      {processingStatus === 'completed' && (
+                        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-green-600" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-slate-800">
+                          {processingStatus === 'processing' && 'جاري المعالجة...'}
+                          {processingStatus === 'paused' && 'متوقف مؤقتاً'}
+                          {processingStatus === 'completed' && 'اكتملت المعالجة'}
+                        </p>
+                        {estimatedTime > 0 && (
+                          <p className="text-xs text-slate-500">الوقت المتبقي: {formatTime(estimatedTime)}</p>
+                        )}
+                      </div>
                     </div>
+                    <div className="text-2xl font-bold text-teal-600">{overallProgress}%</div>
                   </div>
                   <Progress value={overallProgress} className="h-2" />
-                </div>
+                </motion.div>
               )}
 
-              {/* أزرار التحكم */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+              {/* أزرار التحكم - تصميم محسن */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {hasResumeState && (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={resumeFromSavedState}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50 rounded-xl"
                     >
-                      <RotateCcw className="w-4 h-4 ml-1" />
+                      <RotateCcw className="w-4 h-4 ml-2" />
                       استئناف من آخر حالة
                     </Button>
                   )}
@@ -1795,313 +1786,259 @@ const VehicleDocumentDistributionDialog: React.FC<VehicleDocumentDistributionDia
                   {processingStatus === 'idle' && stats.pending > 0 && (
                     <Button
                       onClick={processAllFiles}
-                      className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                      className="bg-gradient-to-l from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg shadow-blue-500/25"
                     >
-                      <ScanSearch className="w-4 h-4" />
-                      مسح الصور ({stats.pending})
+                      <ScanSearch className="w-4 h-4 ml-2" />
+                      بدء المسح ({stats.pending})
                     </Button>
                   )}
 
                   {processingStatus === 'processing' && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={pauseProcessing}
-                        className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                      >
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={pauseProcessing} className="rounded-xl text-amber-600 border-amber-200">
                         <Pause className="w-4 h-4 ml-1" />
-                        إيقاف مؤقت
+                        إيقاف
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={cancelProcessing}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                      >
+                      <Button size="sm" variant="outline" onClick={cancelProcessing} className="rounded-xl text-red-600 border-red-200">
                         <X className="w-4 h-4 ml-1" />
                         إلغاء
                       </Button>
-                    </>
+                    </div>
                   )}
 
                   {processingStatus === 'paused' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={resumeProcessing}
-                        className="bg-green-600 hover:bg-green-700 text-white gap-2"
-                      >
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={resumeProcessing} className="rounded-xl bg-green-600 hover:bg-green-700">
                         <Play className="w-4 h-4 ml-1" />
                         استئناف
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={cancelProcessing}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4 ml-1" />
-                        إلغاء
+                      <Button size="sm" variant="outline" onClick={cancelProcessing} className="rounded-xl text-red-600 border-red-200">
+                        <X className="w-4 h-4" />
                       </Button>
-                    </>
+                    </div>
                   )}
 
                   {processingStatus === 'completed' && stats.error > 0 && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={retryFailedFiles}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                      >
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={retryFailedFiles} className="rounded-xl text-blue-600 border-blue-200">
                         <RefreshCw className="w-4 h-4 ml-1" />
-                        إعادة محاولة الفاشلة ({stats.error})
+                        إعادة ({stats.error})
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={exportErrorReport}
-                        className="text-slate-600 border-slate-200 hover:bg-slate-50"
-                      >
+                      <Button size="sm" variant="ghost" onClick={exportErrorReport} className="rounded-xl">
                         <Download className="w-4 h-4 ml-1" />
-                        تصدير تقرير الأخطاء
+                        تصدير
                       </Button>
-                    </>
+                    </div>
                   )}
                 </div>
 
-                <div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={clearAllFiles} className="text-slate-400 hover:text-red-500 rounded-xl">
+                    <Trash2 className="w-4 h-4 ml-1" />
+                    مسح
+                  </Button>
                   {stats.matched > 0 && (
                     <Button
                       onClick={uploadMatchedFiles}
                       disabled={processingStatus === 'processing' || isUploading}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2"
+                      className="bg-gradient-to-l from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/25"
                     >
                       {isUploading ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin ml-2" />
                           جاري الرفع...
                         </>
                       ) : (
                         <>
-                          <Upload className="w-4 h-4" />
-                          رفع وتحديث ({stats.matched})
+                          <Upload className="w-4 h-4 ml-2" />
+                          رفع ({stats.matched})
                         </>
                       )}
                     </Button>
                   )}
                 </div>
               </div>
-
-              {/* معلومات المعالجة المتزامنة */}
-              {(processingStatus === 'processing' || processingStatus === 'paused') && (
-                <div className="flex items-center gap-4 text-xs text-slate-500 bg-slate-50 rounded-lg p-2">
-                  <div className="flex items-center gap-1">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>معالجة متزامنة: {MAX_CONCURRENT} ملفات</span>
-                  </div>
-                  <div>•</div>
-                  <div>حجم الـ chunk: {CHUNK_SIZE} ملف</div>
-                  <div>•</div>
-                  <div>إعادة المحاولة: {MAX_RETRIES} مرات</div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* قائمة الملفات */}
+          {/* تبويبات تصفية الملفات */}
           {files.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm text-slate-600 px-1">
-                <span>عرض {Math.min(visibleFileCount, files.length)} من {files.length} ملف</span>
-                {files.length > visibleFileCount && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setVisibleFileCount(prev => prev + 50)}
-                    className="text-teal-600 hover:text-teal-700"
-                  >
-                    <MoreHorizontal className="w-4 h-4 ml-1" />
-                    عرض المزيد
-                  </Button>
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+                  activeTab === 'all' 
+                    ? "bg-slate-100 text-slate-800" 
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 )}
-              </div>
-              <ScrollArea className="h-[300px] rounded-xl border border-slate-200">
-                <div className="p-3 space-y-2">
-                  <AnimatePresence>
-                    {files.slice(0, visibleFileCount).map((file, index) => (
+              >
+                الكل ({stats.total})
+              </button>
+              <button
+                onClick={() => setActiveTab('matched')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
+                  activeTab === 'matched' 
+                    ? "bg-green-100 text-green-800" 
+                    : "text-slate-500 hover:text-green-700 hover:bg-green-50"
+                )}
+              >
+                <Check className="w-3.5 h-3.5" />
+                مطابق ({stats.matched + stats.uploaded})
+              </button>
+              <button
+                onClick={() => setActiveTab('failed')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2",
+                  activeTab === 'failed' 
+                    ? "bg-red-100 text-red-800" 
+                    : "text-slate-500 hover:text-red-700 hover:bg-red-50"
+                )}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                يحتاج مراجعة ({stats.error + stats.notFound})
+              </button>
+            </div>
+          )}
+
+          {/* قائمة الملفات - تصميم محسن */}
+          {files.length > 0 && (
+            <ScrollArea className="h-[280px] rounded-xl border border-slate-200 bg-slate-50/50">
+              <div className="p-3 space-y-2">
+                <AnimatePresence mode="popLayout">
+                  {filteredFiles.slice(0, visibleFileCount).map((file, index) => (
                     <motion.div
                       key={file.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      transition={{ delay: index * 0.02 }}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                        file.status === 'matched' && "bg-green-50 border-green-200",
-                        file.status === 'uploaded' && "bg-emerald-50 border-emerald-200",
-                        file.status === 'not_found' && "bg-amber-50 border-amber-200",
-                        file.status === 'error' && "bg-red-50 border-red-200",
-                        file.status === 'scanning' && "bg-blue-50 border-blue-200",
-                        file.status === 'skipped' && "bg-slate-50 border-slate-200",
-                        file.status === 'pending' && "bg-white border-slate-200"
+                        "flex items-start gap-3 p-3 rounded-xl border bg-white transition-all hover:shadow-sm",
+                        file.status === 'matched' && "border-green-200",
+                        file.status === 'uploaded' && "border-emerald-200",
+                        file.status === 'not_found' && "border-amber-200",
+                        file.status === 'error' && "border-red-200",
+                        file.status === 'scanning' && "border-blue-200",
+                        file.status === 'skipped' && "border-slate-200",
+                        file.status === 'pending' && "border-slate-200"
                       )}
                     >
                       {/* معاينة الصورة */}
-                      <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                        <img
-                          src={file.preview}
-                          alt="معاينة"
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                        <img src={file.preview} alt="" className="w-full h-full object-cover" />
                       </div>
 
                       {/* معلومات الملف */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">
-                          {file.file.name}
-                        </p>
-                        {file.matchedVehicle ? (
-                          <div className="space-y-1 mt-1">
-                            <div className="flex items-center gap-2">
-                              <Car className="w-3 h-3 text-green-600" />
-                              <span className="text-xs text-green-700 font-medium">
-                                {file.matchedVehicle.plate_number} - {file.matchedVehicle.make} {file.matchedVehicle.model}
-                              </span>
-                            </div>
-                            {file.extractedData && (
-                              <ExtractedDataPreview data={file.extractedData} dataUpdated={file.dataUpdated} />
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium text-slate-800 truncate">{file.file.name}</p>
+                          {getStatusBadge(file)}
+                        </div>
+                        
+                        {file.matchedVehicle && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Car className="w-3.5 h-3.5 text-green-600" />
+                            <span className="text-green-700 font-medium">
+                              {file.matchedVehicle.plate_number} • {file.matchedVehicle.make} {file.matchedVehicle.model}
+                            </span>
+                            {file.dataUpdated && (
+                              <Badge className="bg-blue-100 text-blue-700 text-[10px]">
+                                <Database className="w-2.5 h-2.5 ml-0.5" />
+                                تم تحديث البيانات
+                              </Badge>
                             )}
                           </div>
-                        ) : file.extractedNumber ? (
-                          <div className="space-y-1 mt-1">
-                            <p className="text-xs text-amber-600">
-                              رقم مستخرج: {file.extractedNumber} (المطبع: {file.normalizedNumber})
-                            </p>
-                            {file.extractedData && (
-                              <ExtractedDataPreview data={file.extractedData} />
-                            )}
-                          </div>
-                        ) : file.error ? (
-                          <p className="text-xs text-red-600 mt-1">{file.error}</p>
-                        ) : null}
+                        )}
 
-                        {/* إدخال يدوي */}
+                        {file.extractedNumber && !file.matchedVehicle && (
+                          <p className="text-xs text-amber-600">رقم مستخرج: {file.extractedNumber}</p>
+                        )}
+
+                        {file.error && !file.matchedVehicle && (
+                          <p className="text-xs text-red-500">{file.error}</p>
+                        )}
+
+                        {/* إدخال يدوي مبسط */}
                         {(file.status === 'not_found' || file.status === 'error') && (
-                          <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p className="text-xs text-amber-700 mb-2 flex items-center gap-1">
-                              <Edit3 className="w-3 h-3" />
-                              أدخل رقم اللوحة يدوياً للمطابقة:
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="text"
-                                placeholder="مثال: 8205 أو 008205"
-                                value={editingFileId === file.id ? manualPlateNumber : ''}
-                                onChange={(e) => {
-                                  setEditingFileId(file.id);
-                                  setManualPlateNumber(e.target.value);
-                                }}
-                                onFocus={() => {
-                                  setEditingFileId(file.id);
-                                  if (!manualPlateNumber) {
-                                    setManualPlateNumber(file.extractedNumber || '');
-                                  }
-                                }}
-                                className="h-8 text-sm flex-1 bg-white"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleManualPlateEntry(file.id);
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => handleManualPlateEntry(file.id)}
-                                disabled={editingFileId !== file.id || !manualPlateNumber.trim()}
-                                className="h-8 bg-teal-600 hover:bg-teal-700"
-                              >
-                                <Check className="w-4 h-4 ml-1" />
-                                مطابقة
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => skipFile(file.id)}
-                                className="h-8"
-                              >
-                                <SkipForward className="w-4 h-4 ml-1" />
-                                تخطي
-                              </Button>
-                            </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Input
+                              type="text"
+                              placeholder="أدخل رقم اللوحة..."
+                              value={editingFileId === file.id ? manualPlateNumber : ''}
+                              onChange={(e) => { setEditingFileId(file.id); setManualPlateNumber(e.target.value); }}
+                              onFocus={() => { setEditingFileId(file.id); if (!manualPlateNumber) setManualPlateNumber(file.extractedNumber || ''); }}
+                              className="h-8 text-xs flex-1 max-w-[180px] rounded-lg"
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleManualPlateEntry(file.id); }}
+                            />
+                            <Button size="sm" onClick={() => handleManualPlateEntry(file.id)} disabled={editingFileId !== file.id || !manualPlateNumber.trim()} className="h-8 text-xs rounded-lg bg-teal-600">
+                              مطابقة
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => skipFile(file.id)} className="h-8 text-xs text-slate-400">
+                              تخطي
+                            </Button>
                           </div>
                         )}
 
                         {/* Debug */}
                         {showDebugText === file.id && file.extractedText && (
-                          <div className="mt-2 p-2 bg-slate-800 text-slate-100 rounded text-xs font-mono overflow-x-auto max-h-32 overflow-y-auto">
-                            <div className="text-slate-400 mb-1">النص المستخرج من OCR:</div>
-                            <pre className="whitespace-pre-wrap break-words">{file.extractedText}</pre>
+                          <div className="mt-2 p-2 bg-slate-800 text-slate-100 rounded-lg text-[10px] font-mono max-h-24 overflow-y-auto">
+                            <pre className="whitespace-pre-wrap">{file.extractedText}</pre>
                           </div>
                         )}
                       </div>
 
-                      {/* الحالة والإجراءات */}
+                      {/* أزرار الإجراءات */}
                       <div className="flex items-center gap-1">
-                        {getStatusBadge(file)}
-
                         {file.extractedText && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowDebugText(
-                              showDebugText === file.id ? null : file.id
-                            )}
-                            className="h-8 w-8 text-slate-400 hover:text-blue-500"
-                            title="عرض النص المستخرج"
-                          >
-                            {showDebugText === file.id ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
+                          <Button variant="ghost" size="icon" onClick={() => setShowDebugText(showDebugText === file.id ? null : file.id)} className="h-7 w-7 text-slate-400">
+                            {showDebugText === file.id ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </Button>
                         )}
-
                         {file.status !== 'uploaded' && file.status !== 'scanning' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeFile(file.id)}
-                            className="h-8 w-8 text-slate-400 hover:text-red-500"
-                          >
-                            <X className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="h-7 w-7 text-slate-400 hover:text-red-500">
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
+                
+                {filteredFiles.length > visibleFileCount && (
+                  <Button variant="ghost" onClick={() => setVisibleFileCount(prev => prev + 50)} className="w-full text-teal-600 hover:text-teal-700 mt-2">
+                    <MoreHorizontal className="w-4 h-4 ml-2" />
+                    عرض المزيد ({filteredFiles.length - visibleFileCount} ملف)
+                  </Button>
+                )}
               </div>
             </ScrollArea>
-            </div>
           )}
 
           {/* رسالة عدم وجود ملفات */}
           {files.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              <FileImage className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p className="text-sm">لم يتم رفع أي ملفات بعد</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <FileImage className="w-8 h-8 text-slate-300" />
+              </div>
+              <p className="text-slate-500">لم يتم رفع أي ملفات بعد</p>
+              <p className="text-slate-400 text-sm mt-1">اسحب الصور أو اضغط للاختيار</p>
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2 mt-4">
-          <Button variant="outline" onClick={handleClose}>
+        {/* Footer */}
+        <div className="border-t border-slate-200 px-6 py-3 bg-slate-50 flex items-center justify-between">
+          <div className="text-xs text-slate-400 flex items-center gap-2">
+            <Database className="w-3.5 h-3.5" />
+            <span>OCR: Google Vision + Tesseract</span>
+          </div>
+          <Button variant="outline" onClick={handleClose} className="rounded-xl">
             إغلاق
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -292,6 +292,29 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
 
       console.log('✅ [useContractOperations] Contract updated successfully:', updatedContract);
 
+      // التحقق مما إذا تغيرت القيمة الشهرية أو المدة - إعادة إنشاء الفواتير
+      const amountChanged = data.monthly_amount !== undefined && 
+        Number(data.monthly_amount) !== Number(existingContract.monthly_amount);
+      const datesChanged = (data.start_date && data.start_date !== existingContract.start_date) ||
+        (data.end_date && data.end_date !== existingContract.end_date);
+      
+      if (amountChanged || datesChanged) {
+        console.log('🔄 [useContractOperations] Contract amount or dates changed, regenerating invoices...');
+        try {
+          const invoiceCount = await regenerateContractInvoices(
+            updatedContract.id,
+            Number(updatedContract.monthly_amount),
+            updatedContract.start_date,
+            updatedContract.end_date,
+            updatedContract.customer_id
+          );
+          console.log(`✅ Regenerated ${invoiceCount} invoices for contract ${updatedContract.contract_number}`);
+        } catch (invoiceError) {
+          console.warn('⚠️ [useContractOperations] Invoice regeneration failed:', invoiceError);
+          // لا نفشل تحديث العقد إذا فشل إنشاء الفواتير
+        }
+      }
+
       // Update vehicle status based on contract status
       if (updatedContract.vehicle_id) {
         const today = new Date()
@@ -554,6 +577,140 @@ export const useContractOperations = (options: ContractOperationsOptions = {}) =
   const createContractInvoices = async (contract: Contract) => {
     console.log('📄 Creating contract invoices for:', contract.id);
     // Invoice creation logic here
+  };
+
+  /**
+   * إعادة إنشاء الفواتير وجدول الدفعات للعقد
+   * يتم استدعاء هذه الدالة عند تغيير قيمة العقد أو مدته
+   */
+  const regenerateContractInvoices = async (
+    contractId: string, 
+    monthlyAmount: number,
+    startDate: string,
+    endDate: string,
+    customerId: string
+  ) => {
+    console.log('🔄 [useContractOperations] Regenerating invoices and payment schedules for contract:', contractId);
+    
+    try {
+      // 1. حذف الفواتير غير المدفوعة
+      const { error: deleteInvoicesError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('contract_id', contractId)
+        .in('payment_status', ['unpaid', 'pending'])
+        .or('paid_amount.eq.0,paid_amount.is.null');
+      
+      if (deleteInvoicesError) {
+        console.warn('⚠️ Error deleting old invoices:', deleteInvoicesError);
+      }
+
+      // 2. حذف جدول الدفعات غير المدفوعة
+      const { error: deleteSchedulesError } = await supabase
+        .from('contract_payment_schedules')
+        .delete()
+        .eq('contract_id', contractId)
+        .neq('status', 'paid');
+      
+      if (deleteSchedulesError) {
+        console.warn('⚠️ Error deleting old payment schedules:', deleteSchedulesError);
+      }
+      
+      // 3. حساب الشهور بين تاريخ البداية والنهاية
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // البدء من أول شهر غير مدفوع (الشهر الحالي أو بعده)
+      const today = new Date();
+      const firstInvoiceDate = start > today ? start : new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      // 4. إنشاء الفواتير وجدول الدفعات الجديدة
+      const invoices: any[] = [];
+      const paymentSchedules: any[] = [];
+      let currentDate = new Date(firstInvoiceDate);
+      let installmentNumber = 1;
+      
+      // جلب العقد للحصول على contract_number
+      const { data: contractData } = await supabase
+        .from('contracts')
+        .select('contract_number')
+        .eq('id', contractId)
+        .single();
+      
+      const contractNumber = contractData?.contract_number || contractId;
+      
+      while (currentDate <= end) {
+        const yearMonth = `${currentDate.getFullYear()}${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+        const dueDateStr = currentDate.toISOString().split('T')[0];
+        
+        // إضافة فاتورة
+        invoices.push({
+          contract_id: contractId,
+          customer_id: customerId,
+          company_id: companyId,
+          invoice_number: `INV-${contractNumber}-${yearMonth}`,
+          invoice_date: dueDateStr,
+          invoice_type: 'sales',
+          due_date: dueDateStr,
+          total_amount: monthlyAmount,
+          paid_amount: 0,
+          balance_due: monthlyAmount, // إضافة balance_due بشكل صحيح
+          payment_status: 'unpaid',
+          created_at: new Date().toISOString()
+        });
+
+        // إضافة جدول دفعات
+        paymentSchedules.push({
+          contract_id: contractId,
+          company_id: companyId,
+          amount: monthlyAmount,
+          due_date: dueDateStr,
+          installment_number: installmentNumber,
+          description: `قسط شهر ${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`,
+          status: 'pending',
+          paid_amount: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        
+        // الانتقال للشهر التالي
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        installmentNumber++;
+      }
+      
+      // إدراج الفواتير
+      if (invoices.length > 0) {
+        const { error: insertInvoicesError } = await supabase
+          .from('invoices')
+          .insert(invoices);
+        
+        if (insertInvoicesError) {
+          console.error('❌ Error creating new invoices:', insertInvoicesError);
+          throw insertInvoicesError;
+        }
+        
+        console.log(`✅ Created ${invoices.length} new invoices with amount ${monthlyAmount}`);
+      }
+
+      // إدراج جدول الدفعات
+      if (paymentSchedules.length > 0) {
+        const { error: insertSchedulesError } = await supabase
+          .from('contract_payment_schedules')
+          .insert(paymentSchedules);
+        
+        if (insertSchedulesError) {
+          console.error('❌ Error creating new payment schedules:', insertSchedulesError);
+          throw insertSchedulesError;
+        }
+        
+        console.log(`✅ Created ${paymentSchedules.length} new payment schedules with amount ${monthlyAmount}`);
+      }
+      
+      return invoices.length;
+    } catch (error) {
+      console.error('❌ Error regenerating invoices and payment schedules:', error);
+      throw error;
+    }
   };
 
   // Delete contract permanently with all dependencies

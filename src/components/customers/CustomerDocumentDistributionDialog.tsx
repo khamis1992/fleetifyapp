@@ -2,6 +2,7 @@
  * مكون توزيع صور البطاقات الشخصية على العملاء
  * يقوم بقراءة رقم البطاقة الشخصية من الصور وتوزيعها على العملاء المناسبين
  * مع تحديث بيانات العميل بناءً على البيانات المستخرجة
+ * واجهة مستخدم حديثة ومحسّنة مع تأثيرات بصرية انسيابية
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -19,6 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -43,9 +45,17 @@ import {
   IdCard,
   Pause,
   Play,
+  SkipForward,
   Square,
   Download,
   MoreHorizontal,
+  Clock,
+  Zap,
+  FileText,
+  Sparkles,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -162,7 +172,7 @@ interface UploadedFile {
   id: string;
   file: File;
   preview: string;
-  status: 'pending' | 'scanning' | 'matched' | 'not_found' | 'uploaded' | 'error';
+  status: 'pending' | 'scanning' | 'matched' | 'not_found' | 'uploaded' | 'error' | 'skipped';
   extractedNumber?: string;
   extractedData?: ExtractedCustomerData;
   extractedText?: string;
@@ -179,6 +189,7 @@ interface UploadedFile {
   retryCount?: number;
   lastError?: ProcessingError;
   canSkip?: boolean;
+  processingDuration?: number;
 }
 
 interface CustomerDocumentDistributionDialogProps {
@@ -445,7 +456,443 @@ const DELAY_BETWEEN_CHUNKS = 2000;
 const DELAY_BETWEEN_FILES = 500;
 const MAX_RETRIES = 2;
 const MAX_CONCURRENT = 2; // Reduced from 3 to 2 for better timeout handling
-const LOCAL_STORAGE_KEY = 'ocr-processing-state';
+const LOCAL_STORAGE_KEY = 'customer-ocr-processing-state';
+const RETRY_DELAYS = [1000, 2000]; // تأخير بالمللي ثانية (exponential backoff)
+const PROGRESS_SAVE_INTERVAL = 10; // حفظ الحالة كل 10 ملفات
+const STORAGE_KEY_PREFIX = 'customer-doc-processing-';
+
+// ==================== Helper Functions ====================
+const formatTime = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds}ثانية`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}د ${secs}ث`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}س ${minutes}د`;
+  }
+};
+
+// ==================== Queue Manager ====================
+type ProcessingStatus = 'idle' | 'processing' | 'paused' | 'completed' | 'cancelled';
+
+interface ProcessingState {
+  completedFileIds: string[];
+  failedFileIds: string[];
+  skippedFileIds: string[];
+  currentFileIndex: number;
+  timestamp: number;
+  totalFiles: number;
+}
+
+interface QueueManagerOptions {
+  onProgress?: (completed: number, total: number, currentFile: UploadedFile) => void;
+  onFileComplete?: (file: UploadedFile) => void;
+  onFileError?: (file: UploadedFile, error: Error) => void;
+  onChunkComplete?: (chunkIndex: number, completedInChunk: number, totalInChunk: number) => void;
+  onSaveState?: (state: ProcessingState) => void;
+}
+
+class ProcessingQueueManager {
+  private files: UploadedFile[] = [];
+  private queue: UploadedFile[] = [];
+  private status: ProcessingStatus = 'idle';
+  private completedFiles: Map<string, UploadedFile> = new Map();
+  private failedFiles: Map<string, UploadedFile> = new Map();
+  private skippedFiles: Map<string, UploadedFile> = new Map();
+  private processingCount = 0;
+  private currentChunkIndex = 0;
+  private abortController: AbortController | null = null;
+  private options: QueueManagerOptions;
+  private resumeState: ProcessingState | null = null;
+  private startTime: number = 0;
+  private completedCount = 0;
+
+  constructor(options: QueueManagerOptions = {}) {
+    this.options = options;
+  }
+
+  loadResumeState(state: ProcessingState | null): void {
+    this.resumeState = state;
+    if (state) {
+      console.log('📂 Loaded resume state:', state);
+    }
+  }
+
+  setFiles(files: UploadedFile[]): void {
+    this.files = files;
+    this.queue = [];
+
+    for (const file of files) {
+      if (this.resumeState?.completedFileIds.includes(file.id)) {
+        this.completedFiles.set(file.id, file);
+      } else if (this.resumeState?.failedFileIds.includes(file.id)) {
+        this.failedFiles.set(file.id, file);
+      } else if (this.resumeState?.skippedFileIds.includes(file.id)) {
+        this.skippedFiles.set(file.id, file);
+      } else if (file.status === 'pending') {
+        this.queue.push(file);
+      }
+    }
+
+    console.log(`📊 Queue initialized: ${this.queue.length} pending, ${this.completedFiles.size} completed, ${this.failedFiles.size} failed`);
+  }
+
+  async start(processFileFn: (file: UploadedFile, signal?: AbortSignal) => Promise<UploadedFile>): Promise<void> {
+    if (this.status === 'processing') {
+      console.warn('⚠️ Already processing');
+      return;
+    }
+
+    this.status = 'processing';
+    this.abortController = new AbortController();
+    this.startTime = Date.now();
+    this.completedCount = this.completedFiles.size;
+
+    console.log('🚀 Starting queue processing...');
+    console.log(`📦 Total files: ${this.files.length}`);
+    console.log(`⏭️  Pre-completed: ${this.completedFiles.size}`);
+    console.log(`📝 Pending: ${this.queue.length}`);
+
+    try {
+      await this.processQueue(processFileFn);
+    } catch (error: any) {
+      if (error.message === 'Cancelled') {
+        console.log('🛑 Processing cancelled');
+        this.status = 'cancelled';
+      } else {
+        console.error('❌ Queue processing error:', error);
+        throw error;
+      }
+    }
+
+    if (this.status !== 'cancelled') {
+      this.status = 'completed';
+      console.log('✅ Queue processing completed');
+    }
+  }
+
+  private async processQueue(processFileFn: (file: UploadedFile, signal?: AbortSignal) => Promise<UploadedFile>): Promise<void> {
+    let fileIndex = this.resumeState?.currentFileIndex || 0;
+    const totalFiles = this.files.length;
+    let progressCounter = 0;
+
+    while ((this.queue.length > 0 || this.processingCount > 0) && this.status === 'processing') {
+      const chunk: UploadedFile[] = [];
+
+      while (chunk.length < CHUNK_SIZE && this.queue.length > 0 && this.status === 'processing') {
+        const file = this.queue.shift();
+        if (file) {
+          chunk.push(file);
+        }
+      }
+
+      if (chunk.length === 0) break;
+
+      console.log(`📦 Processing chunk ${this.currentChunkIndex + 1} with ${chunk.length} files...`);
+
+      const chunkPromises = chunk.map((file) =>
+        this.processSingleFile(file, processFileFn, fileIndex++)
+      );
+
+      const results = await Promise.allSettled(chunkPromises);
+
+      let completedInChunk = 0;
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          completedInChunk++;
+        }
+      });
+
+      this.currentChunkIndex++;
+      progressCounter += chunk.length;
+
+      if (progressCounter >= PROGRESS_SAVE_INTERVAL) {
+        this.saveProcessingState(fileIndex);
+        progressCounter = 0;
+      }
+
+      if (this.options.onChunkComplete) {
+        this.options.onChunkComplete(this.currentChunkIndex, completedInChunk, chunk.length);
+      }
+
+      const totalCompleted = this.completedFiles.size;
+      if (this.options.onProgress) {
+        this.options.onProgress(totalCompleted, totalFiles, chunk[chunk.length - 1]);
+      }
+
+      if (this.queue.length > 0 && this.status === 'processing') {
+        await this.delay(500);
+      }
+    }
+
+    this.saveProcessingState(fileIndex);
+  }
+
+  private async processSingleFile(
+    file: UploadedFile,
+    processFileFn: (file: UploadedFile, signal?: AbortSignal) => Promise<UploadedFile>,
+    fileIndex: number
+  ): Promise<UploadedFile> {
+    this.processingCount++;
+    let lastError: Error | null = null;
+
+    try {
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          if (this.status !== 'processing') {
+            throw new Error('Cancelled');
+          }
+
+          const startTime = Date.now();
+          const result = await this.withTimeout(
+            processFileFn(file, this.abortController?.signal),
+            60000,
+            `Timeout processing ${file.file.name}`
+          );
+          const duration = Date.now() - startTime;
+          result.processingDuration = duration;
+
+          this.completedFiles.set(file.id, result);
+          this.completedCount++;
+
+          if (this.options.onFileComplete) {
+            this.options.onFileComplete(result);
+          }
+
+          console.log(`✅ [${fileIndex + 1}] ${file.file.name} - ${duration}ms`);
+          return result;
+
+        } catch (error: any) {
+          lastError = error;
+
+          if (error.message === 'Cancelled' || error.message === 'Aborted') {
+            throw error;
+          }
+
+          if (attempt < MAX_RETRIES) {
+            const delay = RETRY_DELAYS[Math.min(attempt, RETRY_DELAYS.length - 1)];
+            console.warn(`⚠️ [${fileIndex + 1}] ${file.file.name} - Attempt ${attempt + 1} failed: ${error.message}. Retrying in ${delay}ms...`);
+            await this.delay(delay);
+          }
+        }
+      }
+
+      throw lastError || new Error('Max retries exceeded');
+
+    } catch (error: any) {
+      const failedFile: UploadedFile = {
+        ...file,
+        status: error.message === 'Cancelled' ? 'pending' : 'error',
+        error: error.message || 'Processing failed',
+        retryCount: MAX_RETRIES,
+      };
+
+      if (error.message !== 'Cancelled') {
+        this.failedFiles.set(file.id, failedFile);
+        if (this.options.onFileError) {
+          this.options.onFileError(failedFile, error);
+        }
+        console.error(`❌ [${fileIndex + 1}] ${file.file.name} - ${error.message}`);
+      }
+
+      return failedFile;
+
+    } finally {
+      this.processingCount--;
+    }
+  }
+
+  pause(): void {
+    if (this.status === 'processing') {
+      this.status = 'paused';
+      console.log('⏸️  Processing paused');
+    }
+  }
+
+  resume(): void {
+    if (this.status === 'paused') {
+      this.status = 'processing';
+      console.log('▶️  Processing resumed');
+    }
+  }
+
+  cancel(): void {
+    this.status = 'cancelled';
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    console.log('🛑 Processing cancelled');
+  }
+
+  skipFile(fileId: string): void {
+    const file = this.queue.find(f => f.id === fileId);
+    if (file) {
+      this.queue = this.queue.filter(f => f.id !== fileId);
+      const skippedFile: UploadedFile = { ...file, status: 'skipped' };
+      this.skippedFiles.set(fileId, skippedFile);
+      console.log(`⏭️  Skipped file: ${file.file.name}`);
+    }
+  }
+
+  retryFailed(): void {
+    const failedFiles = Array.from(this.failedFiles.values());
+    this.failedFiles.clear();
+
+    for (const file of failedFiles) {
+      const retryFile: UploadedFile = {
+        ...file,
+        status: 'pending',
+        error: undefined,
+        retryCount: 0,
+      };
+      this.queue.push(retryFile);
+    }
+
+    console.log(`🔄 Queued ${failedFiles.length} failed files for retry`);
+  }
+
+  private saveProcessingState(currentFileIndex: number): void {
+    const state: ProcessingState = {
+      completedFileIds: Array.from(this.completedFiles.keys()),
+      failedFileIds: Array.from(this.failedFiles.keys()),
+      skippedFileIds: Array.from(this.skippedFiles.keys()),
+      currentFileIndex,
+      timestamp: Date.now(),
+      totalFiles: this.files.length,
+    };
+
+    if (this.options.onSaveState) {
+      this.options.onSaveState(state);
+    }
+  }
+
+  getProgress(): { completed: number; total: number; percentage: number } {
+    const total = this.files.length;
+    const completed = this.completedFiles.size;
+    return {
+      completed,
+      total,
+      percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+    };
+  }
+
+  getCompletedFiles(): UploadedFile[] {
+    return Array.from(this.completedFiles.values());
+  }
+
+  getFailedFiles(): UploadedFile[] {
+    return Array.from(this.failedFiles.values());
+  }
+
+  getSkippedFiles(): UploadedFile[] {
+    return Array.from(this.skippedFiles.values());
+  }
+
+  getStats(): {
+    total: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+    pending: number;
+    processing: number;
+    averageTime: number;
+  } {
+    const completed = Array.from(this.completedFiles.values());
+    const avgTime = completed.length > 0
+      ? completed.reduce((sum, f) => sum + (f.processingDuration || 0), 0) / completed.length
+      : 0;
+
+    return {
+      total: this.files.length,
+      completed: this.completedFiles.size,
+      failed: this.failedFiles.size,
+      skipped: this.skippedFiles.size,
+      pending: this.queue.length,
+      processing: this.processingCount,
+      averageTime: Math.round(avgTime),
+    };
+  }
+
+  getEstimatedTimeRemaining(): number {
+    const stats = this.getStats();
+    const avgTime = stats.averageTime;
+    const remaining = stats.pending + stats.processing;
+
+    if (avgTime > 0 && remaining > 0 && this.status === 'processing') {
+      const concurrentFactor = Math.min(MAX_CONCURRENT, remaining);
+      const estimatedMs = (remaining / concurrentFactor) * avgTime;
+      return Math.round(estimatedMs / 1000);
+    }
+
+    return 0;
+  }
+
+  getStatus(): ProcessingStatus {
+    return this.status;
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          controller.signal.addEventListener('abort', () => reject(new Error(errorMessage)));
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+
+// ==================== LocalStorage Helpers ====================
+const saveProcessingState = (dialogId: string, state: ProcessingState): void => {
+  try {
+    const key = `${STORAGE_KEY_PREFIX}${dialogId}`;
+    localStorage.setItem(key, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save processing state:', error);
+  }
+};
+
+const loadProcessingState = (dialogId: string): ProcessingState | null => {
+  try {
+    const key = `${STORAGE_KEY_PREFIX}${dialogId}`;
+    const data = localStorage.getItem(key);
+    if (data) {
+      const state = JSON.parse(data) as ProcessingState;
+      const dayInMs = 24 * 60 * 60 * 1000;
+      if (Date.now() - state.timestamp < dayInMs) {
+        return state;
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load processing state:', error);
+  }
+  return null;
+};
+
+const clearProcessingState = (dialogId: string): void => {
+  try {
+    const key = `${STORAGE_KEY_PREFIX}${dialogId}`;
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error('Failed to clear processing state:', error);
+  }
+};
 
 const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionDialogProps> = ({
   open,
@@ -453,34 +900,20 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
 }) => {
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
+  const dialogId = useRef(`dialog-${Date.now()}`);
 
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isStopped, setIsStopped] = useState(false);
   const [overallProgress, setOverallProgress] = useState(0);
   const [showDebugText, setShowDebugText] = useState<string | null>(null);
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [manualNationalId, setManualNationalId] = useState('');
-  const [batchProgress, setBatchProgress] = useState<BatchProgress>({
-    total: 0,
-    processed: 0,
-    successful: 0,
-    failed: 0,
-    inProgress: 0,
-    pending: 0,
-    currentChunk: 0,
-    totalChunks: 0,
-    isPaused: false,
-    stopped: false,
-  });
-  const [processingCompleted, setProcessingCompleted] = useState(false);
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [queueManager] = useState(() => new ProcessingQueueManager());
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
+  const [estimatedTime, setEstimatedTime] = useState(0);
+  const [hasResumeState, setHasResumeState] = useState(false);
+  const [showRetryFailed, setShowRetryFailed] = useState(false);
   const [visibleFileCount, setVisibleFileCount] = useState(50);
-
-  const processingAbortRef = useRef<boolean>(false);
-  const processingPromiseRef = useRef<any>(null);
 
   // معالجة الملفات المسحوبة
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -493,96 +926,18 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       canSkip: true,
     }));
     setFiles(prev => [...prev, ...newFiles]);
-    setProcessingCompleted(false);
   }, []);
 
-  // Utility functions for batch processing
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  const chunkArray = <T,>(array: T[], size: number): T[][] => {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
-  };
-
-  // Save progress to localStorage
-  const saveProgressToLocalStorage = useCallback(() => {
-    try {
-      const state: SavedState = {
-        files: files.map(f => ({
-          ...f,
-          preview: '', // Don't save blob URLs
-        })),
-        progress: batchProgress,
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.warn('Failed to save progress to localStorage:', error);
-    }
-  }, [files, batchProgress]);
-
-  // Load progress from localStorage
-  const loadProgressFromLocalStorage = useCallback((): SavedState | null => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.warn('Failed to load progress from localStorage:', error);
-    }
-    return null;
-  }, []);
-
-  // Clear localStorage
-  const clearLocalStorage = useCallback(() => {
-    try {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    } catch (error) {
-      console.warn('Failed to clear localStorage:', error);
-    }
-  }, []);
-
-  // Check for saved state on mount
+  // التحقق من حالة الاستئناف عند فتح الحوار
   useEffect(() => {
-    if (open && files.length === 0) {
-      const savedState = loadProgressFromLocalStorage();
-      if (savedState && savedState.files.length > 0) {
-        const timeDiff = Date.now() - savedState.timestamp;
-        const hoursDiff = timeDiff / (1000 * 60 * 60);
-
-        // Only show resume prompt if less than 24 hours old
-        if (hoursDiff < 24 && savedState.progress.processed < savedState.progress.total) {
-          setShowResumePrompt(true);
-        }
+    if (open) {
+      const savedState = loadProcessingState(dialogId.current);
+      if (savedState && savedState.completedFileIds.length > 0) {
+        setHasResumeState(true);
+        console.log('📂 Found resume state:', savedState);
       }
     }
-  }, [open, files.length, loadProgressFromLocalStorage]);
-
-  // Resume previous processing
-  const handleResumePrevious = useCallback(() => {
-    const savedState = loadProgressFromLocalStorage();
-    if (savedState) {
-      // Restore blob URLs
-      const restoredFiles = savedState.files.map(f => ({
-        ...f,
-        preview: f.file ? URL.createObjectURL(f.file) : '',
-      }));
-      setFiles(restoredFiles);
-      setBatchProgress(savedState.progress);
-      setShowResumePrompt(false);
-      toast.success('تم استعادة المعالجة السابقة');
-    }
-  }, [loadProgressFromLocalStorage]);
-
-  // Reject resume and clear
-  const handleRejectResume = useCallback(() => {
-    clearLocalStorage();
-    setShowResumePrompt(false);
-  }, [clearLocalStorage]);
+  }, [open]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -832,225 +1187,125 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
     }
   };
 
-  // معالجة جميع الملفات - Enhanced Batch Processing
-  const processSingleFileWithErrorHandling = async (file: UploadedFile): Promise<{ file: UploadedFile; success: boolean }> => {
+  // بدء معالجة جميع الملفات
+  const processAllFiles = async () => {
+    const savedState = loadProcessingState(dialogId.current);
+    queueManager.loadResumeState(savedState);
+    queueManager.setFiles(files);
+
+    // إعداد callbacks
+    queueManager.options = {
+      onProgress: (completed, total) => {
+        setOverallProgress(Math.round((completed / total) * 100));
+      },
+      onFileComplete: (file) => {
+        setFiles(prev => prev.map(f => f.id === file.id ? file : f));
+      },
+      onFileError: (file, error) => {
+        setFiles(prev => prev.map(f => f.id === file.id ? file : f));
+      },
+      onChunkComplete: (chunkIndex, completed, total) => {
+        console.log(`📦 Chunk ${chunkIndex} completed: ${completed}/${total}`);
+        // تحديث الوقت المتبقي
+        setEstimatedTime(queueManager.getEstimatedTimeRemaining());
+      },
+      onSaveState: (state) => {
+        saveProcessingState(dialogId.current, state);
+      },
+    };
+
+    setProcessingStatus('processing');
+    setHasResumeState(false);
+
     try {
-      const processedFile = await processImage(file);
+      await queueManager.start(processImage);
 
-      // Clean up memory
-      if (file.preview && file.preview !== processedFile.preview) {
-        URL.revokeObjectURL(file.preview);
-      }
+      // الانتهاء من المعالجة
+      const stats = queueManager.getStats();
+      console.log('📊 Final stats:', stats);
 
-      return {
-        file: processedFile,
-        success: processedFile.status === 'matched' || processedFile.status === 'not_found',
-      };
-    } catch (error: any) {
-      console.error(`Failed to process ${file.file.name}:`, error);
-      return {
-        file: {
-          ...file,
-          status: 'error' as const,
-          error: error.message || 'فشل في قراءة الصورة',
-          lastError: ProcessingError.OCR_FAILED,
-          retryCount: (file.retryCount || 0) + 1,
-        },
-        success: false,
-      };
-    }
-  };
-
-  const processChunkWithConcurrency = async (filesToProcess: UploadedFile[]): Promise<UploadedFile[]> => {
-    const results: UploadedFile[] = [];
-
-    // Process in batches of MAX_CONCURRENT
-    for (let i = 0; i < filesToProcess.length; i += MAX_CONCURRENT) {
-      const batch = filesToProcess.slice(i, i + MAX_CONCURRENT);
-
-      const batchResults = await Promise.allSettled(
-        batch.map(file => processSingleFileWithErrorHandling(file))
+      toast.success(
+        `اكتملت المعالجة: ${stats.completed} نجح، ${stats.failed} فشل، ${stats.skipped} تم تخطيهم`
       );
 
-      batchResults.forEach((result) => {
-        if (result.status === 'fulfilled') {
-          results.push(result.value.file);
-        } else {
-          // Should not happen with error handling, but just in case
-          results.push({
-            ...batch[0],
-            status: 'error' as const,
-            error: 'Unknown error occurred',
-          });
-        }
-      });
+      // مسح الحالة المحفوظة
+      clearProcessingState(dialogId.current);
 
-      // Update UI after each batch
-      setFiles(prev => {
-        const updated = [...prev];
-        batchResults.forEach((result, idx) => {
-          const originalFile = batch[idx];
-          const index = updated.findIndex(f => f.id === originalFile.id);
-          if (index !== -1) {
-            updated[index] = result.status === 'fulfilled' ? result.value.file : updated[index];
-          }
-        });
-        return updated;
-      });
-
-      // Delay between concurrent batches
-      if (i + MAX_CONCURRENT < filesToProcess.length) {
-        await sleep(DELAY_BETWEEN_FILES);
-      }
+    } catch (error: any) {
+      console.error('Processing error:', error);
+      toast.error(`خطأ في المعالجة: ${error.message}`);
     }
 
-    return results;
+    setProcessingStatus('completed');
+    setEstimatedTime(0);
   };
 
-  const processAllFilesInChunks = async () => {
-    const pendingFiles = files.filter(f => f.status === 'pending');
-
-    if (pendingFiles.length === 0) {
-      toast.info('لا توجد ملفات في الانتظار للمعالجة');
-      return;
-    }
-
-    setIsProcessing(true);
-    setIsStopped(false);
-    setIsPaused(false);
-    setProcessingCompleted(false);
-    processingAbortRef.current = false;
-
-    const chunks = chunkArray(pendingFiles, CHUNK_SIZE);
-    const totalChunks = chunks.length;
-
-    // Initialize batch progress
-    const initialProgress: BatchProgress = {
-      total: pendingFiles.length,
-      processed: 0,
-      successful: 0,
-      failed: 0,
-      inProgress: 0,
-      pending: pendingFiles.length,
-      currentChunk: 0,
-      totalChunks,
-      isPaused: false,
-      stopped: false,
-    };
-    setBatchProgress(initialProgress);
-
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      // Check if stopped
-      if (processingAbortRef.current) {
-        console.log('Processing stopped by user');
-        break;
-      }
-
-      // Wait while paused
-      while (isPaused && !processingAbortRef.current) {
-        await sleep(500);
-      }
-
-      if (processingAbortRef.current) break;
-
-      const chunk = chunks[chunkIndex];
-
-      // Update current chunk
-      setBatchProgress(prev => ({
-        ...prev,
-        currentChunk: chunkIndex + 1,
-        inProgress: chunk.length,
-      }));
-
-      // Process the chunk
-      const processedResults = await processChunkWithConcurrency(chunk);
-
-      // Update progress stats
-      setBatchProgress(prev => {
-        const successful = processedResults.filter(f => f.status === 'matched').length;
-        const failed = processedResults.filter(f => f.status === 'error' || f.status === 'not_found').length;
-        const newProcessed = prev.processed + chunk.length;
-
-        return {
-          ...prev,
-          processed: newProcessed,
-          successful: prev.successful + successful,
-          failed: prev.failed + failed,
-          inProgress: 0,
-          pending: prev.total - newProcessed,
-        };
-      });
-
-      // Update overall progress percentage
-      setOverallProgress(Math.round(((chunkIndex + 1) / chunks.length) * 100));
-
-      // Save progress to localStorage after each chunk
-      await saveProgressToLocalStorage();
-
-      // Memory cleanup: Clean up processed files from memory if needed
-      // (Browsers handle this automatically with object URLs)
-
-      // Delay between chunks (rate limiting)
-      if (chunkIndex < chunks.length - 1) {
-        await sleep(DELAY_BETWEEN_CHUNKS);
-      }
-    }
-
-    setIsProcessing(false);
-    setProcessingCompleted(true);
-    clearLocalStorage();
-  };
-
-  // Pause processing
+  // إيقاف مؤقت
   const pauseProcessing = () => {
-    setIsPaused(true);
-    setBatchProgress(prev => ({ ...prev, isPaused: true }));
+    queueManager.pause();
+    setProcessingStatus('paused');
     toast.info('تم إيقاف المعالجة مؤقتاً');
   };
 
-  // Resume processing
+  // استئناف
   const resumeProcessing = () => {
-    setIsPaused(false);
-    setBatchProgress(prev => ({ ...prev, isPaused: false }));
+    queueManager.resume();
+    setProcessingStatus('processing');
     toast.info('تم استئناف المعالجة');
   };
 
-  // Stop processing
-  const stopProcessing = () => {
-    processingAbortRef.current = true;
-    setIsStopped(true);
-    setBatchProgress(prev => ({ ...prev, stopped: true }));
-    toast.warning('تم إيقاف المعالجة');
+  // إلغاء
+  const cancelProcessing = () => {
+    queueManager.cancel();
+    setProcessingStatus('cancelled');
+    setOverallProgress(0);
+    setEstimatedTime(0);
+    toast.info('تم إلغاء المعالجة');
   };
 
-  // Retry failed files
-  const retryFailedFiles = async () => {
-    const failedFiles = files.filter(f =>
-      f.status === 'error' ||
-      (f.status === 'not_found' && (f.retryCount || 0) < MAX_RETRIES)
-    );
+  // تخطي ملف
+  const skipFile = (fileId: string) => {
+    queueManager.skipFile(fileId);
+    setFiles(prev => prev.map(f =>
+      f.id === fileId ? { ...f, status: 'skipped' as const } : f
+    ));
+    toast.info('تم تخطي الملف');
+  };
 
-    if (failedFiles.length === 0) {
-      toast.info('لا توجد ملفات فاشلة لإعادة المحاولة');
-      return;
-    }
+  // إعادة معالجة الفاشلة
+  const retryFailedFiles = () => {
+    queueManager.retryFailed();
+    setShowRetryFailed(false);
 
-    // Reset failed files to pending
+    // إعادة تعيين حالات الملفات
     setFiles(prev => prev.map(f => {
-      if (failedFiles.find(ff => ff.id === f.id)) {
-        return {
-          ...f,
-          status: 'pending' as const,
-          error: undefined,
-        };
+      if (f.status === 'error') {
+        return { ...f, status: 'pending' as const, error: undefined, retryCount: 0 };
       }
       return f;
     }));
 
-    toast.info(`جاري إعادة معالجة ${failedFiles.length} ملف فاشل...`);
+    toast.info('تمت إضافة الملفات الفاشلة إلى الطابور');
+  };
 
-    // Start processing
-    await processAllFilesInChunks();
+  // استئناف من حالة محفوظة
+  const resumeFromSavedState = () => {
+    const savedState = loadProcessingState(dialogId.current);
+    if (savedState) {
+      queueManager.loadResumeState(savedState);
+      queueManager.setFiles(files);
+
+      // تحديث الملفات بناءً على الحالة المحفوظة
+      setFiles(prev => prev.map(f => {
+        if (savedState.completedFileIds.includes(f.id)) {
+          return { ...f, status: 'matched' as const };
+        }
+        return f;
+      }));
+
+      setHasResumeState(false);
+      toast.info(`تم استعادة الحالة: ${savedState.completedFileIds.length} ملف مكتمل`);
+    }
   };
 
   // Export error report as CSV
@@ -1096,9 +1351,11 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
 
     for (const file of matchedFiles) {
       try {
-        // رفع الملف إلى Storage
+        // 1. Upload to storage with unique name
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 8);
         const fileExt = file.file.name.split('.').pop();
-        const fileName = `customer-documents/${file.matchedCustomer!.id}/${Date.now()}_id_card.${fileExt}`;
+        const fileName = `customer-documents/${file.matchedCustomer!.id}/${timestamp}_${randomId}_id_card.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('documents')
@@ -1109,14 +1366,15 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
 
         if (uploadError) throw uploadError;
 
-        // إنشاء سجل في قاعدة البيانات
+        // 2. Create database record with unique document name
+        const uniqueDocumentName = `البطاقة الشخصية - ${file.matchedCustomer!.first_name} ${file.matchedCustomer!.last_name} - ${timestamp}`;
         const { error: dbError } = await supabase
           .from('customer_documents')
           .insert({
             customer_id: file.matchedCustomer!.id,
             company_id: companyId!,
             document_type: 'national_id',
-            document_name: `البطاقة الشخصية - ${file.matchedCustomer!.first_name} ${file.matchedCustomer!.last_name}`,
+            document_name: uniqueDocumentName,
             file_path: fileName,
             mime_type: file.file.type,
             file_size: file.file.size,
@@ -1216,29 +1474,16 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       if (f.preview) URL.revokeObjectURL(f.preview);
     });
     setFiles([]);
-    clearLocalStorage();
-    setProcessingCompleted(false);
-    setBatchProgress({
-      total: 0,
-      processed: 0,
-      successful: 0,
-      failed: 0,
-      inProgress: 0,
-      pending: 0,
-      currentChunk: 0,
-      totalChunks: 0,
-      isPaused: false,
-      stopped: false,
-    });
+    clearProcessingState(dialogId.current);
+    setHasResumeState(false);
   };
 
   const handleClose = () => {
-    if (isProcessing) {
-      // Ask for confirmation
-      if (!confirm('المعالجة جارية. هل تريد حقاً الإغلاق؟')) {
+    if (processingStatus === 'processing') {
+      if (!confirm('المعالجة جارية. هل تريد الإلغاء والإغلاق؟')) {
         return;
       }
-      stopProcessing();
+      cancelProcessing();
     }
     clearAllFiles();
     onOpenChange(false);
@@ -1262,6 +1507,7 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
       uploaded: files.filter(f => f.status === 'uploaded').length,
       dataUpdated: files.filter(f => f.dataUpdated).length,
       error: files.filter(f => f.status === 'error').length,
+      skipped: files.filter(f => f.status === 'skipped').length,
     };
   }, [files]);
 
@@ -1279,495 +1525,364 @@ const CustomerDocumentDistributionDialog: React.FC<CustomerDocumentDistributionD
         return <Badge className="bg-emerald-100 text-emerald-700">تم الرفع</Badge>;
       case 'error':
         return <Badge variant="destructive">خطأ</Badge>;
+      case 'skipped':
+        return <Badge variant="outline" className="bg-slate-100 text-slate-600">تم التخطي</Badge>;
     }
   };
 
   return (
-    <>
-      {/* Resume Prompt Dialog */}
-      <Dialog open={showResumePrompt} onOpenChange={setShowResumePrompt}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>استئناف المعالجة السابقة؟</DialogTitle>
-            <DialogDescription>
-              تم العثور على معالجة سابقة غير مكتملة ({loadProgressFromLocalStorage()?.progress.total || 0} ملف).
-              هل تريد استئناف المعالجة من حيث توقفت؟
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={handleRejectResume}>
-              بدء جديد
-            </Button>
-            <Button onClick={handleResumePrevious} className="bg-teal-600 hover:bg-teal-700">
-              استئناف المعالجة
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Main Dialog */}
-      <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <IdCard className="w-5 h-5 text-teal-600" />
-            توزيع صور البطاقات الشخصية
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground space-y-1">
-            <span>قم برفع صور البطاقات الشخصية للعملاء:</span>
-            <ul className="list-disc list-inside text-xs space-y-0.5 mt-1 mr-2">
-              <li>يستخدم النظام OCR متقدم مع دعم للصور غير الواضحة</li>
-              <li>إذا استغرت المعالجة وقتاً طويلاً، سيتم التحويل التلقائي لطريقة بديلة</li>
-              <li>يتم معالجة صورتين في كل مرة لضمان الجودة</li>
-              <li>يدعم القراءة باللغتين العربية والإنجليزية</li>
-              <li>سيتم استخراج: رقم البطاقة، الاسم (EN/AR)، الجنسية، تاريخ الميلاد، انتهاء البطاقة</li>
-              <li>سيتم حفظ صورة البطاقة في ملفات العميل</li>
-            </ul>
-            <div className="flex items-center gap-1 text-blue-600 mt-2">
-              <Database className="w-3 h-3" />
-              <span className="text-xs font-medium">OCR عبر Supabase Edge Function + Tesseract Fallback</span>
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[950px] max-h-[90vh] p-0 gap-0 overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>توزيع صور البطاقات الشخصية</DialogTitle>
+          <DialogDescription>رفع ومطابقة تلقائية باستخدام OCR</DialogDescription>
+        </VisuallyHidden>
+        {/* Header مبسط وأنيق */}
+        <div className="bg-teal-600 px-6 py-4 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <IdCard className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">توزيع صور البطاقات الشخصية</h2>
+                <p className="text-teal-100 text-sm">رفع ومطابقة تلقائية باستخدام OCR</p>
+              </div>
             </div>
-          </DialogDescription>
-        </DialogHeader>
+            {files.length > 0 && (
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg">
+                  <FileImage className="w-4 h-4" />
+                  <span>{stats.total} ملف</span>
+                </div>
+                {stats.matched > 0 && (
+                  <div className="flex items-center gap-2 bg-green-500/30 px-3 py-1.5 rounded-lg">
+                    <Check className="w-4 h-4" />
+                    <span>{stats.matched} مطابق</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <div className="space-y-4">
-          {/* منطقة السحب والإفلات */}
+        <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* منطقة السحب والإفلات - مصغرة عند وجود ملفات */}
           <div
             {...getRootProps()}
             className={cn(
-              "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
+              "relative border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all duration-300",
+              files.length > 0 ? "p-4" : "p-6",
               isDragActive
-                ? "border-teal-500 bg-teal-50 scale-[1.02] shadow-lg"
-                : "border-slate-200 bg-slate-50/50 hover:border-teal-400 hover:bg-teal-50/50"
+                ? "border-blue-500 bg-blue-50 scale-[1.01] shadow-lg shadow-blue-500/20"
+                : "border-slate-200 bg-gradient-to-b from-slate-50 to-white hover:border-blue-400 hover:shadow-md"
             )}
           >
             <input {...getInputProps()} />
             <motion.div
-              animate={isDragActive ? { scale: 1.1 } : { scale: 1 }}
-              transition={{ duration: 0.2 }}
+              animate={isDragActive ? { scale: 1.1, y: -5 } : { scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="flex flex-col items-center"
             >
-              <Upload className={cn(
-                "w-10 h-10 mx-auto mb-3 transition-colors",
-                isDragActive ? "text-teal-600" : "text-slate-400"
-              )} />
+              <div className={cn(
+                "rounded-2xl flex items-center justify-center mb-3 transition-colors",
+                files.length > 0 ? "w-12 h-12" : "w-16 h-16",
+                isDragActive ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-400"
+              )}>
+                <Upload className={files.length > 0 ? "w-6 h-6" : "w-8 h-8"} />
+              </div>
+              {isDragActive ? (
+                <p className="text-lg font-medium text-blue-700">أفلت الملفات هنا...</p>
+              ) : (
+                <>
+                  <p className={cn("font-medium text-slate-700", files.length > 0 ? "text-sm" : "text-base")}>
+                    {files.length > 0 ? "أضف المزيد من الصور" : "اسحب وأفلت صور البطاقات الشخصية"}
+                  </p>
+                  {files.length === 0 && (
+                    <>
+                      <p className="text-sm text-slate-400 mt-1">أو اضغط لاختيار الملفات</p>
+                      <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                        <Badge variant="outline" className="bg-white">PNG</Badge>
+                        <Badge variant="outline" className="bg-white">JPG</Badge>
+                        <Badge variant="outline" className="bg-white">WebP</Badge>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </motion.div>
-            {isDragActive ? (
-              <p className="text-sm font-medium text-teal-700">
-                أفلت الملفات هنا...
-              </p>
-            ) : (
-              <>
-                <p className="text-sm font-medium text-slate-700">
-                  اسحب وأفلت صور البطاقات الشخصية هنا
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  أو اضغط لاختيار الملفات (PNG, JPG, JPEG)
-                </p>
-              </>
-            )}
           </div>
 
-          {/* شريط الإحصائيات */}
+          {/* شريط الإحصائيات المحسّن - مدمج مع أزرار التحكم */}
           {files.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 md:gap-4 p-3 bg-slate-50 rounded-xl">
-              <div className="flex items-center gap-2">
-                <FileImage className="w-4 h-4 text-slate-500" />
-                <span className="text-sm font-medium">{stats.total} ملف</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-2 flex-wrap">
+                {stats.matched > 0 && (
+                  <Badge className="bg-green-100 text-green-700">
+                    <Check className="w-3 h-3 ml-1" />
+                    {stats.matched} مطابق
+                  </Badge>
+                )}
+                {stats.error > 0 && (
+                  <Badge className="bg-red-100 text-red-700">
+                    <AlertTriangle className="w-3 h-3 ml-1" />
+                    {stats.error} فشل
+                  </Badge>
+                )}
+                {stats.uploaded > 0 && (
+                  <Badge className="bg-emerald-100 text-emerald-700">
+                    <FileCheck className="w-3 h-3 ml-1" />
+                    {stats.uploaded} تم رفعه
+                  </Badge>
+                )}
               </div>
-              {stats.matched > 0 && (
-                <Badge className="bg-green-100 text-green-700">
-                  <Check className="w-3 h-3 ml-1" />
-                  {stats.matched} مطابق
-                </Badge>
-              )}
-              {stats.withData > 0 && (
-                <Badge className="bg-blue-100 text-blue-700">
-                  <Database className="w-3 h-3 ml-1" />
-                  {stats.withData} بيانات
-                </Badge>
-              )}
-              {stats.notFound > 0 && (
-                <Badge className="bg-amber-100 text-amber-700">
-                  <AlertTriangle className="w-3 h-3 ml-1" />
-                  {stats.notFound} غير موجود
-                </Badge>
-              )}
-              {stats.uploaded > 0 && (
-                <Badge className="bg-emerald-100 text-emerald-700">
-                  <FileCheck className="w-3 h-3 ml-1" />
-                  {stats.uploaded} تم رفعه
-                </Badge>
-              )}
-              {stats.dataUpdated > 0 && (
-                <Badge className="bg-purple-100 text-purple-700">
-                  <Settings className="w-3 h-3 ml-1" />
-                  {stats.dataUpdated} تم تحديثه
-                </Badge>
-              )}
-              <div className="flex-1" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFiles}
-                className="text-slate-500 hover:text-red-500"
-              >
-                <Trash2 className="w-4 h-4 ml-1" />
-                مسح الكل
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={clearAllFiles} className="text-slate-400 hover:text-red-500 rounded-lg h-8">
+                  <Trash2 className="w-4 h-4 ml-1" />
+                  مسح
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* Enhanced Batch Progress Section */}
-          {(isProcessing || processingCompleted || batchProgress.total > 0) && (
-            <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              {/* Main Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600 font-medium">
-                    {isProcessing && isPaused ? 'تم الإيقاف المؤقت' : isProcessing ? 'جاري المعالجة...' : processingCompleted ? 'اكتملت المعالجة' : 'التقدم'}
-                  </span>
-                  <span className="text-teal-600 font-bold">{overallProgress}%</span>
-                </div>
-                <Progress value={overallProgress} className="h-2" />
-              </div>
-
-              {/* Batch Statistics */}
-              {batchProgress.total > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                  <div className="bg-white p-2 rounded-lg border">
-                    <div className="text-lg font-bold text-slate-700">{batchProgress.processed}/{batchProgress.total}</div>
-                    <div className="text-xs text-slate-500">تمت المعالجة</div>
+          {/* شريط التحكم والمعالجة */}
+          {files.length > 0 && (
+            <div className="space-y-3">
+              {/* شريط التقدم */}
+              {(processingStatus === 'processing' || processingStatus === 'paused' || processingStatus === 'completed') && (
+                <div className="bg-slate-50 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {processingStatus === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
+                      {processingStatus === 'paused' && <Pause className="w-4 h-4 text-amber-600" />}
+                      {processingStatus === 'completed' && <Check className="w-4 h-4 text-green-600" />}
+                      <span className="text-sm font-medium text-slate-700">
+                        {processingStatus === 'processing' && 'جاري المعالجة...'}
+                        {processingStatus === 'paused' && 'متوقف مؤقتاً'}
+                        {processingStatus === 'completed' && 'اكتملت المعالجة'}
+                      </span>
+                      {estimatedTime > 0 && <span className="text-xs text-slate-500">({formatTime(estimatedTime)})</span>}
+                    </div>
+                    <span className="text-lg font-bold text-blue-600">{overallProgress}%</span>
                   </div>
-                  <div className="bg-green-50 p-2 rounded-lg border border-green-200">
-                    <div className="text-lg font-bold text-green-600">{batchProgress.successful}</div>
-                    <div className="text-xs text-green-700">ناجح</div>
-                  </div>
-                  <div className="bg-red-50 p-2 rounded-lg border border-red-200">
-                    <div className="text-lg font-bold text-red-600">{batchProgress.failed}</div>
-                    <div className="text-xs text-red-700">فاشل</div>
-                  </div>
-                  <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-600">{batchProgress.pending}</div>
-                    <div className="text-xs text-blue-700">في الانتظار</div>
-                  </div>
+                  <Progress value={overallProgress} className="h-2" />
                 </div>
               )}
 
-              {/* Current Chunk Info */}
-              {isProcessing && batchProgress.totalChunks > 0 && (
-                <div className="text-center text-sm text-slate-600 bg-blue-50 py-2 px-4 rounded-lg">
-                  معالجة المجموعة {batchProgress.currentChunk} من {batchProgress.totalChunks}
-                  ({batchProgress.inProgress > 0 ? `${batchProgress.inProgress} ملف جاري المعالجة` : 'انتظار...'})
-                </div>
-              )}
+              {/* أزرار التحكم */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {hasResumeState && (
+                    <Button size="sm" variant="outline" onClick={resumeFromSavedState} className="text-blue-600 border-blue-200 rounded-xl h-9">
+                      <RefreshCw className="w-4 h-4 ml-1" />
+                      استئناف
+                    </Button>
+                  )}
 
-              {/* Control Buttons */}
-              {isProcessing && (
-                <div className="flex items-center justify-center gap-2">
-                  {!isPaused ? (
-                    <>
-                      <Button
-                        onClick={pauseProcessing}
-                        disabled={isPaused || isStopped}
-                        variant="outline"
-                        className="gap-2"
-                      >
-                        <Pause className="w-4 h-4" />
-                        إيقاف مؤقت
-                      </Button>
-                      <Button
-                        onClick={stopProcessing}
-                        variant="destructive"
-                        className="gap-2"
-                      >
-                        <Square className="w-4 h-4" />
+                  {processingStatus === 'idle' && stats.pending > 0 && (
+                    <Button onClick={processAllFiles} className="bg-gradient-to-l from-blue-600 to-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/25 h-9">
+                      <ScanSearch className="w-4 h-4 ml-2" />
+                      بدء المسح ({stats.pending})
+                    </Button>
+                  )}
+
+                  {processingStatus === 'processing' && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={pauseProcessing} className="rounded-xl text-amber-600 border-amber-200 h-9">
+                        <Pause className="w-4 h-4 ml-1" />
                         إيقاف
                       </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        onClick={resumeProcessing}
-                        className="bg-green-600 hover:bg-green-700 gap-2"
-                      >
-                        <Play className="w-4 h-4" />
+                      <Button size="sm" variant="outline" onClick={cancelProcessing} className="rounded-xl text-red-600 border-red-200 h-9">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {processingStatus === 'paused' && (
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={resumeProcessing} className="rounded-xl bg-green-600 hover:bg-green-700 h-9">
+                        <Play className="w-4 h-4 ml-1" />
                         استئناف
                       </Button>
-                      <Button
-                        onClick={stopProcessing}
-                        variant="destructive"
-                        className="gap-2"
-                      >
-                        <Square className="w-4 h-4" />
-                        إيقاف
+                      <Button size="sm" variant="outline" onClick={cancelProcessing} className="rounded-xl text-red-600 border-red-200 h-9">
+                        <X className="w-4 h-4" />
                       </Button>
-                    </>
+                    </div>
                   )}
-                </div>
-              )}
 
-              {/* Processing Complete Summary */}
-              {processingCompleted && !isProcessing && (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
-                  <h3 className="font-bold text-green-800 mb-2 text-center text-lg">اكتملت المعالجة!</h3>
-                  <div className="grid grid-cols-2 gap-3 text-center mb-3">
-                    <div className="bg-white p-2 rounded">
-                      <div className="text-2xl font-bold text-green-600">{batchProgress.successful}</div>
-                      <div className="text-xs text-green-700">ملف ناجح</div>
-                    </div>
-                    <div className="bg-white p-2 rounded">
-                      <div className="text-2xl font-bold text-red-600">{batchProgress.failed}</div>
-                      <div className="text-xs text-red-700">ملف فاشل</div>
-                    </div>
-                  </div>
-                  {batchProgress.failed > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        onClick={retryFailedFiles}
-                        className="bg-amber-600 hover:bg-amber-700 gap-2 w-full"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        إعادة المحاولة للملفات الفاشلة ({batchProgress.failed})
+                  {processingStatus === 'completed' && stats.error > 0 && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={retryFailedFiles} className="rounded-xl text-blue-600 border-blue-200 h-9">
+                        <RefreshCw className="w-4 h-4 ml-1" />
+                        إعادة ({stats.error})
                       </Button>
-                      <Button
-                        onClick={exportErrorReport}
-                        variant="outline"
-                        className="gap-2 w-full"
-                      >
+                      <Button size="sm" variant="ghost" onClick={exportErrorReport} className="rounded-xl h-9">
                         <Download className="w-4 h-4" />
-                        تصدير تقرير الأخطاء
                       </Button>
                     </div>
                   )}
                 </div>
-              )}
+
+                {stats.matched > 0 && (
+                  <Button
+                    onClick={uploadMatchedFiles}
+                    disabled={processingStatus === 'processing' || isUploading}
+                    className="bg-gradient-to-l from-teal-500 to-teal-600 text-white rounded-xl shadow-lg shadow-teal-500/25 h-9"
+                  >
+                    {isUploading ? (
+                      <><Loader2 className="w-4 h-4 animate-spin ml-2" />جاري الرفع...</>
+                    ) : (
+                      <><Upload className="w-4 h-4 ml-2" />رفع ({stats.matched})</>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
           {/* قائمة الملفات */}
           {files.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm text-slate-600 px-1">
-                <span>عرض {Math.min(visibleFileCount, files.length)} من {files.length} ملف</span>
-                {files.length > visibleFileCount && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setVisibleFileCount(prev => prev + 50)}
-                    className="text-teal-600 hover:text-teal-700"
-                  >
-                    <MoreHorizontal className="w-4 h-4 ml-1" />
-                    عرض المزيد
-                  </Button>
-                )}
-              </div>
-              <ScrollArea className="h-[300px] rounded-xl border border-slate-200">
-                <div className="p-3 space-y-2">
-                  <AnimatePresence>
-                    {files.slice(0, visibleFileCount).map((file, index) => (
+            <ScrollArea className="h-[280px] rounded-xl border border-slate-200 bg-slate-50/50">
+              <div className="p-3 space-y-2">
+                <AnimatePresence mode="popLayout">
+                  {files.slice(0, visibleFileCount).map((file, index) => (
                     <motion.div
                       key={file.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      transition={{ delay: index * 0.05 }}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                        file.status === 'matched' && "bg-green-50 border-green-200",
-                        file.status === 'uploaded' && "bg-emerald-50 border-emerald-200",
-                        file.status === 'not_found' && "bg-amber-50 border-amber-200",
-                        file.status === 'error' && "bg-red-50 border-red-200",
-                        file.status === 'scanning' && "bg-blue-50 border-blue-200",
-                        file.status === 'pending' && "bg-white border-slate-200"
+                        "flex items-start gap-3 p-3 rounded-xl border bg-white transition-all hover:shadow-sm",
+                        file.status === 'matched' && "border-green-200",
+                        file.status === 'uploaded' && "border-emerald-200",
+                        file.status === 'not_found' && "border-amber-200",
+                        file.status === 'error' && "border-red-200",
+                        file.status === 'scanning' && "border-blue-200",
+                        file.status === 'pending' && "border-slate-200"
                       )}
                     >
                       {/* معاينة الصورة */}
-                      <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                        <img
-                          src={file.preview}
-                          alt="معاينة"
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                        <img src={file.preview} alt="" className="w-full h-full object-cover" />
+                        {file.status === 'scanning' && (
+                          <div className="absolute inset-0 bg-blue-500/30 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                          </div>
+                        )}
                       </div>
 
                       {/* معلومات الملف */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">
-                          {file.file.name}
-                        </p>
-                        {file.matchedCustomer ? (
-                          <div className="space-y-1 mt-1">
-                            <div className="flex items-center gap-2">
-                              <User className="w-3 h-3 text-green-600" />
-                              <span className="text-xs text-green-700 font-medium">
-                                {file.matchedCustomer.first_name} {file.matchedCustomer.last_name}
-                              </span>
-                              <span className="text-xs text-slate-500">
-                                ({file.matchedCustomer.phone})
-                              </span>
-                            </div>
-                            {file.extractedData && (
-                              <ExtractedDataPreview data={file.extractedData} dataUpdated={file.dataUpdated} />
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium text-slate-800 truncate">{file.file.name}</p>
+                          {getStatusBadge(file)}
+                        </div>
+                        
+                        {file.matchedCustomer && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <User className="w-3.5 h-3.5 text-green-600" />
+                            <span className="text-green-700 font-medium">
+                              {file.matchedCustomer.first_name} {file.matchedCustomer.last_name}
+                            </span>
+                            {file.dataUpdated && (
+                              <Badge className="bg-blue-100 text-blue-700 text-[10px]">
+                                <Database className="w-2.5 h-2.5 ml-0.5" />
+                                تم التحديث
+                              </Badge>
                             )}
-                          </div>
-                        ) : file.extractedNumber ? (
-                          <div className="space-y-1 mt-1">
-                            <p className="text-xs text-amber-600">
-                              رقم مستخرج: {file.extractedNumber}
-                            </p>
-                            {file.extractedData && (
-                              <ExtractedDataPreview data={file.extractedData} />
-                            )}
-                          </div>
-                        ) : file.error ? (
-                          <p className="text-xs text-red-600 mt-1">{file.error}</p>
-                        ) : null}
-
-                        {/* إدخال رقم البطاقة يدوياً */}
-                        {(file.status === 'not_found' || file.status === 'error') && (
-                          <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p className="text-xs text-amber-700 mb-2 flex items-center gap-1">
-                              <Edit3 className="w-3 h-3" />
-                              أدخل رقم البطاقة يدوياً للمطابقة:
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="text"
-                                placeholder="مثال: 29078801030"
-                                value={editingFileId === file.id ? manualNationalId : ''}
-                                onChange={(e) => {
-                                  setEditingFileId(file.id);
-                                  setManualNationalId(e.target.value);
-                                }}
-                                onFocus={() => {
-                                  setEditingFileId(file.id);
-                                  if (!manualNationalId) {
-                                    setManualNationalId(file.extractedNumber || '');
-                                  }
-                                }}
-                                className="h-8 text-sm flex-1 bg-white"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleManualIdEntry(file.id);
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => handleManualIdEntry(file.id)}
-                                disabled={editingFileId !== file.id || !manualNationalId.trim()}
-                                className="h-8 bg-teal-600 hover:bg-teal-700"
-                              >
-                                <Check className="w-4 h-4 ml-1" />
-                                مطابقة
-                              </Button>
-                            </div>
                           </div>
                         )}
 
-                        {/* عرض النص المستخرج */}
+                        {file.extractedNumber && !file.matchedCustomer && (
+                          <p className="text-xs text-amber-600">رقم مستخرج: {file.extractedNumber}</p>
+                        )}
+
+                        {file.error && !file.matchedCustomer && (
+                          <p className="text-xs text-red-500">{file.error}</p>
+                        )}
+
+                        {/* إدخال يدوي */}
+                        {(file.status === 'not_found' || file.status === 'error') && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Input
+                              type="text"
+                              placeholder="أدخل رقم البطاقة..."
+                              value={editingFileId === file.id ? manualNationalId : ''}
+                              onChange={(e) => { setEditingFileId(file.id); setManualNationalId(e.target.value); }}
+                              onFocus={() => { setEditingFileId(file.id); if (!manualNationalId) setManualNationalId(file.extractedNumber || ''); }}
+                              className="h-8 text-xs flex-1 max-w-[180px] rounded-lg"
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleManualIdEntry(file.id); }}
+                            />
+                            <Button size="sm" onClick={() => handleManualIdEntry(file.id)} disabled={editingFileId !== file.id || !manualNationalId.trim()} className="h-8 text-xs rounded-lg bg-blue-600">
+                              مطابقة
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => skipFile(file.id)} className="h-8 text-xs text-slate-400">
+                              تخطي
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Debug */}
                         {showDebugText === file.id && file.extractedText && (
-                          <div className="mt-2 p-2 bg-slate-800 text-slate-100 rounded text-xs font-mono overflow-x-auto max-h-32 overflow-y-auto">
-                            <div className="text-slate-400 mb-1">النص المستخرج من OCR:</div>
-                            <pre className="whitespace-pre-wrap break-words">{file.extractedText}</pre>
+                          <div className="mt-2 p-2 bg-slate-800 text-slate-100 rounded-lg text-[10px] font-mono max-h-24 overflow-y-auto">
+                            <pre className="whitespace-pre-wrap">{file.extractedText}</pre>
                           </div>
                         )}
                       </div>
 
-                      {/* الحالة والإجراءات */}
+                      {/* أزرار الإجراءات */}
                       <div className="flex items-center gap-1">
-                        {getStatusBadge(file)}
-
                         {file.extractedText && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowDebugText(
-                              showDebugText === file.id ? null : file.id
-                            )}
-                            className="h-8 w-8 text-slate-400 hover:text-blue-500"
-                            title="عرض النص المستخرج"
-                          >
-                            {showDebugText === file.id ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
+                          <Button variant="ghost" size="icon" onClick={() => setShowDebugText(showDebugText === file.id ? null : file.id)} className="h-7 w-7 text-slate-400">
+                            {showDebugText === file.id ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </Button>
                         )}
-
                         {file.status !== 'uploaded' && file.status !== 'scanning' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeFile(file.id)}
-                            className="h-8 w-8 text-slate-400 hover:text-red-500"
-                          >
-                            <X className="w-4 h-4" />
+                          <Button variant="ghost" size="icon" onClick={() => removeFile(file.id)} className="h-7 w-7 text-slate-400 hover:text-red-500">
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
+                
+                {files.length > visibleFileCount && (
+                  <Button variant="ghost" onClick={() => setVisibleFileCount(prev => prev + 50)} className="w-full text-blue-600 hover:text-blue-700 mt-2">
+                    <MoreHorizontal className="w-4 h-4 ml-2" />
+                    عرض المزيد ({files.length - visibleFileCount} ملف)
+                  </Button>
+                )}
               </div>
             </ScrollArea>
-            </div>
           )}
 
           {/* رسالة عدم وجود ملفات */}
           {files.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              <IdCard className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p className="text-sm">لم يتم رفع أي ملفات بعد</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <IdCard className="w-8 h-8 text-slate-300" />
+              </div>
+              <p className="text-slate-500">لم يتم رفع أي ملفات بعد</p>
+              <p className="text-slate-400 text-sm mt-1">اسحب الصور أو اضغط للاختيار</p>
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-2 mt-4">
-          <Button variant="outline" onClick={handleClose}>
+        {/* Footer */}
+        <div className="border-t border-slate-200 px-6 py-3 bg-slate-50 flex items-center justify-between">
+          <div className="text-xs text-slate-400 flex items-center gap-2">
+            <Database className="w-3.5 h-3.5" />
+            <span>OCR: Google Vision + Tesseract</span>
+          </div>
+          <Button variant="outline" onClick={handleClose} className="rounded-xl">
             إغلاق
           </Button>
-
-          {stats.pending > 0 && !isProcessing && (
-            <Button
-              onClick={processAllFilesInChunks}
-              disabled={isProcessing || isUploading}
-              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-            >
-              <ScanSearch className="w-4 h-4" />
-              بدء المعالجة ({stats.pending})
-            </Button>
-          )}
-
-          {stats.matched > 0 && (
-            <Button
-              onClick={uploadMatchedFiles}
-              disabled={isProcessing || isUploading}
-              className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  جاري الرفع والتحديث...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  رفع وتحديث ({stats.matched})
-                  {stats.withData > 0 && (
-                    <span className="text-xs opacity-80">
-                      + {stats.withData} بيانات
-                    </span>
-                  )}
-                </>
-              )}
-            </Button>
-          )}
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
-    </>
   );
 };
 

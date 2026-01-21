@@ -28,7 +28,7 @@ export interface DelinquentCustomer {
   contract_id: string;
   contract_number: string;
   contract_start_date: string;
-  contract_status: 'active' | 'cancelled' | 'closed' | 'pending' | string;
+  contract_status: 'active' | 'cancelled' | 'closed' | 'pending' | 'under_legal_procedure' | string;
   monthly_rent: number;
   vehicle_id: string | null;
   vehicle_plate: string | null;
@@ -224,10 +224,10 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       return calculateDelinquentCustomersDynamically(companyId, filters);
     },
     enabled: !!user?.id && !isCompanyLoading,
-    staleTime: 1000 * 60 * 5, // 5 minutes - تقليل طلبات إعادة الجلب
-    gcTime: 1000 * 60 * 15, // 15 minutes - الاحتفاظ بالكاش لفترة أطول
-    refetchOnWindowFocus: false, // منع التحديث التلقائي عند العودة
-    refetchOnMount: false, // استخدام الكاش إذا كان متاحاً
+    staleTime: 1000 * 60 * 2, // 2 minutes - بيانات أحدث
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnWindowFocus: true, // تحديث عند العودة للتطبيق
+    refetchOnMount: true, // تحديث عند الدخول للصفحة
     retry: 1, // محاولة واحدة فقط عند الفشل
   });
 };
@@ -277,7 +277,7 @@ async function calculateDelinquentCustomersDynamically(
       )
     `)
     .eq('company_id', companyId)
-    .in('status', ['active', 'cancelled', 'closed'])  // Include cancelled contracts with debt
+    .in('status', ['active', 'cancelled', 'closed', 'under_legal_procedure'])  // Include cancelled and legal procedure contracts with debt
     .order('balance_due', { ascending: false });
 
   const { data: contracts, error: contractsError } = await contractsQuery;
@@ -303,6 +303,9 @@ async function calculateDelinquentCustomersDynamically(
   let violations: any[] = [];
   let legalCases: any[] = [];
   let overdueInvoices: any[] = [];
+  
+  // حجم الدفعة لتقسيم الطلبات
+  const BATCH_SIZE = 100;
 
   // Get oldest unpaid invoice per contract to calculate days_overdue
   // We need to check for invoices that are past due and not fully paid
@@ -311,27 +314,41 @@ async function calculateDelinquentCustomersDynamically(
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
-    // ⚡ تحسين الأداء: جلب الفواتير المتأخرة مباشرة بدون pagination loop
-    // نستخدم حد أقصى 2000 فاتورة وهو كافي لمعظم الحالات
+    // ⚡ تقسيم الطلبات لتجنب مشاكل حجم URL
+    // نقسم العقود إلى دفعات من 100 عقد لكل طلب
     let allInvoicesData: Array<{contract_id: string, due_date: string, payment_status: string, total_amount: number, paid_amount: number}> = [];
     
-    const { data: invoicesData, error: invoicesError } = await supabase
-      .from('invoices')
-      .select('contract_id, due_date, payment_status, total_amount, paid_amount')
-      .eq('company_id', companyId)
-      .in('contract_id', contractIds.slice(0, 500)) // تحديد عدد العقود لتجنب Query طويلة جداً
-      .lt('due_date', todayStr) // Only past due dates
-      .in('payment_status', ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid']) // فقط الفواتير غير المدفوعة
-      .order('due_date', { ascending: true })
-      .limit(2000); // حد أقصى للفواتير
-    
-    if (invoicesError) {
-      console.warn('Error fetching invoices:', invoicesError);
-    } else if (invoicesData) {
-      allInvoicesData = invoicesData;
+    const contractBatches: string[][] = [];
+    for (let i = 0; i < contractIds.length; i += BATCH_SIZE) {
+      contractBatches.push(contractIds.slice(i, i + BATCH_SIZE));
     }
     
-    console.log(`📊 [DELINQUENT] Fetched ${allInvoicesData.length} overdue invoices for ${Math.min(contractIds.length, 500)} contracts (today: ${todayStr})`);
+    console.log(`📊 [DELINQUENT] Fetching invoices in ${contractBatches.length} batches for ${contractIds.length} contracts`);
+    
+    // جلب الفواتير على دفعات متوازية
+    const batchResults = await Promise.all(
+      contractBatches.map(async (batch) => {
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('contract_id, due_date, payment_status, total_amount, paid_amount')
+          .eq('company_id', companyId)
+          .in('contract_id', batch)
+          .lt('due_date', todayStr)
+          .in('payment_status', ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid'])
+          .order('due_date', { ascending: true });
+        
+        if (error) {
+          console.warn('Error fetching invoice batch:', error);
+          return [];
+        }
+        return data || [];
+      })
+    );
+    
+    // دمج جميع النتائج
+    allInvoicesData = batchResults.flat();
+    
+    console.log(`📊 [DELINQUENT] Fetched ${allInvoicesData.length} overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
     
     if (allInvoicesData.length > 0) {
       // Filter to only include invoices that are actually unpaid or partially paid
@@ -352,20 +369,32 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching overdue invoices:', error);
   }
 
-  // Get payments (handle errors gracefully) - تحسين: حد أقصى للدفعات
+  // Get payments (handle errors gracefully) - تقسيم الطلبات
   try {
-    const { data: paymentsData, error: paymentsError } = await supabase
-      .from('payments')
-      .select('customer_id, amount, payment_date, payment_status')
-      .eq('company_id', companyId)
-      .in('customer_id', customerIds.slice(0, 500)) // تحديد عدد العملاء
-      .in('payment_status', ['completed', 'paid', 'approved'])
-      .order('payment_date', { ascending: false })
-      .limit(2000); // حد أقصى للدفعات
-    
-    if (!paymentsError && paymentsData) {
-      payments = paymentsData;
+    const customerBatches: string[][] = [];
+    for (let i = 0; i < customerIds.length; i += BATCH_SIZE) {
+      customerBatches.push(customerIds.slice(i, i + BATCH_SIZE));
     }
+    
+    const paymentResults = await Promise.all(
+      customerBatches.map(async (batch) => {
+        const { data, error } = await supabase
+          .from('payments')
+          .select('customer_id, amount, payment_date, payment_status')
+          .eq('company_id', companyId)
+          .in('customer_id', batch)
+          .in('payment_status', ['completed', 'paid', 'approved'])
+          .order('payment_date', { ascending: false });
+        
+        if (error) {
+          console.warn('Error fetching payment batch:', error);
+          return [];
+        }
+        return data || [];
+      })
+    );
+    
+    payments = paymentResults.flat();
   } catch (error) {
     console.warn('Error fetching payments:', error);
   }

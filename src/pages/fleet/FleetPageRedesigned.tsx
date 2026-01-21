@@ -84,11 +84,11 @@ import { VehicleGroupManagement } from '@/components/fleet/VehicleGroupManagemen
 import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
 import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
-import { VehicleAlertPanel } from '@/components/fleet/VehicleAlertPanel';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 import { VehicleStatusChangeDialog } from '@/components/fleet/VehicleStatusChangeDialog';
 import VehicleDocumentDistributionDialog from '@/components/fleet/VehicleDocumentDistributionDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { openVehicleFleetHTMLReport } from '@/components/fleet/VehicleFleetHTMLReport';
 
 // ===== Helper Functions for Missing Data Detection =====
 
@@ -130,7 +130,7 @@ const getMissingVehicleDocuments = (
   return missing;
 };
 
-// ===== HTML Export Helper with Missing Data Highlighting =====
+// ===== HTML Export Helper with Professional Report =====
 const exportVehiclesToHTML = async (
   vehicles: Vehicle[],
   companyId: string,
@@ -203,25 +203,13 @@ const exportVehiclesToHTML = async (
       documentsByVehicle.get(doc.vehicle_id)!.push(doc);
     });
 
-    // Arabic status labels
-    const statusLabels: Record<string, string> = {
-      available: 'متاحة',
-      rented: 'مؤجرة',
-      maintenance: 'صيانة',
-      out_of_service: 'خارج الخدمة',
-      reserved: 'محجوزة',
-      reserved_employee: 'محجوزة لموظف',
-      accident: 'حادث',
-      stolen: 'مسروقة',
-      police_station: 'في مركز الشرطة',
-    };
-
     // Count vehicles with issues
     let vehiclesWithMissingData = 0;
     let vehiclesWithMissingDocuments = 0;
+    let expiringDocumentsCount = 0;
 
-    // Generate HTML rows
-    const rows = vehiclesToExport.map((vehicle: Vehicle) => {
+    // Enrich vehicles with missing data info
+    const vehiclesWithMetadata = vehiclesToExport.map((vehicle: Vehicle) => {
       const missingFields = getMissingVehicleFields(vehicle);
       const vehicleDocuments = documentsByVehicle.get(vehicle.id) || [];
       const missingDocuments = getMissingVehicleDocuments(
@@ -231,305 +219,55 @@ const exportVehiclesToHTML = async (
       const hasMissingData = missingFields.length > 0;
       const hasMissingDocuments = missingDocuments.length > 0;
 
+      // Check for registration documents specifically
+      const registrationDocuments = vehicleDocuments.filter((doc: any) =>
+        doc.document_type === 'registration' ||
+        doc.document_type === 'ترخيص' ||
+        doc.document_name?.includes('استمارة') ||
+        doc.document_name?.includes('رخيص')
+      );
+      const hasRegistrationDocuments = registrationDocuments.length > 0;
+      const registrationDocumentCount = registrationDocuments.length;
+
       if (hasMissingData) vehiclesWithMissingData++;
       if (hasMissingDocuments) vehiclesWithMissingDocuments++;
 
-      // Format dates
-      const formatDate = (dateStr: string | undefined) => {
-        if (!dateStr) return '-';
-        try {
-          return new Date(dateStr).toLocaleDateString('ar-SA');
-        } catch {
-          return '-';
-        }
+      // Check for expiring documents
+      const regExpiring = isExpiringSoon(vehicle.registration_expiry);
+      const insExpiring = isExpiringSoon(vehicle.insurance_expiry);
+      if (regExpiring || insExpiring) expiringDocumentsCount++;
+
+      return {
+        ...vehicle,
+        missingFields,
+        missingDocuments,
+        hasRegistrationDocuments,
+        registrationDocumentCount,
       };
+    });
 
-      // Check if registration is expiring soon
-      const registrationExpiry = vehicle.registration_expiry;
-      let isRegistrationExpiring = false;
-      if (registrationExpiry) {
-        const expiryDate = new Date(registrationExpiry);
-        const today = new Date();
-        const daysUntilExpiry = Math.ceil(
-          (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        isRegistrationExpiring = daysUntilExpiry <= 30;
+    // Generate filter description
+    const filterParts: string[] = [];
+    if (filters.status) {
+      filterParts.push(`الحالة: ${statusLabels[filters.status] || filters.status}`);
+    }
+    if (filters.search) {
+      filterParts.push(`بحث: ${filters.search}`);
+    }
+
+    // Use the new professional report generator
+    openVehicleFleetHTMLReport(
+      vehiclesWithMetadata,
+      {
+        generatedAt: new Date(),
+        generatedBy: 'النظام',
+        filters: filterParts.length > 0 ? filterParts.join(' | ') : undefined,
+        totalCount: vehiclesToExport.length,
+        completeCount: vehiclesToExport.length - vehiclesWithMissingData,
+        incompleteCount: vehiclesWithMissingData,
+        expiringDocumentsCount,
       }
-
-      const rowClass = hasMissingData ? 'bg-red-50' : '';
-      const statusClass = hasMissingData ? 'text-red-700' : 'text-green-700';
-
-      return `
-        <tr class="${rowClass} hover:bg-blue-50 transition-colors">
-          <td class="px-4 py-3 border border-gray-300 font-mono text-sm">${vehicle.plate_number || '-'}</td>
-          <td class="px-4 py-3 border border-gray-300">${vehicle.make || '-'}</td>
-          <td class="px-4 py-3 border border-gray-300">${vehicle.model || '-'}</td>
-          <td class="px-4 py-3 border border-gray-300 text-center">${vehicle.year || '-'}</td>
-          <td class="px-4 py-3 border border-gray-300">${vehicle.color || vehicle.color_ar || '-'}</td>
-          <td class="px-4 py-3 border border-gray-300 font-mono text-xs">${vehicle.vin || vehicle.vin_number || '-'}</td>
-          <td class="px-4 py-3 border border-gray-300 text-center">
-            <span class="inline-block px-2 py-1 rounded-full text-xs font-medium ${
-              vehicle.status === 'available' ? 'bg-green-100 text-green-700' :
-              vehicle.status === 'rented' ? 'bg-blue-100 text-blue-700' :
-              vehicle.status === 'maintenance' ? 'bg-amber-100 text-amber-700' :
-              'bg-red-100 text-red-700'
-            }">
-              ${statusLabels[vehicle.status || 'available'] || vehicle.status || 'متاحة'}
-            </span>
-          </td>
-          <td class="px-4 py-3 border border-gray-300 text-center ${isRegistrationExpiring ? 'bg-amber-100 text-amber-700 font-bold' : ''}">
-            ${formatDate(vehicle.registration_expiry)}
-          </td>
-          <td class="px-4 py-3 border border-gray-300 text-center">${formatDate(vehicle.insurance_expiry)}</td>
-          <td class="px-4 py-3 border border-gray-300 text-sm ${statusClass} font-medium">
-            ${hasMissingData ? missingFields.join('، ') : '✓ مكتمل'}
-          </td>
-          <td class="px-4 py-3 border border-gray-300 text-sm ${hasMissingDocuments ? 'text-red-700' : 'text-green-700'} font-medium">
-            ${hasMissingDocuments ? missingDocuments.join('، ') : '✓ مكتمل'}
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    // Generate complete HTML document
-    const htmlContent = `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تقرير المركبات - ${new Date().toLocaleDateString('ar-SA')}</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      direction: rtl;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 20px;
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, #00A896 0%, #007D6D 100%);
-      color: white;
-      padding: 40px;
-      text-align: center;
-    }
-    .header h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
-      font-weight: 700;
-    }
-    .header p {
-      font-size: 1.1em;
-      opacity: 0.9;
-    }
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      padding: 30px 40px;
-      background: #f8fafc;
-    }
-    .summary-card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      transition: transform 0.2s;
-    }
-    .summary-card:hover {
-      transform: translateY(-4px);
-    }
-    .summary-card .number {
-      font-size: 2.5em;
-      font-weight: 700;
-      color: #00A896;
-      margin-bottom: 8px;
-    }
-    .summary-card .label {
-      font-size: 0.9em;
-      color: #64748b;
-    }
-    .table-container {
-      padding: 40px;
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9em;
-    }
-    thead {
-      background: linear-gradient(135deg, #00A896 0%, #007D6D 100%);
-      color: white;
-    }
-    thead th {
-      padding: 16px 12px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.9em;
-      white-space: nowrap;
-    }
-    tbody tr:nth-child(even) {
-      background-color: #f9fafb;
-    }
-    tbody tr:hover {
-      background-color: #e0f2fe !important;
-      transform: scale(1.01);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    td {
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-    }
-    .legend {
-      padding: 20px 40px;
-      background: #fef3c7;
-      border-top: 3px solid #f59e0b;
-    }
-    .legend h3 {
-      margin-bottom: 10px;
-      color: #92400e;
-    }
-    .legend-items {
-      display: flex;
-      gap: 30px;
-      flex-wrap: wrap;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9em;
-    }
-    .legend-color {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-    .footer {
-      padding: 30px 40px;
-      text-align: center;
-      color: #64748b;
-      font-size: 0.85em;
-      border-top: 1px solid #e5e7eb;
-    }
-    @media print {
-      body {
-        background: white;
-        padding: 0;
-      }
-      .container {
-        box-shadow: none;
-        border-radius: 0;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🚗 تقرير أسطول المركبات</h1>
-      <p>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')} - ${new Date().toLocaleTimeString('ar-SA')}</p>
-    </div>
-
-    <div class="summary">
-      <div class="summary-card">
-        <div class="number">${vehiclesToExport.length}</div>
-        <div class="label">إجمالي المركبات</div>
-      </div>
-      <div class="summary-card">
-        <div class="number" style="color: #16a34a;">${vehiclesToExport.length - vehiclesWithMissingData}</div>
-        <div class="label">مركبات مكتملة</div>
-      </div>
-      <div class="summary-card">
-        <div class="number" style="color: #dc2626;">${vehiclesWithMissingData}</div>
-        <div class="label">بيانات ناقصة</div>
-      </div>
-      <div class="summary-card">
-        <div class="number" style="color: #f59e0b;">${vehiclesWithMissingDocuments}</div>
-        <div class="label">مستندات ناقصة</div>
-      </div>
-    </div>
-
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>رقم اللوحة</th>
-            <th>الماركة</th>
-            <th>الموديل</th>
-            <th>السنة</th>
-            <th>اللون</th>
-            <th>رقم الهيكل (VIN)</th>
-            <th>الحالة</th>
-            <th>انتهاء الاستمارة</th>
-            <th>انتهاء التأمين</th>
-            <th>المعلومات الناقصة</th>
-            <th>المستندات الناقصة</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="legend">
-      <h3>دليل الألوان:</h3>
-      <div class="legend-items">
-        <div class="legend-item">
-          <div class="legend-color" style="background: #fee2e2;"></div>
-          <span>أحمر = بيانات ناقصة</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #fef3c7;"></div>
-          <span>أصفر = تنتهي قريباً</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #ffffff;"></div>
-          <span>أبيض = مكتمل</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p>تم إنشاء هذا التقرير بواسطة Fleetify - نظام إدارة أسطول المركبات</p>
-      <p>للمزيد من المعلومات، يرجى التواصل مع إدارة النظام</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-
-    // Create blob and download
-    const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute(
-      'download',
-      `fleet_report_${new Date().toISOString().split('T')[0]}.html`
     );
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 
     toast.dismiss();
 
@@ -547,6 +285,21 @@ const exportVehiclesToHTML = async (
     toast.dismiss();
     console.error('Export error:', error);
     toast.error(error.message || 'فشل تصدير البيانات');
+  }
+};
+
+// Helper function to check if date is expiring soon
+const isExpiringSoon = (dateStr: string | undefined, days: number = 30): boolean => {
+  if (!dateStr) return false;
+  try {
+    const expiryDate = new Date(dateStr);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil(
+      (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysUntilExpiry <= days && daysUntilExpiry > 0;
+  } catch {
+    return false;
   }
 };
 
@@ -1337,15 +1090,15 @@ const FleetPageRedesigned: React.FC = () => {
                   <DropdownMenuItem onClick={() => handleExport()} className="gap-2">
                     <FileText className="w-4 h-4 text-green-600" />
                     <div className="flex flex-col">
-                      <span class="font-medium">Excel (XLSX)</span>
-                      <span class="text-xs text-neutral-500">ملف جدول بيانات</span>
+                      <span className="font-medium">Excel (XLSX)</span>
+                      <span className="text-xs text-neutral-500">ملف جدول بيانات</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('html')} className="gap-2">
                     <FileText className="w-4 h-4 text-blue-600" />
                     <div className="flex flex-col">
-                      <span class="font-medium">تقرير HTML</span>
-                      <span class="text-xs text-neutral-500">تقرير منسق للطباعة</span>
+                      <span className="font-medium">تقرير HTML</span>
+                      <span className="text-xs text-neutral-500">تقرير منسق للطباعة</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1416,11 +1169,6 @@ const FleetPageRedesigned: React.FC = () => {
           activeStatus={filters.status}
         />
 
-        {/* Alerts Panel */}
-        <VehicleAlertPanel
-          onViewVehicle={(vehicleId) => navigate(`/fleet/vehicles/${vehicleId}`)}
-          maxAlerts={3}
-        />
 
         {/* Quick Status Filter Bar */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">

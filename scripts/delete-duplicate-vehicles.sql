@@ -39,19 +39,22 @@ FROM ranked_vehicles;
 -- - plates_with_duplicates: How many plate numbers have duplicates
 
 -- STEP 2: See which plates are duplicated (optional - for review)
+-- Note: This shows duplicates based on normalized plate numbers
 SELECT
-  plate_number,
+  LOWER(TRIM(plate_number)) as normalized_plate,
   company_id,
   COUNT(*) as count,
   MIN(created_at) as first_created,
-  MAX(created_at) as last_created
+  MAX(created_at) as last_created,
+  STRING_AGG(DISTINCT plate_number, ', ') as actual_plate_numbers
 FROM vehicles
 WHERE plate_number IS NOT NULL
-GROUP BY company_id, plate_number
+GROUP BY company_id, LOWER(TRIM(plate_number))
 HAVING COUNT(*) > 1
-ORDER BY count DESC, plate_number;
+ORDER BY count DESC, normalized_plate;
 
 -- STEP 3: Delete duplicates (keeps oldest, deletes newer ones)
+-- Note: The DELETE statement will return the number of rows deleted
 WITH ranked_vehicles AS (
   SELECT
     id,
@@ -70,45 +73,50 @@ WHERE id IN (
   SELECT id FROM ranked_vehicles WHERE rn > 1
 );
 
--- This will show how many rows were deleted
-
 -- STEP 4: Verify duplicates are gone
-WITH ranked_vehicles AS (
+WITH duplicate_check AS (
   SELECT
     company_id,
-    plate_number,
-    COUNT(*) as count,
-    ROW_NUMBER() OVER (
-      PARTITION BY company_id, LOWER(TRIM(plate_number))
-      ORDER BY created_at ASC
-    ) as rn
+    LOWER(TRIM(plate_number)) as normalized_plate,
+    COUNT(*) as count
   FROM vehicles
   WHERE plate_number IS NOT NULL
-  GROUP BY company_id, plate_number
+  GROUP BY company_id, LOWER(TRIM(plate_number))
   HAVING COUNT(*) > 1
 )
 SELECT COUNT(*) as remaining_duplicates
-FROM ranked_vehicles;
+FROM duplicate_check;
 
 -- Should return 0 if all duplicates were removed
 
--- STEP 5: Add unique constraint to prevent future duplicates
+-- STEP 5: Add unique index to prevent future duplicates
+-- Note: PostgreSQL doesn't support UNIQUE constraints with expressions,
+-- so we use a unique index instead which serves the same purpose
 DO $$
 BEGIN
-  -- Check if constraint already exists
+  -- Check if unique index already exists
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'vehicles_company_plate_unique'
+    SELECT 1 
+    FROM pg_indexes
+    WHERE schemaname = 'public'
+      AND tablename = 'vehicles'
+      AND indexname = 'vehicles_company_plate_unique'
   ) THEN
-    ALTER TABLE vehicles
-    ADD CONSTRAINT vehicles_company_plate_unique
-    UNIQUE (company_id, LOWER(TRIM(plate_number)));
+    CREATE UNIQUE INDEX vehicles_company_plate_unique
+    ON vehicles (company_id, LOWER(TRIM(plate_number)))
+    WHERE plate_number IS NOT NULL;
+    RAISE NOTICE 'Unique index vehicles_company_plate_unique created successfully';
+  ELSE
+    RAISE NOTICE 'Unique index vehicles_company_plate_unique already exists';
   END IF;
 END $$;
 
--- STEP 6: Create index for faster lookups
+-- STEP 6: Create regular index for faster lookups (if not already exists as unique)
+-- Note: The unique index above already serves as an index, but we can add
+-- a separate non-unique index if needed for additional queries
 CREATE INDEX IF NOT EXISTS idx_vehicles_company_plate
-ON vehicles (company_id, LOWER(TRIM(plate_number)));
+ON vehicles (company_id, LOWER(TRIM(plate_number)))
+WHERE plate_number IS NOT NULL;
 
 -- ========================================
 -- DONE!

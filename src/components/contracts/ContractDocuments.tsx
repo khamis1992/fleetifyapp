@@ -21,9 +21,12 @@ import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ContractDocumentsProps {
   contractId: string;
+  customerId?: string;
+  vehicleId?: string;
 }
 
 const documentTypes = [
@@ -58,7 +61,7 @@ const fadeInUp = {
   }
 };
 
-export function ContractDocuments({ contractId }: ContractDocumentsProps) {
+export function ContractDocuments({ contractId, customerId, vehicleId }: ContractDocumentsProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedReportId, setSelectedReportId] = React.useState<string | null>(null);
   const [isReportViewerOpen, setIsReportViewerOpen] = React.useState(false);
@@ -66,7 +69,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   const [isDocumentPreviewOpen, setIsDocumentPreviewOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [documentToDelete, setDocumentToDelete] = React.useState<string | null>(null);
-  const { data: documents = [], isLoading } = useContractDocuments(contractId);
+  const { data: documents = [], isLoading } = useContractDocuments(contractId, customerId, vehicleId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
   const downloadDocument = useDownloadContractDocument();
@@ -137,10 +140,17 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     }
   };
 
-  const handleDownload = async (filePath: string, fileName: string) => {
+  const handleDownload = async (filePath: string, fileName: string, sourceBucket: 'contract-documents' | 'documents' = 'contract-documents') => {
     try {
-      const blob = await downloadDocument.mutateAsync(filePath);
-      const url = URL.createObjectURL(blob);
+      // Use the correct bucket based on sourceBucket
+      const { data, error } = await supabase.storage
+        .from(sourceBucket)
+        .download(filePath);
+
+      if (error) throw error;
+      if (!data) throw new Error('No data received');
+
+      const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
@@ -148,8 +158,10 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast.success('تم تحميل المستند بنجاح');
     } catch (error) {
       console.error('Error downloading document:', error);
+      toast.error('فشل في تحميل المستند');
     }
   };
 
@@ -189,10 +201,13 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     }
 
     try {
+      // تحديد الـ bucket الصحيح بناءً على sourceBucket
+      const bucket = document.sourceBucket || 'contract-documents';
+      
       // إذا كان الملف PDF مرفوع (من صفحة رفع العقود الموقعة)، افتحه مباشرة
       if (document.file_path.startsWith('signed-agreements/') || document.mime_type === 'application/pdf') {
         const { data: signedUrl } = await supabase.storage
-          .from('contract-documents')
+          .from(bucket)
           .createSignedUrl(document.file_path, 3600); // 1 hour
         
         if (signedUrl?.signedUrl) {
@@ -444,7 +459,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                     <Car className="w-12 h-12 text-blue-400" />
                   ) : document.mime_type?.includes('image') ? (
                     <LazyImage
-                      src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${document.file_path}`}
+                      src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${document.sourceBucket || 'contract-documents'}/${document.file_path}`}
                       alt={document.document_name}
                       className="w-full h-full object-cover"
                     />
@@ -502,7 +517,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                       className="h-10 w-10 p-0 rounded-xl"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDownload(document.file_path, document.document_name);
+                        handleDownload(document.file_path, document.document_name, document.sourceBucket || 'contract-documents');
                       }}
                       title="تحميل"
                     >
@@ -510,18 +525,21 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                     </Button>
                   )}
                   
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-10 w-10 p-0 rounded-xl bg-red-100 hover:bg-red-200 text-red-600"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(document.id);
-                    }}
-                    title="حذف"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </Button>
+                  {/* Only show delete button for contract documents, not customer documents */}
+                  {document.sourceBucket === 'contract-documents' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-10 w-10 p-0 rounded-xl bg-red-100 hover:bg-red-200 text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(document.id);
+                      }}
+                      title="حذف"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -782,14 +800,14 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                   <>
                     {selectedDocumentForPreview.mime_type?.includes('pdf') ? (
                       <iframe
-                        src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${selectedDocumentForPreview.file_path}`}
+                        src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${selectedDocumentForPreview.sourceBucket || 'contract-documents'}/${selectedDocumentForPreview.file_path}`}
                         className="w-full h-[600px]"
                         title="معاينة PDF"
                       />
                     ) : selectedDocumentForPreview.mime_type?.includes('image') ? (
                       <div className="flex justify-center p-4">
                         <LazyImage
-                          src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/contract-documents/${selectedDocumentForPreview.file_path}`}
+                          src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${selectedDocumentForPreview.sourceBucket || 'contract-documents'}/${selectedDocumentForPreview.file_path}`}
                           alt={selectedDocumentForPreview.document_name}
                           className="max-w-full max-h-[600px] object-contain"
                         />
@@ -803,7 +821,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                           className="mt-4"
                           onClick={() => {
                             if (selectedDocumentForPreview.file_path) {
-                              handleDownload(selectedDocumentForPreview.file_path, selectedDocumentForPreview.document_name);
+                              handleDownload(selectedDocumentForPreview.file_path, selectedDocumentForPreview.document_name, selectedDocumentForPreview.sourceBucket || 'contract-documents');
                             }
                           }}
                         >

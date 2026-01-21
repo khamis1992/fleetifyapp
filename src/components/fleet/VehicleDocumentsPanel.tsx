@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImagePreviewDialog } from '@/components/common/ImagePreviewDialog';
+import { cn } from "@/lib/utils";
 
 interface VehicleDocumentsPanelProps {
   vehicleId: string;
@@ -336,8 +337,24 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '');
   };
 
-  // دمج الوثائق من المصدرين
-  const allDocuments = [...documentFiles, ...documents];
+  // دمج الوثائق من المصدرين وتوحيدها لمنع التكرار
+  const allDocuments = useMemo(() => {
+    const combined = [...documentFiles];
+    
+    // إضافة الوثائق من props فقط إذا لم تكن موجودة بالفعل في documentFiles
+    documents.forEach(doc => {
+      const exists = combined.some(existing => 
+        existing.id === doc.id || 
+        (existing.file_path && existing.file_path === doc.file_path) ||
+        (existing.document_url && existing.document_url === doc.document_url)
+      );
+      if (!exists) {
+        combined.push(doc);
+      }
+    });
+    
+    return combined;
+  }, [documentFiles, documents]);
 
   return (
     <motion.div
@@ -454,126 +471,106 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
         </div>
       ) : allDocuments.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {/* وثائق الملفات المرفوعة */}
-          {documentFiles.map((doc, index) => (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer"
-            >
-              <div className="aspect-[4/3] bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center relative">
-                <FileImage className="w-10 h-10 text-teal-400" />
-                {doc.expiry_date && isExpiringSoon(doc.expiry_date) && (
-                  <div className="absolute top-2 right-2">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                  </div>
+          {allDocuments.map((doc, index) => {
+            const isFromFiles = documentFiles.some(f => f.id === doc.id);
+            const docUrl = doc.document_url || doc.file_path;
+            
+            return (
+              <motion.div
+                key={doc.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                className={cn(
+                  "group relative rounded-xl border overflow-hidden hover:shadow-lg transition-all cursor-pointer",
+                  isFromFiles 
+                    ? "bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 hover:border-teal-300 hover:shadow-teal-500/10" 
+                    : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 hover:border-orange-300 hover:shadow-orange-500/10"
                 )}
-              </div>
-              <div className="p-3">
-                <p className="text-xs font-medium text-slate-900 truncate">{doc.document_name || 'وثيقة'}</p>
-                <Badge variant="outline" className="text-[10px] mt-1 bg-white/50">
-                  {getDocumentTypeLabel(doc.document_type)}
-                </Badge>
-                {doc.expiry_date && (
-                  <p className={`text-[10px] mt-1 flex items-center gap-1 ${isExpiringSoon(doc.expiry_date) ? 'text-red-500' : 'text-slate-500'}`}>
-                    <Calendar className="w-3 h-3" />
-                    {format(new Date(doc.expiry_date), 'dd/MM/yyyy')}
-                  </p>
-                )}
-                {!doc.expiry_date && doc.created_at && (
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    {format(new Date(doc.created_at), 'dd/MM/yyyy')}
-                  </p>
-                )}
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-900/80 to-teal-800/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                {doc.document_url && (
-                  <>
-                    {/* Preview button for images */}
-                    {isImageFile(doc.document_name) && (
+              >
+                <div className="aspect-[4/3] flex items-center justify-center relative">
+                  {isFromFiles ? (
+                    <FileImage className="w-10 h-10 text-teal-400" />
+                  ) : (
+                    <FileText className="w-10 h-10 text-amber-400" />
+                  )}
+                  {doc.expiry_date && isExpiringSoon(doc.expiry_date) && (
+                    <div className="absolute top-2 right-2">
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <p className="text-xs font-medium text-slate-900 truncate">{doc.document_name || 'وثيقة'}</p>
+                  <Badge variant="outline" className="text-[10px] mt-1 bg-white/50">
+                    {getDocumentTypeLabel(doc.document_type)}
+                  </Badge>
+                  {doc.expiry_date && (
+                    <p className={`text-[10px] mt-1 flex items-center gap-1 ${isExpiringSoon(doc.expiry_date) ? 'text-red-500' : 'text-slate-500'}`}>
+                      <Calendar className="w-3 h-3" />
+                      {format(new Date(doc.expiry_date), 'dd/MM/yyyy')}
+                    </p>
+                  )}
+                  {!doc.expiry_date && (doc.created_at || doc.uploaded_at) && (
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      {format(new Date(doc.created_at || doc.uploaded_at), 'dd/MM/yyyy')}
+                    </p>
+                  )}
+                </div>
+                <div className={cn(
+                  "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm",
+                  isFromFiles 
+                    ? "bg-gradient-to-br from-teal-900/80 to-teal-800/80" 
+                    : "bg-gradient-to-br from-amber-900/80 to-amber-800/80"
+                )}>
+                  {docUrl && (
+                    <>
+                      {/* Preview button for images */}
+                      {isImageFile(doc.document_name) && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewDocument(doc);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 text-white" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="secondary"
                         className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setPreviewDocument(doc);
+                          downloadDocument.mutate(doc);
                         }}
                       >
-                        <Eye className="w-4 h-4 text-white" />
+                        <Download className="w-4 h-4 text-white" />
                       </Button>
-                    )}
+                    </>
+                  )}
+                  {isFromFiles && (
                     <Button
                       size="sm"
                       variant="secondary"
                       className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        downloadDocument.mutate(doc);
+                        if (confirm('هل أنت متأكد من حذف هذه الوثيقة؟')) {
+                          deleteDocument.mutate(doc);
+                        }
                       }}
                     >
-                      <Download className="w-4 h-4 text-white" />
+                      <Trash2 className="w-4 h-4 text-white" />
                     </Button>
-                  </>
-                )}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm('هل أنت متأكد من حذف هذه الوثيقة؟')) {
-                      deleteDocument.mutate(doc);
-                    }
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 text-white" />
-                </Button>
-              </div>
-            </motion.div>
-          ))}
-
-          {/* الوثائق التقليدية (من props) */}
-          {documents.map((doc, index) => (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: (documentFiles.length + index) * 0.05 }}
-              className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer"
-            >
-              <div className="aspect-[4/3] bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center relative">
-                <FileText className="w-10 h-10 text-amber-400" />
-                {doc.expiry_date && isExpiringSoon(doc.expiry_date) && (
-                  <div className="absolute top-2 right-2">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                  </div>
-                )}
-              </div>
-              <div className="p-3">
-                <p className="text-xs font-medium text-slate-900 truncate">{doc.document_name}</p>
-                <Badge variant="outline" className="text-[10px] mt-1 bg-white/50">
-                  {getDocumentTypeLabel(doc.document_type)}
-                </Badge>
-                {doc.expiry_date && (
-                  <p className={`text-[10px] mt-1 flex items-center gap-1 ${isExpiringSoon(doc.expiry_date) ? 'text-red-500' : 'text-slate-500'}`}>
-                    <Calendar className="w-3 h-3" />
-                    {format(new Date(doc.expiry_date), 'dd/MM/yyyy')}
-                  </p>
-                )}
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-900/80 to-amber-800/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0">
-                  <Eye className="w-4 h-4 text-white" />
-                </Button>
-                <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0">
-                  <Download className="w-4 h-4 text-white" />
-                </Button>
-              </div>
-            </motion.div>
-          ))}
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-4">

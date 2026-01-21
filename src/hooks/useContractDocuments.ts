@@ -19,6 +19,8 @@ export interface ContractDocument {
   condition_report_id?: string;
   created_at: string;
   updated_at: string;
+  // Added field to distinguish document source bucket
+  sourceBucket?: 'contract-documents' | 'documents';
 }
 
 export interface CreateDocumentData {
@@ -31,22 +33,101 @@ export interface CreateDocumentData {
   condition_report_id?: string;
 }
 
-export function useContractDocuments(contractId?: string) {
+export function useContractDocuments(contractId?: string, customerId?: string, vehicleId?: string) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['contract-documents', contractId],
+    queryKey: ['contract-documents', contractId, customerId, vehicleId],
     queryFn: async () => {
       if (!contractId) return [];
 
-      const { data, error } = await supabase
+      // Fetch contract documents
+      const { data: contractDocs, error: contractError } = await supabase
         .from('contract_documents')
         .select('*')
         .eq('contract_id', contractId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as ContractDocument[];
+      if (contractError) throw contractError;
+
+      // Mark contract documents with their source bucket
+      const contractDocuments = (contractDocs || []).map(doc => ({
+        ...doc,
+        sourceBucket: 'contract-documents' as const
+      }));
+
+      // If customerId is provided, also fetch customer documents
+      let customerDocuments: ContractDocument[] = [];
+      if (customerId) {
+        const { data: customerDocs, error: customerError } = await supabase
+          .from('customer_documents')
+          .select('*')
+          .eq('customer_id', customerId)
+          .order('created_at', { ascending: false });
+
+        if (customerError) {
+          console.error('Error fetching customer documents:', customerError);
+        } else {
+          customerDocuments = (customerDocs || []).map(doc => ({
+            id: doc.id,
+            company_id: doc.company_id,
+            contract_id: contractId,
+            document_type: doc.document_type,
+            document_name: doc.document_name,
+            file_path: doc.file_path,
+            file_size: doc.file_size,
+            mime_type: doc.mime_type,
+            uploaded_by: doc.uploaded_by,
+            uploaded_at: doc.uploaded_at,
+            notes: doc.notes,
+            is_required: doc.is_required,
+            condition_report_id: undefined,
+            created_at: doc.created_at,
+            updated_at: doc.updated_at,
+            sourceBucket: 'documents' as const
+          }));
+        }
+      }
+
+      // If vehicleId is provided, also fetch vehicle documents
+      let vehicleDocuments: ContractDocument[] = [];
+      if (vehicleId) {
+        const { data: vehDocs, error: vehicleError } = await supabase
+          .from('vehicle_documents')
+          .select('*')
+          .eq('vehicle_id', vehicleId)
+          .order('created_at', { ascending: false });
+
+        if (vehicleError) {
+          console.error('Error fetching vehicle documents:', vehicleError);
+        } else {
+          vehicleDocuments = (vehDocs || []).map(doc => ({
+            id: doc.id,
+            company_id: doc.company_id || '',
+            contract_id: contractId,
+            document_type: doc.document_type,
+            document_name: doc.document_name || '',
+            file_path: doc.document_url || '',
+            file_size: 0,
+            mime_type: 'image/jpeg',
+            uploaded_by: '',
+            uploaded_at: doc.created_at || '',
+            notes: '',
+            is_required: false,
+            condition_report_id: undefined,
+            created_at: doc.created_at || '',
+            updated_at: doc.updated_at || '',
+            sourceBucket: 'documents' as const
+          }));
+        }
+      }
+
+      // Combine and sort by created_at
+      const allDocuments = [...contractDocuments, ...customerDocuments, ...vehicleDocuments].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      return allDocuments;
     },
     enabled: !!contractId && !!user
   });
