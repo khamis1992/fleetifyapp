@@ -439,7 +439,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {documents.map((document) => (
               <motion.div
                 key={document.id}
@@ -454,16 +454,25 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                 }}
                 className="group relative bg-neutral-50 rounded-2xl overflow-hidden border border-neutral-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
               >
-                <div className="aspect-[4/3] bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center relative">
+                <div className="aspect-square bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center relative overflow-hidden">
                   {document.document_type === 'condition_report' ? (
                     <Car className="w-12 h-12 text-blue-400" />
-                  ) : document.mime_type?.includes('image') ? (
-                    <LazyImage
+                  ) : (document.mime_type?.includes('image') || 
+                       document.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) ||
+                       document.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) ? (
+                    <img
                       src={`https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/${document.sourceBucket || 'contract-documents'}/${document.file_path}`}
                       alt={document.document_name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        // إذا فشل تحميل الصورة، اعرض أيقونة بديلة
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement?.classList.add('fallback-icon');
+                      }}
                     />
-                  ) : document.mime_type?.includes('pdf') ? (
+                  ) : (document.mime_type?.includes('pdf') || document.file_path?.match(/\.pdf$/i)) ? (
                     <FileText className="w-12 h-12 text-red-400" />
                   ) : (
                     <FileImage className="w-12 h-12 text-neutral-400" />
@@ -478,68 +487,70 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                   )}
                 </div>
                 
-                <div className="p-4">
+                <div className="p-3">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs font-bold text-neutral-900 truncate flex-1" title={document.document_name}>
                       {document.document_name}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-[10px] mb-1 truncate max-w-full">
+                  <Badge variant="outline" className="text-[10px] mb-2 truncate max-w-full">
                     {getDocumentTypeLabel(document.document_type)}
                   </Badge>
-                  <p className="text-[10px] text-neutral-500 mt-1">
+                  <p className="text-[10px] text-neutral-500 mb-3">
                     {format(new Date(document.uploaded_at), 'dd/MM/yyyy')}
                   </p>
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/90 to-teal-600/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-10 w-10 p-0 rounded-xl"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (document.document_type === 'condition_report' && document.condition_report_id) {
-                        handleViewConditionReport(document.condition_report_id);
-                      } else {
-                        handlePreviewDocument(document);
-                      }
-                    }}
-                    title="معاينة"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </Button>
                   
-                  {document.file_path && (
+                  {/* أزرار الإجراءات - دائماً مرئية */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-neutral-200">
                     <Button
                       size="sm"
-                      variant="secondary"
-                      className="h-10 w-10 p-0 rounded-xl"
+                      variant="outline"
+                      className="flex-1 h-8 text-xs gap-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDownload(document.file_path, document.document_name, document.sourceBucket || 'contract-documents');
+                        if (document.document_type === 'condition_report' && document.condition_report_id) {
+                          handleViewConditionReport(document.condition_report_id);
+                        } else {
+                          handlePreviewDocument(document);
+                        }
                       }}
-                      title="تحميل"
+                      title="معاينة"
                     >
-                      <Download className="w-5 h-5" />
+                      <Eye className="w-3.5 h-3.5" />
+                      معاينة
                     </Button>
-                  )}
-                  
-                  {/* Only show delete button for contract documents, not customer documents */}
-                  {document.sourceBucket === 'contract-documents' && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-10 w-10 p-0 rounded-xl bg-red-100 hover:bg-red-200 text-red-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(document.id);
-                      }}
-                      title="حذف"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </Button>
-                  )}
+                    
+                    {document.file_path && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(document.file_path, document.document_name, document.sourceBucket || 'contract-documents');
+                        }}
+                        title="تحميل"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    
+                    {/* Only show delete button for contract documents, not customer documents */}
+                    {document.sourceBucket === 'contract-documents' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 border-red-200 hover:bg-red-50 text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(document.id);
+                        }}
+                        title="حذف"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))}

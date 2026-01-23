@@ -12,18 +12,19 @@
  * - Retry functionality
  */
 
-import React, { Component, ReactNode } from 'react';
+import React, { Component, ReactNode, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Home, RefreshCw, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { captureException, addBreadcrumb } from '@/lib/sentry';
 
 interface RouteErrorBoundaryProps {
   children: ReactNode;
   routeName?: string;
   fallbackPath?: string;
+  resetKey?: string; // Key to trigger reset
 }
 
 interface RouteErrorBoundaryState {
@@ -138,9 +139,12 @@ class RouteErrorBoundaryClass extends Component<RouteErrorBoundaryProps, RouteEr
   }
 }
 
-// Functional wrapper to use hooks
+// Functional wrapper to use hooks and reset on location change
 export const RouteErrorBoundary: React.FC<RouteErrorBoundaryProps> = (props) => {
-  return <RouteErrorBoundaryClass {...props} />;
+  const location = useLocation();
+  
+  // Use location.key as reset trigger - this changes on every navigation
+  return <RouteErrorBoundaryClass key={location.key} {...props} resetKey={location.key} />;
 };
 
 // Error Fallback UI Component
@@ -168,6 +172,12 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
     
     const message = error.message.toLowerCase();
     
+    // HMR/React hooks error - needs full page reload
+    if (message.includes('usestate') || message.includes('useeffect') || 
+        message.includes('useref') || message.includes('usecontext') ||
+        message.includes('invalid hook call') || message.includes('hooks can only be called')) {
+      return 'hmr_error';
+    }
     if (message.includes('chunk') || message.includes('dynamically imported')) {
       return 'chunk_load';
     }
@@ -186,6 +196,12 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
 
   const getErrorMessage = () => {
     switch (errorType) {
+      case 'hmr_error':
+        return {
+          title: 'خطأ في التحديث السريع',
+          description: 'حدث خطأ أثناء تحديث الصفحة. جاري إعادة التحميل تلقائياً...',
+          action: 'reload'
+        };
       case 'chunk_load':
         return {
           title: 'تحديث التطبيق',
@@ -239,13 +255,14 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
     onReset();
   };
 
-  // Auto-reload for chunk errors (only once)
+  // Auto-reload for chunk errors and HMR errors (only once)
   React.useEffect(() => {
-    if (errorType === 'chunk_load' && errorCount === 1) {
+    if ((errorType === 'chunk_load' || errorType === 'hmr_error') && errorCount === 1) {
+      const delay = errorType === 'hmr_error' ? 500 : 1500; // Faster reload for HMR errors
       const timer = setTimeout(() => {
-        console.log('🔄 Auto-reloading due to chunk error...');
+        console.log(`🔄 Auto-reloading due to ${errorType} error...`);
         handleReload();
-      }, 1500);
+      }, delay);
       return () => clearTimeout(timer);
     }
   }, [errorType, errorCount]);

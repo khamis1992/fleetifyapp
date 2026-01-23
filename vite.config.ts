@@ -9,9 +9,16 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Fix HMR issues with React hooks
+    hmr: {
+      overlay: true,
+    },
   },
   plugins: [
-    react(),
+    react({
+      // Enable fast refresh with better stability
+      fastRefresh: true,
+    }),
     mode === 'development' && componentTagger(),
     mode === 'production' && visualizer({
       filename: 'dist/stats.html',

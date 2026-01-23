@@ -42,6 +42,16 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('Component Stack:', errorInfo.componentStack);
     console.groupEnd();
     
+    // Check for HMR/React hooks error - auto reload
+    const message = error.message.toLowerCase();
+    if (message.includes('usestate') || message.includes('useeffect') || 
+        message.includes('useref') || message.includes('invalid hook call') ||
+        message.includes('hooks can only be called')) {
+      console.warn('🔄 HMR error detected, auto-reloading in 500ms...');
+      setTimeout(() => window.location.reload(), 500);
+      return;
+    }
+    
     // Log compatibility issues
     if (error.message.includes('forwardRef')) {
       this.compatibilityLogger.logLibraryConflict('Radix UI forwardRef', error);

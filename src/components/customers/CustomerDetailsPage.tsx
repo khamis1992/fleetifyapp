@@ -1632,53 +1632,90 @@ const DocumentsSection = ({
       </div>
 
       {documents.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {documents.map((doc, idx) => (
-            <motion.div
-              key={doc.id}
-              variants={scaleIn}
-              whileHover={{ y: -4 }}
-              className="group relative bg-neutral-50 rounded-2xl overflow-hidden border border-neutral-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
-            >
-              <div className="aspect-[4/3] bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
-                <FileImage className="w-12 h-12 text-neutral-400" />
-              </div>
-              <div className="p-4">
-                <p className="text-xs font-bold text-neutral-900 truncate">{doc.document_name}</p>
-                <p className="text-[10px] text-neutral-500 mt-1">
-                  {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
-                </p>
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/90 to-teal-600/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-10 w-10 p-0 rounded-xl"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDownload(doc);
-                  }}
-                  title="تحميل"
-                >
-                  <Download className="w-5 h-5" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-10 w-10 p-0 rounded-xl bg-red-100 hover:bg-red-200 text-red-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm('هل أنت متأكد من حذف هذا المستند؟')) {
-                      onDelete(doc.id);
-                    }
-                  }}
-                  title="حذف"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </Button>
-              </div>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {documents.map((doc, idx) => {
+            const isImage = doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || 
+                           doc.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+            const imageUrl = doc.file_path 
+              ? `https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/customer-documents/${doc.file_path}`
+              : '';
+            
+            return (
+              <motion.div
+                key={doc.id}
+                variants={scaleIn}
+                whileHover={{ y: -4 }}
+                className="group relative bg-neutral-50 rounded-2xl overflow-hidden border border-neutral-200 hover:border-teal-300 hover:shadow-md transition-all"
+              >
+                {/* منطقة معاينة الصورة */}
+                <div className="aspect-square bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center overflow-hidden">
+                  {isImage && imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={doc.document_name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`flex-col items-center justify-center ${isImage && imageUrl ? 'hidden' : 'flex'}`}>
+                    <FileImage className="w-12 h-12 text-neutral-400" />
+                  </div>
+                </div>
+                
+                {/* معلومات المستند وأزرار الإجراءات */}
+                <div className="p-3">
+                  <p className="text-xs font-bold text-neutral-900 truncate mb-1">{doc.document_name}</p>
+                  <p className="text-[10px] text-neutral-500 mb-3">
+                    {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
+                  </p>
+                  
+                  {/* أزرار الإجراءات - دائماً مرئية */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-neutral-200">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1 h-8 text-xs gap-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        imageUrl && window.open(imageUrl, '_blank');
+                      }}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      معاينة
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 w-8 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload(doc);
+                      }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0 border-red-200 hover:bg-red-50 text-red-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('هل أنت متأكد من حذف هذا المستند؟')) {
+                          onDelete(doc.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

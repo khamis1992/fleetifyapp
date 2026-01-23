@@ -2452,34 +2452,75 @@ const CustomerDetailsPageNew = () => {
           </div>
 
           {documents.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {documents.map((doc: CustomerDocument, index: number) => (
-                <motion.div
-                  key={doc.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer"
-                >
-                  <div className="aspect-[4/3] bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
-                    <FileImage className="w-10 h-10 text-teal-400" />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs font-medium text-slate-900 truncate">{doc.document_name}</p>
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-900/80 to-teal-800/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0">
-                      <Eye className="w-4 h-4 text-white" />
-                    </Button>
-                    <Button size="sm" variant="secondary" className="h-8 w-8 p-0 bg-white/20 hover:bg-white/30 border-0">
-                      <Download className="w-4 h-4 text-white" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {documents.map((doc: CustomerDocument, index: number) => {
+                const isImage = doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || 
+                               doc.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+                const imageUrl = doc.file_path 
+                  ? `https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/customer-documents/${doc.file_path}`
+                  : '';
+                
+                return (
+                  <motion.div
+                    key={doc.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all"
+                  >
+                    {/* منطقة معاينة الصورة */}
+                    <div className="aspect-square bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center overflow-hidden">
+                      {isImage && imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={doc.document_name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            if (target.nextElementSibling) {
+                              (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`flex-col items-center justify-center ${isImage && imageUrl ? 'hidden' : 'flex'}`}>
+                        <FileImage className="w-10 h-10 text-teal-400" />
+                      </div>
+                    </div>
+                    
+                    {/* معلومات المستند وأزرار الإجراءات */}
+                    <div className="p-3">
+                      <p className="text-xs font-medium text-slate-900 truncate mb-1">{doc.document_name}</p>
+                      <p className="text-[10px] text-slate-500 mb-3">
+                        {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
+                      </p>
+                      
+                      {/* أزرار الإجراءات - دائماً مرئية */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 h-8 text-xs gap-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200"
+                          onClick={() => imageUrl && window.open(imageUrl, '_blank')}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          معاينة
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => imageUrl && window.open(imageUrl, '_blank')}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">
