@@ -5,7 +5,7 @@
  * @component VehiclePickupReturnTabRedesigned
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Car,
@@ -30,6 +30,7 @@ import {
   Shield,
   Package,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { VehicleReturnFormDialog } from './VehicleReturnFormDialog';
 import { VisualVehicleDiagram } from './vehicle-inspection';
@@ -43,6 +44,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { ZoneSelection, VehicleType } from './vehicle-inspection/types';
+import { useVehicleInspections, VehicleInspection } from '@/hooks/useVehicleInspections';
 
 // ===== Animation Variants =====
 const fadeInUp = {
@@ -106,33 +108,49 @@ interface InspectionRecord {
   visualZones?: ZoneSelection[];
 }
 
-// ===== Mock Data (replace with actual data fetching) =====
-const mockPickupRecords: InspectionRecord[] = [
-  {
-    id: '1',
-    type: 'pickup',
-    date: '2024-01-15',
-    time: '10:30',
-    mileage: 45000,
-    fuelLevel: 75,
+// ===== Helper function to transform database inspection to InspectionRecord =====
+function transformInspection(inspection: VehicleInspection): InspectionRecord {
+  const inspectionDate = new Date(inspection.inspection_date);
+  
+  // Transform exterior condition from JSONB to description
+  const exteriorDescription = Array.isArray(inspection.exterior_condition) && inspection.exterior_condition.length > 0
+    ? inspection.exterior_condition.map((d: any) => `${d.location}: ${d.description}`).join('، ')
+    : inspection.exterior_condition && typeof inspection.exterior_condition === 'string'
+      ? inspection.exterior_condition
+      : 'لا توجد ملاحظات';
+  
+  // Transform interior condition from JSONB to description
+  const interiorDescription = Array.isArray(inspection.interior_condition) && inspection.interior_condition.length > 0
+    ? inspection.interior_condition.map((d: any) => `${d.location}: ${d.description}`).join('، ')
+    : inspection.interior_condition && typeof inspection.interior_condition === 'string'
+      ? inspection.interior_condition
+      : 'لا توجد ملاحظات';
+  
+  return {
+    id: inspection.id,
+    type: inspection.inspection_type === 'check_in' ? 'pickup' : 'return',
+    date: format(inspectionDate, 'yyyy-MM-dd'),
+    time: format(inspectionDate, 'HH:mm'),
+    mileage: inspection.odometer_reading || 0,
+    fuelLevel: inspection.fuel_level || 0,
     condition: {
-      exterior: 'ممتاز - لا يوجد خدوش',
-      interior: 'نظيف - فرش جديد',
-      mechanical: 'سليم - صيانة حديثة',
+      exterior: exteriorDescription,
+      interior: interiorDescription,
+      mechanical: inspection.notes || 'لا توجد ملاحظات',
     },
-    accessories: ['spare_tire', 'jack', 'extinguisher'],
-    documents: ['registration', 'insurance'],
-    photos: [],
-    notes: 'المركبة بحالة ممتازة',
+    accessories: (inspection as any).accessories || [],
+    documents: (inspection as any).documents || [],
+    photos: inspection.photo_urls || [],
+    notes: inspection.notes || '',
     signatures: {
-      customer: 'أحمد محمد',
-      staff: 'خالد علي',
+      customer: inspection.customer_signature ? 'موقع' : 'غير موقع',
+      staff: inspection.inspector?.full_name || 'غير محدد',
     },
     status: 'completed',
-  },
-];
-
-const mockReturnRecords: InspectionRecord[] = [];
+    vehicleType: (inspection as any).vehicle_type as VehicleType,
+    visualZones: (inspection as any).visual_inspection_zones || [],
+  };
+}
 
 // ===== Helper Components =====
 
@@ -462,6 +480,33 @@ export const VehiclePickupReturnTabRedesigned = ({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<'pickup' | 'return'>('pickup');
 
+  // Fetch real data from database
+  const { data: inspections, isLoading, error } = useVehicleInspections({
+    contractId: contract?.id,
+    enabled: !!contract?.id,
+  });
+
+  // Transform and filter inspections by type
+  const { pickupRecords, returnRecords } = useMemo(() => {
+    if (!inspections) {
+      return { pickupRecords: [], returnRecords: [] };
+    }
+
+    const pickup: InspectionRecord[] = [];
+    const returnRecs: InspectionRecord[] = [];
+
+    inspections.forEach((inspection) => {
+      const transformed = transformInspection(inspection);
+      if (inspection.inspection_type === 'check_in') {
+        pickup.push(transformed);
+      } else {
+        returnRecs.push(transformed);
+      }
+    });
+
+    return { pickupRecords: pickup, returnRecords: returnRecs };
+  }, [inspections]);
+
   const handleCreateNew = (type: 'pickup' | 'return') => {
     setCreateType(type);
     setIsCreateDialogOpen(true);
@@ -470,9 +515,6 @@ export const VehiclePickupReturnTabRedesigned = ({
   const handleCloseDialog = () => {
     setIsCreateDialogOpen(false);
   };
-
-  const pickupRecords = mockPickupRecords; // Replace with actual data
-  const returnRecords = mockReturnRecords; // Replace with actual data
 
   return (
     <div className="space-y-6">
@@ -510,7 +552,14 @@ export const VehiclePickupReturnTabRedesigned = ({
 
         {/* Pickup Tab Content */}
         <TabsContent value="pickup" className="mt-6">
-          {pickupRecords.length === 0 ? (
+          {isLoading ? (
+            <Card className="border-neutral-200">
+              <CardContent className="p-12 flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-3" />
+                <p className="text-neutral-500">جاري تحميل سجلات الاستلام...</p>
+              </CardContent>
+            </Card>
+          ) : pickupRecords.length === 0 ? (
             <Card className="border-neutral-200">
               <CardContent className="p-6">
                 <EmptyState type="pickup" onCreate={() => handleCreateNew('pickup')} />
@@ -532,7 +581,14 @@ export const VehiclePickupReturnTabRedesigned = ({
 
         {/* Return Tab Content */}
         <TabsContent value="return" className="mt-6">
-          {returnRecords.length === 0 ? (
+          {isLoading ? (
+            <Card className="border-neutral-200">
+              <CardContent className="p-12 flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+                <p className="text-neutral-500">جاري تحميل سجلات التسليم...</p>
+              </CardContent>
+            </Card>
+          ) : returnRecords.length === 0 ? (
             <Card className="border-neutral-200">
               <CardContent className="p-6">
                 <EmptyState type="return" onCreate={() => handleCreateNew('return')} />

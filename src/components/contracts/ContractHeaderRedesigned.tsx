@@ -75,6 +75,7 @@ interface ContractHeaderRedesignedProps {
   onPrint?: () => void;
   onExport?: () => void;
   onRefresh?: () => void;
+  onStatusClick?: () => void;
   isRefreshing?: boolean;
   className?: string;
 }
@@ -104,6 +105,7 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
   onPrint,
   onExport,
   onRefresh,
+  onStatusClick,
   isRefreshing = false,
   className
 }) => {
@@ -249,7 +251,16 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
             {/* Status Badge */}
             <div className="flex flex-col items-end gap-2">
               <div className="flex items-center gap-2">
-                <ContractStatusBadge status={contract.status} />
+                <div 
+                  onClick={onStatusClick}
+                  className={cn(
+                    "cursor-pointer transition-transform hover:scale-105",
+                    onStatusClick && "hover:ring-2 hover:ring-teal-300 hover:ring-offset-2 rounded-full"
+                  )}
+                  title="انقر لتغيير حالة العقد"
+                >
+                  <ContractStatusBadge status={contract.status} />
+                </div>
                 {isExpiringSoon && (
                   <Badge className="bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100">
                     <AlertTriangle className="w-3 h-3 ml-1" />
@@ -311,66 +322,68 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
               </div>
             </motion.div>
 
-            {/* Daily Rate */}
+            {/* Customer Name */}
             <motion.div
               variants={scaleIn}
-              className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100 hover:shadow-md transition-all"
+              className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => contract.customer?.id && navigate(`/customers/${contract.customer.id}`)}
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-teal-700 font-medium mb-1">العميل</p>
+                  <p className="text-sm font-bold text-teal-900 truncate">
+                    {customerName || 'غير محدد'}
+                  </p>
+                  {contract.customer?.phone && (
+                    <p className="text-xs text-teal-600 mt-0.5 font-mono" dir="ltr">
+                      {contract.customer.phone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Monthly Rent */}
+            <motion.div
+              variants={scaleIn}
+              className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100 hover:shadow-md transition-all"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-emerald-700 font-medium mb-1">السعر اليومي</p>
+                  <p className="text-xs text-emerald-700 font-medium mb-1">الإيجار الشهري</p>
                   <p className="text-lg font-bold text-emerald-900">
-                    {contract.daily_rate?.toLocaleString('ar-SA')} ر.ق
+                    {contract.monthly_amount?.toLocaleString('ar-SA') || '0'} ر.ق
                   </p>
-                  {contract.monthly_amount && (
-                    <p className="text-xs text-emerald-600 mt-0.5">
-                      {contract.monthly_amount.toLocaleString('ar-SA')} ر.ق / شهر
-                    </p>
-                  )}
                 </div>
               </div>
             </motion.div>
 
-            {/* Total Amount */}
+            {/* Vehicle Plate Number */}
             <motion.div
               variants={scaleIn}
-              className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-100 hover:shadow-md transition-all"
+              className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => contract.vehicle?.id && navigate(`/fleet/vehicles/${contract.vehicle.id}`)}
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Wallet className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <Car className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-purple-700 font-medium mb-1">الإجمالي</p>
-                  <p className="text-lg font-bold text-purple-900">
-                    {contract.total_amount?.toLocaleString('ar-SA')} ر.ق
+                  <p className="text-xs text-indigo-700 font-medium mb-1">رقم المركبة</p>
+                  <p className="text-lg font-bold text-indigo-900 font-mono">
+                    {vehicleInfo?.plate || 'غير محدد'}
                   </p>
-                  {contract.balance_due !== undefined && contract.balance_due > 0 && (
-                    <p className="text-xs text-purple-600 mt-0.5">
-                      متبقي: {contract.balance_due.toLocaleString('ar-SA')} ر.ق
+                  {vehicleInfo?.name && (
+                    <p className="text-xs text-indigo-600 mt-0.5 truncate">
+                      {vehicleInfo.name}
                     </p>
                   )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Payment Method */}
-            <motion.div
-              variants={scaleIn}
-              className="bg-gradient-to-br from-slate-50 to-neutral-50 rounded-xl p-4 border border-slate-100 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <paymentMethodInfo.icon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-700 font-medium mb-1">طريقة الدفع</p>
-                  <Badge className={cn("text-xs", paymentMethodInfo.color)}>
-                    {paymentMethodInfo.label}
-                  </Badge>
                 </div>
               </div>
             </motion.div>

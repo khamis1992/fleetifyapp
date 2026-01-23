@@ -1,6 +1,8 @@
 /**
- * صفحة العملاء المتأخرون عن الدفع - التصميم الجديد
- * متوافق مع ألوان وتصميم الداشبورد الرئيسي
+ * صفحة العملاء المتأخرين عن الدفع - التصميم المعاد
+ * متوافق مع ألوان النظام (Teal) وتصميم الداشبورد الرئيسي
+ *
+ * @component DelinquentCustomersTab
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -33,12 +35,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  FileText, 
-  AlertTriangle, 
-  Download, 
-  Users, 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  Search,
+  FileText,
+  AlertTriangle,
+  Download,
+  Users,
   RefreshCw,
   DollarSign,
   TrendingUp,
@@ -59,6 +66,21 @@ import {
   Star,
   Trash2,
   Gavel,
+  LayoutGrid,
+  List,
+  Columns,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  CalendarClock,
+  Target,
+  PhoneCall,
+  ChevronDown,
+  Calendar,
+  Car as CarIcon,
+  Building2,
+  User,
+  Wallet,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -88,134 +110,130 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { GeneratedWarning } from '@/hooks/useGenerateLegalWarning';
 
-// ===== Stat Card Component =====
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  color: 'rose' | 'red' | 'amber' | 'emerald' | 'sky';
-  onClick?: () => void;
-  isActive?: boolean;
-  badge?: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title, value, subtitle, icon: Icon, color, onClick, isActive, badge
-}) => {
-  const colorClasses = {
-    rose: {
-      bg: 'bg-gradient-to-br from-rose-50 to-rose-100/50',
-      icon: 'bg-gradient-to-br from-rose-500 to-rose-600',
-      border: 'border-rose-200',
-      active: 'ring-2 ring-rose-500 ring-offset-2',
-      value: 'text-rose-700',
-      title: 'text-rose-700'
-    },
-    red: {
-      bg: 'bg-gradient-to-br from-red-50 to-red-100/50',
-      icon: 'bg-gradient-to-br from-red-500 to-red-600',
-      border: 'border-red-200',
-      active: 'ring-2 ring-red-500 ring-offset-2',
-      value: 'text-red-700',
-      title: 'text-red-700'
-    },
-    amber: {
-      bg: 'bg-gradient-to-br from-amber-50 to-amber-100/50',
-      icon: 'bg-gradient-to-br from-amber-500 to-amber-600',
-      border: 'border-amber-200',
-      active: 'ring-2 ring-amber-500 ring-offset-2',
-      value: 'text-amber-700',
-      title: 'text-amber-700'
-    },
-    emerald: {
-      bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
-      icon: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-      border: 'border-emerald-200',
-      active: 'ring-2 ring-emerald-500 ring-offset-2',
-      value: 'text-emerald-700',
-      title: 'text-emerald-700'
-    },
-    sky: {
-      bg: 'bg-gradient-to-br from-sky-50 to-sky-100/50',
-      icon: 'bg-gradient-to-br from-sky-500 to-sky-600',
-      border: 'border-sky-200',
-      active: 'ring-2 ring-sky-500 ring-offset-2',
-      value: 'text-sky-700',
-      title: 'text-sky-700'
-    },
-  };
-
-  const classes = colorClasses[color];
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={cn(
-        "relative cursor-pointer rounded-2xl border shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden",
-        classes.bg,
-        classes.border,
-        isActive && classes.active
-      )}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent pointer-events-none" />
-      {badge && (
-        <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs shadow-md">
-          {badge}
-        </Badge>
-      )}
-      <div className="relative flex items-start justify-between p-6">
-        <div className="space-y-3">
-          <p className={cn("text-sm font-semibold", classes.title)}>{title}</p>
-          <p className={cn("text-3xl font-bold tracking-tight", classes.value)}>{value}</p>
-          {subtitle && (
-            <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
-          )}
-        </div>
-        <div className={cn("p-3 rounded-xl shadow-md", classes.icon)}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-      </div>
-    </motion.div>
-  );
+// ===== System Colors =====
+const colors = {
+  primary: '174 80% 40%',      // Teal
+  primaryLight: '173 75% 48%',
+  primaryDark: '175 84% 32%',
+  accent: '25 90% 92%',        // Orange
+  accentForeground: '25 85% 55%',
+  success: '142 56% 42%',
+  warning: '25 85% 55%',
+  destructive: '0 65% 51%',
+  background: '0 0% 96%',
+  card: '0 0% 100%',
+  border: '0 0% 85%',
+  muted: '0 0% 92%',
+  foreground: '0 0% 15%',
 };
 
 // ===== Risk Badge Component =====
-const RiskBadge: React.FC<{ level: string; score: number }> = ({ level, score }) => {
-  const config: Record<string, { bg: string; text: string; label: string; color: string }> = {
-    CRITICAL: { bg: 'bg-red-100', text: 'text-red-700', label: 'حرج', color: 'bg-red-500' },
-    HIGH: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'عالي', color: 'bg-orange-500' },
-    MEDIUM: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'متوسط', color: 'bg-yellow-500' },
-    LOW: { bg: 'bg-green-100', text: 'text-green-700', label: 'منخفض', color: 'bg-green-500' },
-    MONITOR: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'مراقبة', color: 'bg-blue-500' },
+interface RiskBadgeProps {
+  level: string;
+  score: number;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const RiskBadge: React.FC<RiskBadgeProps> = ({ level, score, size = 'md' }) => {
+  const config: Record<string, {
+    bg: string;
+    text: string;
+    label: string;
+    color: string;
+    icon: React.ElementType;
+  }> = {
+    CRITICAL: {
+      bg: 'bg-red-50 dark:bg-red-950/20',
+      text: 'text-red-700 dark:text-red-400',
+      label: 'حرج',
+      color: 'bg-red-500',
+      icon: AlertCircle,
+    },
+    HIGH: {
+      bg: 'bg-orange-50 dark:bg-orange-950/20',
+      text: 'text-orange-700 dark:text-orange-400',
+      label: 'عالي',
+      color: 'bg-orange-500',
+      icon: AlertTriangle,
+    },
+    MEDIUM: {
+      bg: 'bg-amber-50 dark:bg-amber-950/20',
+      text: 'text-amber-700 dark:text-amber-400',
+      label: 'متوسط',
+      color: 'bg-amber-500',
+      icon: Clock,
+    },
+    LOW: {
+      bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+      text: 'text-emerald-700 dark:text-emerald-400',
+      label: 'منخفض',
+      color: 'bg-emerald-500',
+      icon: CheckCircle,
+    },
+    MONITOR: {
+      bg: 'bg-blue-50 dark:bg-blue-950/20',
+      text: 'text-blue-700 dark:text-blue-400',
+      label: 'مراقبة',
+      color: 'bg-blue-500',
+      icon: Eye,
+    },
   };
 
-  const { bg, text, label, color } = config[level] || config.MONITOR;
+  const { bg, text, label, color, icon: Icon } = config[level] || config.MONITOR;
+  const sizeClasses = {
+    sm: 'text-[10px] px-2 py-0.5',
+    md: 'text-xs px-2.5 py-1',
+    lg: 'text-sm px-3 py-1.5',
+  };
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <Badge className={cn(bg, text, 'font-medium')}>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <Badge className={cn(bg, text, sizeClasses[size], 'font-semibold gap-1 border-0')}>
+          <Icon className={size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-4 h-4' : 'w-3.5 h-3.5'} />
           {label}
         </Badge>
-        <span className="text-xs text-neutral-500">{score}%</span>
+        <span className="text-xs text-muted-foreground font-medium">{score}%</span>
       </div>
       {/* Visual Risk Indicator */}
       <div className="flex items-center gap-2">
-        <div className="w-12 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-          <div 
-            className={cn("h-full transition-all", color)}
-            style={{ width: `${Math.min(score, 100)}%` }}
+        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(score, 100)}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className={cn('h-full rounded-full', color)}
           />
         </div>
-        {score >= 80 && (
-          <AlertCircle className="w-3 h-3 text-red-500" />
-        )}
-        {score >= 60 && score < 80 && (
-          <AlertTriangle className="w-3 h-3 text-orange-500" />
-        )}
+        {score >= 80 && <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />}
+        {score >= 60 && score < 80 && <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0" />}
+      </div>
+    </div>
+  );
+};
+
+// ===== View Mode Types =====
+type ViewMode = 'cards' | 'compact' | 'kanban';
+type SortField = 'total_debt' | 'days_overdue' | 'risk_score' | 'last_contact_days' | 'customer_name';
+type SortDirection = 'asc' | 'desc';
+
+// ===== Info Chip Component =====
+interface InfoChipProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  color?: string;
+}
+
+const InfoChip: React.FC<InfoChipProps> = ({ icon: Icon, label, value, color = colors.primary }) => {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card">
+      <Icon className="w-4 h-4 flex-shrink-0" style={{ color: `hsl(${color})` }} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
+        <p className="text-sm font-semibold truncate" style={{ color: `hsl(${color})` }}>
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -243,7 +261,14 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkRemindersDialogOpen, setBulkRemindersDialogOpen] = useState(false);
   const [scheduleCallsDialogOpen, setScheduleCallsDialogOpen] = useState(false);
-  const itemsPerPage = 10;
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+
+  // New UX States
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  const [sortField, setSortField] = useState<SortField>('total_debt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showTodayTasks, setShowTodayTasks] = useState(true);
 
   // Hooks
   const { data: stats, isLoading: statsLoading } = useDelinquencyStats();
@@ -264,23 +289,117 @@ export const DelinquentCustomersTab: React.FC = () => {
   const { data: rawCustomers, isLoading: customersLoading, error } = useDelinquentCustomers(filters);
 
   // Apply contract status filter locally
-  const customers = useMemo(() => {
+  const filteredCustomers = useMemo(() => {
     if (!rawCustomers) return [];
     if (contractStatusFilter === 'all') return rawCustomers;
     return rawCustomers.filter(c => c.contract_status === contractStatusFilter);
   }, [rawCustomers, contractStatusFilter]);
+
+  // Apply sorting
+  const customers = useMemo(() => {
+    if (!filteredCustomers) return [];
+    const sorted = [...filteredCustomers].sort((a, b) => {
+      let aVal: number | string = 0;
+      let bVal: number | string = 0;
+
+      switch (sortField) {
+        case 'total_debt':
+          aVal = a.total_debt || 0;
+          bVal = b.total_debt || 0;
+          break;
+        case 'days_overdue':
+          aVal = a.days_overdue || 0;
+          bVal = b.days_overdue || 0;
+          break;
+        case 'risk_score':
+          aVal = a.risk_score || 0;
+          bVal = b.risk_score || 0;
+          break;
+        case 'last_contact_days':
+          aVal = a.last_contact_days || 0;
+          bVal = b.last_contact_days || 0;
+          break;
+        case 'customer_name':
+          aVal = a.customer_name || '';
+          bVal = b.customer_name || '';
+          break;
+      }
+
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sortDirection === 'asc'
+          ? aVal.localeCompare(bVal, 'ar')
+          : bVal.localeCompare(aVal, 'ar');
+      }
+
+      return sortDirection === 'asc'
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    });
+    return sorted;
+  }, [filteredCustomers, sortField, sortDirection]);
+
+  // Calculate today's tasks (customers needing immediate action)
+  const todaysTasks = useMemo(() => {
+    if (!customers) return { urgentCalls: [], noContact7Days: [], promisedPayments: [] };
+
+    const urgentCalls = customers.filter(c =>
+      c.risk_level === 'CRITICAL' || (c.days_overdue || 0) > 90
+    ).slice(0, 5);
+
+    const noContact7Days = customers.filter(c =>
+      (c.last_contact_days || 0) >= 7
+    ).slice(0, 5);
+
+    return { urgentCalls, noContact7Days, promisedPayments: [] };
+  }, [customers]);
+
+  // Executive summary calculations
+  const executiveSummary = useMemo(() => {
+    if (!customers) return { urgentToday: 0, over90Days: 0, over90Amount: 0, noContactWeek: 0 };
+
+    const urgentToday = customers.filter(c => c.risk_level === 'CRITICAL').length;
+    const over90Days = customers.filter(c => (c.days_overdue || 0) > 90).length;
+    const over90Amount = customers
+      .filter(c => (c.days_overdue || 0) > 90)
+      .reduce((sum, c) => sum + (c.total_debt || 0), 0);
+    const noContactWeek = customers.filter(c => (c.last_contact_days || 0) >= 7).length;
+
+    return { urgentToday, over90Days, over90Amount, noContactWeek };
+  }, [customers]);
+
+  // Kanban grouped customers
+  const kanbanGroups = useMemo(() => {
+    if (!customers) return { CRITICAL: [], HIGH: [], MEDIUM: [], LOW: [] };
+
+    return {
+      CRITICAL: customers.filter(c => c.risk_level === 'CRITICAL'),
+      HIGH: customers.filter(c => c.risk_level === 'HIGH'),
+      MEDIUM: customers.filter(c => c.risk_level === 'MEDIUM'),
+      LOW: customers.filter(c => c.risk_level === 'LOW' || !c.risk_level),
+    };
+  }, [customers]);
+
+  // Handle sort toggle
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  }, [sortField]);
 
   // Pagination
   const paginatedCustomers = useMemo(() => {
     if (!customers) return [];
     const start = (currentPage - 1) * itemsPerPage;
     return customers.slice(start, start + itemsPerPage);
-  }, [customers, currentPage]);
+  }, [customers, currentPage, itemsPerPage]);
 
   const totalPages = useMemo(() => {
     if (!customers) return 1;
     return Math.ceil(customers.length / itemsPerPage);
-  }, [customers]);
+  }, [customers, itemsPerPage]);
 
   // Handle stat card click for filtering
   const handleStatCardClick = useCallback((filter: string) => {
@@ -294,15 +413,15 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   // Handle select all
   const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked && customers) {
-      const allIds = new Set(customers.map(c => c.customer_id));
+    if (checked && paginatedCustomers) {
+      const allIds = new Set(paginatedCustomers.map(c => c.customer_id));
       setSelectedIds(allIds);
-      setSelectedCustomers(customers);
+      setSelectedCustomers(paginatedCustomers);
     } else {
       setSelectedIds(new Set());
       setSelectedCustomers([]);
     }
-  }, [customers]);
+  }, [paginatedCustomers]);
 
   // Handle select individual
   const handleSelectCustomer = useCallback((customer: DelinquentCustomer, checked: boolean) => {
@@ -315,7 +434,7 @@ export const DelinquentCustomersTab: React.FC = () => {
       }
       return newSet;
     });
-    
+
     setSelectedCustomers(prev => {
       if (checked) {
         return [...prev, customer];
@@ -334,7 +453,6 @@ export const DelinquentCustomersTab: React.FC = () => {
 
   // Handle record payment - Navigate to quick payment page with customer selected
   const handleRecordPayment = useCallback((customer: DelinquentCustomer) => {
-    // Navigate to quick payment page with customer info as query params
     const params = new URLSearchParams({
       customerId: customer.customer_id,
       customerName: customer.customer_name || '',
@@ -379,8 +497,6 @@ export const DelinquentCustomersTab: React.FC = () => {
       return;
     }
 
-    // Navigate to the first customer's lawsuit preparation page
-    // User can prepare documents there before submitting the case
     const firstCustomer = selectedCustomers[0];
     if (firstCustomer?.contract_id) {
       navigate(`/legal/lawsuit/prepare/${firstCustomer.contract_id}`);
@@ -399,10 +515,10 @@ export const DelinquentCustomersTab: React.FC = () => {
 
     setBulkDeleting(true);
     toast.info(`جاري حذف ${selectedCustomers.length} عقد نهائياً...`);
-    
+
     let successCount = 0;
     let failCount = 0;
-    
+
     for (const customer of selectedCustomers) {
       try {
         await deleteContractPermanently.mutateAsync(customer.contract_id);
@@ -412,17 +528,17 @@ export const DelinquentCustomersTab: React.FC = () => {
         failCount++;
       }
     }
-    
+
     setBulkDeleting(false);
     setBulkDeleteDialogOpen(false);
-    
+
     if (successCount > 0) {
       toast.success(`تم حذف ${successCount} عقد نهائياً`);
     }
     if (failCount > 0) {
       toast.error(`فشل حذف ${failCount} عقد`);
     }
-    
+
     setSelectedCustomers([]);
     setSelectedIds(new Set());
   }, [selectedCustomers, deleteContractPermanently]);
@@ -434,7 +550,6 @@ export const DelinquentCustomersTab: React.FC = () => {
       return;
     }
 
-    // Create CSV content
     const headers = ['رقم العميل', 'اسم العميل', 'رقم العقد', 'لوحة المركبة', 'الإيجار المتأخر', 'غرامة التأخير', 'المخالفات', 'إجمالي المستحق', 'أيام التأخير', 'مستوى المخاطر', 'الهاتف'];
     const rows = customers.map(c => [
       c.customer_code || '',
@@ -455,7 +570,6 @@ export const DelinquentCustomersTab: React.FC = () => {
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
 
-    // Add BOM for Arabic support
     const bom = '\uFEFF';
     const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -494,25 +608,25 @@ export const DelinquentCustomersTab: React.FC = () => {
         <style>
           @page { size: A4; margin: 15mm; }
           body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; color: #333; font-size: 12px; }
-          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E55B5B; padding-bottom: 16px; margin-bottom: 20px; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #14b8a6; padding-bottom: 16px; margin-bottom: 20px; }
           .company-info { text-align: right; }
-          .company-name { font-size: 22px; font-weight: bold; color: #E55B5B; }
-          .report-title { text-align: center; padding: 10px 30px; border: 2px solid #E55B5B; border-radius: 8px; background: #FEF2F2; }
-          .title-text { font-size: 18px; font-weight: bold; color: #E55B5B; }
+          .company-name { font-size: 22px; font-weight: bold; color: #0d9488; }
+          .report-title { text-align: center; padding: 10px 30px; border: 2px solid #14b8a6; border-radius: 8px; background: #f0fdfa; }
+          .title-text { font-size: 18px; font-weight: bold; color: #0d9488; }
           .logo { width: 100px; height: auto; }
-          .summary { display: flex; justify-content: center; gap: 40px; margin: 20px 0; padding: 16px; background: #FEF2F2; border-radius: 8px; }
+          .summary { display: flex; justify-content: center; gap: 40px; margin: 20px 0; padding: 16px; background: #f0fdfa; border-radius: 8px; }
           .summary-item { text-align: center; }
-          .summary-value { font-size: 28px; font-weight: bold; color: #E55B5B; }
+          .summary-value { font-size: 28px; font-weight: bold; color: #0d9488; }
           .summary-label { font-size: 12px; color: #666; }
           table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          th { background: linear-gradient(135deg, #E55B5B 0%, #DC2626 100%); color: white; padding: 10px 6px; font-weight: bold; text-align: right; }
+          th { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 10px 6px; font-weight: bold; text-align: right; }
           td { padding: 8px 6px; border: 1px solid #e5e7eb; text-align: right; }
           tr:nth-child(even) { background: #f9fafb; }
-          .amount { font-weight: bold; color: #E55B5B; }
-          .risk-critical { background: #FEE2E2; color: #DC2626; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-          .risk-high { background: #FFEDD5; color: #EA580C; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-          .risk-medium { background: #FEF3C7; color: #D97706; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-          .risk-low { background: #D1FAE5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+          .amount { font-weight: bold; color: #0d9488; }
+          .risk-critical { background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+          .risk-high { background: #ffedd5; color: #ea580c; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+          .risk-medium { background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+          .risk-low { background: #d1fae5; color: #059669; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
           .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; }
           .footer-item { text-align: center; }
           .footer-line { width: 120px; border-top: 1px solid #999; margin: 30px auto 5px; }
@@ -549,7 +663,7 @@ export const DelinquentCustomersTab: React.FC = () => {
             <div class="summary-value">${totalViolations.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             <div class="summary-label">المخالفات المرورية</div>
           </div>
-          <div class="summary-item" style="border-right: 2px solid #E55B5B; padding-right: 20px;">
+          <div class="summary-item" style="border-right: 2px solid #14b8a6; padding-right: 20px;">
             <div class="summary-value">${totalDebt.toLocaleString('en-US', { minimumFractionDigits: 2 })} QAR</div>
             <div class="summary-label">الإجمالي المستحق</div>
           </div>
@@ -582,8 +696,8 @@ export const DelinquentCustomersTab: React.FC = () => {
                   <div style="font-size: 10px; color: #666;">🚗 ${c.vehicle_plate || '-'}</div>
                 </td>
                 <td class="amount">${(c.overdue_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td style="color: #EA580C;">${(c.late_penalty || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td style="color: #DC2626;">${(c.violations_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}${c.violations_count > 0 ? ` (${c.violations_count})` : ''}</td>
+                <td style="color: #ea580c;">${(c.late_penalty || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td style="color: #dc2626;">${(c.violations_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}${c.violations_count > 0 ? ` (${c.violations_count})` : ''}</td>
                 <td class="amount" style="font-size: 13px;">${(c.total_debt || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 <td>${(c.days_overdue || 0).toLocaleString('en-US')}</td>
                 <td><span class="risk-${c.risk_level?.toLowerCase() || 'low'}">${
@@ -629,15 +743,25 @@ export const DelinquentCustomersTab: React.FC = () => {
     setCurrentPage(1);
   }, []);
 
-  const activeFiltersCount = [searchTerm, riskLevelFilter !== 'all', overduePeriodFilter !== 'all', amountRangeFilter !== 'all', violationsFilter !== 'all', contractStatusFilter !== 'all'].filter(Boolean).length;
+  const activeFiltersCount = [
+    searchTerm,
+    riskLevelFilter !== 'all',
+    overduePeriodFilter !== 'all',
+    amountRangeFilter !== 'all',
+    violationsFilter !== 'all',
+    contractStatusFilter !== 'all',
+  ].filter(Boolean).length;
 
   // Loading state
   if (statsLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-500">جاري تحميل البيانات...</p>
+          <div
+            className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+            style={{ borderColor: `hsl(${colors.primary})`, borderTopColor: 'transparent' }}
+          />
+          <p className="text-muted-foreground">جاري تحميل البيانات...</p>
         </div>
       </div>
     );
@@ -646,628 +770,1272 @@ export const DelinquentCustomersTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Quick Actions Bar */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">
-              إجراءات سريعة
-            </span>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border bg-card p-4 shadow-sm"
+        style={{
+          background: `linear-gradient(135deg, hsl(${colors.accent} / 0.3), hsl(${colors.accent} / 0.1))`,
+          borderColor: `hsl(${colors.accentForeground} / 0.3)`,
+        }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-xl shadow-md"
+              style={{ backgroundColor: `hsl(${colors.accentForeground})` }}
+            >
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <span className="text-sm font-bold" style={{ color: `hsl(${colors.accentForeground})` }}>
+                إجراءات سريعة
+              </span>
+              <p className="text-xs text-muted-foreground">تنفيذ مهام التحصيل المتكررة</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="outline"
-              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+              className="gap-2 rounded-xl"
+              style={{
+                borderColor: `hsl(${colors.accentForeground} / 0.4)`,
+              }}
               onClick={() => setBulkRemindersDialogOpen(true)}
             >
               <Mail className="w-4 h-4" />
-              إرسال تذكيرات جماعية
+              <span className="hidden sm:inline">إرسال تذكيرات</span>
+              <span className="sm:hidden">تذكيرات</span>
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+              className="gap-2 rounded-xl"
+              style={{
+                borderColor: `hsl(${colors.accentForeground} / 0.4)`,
+              }}
               onClick={() => setScheduleCallsDialogOpen(true)}
             >
               <Phone className="w-4 h-4" />
-              جدولة مكالمات
+              <span className="hidden sm:inline">جدولة مكالمات</span>
+              <span className="sm:hidden">مكالمات</span>
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+              className="gap-2 rounded-xl"
+              style={{
+                borderColor: `hsl(${colors.destructive} / 0.4)`,
+                color: `hsl(${colors.destructive})`,
+              }}
               onClick={() => {
                 setRiskLevelFilter('CRITICAL');
                 toast.success(`تم تصفية العرض للحالات الحرجة (${customers?.filter(c => c.risk_level === 'CRITICAL').length || 0} عميل)`);
               }}
             >
               <AlertTriangle className="w-4 h-4" />
-              عرض الحالات العاجلة
+              <span className="hidden sm:inline">الحالات العاجلة</span>
+              <span className="sm:hidden">عاجل</span>
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <Users className="w-7 h-7 text-white" />
+      {/* Today's Tasks */}
+      {showTodayTasks && (todaysTasks.urgentCalls.length > 0 || todaysTasks.noContact7Days.length > 0) && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border bg-card p-5 shadow-sm"
+          style={{
+            borderColor: `hsl(${colors.primary} / 0.2)`,
+            backgroundColor: `hsl(${colors.primary} / 0.03)`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-xl shadow-md"
+                style={{ backgroundColor: `hsl(${colors.primary})` }}
+              >
+                <CalendarClock className="w-5 h-5 text-white" />
               </div>
               <div>
-            <h1 className="text-2xl font-bold text-neutral-900">العملاء المتأخرون عن الدفع</h1>
-            <p className="text-sm text-neutral-500">
-              تتبع ومتابعة العملاء المتأخرين • آخر تحديث: {format(new Date(), 'dd MMM yyyy', { locale: ar })}
-            </p>
+                <h3 className="font-bold text-base text-foreground">مهام اليوم</h3>
+                <p className="text-xs text-muted-foreground">أولويات التحصيل لهذا اليوم</p>
               </div>
             </div>
-
-        <div className="flex items-center gap-3">
             <Button
-              variant="outline"
-              onClick={() => refreshDelinquentCustomers.mutate()}
-              disabled={refreshDelinquentCustomers.isPending}
-              className="gap-2"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTodayTasks(false)}
+              className="h-8 w-8 p-0 rounded-lg"
             >
-            <RefreshCw className={cn("h-4 w-4", refreshDelinquentCustomers.isPending && "animate-spin")} />
-            تحديث
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handlePrintReport}
-            className="gap-2"
-          >
-            <Printer className="h-4 w-4" />
-            طباعة
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            تصدير
+              <X className="w-4 h-4" />
             </Button>
           </div>
-      </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Urgent Calls */}
+            {todaysTasks.urgentCalls.length > 0 && (
+              <div className="rounded-xl border-2 bg-card p-4" style={{ borderColor: `hsl(${colors.destructive} / 0.2)` }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `hsl(${colors.destructive})` }}
+                  >
+                    <Phone className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm" style={{ color: `hsl(${colors.destructive})` }}>
+                      مكالمات عاجلة
+                    </p>
+                    <p className="text-xs text-muted-foreground">{todaysTasks.urgentCalls.length} عميل حرج</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {todaysTasks.urgentCalls.slice(0, 3).map((c, i) => (
+                    <motion.div
+                      key={c.customer_id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex items-center justify-between rounded-lg border bg-card p-3 cursor-pointer transition-all hover:shadow-md"
+                      style={{ borderColor: `hsl(${colors.destructive} / 0.15)` }}
+                      onClick={() => handleViewDetails(c)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm font-semibold truncate">{c.customer_name}</span>
+                        <Badge
+                          className="text-[10px] px-2 py-0 gap-1"
+                          style={{
+                            backgroundColor: `hsl(${colors.destructive} / 0.1)`,
+                            color: `hsl(${colors.destructive})`,
+                            borderColor: `hsl(${colors.destructive} / 0.2)`,
+                          }}
+                        >
+                          <Clock className="w-3 h-3" />
+                          {c.days_overdue} يوم
+                        </Badge>
+                      </div>
+                      <span
+                        className="text-sm font-bold flex-shrink-0"
+                        style={{ color: `hsl(${colors.destructive})` }}
+                      >
+                        {formatCurrency(c.total_debt || 0)}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="إجمالي العملاء المتأخرين"
-          value={stats?.totalDelinquent || 0}
-          subtitle={`${(stats?.criticalRisk || 0) + (stats?.highRisk || 0)} عميل عالي المخاطر`}
-          icon={Users}
-          color="rose"
-          onClick={() => clearFilters()}
-          isActive={riskLevelFilter === 'all' && !searchTerm}
-        />
-        <StatCard
-          title="المبالغ المعرضة للخطر"
-          value={formatCurrency(stats?.totalAmountAtRisk || 0)}
-          subtitle="إيجارات متأخرة"
-          icon={DollarSign}
-          color="red"
-        />
-        <StatCard
-          title="الغرامات المتراكمة"
-          value={formatCurrency(stats?.totalPenalties || 0)}
-          subtitle={`متوسط ${Math.round(stats?.averageDaysOverdue || 0)} يوم تأخير`}
-          icon={AlertTriangle}
-          color="amber"
-        />
-        <StatCard
-          title="يحتاجون إجراء فوري"
-          value={(stats?.criticalRisk || 0) + (stats?.highRisk || 0)}
-          subtitle={`${stats?.needLegalCase || 0} يحتاجون قضية قانونية`}
-          icon={Zap}
-          color="red"
-          badge={stats?.needBlacklist ? `${stats.needBlacklist} قائمة سوداء` : undefined}
-          onClick={() => handleStatCardClick('CRITICAL')}
-          isActive={riskLevelFilter === 'CRITICAL' || riskLevelFilter === 'HIGH'}
-        />
-      </div>
+            {/* No Contact in 7 Days */}
+            {todaysTasks.noContact7Days.length > 0 && (
+              <div className="rounded-xl border-2 bg-card p-4" style={{ borderColor: `hsl(${colors.warning} / 0.2)` }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `hsl(${colors.warning})` }}
+                  >
+                    <Clock className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm" style={{ color: `hsl(${colors.warning})` }}>
+                      لم يتم التواصل
+                    </p>
+                    <p className="text-xs text-muted-foreground">منذ 7 أيام أو أكثر</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {todaysTasks.noContact7Days.slice(0, 3).map((c, i) => (
+                    <motion.div
+                      key={c.customer_id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex items-center justify-between rounded-lg border bg-card p-3 cursor-pointer transition-all hover:shadow-md"
+                      style={{ borderColor: `hsl(${colors.warning} / 0.15)` }}
+                      onClick={() => handleViewDetails(c)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm font-semibold truncate">{c.customer_name}</span>
+                        <Badge
+                          className="text-[10px] px-2 py-0 gap-1"
+                          style={{
+                            backgroundColor: `hsl(${colors.warning} / 0.1)`,
+                            color: `hsl(${colors.warning})`,
+                            borderColor: `hsl(${colors.warning} / 0.2)`,
+                          }}
+                        >
+                          <Calendar className="w-3 h-3" />
+                          {c.last_contact_days} يوم
+                        </Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-lg flex-shrink-0"
+                        style={{ color: `hsl(${colors.warning})` }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (c.phone) {
+                            window.open(`tel:${c.phone}`, '_self');
+                          }
+                        }}
+                      >
+                        <Phone className="w-4 h-4" />
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Cancelled Contracts Warning */}
       {customers && customers.filter(c => c.contract_status === 'cancelled').length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-l from-red-100 via-red-50 to-white rounded-2xl p-4 border border-red-200 shadow-sm"
+          className="rounded-2xl border bg-card p-4 shadow-sm"
+          style={{
+            borderColor: `hsl(${colors.destructive} / 0.3)`,
+            backgroundColor: `hsl(${colors.destructive} / 0.05)`,
+          }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-xl shadow-md"
+                style={{ backgroundColor: `hsl(${colors.destructive})` }}
+              >
                 <X className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-red-700 text-lg">
+                <h3 className="font-bold text-base" style={{ color: `hsl(${colors.destructive})` }}>
                   {customers.filter(c => c.contract_status === 'cancelled').length} عقد ملغي يحتاج متابعة
                 </h3>
-                <p className="text-sm text-red-600">
-                  هذه العقود ملغية ولكن لا تزال هناك مستحقات مالية على العملاء - يجب استرداد المركبات ومتابعة التحصيل
+                <p className="text-sm text-muted-foreground">
+                  هذه العقود ملغية ولكن لا تزال هناك مستحقات مالية على العملاء
                 </p>
               </div>
             </div>
             <Button
               variant="outline"
-              className="border-red-300 text-red-700 hover:bg-red-100"
+              className="gap-2 rounded-xl shrink-0"
+              style={{
+                borderColor: `hsl(${colors.destructive} / 0.4)`,
+                color: `hsl(${colors.destructive})`,
+              }}
               onClick={() => { setContractStatusFilter('cancelled'); setCurrentPage(1); }}
             >
-              <Filter className="w-4 h-4 ml-2" />
+              <Filter className="w-4 h-4" />
               عرض الملغية فقط
             </Button>
           </div>
         </motion.div>
       )}
 
-      {/* Risk Level Status Bar */}
-      <div className="bg-white rounded-2xl p-3 border border-neutral-200 shadow-sm">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-neutral-500 ml-2">مستوى المخاطر:</span>
-          
-          {[
-            { id: 'CRITICAL', label: 'حرج', count: stats?.criticalRisk || 0, color: 'red' },
-            { id: 'HIGH', label: 'عالي', count: stats?.highRisk || 0, color: 'orange' },
-            { id: 'MEDIUM', label: 'متوسط', count: stats?.mediumRisk || 0, color: 'yellow' },
-            { id: 'LOW', label: 'منخفض', count: stats?.lowRisk || 0, color: 'green' },
-          ].map(({ id, label, count, color }) => (
-            <button
-              key={id}
-              onClick={() => handleStatCardClick(id)}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-                riskLevelFilter === id
-                  ? `bg-${color}-500 text-white shadow-md`
-                  : `bg-${color}-50 text-${color}-700 hover:bg-${color}-100 border border-${color}-200`,
-                // Fallback for Tailwind JIT
-                id === 'CRITICAL' && (riskLevelFilter === id ? 'bg-red-500 text-white' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'),
-                id === 'HIGH' && (riskLevelFilter === id ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'),
-                id === 'MEDIUM' && (riskLevelFilter === id ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'),
-                id === 'LOW' && (riskLevelFilter === id ? 'bg-green-500 text-white' : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'),
-              )}
-            >
-              <span className="w-2 h-2 rounded-full bg-current opacity-70"></span>
-              {label}
-              <span className={cn(
-                "px-1.5 py-0.5 rounded-full text-xs",
-                riskLevelFilter === id ? "bg-white/20" : `bg-${color}-100`
-              )}>
-                {count}
-              </span>
-            </button>
-          ))}
-
-          {/* Contract Status Quick Filters */}
-          <div className="flex items-center gap-1 mr-4 pr-4 border-r border-neutral-200">
-            <span className="text-sm text-neutral-400 ml-2">العقد:</span>
-            {[
-              { id: 'active', label: 'نشط', count: customers?.filter(c => c.contract_status === 'active').length || 0, color: 'green' },
-              { id: 'cancelled', label: 'ملغي', count: customers?.filter(c => c.contract_status === 'cancelled').length || 0, color: 'red' },
-              { id: 'closed', label: 'مغلق', count: customers?.filter(c => c.contract_status === 'closed').length || 0, color: 'gray' },
-              { id: 'under_legal_procedure', label: 'إجراء قانوني', count: customers?.filter(c => c.contract_status === 'under_legal_procedure').length || 0, color: 'violet' },
-            ].filter(f => f.count > 0).map(({ id, label, count, color }) => (
-              <button
-                key={id}
-                onClick={() => { 
-                  setContractStatusFilter(contractStatusFilter === id ? 'all' : id); 
-                  setCurrentPage(1); 
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all",
-                  contractStatusFilter === id
-                    ? id === 'cancelled' ? 'bg-red-500 text-white' 
-                    : id === 'closed' ? 'bg-slate-500 text-white' 
-                    : id === 'under_legal_procedure' ? 'bg-violet-500 text-white'
-                    : 'bg-green-500 text-white'
-                    : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' 
-                    : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
-                    : id === 'under_legal_procedure' ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
-                    : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                )}
-              >
-                {id === 'cancelled' && <X className="w-3 h-3" />}
-                {id === 'closed' && <CheckCircle className="w-3 h-3" />}
-                {id === 'under_legal_procedure' && <Gavel className="w-3 h-3" />}
-                {label}
-                <span className="bg-white/20 px-1 rounded text-[10px]">{count}</span>
-              </button>
-            ))}
+      {/* Page Header & Actions */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+            style={{
+              background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
+            }}
+          >
+            <Users className="w-7 h-7 text-white" />
           </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              العملاء المتأخرون عن الدفع
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              تتبع ومتابعة العملاء المتأخرين • آخر تحديث: {format(new Date(), 'dd MMM yyyy', { locale: ar })}
+            </p>
+          </div>
+        </div>
 
-          {activeFiltersCount > 0 && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-all mr-auto"
-            >
-              <X className="w-3 h-3" />
-              إلغاء الفلاتر ({activeFiltersCount})
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refreshDelinquentCustomers.mutate()}
+            disabled={refreshDelinquentCustomers.isPending}
+            className="gap-2 rounded-xl"
+          >
+            <RefreshCw className={cn('h-4 w-4', refreshDelinquentCustomers.isPending && 'animate-spin')} />
+            <span className="hidden sm:inline">تحديث</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintReport}
+            className="gap-2 rounded-xl"
+          >
+            <Printer className="h-4 w-4" />
+            <span className="hidden sm:inline">طباعة</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            className="gap-2 rounded-xl"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">تصدير</span>
+          </Button>
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div className="bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                  <Input
-              placeholder="بحث... (الاسم، رقم العميل، العقد، المركبة)"
-                    value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="pr-12 h-12 rounded-xl border-neutral-200"
-                  />
-              </div>
+      {/* Filters & Controls Section */}
+      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden" style={{ borderColor: `hsl(${colors.border})` }}>
+        {/* Risk Level Status Bar */}
+        <div className="border-b bg-muted/30 px-4 py-3" style={{ borderColor: `hsl(${colors.border})` }}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground font-medium ml-2">مستوى المخاطر:</span>
 
-          {/* Period Filter */}
-          <Select value={overduePeriodFilter} onValueChange={(v) => { setOverduePeriodFilter(v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
-              <Clock className="w-4 h-4 ml-2 text-neutral-400" />
-                  <SelectValue placeholder="فترة التأخير" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الفترات</SelectItem>
-                  <SelectItem value="<30">أقل من 30 يوم</SelectItem>
-                  <SelectItem value="30-60">30-60 يوم</SelectItem>
-                  <SelectItem value="60-90">60-90 يوم</SelectItem>
-                  <SelectItem value=">90">أكثر من 90 يوم</SelectItem>
-                </SelectContent>
-              </Select>
+            {[
+              { id: 'CRITICAL', label: 'حرج', count: stats?.criticalRisk || 0, color: 'red' },
+              { id: 'HIGH', label: 'عالي', count: stats?.highRisk || 0, color: 'orange' },
+              { id: 'MEDIUM', label: 'متوسط', count: stats?.mediumRisk || 0, color: 'amber' },
+              { id: 'LOW', label: 'منخفض', count: stats?.lowRisk || 0, color: 'emerald' },
+            ].map(({ id, label, count, color }) => (
+              <button
+                key={id}
+                onClick={() => handleStatCardClick(id)}
+                className={cn(
+                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all',
+                  riskLevelFilter === id
+                    ? `bg-${color}-500 text-white shadow-md`
+                    : `bg-${color}-50 text-${color}-700 hover:bg-${color}-100 border border-${color}-200`,
+                  // Fallback classes for Tailwind JIT
+                  id === 'CRITICAL' && (riskLevelFilter === id ? 'bg-red-500 text-white shadow-md' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'),
+                  id === 'HIGH' && (riskLevelFilter === id ? 'bg-orange-500 text-white shadow-md' : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'),
+                  id === 'MEDIUM' && (riskLevelFilter === id ? 'bg-amber-500 text-white shadow-md' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'),
+                  id === 'LOW' && (riskLevelFilter === id ? 'bg-emerald-500 text-white shadow-md' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'),
+                )}
+              >
+                <span className="w-2 h-2 rounded-full bg-current opacity-70" />
+                {label}
+                <span
+                  className={cn(
+                    'px-1.5 py-0.5 rounded-full text-xs font-bold',
+                    riskLevelFilter === id ? 'bg-white/20' : `bg-${color}-100`,
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            ))}
 
-              {/* Amount Range Filter */}
-          <Select value={amountRangeFilter} onValueChange={(v) => { setAmountRangeFilter(v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
-              <DollarSign className="w-4 h-4 ml-2 text-neutral-400" />
-                  <SelectValue placeholder="نطاق المبلغ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المبالغ</SelectItem>
-                  <SelectItem value="0-1000">أقل من 1,000</SelectItem>
-                  <SelectItem value="1000-5000">1,000 - 5,000</SelectItem>
-                  <SelectItem value="5000-10000">5,000 - 10,000</SelectItem>
-                  <SelectItem value="10000+">أكثر من 10,000</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Violations Filter */}
-          <Select value={violationsFilter} onValueChange={(v) => { setViolationsFilter(v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
-              <AlertCircle className="w-4 h-4 ml-2 text-neutral-400" />
-                  <SelectValue placeholder="المخالفات" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="yes">يوجد مخالفات</SelectItem>
-                  <SelectItem value="no">لا يوجد مخالفات</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Contract Status Filter */}
-          <Select value={contractStatusFilter} onValueChange={(v) => { setContractStatusFilter(v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-full md:w-[180px] h-12 rounded-xl">
-              <FileText className="w-4 h-4 ml-2 text-neutral-400" />
-                  <SelectValue placeholder="حالة العقد" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الحالات</SelectItem>
-                  <SelectItem value="active">نشط</SelectItem>
-                  <SelectItem value="cancelled">ملغي</SelectItem>
-                  <SelectItem value="closed">مغلق</SelectItem>
-                  <SelectItem value="under_legal_procedure">تحت الإجراء القانوني</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Contract Status Quick Filters */}
+            <div className="flex items-center gap-1 mr-4 pr-4 border-r" style={{ borderColor: `hsl(${colors.border})` }}>
+              <span className="text-sm text-muted-400 ml-2">العقد:</span>
+              {[
+                { id: 'active', label: 'نشط', count: customers?.filter(c => c.contract_status === 'active').length || 0, color: 'emerald', icon: CheckCircle },
+                { id: 'cancelled', label: 'ملغي', count: customers?.filter(c => c.contract_status === 'cancelled').length || 0, color: 'red', icon: X },
+                { id: 'closed', label: 'مغلق', count: customers?.filter(c => c.contract_status === 'closed').length || 0, color: 'slate', icon: CheckCircle },
+                { id: 'under_legal_procedure', label: 'قانوني', count: customers?.filter(c => c.contract_status === 'under_legal_procedure').length || 0, color: 'violet', icon: Gavel },
+              ]
+                .filter(f => f.count > 0)
+                .map(({ id, label, count, color, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setContractStatusFilter(contractStatusFilter === id ? 'all' : id);
+                      setCurrentPage(1);
+                    }}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all',
+                      contractStatusFilter === id
+                        ? id === 'cancelled' ? 'bg-red-500 text-white'
+                        : id === 'closed' ? 'bg-slate-500 text-white'
+                        : id === 'under_legal_procedure' ? 'bg-violet-500 text-white'
+                          : 'bg-emerald-500 text-white'
+                        : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+                          : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            : id === 'under_legal_procedure' ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100',
+                    )}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {label}
+                    <span className="bg-white/20 px-1 rounded text-[10px] font-bold">{count}</span>
+                  </button>
+                ))}
             </div>
 
-        {/* Bulk Actions */}
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-all mr-auto"
+              >
+                <X className="w-3 h-3" />
+                إلغاء الفلاتر ({activeFiltersCount})
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Advanced Filters */}
+        <Collapsible open={filtersExpanded} onOpenChange={setFiltersExpanded}>
+          <div className="border-b px-4 py-3" style={{ borderColor: `hsl(${colors.border})` }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {/* View Mode Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">العرض:</span>
+                  <div className="inline-flex bg-muted rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-all',
+                        viewMode === 'cards'
+                          ? 'bg-white shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      <span className="hidden sm:inline">بطاقات</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-all',
+                        viewMode === 'compact'
+                          ? 'bg-white shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                      <span className="hidden sm:inline">مختصر</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('kanban')}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-all',
+                        viewMode === 'kanban'
+                          ? 'bg-white shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      <Columns className="w-4 h-4" />
+                      <span className="hidden sm:inline">Kanban</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sort Control */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">ترتيب:</span>
+                  <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
+                    <SelectTrigger className="w-[140px] h-9 rounded-lg text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="total_debt">المبلغ المستحق</SelectItem>
+                      <SelectItem value="days_overdue">أيام التأخير</SelectItem>
+                      <SelectItem value="risk_score">مستوى المخاطر</SelectItem>
+                      <SelectItem value="last_contact_days">آخر تواصل</SelectItem>
+                      <SelectItem value="customer_name">اسم العميل</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                    className="h-9 w-9 p-0 rounded-lg"
+                  >
+                    {sortDirection === 'desc' ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+                  </Button>
+                </div>
+
+                {/* Page Size */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">عرض:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={(v) => {
+                      setItemsPerPage(Number(v));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[80px] h-9 rounded-lg text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="12">12</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 gap-2 rounded-lg">
+                  <span className="text-sm">فلاتر متقدمة</span>
+                  <ChevronDown className={cn('w-4 h-4 transition-transform', filtersExpanded && 'rotate-180')} />
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          </div>
+
+          <CollapsibleContent>
+            <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: `hsl(${colors.border})` }}>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="بحث بالاسم، رقم العميل، العقد، أو المركبة..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pr-12 h-12 rounded-xl"
+                />
+              </div>
+
+              {/* Filter Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <Select value={overduePeriodFilter} onValueChange={(v) => { setOverduePeriodFilter(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <Clock className="w-4 h-4 ml-2 text-muted-foreground" />
+                    <SelectValue placeholder="فترة التأخير" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الفترات</SelectItem>
+                    <SelectItem value="<30">أقل من 30 يوم</SelectItem>
+                    <SelectItem value="30-60">30-60 يوم</SelectItem>
+                    <SelectItem value="60-90">60-90 يوم</SelectItem>
+                    <SelectItem value=">90">أكثر من 90 يوم</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={amountRangeFilter} onValueChange={(v) => { setAmountRangeFilter(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <DollarSign className="w-4 h-4 ml-2 text-muted-foreground" />
+                    <SelectValue placeholder="نطاق المبلغ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المبالغ</SelectItem>
+                    <SelectItem value="0-1000">أقل من 1,000</SelectItem>
+                    <SelectItem value="1000-5000">1,000 - 5,000</SelectItem>
+                    <SelectItem value="5000-10000">5,000 - 10,000</SelectItem>
+                    <SelectItem value="10000+">أكثر من 10,000</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={violationsFilter} onValueChange={(v) => { setViolationsFilter(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <AlertCircle className="w-4 h-4 ml-2 text-muted-foreground" />
+                    <SelectValue placeholder="المخالفات" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">الكل</SelectItem>
+                    <SelectItem value="yes">يوجد مخالفات</SelectItem>
+                    <SelectItem value="no">لا يوجد مخالفات</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={contractStatusFilter} onValueChange={(v) => { setContractStatusFilter(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <FileText className="w-4 h-4 ml-2 text-muted-foreground" />
+                    <SelectValue placeholder="حالة العقد" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="cancelled">ملغي</SelectItem>
+                    <SelectItem value="closed">مغلق</SelectItem>
+                    <SelectItem value="under_legal_procedure">تحت الإجراء القانوني</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Bulk Actions Bar */}
         {selectedCustomers.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-3 mt-4 pt-4 border-t border-neutral-100"
+            className="border-t px-4 py-3 bg-muted/30"
+            style={{ borderColor: `hsl(${colors.border})` }}
           >
-            <Badge variant="secondary" className="text-sm">
-              تم تحديد {selectedCustomers.length} عميل
-            </Badge>
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="secondary" className="text-sm px-3 py-1">
+                تم تحديد {selectedCustomers.length} عميل
+              </Badge>
               <Button
                 size="sm"
                 onClick={handleBulkCreateCases}
-              disabled={convertToCase.isPending}
-              className="gap-2 bg-rose-500 hover:bg-rose-600"
+                disabled={convertToCase.isPending}
+                className="gap-2 rounded-xl"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
+                  color: 'white',
+                }}
               >
                 <FileText className="h-4 w-4" />
-              إنشاء قضايا
+                إنشاء قضايا
               </Button>
               <Button
                 size="sm"
-                variant="destructive"
+                variant="outline"
                 onClick={() => setBulkDeleteDialogOpen(true)}
                 disabled={bulkDeleting}
-                className="gap-2"
+                className="gap-2 rounded-xl"
+                style={{
+                  borderColor: `hsl(${colors.destructive} / 0.4)`,
+                  color: `hsl(${colors.destructive})`,
+                }}
               >
                 <Trash2 className="h-4 w-4" />
                 حذف نهائي
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-              onClick={() => { setSelectedCustomers([]); setSelectedIds(new Set()); }}
-            >
-              إلغاء التحديد
-            </Button>
+                onClick={() => {
+                  setSelectedCustomers([]);
+                  setSelectedIds(new Set());
+                }}
+                className="gap-2 rounded-lg"
+              >
+                إلغاء التحديد
+              </Button>
+            </div>
           </motion.div>
         )}
       </div>
 
-      {/* Table View - Card-based Design */}
-      <div className="space-y-4">
-        {/* Header Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider items-center">
-            <div className="col-span-1">
-              <Checkbox
-                checked={selectedIds.size === customers.length}
-                onCheckedChange={handleSelectAll}
-              />
-            </div>
-            <div className="col-span-3">العميل</div>
-            <div className="col-span-3">العقد / المركبة</div>
-            <div className="col-span-2">المستحقات</div>
-            <div className="col-span-1">التواصل</div>
-            <div className="col-span-2 text-center">الإجراءات</div>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {customersLoading ? (
-          <div className="flex items-center justify-center h-80">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-80 text-center bg-white rounded-2xl border border-slate-200">
-            <AlertTriangle className="w-16 h-16 text-red-400 mb-4" />
-            <p className="text-slate-600 text-lg">حدث خطأ أثناء تحميل البيانات</p>
-            <Button variant="outline" onClick={() => refreshDelinquentCustomers.mutate()} className="mt-4">
-              إعادة المحاولة
-            </Button>
-          </div>
-        ) : !customers || customers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-80 text-center bg-white rounded-2xl border border-slate-200">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center mb-6 shadow-lg">
-              <CheckCircle className="w-12 h-12 text-emerald-500" />
-            </div>
-            <p className="text-slate-800 text-2xl font-bold mb-3">لا يوجد عملاء متأخرين! 🎉</p>
-            <p className="text-slate-500">جميع العملاء يدفعون في الوقت المحدد</p>
-          </div>
-        ) : (
-          <>
-            {/* Customer Cards */}
-            <AnimatePresence mode="popLayout">
-              {paginatedCustomers.map((customer, index) => (
-                <motion.div
-                  key={`${customer.customer_id}-${index}`}
-                  layout
-                  initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className={cn(
-                    "group bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-xl",
-                    customer.risk_level === 'CRITICAL'
-                      ? "border-red-200 hover:border-red-300 hover:bg-red-50/30"
-                      : customer.risk_level === 'HIGH'
-                        ? "border-orange-200 hover:border-orange-300 hover:bg-orange-50/30"
-                        : customer.risk_level === 'MEDIUM'
-                          ? "border-amber-200 hover:border-amber-300 hover:bg-amber-50/30"
-                          : "border-slate-200 hover:border-rose-200 hover:bg-rose-50/20"
-                  )}
-                >
-                  <div className="p-6">
-                    <div className="grid grid-cols-12 gap-4 items-center">
-                      {/* Checkbox */}
-                      <div className="col-span-1">
-                        <Checkbox
-                          checked={selectedIds.has(customer.customer_id)}
-                          onCheckedChange={(checked) => handleSelectCustomer(customer, checked as boolean)}
-                        />
-                      </div>
-
-                      {/* Customer */}
-                      <div className="col-span-3">
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center shadow-md transition-all duration-300",
-                            customer.risk_level === 'CRITICAL'
-                              ? "bg-gradient-to-br from-red-100 to-red-200"
-                              : customer.risk_level === 'HIGH'
-                                ? "bg-gradient-to-br from-orange-100 to-orange-200"
-                                : customer.risk_level === 'MEDIUM'
-                                  ? "bg-gradient-to-br from-amber-100 to-amber-200"
-                                  : "bg-gradient-to-br from-slate-100 to-slate-200 group-hover:from-rose-100 group-hover:to-rose-200"
-                          )}>
-                            <Users className={cn(
-                              "w-6 h-6 transition-colors",
-                              customer.risk_level === 'CRITICAL'
-                                ? "text-red-600"
-                                : customer.risk_level === 'HIGH'
-                                  ? "text-orange-600"
-                                  : customer.risk_level === 'MEDIUM'
-                                    ? "text-amber-600"
-                                    : "text-slate-600 group-hover:text-rose-600"
-                            )} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-slate-900 truncate">{customer.customer_name}</p>
-                              <div className="flex gap-0.5">
-                                {[1,2,3,4,5].map(i => (
-                                  <Star
-                                    key={i}
-                                    className={cn(
-                                      "w-3 h-3",
-                                      i <= (customer.payment_history_score || 3)
-                                        ? "text-yellow-400 fill-current"
-                                        : "text-slate-300"
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <p className="text-xs text-slate-400 mt-0.5">{customer.customer_code}</p>
-                            {customer.phone && (
-                              <p className="text-xs text-slate-400 mt-0.5" dir="ltr">{customer.phone}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Contract/Vehicle */}
-                      <div className="col-span-3">
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (customer.contract_number) {
-                                navigate(`/contracts/${customer.contract_number}`);
-                              }
-                            }}
-                            className="font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer transition-colors text-sm"
-                            title="عرض تفاصيل العقد"
-                          >
-                            {customer.contract_number || '-'}
-                          </button>
-                          <span className="text-xs text-slate-500">🚗 {customer.vehicle_plate || 'غير محدد'}</span>
-                          {customer.contract_status === 'cancelled' && (
-                            <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white animate-pulse gap-1 w-fit">
-                              <X className="w-3 h-3" />
-                              ملغي
-                            </Badge>
-                          )}
-                          {customer.contract_status === 'under_legal_procedure' && (
-                            <Badge className="text-[10px] px-2 py-0.5 bg-violet-600 text-white animate-pulse gap-1 w-fit">
-                              <Gavel className="w-3 h-3" />
-                              قضية
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Due Amounts */}
-                      <div className="col-span-2">
-                        <div className="flex flex-col gap-1">
-                          <span className={cn(
-                            "font-bold text-base",
-                            customer.risk_level === 'CRITICAL'
-                              ? "text-red-700"
-                              : customer.risk_level === 'HIGH'
-                                ? "text-orange-700"
-                                : "text-rose-700"
-                          )}>
-                            {formatCurrency(customer.total_debt || 0)}
-                          </span>
-                          <div className="text-[10px] text-slate-400 space-y-0.5">
-                            <div>إيجار: {formatCurrency(customer.overdue_amount || 0)}</div>
-                            {(customer.late_penalty || 0) > 0 && (
-                              <div className="text-orange-600">+ غرامة: {formatCurrency(customer.late_penalty)}</div>
-                            )}
-                            {(customer.violations_amount || 0) > 0 && (
-                              <div className="text-rose-600">+ مخالفات: {formatCurrency(customer.violations_amount)}</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Communication */}
-                      <div className="col-span-1">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            <span className="text-slate-600">{customer.last_contact_days || 0} يوم</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            <span className="text-slate-600">{customer.contact_count_this_month || 0}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="col-span-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => { e.stopPropagation(); handleViewDetails(customer); }}
-                            title="عرض التفاصيل"
-                            className="h-9 w-9 hover:bg-rose-50 hover:text-rose-600"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleSendWarning(customer)}
-                            title="إرسال إنذار"
-                            className="h-9 w-9 hover:bg-amber-50 hover:text-amber-600"
-                          >
-                            <AlertTriangle className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRecordPayment(customer)}
-                            title="تسجيل دفعة"
-                            className="h-9 w-9 hover:bg-emerald-50 hover:text-emerald-600"
-                          >
-                            <CreditCard className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+      {/* Kanban View */}
+      {viewMode === 'kanban' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { key: 'CRITICAL', label: 'حرج', color: 'red', icon: AlertCircle },
+            { key: 'HIGH', label: 'عالي', color: 'orange', icon: AlertTriangle },
+            { key: 'MEDIUM', label: 'متوسط', color: 'amber', icon: Clock },
+            { key: 'LOW', label: 'منخفض', color: 'emerald', icon: CheckCircle },
+          ].map(({ key, label, color, icon: Icon }) => (
+            <div
+              key={key}
+              className="rounded-2xl border-2 bg-card overflow-hidden"
+              style={{
+                borderColor:
+                  color === 'red' ? `hsl(${colors.destructive} / 0.3)`
+                    : color === 'orange' ? `hsl(${colors.accentForeground} / 0.3)`
+                      : color === 'amber' ? `hsl(${colors.warning} / 0.3)`
+                        : `hsl(${colors.success} / 0.3)`,
+              }}
+            >
+              <div
+                className="p-4 border-b"
+                style={{
+                  borderColor:
+                    color === 'red' ? `hsl(${colors.destructive} / 0.2)`
+                      : color === 'orange' ? `hsl(${colors.accentForeground} / 0.2)`
+                        : color === 'amber' ? `hsl(${colors.warning} / 0.2)`
+                          : `hsl(${colors.success} / 0.2)`,
+                  backgroundColor:
+                    color === 'red' ? `hsl(${colors.destructive} / 0.05)`
+                      : color === 'orange' ? `hsl(${colors.accentForeground} / 0.05)`
+                        : color === 'amber' ? `hsl(${colors.warning} / 0.05)`
+                          : `hsl(${colors.success} / 0.05)`,
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl shadow-md"
+                    style={{
+                      backgroundColor:
+                        color === 'red' ? `hsl(${colors.destructive})`
+                          : color === 'orange' ? `hsl(${colors.accentForeground})`
+                            : color === 'amber' ? `hsl(${colors.warning})`
+                              : `hsl(${colors.success})`,
+                    }}
+                  >
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">
-                    عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, customers.length)} من {customers.length}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="rounded-xl"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                    <span className="text-sm px-3 font-medium text-slate-700">
-                      {currentPage} / {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="rounded-xl"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
+                  <div className="flex-1">
+                    <p className="font-bold text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{kanbanGroups[key as keyof typeof kanbanGroups].length} عميل</p>
                   </div>
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </div>
+              <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto">
+                {kanbanGroups[key as keyof typeof kanbanGroups].slice(0, 10).map((customer) => (
+                  <motion.div
+                    key={customer.customer_id}
+                    whileHover={{ scale: 1.02 }}
+                    onClick={() => handleViewDetails(customer)}
+                    className="p-3 rounded-xl border cursor-pointer transition-all hover:shadow-md"
+                    style={{
+                      borderColor:
+                        color === 'red' ? `hsl(${colors.destructive} / 0.2)`
+                          : color === 'orange' ? `hsl(${colors.accentForeground} / 0.2)`
+                            : color === 'amber' ? `hsl(${colors.warning} / 0.2)`
+                              : `hsl(${colors.success} / 0.2)`,
+                      backgroundColor:
+                        color === 'red' ? `hsl(${colors.destructive} / 0.03)`
+                          : color === 'orange' ? `hsl(${colors.accentForeground} / 0.03)`
+                            : color === 'amber' ? `hsl(${colors.warning} / 0.03)`
+                              : `hsl(${colors.success} / 0.03)`,
+                    }}
+                  >
+                    <p className="font-semibold text-foreground text-sm truncate">{customer.customer_name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{customer.contract_number}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span
+                        className="text-sm font-bold"
+                        style={{
+                          color:
+                            color === 'red' ? `hsl(${colors.destructive})`
+                              : color === 'orange' ? `hsl(${colors.accentForeground})`
+                                : color === 'amber' ? `hsl(${colors.warning})`
+                                  : `hsl(${colors.success})`,
+                        }}
+                      >
+                        {formatCurrency(customer.total_debt || 0)}
+                      </span>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {customer.days_overdue} يوم
+                      </Badge>
+                    </div>
+                  </motion.div>
+                ))}
+                {kanbanGroups[key as keyof typeof kanbanGroups].length > 10 && (
+                  <p className="text-xs text-center text-muted-foreground py-2">
+                    +{kanbanGroups[key as keyof typeof kanbanGroups].length - 10} آخرين
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Compact Table View */}
+      {viewMode === 'compact' && (
+        <div className="rounded-2xl border bg-card shadow-sm overflow-hidden" style={{ borderColor: `hsl(${colors.border})` }}>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="w-12 text-right">
+                  <Checkbox
+                    checked={selectedIds.size === paginatedCustomers.length && paginatedCustomers.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="text-right cursor-pointer hover:bg-muted/80" onClick={() => handleSort('customer_name')}>
+                  <div className="flex items-center gap-1">
+                    العميل
+                    {sortField === 'customer_name' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                  </div>
+                </TableHead>
+                <TableHead className="text-right">العقد</TableHead>
+                <TableHead className="text-right cursor-pointer hover:bg-muted/80" onClick={() => handleSort('total_debt')}>
+                  <div className="flex items-center gap-1">
+                    المستحق
+                    {sortField === 'total_debt' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                  </div>
+                </TableHead>
+                <TableHead className="text-right cursor-pointer hover:bg-muted/80" onClick={() => handleSort('days_overdue')}>
+                  <div className="flex items-center gap-1">
+                    الأيام
+                    {sortField === 'days_overdue' && (sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                  </div>
+                </TableHead>
+                <TableHead className="text-right">المخاطر</TableHead>
+                <TableHead className="text-center">إجراء</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedCustomers.map((customer) => (
+                <TableRow
+                  key={customer.customer_id}
+                  className={cn(
+                    'hover:bg-muted/30 transition-colors',
+                    customer.risk_level === 'CRITICAL' && 'bg-red-50/30 dark:bg-red-950/10',
+                    customer.risk_level === 'HIGH' && 'bg-orange-50/30 dark:bg-orange-950/10',
+                  )}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(customer.customer_id)}
+                      onCheckedChange={(checked) => handleSelectCustomer(customer, checked as boolean)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium text-foreground">{customer.customer_name}</p>
+                      <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: `hsl(${colors.primary})` }}>
+                        {customer.contract_number}
+                      </p>
+                      <p className="text-xs text-muted-foreground">🚗 {customer.vehicle_plate}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        'font-bold',
+                        customer.risk_level === 'CRITICAL' ? 'text-red-700 dark:text-red-400'
+                          : customer.risk_level === 'HIGH' ? 'text-orange-700 dark:text-orange-400'
+                            : 'text-foreground',
+                      )}
+                    >
+                      {formatCurrency(customer.total_debt || 0)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'text-xs',
+                        (customer.days_overdue || 0) > 90
+                          ? 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'
+                          : (customer.days_overdue || 0) > 60
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+                            : '',
+                      )}
+                    >
+                      {customer.days_overdue} يوم
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RiskBadge level={customer.risk_level || 'LOW'} score={customer.risk_score || 0} size="sm" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDetails(customer)}
+                        className="h-8 w-8 p-0 rounded-lg"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRecordPayment(customer)}
+                        className="h-8 w-8 p-0 rounded-lg"
+                        style={{ color: `hsl(${colors.success})` }}
+                      >
+                        <CreditCard className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Cards View */}
+      {viewMode === 'cards' && (
+        <div className="space-y-4">
+          {/* Loading State */}
+          {customersLoading ? (
+            <div className="flex items-center justify-center h-80">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-80 text-center rounded-2xl border bg-card p-8">
+              <div
+                className="flex h-20 w-20 items-center justify-center rounded-2xl mb-4 shadow-lg"
+                style={{ backgroundColor: `hsl(${colors.destructive} / 0.1)` }}
+              >
+                <AlertTriangle className="w-10 h-10" style={{ color: `hsl(${colors.destructive})` }} />
+              </div>
+              <p className="text-foreground text-lg font-semibold mb-2">حدث خطأ أثناء تحميل البيانات</p>
+              <Button variant="outline" onClick={() => refreshDelinquentCustomers.mutate()} className="rounded-xl mt-4">
+                <RefreshCw className="w-4 h-4 ml-2" />
+                إعادة المحاولة
+              </Button>
+            </div>
+          ) : !customers || customers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-80 text-center rounded-2xl border bg-card p-8">
+              <div
+                className="flex h-24 w-24 items-center justify-center rounded-3xl mb-6 shadow-lg"
+                style={{ backgroundColor: `hsl(${colors.success} / 0.1)` }}
+              >
+                <CheckCircle className="w-12 h-12" style={{ color: `hsl(${colors.success})` }} />
+              </div>
+              <p className="text-foreground text-2xl font-bold mb-3">لا يوجد عملاء متأخرين!</p>
+              <p className="text-muted-foreground">جميع العملاء يدفعون في الوقت المحدد</p>
+            </div>
+          ) : (
+            <>
+              {/* Header Card */}
+              <div className="rounded-2xl border bg-card p-5 shadow-sm" style={{ borderColor: `hsl(${colors.border})` }}>
+                <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider items-center">
+                  <div className="col-span-1">
+                    <Checkbox
+                      checked={selectedIds.size === paginatedCustomers.length && paginatedCustomers.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </div>
+                  <div className="col-span-3">العميل</div>
+                  <div className="col-span-3">العقد / المركبة</div>
+                  <div className="col-span-2">المستحقات</div>
+                  <div className="col-span-1">التواصل</div>
+                  <div className="col-span-2 text-center">الإجراءات</div>
+                </div>
+              </div>
+
+              {/* Customer Cards */}
+              <AnimatePresence mode="popLayout">
+                {paginatedCustomers.map((customer, index) => (
+                  <motion.div
+                    key={`${customer.customer_id}-${index}`}
+                    layout
+                    initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className={cn(
+                      'group rounded-2xl border-2 bg-card transition-all duration-300 hover:shadow-lg',
+                      customer.risk_level === 'CRITICAL' && 'border-red-200 hover:border-red-300 hover:bg-red-50/20',
+                      customer.risk_level === 'HIGH' && 'border-orange-200 hover:border-orange-300 hover:bg-orange-50/20',
+                      customer.risk_level === 'MEDIUM' && 'border-amber-200 hover:border-amber-300 hover:bg-amber-50/20',
+                      !customer.risk_level || customer.risk_level === 'LOW' && 'hover:border-teal-200 hover:bg-teal-50/10',
+                    )}
+                  >
+                    <div className="p-5">
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        {/* Checkbox */}
+                        <div className="col-span-1">
+                          <Checkbox
+                            checked={selectedIds.has(customer.customer_id)}
+                            onCheckedChange={(checked) => handleSelectCustomer(customer, checked as boolean)}
+                          />
+                        </div>
+
+                        {/* Customer */}
+                        <div className="col-span-3">
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={cn(
+                                'flex h-12 w-12 items-center justify-center rounded-xl shadow-md transition-all duration-300',
+                                customer.risk_level === 'CRITICAL' && 'bg-gradient-to-br from-red-100 to-red-200',
+                                customer.risk_level === 'HIGH' && 'bg-gradient-to-br from-orange-100 to-orange-200',
+                                customer.risk_level === 'MEDIUM' && 'bg-gradient-to-br from-amber-100 to-amber-200',
+                                !customer.risk_level || customer.risk_level === 'LOW' && 'bg-gradient-to-br from-slate-100 to-slate-200 group-hover:from-teal-100 group-hover:to-teal-200',
+                              )}
+                            >
+                              <Users
+                                className={cn(
+                                  'w-6 h-6 transition-colors',
+                                  customer.risk_level === 'CRITICAL' && 'text-red-600',
+                                  customer.risk_level === 'HIGH' && 'text-orange-600',
+                                  customer.risk_level === 'MEDIUM' && 'text-amber-600',
+                                  !customer.risk_level || customer.risk_level === 'LOW' && 'text-slate-600 group-hover:text-teal-600',
+                                )}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-foreground truncate">{customer.customer_name}</p>
+                                <div className="flex gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((i) => (
+                                    <Star
+                                      key={i}
+                                      className={cn(
+                                        'w-3 h-3',
+                                        i <= (customer.payment_history_score || 3)
+                                          ? 'text-yellow-400 fill-current'
+                                          : 'text-slate-300 dark:text-slate-600',
+                                      )}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">{customer.customer_code}</p>
+                              {customer.phone && (
+                                <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{customer.phone}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Contract/Vehicle */}
+                        <div className="col-span-3">
+                          <div className="flex flex-col gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (customer.contract_number) {
+                                  navigate(`/contracts/${customer.contract_number}`);
+                                }
+                              }}
+                              className="font-semibold text-sm text-left hover:underline transition-colors"
+                              style={{ color: `hsl(${colors.primary})` }}
+                              title="عرض تفاصيل العقد"
+                            >
+                              {customer.contract_number || '-'}
+                            </button>
+                            <div className="flex items-center gap-2">
+                              <CarIcon className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">{customer.vehicle_plate || 'غير محدد'}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {customer.contract_status === 'cancelled' && (
+                                <Badge className="text-[10px] px-2 py-0.5 bg-red-500 text-white gap-1">
+                                  <X className="w-3 h-3" />
+                                  ملغي
+                                </Badge>
+                              )}
+                              {customer.contract_status === 'under_legal_procedure' && (
+                                <Badge className="text-[10px] px-2 py-0.5 gap-1" style={{ backgroundColor: `hsl(262 83% 58%)`, color: 'white' }}>
+                                  <Gavel className="w-3 h-3" />
+                                  قضية
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Due Amounts */}
+                        <div className="col-span-2">
+                          <div className="flex flex-col gap-1.5">
+                            <span
+                              className={cn(
+                                'font-bold text-base',
+                                customer.risk_level === 'CRITICAL' && 'text-red-700',
+                                customer.risk_level === 'HIGH' && 'text-orange-700',
+                                customer.risk_level === 'MEDIUM' && 'text-amber-700',
+                                (!customer.risk_level || customer.risk_level === 'LOW') && '',
+                              )}
+                              style={
+                                !customer.risk_level || customer.risk_level === 'LOW'
+                                  ? { color: `hsl(${colors.primary})` }
+                                  : undefined
+                              }
+                            >
+                              {formatCurrency(customer.total_debt || 0)}
+                            </span>
+                            <div className="text-[10px] text-muted-foreground space-y-0.5">
+                              <div>إيجار: {formatCurrency(customer.overdue_amount || 0)}</div>
+                              {(customer.late_penalty || 0) > 0 && (
+                                <div className="text-orange-600 dark:text-orange-400">+ غرامة: {formatCurrency(customer.late_penalty)}</div>
+                              )}
+                              {(customer.violations_amount || 0) > 0 && (
+                                <div className="text-red-600 dark:text-red-400">+ مخالفات: {formatCurrency(customer.violations_amount)}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Communication */}
+                        <div className="col-span-1">
+                          <div className="space-y-2">
+                            <InfoChip
+                              icon={Clock}
+                              label="آخر تواصل"
+                              value={`${customer.last_contact_days || 0} يوم`}
+                              color={customer.risk_level === 'CRITICAL' ? colors.destructive : customer.risk_level === 'HIGH' ? colors.accentForeground : colors.primary}
+                            />
+                            <InfoChip
+                              icon={Phone}
+                              label="هذا الشهر"
+                              value={`${customer.contact_count_this_month || 0}`}
+                              color={colors.primary}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="col-span-2 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewDetails(customer);
+                              }}
+                              title="عرض التفاصيل"
+                              className="h-9 w-9 rounded-lg hover:bg-teal-50 hover:text-teal-600"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleSendWarning(customer)}
+                              title="إرسال إنذار"
+                              className="h-9 w-9 rounded-lg hover:bg-amber-50 hover:text-amber-600"
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRecordPayment(customer)}
+                              title="تسجيل دفعة"
+                              className="h-9 w-9 rounded-lg hover:bg-emerald-50 hover:text-emerald-600"
+                            >
+                              <CreditCard className="w-4 h-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem onClick={() => handleCreateCase(customer)} className="gap-2 cursor-pointer">
+                                  <Gavel className="w-4 h-4" />
+                                  <span>رفع دعوى قضائية</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (customer.phone) window.open(`tel:${customer.phone}`, '_self');
+                                  }}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Phone className="w-4 h-4" />
+                                  <span>اتصال بالعميل</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (customer.phone) window.open(`https://wa.me/${customer.phone?.replace(/\D/g, '')}`, '_blank');
+                                  }}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Mail className="w-4 h-4" />
+                                  <span>رسالة WhatsApp</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Risk Indicator Bar */}
+                      <div className="mt-4 pt-4 border-t" style={{ borderColor: `hsl(${colors.border})` }}>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                          <span>مستوى المخاطر</span>
+                          <span className="font-semibold">{customer.risk_score || 0}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(customer.risk_score || 0, 100)}%` }}
+                            transition={{ duration: 0.8, delay: index * 0.05 + 0.2 }}
+                            className="h-full rounded-full"
+                            style={{
+                              background:
+                                customer.risk_level === 'CRITICAL'
+                                  ? `linear-gradient(90deg, hsl(${colors.destructive}), hsl(${colors.destructive}) / 0.7)`
+                                  : customer.risk_level === 'HIGH'
+                                    ? `linear-gradient(90deg, hsl(${colors.accentForeground}), hsl(${colors.accentForeground}) / 0.7)`
+                                    : customer.risk_level === 'MEDIUM'
+                                      ? `linear-gradient(90deg, hsl(${colors.warning}), hsl(${colors.warning}) / 0.7)`
+                                      : `linear-gradient(90deg, hsl(${colors.primary}), hsl(${colors.primary}) / 0.7)`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="rounded-2xl border bg-card p-4 shadow-sm" style={{ borderColor: `hsl(${colors.border})` }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <span className="text-sm text-muted-foreground">
+                      عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, customers.length)} من {customers.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="rounded-xl gap-1"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                        <span className="hidden sm:inline">السابق</span>
+                      </Button>
+                      <span className="text-sm px-3 font-semibold text-foreground">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="rounded-xl gap-1"
+                      >
+                        <span className="hidden sm:inline">التالي</span>
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Pagination for Compact View */}
+      {viewMode === 'compact' && totalPages > 1 && (
+        <div className="rounded-2xl border bg-card p-4 shadow-sm" style={{ borderColor: `hsl(${colors.border})` }}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <span className="text-sm text-muted-foreground">
+              عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, customers.length)} من {customers.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="rounded-xl gap-1"
+              >
+                <ChevronRight className="w-4 h-4" />
+                <span className="hidden sm:inline">السابق</span>
+              </Button>
+              <span className="text-sm px-3 font-semibold text-foreground">
+                {currentPage} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="rounded-xl gap-1"
+              >
+                <span className="hidden sm:inline">التالي</span>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Legal Warning Dialog */}
       <LegalWarningDialog
@@ -1291,7 +2059,7 @@ export const DelinquentCustomersTab: React.FC = () => {
         }}
       />
 
-      {/* Delinquent Details Dialog - تفاصيل الفواتير المتأخرة */}
+      {/* Delinquent Details Dialog */}
       <DelinquentDetailsDialog
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
@@ -1300,21 +2068,19 @@ export const DelinquentCustomersTab: React.FC = () => {
 
       {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir="rtl" className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+            <AlertDialogTitle className="flex items-center gap-2" style={{ color: `hsl(${colors.destructive})` }}>
               <AlertTriangle className="h-5 w-5" />
               تأكيد الحذف النهائي
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-right space-y-2">
-              <p>
-                أنت على وشك حذف <strong>{selectedCustomers.length} عقد</strong> نهائياً.
-              </p>
-              <p className="text-red-600 font-medium">
+            <AlertDialogDescription className="text-right space-y-3">
+              <p>أنت على وشك حذف <strong>{selectedCustomers.length} عقد</strong> نهائياً.</p>
+              <p className="font-semibold" style={{ color: `hsl(${colors.destructive})` }}>
                 ⚠️ هذا الإجراء لا يمكن التراجع عنه!
               </p>
               <p>سيتم حذف جميع البيانات المرتبطة بالعقود المحددة:</p>
-              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1">
+              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pr-2">
                 <li>الفواتير والمدفوعات</li>
                 <li>جداول السداد</li>
                 <li>سجلات المتعثرين</li>
@@ -1323,11 +2089,17 @@ export const DelinquentCustomersTab: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogCancel disabled={bulkDeleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel disabled={bulkDeleting} className="rounded-xl">
+              إلغاء
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDeleteContracts}
               disabled={bulkDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="rounded-xl"
+              style={{
+                background: `hsl(${colors.destructive})`,
+                color: 'white',
+              }}
             >
               {bulkDeleting ? 'جاري الحذف...' : `حذف ${selectedCustomers.length} عقد نهائياً`}
             </AlertDialogAction>

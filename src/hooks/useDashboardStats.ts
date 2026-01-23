@@ -409,6 +409,6 @@ export const useDashboardStats = () => {
     gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
     retry: 1,
     refetchOnWindowFocus: false, // Don't refetch on window focus for dashboard stats
-    refetchOnMount: false, // Don't refetch on mount if data is fresh
+    refetchOnMount: true, // Refetch on mount to ensure fresh data on navigation
   });
 };

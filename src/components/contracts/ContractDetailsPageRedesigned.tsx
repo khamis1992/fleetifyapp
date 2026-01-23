@@ -32,7 +32,9 @@ import {
   GitBranch,
   Activity,
   CheckCircle,
+  CheckCircle2,
   Clock,
+  Trash2,
   Plus,
   Eye,
   Scale,
@@ -48,6 +50,11 @@ import {
   Share2,
   Download,
   Bell,
+  Palette,
+  Gauge,
+  Fuel,
+  ExternalLink,
+  Hash,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -305,6 +312,8 @@ const QuickActionsBar = ({
   onRenew,
   onAmend,
   onTerminate,
+  onReactivate,
+  onDeletePermanent,
   onConvertToLegal,
   onRemoveLegal,
 }: {
@@ -312,6 +321,8 @@ const QuickActionsBar = ({
   onRenew: () => void;
   onAmend: () => void;
   onTerminate: () => void;
+  onReactivate: () => void;
+  onDeletePermanent: () => void;
   onConvertToLegal: () => void;
   onRemoveLegal: () => void;
 }) => {
@@ -349,7 +360,21 @@ const QuickActionsBar = ({
       icon: XCircle,
       onClick: onTerminate,
       color: 'border-rose-200 text-rose-700 hover:bg-rose-50',
-      show: contract.status === 'active' || contract.status === 'cancelled',
+      show: contract.status === 'active',
+    },
+    {
+      label: 'إعادة تفعيل العقد',
+      icon: CheckCircle2,
+      onClick: onReactivate,
+      color: 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent',
+      show: contract.status === 'cancelled',
+    },
+    {
+      label: 'حذف العقد نهائياً',
+      icon: Trash2,
+      onClick: onDeletePermanent,
+      color: 'bg-rose-600 hover:bg-rose-700 text-white border-transparent',
+      show: true, // يظهر دائماً لجميع الحالات
     },
   ];
 
@@ -484,80 +509,9 @@ const ContractTab = ({
 }: {
   contract: Contract;
 }) => (
-  <Tabs defaultValue="details" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
-      <TabsTrigger
-        value="details"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
-      >
-        <Info className="w-4 h-4" />
-        التفاصيل
-      </TabsTrigger>
-      <TabsTrigger
-        value="official"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
-      >
-        <FileCheck className="w-4 h-4" />
-        العقد الرسمي
-      </TabsTrigger>
-    </TabsList>
-
-    <TabsContent value="details" className="mt-6">
-      <Card className="border-neutral-200">
-        <CardHeader>
-          <CardTitle className="text-lg">معلومات العقد</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-neutral-500 mb-2">رقم العقد</p>
-              <p className="font-semibold text-neutral-900 text-lg">{contract.contract_number}</p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500 mb-2">نوع العقد</p>
-              <p className="font-semibold text-neutral-900 text-lg">
-                {contract.contract_type === 'rental' ? 'إيجار' : contract.contract_type}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500 mb-2">تاريخ البداية</p>
-              <p className="font-semibold text-neutral-900">
-                {contract.start_date ? format(new Date(contract.start_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500 mb-2">تاريخ الانتهاء</p>
-              <p className="font-semibold text-neutral-900">
-                {contract.end_date ? format(new Date(contract.end_date), 'dd MMMM yyyy', { locale: ar }) : '-'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500 mb-2">الإيجار الشهري</p>
-              <p className="font-semibold text-teal-600 text-lg">
-                {contract.monthly_amount ? `${contract.monthly_amount.toLocaleString()} ر.ق` : '-'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-500 mb-2">التأمين</p>
-              <p className="font-semibold text-neutral-900 text-lg">
-                {contract.insurance_amount ? `${contract.insurance_amount.toLocaleString()} ر.ق` : '-'}
-              </p>
-            </div>
-          </div>
-          {contract.notes && (
-            <div className="pt-6 border-t border-neutral-100">
-              <p className="text-sm text-neutral-500 mb-2">ملاحظات</p>
-              <p className="text-neutral-700 leading-relaxed">{contract.notes}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </TabsContent>
-
-    <TabsContent value="official" className="mt-6">
-      <OfficialContractView contract={contract} />
-    </TabsContent>
-  </Tabs>
+  <div className="w-full">
+    <OfficialContractView contract={contract} />
+  </div>
 );
 
 // Financial Tab Component
@@ -678,23 +632,128 @@ const VehicleTab = ({
   customerName: string;
   plateNumber?: string;
   formatCurrency: (amount: number) => string;
-}) => (
-  <VehiclePickupReturnTabRedesigned
-    contract={{
-      id: contract.id,
-      contract_number: contract.contract_number,
-      customer_name: customerName,
-      customer_phone: contract.customer?.phone || '',
-      vehicle_plate: plateNumber || '',
-      vehicle_make: contract.vehicle?.make || '',
-      vehicle_model: contract.vehicle?.model || '',
-      vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
-      start_date: contract.start_date,
-      end_date: contract.end_date,
-    }}
-    formatCurrency={formatCurrency}
-  />
-);
+}) => {
+  const navigate = useNavigate();
+  const vehicle = contract.vehicle;
+  
+  return (
+    <div className="space-y-6">
+      {/* Vehicle Hero Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-gradient-to-br from-[#00A896] via-[#008F7A] to-[#007A68] rounded-3xl p-6 text-white relative overflow-hidden"
+      >
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
+        </div>
+        
+        <div className="relative z-10">
+          {/* Header with plate number */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Car className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <p className="text-blue-200 text-sm mb-1">المركبة المؤجرة</p>
+                <h2 className="text-2xl font-bold">
+                  {vehicle?.make || ''} {vehicle?.model || ''}
+                </h2>
+                <p className="text-blue-200">{vehicle?.year || ''}</p>
+              </div>
+            </div>
+            
+            {/* Plate Number Badge */}
+            <div className="bg-white rounded-xl px-4 py-3 text-center shadow-lg">
+              <p className="text-xs text-neutral-500 mb-1">رقم اللوحة</p>
+              <p className="text-xl font-bold text-neutral-900 font-mono" dir="ltr">
+                {plateNumber || 'غير محدد'}
+              </p>
+            </div>
+          </div>
+          
+          {/* Vehicle Details Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-blue-200 text-sm mb-1">
+                <Palette className="w-4 h-4" />
+                <span>اللون</span>
+              </div>
+              <p className="font-semibold text-lg">{vehicle?.color || 'غير محدد'}</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-blue-200 text-sm mb-1">
+                <Hash className="w-4 h-4" />
+                <span>رقم الهيكل</span>
+              </div>
+              <p className="font-semibold text-sm font-mono" dir="ltr">
+                {vehicle?.vin ? `...${vehicle.vin.slice(-8)}` : 'غير محدد'}
+              </p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-blue-200 text-sm mb-1">
+                <Gauge className="w-4 h-4" />
+                <span>العداد</span>
+              </div>
+              <p className="font-semibold text-lg">
+                {vehicle?.current_mileage?.toLocaleString() || '0'} كم
+              </p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-blue-200 text-sm mb-1">
+                <Fuel className="w-4 h-4" />
+                <span>نوع الوقود</span>
+              </div>
+              <p className="font-semibold text-lg">
+                {vehicle?.fuel_type === 'petrol' ? 'بنزين' : 
+                 vehicle?.fuel_type === 'diesel' ? 'ديزل' : 
+                 vehicle?.fuel_type === 'electric' ? 'كهربائي' : 
+                 vehicle?.fuel_type === 'hybrid' ? 'هجين' : 'غير محدد'}
+              </p>
+            </div>
+          </div>
+          
+          {/* Action Button */}
+          {vehicle?.id && (
+            <div className="mt-6 flex justify-end">
+              <Button
+                onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-xl gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                عرض تفاصيل المركبة الكاملة
+              </Button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+      
+      {/* Pickup/Return Section */}
+      <VehiclePickupReturnTabRedesigned
+        contract={{
+          id: contract.id,
+          contract_number: contract.contract_number,
+          customer_name: customerName,
+          customer_phone: contract.customer?.phone || '',
+          vehicle_plate: plateNumber || '',
+          vehicle_make: contract.vehicle?.make || '',
+          vehicle_model: contract.vehicle?.model || '',
+          vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+        }}
+        formatCurrency={formatCurrency}
+      />
+    </div>
+  );
+};
 
 // Violations Tab Component
 const ViolationsTab = ({
@@ -809,6 +868,8 @@ const ContractDetailsPageRedesigned = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoveLegalDialogOpen, setIsRemoveLegalDialogOpen] = useState(false);
   const [isRemovingLegal, setIsRemovingLegal] = useState(false);
+  const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
   const [relatedDataCounts, setRelatedDataCounts] = useState<{invoices: number; payments: number; violations: number} | null>(null);
   const [isCancellingInvoice, setIsCancellingInvoice] = useState(false);
   const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
@@ -1062,6 +1123,10 @@ const ContractDetailsPageRedesigned = () => {
     setIsTerminateDialogOpen(true);
   }, []);
 
+  const handleReactivate = useCallback(() => {
+    setIsReactivateDialogOpen(true);
+  }, []);
+
   const handleGeneratePaymentSchedules = useCallback(() => {
     if (!contract?.id) return;
     generatePaymentSchedulesFromInvoices.mutate(contract.id);
@@ -1125,6 +1190,44 @@ const ContractDetailsPageRedesigned = () => {
       });
     } finally {
       setIsTerminating(false);
+    }
+  }, [contract, companyId, queryClient, toast]);
+
+  const executeReactivateContract = useCallback(async () => {
+    if (!contract?.id || !companyId) return;
+
+    setIsReactivating(true);
+    try {
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', contract.id)
+        .eq('company_id', companyId);
+
+      if (contractError) throw contractError;
+
+      queryClient.invalidateQueries({ queryKey: ['contract-details'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+
+      toast({
+        title: 'تم إعادة تفعيل العقد',
+        description: `تم إعادة تفعيل العقد #${contract.contract_number} بنجاح`,
+      });
+
+      setIsReactivateDialogOpen(false);
+    } catch (error) {
+      console.error('خطأ في إعادة تفعيل العقد:', error);
+      toast({
+        title: 'خطأ في إعادة تفعيل العقد',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsReactivating(false);
     }
   }, [contract, companyId, queryClient, toast]);
 
@@ -1266,6 +1369,7 @@ const ContractDetailsPageRedesigned = () => {
           onPrint={handlePrint}
           onExport={handleExport}
           onRefresh={handleRefresh}
+          onStatusClick={() => setIsStatusManagementOpen(true)}
           isRefreshing={false}
         />
 
@@ -1275,6 +1379,8 @@ const ContractDetailsPageRedesigned = () => {
           onRenew={handleRenew}
           onAmend={handleAmend}
           onTerminate={handleTerminate}
+          onReactivate={handleReactivate}
+          onDeletePermanent={handleOpenDeletePermanent}
           onConvertToLegal={() => setIsConvertToLegalOpen(true)}
           onRemoveLegal={() => setIsRemoveLegalDialogOpen(true)}
         />
@@ -1447,6 +1553,35 @@ const ContractDetailsPageRedesigned = () => {
                 </>
               ) : (
                 'نعم، إنهاء العقد'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reactivate Dialog */}
+      <AlertDialog open={isReactivateDialogOpen} onOpenChange={setIsReactivateDialogOpen}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-emerald-600">إعادة تفعيل العقد</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إعادة تفعيل العقد #{contract.contract_number}؟ سيتم تحديث حالة العقد إلى "نشط".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeReactivateContract}
+              disabled={isReactivating}
+              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+            >
+              {isReactivating ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  جاري التفعيل...
+                </>
+              ) : (
+                'نعم، إعادة التفعيل'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

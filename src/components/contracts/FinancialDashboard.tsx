@@ -82,7 +82,7 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
   return (
     <div className="space-y-6">
       {/* البطاقات الإحصائية العلوية */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* بطاقة قيمة العقد */}
         <Card className="border-teal-200/50 hover:border-teal-300 transition-all duration-200 hover:shadow-lg">
           <CardContent className="p-5">
@@ -179,49 +179,6 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
           </CardContent>
         </Card>
 
-        {/* بطاقة المبالغ الإضافية */}
-        {financialData.extraPayments > 0 ? (
-          <Card className="border-orange-200/50 hover:border-orange-300 transition-all duration-200 hover:shadow-lg">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-600 mb-2">إضافي</p>
-                  <p className="text-2xl font-bold text-orange-600 mb-1">
-                    {formatCurrency(financialData.extraPayments)}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-orange-600">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span>فوق قيمة العقد</span>
-                  </div>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          // بطاقة حالة العند كبديل
-          <Card className="border-blue-200/50 hover:border-blue-300 transition-all duration-200 hover:shadow-lg">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-600 mb-2">حالة الدفع</p>
-                  <p className="text-lg font-bold text-blue-600 mb-1">
-                    {financialData.paymentStatus.label}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <ArrowDownRight className="w-3 h-3" />
-                    <span>{formatCurrency(financialData.balanceDue)} متبقي</span>
-                  </div>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* الرسم البياني والتفاصيل */}

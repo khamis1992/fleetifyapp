@@ -29,12 +29,19 @@ export interface VehicleInspection {
   fuel_level: number | null;
   odometer_reading: number | null;
   cleanliness_rating: number | null;
-  exterior_condition: Array<DamageRecord>;
-  interior_condition: Array<DamageRecord>;
+  exterior_condition: Array<DamageRecord> | string;
+  interior_condition: Array<DamageRecord> | string;
   photo_urls: string[];
   notes: string | null;
   customer_signature: string | null;
   created_at: string;
+  
+  // Visual inspection fields
+  vehicle_type?: string | null;
+  visual_inspection_zones?: Array<any>;
+  accessories?: Array<string>;
+  documents?: Array<string>;
+  status?: string | null;
 
   // Related data
   contract?: {
@@ -121,6 +128,11 @@ export function useVehicleInspections(options: UseVehicleInspectionsOptions = {}
           notes,
           customer_signature,
           created_at,
+          vehicle_type,
+          visual_inspection_zones,
+          accessories,
+          documents,
+          status,
           contracts:contract_id (
             id,
             contract_number
@@ -177,6 +189,11 @@ export function useVehicleInspections(options: UseVehicleInspectionsOptions = {}
         notes: inspection.notes,
         customer_signature: inspection.customer_signature,
         created_at: inspection.created_at,
+        vehicle_type: inspection.vehicle_type,
+        visual_inspection_zones: inspection.visual_inspection_zones || [],
+        accessories: inspection.accessories || [],
+        documents: inspection.documents || [],
+        status: inspection.status,
         contract: inspection.contracts ? {
           id: inspection.contracts.id,
           contract_number: inspection.contracts.contract_number,
