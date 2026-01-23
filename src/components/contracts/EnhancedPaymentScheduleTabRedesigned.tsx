@@ -63,12 +63,21 @@ const scaleIn = {
 // ===== Types =====
 type PaymentStatus = 'all' | 'paid' | 'pending' | 'overdue' | 'upcoming';
 
+interface Invoice {
+  id: string;
+  total_amount?: number;
+  paid_amount?: number;
+  balance_due?: number;
+  payment_status?: string;
+}
+
 interface EnhancedPaymentScheduleTabRedesignedProps {
   contract: Contract;
   formatCurrency: (amount: number) => string;
   payments?: any[];
   onGenerateSchedules?: () => void;
   hasInvoices?: boolean;
+  invoices?: Invoice[];
 }
 
 // ===== Helper Functions =====
@@ -514,17 +523,20 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
   payments = [],
   onGenerateSchedules,
   hasInvoices,
+  invoices = [],
 }: EnhancedPaymentScheduleTabRedesignedProps) => {
   const [selectedStatus, setSelectedStatus] = useState<PaymentStatus>('all');
   const [searchText, setSearchText] = useState('');
   const [sortOption, setSortOption] = useState('date-asc');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('timeline');
 
-  // Calculate stats
+  // Calculate stats - using invoices for consistency with other tabs
   const stats = useMemo(() => {
     const totalAmount = contract.contract_amount || 0;
-    const totalPaid = contract.total_paid || 0;
-    const balanceDue = totalAmount - totalPaid;
+    // حساب المدفوع من الفواتير (نفس مصدر البيانات المستخدم في التبويبات الأخرى)
+    const totalPaidFromInvoices = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+    const totalPaid = invoices.length > 0 ? totalPaidFromInvoices : (contract.total_paid || 0);
+    const balanceDue = Math.max(0, totalAmount - totalPaid);
     const paidCount = payments.filter((p) => p.status === 'paid').length;
     const pendingCount = payments.filter((p) => p.status === 'pending').length;
     const overdueCount = payments.filter((p) => p.status === 'overdue').length;
@@ -543,7 +555,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
       totalPayments: payments.length,
       progressPercentage: totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0,
     };
-  }, [contract, payments]);
+  }, [contract, payments, invoices]);
 
   // Filter payments
   const filteredPayments = useMemo(() => {

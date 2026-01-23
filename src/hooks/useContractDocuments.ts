@@ -41,85 +41,89 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
     queryFn: async () => {
       if (!contractId) return [];
 
-      // Fetch contract documents
-      const { data: contractDocs, error: contractError } = await supabase
-        .from('contract_documents')
-        .select('*')
-        .eq('contract_id', contractId)
-        .order('created_at', { ascending: false });
+      // Run all queries in parallel for better performance
+      const [contractResult, customerResult, vehicleResult] = await Promise.all([
+        // Fetch contract documents
+        supabase
+          .from('contract_documents')
+          .select('id, company_id, contract_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, condition_report_id, created_at, updated_at')
+          .eq('contract_id', contractId)
+          .order('created_at', { ascending: false }),
+        
+        // Fetch customer documents (only if customerId provided)
+        customerId
+          ? supabase
+              .from('customer_documents')
+              .select('id, company_id, document_type, document_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, notes, is_required, created_at, updated_at')
+              .eq('customer_id', customerId)
+              .order('created_at', { ascending: false })
+          : Promise.resolve({ data: null, error: null }),
+        
+        // Fetch vehicle documents (only if vehicleId provided)
+        vehicleId
+          ? supabase
+              .from('vehicle_documents')
+              .select('id, company_id, document_type, document_name, document_url, created_at, updated_at')
+              .eq('vehicle_id', vehicleId)
+              .order('created_at', { ascending: false })
+          : Promise.resolve({ data: null, error: null })
+      ]);
 
-      if (contractError) throw contractError;
-
-      // Mark contract documents with their source bucket
-      const contractDocuments = (contractDocs || []).map(doc => ({
+      // Handle contract documents
+      if (contractResult.error) throw contractResult.error;
+      const contractDocuments = (contractResult.data || []).map(doc => ({
         ...doc,
         sourceBucket: 'contract-documents' as const
       }));
 
-      // If customerId is provided, also fetch customer documents
+      // Handle customer documents
       let customerDocuments: ContractDocument[] = [];
-      if (customerId) {
-        const { data: customerDocs, error: customerError } = await supabase
-          .from('customer_documents')
-          .select('*')
-          .eq('customer_id', customerId)
-          .order('created_at', { ascending: false });
-
-        if (customerError) {
-          console.error('Error fetching customer documents:', customerError);
-        } else {
-          customerDocuments = (customerDocs || []).map(doc => ({
-            id: doc.id,
-            company_id: doc.company_id,
-            contract_id: contractId,
-            document_type: doc.document_type,
-            document_name: doc.document_name,
-            file_path: doc.file_path,
-            file_size: doc.file_size,
-            mime_type: doc.mime_type,
-            uploaded_by: doc.uploaded_by,
-            uploaded_at: doc.uploaded_at,
-            notes: doc.notes,
-            is_required: doc.is_required,
-            condition_report_id: undefined,
-            created_at: doc.created_at,
-            updated_at: doc.updated_at,
-            sourceBucket: 'documents' as const
-          }));
-        }
+      if (customerResult.data && !customerResult.error) {
+        customerDocuments = customerResult.data.map(doc => ({
+          id: doc.id,
+          company_id: doc.company_id,
+          contract_id: contractId,
+          document_type: doc.document_type,
+          document_name: doc.document_name,
+          file_path: doc.file_path,
+          file_size: doc.file_size,
+          mime_type: doc.mime_type,
+          uploaded_by: doc.uploaded_by,
+          uploaded_at: doc.uploaded_at,
+          notes: doc.notes,
+          is_required: doc.is_required,
+          condition_report_id: undefined,
+          created_at: doc.created_at,
+          updated_at: doc.updated_at,
+          sourceBucket: 'documents' as const
+        }));
+      } else if (customerResult.error) {
+        console.error('Error fetching customer documents:', customerResult.error);
       }
 
-      // If vehicleId is provided, also fetch vehicle documents
+      // Handle vehicle documents
       let vehicleDocuments: ContractDocument[] = [];
-      if (vehicleId) {
-        const { data: vehDocs, error: vehicleError } = await supabase
-          .from('vehicle_documents')
-          .select('*')
-          .eq('vehicle_id', vehicleId)
-          .order('created_at', { ascending: false });
-
-        if (vehicleError) {
-          console.error('Error fetching vehicle documents:', vehicleError);
-        } else {
-          vehicleDocuments = (vehDocs || []).map(doc => ({
-            id: doc.id,
-            company_id: doc.company_id || '',
-            contract_id: contractId,
-            document_type: doc.document_type,
-            document_name: doc.document_name || '',
-            file_path: doc.document_url || '',
-            file_size: 0,
-            mime_type: 'image/jpeg',
-            uploaded_by: '',
-            uploaded_at: doc.created_at || '',
-            notes: '',
-            is_required: false,
-            condition_report_id: undefined,
-            created_at: doc.created_at || '',
-            updated_at: doc.updated_at || '',
-            sourceBucket: 'documents' as const
-          }));
-        }
+      if (vehicleResult.data && !vehicleResult.error) {
+        vehicleDocuments = vehicleResult.data.map(doc => ({
+          id: doc.id,
+          company_id: doc.company_id || '',
+          contract_id: contractId,
+          document_type: doc.document_type,
+          document_name: doc.document_name || '',
+          file_path: doc.document_url || '',
+          file_size: 0,
+          mime_type: 'image/jpeg',
+          uploaded_by: '',
+          uploaded_at: doc.created_at || '',
+          notes: '',
+          is_required: false,
+          condition_report_id: undefined,
+          created_at: doc.created_at || '',
+          updated_at: doc.updated_at || '',
+          sourceBucket: 'documents' as const
+        }));
+      } else if (vehicleResult.error) {
+        console.error('Error fetching vehicle documents:', vehicleResult.error);
       }
 
       // Combine and sort by created_at
@@ -129,7 +133,9 @@ export function useContractDocuments(contractId?: string, customerId?: string, v
 
       return allDocuments;
     },
-    enabled: !!contractId && !!user
+    enabled: !!contractId && !!user,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 }
 

@@ -78,7 +78,7 @@ export function usePricingSuggestions({
       if (customerId) {
         const { data: customerContracts, error: customerError } = await supabase
           .from('contracts')
-          .select('contract_amount, rental_days, start_date, daily_rate')
+          .select('contract_amount, start_date, end_date')
           .eq('company_id', companyId)
           .eq('customer_id', customerId)
           .not('contract_amount', 'is', null)
@@ -124,7 +124,7 @@ export function usePricingSuggestions({
       // === 3. Fetch Similar Contracts ===
       let query = supabase
         .from('contracts')
-        .select('contract_amount, rental_days, start_date, vehicle_id')
+        .select('contract_amount, start_date, end_date, vehicle_id')
         .eq('company_id', companyId)
         .eq('contract_type', contractType)
         .gte('start_date', sixMonthsAgo.toISOString())
@@ -145,12 +145,24 @@ export function usePricingSuggestions({
         throw error;
       }
 
+      // Helper function to calculate rental days from start_date and end_date
+      const calculateRentalDays = (startDate: string, endDate: string | null): number => {
+        if (!endDate) return 1;
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays || 1;
+      };
+
       // Filter contracts with similar duration (±20%)
       const durationRange = rentalDays * 0.2;
       const similarContracts = (contracts || []).filter(
-        (contract) =>
-          contract.rental_days >= rentalDays - durationRange &&
-          contract.rental_days <= rentalDays + durationRange
+        (contract) => {
+          const contractDays = calculateRentalDays(contract.start_date, contract.end_date);
+          return contractDays >= rentalDays - durationRange &&
+            contractDays <= rentalDays + durationRange;
+        }
       ).slice(0, 5);
 
       // Calculate similar contracts average

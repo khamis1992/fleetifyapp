@@ -366,7 +366,8 @@
         url: window.location.href
       });
     }
-    return true;
+    // لا نرجع true لأن جميع الاستجابات متزامنة
+    // Return false/undefined for synchronous responses
   });
 
   // تهيئة الإضافة

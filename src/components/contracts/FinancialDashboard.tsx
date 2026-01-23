@@ -13,18 +13,35 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
 
+interface Invoice {
+  id: string;
+  total_amount?: number;
+  paid_amount?: number;
+  balance_due?: number;
+  payment_status?: string;
+  status?: string;
+}
+
 interface FinancialDashboardProps {
   contract: Contract;
   formatCurrency: (amount: number) => string;
+  invoices?: Invoice[];
 }
 
-export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashboardProps) => {
-  // حساب البيانات المالية
+export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: FinancialDashboardProps) => {
+  // حساب البيانات المالية من الفواتير (مصدر موحد)
   const financialData = useMemo(() => {
     const contractAmount = contract.contract_amount || 0;
-    const totalPaid = contract.total_paid || 0;
-    const balanceDue = contract.balance_due || (contractAmount - totalPaid);
     const monthlyAmount = contract.monthly_amount || 0;
+    
+    // حساب المدفوع من الفواتير (نفس طريقة حساب تبويب الفواتير)
+    const totalPaidFromInvoices = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+    
+    // استخدام المدفوع من الفواتير إذا كانت موجودة، وإلا استخدام قيمة العقد
+    const totalPaid = invoices.length > 0 ? totalPaidFromInvoices : (contract.total_paid || 0);
+    
+    // حساب المتبقي
+    const balanceDue = Math.max(0, contractAmount - totalPaid);
 
     // نسبة الدفع
     const paymentPercentage = contractAmount > 0 ? Math.min(100, Math.round((totalPaid / contractAmount) * 100)) : 0;
@@ -48,7 +65,7 @@ export const FinancialDashboard = ({ contract, formatCurrency }: FinancialDashbo
       extraPayments,
       paymentStatus: getPaymentStatus(),
     };
-  }, [contract]);
+  }, [contract, invoices]);
 
   // بيانات الرسم البياني الدائري
   const chartData = useMemo(() => {

@@ -211,6 +211,8 @@ export function useVehicleInspections(options: UseVehicleInspectionsOptions = {}
       })) as VehicleInspection[];
     },
     enabled: enabled && !!currentCompanyId,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 }
 

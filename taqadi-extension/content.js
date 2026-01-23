@@ -11,23 +11,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'fillForm') {
     fillFormWithData(request.data);
     sendResponse({ success: true });
-  }
-  
-  if (request.action === 'checkPage') {
+  } else if (request.action === 'checkPage') {
     sendResponse({ 
       url: window.location.href,
       hasForm: !!document.querySelector('form'),
       isLoggedIn: !window.location.href.includes('login')
     });
-  }
-  
-  if (request.action === 'setData') {
+  } else if (request.action === 'setData') {
     cachedLawsuitData = request.data;
     chrome.storage.local.set({ lawsuitData: request.data });
     sendResponse({ success: true });
   }
-  
-  return true;
+  // جميع الاستجابات متزامنة، لا حاجة لـ return true
 });
 
 // التحقق من البيانات المحفوظة عند تحميل الصفحة

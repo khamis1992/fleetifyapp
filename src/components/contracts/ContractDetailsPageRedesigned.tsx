@@ -529,6 +529,8 @@ const FinancialTab = ({
   onCancelInvoice,
   isCancellingInvoice,
   onGeneratePaymentSchedules,
+  customerName,
+  trafficViolations,
 }: {
   contract: Contract;
   invoices: Invoice[];
@@ -550,6 +552,16 @@ const FinancialTab = ({
   onCancelInvoice: (invoice: Invoice) => void;
   isCancellingInvoice: boolean;
   onGeneratePaymentSchedules: () => void;
+  customerName: string;
+  trafficViolations: Array<{
+    id: string;
+    violation_number: string;
+    violation_date: string;
+    violation_type: string;
+    fine_amount: number;
+    status: string;
+    location?: string | null;
+  }>;
 }) => (
   <Tabs defaultValue="overview" className="w-full">
     <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
@@ -584,7 +596,7 @@ const FinancialTab = ({
     </TabsList>
 
     <TabsContent value="overview" className="mt-6">
-      <FinancialDashboard contract={contract} formatCurrency={formatCurrency} />
+      <FinancialDashboard contract={contract} formatCurrency={formatCurrency} invoices={invoices} />
     </TabsContent>
 
     <TabsContent value="invoices" className="mt-6">
@@ -597,6 +609,14 @@ const FinancialTab = ({
         onCancelInvoice={onCancelInvoice}
         isCancellingInvoice={isCancellingInvoice}
         contractNumber={contract.contract_number}
+        customerInfo={{
+          name: customerName,
+          phone: contract.customer?.phone,
+          email: contract.customer?.email,
+          nationalId: contract.customer?.national_id,
+          customerType: contract.customer?.customer_type,
+        }}
+        trafficViolations={trafficViolations}
       />
     </TabsContent>
 
@@ -616,6 +636,7 @@ const FinancialTab = ({
         payments={paymentSchedules}
         onGenerateSchedules={invoices.length > 0 && paymentSchedules.length < invoices.length ? onGeneratePaymentSchedules : undefined}
         hasInvoices={invoices.length > 0}
+        invoices={invoices}
       />
     </TabsContent>
   </Tabs>
@@ -875,7 +896,7 @@ const ContractDetailsPageRedesigned = () => {
   const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
   const [isCancelInvoiceDialogOpen, setIsCancelInvoiceDialogOpen] = useState(false);
 
-  // Fetch contract data
+  // Fetch contract data with caching
   const { data: contract, isLoading, error } = useQuery({
     queryKey: ['contract-details', contractNumber, companyId],
     queryFn: async () => {
@@ -919,9 +940,11 @@ const ContractDetailsPageRedesigned = () => {
       return data as Contract;
     },
     enabled: !!contractNumber && !!companyId,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  // Fetch invoices
+  // Fetch invoices with caching
   const { data: invoices = [] } = useQuery({
     queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
@@ -939,9 +962,11 @@ const ContractDetailsPageRedesigned = () => {
       return data as Invoice[];
     },
     enabled: !!contract?.id,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  // Fetch traffic violations
+  // Fetch traffic violations with caching
   const { data: trafficViolations = [] } = useQuery({
     queryKey: ['contract-violations', contract?.id],
     queryFn: async () => {
@@ -957,6 +982,8 @@ const ContractDetailsPageRedesigned = () => {
       return data || [];
     },
     enabled: !!contract?.id,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   // Vehicle inspections
@@ -1448,6 +1475,8 @@ const ContractDetailsPageRedesigned = () => {
                   onCancelInvoice={handleCancelInvoice}
                   isCancellingInvoice={isCancellingInvoice}
                   onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
+                  customerName={customerName}
+                  trafficViolations={trafficViolations}
                 />
               </TabsContent>
 

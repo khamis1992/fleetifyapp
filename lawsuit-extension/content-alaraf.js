@@ -268,11 +268,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractData') {
     const data = extractAndSaveData();
     sendResponse({ data: data });
-  }
-  if (request.action === 'ping') {
+  } else if (request.action === 'ping') {
     sendResponse({ status: 'alive', page: 'alaraf' });
   }
-  return true;
+  // جميع الاستجابات متزامنة، لا حاجة لـ return true
 });
 
 // ============================================

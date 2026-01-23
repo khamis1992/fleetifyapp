@@ -13,7 +13,7 @@ export { ContractAmendmentForm } from './ContractAmendmentForm';
 export { ContractAmendmentsList } from './ContractAmendmentsList';
 
 // Contract Details Page
-export { default as ContractDetailsPage } from './ContractDetailsPage';
+export { default as ContractDetailsPage } from './ContractDetailsPageRedesigned';
 
 // Alaraf Official Legal Contract
 export { AlarafOfficialContractComplete } from './AlarafOfficialContractComplete';

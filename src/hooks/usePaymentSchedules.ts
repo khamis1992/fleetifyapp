@@ -35,6 +35,8 @@ export const useContractPaymentSchedules = (contractId: string) => {
       return data as PaymentSchedule[];
     },
     enabled: !!user?.id && !!contractId,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 };
 

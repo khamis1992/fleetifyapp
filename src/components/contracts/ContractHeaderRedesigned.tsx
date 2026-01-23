@@ -166,119 +166,101 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
   return (
     <motion.div
       variants={fadeInUp}
-      className={cn("space-y-6", className)}
+      className={cn("space-y-4", className)}
     >
-      {/* Hero Section - Gradient Banner */}
-      <Card className="overflow-hidden border-0 shadow-lg">
-        {/* Gradient Cover */}
-        <div className="relative h-36 bg-gradient-to-r from-teal-500 via-teal-600 to-cyan-600">
-          {/* Pattern Overlay */}
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0di0yaDJ2MmgtMnptMC00djJoMnYyaC0yem0wLTR2MmgydjJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+      {/* Official Header Card */}
+      <Card className="overflow-hidden border border-slate-200 shadow-sm">
+        {/* Top Action Bar */}
+        <div className="flex items-center justify-between px-6 py-3 bg-slate-50 border-b border-slate-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="h-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          >
+            <ArrowRight className="h-4 w-4 ml-2" />
+            العودة
+          </Button>
 
-          {/* Top Action Bar */}
-          <div className="absolute top-4 inset-x-4 flex items-center justify-between">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => navigate(-1)}
-              className="h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border-0 transition-all"
+              size="icon"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
             >
-              <ArrowRight className="h-4 w-4 ml-2" />
-              العودة
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
             </Button>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border-0 transition-all"
-              >
-                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onPrint}
-                className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border-0 transition-all"
-              >
-                <Printer className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onExport}
-                className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border-0 transition-all"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onEdit}
-                className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm border-0 transition-all"
-              >
-                <FileEdit className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onPrint}
+              className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onExport}
+              className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onEdit}
+              className="h-8 w-8 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+            >
+              <FileEdit className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        {/* Content Section - Overlapping the gradient */}
-        <div className="relative px-8 pb-8">
-          <div className="flex items-start justify-between mb-6 -mt-8">
-            {/* Contract Number & Status */}
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-xl border-4 border-white">
-                  <Hash className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-neutral-900">
-                    {contract.contract_number}
-                  </h1>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-neutral-600 border-neutral-300">
-                      <FileText className="w-3 h-3 ml-1" />
-                      {getContractTypeLabel(contract.contract_type)}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Badge */}
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <div 
-                  onClick={onStatusClick}
-                  className={cn(
-                    "cursor-pointer transition-transform hover:scale-105",
-                    onStatusClick && "hover:ring-2 hover:ring-teal-300 hover:ring-offset-2 rounded-full"
-                  )}
-                  title="انقر لتغيير حالة العقد"
-                >
-                  <ContractStatusBadge status={contract.status} />
-                </div>
-                {isExpiringSoon && (
-                  <Badge className="bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100">
-                    <AlertTriangle className="w-3 h-3 ml-1" />
-                    ينتهي قريباً
-                  </Badge>
-                )}
-                {isExpired && (
-                  <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">
-                    <Clock className="w-3 h-3 ml-1" />
-                    منتهي
-                  </Badge>
-                )}
+        {/* Main Content */}
+        <div className="p-6">
+          {/* Contract Header */}
+          <div className="flex items-start justify-between mb-6 pb-6 border-b border-slate-200">
+            {/* Contract Number & Type */}
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-slate-900">
+                  {contract.contract_number}
+                </h1>
+                <Badge variant="outline" className="text-slate-600 border-slate-300 font-normal">
+                  {getContractTypeLabel(contract.contract_type)}
+                </Badge>
               </div>
               {daysUntilExpiry !== null && daysUntilExpiry > 0 && (
-                <div className="text-sm text-neutral-500">
-                  <Clock className="w-3 h-3 inline ml-1" />
-                  {daysUntilExpiry} يوم متبقي
-                </div>
+                <p className="text-sm text-slate-500">
+                  {daysUntilExpiry} يوم متبقي على انتهاء العقد
+                </p>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center gap-2">
+              <div 
+                onClick={onStatusClick}
+                className={cn(
+                  "cursor-pointer",
+                  onStatusClick && "hover:opacity-80"
+                )}
+                title="انقر لتغيير حالة العقد"
+              >
+                <ContractStatusBadge status={contract.status} />
+              </div>
+              {isExpiringSoon && (
+                <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                  ينتهي قريباً
+                </Badge>
+              )}
+              {isExpired && (
+                <Badge variant="outline" className="text-red-700 border-red-300 bg-red-50">
+                  منتهي
+                </Badge>
               )}
             </div>
           </div>
@@ -286,230 +268,92 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
           {/* Progress Bar */}
           {contractProgress > 0 && contractProgress < 100 && (
             <div className="mb-6">
-              <div className="flex items-center justify-between text-xs text-neutral-500 mb-2">
-                <span>تقدم العقد</span>
+              <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+                <span>نسبة التقدم</span>
                 <span className="font-medium">{Math.round(contractProgress)}%</span>
               </div>
-              <Progress value={contractProgress} className="h-2" />
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-slate-600 rounded-full transition-all duration-300"
+                  style={{ width: `${contractProgress}%` }}
+                />
+              </div>
             </div>
           )}
 
-          {/* Key Information Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Contract Period */}
-            <motion.div
-              variants={scaleIn}
-              className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Calendar className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-700 font-medium mb-1">فترة العقد</p>
-                  <p className="text-sm font-semibold text-blue-900 truncate">
-                    {contract.start_date && format(new Date(contract.start_date), 'dd MMM yyyy', { locale: ar })}
-                  </p>
-                  <p className="text-xs text-blue-600 mt-0.5">
-                    إلى {contract.end_date && format(new Date(contract.end_date), 'dd MMM yyyy', { locale: ar })}
-                  </p>
-                  {contractDuration && (
-                    <p className="text-xs text-blue-500 mt-1">
-                      المدة: {contractDuration} يوم
-                    </p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Customer Name */}
-            <motion.div
-              variants={scaleIn}
-              className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100 hover:shadow-md transition-all cursor-pointer"
-              onClick={() => contract.customer?.id && navigate(`/customers/${contract.customer.id}`)}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-teal-700 font-medium mb-1">العميل</p>
-                  <p className="text-sm font-bold text-teal-900 truncate">
-                    {customerName || 'غير محدد'}
-                  </p>
-                  {contract.customer?.phone && (
-                    <p className="text-xs text-teal-600 mt-0.5 font-mono" dir="ltr">
-                      {contract.customer.phone}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Monthly Rent */}
-            <motion.div
-              variants={scaleIn}
-              className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <DollarSign className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-emerald-700 font-medium mb-1">الإيجار الشهري</p>
-                  <p className="text-lg font-bold text-emerald-900">
+          {/* Key Information Table */}
+          <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <table className="w-full">
+              <tbody className="divide-y divide-slate-200">
+                <tr>
+                  <td className="px-4 py-3 bg-slate-50 text-sm font-medium text-slate-600 w-40">فترة العقد</td>
+                  <td className="px-4 py-3 text-sm text-slate-900">
+                    {contract.start_date && format(new Date(contract.start_date), 'dd/MM/yyyy')}
+                    {' '}<span className="text-slate-400">إلى</span>{' '}
+                    {contract.end_date && format(new Date(contract.end_date), 'dd/MM/yyyy')}
+                    {contractDuration && (
+                      <span className="text-slate-500 mr-2">({contractDuration} يوم)</span>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 bg-slate-50 text-sm font-medium text-slate-600">العميل</td>
+                  <td className="px-4 py-3 text-sm text-slate-900">
+                    <button
+                      onClick={() => contract.customer?.id && navigate(`/customers/${contract.customer.id}`)}
+                      className="hover:text-blue-600 hover:underline font-medium"
+                    >
+                      {customerName || 'غير محدد'}
+                    </button>
+                    {contract.customer?.phone && (
+                      <span className="text-slate-500 mr-3 font-mono text-xs" dir="ltr">
+                        ({contract.customer.phone})
+                      </span>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 bg-slate-50 text-sm font-medium text-slate-600">الإيجار الشهري</td>
+                  <td className="px-4 py-3 text-sm font-bold text-slate-900">
                     {contract.monthly_amount?.toLocaleString('ar-SA') || '0'} ر.ق
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Vehicle Plate Number */}
-            <motion.div
-              variants={scaleIn}
-              className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100 hover:shadow-md transition-all cursor-pointer"
-              onClick={() => contract.vehicle?.id && navigate(`/fleet/vehicles/${contract.vehicle.id}`)}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Car className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-indigo-700 font-medium mb-1">رقم المركبة</p>
-                  <p className="text-lg font-bold text-indigo-900 font-mono">
-                    {vehicleInfo?.plate || 'غير محدد'}
-                  </p>
-                  {vehicleInfo?.name && (
-                    <p className="text-xs text-indigo-600 mt-0.5 truncate">
-                      {vehicleInfo.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 bg-slate-50 text-sm font-medium text-slate-600">المركبة</td>
+                  <td className="px-4 py-3 text-sm text-slate-900">
+                    <button
+                      onClick={() => contract.vehicle?.id && navigate(`/fleet/vehicles/${contract.vehicle.id}`)}
+                      className="hover:text-blue-600 hover:underline font-mono font-bold"
+                    >
+                      {vehicleInfo?.plate || 'غير محدد'}
+                    </button>
+                    {vehicleInfo?.name && (
+                      <span className="text-slate-500 mr-3">
+                        ({vehicleInfo.name})
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </Card>
 
-      {/* Customer & Vehicle Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Customer Card */}
-        {customerName && (
-          <motion.div
-            variants={scaleIn}
-            whileHover={{ y: -2 }}
-            className="bg-white rounded-xl border border-neutral-200 p-5 hover:border-teal-200 hover:shadow-md transition-all cursor-pointer"
-            onClick={() => contract.customer?.id && navigate(`/customers/${contract.customer.id}`)}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-neutral-500 mb-1">العميل</p>
-                <h3 className="font-bold text-neutral-900 text-base mb-2 truncate">{customerName}</h3>
-                <div className="space-y-1">
-                  {contract.customer?.national_id && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Hash className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="font-semibold">رقم الهوية:</span>
-                      <span className="font-mono font-semibold" dir="ltr">{contract.customer.national_id}</span>
-                    </div>
-                  )}
-                  {contract.customer?.customer_code && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Badge className="bg-teal-100 text-teal-700 border-teal-200 font-semibold text-xs px-2 py-0.5">
-                        {contract.customer.customer_code}
-                      </Badge>
-                    </div>
-                  )}
-                  {contract.customer?.phone && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Phone className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="font-mono" dir="ltr">{contract.customer.phone}</span>
-                    </div>
-                  )}
-                  {contract.customer?.email && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Mail className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="truncate">{contract.customer.email}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Vehicle Card */}
-        {vehicleInfo && (
-          <motion.div
-            variants={scaleIn}
-            whileHover={{ y: -2 }}
-            className="bg-white rounded-xl border border-neutral-200 p-5 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer"
-            onClick={() => contract.vehicle?.id && navigate(`/fleet/vehicles/${contract.vehicle.id}`)}
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                <Car className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-neutral-500 mb-1">المركبة</p>
-                <h3 className="font-bold text-neutral-900 text-base mb-2">{vehicleInfo.name}</h3>
-                <div className="space-y-1">
-                  {vehicleInfo.plate && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Hash className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="font-mono font-bold">{vehicleInfo.plate}</span>
-                    </div>
-                  )}
-                  {vehicleInfo.color && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <div className={cn("w-3 h-3 rounded-full border border-neutral-300")} />
-                      <span>{vehicleInfo.color}</span>
-                    </div>
-                  )}
-                  {contract.vehicle?.year && (
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                      <span>{contract.vehicle.year}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </div>
-
       {/* Notes Section */}
       {contract.notes && (
-        <motion.div
-          variants={scaleIn}
-          className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-5"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-              <FileText className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-900 mb-1">ملاحظات</p>
-              <p className="text-sm text-amber-800 leading-relaxed">{contract.notes}</p>
-            </div>
+        <Card className="border border-slate-200 shadow-sm">
+          <div className="px-6 py-4">
+            <h3 className="text-sm font-medium text-slate-600 mb-2">ملاحظات</h3>
+            <p className="text-sm text-slate-700 leading-relaxed">{contract.notes}</p>
           </div>
-        </motion.div>
+        </Card>
       )}
 
-      {/* Created At Badge */}
-      <motion.div
-        variants={scaleIn}
-        className="flex items-center justify-center"
-      >
-        <Badge variant="outline" className="text-neutral-500 border-neutral-200">
-          <Clock className="w-3 h-3 ml-1" />
-          {contract.created_at && format(new Date(contract.created_at), 'dd MMMM yyyy HH:mm', { locale: ar })}
-        </Badge>
-      </motion.div>
+      {/* Created At */}
+      <div className="text-center text-xs text-slate-400">
+        تاريخ الإنشاء: {contract.created_at && format(new Date(contract.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
+      </div>
     </motion.div>
   );
 });

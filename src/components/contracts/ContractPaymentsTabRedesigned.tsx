@@ -574,9 +574,9 @@ export const ContractPaymentsTabRedesigned = ({
   const [sortOption, setSortOption] = useState('date-desc');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
-  // Fetch payments
+  // Fetch payments with caching for better performance
   const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['contract-payments', contractId, showAllPayments],
+    queryKey: ['contract-payments', contractId, showAllPayments, invoiceIds.join(',')],
     queryFn: async () => {
       let query = supabase
         .from('payments')
@@ -610,6 +610,8 @@ export const ContractPaymentsTabRedesigned = ({
       return (data || []) as Payment[];
     },
     enabled: showAllPayments || invoiceIds.length > 0,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   // Filter and sort payments
