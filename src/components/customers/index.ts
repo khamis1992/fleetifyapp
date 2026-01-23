@@ -42,4 +42,4 @@ export { FixCustomerAccounts } from './FixCustomerAccounts';
 export { CreateAccountsForExistingCustomers } from './CreateAccountsForExistingCustomers';
 
 // صفحة تفاصيل العميل الشاملة
-export { default as CustomerDetailsPage } from './CustomerDetailsPage';
+export { default as CustomerDetailsPage } from './CustomerDetailsPageNew';

@@ -731,7 +731,520 @@ const InvoicesTab = ({
 };
 
 // تبويب المدفوعات
-const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], navigate: any, onAddPayment: () => void }) => {
+const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerPhone, customerIdNumber }: { 
+  payments: any[], 
+  navigate: any, 
+  onAddPayment: () => void, 
+  customerName?: string,
+  customerPhone?: string,
+  customerIdNumber?: string 
+}) => {
+  
+  // وظيفة طباعة إيصال المدفوعات
+  const handlePrintPayments = () => {
+    const totalAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const completedPayments = payments.filter(p => p.payment_status === 'completed');
+    const completedAmount = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    const receiptNumber = `RCP-${Date.now().toString().slice(-8)}`;
+    const currentDateAr = new Date().toLocaleDateString('ar-QA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    
+    // بيانات الشركة - نفس المستخدمة في المذكرة الشارحة
+    const COMPANY_INFO = {
+      name_ar: 'شركة العراف لتأجير السيارات',
+      name_en: 'AL-ARAF CAR RENTAL L.L.C',
+      logo: '/receipts/logo.png',
+      address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+      phone: '31411919',
+      email: 'info@alaraf.qa',
+      cr: '146832',
+      authorized_signatory: 'شركة العراف لتأجير السيارات',
+      authorized_title: '',
+    };
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>إيصال سداد رسمي - ${receiptNumber}</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <style>
+          @page { 
+            size: A4; 
+            margin: 15mm 20mm 20mm 20mm; 
+          }
+          
+          @media print {
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            body { margin: 0; padding: 0; }
+            .receipt-container {
+              width: 100% !important;
+              max-width: none !important;
+              margin: 0 !important;
+              padding: 20px 30px !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+          }
+          
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          
+          body { 
+            font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+          }
+          
+          .receipt-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px 30px;
+            background: #fff;
+          }
+          
+          /* رأسية الشركة - نفس تصميم المذكرة الشارحة */
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px double #1e3a5f;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+          }
+          
+          .company-ar {
+            flex: 1;
+            text-align: right;
+          }
+          
+          .company-ar h1 {
+            color: #1e3a5f;
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+          }
+          
+          .company-ar p {
+            color: #000;
+            margin: 2px 0;
+            font-size: 11px;
+          }
+          
+          .logo-container {
+            flex: 0 0 130px;
+            text-align: center;
+            padding: 0 15px;
+          }
+          
+          .logo-container img {
+            max-height: 70px;
+            max-width: 120px;
+          }
+          
+          .company-en {
+            flex: 1;
+            text-align: left;
+          }
+          
+          .company-en h1 {
+            color: #1e3a5f;
+            margin: 0;
+            font-size: 14px;
+            font-weight: bold;
+          }
+          
+          .company-en p {
+            color: #000;
+            margin: 2px 0;
+            font-size: 10px;
+          }
+          
+          .address-bar {
+            text-align: center;
+            color: #000;
+            font-size: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+          }
+          
+          .ref-date {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #000;
+          }
+          
+          .subject-box {
+            background: #1e3a5f;
+            color: #fff;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: center;
+            font-weight: bold;
+          }
+          
+          .info-box {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border-right: 4px solid #1e3a5f;
+          }
+          
+          .info-row {
+            display: flex;
+            justify-content: flex-start;
+            gap: 15px;
+            padding: 5px 0;
+            border-bottom: 1px dotted #ddd;
+          }
+          
+          .info-row:last-child {
+            border-bottom: none;
+          }
+          
+          .info-label {
+            font-weight: bold;
+            color: #1e3a5f;
+            min-width: 100px;
+          }
+          
+          table { 
+            width: 100%; 
+            border-collapse: collapse;
+            margin: 15px 0;
+            border: 1px solid #1e3a5f;
+          }
+          
+          th { 
+            background: #1e3a5f;
+            color: white; 
+            padding: 12px 10px; 
+            text-align: right; 
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid #1e3a5f;
+          }
+          
+          td { 
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-size: 13px;
+          }
+          
+          tr:nth-child(even) { 
+            background: #f9f9f9; 
+          }
+          
+          .amount-cell { 
+            font-weight: bold; 
+            color: #1e3a5f;
+          }
+          
+          .status-completed { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 4px 10px; 
+            border-radius: 3px; 
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid #c3e6cb;
+          }
+          
+          .status-pending { 
+            background: #fff3cd; 
+            color: #856404; 
+            padding: 4px 10px; 
+            border-radius: 3px; 
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid #ffc107;
+          }
+          
+          .totals-section {
+            margin: 20px 0;
+            border: 2px solid #1e3a5f;
+            border-radius: 5px;
+            overflow: hidden;
+          }
+          
+          .totals-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #ddd;
+          }
+          
+          .totals-row:last-child {
+            border-bottom: none;
+            background: #1e3a5f;
+            color: white;
+          }
+          
+          .totals-row:last-child .totals-value {
+            color: white;
+          }
+          
+          .totals-label {
+            font-weight: bold;
+          }
+          
+          .totals-value {
+            font-weight: bold;
+            font-size: 16px;
+            color: #1e3a5f;
+          }
+          
+          .signature-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #1e3a5f;
+          }
+          
+          .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+          }
+          
+          .signature-box {
+            text-align: center;
+            width: 180px;
+          }
+          
+          .signatory {
+            text-align: center;
+          }
+          
+          .signatory .company-name {
+            font-weight: bold;
+            color: #1e3a5f;
+            font-size: 14px;
+            margin-bottom: 5px;
+          }
+          
+          .signatory .name {
+            font-weight: bold;
+            margin-top: 50px;
+          }
+          
+          .signatory .title {
+            font-size: 12px;
+            color: #666;
+          }
+          
+          .sign-line {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-size: 12px;
+            color: #666;
+          }
+          
+          .stamp-area {
+            text-align: center;
+          }
+          
+          .stamp-placeholder {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            border: 2px dashed #ccc;
+            border-radius: 50%;
+            line-height: 100px;
+            color: #999;
+            font-size: 12px;
+          }
+          
+          .footer {
+            text-align: center;
+            color: #000;
+            font-size: 10px;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ccc;
+          }
+          
+          .legal-notice {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          
+          <!-- رأسية الشركة - نفس المذكرة الشارحة -->
+          <div class="header">
+            <div class="company-ar">
+              <h1>${COMPANY_INFO.name_ar}</h1>
+              <p>ذ.م.م</p>
+              <p>س.ت: ${COMPANY_INFO.cr}</p>
+            </div>
+            
+            <div class="logo-container">
+              <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" onerror="this.style.display='none'" />
+            </div>
+            
+            <div class="company-en" dir="ltr">
+              <h1>${COMPANY_INFO.name_en}</h1>
+              <p>C.R: ${COMPANY_INFO.cr}</p>
+            </div>
+          </div>
+          
+          <!-- العنوان -->
+          <div class="address-bar">
+            ${COMPANY_INFO.address}<br/>
+            هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
+          </div>
+          
+          <!-- التاريخ والرقم المرجعي -->
+          <div class="ref-date">
+            <div><strong>رقم الإيصال:</strong> ${receiptNumber}</div>
+            <div><strong>التاريخ:</strong> ${currentDateAr}</div>
+          </div>
+
+          <!-- الموضوع -->
+          <div class="subject-box">
+            إيصال سداد رسمي
+          </div>
+          
+          <!-- بيانات العميل -->
+          <div class="info-box">
+            <div class="info-row">
+              <span class="info-label">اسم العميل:</span>
+              <span>${customerName || 'غير محدد'}</span>
+            </div>
+            ${customerIdNumber ? `
+            <div class="info-row">
+              <span class="info-label">رقم الهوية:</span>
+              <span>${customerIdNumber}</span>
+            </div>
+            ` : ''}
+            ${customerPhone ? `
+            <div class="info-row">
+              <span class="info-label">رقم الهاتف:</span>
+              <span>${customerPhone}</span>
+            </div>
+            ` : ''}
+          </div>
+
+          <!-- جدول المدفوعات -->
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px;">م</th>
+                <th>رقم الدفعة</th>
+                <th>تاريخ السداد</th>
+                <th>المبلغ</th>
+                <th>طريقة الدفع</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${payments.map((payment, index) => `
+                <tr>
+                  <td style="text-align: center;">${index + 1}</td>
+                  <td>${payment.payment_number || payment.id?.substring(0, 8) || '-'}</td>
+                  <td>${payment.payment_date ? format(new Date(payment.payment_date), 'dd/MM/yyyy') : '-'}</td>
+                  <td class="amount-cell">${payment.amount?.toLocaleString() || 0} ر.ق</td>
+                  <td>${payment.payment_method || '-'}</td>
+                  <td style="text-align: center;">
+                    <span class="${payment.payment_status === 'completed' ? 'status-completed' : 'status-pending'}">
+                      ${payment.payment_status === 'completed' ? 'مسدد' : 'معلق'}
+                    </span>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- الملخص المالي -->
+          <div class="totals-section">
+            <div class="totals-row">
+              <span class="totals-label">عدد العمليات:</span>
+              <span class="totals-value">${payments.length} عملية</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">العمليات المكتملة:</span>
+              <span class="totals-value">${completedPayments.length} عملية</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">إجمالي المبلغ المسدد:</span>
+              <span class="totals-value">${completedAmount.toLocaleString()} ر.ق</span>
+            </div>
+          </div>
+
+          <!-- التوقيعات -->
+          <div class="signature-section">
+            <div class="signatures">
+              <div class="signature-box">
+                <div class="sign-line">توقيع المستلم</div>
+              </div>
+              
+              <div class="stamp-area">
+                <div class="stamp-placeholder">الختم</div>
+              </div>
+              
+              <div class="signatory">
+                <p class="company-name">${COMPANY_INFO.name_ar}</p>
+                <div class="sign-line">التوقيع</div>
+              </div>
+            </div>
+            
+            <div class="legal-notice">
+              هذا الإيصال وثيقة رسمية تثبت استلام المبالغ المذكورة أعلاه.<br>
+              يرجى الاحتفاظ بهذا الإيصال للرجوع إليه عند الحاجة.
+            </div>
+          </div>
+          
+          <!-- الذيل -->
+          <div class="footer">
+            ${COMPANY_INFO.address}<br/>
+            هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
+          </div>
+
+        </div>
+        
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -747,13 +1260,25 @@ const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], na
             <p className="text-xs text-teal-600/70">{payments.length} عملية</p>
           </div>
         </div>
-        <Button
-          className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
-          onClick={onAddPayment}
-        >
-          <Plus className="w-4 h-4" />
-          تسجيل دفعة
-        </Button>
+        <div className="flex items-center gap-2">
+          {payments.length > 0 && (
+            <Button
+              variant="outline"
+              className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+              onClick={handlePrintPayments}
+            >
+              <Printer className="w-4 h-4" />
+              طباعة الإيصال
+            </Button>
+          )}
+          <Button
+            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
+            onClick={onAddPayment}
+          >
+            <Plus className="w-4 h-4" />
+            تسجيل دفعة
+          </Button>
+        </div>
       </div>
 
       {payments.length > 0 ? (
@@ -808,13 +1333,100 @@ const PaymentsTab = ({ payments, navigate, onAddPayment }: { payments: any[], na
   );
 };
 
-// تبويب الملاحظات - متكامل مع CRM
-const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerPhone?: string }) => {
+// تبويب CRM الموحد - يجمع الملاحظات والمتابعات
+const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string; customerPhone?: string; companyId?: string }) => {
   const [newNote, setNewNote] = useState('');
   const [noteType, setNoteType] = useState<'note' | 'phone' | 'whatsapp'>('note');
   const [isAdding, setIsAdding] = useState(false);
   
   const { activities, isLoading, addActivity, isAddingActivity } = useCustomerCRMActivity(customerId);
+
+  // === حالة المتابعات ===
+  const [isAddingFollowup, setIsAddingFollowup] = useState(false);
+  const [newFollowup, setNewFollowup] = useState({
+    title: '',
+    notes: '',
+    scheduled_date: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent'
+  });
+
+  // جلب المتابعات
+  const { data: followups, isLoading: isLoadingFollowups, refetch: refetchFollowups } = useQuery({
+    queryKey: ['customer-followups', customerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('scheduled_followups')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .order('scheduled_date', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId && !!companyId
+  });
+
+  const pendingFollowups = followups?.filter(f => f.status !== 'completed') || [];
+  const completedFollowups = followups?.filter(f => f.status === 'completed') || [];
+
+  const handleAddFollowup = async () => {
+    if (!newFollowup.title.trim() || !newFollowup.scheduled_date) return;
+
+    try {
+      const { error } = await supabase
+        .from('scheduled_followups')
+        .insert({
+          customer_id: customerId,
+          company_id: companyId,
+          title: newFollowup.title,
+          notes: newFollowup.notes,
+          scheduled_date: newFollowup.scheduled_date,
+          priority: newFollowup.priority,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+      
+      setNewFollowup({ title: '', notes: '', scheduled_date: '', priority: 'medium' });
+      setIsAddingFollowup(false);
+      refetchFollowups();
+    } catch (error) {
+      console.error('Error adding followup:', error);
+    }
+  };
+
+  const handleCompleteFollowup = async (followupId: string) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_followups')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', followupId);
+
+      if (error) throw error;
+      refetchFollowups();
+    } catch (error) {
+      console.error('Error completing followup:', error);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+      default: return 'bg-green-100 text-green-700 border-green-200';
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'عاجل';
+      case 'high': return 'عالي';
+      case 'medium': return 'متوسط';
+      default: return 'منخفض';
+    }
+  };
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
@@ -868,7 +1480,131 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
       animate={{ opacity: 1, y: 0 }}
       className="space-y-5"
     >
-      {/* Header with actions */}
+      {/* ═══════════════════════════════════════════════════════════════
+          القسم الأول: المتابعات القادمة (Compact)
+          ═══════════════════════════════════════════════════════════════ */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-200/50">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-amber-600" />
+            <h4 className="text-sm font-bold text-amber-900">المتابعات القادمة</h4>
+            {pendingFollowups.length > 0 && (
+              <Badge className="text-xs bg-amber-500 text-white">
+                {pendingFollowups.length}
+              </Badge>
+            )}
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline"
+            className="gap-1.5 h-8 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+            onClick={() => setIsAddingFollowup(!isAddingFollowup)}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            متابعة جديدة
+          </Button>
+        </div>
+
+        {/* نموذج إضافة متابعة */}
+        <AnimatePresence>
+          {isAddingFollowup && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white rounded-xl p-4 mb-3 border border-amber-200 space-y-3"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newFollowup.title}
+                  onChange={(e) => setNewFollowup(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="عنوان المتابعة..."
+                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <input
+                  type="datetime-local"
+                  value={newFollowup.scheduled_date}
+                  onChange={(e) => setNewFollowup(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                {(['low', 'medium', 'high', 'urgent'] as const).map(priority => (
+                  <Button
+                    key={priority}
+                    variant={newFollowup.priority === priority ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNewFollowup(prev => ({ ...prev, priority }))}
+                    className={cn("text-xs h-7", newFollowup.priority === priority ? getPriorityColor(priority) : '')}
+                  >
+                    {getPriorityLabel(priority)}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" className="h-8" onClick={() => setIsAddingFollowup(false)}>إلغاء</Button>
+                <Button 
+                  size="sm"
+                  className="h-8 bg-amber-500 hover:bg-amber-600"
+                  onClick={handleAddFollowup}
+                  disabled={!newFollowup.title.trim() || !newFollowup.scheduled_date}
+                >
+                  حفظ
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* قائمة المتابعات المعلقة */}
+        {isLoadingFollowups ? (
+          <div className="flex items-center justify-center py-4">
+            <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+          </div>
+        ) : pendingFollowups.length > 0 ? (
+          <div className="space-y-2">
+            {pendingFollowups.map((followup) => (
+              <div
+                key={followup.id}
+                className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 border border-amber-100 hover:border-amber-300 transition-colors"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Badge className={cn("text-[10px] shrink-0", getPriorityColor(followup.priority))}>
+                    {getPriorityLabel(followup.priority)}
+                  </Badge>
+                  <span className="text-sm font-medium text-neutral-800 truncate">{followup.title}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-neutral-500 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {format(new Date(followup.scheduled_date), 'dd MMM', { locale: ar })}
+                  </span>
+                  {differenceInDays(new Date(followup.scheduled_date), new Date()) <= 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5">متأخر</Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleCompleteFollowup(followup.id)}
+                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-amber-600/70 text-sm">
+            لا توجد متابعات قادمة
+          </div>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          القسم الثاني: سجل التواصل والملاحظات
+          ═══════════════════════════════════════════════════════════════ */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 shadow-sm">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -914,7 +1650,7 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
           </div>
         </div>
 
-        {/* Add Note Form */}
+        {/* نموذج إضافة ملاحظة */}
         <AnimatePresence>
           {isAdding && (
             <motion.div
@@ -1001,7 +1737,7 @@ const NotesTab = ({ customerId, customerPhone }: { customerId: string; customerP
         </AnimatePresence>
       </div>
 
-      {/* Activities List */}
+      {/* قائمة النشاطات (Timeline) */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="w-6 h-6 animate-spin text-teal-400" />
@@ -1187,259 +1923,6 @@ const ViolationsTab = ({ violations, navigate, isLoading }: { violations: any[],
           <AlertTriangle className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
           <p className="text-neutral-600 font-medium">لا توجد مخالفات مرورية مسجلة</p>
           <p className="text-neutral-400 text-sm mt-1">لم يتم تسجيل أي مخالفات على عقود هذا العميل</p>
-        </div>
-      )}
-    </motion.div>
-  );
-};
-
-// تبويب المتابعات المجدولة
-const FollowupsTab = ({ customerId, companyId }: { customerId: string; companyId: string }) => {
-  const [isAdding, setIsAdding] = useState(false);
-  const [newFollowup, setNewFollowup] = useState({
-    title: '',
-    notes: '',
-    scheduled_date: '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent'
-  });
-
-  // جلب المتابعات
-  const { data: followups, isLoading, refetch } = useQuery({
-    queryKey: ['customer-followups', customerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('scheduled_followups')
-        .select('*')
-        .eq('customer_id', customerId)
-        .eq('company_id', companyId)
-        .order('scheduled_date', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!customerId && !!companyId
-  });
-
-  const handleAddFollowup = async () => {
-    if (!newFollowup.title.trim() || !newFollowup.scheduled_date) return;
-
-    try {
-      const { error } = await supabase
-        .from('scheduled_followups')
-        .insert({
-          customer_id: customerId,
-          company_id: companyId,
-          title: newFollowup.title,
-          notes: newFollowup.notes,
-          scheduled_date: newFollowup.scheduled_date,
-          priority: newFollowup.priority,
-          status: 'pending'
-        });
-
-      if (error) throw error;
-      
-      setNewFollowup({ title: '', notes: '', scheduled_date: '', priority: 'medium' });
-      setIsAdding(false);
-      refetch();
-    } catch (error) {
-      console.error('Error adding followup:', error);
-    }
-  };
-
-  const handleCompleteFollowup = async (followupId: string) => {
-    try {
-      const { error } = await supabase
-        .from('scheduled_followups')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
-        .eq('id', followupId);
-
-      if (error) throw error;
-      refetch();
-    } catch (error) {
-      console.error('Error completing followup:', error);
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-green-100 text-green-700 border-green-200';
-    }
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'عاجل';
-      case 'high': return 'عالي';
-      case 'medium': return 'متوسط';
-      default: return 'منخفض';
-    }
-  };
-
-  const pendingFollowups = followups?.filter(f => f.status !== 'completed') || [];
-  const completedFollowups = followups?.filter(f => f.status === 'completed') || [];
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
-      {/* Header */}
-      <div className="bg-white rounded-2xl p-4 border border-neutral-200">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h4 className="text-sm font-bold text-neutral-900">المتابعات المجدولة</h4>
-            <p className="text-xs text-neutral-500">{pendingFollowups.length} متابعة قادمة</p>
-          </div>
-          <Button 
-            size="sm" 
-            className="gap-2 bg-rose-500 hover:bg-coral-600"
-            onClick={() => setIsAdding(!isAdding)}
-          >
-            <Plus className="w-4 h-4" />
-            إضافة متابعة
-          </Button>
-        </div>
-
-        {/* Add Followup Form */}
-        <AnimatePresence>
-          {isAdding && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="border-t border-neutral-100 pt-4 space-y-3"
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={newFollowup.title}
-                  onChange={(e) => setNewFollowup(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="عنوان المتابعة..."
-                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
-                />
-                <input
-                  type="datetime-local"
-                  value={newFollowup.scheduled_date}
-                  onChange={(e) => setNewFollowup(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                  className="px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
-                />
-              </div>
-              <div className="flex gap-2">
-                {(['low', 'medium', 'high', 'urgent'] as const).map(priority => (
-                  <Button
-                    key={priority}
-                    variant={newFollowup.priority === priority ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setNewFollowup(prev => ({ ...prev, priority }))}
-                    className={newFollowup.priority === priority ? getPriorityColor(priority) : ''}
-                  >
-                    {getPriorityLabel(priority)}
-                  </Button>
-                ))}
-              </div>
-              <Textarea
-                value={newFollowup.notes}
-                onChange={(e) => setNewFollowup(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="ملاحظات إضافية..."
-                className="min-h-[80px]"
-              />
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsAdding(false)}>
-                  إلغاء
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="gap-2 bg-rose-500 hover:bg-coral-600"
-                  onClick={handleAddFollowup}
-                  disabled={!newFollowup.title.trim() || !newFollowup.scheduled_date}
-                >
-                  <Plus className="w-4 h-4" />
-                  حفظ المتابعة
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Pending Followups */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
-        </div>
-      ) : pendingFollowups.length > 0 ? (
-        <div className="space-y-3">
-          {pendingFollowups.map((followup, index) => (
-            <motion.div
-              key={followup.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-rose-200 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bell className="w-4 h-4 text-rose-500" />
-                    <h5 className="font-medium text-neutral-900">{followup.title}</h5>
-                    <Badge className={cn("text-xs", getPriorityColor(followup.priority))}>
-                      {getPriorityLabel(followup.priority)}
-                    </Badge>
-                  </div>
-                  {followup.notes && (
-                    <p className="text-sm text-neutral-600 mb-2">{followup.notes}</p>
-                  )}
-                  <div className="flex items-center gap-4 text-xs text-neutral-500">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {format(new Date(followup.scheduled_date), 'dd MMM yyyy - HH:mm', { locale: ar })}
-                    </span>
-                    {differenceInDays(new Date(followup.scheduled_date), new Date()) <= 0 && (
-                      <Badge variant="destructive" className="text-xs">متأخرة</Badge>
-                    )}
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => handleCompleteFollowup(followup.id)}
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                >
-                  <CheckCircle className="w-5 h-5" />
-                </Button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-neutral-50 rounded-2xl p-12 text-center border border-neutral-200">
-          <Bell className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-          <p className="text-neutral-600 font-medium">لا توجد متابعات مجدولة</p>
-          <p className="text-neutral-400 text-sm mt-1">أضف متابعة جديدة للتذكير</p>
-        </div>
-      )}
-
-      {/* Completed Followups */}
-      {completedFollowups.length > 0 && (
-        <div className="mt-6">
-          <h5 className="text-sm font-medium text-neutral-500 mb-3">المتابعات المكتملة ({completedFollowups.length})</h5>
-          <div className="space-y-2">
-            {completedFollowups.slice(0, 5).map(followup => (
-              <div 
-                key={followup.id}
-                className="bg-neutral-50 rounded-lg p-3 border border-neutral-100 opacity-60"
-              >
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-neutral-600 line-through">{followup.title}</span>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </motion.div>
@@ -2257,11 +2740,11 @@ const CustomerDetailsPageNew = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 border-cyan-200 text-cyan-600 hover:bg-cyan-50 hover:border-cyan-300"
-                onClick={() => setActiveTab('followups')}
+                className="gap-2 border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300"
+                onClick={() => setActiveTab('notes')}
               >
                 <Bell className="w-4 h-4" />
-                المتابعات
+                المتابعة
               </Button>
             </div>
           </div>
@@ -2284,8 +2767,7 @@ const CustomerDetailsPageNew = () => {
                 { value: 'invoices', label: 'الفواتير', icon: Wallet },
                 { value: 'payments', label: 'المدفوعات', icon: CreditCard },
                 { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
-                { value: 'notes', label: 'CRM والملاحظات', icon: MessageSquare },
-                { value: 'followups', label: 'المتابعات', icon: Bell },
+                { value: 'notes', label: 'المتابعة', icon: MessageSquare },
                 { value: 'activity', label: 'سجل النشاط', icon: Activity },
               ].map((tab) => (
                 <TabsTrigger
@@ -2366,7 +2848,14 @@ const CustomerDetailsPageNew = () => {
                     <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
                   </div>
                 ) : (
-                  <PaymentsTab payments={payments} navigate={navigate} onAddPayment={() => setIsPaymentDialogOpen(true)} />
+                  <PaymentsTab 
+                    payments={payments} 
+                    navigate={navigate} 
+                    onAddPayment={() => setIsPaymentDialogOpen(true)} 
+                    customerName={customerName}
+                    customerPhone={customer?.phone || customer?.mobile_number}
+                    customerIdNumber={customer?.id_number || customer?.qatar_id}
+                  />
                 )}
               </TabsContent>
               <TabsContent value="violations" className="mt-0">
@@ -2395,15 +2884,10 @@ const CustomerDetailsPageNew = () => {
                 ) : (
                   <NotesTab 
                     customerId={customerId || ''} 
-                    customerPhone={customer?.phone || customer?.mobile_number} 
+                    customerPhone={customer?.phone || customer?.mobile_number}
+                    companyId={companyId || ''}
                   />
                 )}
-              </TabsContent>
-              <TabsContent value="followups" className="mt-0">
-                <FollowupsTab 
-                  customerId={customerId || ''} 
-                  companyId={companyId || ''} 
-                />
               </TabsContent>
             </div>
           </Tabs>
