@@ -2127,7 +2127,43 @@ export default function LawsuitPreparationPage() {
       {/* نافذة إرسال مهمة فتح بلاغ */}
       <SendReportTaskDialog
         open={sendReportDialogOpen}
-        onOpenChange={setSendReportDialogOpen}
+        onOpenChange={(open) => {
+          setSendReportDialogOpen(open);
+          // توليد المستند تلقائياً عند فتح النافذة إذا لم يكن موجوداً
+          if (open) {
+            if (!criminalComplaintHtmlContent && contract) {
+              console.log('[SEND REPORT] Auto-generating criminal complaint HTML...');
+              const customer = (contract as any)?.customers;
+              const vehicle = (contract as any)?.vehicles;
+              const customerName = customer
+                ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
+                : 'غير معروف';
+
+              const complaintHtml = generateCriminalComplaintHtml({
+                customerName,
+                customerNationality: customer?.nationality || '',
+                customerId: customer?.national_id || '-',
+                customerMobile: customer?.phone || customer?.mobile || '',
+                contractDate: contract?.start_date
+                  ? new Date(contract.start_date).toLocaleDateString('ar-QA')
+                  : '-',
+                contractEndDate: contract?.end_date
+                  ? new Date(contract.end_date).toLocaleDateString('ar-QA')
+                  : '-',
+                vehicleType: vehicle
+                  ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim()
+                  : '-',
+                plateNumber: vehicle?.plate_number || '-',
+                plateType: 'خصوصي',
+                manufactureYear: vehicle?.year?.toString() || '',
+                chassisNumber: vehicle?.vin || '',
+              });
+              setCriminalComplaintHtmlContent(complaintHtml);
+              setCriminalComplaintUrl('generated');
+              console.log('[SEND REPORT] Criminal complaint HTML generated, length:', complaintHtml.length);
+            }
+          }
+        }}
         contractId={contractId}
         contractNumber={contract?.contract_number}
         customerName={customerFullName}

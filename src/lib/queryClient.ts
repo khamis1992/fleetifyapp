@@ -41,7 +41,7 @@ const defaultOptions = {
     refetchOnMount: true, // Refetch on component mount
 
     // Performance optimizations
-    networkMode: 'online', // Only fetch when online
+    networkMode: 'always', // CRITICAL FIX: Changed from 'online' to 'always' to prevent infinite loading on navigation
     retryOnMount: false, // Don't retry on mount if already failed
 
     // Error handling
@@ -250,18 +250,6 @@ export function createOptimizedMutationFn<TVariables, TData>(
     }
   };
 }
-
-/**
- * Create and configure the Query Client
- */
-export const queryClient = new QueryClient({
-  defaultOptions,
-  logger: {
-    log: (message) => logger.debug(message),
-    warn: (message) => logger.warn(message),
-    error: (message) => logger.error(message)
-  }
-});
 
 /**
  * Create and configure the Query Client

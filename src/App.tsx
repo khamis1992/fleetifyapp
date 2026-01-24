@@ -105,7 +105,7 @@ const createQueryClient = () => {
     defaultOptions: {
       queries: {
         // Performance optimizations
-        refetchOnMount: false, // Changed from true to prevent unnecessary refetches on mount
+        refetchOnMount: true, // CRITICAL FIX: Changed from false to prevent stale data on navigation
         refetchOnWindowFocus: false,
         refetchOnReconnect: true,
 

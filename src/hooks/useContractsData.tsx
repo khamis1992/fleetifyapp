@@ -73,7 +73,7 @@ export const useContractsData = (filters: any = {}) => {
   // Fetch statistics separately (all contracts for accurate counts)
   const { data: allContractsForStats } = useQuery({
     queryKey: [...queryKeys.contracts.lists(), 'all-for-stats', filter?.company_id],
-    queryFn: async () => {
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
         const companyId = filter?.company_id || null;
         
@@ -87,7 +87,8 @@ export const useContractsData = (filters: any = {}) => {
 
         let query = supabase
           .from('contracts')
-          .select('id, status, contract_amount, monthly_amount');
+          .select('id, status, contract_amount, monthly_amount')
+          .abortSignal(signal!);
 
         if (companyId) {
           query = query.eq('company_id', companyId);
@@ -124,7 +125,7 @@ export const useContractsData = (filters: any = {}) => {
       filters?.cost_center_id,
       filters?.search // البحث كجزء من queryKey
     ]),
-    queryFn: async () => {
+    queryFn: async ({ signal }: { signal?: AbortSignal }) => {
       try {
         const companyId = filter?.company_id || null;
         
@@ -185,7 +186,8 @@ export const useContractsData = (filters: any = {}) => {
           .from('customers')
           .select('id')
           .eq('company_id', companyId)
-          .or(customerSearchConditions.join(','));
+          .or(customerSearchConditions.join(','))
+          .abortSignal(signal!);
         
         if (matchingCustomers && matchingCustomers.length > 0) {
           customerIds = matchingCustomers.map(c => c.id);
@@ -201,7 +203,8 @@ export const useContractsData = (filters: any = {}) => {
       if (filters?.page || filters?.pageSize) {
         let countQuery = supabase
           .from('contracts')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .abortSignal(signal!);
 
         if (companyId) {
           countQuery = countQuery.eq('company_id', companyId);
@@ -262,7 +265,8 @@ export const useContractsData = (filters: any = {}) => {
             center_name,
             center_name_ar
           )
-        `);
+        `)
+        .abortSignal(signal!);
 
       if (companyId) {
         query = query.eq('company_id', companyId);
@@ -319,7 +323,8 @@ export const useContractsData = (filters: any = {}) => {
           const { data: vehiclesData, error: vehiclesError } = await supabase
             .from('vehicles')
             .select('id, plate_number, make, model, year, status')
-            .in('id', vehicleIds);
+            .in('id', vehicleIds)
+            .abortSignal(signal!);
           
           if (!vehiclesError && vehiclesData) {
             console.log('✅ [CONTRACTS_QUERY] Successfully fetched vehicles:', vehiclesData.length);

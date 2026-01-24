@@ -47,7 +47,7 @@ export const useDashboardStats = () => {
 
   return useQuery({
     queryKey: ['dashboard-stats', user?.id, moduleContext?.activeModules],
-    queryFn: async (): Promise<DashboardStats> => {
+    queryFn: async ({ signal }: { signal?: AbortSignal }): Promise<DashboardStats> => {
       if (!user?.id) {
         return {
           totalCustomers: 0,
@@ -87,6 +87,7 @@ export const useDashboardStats = () => {
         .from('profiles')
         .select('company_id')
         .eq('user_id', user.id)
+        .abortSignal(signal!)
         .single();
       
       MobileDebugger.log('DASHBOARD', 'Profiles query result', { 
@@ -108,6 +109,7 @@ export const useDashboardStats = () => {
           .select('company_id')
           .eq('user_id', user.id)
           .eq('is_active', true)
+          .abortSignal(signal!)
           .single();
         
         if (employeeError || !employeeData?.company_id) {
@@ -158,31 +160,31 @@ export const useDashboardStats = () => {
 
       // ⚡ PERFORMANCE OPTIMIZATION: Run all count queries in parallel
       const countQueries = [];
-      
+
       // Vehicles queries (if enabled)
       if (isVehiclesEnabled) {
         countQueries.push(
-          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()),
-          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
-          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active').lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]).or(`end_date.gte.${lastDayPrevMonth.toISOString().split('T')[0]},end_date.is.null`)
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
+          supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()).abortSignal(signal!),
+          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active').abortSignal(signal!),
+          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
+          supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active').lte('start_date', lastDayPrevMonth.toISOString().split('T')[0]).or(`end_date.gte.${lastDayPrevMonth.toISOString().split('T')[0]},end_date.is.null`).abortSignal(signal!)
         );
       }
-      
+
       // Properties queries (if enabled)
       if (isPropertiesEnabled) {
         countQueries.push(
-          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-          supabase.from('property_owners').select('*', { count: 'exact', head: true }).eq('company_id', company_id)
+          supabase.from('properties').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
+          supabase.from('property_owners').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!)
         );
       }
 
       // Customers queries (always run)
       countQueries.push(
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString())
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).abortSignal(signal!),
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('company_id', company_id).lte('created_at', lastDayPrevMonth.toISOString()).abortSignal(signal!)
       );
       
       // Execute all count queries in parallel
@@ -245,7 +247,8 @@ export const useDashboardStats = () => {
           .eq('company_id', company_id)
           .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0])
-          .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0]);
+          .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0])
+          .abortSignal(signal!);
 
         monthlyRevenue = currentMonthPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
 
@@ -257,7 +260,8 @@ export const useDashboardStats = () => {
             .eq('company_id', company_id)
             .eq('payment_status', 'paid')
             .gte('invoice_date', firstDayOfMonth.toISOString().split('T')[0])
-            .lte('invoice_date', lastDayOfMonth.toISOString().split('T')[0]);
+            .lte('invoice_date', lastDayOfMonth.toISOString().split('T')[0])
+            .abortSignal(signal!);
 
           monthlyRevenue = paidInvoices?.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0) || 0;
         }
@@ -269,7 +273,8 @@ export const useDashboardStats = () => {
           .eq('company_id', company_id)
           .in('payment_status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayPrevMonth.toISOString().split('T')[0])
-          .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0]);
+          .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0])
+          .abortSignal(signal!);
 
         previousMonthRevenue = prevMonthPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
 
@@ -281,7 +286,8 @@ export const useDashboardStats = () => {
             .eq('company_id', company_id)
             .eq('payment_status', 'paid')
             .gte('invoice_date', firstDayPrevMonth.toISOString().split('T')[0])
-            .lte('invoice_date', lastDayPrevMonth.toISOString().split('T')[0]);
+            .lte('invoice_date', lastDayPrevMonth.toISOString().split('T')[0])
+            .abortSignal(signal!);
 
           previousMonthRevenue = prevPaidInvoices?.reduce((sum, inv) => sum + (Number(inv.total_amount) || 0), 0) || 0;
         }
@@ -296,7 +302,8 @@ export const useDashboardStats = () => {
           .eq('company_id', company_id)
           .in('status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayOfMonth.toISOString().split('T')[0])
-          .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0]);
+          .lte('payment_date', lastDayOfMonth.toISOString().split('T')[0])
+          .abortSignal(signal!);
 
         propertyRevenue = propertyPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
         monthlyRevenue += propertyRevenue;
@@ -308,7 +315,8 @@ export const useDashboardStats = () => {
           .eq('company_id', company_id)
           .in('status', ['completed', 'paid', 'confirmed'])
           .gte('payment_date', firstDayPrevMonth.toISOString().split('T')[0])
-          .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0]);
+          .lte('payment_date', lastDayPrevMonth.toISOString().split('T')[0])
+          .abortSignal(signal!);
 
         const prevPropertyRevenue = prevPropertyPayments?.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0) || 0;
         previousMonthRevenue += prevPropertyRevenue;
@@ -347,7 +355,8 @@ export const useDashboardStats = () => {
         const { data: repeatCustomersData } = await supabase
           .from('contracts')
           .select('customer_id')
-          .eq('company_id', company_id);
+          .eq('company_id', company_id)
+          .abortSignal(signal!);
         
         // Count unique customers with more than one contract
         const customerContractCounts = repeatCustomersData?.reduce((acc, contract) => {

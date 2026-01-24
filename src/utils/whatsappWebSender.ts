@@ -174,7 +174,7 @@ export const sendWhatsAppDocument = async ({
   console.log('🚀 [WHATSAPP DOC] Phone:', phone);
   console.log('🚀 [WHATSAPP DOC] Filename:', filename);
   console.log('🚀 [WHATSAPP DOC] Base64 length:', documentBase64?.length || 0);
-  
+
   const formattedPhone = formatPhoneForWhatsApp(phone);
   console.log('🚀 [WHATSAPP DOC] Formatted phone:', formattedPhone);
 
@@ -182,14 +182,30 @@ export const sendWhatsAppDocument = async ({
     console.error(`❌ [WHATSAPP DOC] Invalid phone number: ${phone}`);
     return { success: false, error: 'رقم الهاتف غير صحيح' };
   }
-  
+
+  const config = getUltramsgConfig();
+
+  if (!config?.instanceId || !config?.token) {
+    console.error('❌ [WHATSAPP DOC] Ultramsg not configured');
+    return { success: false, error: 'Ultramsg غير مُعد' };
+  }
+
+  // إزالة بادئة data: إذا وجدت
+  let base64Data = documentBase64;
+  if (base64Data.startsWith('data:')) {
+    base64Data = base64Data.split(',')[1] || base64Data;
+  }
+
+  console.log('🚀 [WHATSAPP DOC] Cleaned base64 length:', base64Data.length);
+  console.log('🚀 [WHATSAPP DOC] Starts with:', base64Data.substring(0, 30) + '...');
+
+  // الطريقة الأولى: محاولة استخدام Edge Function (يفضل لتجنب CORS)
   try {
-    // استخدام Supabase Edge Function لتجنب مشاكل CORS
-    console.log('🚀 [WHATSAPP DOC] Importing supabase client...');
+    console.log('🚀 [WHATSAPP DOC] Method 1: Trying Edge Function...');
     const { supabase } = await import('@/integrations/supabase/client');
-    
+
     console.log('🚀 [WHATSAPP DOC] Calling Edge Function send-whatsapp-document...');
-    console.log('🚀 [WHATSAPP DOC] Payload size:', Math.round(documentBase64.length / 1024), 'KB');
+    console.log('🚀 [WHATSAPP DOC] Payload size:', Math.round(base64Data.length / 1024), 'KB');
 
     const { data, error } = await supabase.functions.invoke('send-whatsapp-document', {
       body: {
@@ -204,31 +220,64 @@ export const sendWhatsAppDocument = async ({
     console.log('🚀 [WHATSAPP DOC] Data:', data);
     console.log('🚀 [WHATSAPP DOC] Error:', error);
 
-    if (error) {
-      console.error(`❌ [WHATSAPP DOC] Edge Function error:`, error);
-      return { 
-        success: false, 
-        error: error.message || 'فشل في إرسال المستند' 
-      };
-    }
-
-    if (data?.success) {
-      console.log(`✅ [WHATSAPP DOC] Document sent successfully!`, {
+    if (!error && data?.success) {
+      console.log(`✅ [WHATSAPP DOC] Document sent via Edge Function!`, {
         messageId: data.messageId,
         method: data.method,
         filename,
       });
       return { success: true, messageId: data.messageId };
     } else {
-      console.error(`❌ [WHATSAPP DOC] Failed to send document:`, data);
-      return { 
-        success: false, 
-        error: data?.error || 'فشل في إرسال المستند'
+      console.warn(`⚠️ [WHATSAPP DOC] Edge Function failed, trying direct API...`, error || data);
+    }
+  } catch (edgeFunctionError) {
+    console.warn('⚠️ [WHATSAPP DOC] Edge Function exception:', edgeFunctionError);
+  }
+
+  // الطريقة الثانية: إرسال مباشر عبر Ultramsg API (Fallback)
+  console.log('🚀 [WHATSAPP DOC] Method 2: Trying direct Ultramsg API...');
+
+  try {
+    const url = `https://api.ultramsg.com/${config.instanceId}/messages/document`;
+    const body = new URLSearchParams({
+      token: config.token,
+      to: formattedPhone,
+      filename: filename,
+      document: documentBase64, // استخدام base64 كامل مع data:
+      caption: caption || '',
+    });
+
+    console.log('🚀 [WHATSAPP DOC] POST to:', url);
+    console.log('🚀 [WHATSAPP DOC] Form data keys:', Array.from(body.keys()));
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body,
+    });
+
+    const responseData: UltramsgResponse = await response.json();
+
+    console.log('🚀 [WHATSAPP DOC] Direct API Response:', responseData);
+
+    if (responseData.sent === 'true' || responseData.sent === true as any || responseData.id) {
+      console.log(`✅ [WHATSAPP DOC] Document sent via direct API!`, {
+        messageId: responseData.id,
+        filename,
+      });
+      return { success: true, messageId: responseData.id };
+    } else {
+      console.error(`❌ [WHATSAPP DOC] Direct API failed:`, responseData);
+      return {
+        success: false,
+        error: responseData.error || responseData.message || 'فشل في إرسال المستند'
       };
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
-    console.error(`❌ [WHATSAPP DOC] Network/Exception error:`, error);
+  } catch (directApiError) {
+    console.error('❌ [WHATSAPP DOC] Direct API exception:', directApiError);
+    const errorMessage = directApiError instanceof Error ? directApiError.message : 'خطأ في الاتصال';
     return { success: false, error: errorMessage };
   }
 };

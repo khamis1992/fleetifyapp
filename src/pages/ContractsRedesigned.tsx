@@ -119,6 +119,14 @@ function ContractsRedesigned() {
   const processedCustomerRef = useRef(false);
   const processedVehicleRef = useRef(false);
 
+  // CRITICAL FIX: Reset refs on unmount to prevent stale URL parameter handling
+  useEffect(() => {
+    return () => {
+      processedCustomerRef.current = false;
+      processedVehicleRef.current = false;
+    };
+  }, []);
+
   // Debounce search term - تأخير البحث لمنع الاستعلام المتكرر
   useEffect(() => {
     const timer = setTimeout(() => {

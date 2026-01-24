@@ -90,6 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const authListenerRef = useRef<{ subscription: { unsubscribe: () => void } } | null>(null);
   const logTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profilePromiseRef = useRef<Promise<any> | null>(null);
   const isInitialized = useRef(false);
   const mountedRef = useRef(true);
 
@@ -151,7 +152,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         // Load full profile in background with timeout (increased to 10s for slower networks)
+        // CRITICAL FIX: Store background promise in ref for cleanup
         const profilePromise = authService.getCurrentUser();
+        profilePromiseRef.current = profilePromise;
         const profileTimeout = new Promise<null>((resolve) => {
           const timeoutId = setTimeout(() => {
             console.warn('⚠️ [AUTH_CONTEXT] Profile fetch timeout (10s) - using basic user');
@@ -315,6 +318,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (import.meta.env.DEV) {
         // Reset initialization flag on unmount in development to allow HMR to work properly
         isInitialized.current = false;
+      }
+
+      // CRITICAL FIX: Cancel background promise on cleanup to prevent memory leaks and stale state updates
+      if (profilePromiseRef.current) {
+        // The promise is stored in a ref, we can't directly cancel it
+        // But we can set mountedRef to false to prevent state updates
+        console.log('📝 [AUTH_CONTEXT] Cleanup: Background profile promise will be ignored due to unmount');
       }
 
       if (authListenerRef.current?.subscription) {

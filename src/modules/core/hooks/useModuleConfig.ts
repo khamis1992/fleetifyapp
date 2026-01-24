@@ -56,7 +56,8 @@ export const useModuleConfig = () => {
     enabled: !!companyId,
     staleTime: isBrowsingMode ? 30 * 1000 : 10 * 60 * 1000, // 10s cache for better performance
     refetchOnWindowFocus: false, // Disable automatic refetch on focus
-    refetchOnMount: false, // Don't always refetch on mount
+    // CRITICAL FIX: Changed refetchOnMount from false to true to ensure fresh data on navigation
+    refetchOnMount: true,
     gcTime: isBrowsingMode ? 2 * 60 * 1000 : 5 * 60 * 1000, // 2min garbage collection in browse mode
     retry: 1 // Reduce retries for better performance
   });
@@ -84,7 +85,8 @@ export const useModuleConfig = () => {
     enabled: !!companyId,
     staleTime: isBrowsingMode ? 30 * 1000 : 5 * 60 * 1000, // 30s cache in browse mode
     refetchOnWindowFocus: false, // Disable automatic refetch on focus
-    refetchOnMount: false, // Don't always refetch on mount
+    // CRITICAL FIX: Changed refetchOnMount from false to true to ensure fresh data on navigation
+    refetchOnMount: true,
     gcTime: isBrowsingMode ? 2 * 60 * 1000 : 5 * 60 * 1000, // 2min garbage collection in browse mode
     retry: 2 // Limit retries
   });
