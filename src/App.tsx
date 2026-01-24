@@ -29,8 +29,11 @@ import RouteRenderer from '@/components/router/RouteRenderer';
 import { routeConfigs } from '@/routes';
 
 // Error Boundaries and Performance
-import ErrorBoundary from '@/lib/errorBoundary';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary';
+
+// Suspense Boundaries
+import SuspenseBoundary from '@/components/common/SuspenseBoundary';
 
 // PWA and Security
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
@@ -41,6 +44,7 @@ import { CommandPalette } from '@/components/ui/CommandPalette';
 import { performanceMonitor } from '@/lib/performanceMonitor';
 import { performanceLogger } from '@/lib/performanceLogger';
 import { initializePWA } from '@/utils/pwaConfig';
+import PerformanceMonitor from '@/components/performance/PerformanceMonitor';
 
 // Preloading and Optimization
 import { preloadCriticalRoutes, preloadRelatedRoutes } from '@/utils/routePreloading';
@@ -101,13 +105,17 @@ const createQueryClient = () => {
     defaultOptions: {
       queries: {
         // Performance optimizations
-        refetchOnMount: true,
+        refetchOnMount: false, // Changed from true to prevent unnecessary refetches on mount
         refetchOnWindowFocus: false,
         refetchOnReconnect: true,
 
-        // Cache configuration
+        // Cache configuration - optimized for performance
         staleTime: APP_CONFIG.QUERY_STALE_TIME,
         gcTime: APP_CONFIG.QUERY_CACHE_TIME,
+
+        // Better cache configuration to prevent data flickering
+        structuralSharing: true,
+        _default: true,
 
         // Retry configuration
         retry: (failureCount, error: any) => {
@@ -115,9 +123,9 @@ const createQueryClient = () => {
           if (error?.status >= 400 && error?.status < 500) {
             return false;
           }
-          return failureCount < 3;
+          return failureCount < 2; // Reduced from 3 to 2 for faster failure detection
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+        retryDelay: (attemptIndex) => Math.min(1000 * 1.5 ** attemptIndex, 5000), // Reduced max delay
 
         // Network mode - CRITICAL: Use 'always' to prevent infinite loading on navigation
         // 'online' mode causes queries to pause when browser's online status check is slow
@@ -131,6 +139,10 @@ const createQueryClient = () => {
         onError: (error) => {
           console.error('Mutation error:', error);
         },
+        onSuccess: (data) => {
+          // Invalidate related queries on mutation success
+          console.log('Mutation succeeded, data updated');
+        }
       },
     },
   });
@@ -140,6 +152,14 @@ const createQueryClient = () => {
 const App: React.FC = () => {
   // Initialize query client with memoization
   const queryClient = useMemo(() => createQueryClient(), []);
+
+  // Initialize cache utilities
+  React.useEffect(() => {
+    // Set the query client instance for cache utilities
+    import('./utils/cacheUtils').then(({ setQueryClient }) => {
+      setQueryClient(queryClient);
+    });
+  }, [queryClient]);
 
   // Debug: Check routes
   console.log('🔍 [App] routeConfigs length:', routeConfigs.length);
@@ -201,36 +221,40 @@ const App: React.FC = () => {
                   <FABProvider>
                     <FinanceProvider>
                       <MobileOptimizationProvider>
-                        <RouteProvider routes={routeConfigs}>
-                          <RouteErrorBoundary>
-                            <div className="min-h-screen bg-background">
-                              {/* Mobile Auto-Redirect for Native App */}
-                              <MobileRedirect />
+                        <PerformanceMonitor>
+                          <RouteProvider routes={routeConfigs}>
+                            <RouteErrorBoundary>
+                              <div className="min-h-screen bg-background">
+                                {/* Mobile Auto-Redirect for Native App */}
+                                <MobileRedirect />
 
-                              {/* Main Application Routes */}
-                              <RouteRenderer routes={routeConfigs} />
+                                {/* Main Application Routes with Suspense Boundary */}
+                                <SuspenseBoundary height="min-h-screen">
+                                  <RouteRenderer routes={routeConfigs} />
+                                </SuspenseBoundary>
 
-                              {/* Global UI Components */}
-                              {/* Temporarily disabled CommandPalette for debugging */}
-                              {false && (
-                                <Suspense fallback={<Skeleton className="h-10 w-64" />}>
-                                  <CommandPalette />
-                                </Suspense>
-                              )}
+                                {/* Global UI Components */}
+                                {/* Temporarily disabled CommandPalette for debugging */}
+                                {false && (
+                                  <Suspense fallback={<Skeleton className="h-10 w-64" />}>
+                                    <CommandPalette />
+                                  </Suspense>
+                                )}
 
-                              {/* PWA Install Prompt */}
-                              {APP_CONFIG.ENABLE_PWA && (
-                                <Suspense fallback={<Skeleton className="h-20 w-full" />}>
-                                  <PWAInstallPrompt />
-                                </Suspense>
-                              )}
+                                {/* PWA Install Prompt */}
+                                {APP_CONFIG.ENABLE_PWA && (
+                                  <Suspense fallback={<Skeleton className="h-20 w-full" />}>
+                                    <PWAInstallPrompt />
+                                  </Suspense>
+                                )}
 
-                              {/* Global Toast Notifications */}
-                              <Toaster />
-                              <SonnerToaster />
-                            </div>
-                          </RouteErrorBoundary>
-                        </RouteProvider>
+                                {/* Global Toast Notifications */}
+                                <Toaster />
+                                <SonnerToaster />
+                              </div>
+                            </RouteErrorBoundary>
+                          </RouteProvider>
+                        </PerformanceMonitor>
 
                         {/* Development Tools */}
                         {APP_CONFIG.ENABLE_REACT_QUERY_DEVTOOLS && (

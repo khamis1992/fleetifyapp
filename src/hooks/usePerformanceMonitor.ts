@@ -1,305 +1,118 @@
-import { useRef, useCallback, useMemo } from 'react';
-import { useQuery, UseQueryOptions, UseQueryResult } from '@tanstack/react-query';
-import { performanceLogger } from '../lib/performanceLogger';
-
-// Type definitions for React Query callback parameters
-type OnSuccessCallback<TData> = (data: TData) => void;
-type OnErrorCallback<TError> = (error: TError) => void;
-type OnSettledCallback = () => void;
-
-// Performance metrics interface
-export interface QueryPerformanceMetrics {
-  queryKey: string[];
-  executionCount: number;
-  totalTime: number;
-  averageTime: number;
-  minTime: number;
-  maxTime: number;
-  cacheHits: number;
-  cacheMisses: number;
-  cacheHitRate: number;
-  isSlowQuery: boolean;
-  lastExecutionTime: number;
-}
-
-// Performance monitoring options
-export interface PerformanceMonitorOptions {
-  queryKey: string[];
-  slowQueryThreshold?: number; // Default: 1000ms
-  enableDetailedLogging?: boolean; // Default: true
-  trackCacheMetrics?: boolean; // Default: true
-}
-
-// Enhanced query options with performance monitoring
-export interface MonitoredQueryOptions<TData, TError = unknown>
-  extends Omit<UseQueryOptions<TData, TError>, 'queryKey'> {
-  queryKey: string[];
-  performanceOptions?: PerformanceMonitorOptions;
-}
-
-// Performance monitoring result
-export interface UsePerformanceMonitorResult<TData, TError = unknown>
-  extends UseQueryResult<TData, TError> {
-  performanceMetrics?: QueryPerformanceMetrics;
-  clearMetrics: () => void;
-}
-
-// Global performance metrics storage
-const globalMetrics = new Map<string, QueryPerformanceMetrics>();
+import { useEffect, useRef } from 'react';
 
 /**
- * Performance monitoring hook that wraps useQuery to add performance logging,
- * tracks query execution times, cache hits/misses, and provides performance metrics.
+ * Performance Monitoring Hook
+ * 
+ * Tracks component render times and provides performance insights
  */
-export function usePerformanceMonitor<TData, TError = unknown>(
-  options: MonitoredQueryOptions<TData, TError>
-): UsePerformanceMonitorResult<TData, TError> {
-  const {
-    queryKey,
-    performanceOptions = {} as PerformanceMonitorOptions,
-    ...queryOptions
-  } = options;
+export const usePerformanceMonitor = (componentName: string) => {
+  const renderStartRef = useRef<number | null>(null);
 
-  const slowQueryThreshold = performanceOptions.slowQueryThreshold ?? 1000;
-  const enableDetailedLogging = performanceOptions.enableDetailedLogging ?? true;
-  const trackCacheMetrics = performanceOptions.trackCacheMetrics ?? true;
-
-  const queryKeyString = useMemo(() => JSON.stringify(queryKey), [queryKey]);
-  const metricsRef = useRef<QueryPerformanceMetrics>();
-
-  // Initialize or get existing metrics for this query
-  const getMetrics = useCallback((): QueryPerformanceMetrics => {
-    if (!globalMetrics.has(queryKeyString)) {
-      globalMetrics.set(queryKeyString, {
-        queryKey,
-        executionCount: 0,
-        totalTime: 0,
-        averageTime: 0,
-        minTime: Infinity,
-        maxTime: 0,
-        cacheHits: 0,
-        cacheMisses: 0,
-        cacheHitRate: 0,
-        isSlowQuery: false,
-        lastExecutionTime: 0
-      });
-    }
-    return globalMetrics.get(queryKeyString)!;
-  }, [queryKeyString, queryKey]);
-
-  // Update metrics with new execution data
-  const updateMetrics = useCallback((
-    executionTime: number,
-    isFromCache: boolean
-  ) => {
-    const metrics = getMetrics();
+  useEffect(() => {
+    // Track component mount/render time
+    renderStartRef.current = performance.now();
     
-    metrics.executionCount++;
-    metrics.totalTime += executionTime;
-    metrics.averageTime = metrics.totalTime / metrics.executionCount;
-    metrics.minTime = Math.min(metrics.minTime, executionTime);
-    metrics.maxTime = Math.max(metrics.maxTime, executionTime);
-    metrics.lastExecutionTime = executionTime;
-    metrics.isSlowQuery = executionTime > slowQueryThreshold;
-
-    if (trackCacheMetrics) {
-      if (isFromCache) {
-        metrics.cacheHits++;
-      } else {
-        metrics.cacheMisses++;
-      }
-      const totalCacheEvents = metrics.cacheHits + metrics.cacheMisses;
-      metrics.cacheHitRate = totalCacheEvents > 0 ? metrics.cacheHits / totalCacheEvents : 0;
-    }
-
-    // Log performance details
-    if (enableDetailedLogging) {
-      performanceLogger.logQuery(
-        queryKey.join('.'),
-        executionTime,
-        {
-          isFromCache,
-          executionCount: metrics.executionCount,
-          averageTime: metrics.averageTime,
-          cacheHitRate: metrics.cacheHitRate,
-          isSlowQuery: metrics.isSlowQuery
+    return () => {
+      if (renderStartRef.current !== null) {
+        const renderTime = performance.now() - renderStartRef.current;
+        
+        // Log performance metrics
+        if (renderTime > 100) {
+          console.warn(`⚠️ [PERFORMANCE] ${componentName} render took ${renderTime.toFixed(2)}ms`);
+        } else if (renderTime > 50) {
+          console.info(`ℹ️ [PERFORMANCE] ${componentName} render took ${renderTime.toFixed(2)}ms`);
         }
-      );
-
-      // Log cache-specific events
-      if (trackCacheMetrics) {
-        performanceLogger.logCache(
-          `${queryKey.join('.')} ${isFromCache ? 'HIT' : 'MISS'}`,
-          0,
-          {
-            cacheHitRate: metrics.cacheHitRate,
-            totalExecutions: metrics.executionCount
-          }
-        );
-      }
-    }
-
-    metricsRef.current = metrics;
-  }, [queryKey, slowQueryThreshold, enableDetailedLogging, trackCacheMetrics, getMetrics]);
-
-  // Clear metrics for this query
-  const clearMetrics = useCallback(() => {
-    if (globalMetrics.has(queryKeyString)) {
-      globalMetrics.delete(queryKeyString);
-    }
-    metricsRef.current = undefined;
-  }, [queryKeyString]);
-
-  // Wrap the original useQuery with performance monitoring
-  const monitoredQuery = useMemo(() => {
-    const startTime = Date.now();
-    let isFromCache = false;
-
-    // Enhanced query function wrapper
-    const enhancedQueryFn = async (context: any) => {
-      const queryStartTime = Date.now();
-      
-      try {
-        // Call original query function
-        const result = await queryOptions.queryFn?.(context);
         
-        // Calculate execution time
-        const executionTime = Date.now() - queryStartTime;
-        
-        // Determine if this is from cache (React Query handles this internally)
-        // We'll use a heuristic: very fast responses (< 10ms) are likely from cache
-        isFromCache = executionTime < 10;
-        
-        // Update metrics
-        updateMetrics(executionTime, isFromCache);
-        
-        return result;
-      } catch (error) {
-        const executionTime = Date.now() - queryStartTime;
-        updateMetrics(executionTime, false);
-        throw error;
+        // Send to performance monitoring if needed
+        // performanceLogger?.logRender(componentName, renderTime);
       }
     };
-
-    return useQuery<TData, TError>({
-      ...queryOptions,
-      queryKey,
-      queryFn: enhancedQueryFn,
-      onSuccess: (data: TData) => {
-        const totalTime = Date.now() - Date.now();
-        
-        if (enableDetailedLogging) {
-          performanceLogger.logQuery(
-            queryKey.join('.'),
-            totalTime,
-            {
-              status: 'success',
-              dataReceived: !!data
-            }
-          );
-        }
-        
-        (queryOptions.onSuccess as OnSuccessCallback<TData>)?.(data);
-      },
-      onError: (error: TError) => {
-        const totalTime = Date.now() - Date.now();
-        
-        if (enableDetailedLogging) {
-          performanceLogger.logQuery(
-            queryKey.join('.'),
-            totalTime,
-            {
-              status: 'error',
-              error: error
-            }
-          );
-        }
-        
-        (queryOptions.onError as OnErrorCallback<TError>)?.(error);
-      },
-      onSettled: () => {
-        const totalTime = Date.now() - Date.now();
-        
-        if (enableDetailedLogging) {
-          performanceLogger.logQuery(
-            queryKey.join('.'),
-            totalTime,
-            {
-              status: 'settled'
-            }
-          );
-        }
-        
-        (queryOptions.onSettled as OnSettledCallback)?.();
-      }
-    });
-  }, [queryKey, queryOptions, enableDetailedLogging, updateMetrics]);
-
-  return {
-    ...monitoredQuery,
-    performanceMetrics: metricsRef.current,
-    clearMetrics
-  };
-}
+  }, [componentName]);
+};
 
 /**
- * Get all performance metrics for all monitored queries
+ * Network Request Performance Monitor
  */
-export function getGlobalPerformanceMetrics(): Map<string, QueryPerformanceMetrics> {
-  return new Map(globalMetrics);
-}
-
-/**
- * Get performance summary for all queries
- */
-export function getPerformanceSummary(): string {
-  const allMetrics = Array.from(globalMetrics.values());
+export const monitorNetworkRequest = async <T>(
+  request: () => Promise<T>,
+  operationName: string
+): Promise<T> => {
+  const startTime = performance.now();
   
-  if (allMetrics.length === 0) {
-    return '📊 No performance data available';
+  try {
+    const result = await request();
+    const duration = performance.now() - startTime;
+    
+    if (duration > 1000) {
+      console.warn(`⚠️ [NETWORK] ${operationName} took ${duration.toFixed(2)}ms`);
+    } else {
+      console.log(`ℹ️ [NETWORK] ${operationName} took ${duration.toFixed(2)}ms`);
+    }
+    
+    return result;
+  } catch (error) {
+    const duration = performance.now() - startTime;
+    console.error(`❌ [NETWORK] ${operationName} failed after ${duration.toFixed(2)}ms`, error);
+    throw error;
   }
-
-  const totalQueries = allMetrics.reduce((sum, m) => sum + m.executionCount, 0);
-  const totalCacheHits = allMetrics.reduce((sum, m) => sum + m.cacheHits, 0);
-  const totalCacheMisses = allMetrics.reduce((sum, m) => sum + m.cacheMisses, 0);
-  const avgCacheHitRate = totalCacheHits + totalCacheMisses > 0 
-    ? totalCacheHits / (totalCacheHits + totalCacheMisses) 
-    : 0;
-  
-  const slowQueries = allMetrics.filter(m => m.isSlowQuery).length;
-  const avgExecutionTime = allMetrics.reduce((sum, m) => sum + m.averageTime, 0) / allMetrics.length;
-
-  return `
-📊 Global Performance Summary
-=============================
-Total Queries: ${totalQueries}
-Slow Queries (>${1000}ms): ${slowQueries}
-Average Execution Time: ${avgExecutionTime.toFixed(0)}ms
-Cache Hit Rate: ${(avgCacheHitRate * 100).toFixed(1)}%
-
-Query Details:
-${allMetrics.map(m => `
-  ${m.queryKey.join('.')}:
-  - Executions: ${m.executionCount}
-  - Avg Time: ${m.averageTime.toFixed(0)}ms
-  - Cache Rate: ${(m.cacheHitRate * 100).toFixed(1)}%
-  - Status: ${m.isSlowQuery ? '🐌 SLOW' : '✅ OK'}
-`).join('')}
-=============================
-  `;
-}
+};
 
 /**
- * Clear all performance metrics
+ * Memory Usage Monitor
  */
-export function clearAllPerformanceMetrics(): void {
-  globalMetrics.clear();
-  performanceLogger.clear();
-}
+export const useMemoryMonitor = (intervalMs: number = 30000) => {
+  useEffect(() => {
+    if ('memory' in performance) {
+      const logMemoryUsage = () => {
+        // @ts-ignore - memory property exists in some browsers
+        const memory = performance.memory;
+        if (memory) {
+          console.log(`📊 [MEMORY] Used: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB, Total: ${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`);
+          
+          // Alert if memory usage is high
+          if (memory.usedJSHeapSize / memory.totalJSHeapSize > 0.8) {
+            console.warn('⚠️ [MEMORY] High memory usage detected');
+          }
+        }
+      };
+      
+      logMemoryUsage();
+      const interval = setInterval(logMemoryUsage, intervalMs);
+      
+      return () => clearInterval(interval);
+    }
+  }, [intervalMs]);
+};
 
 /**
- * Export performance metrics for analysis
+ * Page Load Performance Monitor
  */
-export function exportPerformanceMetrics(): QueryPerformanceMetrics[] {
-  return Array.from(globalMetrics.values());
-}
+export const usePageLoadMonitor = () => {
+  useEffect(() => {
+    const measurePageLoad = () => {
+      const perfData = performance.getEntriesByType('navigation')[0];
+      if (perfData) {
+        const loadTime = perfData.loadEventEnd - perfData.fetchStart;
+        console.log(`⏱️ [PAGE_LOAD] Page loaded in ${loadTime}ms`);
+        
+        // Log detailed timing
+        console.log('📋 [TIMING]', {
+          dns: perfData.domainLookupEnd - perfData.domainLookupStart,
+          tcp: perfData.connectEnd - perfData.connectStart,
+          request: perfData.responseStart - perfData.requestStart,
+          response: perfData.responseEnd - perfData.responseStart,
+          dom: perfData.domContentLoadedEventEnd - perfData.fetchStart,
+          load: perfData.loadEventEnd - perfData.fetchStart
+        });
+      }
+    };
+    
+    // Wait for page to fully load
+    if (document.readyState === 'complete') {
+      measurePageLoad();
+    } else {
+      window.addEventListener('load', measurePageLoad);
+      return () => window.removeEventListener('load', measurePageLoad);
+    }
+  }, []);
+};

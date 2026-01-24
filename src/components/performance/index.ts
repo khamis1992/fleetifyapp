@@ -4,7 +4,7 @@ export { useLocalStorage } from '@/hooks/useLocalStorage';
 export { LazyImage } from './LazyImage';
 export { LazyComponent } from './LazyComponent';
 export { MobileOptimizationProvider } from './MobileOptimizationProvider';
-export { PerformanceMonitor } from './PerformanceMonitor';
+export { default as PerformanceMonitor } from './PerformanceMonitor';
 
 // Re-export types
 export type { PerformanceMetrics, PerformanceConfig } from '@/hooks/usePerformanceOptimization';

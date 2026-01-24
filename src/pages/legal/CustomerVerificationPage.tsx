@@ -144,6 +144,7 @@ export default function CustomerVerificationPage() {
         .from('invoices')
         .select('*')
         .eq('contract_id', task.contract_id)
+        .neq('status', 'cancelled') // استثناء الفواتير الملغاة
         .order('due_date', { ascending: true });
 
       if (error) throw error;

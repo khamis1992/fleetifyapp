@@ -107,10 +107,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Add timeout to getSession call to prevent hanging (increased to 8s for slow networks)
       const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise<never>((_, reject) => 
+      const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Session timeout')), 8000) // Increased from 5s to 8s
       );
-      
+
       const { data: { session }, error } = await Promise.race([
         sessionPromise,
         timeoutPromise
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.warn('📝 [AUTH_CONTEXT] Session check timeout (5s), continuing without session');
         return { data: { session: null }, error: null };
       });
-      
+
       if (error) {
         console.error('📝 [AUTH_CONTEXT] Error getting session:', error);
         if (mountedRef.current) {
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         return;
       }
-      
+
       const sessionCheckTime = Date.now() - initStartTime;
       console.log(`📝 [AUTH_CONTEXT] Session check complete in ${sessionCheckTime}ms:`, session ? 'Session found' : 'No session');
 
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (session?.user) {
         if (mountedRef.current) {
           setSession(session);
-          
+
           // 🚀 OPTIMIZATION: Try to use cached user first
           const cachedUser = getCachedUser();
           if (cachedUser && cachedUser.id === session.user.id) {
@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.log(`📝 [AUTH_CONTEXT] UI unblocked at ${Date.now() - initStartTime}ms with basic user`);
           }
         }
-        
+
         // Load full profile in background with timeout (increased to 10s for slower networks)
         const profilePromise = authService.getCurrentUser();
         const profileTimeout = new Promise<null>((resolve) => {
@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.warn('⚠️ [AUTH_CONTEXT] This may indicate slow network. Profile will load automatically when ready.');
             resolve(null);
           }, 10000); // Increased from 5s to 10s
-          
+
           // Clear timeout if profile loads successfully
           profilePromise.then(() => {
             clearTimeout(timeoutId);
@@ -166,7 +166,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             clearTimeout(timeoutId);
           });
         });
-        
+
         try {
           const authUser = await Promise.race([profilePromise, profileTimeout]);
           if (mountedRef.current && authUser) {
@@ -197,20 +197,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log(`📝 [AUTH_CONTEXT] No session - completed in ${Date.now() - initStartTime}ms`);
         }
       }
-      
+
       // Only set up listener if not already set
       if (!authListenerRef.current) {
         // Set up auth state listener for future changes (AFTER initial load)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event: AuthChangeEvent, session: Session | null) => {
-            
+
             if (!mountedRef.current) return;
-            
+
             // Clear session error for successful events
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
               setSessionError(null);
             }
-            
+
             if (event === 'SIGNED_OUT') {
               setUser(null);
               setSession(null);
@@ -218,11 +218,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setIsSigningOut(false);
               return;
             }
-            
+
             if (event === 'SIGNED_IN' && session?.user) {
               console.log('🔍 [AUTH_CONTEXT] SIGNED_IN event received - session:', session.user.email);
               setSession(session);
-              
+
               try {
                 console.log('🔍 [AUTH_CONTEXT] Fetching current user profile...');
                 const authUser = await authService.getCurrentUser();
@@ -241,7 +241,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }
               }
             }
-            
+
             if (event === 'TOKEN_REFRESHED' && session) {
               if (mountedRef.current) {
                 setSession(session);
@@ -252,7 +252,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         authListenerRef.current = { subscription };
       }
-      
+
     } catch (error) {
       console.error('📝 [AUTH_CONTEXT] Session initialization error:', error);
       if (mountedRef.current) {
@@ -329,6 +329,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
   }, []);
+
+  // Add a function to force refresh user data
+  const forceRefreshUserData = async () => {
+    if (session?.user) {
+      try {
+        const authUser = await authService.getCurrentUser();
+        if (authUser) {
+          setUser(authUser);
+          cacheUser(authUser);
+          setSessionError(null);
+        }
+      } catch (error) {
+        console.error('📝 [AUTH_CONTEXT] Error refreshing user data:', error);
+      }
+    }
+  };
 
 
   const signUp = async (email: string, password: string, userData?: Record<string, unknown>) => {
@@ -457,7 +473,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     changePassword,
     sessionError,
     validateSession,
-    refreshUser
+    refreshUser,
+    forceRefreshUserData
   };
 
   return (

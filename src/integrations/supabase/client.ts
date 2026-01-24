@@ -44,6 +44,21 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
   // Add retry logic for better reliability
   global: {
     headers: { 'x-client-info': 'fleetify-web' },
+    fetch: (url, options) => {
+      // Add timeout to prevent hanging requests
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+        )
+      ]);
+    },
+  },
+  // Realtime configuration for better performance
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
   },
 });
 
