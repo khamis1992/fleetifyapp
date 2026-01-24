@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileWarning,
@@ -15,10 +15,9 @@ import {
   Bell
 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { useSendBulkViolationReminders } from '@/hooks/useTrafficViolationWhatsApp';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { TrafficViolationReminderDialog } from './TrafficViolationReminderDialog';
 
 // Import the TrafficViolation type
 import { TrafficViolation } from '@/hooks/useTrafficViolations';
@@ -201,7 +200,6 @@ const QuickSummary: React.FC<{
 // Main Dashboard Component
 export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDashboardProps> = ({ violations }) => {
   const { formatCurrency } = useCurrencyFormatter();
-  const sendBulkReminders = useSendBulkViolationReminders();
 
   // Fetch ALL violations for accurate dashboard stats
   const { data: allViolations = [], isLoading: isLoadingStats } = useTrafficViolationsDashboardStats();
@@ -324,11 +322,21 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
     ? Math.round(((stats.thisMonthCount - stats.lastMonthCount) / stats.lastMonthCount) * 100)
     : 0;
 
-  const handleSendBulkReminders = () => {
-    if (window.confirm('هل تريد إرسال تذكيرات WhatsApp لجميع المخالفات غير المسددة (أكثر من 7 أيام)؟')) {
-      sendBulkReminders.mutate({ daysOverdue: 7 });
-    }
-  };
+  // State for reminder dialog
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [selectedViolationsForReminder, setSelectedViolationsForReminder] = useState<TrafficViolation[]>([]);
+
+  // Handler to open reminder dialog with unpaid violations
+  const handleOpenReminderDialog = useCallback(() => {
+    // Filter unpaid/partially paid violations from the passed violations prop
+    const unpaidViolations = violations.filter(v => {
+      const paymentStatus = v.payment_status?.toLowerCase();
+      return paymentStatus !== 'paid' && paymentStatus !== 'مدفوعة';
+    });
+    
+    setSelectedViolationsForReminder(unpaidViolations);
+    setIsReminderDialogOpen(true);
+  }, [violations]);
 
   return (
     <div className="space-y-4">
@@ -401,12 +409,11 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
             <Button
               variant="outline"
               size="sm"
-              onClick={handleSendBulkReminders}
-              disabled={sendBulkReminders.isPending}
+              onClick={handleOpenReminderDialog}
               className="border-red-200 text-red-600 hover:bg-red-100 rounded-xl"
             >
               <Send className="w-4 h-4 ml-2" />
-              {sendBulkReminders.isPending ? 'جاري الإرسال...' : 'إرسال تذكيرات'}
+              إرسال تذكيرات
             </Button>
           </div>
         </div>
@@ -419,6 +426,13 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
         cancelledCount={stats.cancelledCount}
         repeatedVehicles={stats.repeatedVehicles}
         repeatedCustomers={stats.repeatedCustomers}
+      />
+
+      {/* Reminder Dialog */}
+      <TrafficViolationReminderDialog
+        open={isReminderDialogOpen}
+        onOpenChange={setIsReminderDialogOpen}
+        violations={selectedViolationsForReminder}
       />
     </div>
   );

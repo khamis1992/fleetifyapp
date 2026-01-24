@@ -12,7 +12,7 @@ const COMPANY_INFO = {
   phone: '31411919',
   email: 'info@alaraf.qa',
   cr: 'س.ت: 146832',
-  authorized_signatory: 'أسامة أحمد البشرى',
+  authorized_signatory: 'خميس هاشم الجبر',
   authorized_title: 'المخول بالتوقيع',
 };
 

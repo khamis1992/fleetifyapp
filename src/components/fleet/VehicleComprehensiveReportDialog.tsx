@@ -152,7 +152,7 @@ export const VehicleComprehensiveReportDialog: React.FC<VehicleComprehensiveRepo
         phone: '+974 3141 1919',
         email: 'info@alaraf.qa',
         cr: '146832',
-        authorized_signatory: 'أسامة أحمد البشرى',
+        authorized_signatory: 'خميس هاشم الجبر',
         authorized_title: 'المخول بالتوقيع',
       };
 

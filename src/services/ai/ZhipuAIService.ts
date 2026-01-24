@@ -47,7 +47,7 @@ const COMPANY_INFO = {
   email: 'info@alaraf.qa',
   cr: 'س.ت: 146832',
   logo: '/receipts/logo.png',
-  authorized_signatory: 'أسامة أحمد البشرى',
+  authorized_signatory: 'خميس هاشم الجبر',
   authorized_title: 'المخول بالتوقيع',
 };
 

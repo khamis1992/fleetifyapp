@@ -252,6 +252,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [amountRangeFilter, setAmountRangeFilter] = useState<string>('all');
   const [violationsFilter, setViolationsFilter] = useState<string>('all');
   const [contractStatusFilter, setContractStatusFilter] = useState<string>('all');
+  const [verificationFilter, setVerificationFilter] = useState<string>('all');
   const [selectedCustomers, setSelectedCustomers] = useState<DelinquentCustomer[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
@@ -300,12 +301,29 @@ export const DelinquentCustomersTab: React.FC = () => {
   );
   const { data: verificationStatuses } = useVerificationStatuses(contractIds);
 
-  // Apply contract status filter locally
+  // Apply contract status filter and verification filter locally
   const filteredCustomers = useMemo(() => {
     if (!rawCustomers) return [];
-    if (contractStatusFilter === 'all') return rawCustomers;
-    return rawCustomers.filter(c => c.contract_status === contractStatusFilter);
-  }, [rawCustomers, contractStatusFilter]);
+    let result = rawCustomers;
+    
+    // Filter by contract status
+    if (contractStatusFilter !== 'all') {
+      result = result.filter(c => c.contract_status === contractStatusFilter);
+    }
+    
+    // Filter by verification status
+    if (verificationFilter !== 'all' && verificationStatuses) {
+      if (verificationFilter === 'verified') {
+        result = result.filter(c => verificationStatuses.get(c.contract_id)?.status === 'verified');
+      } else if (verificationFilter === 'pending') {
+        result = result.filter(c => verificationStatuses.get(c.contract_id)?.status === 'pending');
+      } else if (verificationFilter === 'not_verified') {
+        result = result.filter(c => !verificationStatuses.get(c.contract_id));
+      }
+    }
+    
+    return result;
+  }, [rawCustomers, contractStatusFilter, verificationFilter, verificationStatuses]);
 
   // Apply sorting
   const customers = useMemo(() => {
@@ -752,6 +770,7 @@ export const DelinquentCustomersTab: React.FC = () => {
     setAmountRangeFilter('all');
     setViolationsFilter('all');
     setContractStatusFilter('all');
+    setVerificationFilter('all');
     setCurrentPage(1);
   }, []);
 
@@ -762,6 +781,7 @@ export const DelinquentCustomersTab: React.FC = () => {
     amountRangeFilter !== 'all',
     violationsFilter !== 'all',
     contractStatusFilter !== 'all',
+    verificationFilter !== 'all',
   ].filter(Boolean).length;
 
   // Loading state
@@ -1173,6 +1193,37 @@ export const DelinquentCustomersTab: React.FC = () => {
                           : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
                             : id === 'under_legal_procedure' ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
                               : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100',
+                    )}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {label}
+                    <span className="bg-white/20 px-1 rounded text-[10px] font-bold">{count}</span>
+                  </button>
+                ))}
+            </div>
+
+            {/* Verification Status Quick Filters */}
+            <div className="flex items-center gap-1 mr-4 pr-4 border-r" style={{ borderColor: `hsl(${colors.border})` }}>
+              <span className="text-sm text-muted-400 ml-2">التدقيق:</span>
+              {[
+                { id: 'verified', label: 'تم التدقيق', count: rawCustomers?.filter(c => verificationStatuses?.get(c.contract_id)?.status === 'verified').length || 0, color: 'green', icon: ClipboardCheck },
+                { id: 'pending', label: 'قيد التدقيق', count: rawCustomers?.filter(c => verificationStatuses?.get(c.contract_id)?.status === 'pending').length || 0, color: 'amber', icon: Clock },
+              ]
+                .filter(f => f.count > 0)
+                .map(({ id, label, count, color, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setVerificationFilter(verificationFilter === id ? 'all' : id);
+                      setCurrentPage(1);
+                    }}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all',
+                      verificationFilter === id
+                        ? id === 'verified' ? 'bg-green-500 text-white'
+                          : 'bg-amber-500 text-white'
+                        : id === 'verified' ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100',
                     )}
                   >
                     <Icon className="w-3 h-3" />

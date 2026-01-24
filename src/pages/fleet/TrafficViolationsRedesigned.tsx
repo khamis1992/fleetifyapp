@@ -39,6 +39,7 @@ import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViola
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
 import { TrafficViolationSidePanelNew } from '@/components/fleet/TrafficViolationSidePanelNew';
 import { TrafficViolationReportDialog } from '@/components/fleet/TrafficViolationReportDialog';
+import { TrafficViolationReminderDialog } from '@/components/fleet/TrafficViolationReminderDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useVehicles } from '@/hooks/useVehicles';
@@ -76,6 +77,8 @@ export default function TrafficViolationsRedesigned() {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isRelinkDialogOpen, setIsRelinkDialogOpen] = useState(false);
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [selectedViolationsForReminder, setSelectedViolationsForReminder] = useState<TrafficViolation[]>([]);
   
   // Data Fetching - Reduced limit for better performance (was 10000!)
   const [currentPage, setCurrentPage] = useState(1);
@@ -256,6 +259,28 @@ export default function TrafficViolationsRedesigned() {
     toast.info('جاري التحويل للشؤون القانونية...');
   }, [navigate]);
 
+  // فتح نافذة إرسال تذكير للمخالفات غير المسددة
+  const handleOpenReminderDialog = useCallback(() => {
+    // جمع المخالفات غير المسددة
+    const unpaidViolations = filteredViolations.filter(v => 
+      v.payment_status === 'unpaid' || v.payment_status === 'partially_paid'
+    );
+    
+    if (unpaidViolations.length === 0) {
+      toast.error('لا توجد مخالفات غير مسددة');
+      return;
+    }
+    
+    setSelectedViolationsForReminder(unpaidViolations);
+    setIsReminderDialogOpen(true);
+  }, [filteredViolations]);
+
+  // إرسال تذكير لمخالفة محددة
+  const handleSendReminderForViolation = useCallback((violation: TrafficViolation) => {
+    setSelectedViolationsForReminder([violation]);
+    setIsReminderDialogOpen(true);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -294,6 +319,14 @@ export default function TrafficViolationsRedesigned() {
         open={isReportDialogOpen}
         onOpenChange={setIsReportDialogOpen}
         violations={violations}
+      />
+
+      {/* Reminder Dialog */}
+      <TrafficViolationReminderDialog
+        open={isReminderDialogOpen}
+        onOpenChange={setIsReminderDialogOpen}
+        violations={selectedViolationsForReminder}
+        onSuccess={() => refetch()}
       />
 
       {/* Relink Violations Dialog */}
@@ -496,6 +529,14 @@ export default function TrafficViolationsRedesigned() {
           >
             <RefreshCw className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">تحديث</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleOpenReminderDialog}
+            className="border-amber-200/50 hover:bg-amber-50 rounded-xl hover:border-amber-500/30 text-amber-700"
+          >
+            <MessageSquare className="w-4 h-4 ml-2" />
+            <span className="hidden md:inline">إرسال تذكير</span>
           </Button>
           <Button
             variant="outline"

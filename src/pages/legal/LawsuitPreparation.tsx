@@ -43,6 +43,7 @@ import {
   ArrowLeft,
   FileWarning,
   FileStack,
+  Send,
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
@@ -67,6 +68,7 @@ import {
   generateViolationsTransferHtml,
   openLetterForPrint,
 } from '@/utils/official-letter-generator';
+import { SendReportTaskDialog } from '@/components/legal/SendReportTaskDialog';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
 
 // واجهة المستند
@@ -137,6 +139,9 @@ export default function LawsuitPreparationPage() {
   // خيارات المستندات الداعمة (اختياري) - للحافظة
   const [includeCriminalComplaint, setIncludeCriminalComplaint] = useState(false);
   const [includeViolationsTransfer, setIncludeViolationsTransfer] = useState(false);
+  
+  // نافذة إرسال مهمة فتح بلاغ
+  const [sendReportDialogOpen, setSendReportDialogOpen] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -1749,6 +1754,23 @@ export default function LawsuitPreparationPage() {
               
               {/* خيارات تضمين في الحافظة */}
               <Separator className="my-4" />
+              
+              {/* زر إرسال مهمة لموظف */}
+              <div className="mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSendReportDialogOpen(true)}
+                  className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400"
+                >
+                  <Send className="h-4 w-4" />
+                  إرسال مهمة فتح بلاغ لموظف
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  إرسال ملف PDF لموظف لفتح بلاغ سرقة أو تحويل مخالفات
+                </p>
+              </div>
+              
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground font-medium">تضمين في حافظة المستندات:</p>
                 <div className="flex flex-col gap-2">
@@ -1991,6 +2013,16 @@ export default function LawsuitPreparationPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* نافذة إرسال مهمة فتح بلاغ */}
+      <SendReportTaskDialog
+        open={sendReportDialogOpen}
+        onOpenChange={setSendReportDialogOpen}
+        contractId={contractId}
+        contractNumber={contract?.contract_number}
+        customerName={customerFullName}
+        vehiclePlate={vehicle?.plate_number || (contract as any)?.license_plate}
+      />
     </div>
   );
 }
