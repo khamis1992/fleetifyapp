@@ -499,7 +499,7 @@ class LawsuitService {
     vehicleInfo: string,
     overdueAmount: number
   ): string {
-    const formattedDate = new Date(contractDate).toLocaleDateString('ar-QA');
+    const formattedDate = new Date(contractDate).toLocaleDateString('en-GB');
     return `بتاريخ ${formattedDate} أبرمت شركة العراف لتأجير السيارات (المدعية) عقد إيجار سيارة مع السيد/ ${customerName} (المدعى عليه) وذلك لاستئجار سيارة ${vehicleInfo}.
 
 وقد التزمت المدعية بتسليم السيارة المؤجرة للمدعى عليه في حالة جيدة وصالحة للاستخدام، إلا أن المدعى عليه أخل بالتزاماته التعاقدية وامتنع عن سداد الإيجارات المستحقة عليه.

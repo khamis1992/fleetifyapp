@@ -54,6 +54,7 @@ import {
   Plus,
   RefreshCw,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { 
   lawsuitService, 
@@ -86,7 +87,7 @@ export default function CompanyLegalDocuments() {
   // الحالات
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<LegalDocumentType | ''>('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [expiryDate, setExpiryDate] = useState('');
   const [notes, setNotes] = useState('');
   const [viewUrl, setViewUrl] = useState<string | null>(null);
@@ -101,13 +102,51 @@ export default function CompanyLegalDocuments() {
   // رفع مستند
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!companyId || !selectedDocType || !selectedFile) {
+      if (!companyId || !selectedDocType || selectedFiles.length === 0) {
         throw new Error('بيانات غير مكتملة');
       }
+
+      let fileToUpload = selectedFiles[0];
+
+      // دمج الصور في ملف PDF واحد في حالة السجل التجاري
+      if (selectedDocType === 'commercial_register' && selectedFiles.length > 0) {
+        const isImages = selectedFiles.every(f => f.type.startsWith('image/'));
+        
+        if (isImages) {
+          try {
+            const pdf = new jsPDF();
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+              const file = selectedFiles[i];
+              if (i > 0) pdf.addPage();
+              
+              const imgData = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              });
+              
+              const imgProps = pdf.getImageProperties(imgData);
+              const pdfWidth = pdf.internal.pageSize.getWidth();
+              const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+              
+              pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            }
+            
+            const pdfBlob = pdf.output('blob');
+            fileToUpload = new File([pdfBlob], 'commercial_register.pdf', { type: 'application/pdf' });
+          } catch (error) {
+            console.error('Error creating PDF:', error);
+            throw new Error('فشل في دمج الصور في ملف PDF');
+          }
+        }
+      }
+
       return lawsuitService.uploadLegalDocument(
         companyId,
         selectedDocType,
-        selectedFile,
+        fileToUpload,
         expiryDate || undefined,
         notes || undefined
       );
@@ -138,7 +177,7 @@ export default function CompanyLegalDocuments() {
   const resetUploadForm = useCallback(() => {
     setUploadDialogOpen(false);
     setSelectedDocType('');
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setExpiryDate('');
     setNotes('');
   }, []);
@@ -476,12 +515,26 @@ export default function CompanyLegalDocuments() {
             </div>
             
             <div className="space-y-2">
-              <Label>الملف (PDF)</Label>
+              <Label>
+                {selectedDocType === 'commercial_register' 
+                  ? 'الملفات (صور أو PDF)' 
+                  : 'الملف (PDF)'}
+              </Label>
               <Input
                 type="file"
-                accept=".pdf"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                accept={selectedDocType === 'commercial_register' ? "image/*,.pdf" : ".pdf"}
+                multiple={selectedDocType === 'commercial_register'}
+                onChange={(e) => {
+                  if (e.target.files) {
+                    setSelectedFiles(Array.from(e.target.files));
+                  }
+                }}
               />
+              {selectedDocType === 'commercial_register' && (
+                <p className="text-xs text-muted-foreground">
+                  يمكنك اختيار صورتين للسجل التجاري وسيتم دمجهما في ملف واحد تلقائياً
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -509,7 +562,7 @@ export default function CompanyLegalDocuments() {
             </Button>
             <Button
               onClick={() => uploadMutation.mutate()}
-              disabled={!selectedDocType || !selectedFile || uploadMutation.isPending}
+              disabled={!selectedDocType || selectedFiles.length === 0 || uploadMutation.isPending}
             >
               {uploadMutation.isPending ? (
                 <>

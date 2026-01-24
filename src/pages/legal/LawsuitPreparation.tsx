@@ -3,7 +3,7 @@
  * قائمة مهام لتجهيز جميع المستندات المطلوبة لرفع دعوى في تقاضي
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -112,10 +112,14 @@ export default function LawsuitPreparationPage() {
 
   // حالات المستندات
   const [memoUrl, setMemoUrl] = useState<string | null>(null);
+  const memoUrlRef = useRef<string | null>(null);
+  const memoHtmlRef = useRef<string | null>(null); // محتوى HTML للمذكرة
   const [isGeneratingMemo, setIsGeneratingMemo] = useState(false);
   const [docsListUrl, setDocsListUrl] = useState<string | null>(null);
   const [isGeneratingDocsList, setIsGeneratingDocsList] = useState(false);
   const [claimsStatementUrl, setClaimsStatementUrl] = useState<string | null>(null);
+  const claimsStatementUrlRef = useRef<string | null>(null);
+  const claimsHtmlRef = useRef<string | null>(null); // محتوى HTML لكشف المطالبات
   const [isGeneratingClaims, setIsGeneratingClaims] = useState(false);
   const [violationsListUrl, setViolationsListUrl] = useState<string | null>(null);
   const [isGeneratingViolations, setIsGeneratingViolations] = useState(false);
@@ -263,6 +267,15 @@ export default function LawsuitPreparationPage() {
       });
     }
   }, [contractDocument, contractFileUrl]);
+
+  // تحديث الـ refs عند تغيير القيم
+  useEffect(() => {
+    claimsStatementUrlRef.current = claimsStatementUrl;
+  }, [claimsStatementUrl]);
+
+  useEffect(() => {
+    memoUrlRef.current = memoUrl;
+  }, [memoUrl]);
 
   // حساب المبالغ - باستخدام الدالة الموحدة
   // غرامة التأخير: 120 ر.ق × أيام التأخير لكل فاتورة
@@ -439,7 +452,11 @@ export default function LawsuitPreparationPage() {
       openLetterForPrint(memoHtml);
       
       const blob = new Blob([memoHtml], { type: 'text/html;charset=utf-8' });
-      setMemoUrl(URL.createObjectURL(blob));
+      const blobUrl = URL.createObjectURL(blob);
+      // تحديث الـ refs مباشرة لضمان توفر القيم فوراً
+      memoUrlRef.current = blobUrl;
+      memoHtmlRef.current = memoHtml; // حفظ محتوى HTML
+      setMemoUrl(blobUrl);
       toast.success('✅ تم توليد المذكرة الشارحة!');
     } catch (error: any) {
       toast.error('حدث خطأ أثناء توليد المذكرة');
@@ -451,20 +468,77 @@ export default function LawsuitPreparationPage() {
   // توليد كشف المستندات
   const generateDocumentsList = useCallback(() => {
     if (!contract || !taqadiData) return;
-    
+
     setIsGeneratingDocsList(true);
     const customer = (contract as any)?.customers;
-    const customerName = customer 
+    const customerName = customer
       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
       : 'غير معروف';
 
-    const documents: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [
-      { name: 'المذكرة الشارحة', status: memoUrl ? 'مرفق' : 'غير مرفق' },
-      { name: 'صورة من البطاقة الشخصية للممثل', status: getDocByType('representative_id') ? 'مرفق' : 'غير مرفق' },
-      { name: 'صورة من السجل التجاري', status: getDocByType('commercial_register') ? 'مرفق' : 'غير مرفق' },
-      { name: 'صورة من العقد', status: contractFileUrl ? 'مرفق' : 'غير مرفق' },
-      { name: 'شهادة IBAN', status: getDocByType('iban_certificate') ? 'مرفق' : 'غير مرفق' },
+    // بناء قائمة المستندات ديناميكياً من جميع المستندات المرفوعة
+    const documents: { name: string; status: 'مرفق' | 'غير مرفق'; url?: string; type?: string }[] = [];
+
+    // إضافة المذكرة الشارحة - استخدام الـ ref للحصول على أحدث قيمة
+    const currentMemoUrl = memoUrlRef.current || memoUrl;
+    const currentMemoHtml = memoHtmlRef.current;
+    if (currentMemoUrl) {
+      documents.push({
+        name: 'المذكرة الشارحة',
+        status: 'مرفق',
+        url: currentMemoUrl,
+        type: 'html',
+        htmlContent: currentMemoHtml || undefined,
+      });
+    }
+
+    // إضافة كشف المطالبات المالية - استخدام الـ ref للحصول على أحدث قيمة
+    const currentClaimsUrl = claimsStatementUrlRef.current || claimsStatementUrl;
+    const currentClaimsHtml = claimsHtmlRef.current;
+    if (currentClaimsUrl) {
+      documents.push({
+        name: 'كشف المطالبات المالية',
+        status: 'مرفق',
+        url: currentClaimsUrl,
+        type: 'html',
+        htmlContent: currentClaimsHtml || undefined,
+      });
+    }
+
+    // إضافة صورة العقد
+    if (contractFileUrl) {
+      documents.push({
+        name: 'صورة من العقد',
+        status: 'مرفق',
+        url: contractFileUrl,
+        type: 'image',
+      });
+    }
+
+    // إضافة جميع مستندات الشركة القانونية المرفوعة
+    const fixedDocTypes: LegalDocumentType[] = [
+      'commercial_register',
+      'establishment_record',
+      'iban_certificate',
+      'representative_id',
+      'authorization_letter',
     ];
+
+    for (const docType of fixedDocTypes) {
+      const doc = getDocByType(docType);
+      if (doc) {
+        documents.push({
+          name: DOCUMENT_TYPE_NAMES[docType],
+          status: 'مرفق',
+          url: doc.file_url,
+          type: 'pdf',
+        });
+      } else {
+        documents.push({
+          name: DOCUMENT_TYPE_NAMES[docType],
+          status: 'غير مرفق',
+        });
+      }
+    }
 
     const docsListHtml = generateDocumentsListHtml({
       caseTitle: taqadiData.caseTitle,
@@ -477,7 +551,7 @@ export default function LawsuitPreparationPage() {
     setDocsListUrl('generated');
     setIsGeneratingDocsList(false);
     toast.success('✅ تم توليد كشف المستندات!');
-  }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl]);
+  }, [taqadiData, contract, legalDocs, memoUrl, contractFileUrl, claimsStatementUrl]);
 
   // توليد كشف المطالبات
   const generateClaimsStatement = useCallback(() => {
@@ -528,7 +602,14 @@ export default function LawsuitPreparationPage() {
     });
 
     openLetterForPrint(claimsHtml);
-    setClaimsStatementUrl('generated');
+
+    // حفظ كشف المطالبات كـ blob URL
+    const blob = new Blob([claimsHtml], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    // تحديث الـ refs مباشرة لضمان توفر القيم فوراً
+    claimsStatementUrlRef.current = blobUrl;
+    claimsHtmlRef.current = claimsHtml; // حفظ محتوى HTML
+    setClaimsStatementUrl(blobUrl);
     setIsGeneratingClaims(false);
     toast.success('✅ تم توليد كشف المطالبات!');
   }, [overdueInvoices, trafficViolations, contract, calculations, taqadiData]);

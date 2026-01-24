@@ -316,7 +316,7 @@ async function calculateDelinquentCustomersDynamically(
     
     // ⚡ تقسيم الطلبات لتجنب مشاكل حجم URL
     // نقسم العقود إلى دفعات من 100 عقد لكل طلب
-    let allInvoicesData: Array<{contract_id: string, due_date: string, payment_status: string, total_amount: number, paid_amount: number}> = [];
+    let allInvoicesData: Array<{contract_id: string, due_date: string, payment_status: string, total_amount: number, paid_amount: number, status: string}> = [];
     
     const contractBatches: string[][] = [];
     for (let i = 0; i < contractIds.length; i += BATCH_SIZE) {
@@ -330,10 +330,11 @@ async function calculateDelinquentCustomersDynamically(
       contractBatches.map(async (batch) => {
         const { data, error } = await supabase
           .from('invoices')
-          .select('contract_id, due_date, payment_status, total_amount, paid_amount')
+          .select('contract_id, due_date, payment_status, total_amount, paid_amount, status')
           .eq('company_id', companyId)
           .in('contract_id', batch)
           .lt('due_date', todayStr)
+          .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
           .in('payment_status', ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid'])
           .order('due_date', { ascending: true });
         
@@ -651,7 +652,7 @@ async function calculateDelinquentCustomersDynamically(
         total_debt: totalDebt,
 
         risk_score: riskScore,
-        risk_level: riskLevel.label,
+        risk_level: riskLevel.labelEn.toUpperCase(),
         risk_level_en: riskLevel.labelEn,
         risk_color: riskLevel.color,
         recommended_action: recommendedAction,

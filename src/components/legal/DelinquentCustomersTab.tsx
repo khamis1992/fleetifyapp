@@ -1475,9 +1475,9 @@ export const DelinquentCustomersTab: React.FC = () => {
                 </div>
               </div>
               <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto">
-                {kanbanGroups[key as keyof typeof kanbanGroups].slice(0, 10).map((customer) => (
+                {kanbanGroups[key as keyof typeof kanbanGroups].slice(0, 10).map((customer, idx) => (
                   <motion.div
-                    key={customer.customer_id}
+                    key={`${customer.contract_id}-${idx}`}
                     whileHover={{ scale: 1.02 }}
                     onClick={() => handleViewDetails(customer)}
                     className="p-3 rounded-xl border cursor-pointer transition-all hover:shadow-md"
@@ -1562,9 +1562,9 @@ export const DelinquentCustomersTab: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedCustomers.map((customer) => (
+              {paginatedCustomers.map((customer, index) => (
                 <TableRow
-                  key={customer.customer_id}
+                  key={`${customer.contract_id}-${index}`}
                   className={cn(
                     'hover:bg-muted/30 transition-colors',
                     customer.risk_level === 'CRITICAL' && 'bg-red-50/30 dark:bg-red-950/10',

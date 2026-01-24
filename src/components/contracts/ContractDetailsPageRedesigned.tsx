@@ -96,6 +96,7 @@ import { TimelineView } from './TimelineView';
 import { QuickActionsButton } from './QuickActionsButton';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { useContractPaymentSchedules, useGeneratePaymentSchedulesFromInvoices } from '@/hooks/usePaymentSchedules';
+// Re-importing to ensure HMR update
 import { ContractPaymentsTab } from './ContractPaymentsTab';
 import { ContractPaymentsTabRedesigned } from './ContractPaymentsTabRedesigned';
 import { ContractInvoicesTabRedesigned } from './ContractInvoicesTabRedesigned';

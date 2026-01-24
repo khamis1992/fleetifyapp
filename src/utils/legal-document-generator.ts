@@ -24,10 +24,38 @@ export interface LegalDocumentData {
   contractInfo: {
     contract_number: string;
     start_date: string;
+    end_date?: string;
     monthly_rent: number;
+    total_amount?: number;
+    installments_count?: number;
+    security_deposit?: number;
+    duration_years?: number;
   };
   damages?: number;
+  compensation?: number;
   additionalNotes?: string;
+  breachDetails?: {
+    unpaidMonthsDescription?: string;
+    damagesDescription?: string;
+  };
+}
+
+/**
+ * تحويل الأيام إلى صيغة مناسبة (أشهر إذا كانت أكثر من 60 يوم)
+ */
+function formatDaysToReadable(days: number): string {
+  if (days < 60) {
+    return `${days} يوم`;
+  }
+  
+  const months = Math.floor(days / 30);
+  const remainingDays = days % 30;
+  
+  // عرض الأشهر فقط بدون الأيام المتبقية
+  if (months === 1) return 'شهر واحد';
+  if (months === 2) return 'شهرين';
+  if (months >= 3 && months <= 10) return `${months} أشهر`;
+  return `${months} شهر`;
 }
 
 /**
@@ -93,7 +121,7 @@ ${customer.email ? `البريد الإلكتروني: ${customer.email}` : ''}
 
 أبرمت الشركة عقد إيجار مركبة رقم (${contractInfo.contract_number}) بتاريخ ${contractInfo.start_date} مع المدعى عليه، التزم بموجبه بدفع الإيجار الشهري البالغ (${contractInfo.monthly_rent.toLocaleString('en-US')}) ريال قطري والمحافظة على المركبة رقم (${vehicleInfo.plate})${vehicleInfo.make ? ` من نوع ${vehicleInfo.make}` : ''}${vehicleInfo.model ? ` ${vehicleInfo.model}` : ''}${vehicleInfo.year ? ` موديل ${vehicleInfo.year}` : ''} وسداد جميع الالتزامات المترتبة على استخدامها.
 
-إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات لمدة (${customer.months_unpaid}) شهر، بإجمالي (${customer.days_overdue}) يوم تأخير، ${customer.violations_count > 0 ? `وسُجلت على المركبة (${customer.violations_count}) مخالفة مرورية بقيمة إجمالية (${customer.violations_amount.toLocaleString('en-US')}) ريال قطري ناتجة عن استخدامه الشخصي،` : ''} ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
+إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات لمدة (${formatDaysToReadable(customer.days_overdue)})، ${customer.violations_count > 0 ? `وسُجلت على المركبة (${customer.violations_count}) مخالفة مرورية بقيمة إجمالية (${customer.violations_amount.toLocaleString('en-US')}) ريال قطري ناتجة عن استخدامه الشخصي،` : ''} ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
 
 ${customer.violations_count > 0 ? `
 ونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا، وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها، وذلك استنادًا إلى سجلات المخالفات الصادرة من الإدارة العامة للمرور.
@@ -106,7 +134,7 @@ ${customer.violations_count > 0 ? `
 ┌─────────────────────────────────────────────────────────────────┐
 │ البند │ البيان                                      │ المبلغ (ر.ق) │
 ├───────┼─────────────────────────────────────────────┼──────────────┤
-│   1   │ غرامات تأخير في سداد الإيجار الشهري         │ ${latePenalty.toLocaleString('en-US').padStart(12, ' ')} │
+│   1   │ غرامات تأخير حسب ما هو منصوص عليه في العقد  │ ${latePenalty.toLocaleString('en-US').padStart(12, ' ')} │
 │   2   │ إيجار متأخر غير مسدد                        │ ${overdueRent.toLocaleString('en-US').padStart(12, ' ')} │
 │   3   │ تعويض عن الأضرار المادية والمعنوية          │ ${damagesAmount.toLocaleString('en-US').padStart(12, ' ')} │
 ├───────┼─────────────────────────────────────────────┼──────────────┤
@@ -179,12 +207,13 @@ _______________________________
 /**
  * Generate HTML version of the legal complaint for printing
  * Professional formal legal document style - matching claims statement design
+ * Updated to match new legal memo template structure
  */
 export function generateLegalComplaintHTML(data: LegalDocumentData): string {
-  const { customer, companyInfo, vehicleInfo, contractInfo, damages = 0, additionalNotes } = data;
+  const { customer, companyInfo, vehicleInfo, contractInfo, damages = 0, compensation = 10000, additionalNotes, breachDetails } = data;
   
-  const today = format(new Date(), 'dd/MM/yyyy', { locale: ar });
-  const currentDateAr = new Date().toLocaleDateString('ar-QA', {
+  const today = format(new Date(), 'dd/MM/yyyy');
+  const currentDate = new Date().toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -200,8 +229,13 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
   // Calculate totals
   const latePenalty = customer.late_penalty || 0;
   const overdueRent = customer.overdue_amount || 0;
-  const damagesAmount = damages || Math.round(customer.total_debt * 0.3);
-  const totalClaim = latePenalty + overdueRent + damagesAmount;
+  const compensationAmount = compensation || 10000;
+  const totalClaim = latePenalty + overdueRent + compensationAmount;
+  
+  // Contract details
+  const securityDeposit = contractInfo.security_deposit || 0;
+  const contractDuration = contractInfo.duration_years || 3;
+  const lateFeePerDay = 120; // غرامة التأخير اليومية
 
   // Company info constants
   const COMPANY_INFO = {
@@ -617,12 +651,13 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     <!-- التاريخ والرقم المرجعي -->
     <div class="ref-date">
       <div><strong>الرقم المرجعي:</strong> ${refNumber}</div>
-      <div><strong>التاريخ:</strong> ${currentDateAr}</div>
+      <div><strong>التاريخ:</strong> ${currentDate}</div>
     </div>
 
     <!-- الموضوع -->
     <div class="subject-box">
-      <strong>مذكرة شارحة مقدمة إلى عدالة المحكمة المدنية</strong>
+      <strong>مذكرة شارحة مقدمة إلى محكمة الاستثمار</strong><br>
+      <span style="font-size: 12px;">في دعوى مطالبة مالية وتعويضات عقدية - إخلال بالتزامات عقد إيجار مركبة</span>
     </div>
     
     <!-- معلومات الأطراف -->
@@ -656,24 +691,32 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <div class="section-title">أولاً: الوقائع</div>
       <div class="section-content">
         <p>
-          أبرمت الشركة عقد إيجار مركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractInfo.start_date}</strong> مع المدعى عليه، 
+          أبرمت الشركة عقد إيجار مركبة رقم <strong>(${contractInfo.contract_number})</strong> بتاريخ <strong>${contractInfo.start_date}</strong> مع المدعى عليه
+          ${contractInfo.end_date ? ` ولمدة <strong>(${contractDuration})</strong> سنوات تنتهي بتاريخ <strong>${contractInfo.end_date}</strong>` : ''}، 
           التزم بموجبه بدفع الإيجار الشهري البالغ <strong>(${contractInfo.monthly_rent.toLocaleString('en-US')})</strong> ريال قطري 
+          ${contractInfo.total_amount ? `بإجمالي مبلغ تعاقدي قدره <strong>(${contractInfo.total_amount.toLocaleString('en-US')})</strong> ريال قطري` : ''}
+          ${contractInfo.installments_count ? ` على <strong>(${contractInfo.installments_count})</strong> قسط` : ''}
+          ${securityDeposit > 0 ? ` مع إيداع وديعة ضمان قدرها <strong>(${securityDeposit.toLocaleString('en-US')})</strong> ريال قطري` : ''}،
           والمحافظة على المركبة رقم <strong>(${vehicleInfo.plate})</strong>
           ${vehicleInfo.make ? ` من نوع <strong>${vehicleInfo.make}</strong>` : ''}
           ${vehicleInfo.model ? ` <strong>${vehicleInfo.model}</strong>` : ''}
           ${vehicleInfo.year ? ` موديل <strong>${vehicleInfo.year}</strong>` : ''}
-          وسداد جميع الالتزامات المترتبة على استخدامها.
+          وسداد جميع الالتزامات المترتبة على استخدامها، مع الالتزام بغرامة تأخير قدرها <strong>(${lateFeePerDay})</strong> ريال قطري عن كل يوم تأخير.
         </p>
         <p>
-          إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا، إذ تأخر في سداد الإيجارات المستحقة لمدة 
-          <strong>(${customer.days_overdue})</strong> يوماً،
+          إلا أن المدعى عليه أخلَّ بهذه الالتزامات إخلالًا واضحًا وجسيمًا، إذ تأخر في سداد الإيجارات المستحقة لمدة 
+          <strong>(${formatDaysToReadable(customer.days_overdue)})</strong>
+          ${breachDetails?.unpaidMonthsDescription ? ` (${breachDetails.unpaidMonthsDescription})` : ''}،
           ${customer.violations_count > 0 ? `وسُجلت على المركبة <strong>(${customer.violations_count})</strong> مخالفة مرورية بقيمة إجمالية <strong>(${customer.violations_amount.toLocaleString('en-US')})</strong> ريال قطري ناتجة عن استخدامه الشخصي،` : ''}
+          ${breachDetails?.damagesDescription ? `كما تسبب في أضرار بالمركبة (${breachDetails.damagesDescription})،` : ''}
           ورفض تسليم المركبة وسداد المستحقات دون مبرر مشروع.
         </p>
         ${customer.violations_count > 0 ? `
         <p>
-          ونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا، 
-          وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها.
+          ونظرًا لأن المخالفات المرورية تصدر باسم مالك المركبة (الشركة) بحكم النظام، فإن الشركة لا تطلب من عدالتكم الموقرة إلزام المدعى عليه بسداد قيمتها نقدًا بشكل أساسي، 
+          وإنما تلتمس تحويل هذه المخالفات رسميًا على رقمه الشخصي <strong>${customer.id_number || ''}</strong> باعتباره السائق والمستخدم الفعلي للمركبة وقت وقوعها، 
+          وذلك استنادًا إلى سجلات المخالفات الصادرة من الإدارة العامة للمرور.
+          وفي حال تعذر تحويل المخالفات إدارياً، تلتمس الشركة احتياطياً إلزام المدعى عليه بسداد قيمتها كاملة.
         </p>
         ` : ''}
       </div>
@@ -693,25 +736,30 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
         <tbody>
           <tr>
             <td class="center">1</td>
-            <td>غرامات تأخير في سداد الإيجار الشهري</td>
-            <td class="amount">${latePenalty.toLocaleString('en-US')}</td>
-          </tr>
-          <tr>
-            <td class="center">2</td>
             <td>إيجار متأخر غير مسدد</td>
             <td class="amount">${overdueRent.toLocaleString('en-US')}</td>
           </tr>
           <tr>
+            <td class="center">2</td>
+            <td>غرامات تأخير في سداد الإيجار الشهري بواقع (${lateFeePerDay}) ريال قطري عن كل يوم تأخير × (${customer.days_overdue}) يوم، حسب ما هو منصوص عليه في العقد</td>
+            <td class="amount">${latePenalty.toLocaleString('en-US')}</td>
+          </tr>
+          <tr>
             <td class="center">3</td>
-            <td>تعويض عن الأضرار المادية والمعنوية التي لحقت بالشركة جراء الإخلال بالعقد</td>
-            <td class="amount">${damagesAmount.toLocaleString('en-US')}</td>
+            <td>تعويض عن الأضرار المادية والمعنوية والحرمان من الانتفاع</td>
+            <td class="amount">${compensationAmount.toLocaleString('en-US')}</td>
           </tr>
           <tr class="total-row">
-            <td colspan="2" style="text-align: left; font-weight: bold;">الإجمالي</td>
+            <td colspan="2" style="text-align: left; font-weight: bold;">الإجمالي المطالب به</td>
             <td class="amount" style="font-size: 15px; color: white;">${totalClaim.toLocaleString('en-US')}</td>
           </tr>
         </tbody>
       </table>
+      ${securityDeposit > 0 ? `
+      <p style="margin-top: 10px; font-size: 12px; color: #666;">
+        <strong>ملاحظة:</strong> تحتفظ الشركة بحقها في المقاصة بين وديعة الضمان البالغة (${securityDeposit.toLocaleString('en-US')}) ريال قطري والمبالغ المستحقة.
+      </p>
+      ` : ''}
     </div>
 
     ${customer.violations_count > 0 ? `
@@ -736,7 +784,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     <div class="section">
       <div class="section-title">${customer.violations_count > 0 ? 'رابعاً' : 'ثالثاً'}: الأساس القانوني</div>
       <div class="section-content">
-        <p>تستند هذه الدعوى إلى أحكام القانون المدني القطري، ولا سيما المواد:</p>
+        <p>تستند هذه الدعوى إلى أحكام <strong>القانون المدني القطري رقم 22 لسنة 2004</strong>، ولا سيما المواد:</p>
         <div class="legal-article">
           <strong>المادة (171):</strong> العقد شريعة المتعاقدين، ولا يجوز نقضه أو تعديله إلا باتفاق الطرفين أو للأسباب التي يقرها القانون.
         </div>
@@ -744,14 +792,20 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           <strong>المادة (263):</strong> يلتزم المدين بتعويض الضرر الناتج عن إخلاله بالتزامه.
         </div>
         <div class="legal-article">
-          <strong>المادة (589):</strong> يلتزم المستأجر بالمحافظة على العين المؤجرة وردها بالحالة التي تسلمها بها.
+          <strong>المادة (266):</strong> إذا لم يقم المدين بتنفيذ التزامه التعاقدي جاز للدائن أن يطلب فسخ العقد مع التعويض إن كان له مقتضى.
         </div>
         <div class="legal-article">
           <strong>المادة (267):</strong> يقدر التعويض بقدر الضرر المباشر المتوقع عادة وقت التعاقد.
         </div>
+        <div class="legal-article">
+          <strong>المادة (589):</strong> يلتزم المستأجر بالمحافظة على العين المؤجرة وردها بالحالة التي تسلمها بها.
+        </div>
+        <p style="margin-top: 15px; padding: 10px; background: #f0f4f8; border-radius: 5px;">
+          <strong>المبدأ القضائي:</strong> الإخلال بالالتزامات العقدية يوجب التعويض متى ثبت الضرر وتوافرت العلاقة السببية.
+        </p>
         <p>
           وبناءً عليه، فإن المطالبات المالية الواردة أعلاه هي عن التزامات تعاقدية مباشرة، 
-          في حين أن الغرامات المرورية ينبغي أن تُحوّل إداريًا إلى المستأجر.
+          ${customer.violations_count > 0 ? 'في حين أن الغرامات المرورية ينبغي أن تُحوّل إداريًا إلى المستأجر أو يُلزم بسدادها احتياطياً.' : ''}
         </p>
       </div>
     </div>
@@ -765,11 +819,28 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           <div class="request-item">
             إلزام المدعى عليه بسداد المبلغ الإجمالي وقدره <strong>(${totalClaim.toLocaleString('en-US')} ريال قطري)</strong>.
           </div>
+          <div class="request-item">
+            فسخ عقد الإيجار رقم <strong>(${contractInfo.contract_number})</strong> لإخلال المدعى عليه بالتزاماته التعاقدية.
+          </div>
           ${customer.violations_count > 0 ? `
           <div class="request-item">
-            إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong>.
+            <strong>طلب أصلي:</strong> إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong>.
+          </div>
+          <div class="request-item">
+            <strong>طلب احتياطي:</strong> في حال تعذر تحويل المخالفات، إلزام المدعى عليه بسداد قيمتها كاملة وقدرها <strong>(${customer.violations_amount.toLocaleString('en-US')} ريال قطري)</strong>.
           </div>
           ` : ''}
+          <div class="request-item">
+            تعويض عن الحرمان من الانتفاع بالمركبة وفق أجر المثل.
+          </div>
+          ${securityDeposit > 0 ? `
+          <div class="request-item">
+            تثبيت حق الشركة في المقاصة بين وديعة الضمان البالغة <strong>(${securityDeposit.toLocaleString('en-US')} ريال قطري)</strong> والمبالغ المستحقة.
+          </div>
+          ` : ''}
+          <div class="request-item">
+            تعويض عن التأخير حتى السداد التام.
+          </div>
           <div class="request-item">
             تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.
           </div>
@@ -792,27 +863,28 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       <p>وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
     </div>
     
-    <!-- التوقيع -->
-    <div class="signature-section">
-      <div class="stamp-area">
-        <div class="stamp-circle">
-          <span>مكان الختم</span>
-        </div>
-      </div>
-      
-      <div class="signatory">
-        <p class="company-name">${COMPANY_INFO.name_ar}</p>
-        <div class="line">
-          <p class="name">${COMPANY_INFO.authorized_signatory}</p>
-          <p class="title">${COMPANY_INFO.authorized_title}</p>
-        </div>
-      </div>
-      
-      <div class="sign-area">
-        <div class="sign-line"></div>
-        <span>التوقيع</span>
-      </div>
-    </div>
+    <!-- التوقيع والختم -->
+    <table style="width: 100%; margin-top: 15px; border: none; page-break-inside: avoid;">
+      <tr>
+        <td style="width: 50%; text-align: center; vertical-align: bottom; border: none; padding: 10px;">
+          <!-- الختم -->
+          <img src="/receipts/stamp.png" alt="ختم الشركة" 
+               style="width: 130px; height: 130px; object-fit: contain; transform: rotate(-5deg);"
+               onerror="this.style.display='none'" />
+        </td>
+        <td style="width: 50%; text-align: center; vertical-align: bottom; border: none; padding: 10px;">
+          <!-- التوقيع ومعلومات الموقع -->
+          <p style="color: #1e3a5f; font-weight: bold; font-size: 15px; margin: 0 0 10px 0;">${COMPANY_INFO.name_ar}</p>
+          <img src="/receipts/signature.png" alt="التوقيع" 
+               style="width: 120px; height: 50px; object-fit: contain; display: block; margin: 0 auto 10px auto;"
+               onerror="this.style.display='none'" />
+          <div style="border-top: 2px solid #1e3a5f; padding-top: 8px; min-width: 200px;">
+            <p style="font-size: 14px; font-weight: bold; color: #000; margin: 0;">${COMPANY_INFO.authorized_signatory}</p>
+            <p style="font-size: 11px; color: #555; margin: 3px 0 0 0;">${COMPANY_INFO.authorized_title}</p>
+          </div>
+        </td>
+      </tr>
+    </table>
     
     <!-- الذيل -->
     <div class="footer">

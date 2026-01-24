@@ -576,7 +576,7 @@ export const useMarkPaymentAsPaid = () => {
   });
 };
 
-// Hook to generate payment schedules from existing invoices
+// Hook to generate payment schedules from existing invoices - Updated for HMR fix
 export const useGeneratePaymentSchedulesFromInvoices = () => {
   const { toast } = useToast();
   const { user } = useAuth();

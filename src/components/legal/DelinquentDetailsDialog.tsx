@@ -223,6 +223,7 @@ export const DelinquentDetailsDialog: React.FC<DelinquentDetailsDialogProps> = (
       
       const { data, error } = await query
         .lt('due_date', todayStr)
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة - نفس منطق صفحة تفاصيل العقد
         .order('due_date', { ascending: true });
 
       if (error) throw error;

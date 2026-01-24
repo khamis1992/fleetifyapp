@@ -34,6 +34,27 @@ function formatDateAr(date: Date = new Date()): string {
   });
 }
 
+// استخراج محتوى body من مستند HTML كامل
+function extractHtmlBody(html: string): string {
+  if (!html) return '';
+  
+  // محاولة استخراج محتوى body
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  if (bodyMatch) {
+    return bodyMatch[1];
+  }
+  
+  // إذا لم يكن هناك body tag، نرجع المحتوى كما هو
+  // لكن نزيل الـ doctype و html و head tags إن وجدت
+  let content = html;
+  content = content.replace(/<!DOCTYPE[^>]*>/i, '');
+  content = content.replace(/<html[^>]*>/i, '');
+  content = content.replace(/<\/html>/i, '');
+  content = content.replace(/<head[^>]*>[\s\S]*?<\/head>/i, '');
+  
+  return content.trim();
+}
+
 // واجهة بيانات الكتاب
 export interface OfficialLetterData {
   recipient: string;
@@ -82,7 +103,13 @@ export interface DocumentsListData {
   documents: {
     name: string;
     status: 'مرفق' | 'غير مرفق';
+    url?: string; // رابط المستند للعرض
+    type?: string; // نوع الملف (image, pdf, html, etc)
+    htmlContent?: string; // محتوى HTML للمستندات من نوع html
   }[];
+  // بيانات إضافية للدمج (للتوافق مع الكود القديم)
+  claimsStatementHtml?: string; // كشف المطالبات كـ HTML
+  memoHtml?: string; // المذكرة الشارحة كـ HTML
 }
 
 // واجهة بيانات بلاغ سرقة المركبة
@@ -166,6 +193,20 @@ function getOfficialLetterStyles(): string {
       table {
         width: 100% !important;
         table-layout: fixed !important;
+        page-break-inside: auto !important;
+      }
+      
+      tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+      }
+      
+      thead {
+        display: table-header-group !important;
+      }
+      
+      tfoot {
+        display: table-footer-group !important;
       }
     }
     
@@ -372,15 +413,17 @@ function getOfficialLetterStyles(): string {
     
     .closing {
       text-align: center;
-      margin: 25px 0;
+      margin: 15px 0;
       font-size: 14px;
       color: #000;
+      page-break-inside: avoid;
     }
     
     .signature-section {
-      margin-top: 40px;
+      margin-top: 20px;
       width: 100%;
       overflow: hidden;
+      page-break-inside: avoid;
     }
     
     .signature-section::after {
@@ -463,12 +506,13 @@ function getOfficialLetterStyles(): string {
     }
     
     .footer {
-      margin-top: 30px;
-      padding-top: 10px;
+      margin-top: 10px;
+      padding-top: 5px;
       border-top: 1px solid #ccc;
       text-align: center;
       font-size: 9px;
       color: #000;
+      page-break-inside: avoid;
     }
 
     /* أنماط إضافية للجداول */
@@ -652,41 +696,44 @@ function generateOfficialHeader(refNumber: string, currentDate: string): string 
 }
 
 /**
- * توليد قسم التوقيع
+ * توليد قسم التوقيع مع الختم والتوقيع الفعلي
  */
 function generateSignatureSection(): string {
   return `
-    <!-- الختام -->
-    <div class="closing">
-      <p>وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
-    </div>
-    
-    <!-- التوقيع -->
-    <div class="signature-section">
-      <div class="stamp-area">
-        <div class="stamp-circle">
-          <span>مكان الختم</span>
-        </div>
+    <div style="page-break-inside: avoid;">
+      <!-- الختام -->
+      <div class="closing">
+        <p>وتفضلوا بقبول فائق الاحترام والتقدير،،،</p>
       </div>
       
-      <div class="signatory">
-        <p class="company-name">${COMPANY_INFO.name_ar}</p>
-        <div class="line">
-          <p class="name">${COMPANY_INFO.authorized_signatory}</p>
-          <p class="title">${COMPANY_INFO.authorized_title}</p>
-        </div>
-      </div>
+      <!-- التوقيع والختم -->
+      <table style="width: 100%; margin-top: 15px; border: none;">
+        <tr>
+          <td style="width: 50%; text-align: center; vertical-align: bottom; border: none; padding: 10px;">
+            <!-- الختم -->
+            <img src="/receipts/stamp.png" alt="ختم الشركة" 
+                 style="width: 120px; height: 120px; object-fit: contain; transform: rotate(-5deg);"
+                 onerror="this.style.display='none'" />
+          </td>
+          <td style="width: 50%; text-align: center; vertical-align: bottom; border: none; padding: 10px;">
+            <!-- التوقيع ومعلومات الموقع -->
+            <p style="color: #1e3a5f; font-weight: bold; font-size: 14px; margin: 0 0 5px 0;">${COMPANY_INFO.name_ar}</p>
+            <img src="/receipts/signature.png" alt="التوقيع" 
+                 style="width: 100px; height: 40px; object-fit: contain;"
+                 onerror="this.style.display='none'" />
+            <div style="border-top: 1px solid #1e3a5f; padding-top: 5px; margin-top: 5px;">
+              <p style="font-size: 13px; font-weight: bold; color: #000; margin: 0;">${COMPANY_INFO.authorized_signatory}</p>
+              <p style="font-size: 10px; color: #555; margin: 2px 0 0 0;">${COMPANY_INFO.authorized_title}</p>
+            </div>
+          </td>
+        </tr>
+      </table>
       
-      <div class="sign-area">
-        <div class="sign-line"></div>
-        <span>التوقيع</span>
+      <!-- الذيل -->
+      <div class="footer">
+        ${COMPANY_INFO.address}<br/>
+        هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
       </div>
-    </div>
-    
-    <!-- الذيل -->
-    <div class="footer">
-      ${COMPANY_INFO.address}<br/>
-      هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
     </div>
   `;
 }
@@ -910,11 +957,14 @@ ${requestsText}
 }
 
 /**
- * توليد كشف المستندات المرفوعة
+ * توليد كشف المستندات المرفوعة مع دمج صور المستندات
  */
 export function generateDocumentsListHtml(data: DocumentsListData): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
+  
+  // تصفية المستندات المرفقة التي لها روابط
+  const attachedDocs = data.documents.filter(d => d.status === 'مرفق' && d.url);
 
   return `
 <!DOCTYPE html>
@@ -922,7 +972,50 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
 <head>
   <meta charset="UTF-8">
   <title>كشف بالمستندات المرفوعة - ${COMPANY_INFO.name_ar}</title>
-  <style>${getOfficialLetterStyles()}</style>
+  <style>
+    ${getOfficialLetterStyles()}
+    
+    /* أنماط إضافية لعرض المستندات */
+    .document-section {
+      page-break-before: always;
+      margin-top: 30px;
+    }
+    .document-section:first-of-type {
+      page-break-before: avoid;
+    }
+    .document-title {
+      background: #1e3a5f;
+      color: white;
+      padding: 10px 15px;
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      border-radius: 5px;
+    }
+    .document-image {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ddd;
+      margin: 10px 0;
+    }
+    .document-frame {
+      width: 100%;
+      min-height: 500px;
+      border: 1px solid #ddd;
+    }
+    .page-break {
+      page-break-after: always;
+    }
+    @media print {
+      .document-section {
+        page-break-before: always;
+      }
+      .no-break {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="letter-container">
@@ -944,36 +1037,144 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
       </div>
       <div class="info-row">
         <span class="info-label">المبلغ المطالب به:</span>
-        <span>${data.amount.toLocaleString('ar-QA')} ريال قطري</span>
+        <span>${data.amount.toLocaleString('en-US')} ريال قطري</span>
       </div>
     </div>
     
+    <!-- جدول المستندات -->
     <table>
       <thead>
         <tr>
-          <th>م</th>
+          <th style="width: 50px;">م</th>
           <th>اسم المستند</th>
-          <th>الحالة</th>
         </tr>
       </thead>
       <tbody>
-        ${data.documents.map((doc, i) => `
+        ${data.documents.filter(d => d.status === 'مرفق').map((doc, i) => `
           <tr>
-            <td>${i + 1}</td>
+            <td style="text-align: center;">${i + 1}</td>
             <td>${doc.name}</td>
-            <td class="${doc.status === 'مرفق' ? 'attached' : 'not-attached'}">${doc.status}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
     
-    <div class="content" style="text-align: center;">
-      <p><strong>إجمالي المستندات:</strong> ${data.documents.length}</p>
-      <p><strong>المستندات المرفقة:</strong> ${data.documents.filter(d => d.status === 'مرفق').length}</p>
+    <div class="content" style="text-align: center; margin: 20px 0;">
+      <p><strong>إجمالي المستندات المرفقة:</strong> ${data.documents.filter(d => d.status === 'مرفق').length}</p>
     </div>
     
     ${generateSignatureSection()}
   </div>
+  
+  <!-- ==================== المستندات المرفقة ==================== -->
+  
+  ${attachedDocs.map((doc, index) => `
+    <div class="letter-container document-section">
+      <div class="document-title">
+        ${index + 1}. ${doc.name}
+      </div>
+      ${doc.type === 'pdf' ? `
+        <div id="pdf-container-${index}" style="width: 100%;"></div>
+        <script>
+          (function() {
+            // تحميل pdf.js من CDN
+            if (!window.pdfjsLib) {
+              var script = document.createElement('script');
+              script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+              script.onload = function() {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                renderAllPages${index}();
+              };
+              document.head.appendChild(script);
+            } else {
+              renderAllPages${index}();
+            }
+            
+            function renderAllPages${index}() {
+              var container = document.getElementById('pdf-container-${index}');
+              pdfjsLib.getDocument('${doc.url}').promise.then(function(pdf) {
+                var totalPages = pdf.numPages;
+                
+                // إذا كان المستند صفحتين أو أقل، نعرضهم في صفحة واحدة (مثل البطاقة الشخصية)
+                var keepTogether = totalPages <= 2;
+                
+                // عرض جميع الصفحات
+                for (var pageNum = 1; pageNum <= totalPages; pageNum++) {
+                  (function(pageNumber) {
+                    pdf.getPage(pageNumber).then(function(page) {
+                      var scale = keepTogether ? 1.5 : 2;
+                      var viewport = page.getViewport({ scale: scale });
+                      
+                      // إنشاء div لكل صفحة
+                      var pageDiv = document.createElement('div');
+                      pageDiv.style.marginBottom = '15px';
+                      // فقط إضافة page-break إذا كان أكثر من صفحتين
+                      if (!keepTogether && pageNumber < totalPages) {
+                        pageDiv.style.pageBreakAfter = 'always';
+                      }
+                      
+                      // إنشاء canvas لكل صفحة
+                      var canvas = document.createElement('canvas');
+                      canvas.style.width = keepTogether ? '90%' : '100%';
+                      canvas.style.display = 'block';
+                      canvas.style.margin = '0 auto';
+                      canvas.style.border = '1px solid #ddd';
+                      canvas.height = viewport.height;
+                      canvas.width = viewport.width;
+                      
+                      var context = canvas.getContext('2d');
+                      page.render({ canvasContext: context, viewport: viewport });
+                      
+                      pageDiv.appendChild(canvas);
+                      
+                      // إضافة رقم الصفحة فقط إذا كان أكثر من صفحتين
+                      if (!keepTogether) {
+                        var pageLabel = document.createElement('p');
+                        pageLabel.style.textAlign = 'center';
+                        pageLabel.style.color = '#666';
+                        pageLabel.style.fontSize = '11px';
+                        pageLabel.style.margin = '5px 0';
+                        pageLabel.textContent = 'صفحة ' + pageNumber + ' من ' + totalPages;
+                        pageDiv.appendChild(pageLabel);
+                      }
+                      
+                      container.appendChild(pageDiv);
+                    });
+                  })(pageNum);
+                }
+              }).catch(function(error) {
+                console.error('Error loading PDF:', error);
+                container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">تعذر تحميل ملف PDF</p>';
+              });
+            }
+          })();
+        </script>
+      ` : doc.type === 'html' && doc.htmlContent ? `
+        <div class="html-document-content" style="width: 100%; border: 1px solid #ddd; padding: 15px; background: #fff;">
+          ${extractHtmlBody(doc.htmlContent)}
+        </div>
+      ` : doc.type === 'html' ? `
+        <div style="text-align: center; padding: 40px; color: #666;">
+          <p>محتوى المستند غير متوفر للعرض المباشر</p>
+          <p style="font-size: 12px;">يرجى توليد المستند أولاً</p>
+        </div>
+      ` : `
+        <img src="${doc.url}" alt="${doc.name}" class="document-image" 
+             onerror="this.onerror=null; this.src=''; this.alt='تعذر تحميل الصورة';" />
+      `}
+    </div>
+  `).join('')}
+  
+  ${data.claimsStatementHtml ? `
+    <!-- كشف المطالبات المالية -->
+    <div class="letter-container document-section">
+      <div class="document-title">
+        كشف المطالبات المالية
+      </div>
+      ${data.claimsStatementHtml}
+    </div>
+  ` : ''}
+
 </body>
 </html>
   `;
@@ -1849,14 +2050,7 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
       </table>
     </div>
     
-    <div class="signature-area">
-      <div class="signature-box">
-        <div class="signature-line"></div>
-        <p>${COMPANY_INFO.authorized_signatory}</p>
-        <p style="color: #666; font-size: 11px;">${COMPANY_INFO.authorized_title}</p>
-      </div>
-      <div class="stamp-box">ختم الشركة</div>
-    </div>
+    ${generateSignatureSection()}
   </div>
   
   ${data.contractImageUrl ? `

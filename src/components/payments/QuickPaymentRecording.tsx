@@ -22,6 +22,16 @@ interface Customer {
   phone: string;
 }
 
+interface Contract {
+  id: string;
+  contract_number: string;
+  monthly_amount: number;
+  status: string;
+  start_date: string;
+  end_date: string;
+  vehicle_plate?: string;
+}
+
 interface Invoice {
   id: string;
   invoice_number: string;
@@ -73,6 +83,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [searching, setSearching] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerContracts, setCustomerContracts] = useState<Contract[]>([]);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [loadingContracts, setLoadingContracts] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -314,8 +327,75 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setSelectedCustomer(customer);
     setCustomers([]);
     setSearchTerm('');
+    setLoadingContracts(true);
+    setCustomerContracts([]);
+    setSelectedContract(null);
+    setInvoices([]);
 
-    // Fetch unpaid invoices for this customer
+    try {
+      // جلب جميع العقود النشطة للعميل
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          contract_number,
+          monthly_amount,
+          status,
+          start_date,
+          end_date,
+          vehicles:vehicle_id (
+            plate_number
+          )
+        `)
+        .eq('customer_id', customer.id)
+        .eq('company_id', companyId)
+        .in('status', ['active', 'under_legal_procedure'])
+        .order('created_at', { ascending: false });
+
+      if (contractsError) throw contractsError;
+
+      const formattedContracts: Contract[] = (contracts || []).map(c => ({
+        id: c.id,
+        contract_number: c.contract_number,
+        monthly_amount: c.monthly_amount || 0,
+        status: c.status,
+        start_date: c.start_date,
+        end_date: c.end_date,
+        vehicle_plate: (c.vehicles as any)?.plate_number || '',
+      }));
+
+      setCustomerContracts(formattedContracts);
+
+      // إذا كان هناك عقد واحد فقط، اختره تلقائياً
+      if (formattedContracts.length === 1) {
+        await selectContract(formattedContracts[0], customer.id);
+      } else if (formattedContracts.length === 0) {
+        toast({
+          title: 'لا توجد عقود نشطة',
+          description: 'لا يوجد عقد نشط لهذا العميل',
+          variant: 'destructive',
+        });
+      }
+      // إذا كان أكثر من عقد، سيُعرض للمستخدم خيار الاختيار
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء جلب العقود',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingContracts(false);
+    }
+  };
+
+  // دالة اختيار العقد وجلب الفواتير
+  const selectContract = async (contract: Contract, customerId?: string) => {
+    setSelectedContract(contract);
+    const customerIdToUse = customerId || selectedCustomer?.id;
+    
+    if (!customerIdToUse) return;
+
     try {
       const { data, error } = await supabase
         .from('invoices')
@@ -337,15 +417,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
             )
           )
         `)
-        .eq('customer_id', customer.id)
+        .eq('customer_id', customerIdToUse)
+        .eq('contract_id', contract.id)  // فلترة حسب العقد المختار
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
-        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
+        .neq('status', 'cancelled')
         .order('due_date', { ascending: true });
 
       if (error) throw error;
 
       setInvoices(data || []);
-      // لا نعرض رسالة خطأ إذا لم تكن هناك فواتير - قد يكون هناك عقد بدون فواتير
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
@@ -771,6 +851,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
+    setCustomerContracts([]);
+    setSelectedContract(null);
   };
 
   // دالة جديدة: إعادة تعيين النموذج مع الإبقاء على نفس العميل
@@ -780,8 +862,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       return;
     }
 
-    // حفظ بيانات العميل
+    // حفظ بيانات العميل والعقد
     const currentCustomer = selectedCustomer;
+    const currentContract = selectedContract;
     
     // إعادة تعيين حالة الدفعة
     setSelectedInvoices([]);
@@ -790,14 +873,14 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     setPaymentSuccess(null);
     setShowReceipt(false);
     setReadyToPay(false);
-    setProcessing(true); // ✅ إظهار حالة التحميل أثناء جلب الفواتير
+    setProcessing(true);
 
-    // ✅ تأخير قصير للسماح بتحديث قاعدة البيانات (الـ triggers)
+    // تأخير قصير للسماح بتحديث قاعدة البيانات
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // إعادة جلب الفواتير للعميل الحالي
+    // إعادة جلب الفواتير للعميل والعقد الحالي
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select(`
           id,
@@ -819,8 +902,15 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         `)
         .eq('customer_id', currentCustomer.id)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
-        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
+        .neq('status', 'cancelled')
         .order('due_date', { ascending: true });
+
+      // فلترة حسب العقد إذا كان محدداً
+      if (currentContract) {
+        query = query.eq('contract_id', currentContract.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -844,7 +934,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         variant: 'destructive',
       });
     } finally {
-      setProcessing(false); // ✅ إيقاف حالة التحميل
+      setProcessing(false);
     }
   };
 
@@ -1011,7 +1101,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
             </div>
           )}
 
-          {/* Step 2: Show Selected Customer and Invoices */}
+          {/* Step 2: Show Selected Customer and Contracts/Invoices */}
           {selectedCustomer && !readyToPay && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1027,6 +1117,71 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                 </Button>
               </div>
 
+              {/* عرض قائمة العقود إذا كان هناك أكثر من عقد */}
+              {loadingContracts && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="mr-2 text-muted-foreground">جاري تحميل العقود...</span>
+                </div>
+              )}
+
+              {!loadingContracts && customerContracts.length > 1 && !selectedContract && (
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">اختر العقد</Label>
+                  <p className="text-sm text-muted-foreground">
+                    هذا العميل لديه {customerContracts.length} عقود نشطة. اختر العقد المراد الدفع له:
+                  </p>
+                  <div className="border rounded-lg divide-y">
+                    {customerContracts.map((contract) => (
+                      <div
+                        key={contract.id}
+                        className="p-4 hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => selectContract(contract)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-base">{contract.contract_number}</div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              🚗 {contract.vehicle_plate || 'بدون لوحة'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              الإيجار الشهري: {contract.monthly_amount.toFixed(2)} ر.ق
+                            </div>
+                          </div>
+                          <Badge variant={contract.status === 'active' ? 'default' : 'secondary'}>
+                            {contract.status === 'active' ? 'نشط' : 'تحت الإجراء القانوني'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* عرض العقد المختار وخيار تغييره */}
+              {selectedContract && customerContracts.length > 1 && (
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div>
+                    <div className="text-sm text-blue-600 font-medium">العقد المختار</div>
+                    <div className="font-semibold">{selectedContract.contract_number}</div>
+                    <div className="text-sm text-muted-foreground">🚗 {selectedContract.vehicle_plate || '-'}</div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setSelectedContract(null);
+                      setInvoices([]);
+                      setSelectedInvoices([]);
+                    }}
+                  >
+                    تغيير العقد
+                  </Button>
+                </div>
+              )}
+
+              {/* عرض الفواتير فقط إذا تم اختيار عقد أو كان هناك عقد واحد فقط */}
+              {(selectedContract || customerContracts.length === 1) && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>اختر الفواتير المراد دفعها (يمكنك تحديد أكثر من فاتورة)</Label>
@@ -1061,27 +1216,20 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                       onClick={async () => {
                         if (!selectedCustomer || !companyId) return;
                         
+                        // استخدام العقد المحدد أو العقد الوحيد
+                        const contractToUse = selectedContract || customerContracts[0];
+                        
+                        if (!contractToUse) {
+                          toast({
+                            title: 'لا يوجد عقد نشط',
+                            description: 'يجب أن يكون للعميل عقد نشط لإنشاء فاتورة',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        
                         try {
-                          // البحث عن عقد نشط للعميل
-                          const { data: activeContracts, error: contractError } = await supabase
-                            .from('contracts')
-                            .select('id, contract_number, monthly_amount')
-                            .eq('customer_id', selectedCustomer.id)
-                            .eq('company_id', companyId)
-                            .eq('status', 'active')
-                            .order('created_at', { ascending: false })
-                            .limit(1);
-
-                          if (contractError || !activeContracts || activeContracts.length === 0) {
-                            toast({
-                              title: 'لا يوجد عقد نشط',
-                              description: 'يجب أن يكون للعميل عقد نشط لإنشاء فاتورة',
-                              variant: 'destructive',
-                            });
-                            return;
-                          }
-
-                          const activeContract = activeContracts[0];
+                          const activeContract = contractToUse;
                           const today = new Date().toISOString().split('T')[0];
                           
                           // ✅ استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
@@ -1253,6 +1401,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                   </div>
                 )}
               </div>
+              )}
             </div>
           )}
 
