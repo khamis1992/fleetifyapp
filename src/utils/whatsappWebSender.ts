@@ -148,6 +148,171 @@ export const sendWhatsAppMessage = async ({ phone, message, customerName }: Send
 };
 
 /**
+ * Send document via WhatsApp using Ultramsg API
+ * https://docs.ultramsg.com/api/post/messages/document
+ */
+interface SendWhatsAppDocumentParams {
+  phone: string;
+  documentBase64: string; // Base64 encoded PDF
+  filename: string;
+  caption?: string;
+  customerName?: string;
+}
+
+export const sendWhatsAppDocument = async ({
+  phone,
+  documentBase64,
+  filename,
+  caption,
+  customerName
+}: SendWhatsAppDocumentParams): Promise<{
+  success: boolean;
+  error?: string;
+  messageId?: string;
+}> => {
+  console.log('🚀 [WHATSAPP DOC] Starting sendWhatsAppDocument...');
+  console.log('🚀 [WHATSAPP DOC] Phone:', phone);
+  console.log('🚀 [WHATSAPP DOC] Filename:', filename);
+  console.log('🚀 [WHATSAPP DOC] Base64 length:', documentBase64?.length || 0);
+  
+  const formattedPhone = formatPhoneForWhatsApp(phone);
+  console.log('🚀 [WHATSAPP DOC] Formatted phone:', formattedPhone);
+
+  if (!formattedPhone || formattedPhone.length < 8) {
+    console.error(`❌ [WHATSAPP DOC] Invalid phone number: ${phone}`);
+    return { success: false, error: 'رقم الهاتف غير صحيح' };
+  }
+  
+  try {
+    // استخدام Supabase Edge Function لتجنب مشاكل CORS
+    console.log('🚀 [WHATSAPP DOC] Importing supabase client...');
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    console.log('🚀 [WHATSAPP DOC] Calling Edge Function send-whatsapp-document...');
+    console.log('🚀 [WHATSAPP DOC] Payload size:', Math.round(documentBase64.length / 1024), 'KB');
+
+    const { data, error } = await supabase.functions.invoke('send-whatsapp-document', {
+      body: {
+        phone: formattedPhone,
+        documentBase64: documentBase64,
+        filename: filename,
+        caption: caption || '',
+      },
+    });
+
+    console.log('🚀 [WHATSAPP DOC] Edge Function returned');
+    console.log('🚀 [WHATSAPP DOC] Data:', data);
+    console.log('🚀 [WHATSAPP DOC] Error:', error);
+
+    if (error) {
+      console.error(`❌ [WHATSAPP DOC] Edge Function error:`, error);
+      return { 
+        success: false, 
+        error: error.message || 'فشل في إرسال المستند' 
+      };
+    }
+
+    if (data?.success) {
+      console.log(`✅ [WHATSAPP DOC] Document sent successfully!`, {
+        messageId: data.messageId,
+        method: data.method,
+        filename,
+      });
+      return { success: true, messageId: data.messageId };
+    } else {
+      console.error(`❌ [WHATSAPP DOC] Failed to send document:`, data);
+      return { 
+        success: false, 
+        error: data?.error || 'فشل في إرسال المستند'
+      };
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
+    console.error(`❌ [WHATSAPP DOC] Network/Exception error:`, error);
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * Send image via WhatsApp using Ultramsg API
+ * https://docs.ultramsg.com/api/post/messages/image
+ * أبسط من PDF ولا يحتاج Edge Function
+ */
+interface SendWhatsAppImageParams {
+  phone: string;
+  imageBase64: string; // Base64 encoded image (data:image/jpeg;base64,...)
+  caption?: string;
+  customerName?: string;
+}
+
+export const sendWhatsAppImage = async ({
+  phone,
+  imageBase64,
+  caption,
+  customerName
+}: SendWhatsAppImageParams): Promise<{
+  success: boolean;
+  error?: string;
+  messageId?: string;
+}> => {
+  const config = getUltramsgConfig();
+  const formattedPhone = formatPhoneForWhatsApp(phone);
+  
+  console.log('🖼️ [WHATSAPP IMG] Starting sendWhatsAppImage...');
+  console.log('🖼️ [WHATSAPP IMG] Phone:', formattedPhone);
+  console.log('🖼️ [WHATSAPP IMG] Image size:', Math.round(imageBase64.length / 1024), 'KB');
+
+  if (!formattedPhone || formattedPhone.length < 8) {
+    console.error(`❌ [WHATSAPP IMG] Invalid phone number: ${phone}`);
+    return { success: false, error: 'رقم الهاتف غير صحيح' };
+  }
+
+  // التحقق من حجم الصورة (الحد الأقصى 6.5 ميجابايت)
+  if (imageBase64.length > 6500000) {
+    console.error(`❌ [WHATSAPP IMG] Image too large: ${Math.round(imageBase64.length / 1024)} KB`);
+    return { success: false, error: 'حجم الصورة كبير جداً (الحد الأقصى 6.5 ميجابايت)' };
+  }
+  
+  try {
+    const url = `https://api.ultramsg.com/${config.instanceId}/messages/image`;
+    
+    console.log('🖼️ [WHATSAPP IMG] Sending to:', url);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        token: config.token,
+        to: formattedPhone,
+        image: imageBase64,
+        caption: caption || '',
+      }),
+    });
+
+    const data: UltramsgResponse = await response.json();
+    
+    console.log('🖼️ [WHATSAPP IMG] Response:', data);
+
+    if (data.sent === 'true' || data.sent === true as any || data.id) {
+      console.log(`✅ [WHATSAPP IMG] Image sent to ${customerName || phone}`);
+      return { success: true, messageId: data.id };
+    } else {
+      console.error(`❌ [WHATSAPP IMG] Failed:`, data);
+      return { 
+        success: false, 
+        error: data.error || data.message || 'فشل في إرسال الصورة'
+      };
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
+    console.error(`❌ [WHATSAPP IMG] Error:`, error);
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
  * Send multiple WhatsApp messages with delay
  */
 export const sendBulkWhatsAppMessages = async (

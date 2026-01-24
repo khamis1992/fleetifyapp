@@ -83,6 +83,9 @@ import {
   Wallet,
   UserCheck,
   ClipboardCheck,
+  Loader2,
+  FolderArchive,
+  Scale,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -94,6 +97,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
 import { useRefreshDelinquentCustomers } from '@/hooks/useDelinquentCustomers';
@@ -113,6 +123,16 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { GeneratedWarning } from '@/hooks/useGenerateLegalWarning';
+import { 
+  generateBulkDocumentsZip, 
+  downloadZipFile, 
+  updateCustomersToOpeningComplaint,
+  convertToOfficialCase,
+  type BulkCustomerData,
+  type BulkGenerationProgress,
+} from '@/utils/bulkDocumentGenerator';
+import { Progress } from '@/components/ui/progress';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 
 // ===== System Colors =====
 const colors = {
@@ -251,8 +271,8 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [overduePeriodFilter, setOverduePeriodFilter] = useState<string>('all');
   const [amountRangeFilter, setAmountRangeFilter] = useState<string>('all');
   const [violationsFilter, setViolationsFilter] = useState<string>('all');
-  const [contractStatusFilter, setContractStatusFilter] = useState<string>('all');
-  const [verificationFilter, setVerificationFilter] = useState<string>('all');
+  // فلتر موحد للحالات (حالة العقد + حالة التدقيق)
+  const [combinedStatusFilter, setCombinedStatusFilter] = useState<string>('all');
   const [selectedCustomers, setSelectedCustomers] = useState<DelinquentCustomer[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
@@ -268,6 +288,11 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [scheduleCallsDialogOpen, setScheduleCallsDialogOpen] = useState(false);
   const [verificationTaskDialogOpen, setVerificationTaskDialogOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
+  
+  // Bulk Document Generation States
+  const [bulkGenerationDialogOpen, setBulkGenerationDialogOpen] = useState(false);
+  const [bulkGenerationProgress, setBulkGenerationProgress] = useState<BulkGenerationProgress | null>(null);
+  const [generatedCustomerIds, setGeneratedCustomerIds] = useState<Set<string>>(new Set());
 
   // New UX States
   const [itemsPerPage, setItemsPerPage] = useState(12);
@@ -277,6 +302,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [showTodayTasks, setShowTodayTasks] = useState(true);
 
   // Hooks
+  const { companyId } = useUnifiedCompanyAccess();
   const { data: stats, isLoading: statsLoading } = useDelinquencyStats();
   const convertToCase = useConvertToLegalCase();
   const generateWarning = useGenerateLegalWarning();
@@ -301,29 +327,28 @@ export const DelinquentCustomersTab: React.FC = () => {
   );
   const { data: verificationStatuses } = useVerificationStatuses(contractIds);
 
-  // Apply contract status filter and verification filter locally
+  // Apply combined status filter locally (contract status + verification status)
   const filteredCustomers = useMemo(() => {
     if (!rawCustomers) return [];
     let result = rawCustomers;
     
-    // Filter by contract status
-    if (contractStatusFilter !== 'all') {
-      result = result.filter(c => c.contract_status === contractStatusFilter);
-    }
-    
-    // Filter by verification status
-    if (verificationFilter !== 'all' && verificationStatuses) {
-      if (verificationFilter === 'verified') {
+    if (combinedStatusFilter !== 'all') {
+      // حالات العقد
+      if (['active', 'cancelled', 'closed', 'under_legal_procedure'].includes(combinedStatusFilter)) {
+        result = result.filter(c => c.contract_status === combinedStatusFilter);
+      }
+      // حالات التدقيق
+      else if (combinedStatusFilter === 'verified' && verificationStatuses) {
         result = result.filter(c => verificationStatuses.get(c.contract_id)?.status === 'verified');
-      } else if (verificationFilter === 'pending') {
+      } else if (combinedStatusFilter === 'pending' && verificationStatuses) {
         result = result.filter(c => verificationStatuses.get(c.contract_id)?.status === 'pending');
-      } else if (verificationFilter === 'not_verified') {
-        result = result.filter(c => !verificationStatuses.get(c.contract_id));
+      } else if (combinedStatusFilter === 'not_verified') {
+        result = result.filter(c => !verificationStatuses?.get(c.contract_id));
       }
     }
     
     return result;
-  }, [rawCustomers, contractStatusFilter, verificationFilter, verificationStatuses]);
+  }, [rawCustomers, combinedStatusFilter, verificationStatuses]);
 
   // Apply sorting
   const customers = useMemo(() => {
@@ -520,21 +545,106 @@ export const DelinquentCustomersTab: React.FC = () => {
     }
   }, [generateWarning]);
 
-  // Handle bulk actions - navigate to lawsuit preparation page
+  // Handle bulk actions - generate documents for all selected customers
   const handleBulkCreateCases = useCallback(async () => {
     if (selectedCustomers.length === 0) {
       toast.error('لم يتم تحديد أي عملاء');
       return;
     }
 
-    const firstCustomer = selectedCustomers[0];
-    if (firstCustomer?.contract_id) {
-      navigate(`/legal/lawsuit/prepare/${firstCustomer.contract_id}`);
-      toast.info(`جاري تجهيز دعوى للعقد: ${firstCustomer.contract_number}`);
-    } else {
-      toast.error('رقم العقد غير متاح');
+    setBulkGenerationDialogOpen(true);
+    setBulkGenerationProgress({
+      current: 0,
+      total: selectedCustomers.length,
+      currentCustomer: '',
+      status: 'generating',
+      errors: [],
+    });
+
+    try {
+      // تحويل بيانات العملاء للصيغة المطلوبة
+      const customersData: BulkCustomerData[] = selectedCustomers.map(c => ({
+        contract_id: c.contract_id,
+        contract_number: c.contract_number,
+        customer_name: c.customer_name,
+        customer_id: c.customer_id,
+        national_id: c.national_id,
+        phone: c.phone,
+        total_due: c.total_due,
+        days_overdue: c.days_overdue,
+      }));
+
+      // إنشاء ملف ZIP مع جميع المستندات
+      const zipBlob = await generateBulkDocumentsZip(customersData, (progress) => {
+        setBulkGenerationProgress(progress);
+      });
+
+      // تحميل الملف
+      const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm');
+      downloadZipFile(zipBlob, `قضايا_${selectedCustomers.length}_عميل_${timestamp}.zip`);
+
+      // تحديث حالة العملاء إلى "جاري فتح بلاغ"
+      const contractIds = selectedCustomers.map(c => c.contract_id);
+      await updateCustomersToOpeningComplaint(contractIds);
+
+      // تحديث الحالة المحلية
+      setGeneratedCustomerIds(prev => {
+        const newSet = new Set(prev);
+        contractIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+
+      toast.success(`✅ تم إنشاء وتحميل مستندات ${selectedCustomers.length} عميل بنجاح`);
+      
+      // إعادة تحميل البيانات
+      refreshDelinquentCustomers.refetch();
+      
+      // إلغاء التحديد
+      setSelectedCustomers([]);
+      setSelectedIds(new Set());
+      
+    } catch (error) {
+      console.error('Error in bulk document generation:', error);
+      toast.error('حدث خطأ أثناء إنشاء المستندات');
+    } finally {
+      setTimeout(() => {
+        setBulkGenerationDialogOpen(false);
+        setBulkGenerationProgress(null);
+      }, 2000);
     }
-  }, [selectedCustomers, navigate]);
+  }, [selectedCustomers, refreshDelinquentCustomers]);
+
+  // تحويل عميل واحد إلى قضية رسمية
+  const handleConvertToOfficialCase = useCallback(async (customer: DelinquentCustomer) => {
+    if (!companyId) {
+      toast.error('لم يتم تحديد الشركة');
+      return;
+    }
+
+    try {
+      toast.loading('جاري إنشاء القضية الرسمية...');
+      const caseId = await convertToOfficialCase(customer.contract_id, companyId);
+      toast.dismiss();
+      toast.success('✅ تم إنشاء القضية الرسمية بنجاح');
+      
+      // إزالة العميل من قائمة "جاري فتح بلاغ"
+      setGeneratedCustomerIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(customer.contract_id);
+        return newSet;
+      });
+      
+      // الانتقال لصفحة القضايا
+      navigate(`/legal/cases/${caseId}`);
+      
+      // إعادة تحميل البيانات
+      refreshDelinquentCustomers.refetch();
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error converting to official case:', error);
+      toast.error('حدث خطأ أثناء إنشاء القضية');
+    }
+  }, [companyId, navigate, refreshDelinquentCustomers]);
 
   // Handle bulk delete contracts permanently
   const handleBulkDeleteContracts = useCallback(async () => {
@@ -769,8 +879,7 @@ export const DelinquentCustomersTab: React.FC = () => {
     setOverduePeriodFilter('all');
     setAmountRangeFilter('all');
     setViolationsFilter('all');
-    setContractStatusFilter('all');
-    setVerificationFilter('all');
+    setCombinedStatusFilter('all');
     setCurrentPage(1);
   }, []);
 
@@ -780,8 +889,7 @@ export const DelinquentCustomersTab: React.FC = () => {
     overduePeriodFilter !== 'all',
     amountRangeFilter !== 'all',
     violationsFilter !== 'all',
-    contractStatusFilter !== 'all',
-    verificationFilter !== 'all',
+    combinedStatusFilter !== 'all',
   ].filter(Boolean).length;
 
   // Loading state
@@ -1169,44 +1277,12 @@ export const DelinquentCustomersTab: React.FC = () => {
             <div className="flex items-center gap-1 mr-4 pr-4 border-r" style={{ borderColor: `hsl(${colors.border})` }}>
               <span className="text-sm text-muted-400 ml-2">العقد:</span>
               {[
-                { id: 'active', label: 'نشط', count: customers?.filter(c => c.contract_status === 'active').length || 0, color: 'emerald', icon: CheckCircle },
-                { id: 'cancelled', label: 'ملغي', count: customers?.filter(c => c.contract_status === 'cancelled').length || 0, color: 'red', icon: X },
-                { id: 'closed', label: 'مغلق', count: customers?.filter(c => c.contract_status === 'closed').length || 0, color: 'slate', icon: CheckCircle },
-                { id: 'under_legal_procedure', label: 'قانوني', count: customers?.filter(c => c.contract_status === 'under_legal_procedure').length || 0, color: 'violet', icon: Gavel },
-              ]
-                .filter(f => f.count > 0)
-                .map(({ id, label, count, color, icon: Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => {
-                      setContractStatusFilter(contractStatusFilter === id ? 'all' : id);
-                      setCurrentPage(1);
-                    }}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all',
-                      contractStatusFilter === id
-                        ? id === 'cancelled' ? 'bg-red-500 text-white'
-                        : id === 'closed' ? 'bg-slate-500 text-white'
-                        : id === 'under_legal_procedure' ? 'bg-violet-500 text-white'
-                          : 'bg-emerald-500 text-white'
-                        : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
-                          : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
-                            : id === 'under_legal_procedure' ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100',
-                    )}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {label}
-                    <span className="bg-white/20 px-1 rounded text-[10px] font-bold">{count}</span>
-                  </button>
-                ))}
-            </div>
-
-            {/* Verification Status Quick Filters */}
-            <div className="flex items-center gap-1 mr-4 pr-4 border-r" style={{ borderColor: `hsl(${colors.border})` }}>
-              <span className="text-sm text-muted-400 ml-2">التدقيق:</span>
-              {[
-                { id: 'verified', label: 'تم التدقيق', count: rawCustomers?.filter(c => verificationStatuses?.get(c.contract_id)?.status === 'verified').length || 0, color: 'green', icon: ClipboardCheck },
+                { id: 'active', label: 'نشط', count: rawCustomers?.filter(c => c.contract_status === 'active').length || 0, color: 'emerald', icon: CheckCircle },
+                { id: 'cancelled', label: 'ملغي', count: rawCustomers?.filter(c => c.contract_status === 'cancelled').length || 0, color: 'red', icon: X },
+                { id: 'closed', label: 'مغلق', count: rawCustomers?.filter(c => c.contract_status === 'closed').length || 0, color: 'slate', icon: CheckCircle },
+                { id: 'under_legal_procedure', label: 'قانوني', count: rawCustomers?.filter(c => c.contract_status === 'under_legal_procedure').length || 0, color: 'violet', icon: Gavel },
+                // حالات التدقيق
+                { id: 'verified', label: 'تم التدقيق', count: rawCustomers?.filter(c => verificationStatuses?.get(c.contract_id)?.status === 'verified').length || 0, color: 'blue', icon: ClipboardCheck },
                 { id: 'pending', label: 'قيد التدقيق', count: rawCustomers?.filter(c => verificationStatuses?.get(c.contract_id)?.status === 'pending').length || 0, color: 'amber', icon: Clock },
               ]
                 .filter(f => f.count > 0)
@@ -1214,16 +1290,24 @@ export const DelinquentCustomersTab: React.FC = () => {
                   <button
                     key={id}
                     onClick={() => {
-                      setVerificationFilter(verificationFilter === id ? 'all' : id);
+                      setCombinedStatusFilter(combinedStatusFilter === id ? 'all' : id);
                       setCurrentPage(1);
                     }}
                     className={cn(
                       'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all',
-                      verificationFilter === id
-                        ? id === 'verified' ? 'bg-green-500 text-white'
-                          : 'bg-amber-500 text-white'
-                        : id === 'verified' ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100',
+                      combinedStatusFilter === id
+                        ? id === 'cancelled' ? 'bg-red-500 text-white'
+                        : id === 'closed' ? 'bg-slate-500 text-white'
+                        : id === 'under_legal_procedure' ? 'bg-violet-500 text-white'
+                        : id === 'verified' ? 'bg-blue-500 text-white'
+                        : id === 'pending' ? 'bg-amber-500 text-white'
+                          : 'bg-emerald-500 text-white'
+                        : id === 'cancelled' ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+                          : id === 'closed' ? 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            : id === 'under_legal_procedure' ? 'bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100'
+                            : id === 'verified' ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+                            : id === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100',
                     )}
                   >
                     <Icon className="w-3 h-3" />
@@ -1409,17 +1493,59 @@ export const DelinquentCustomersTab: React.FC = () => {
                   </SelectContent>
                 </Select>
 
-                <Select value={contractStatusFilter} onValueChange={(v) => { setContractStatusFilter(v); setCurrentPage(1); }}>
+                <Select value={combinedStatusFilter} onValueChange={(v) => { setCombinedStatusFilter(v); setCurrentPage(1); }}>
                   <SelectTrigger className="h-11 rounded-xl">
                     <FileText className="w-4 h-4 ml-2 text-muted-foreground" />
-                    <SelectValue placeholder="حالة العقد" />
+                    <SelectValue placeholder="الحالة" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">جميع الحالات</SelectItem>
-                    <SelectItem value="active">نشط</SelectItem>
-                    <SelectItem value="cancelled">ملغي</SelectItem>
-                    <SelectItem value="closed">مغلق</SelectItem>
-                    <SelectItem value="under_legal_procedure">تحت الإجراء القانوني</SelectItem>
+                    {/* حالات العقد */}
+                    <SelectItem value="active" className="text-emerald-600">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        نشط
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="cancelled" className="text-red-600">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        ملغي
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="closed" className="text-gray-600">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-gray-500"></span>
+                        مغلق
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="under_legal_procedure" className="text-purple-600">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                        تحت الإجراء القانوني
+                      </span>
+                    </SelectItem>
+                    {/* فاصل */}
+                    <div className="h-px bg-border my-1" />
+                    {/* حالات التدقيق */}
+                    <SelectItem value="verified" className="text-blue-600">
+                      <span className="flex items-center gap-2">
+                        <ClipboardCheck className="w-3 h-3" />
+                        تم التدقيق
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="pending" className="text-amber-600">
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
+                        قيد التدقيق
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="not_verified" className="text-gray-500">
+                      <span className="flex items-center gap-2">
+                        <AlertCircle className="w-3 h-3" />
+                        لم يتم التدقيق
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1570,7 +1696,14 @@ export const DelinquentCustomersTab: React.FC = () => {
                               : `hsl(${colors.success} / 0.03)`,
                     }}
                   >
-                    <p className="font-semibold text-foreground text-sm truncate">{customer.customer_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground text-sm truncate">{customer.customer_name}</p>
+                      {generatedCustomerIds.has(customer.contract_id) && (
+                        <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200">
+                          جاري فتح بلاغ
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">{customer.contract_number}</p>
                     <div className="flex items-center justify-between mt-2">
                       <span
@@ -1655,7 +1788,14 @@ export const DelinquentCustomersTab: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-foreground">{customer.customer_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">{customer.customer_name}</p>
+                        {generatedCustomerIds.has(customer.contract_id) && (
+                          <Badge className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200">
+                            جاري فتح بلاغ
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">{customer.phone}</p>
                     </div>
                   </TableCell>
@@ -1699,23 +1839,37 @@ export const DelinquentCustomersTab: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(customer)}
-                        className="h-8 w-8 p-0 rounded-lg"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRecordPayment(customer)}
-                        className="h-8 w-8 p-0 rounded-lg"
-                        style={{ color: `hsl(${colors.success})` }}
-                      >
-                        <CreditCard className="w-4 h-4" />
-                      </Button>
+                      {generatedCustomerIds.has(customer.contract_id) ? (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleConvertToOfficialCase(customer)}
+                          className="h-8 px-2 rounded-lg bg-green-600 hover:bg-green-700 text-white gap-1"
+                        >
+                          <Scale className="w-3 h-3" />
+                          <span className="text-xs">فتح قضية</span>
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(customer)}
+                            className="h-8 w-8 p-0 rounded-lg"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRecordPayment(customer)}
+                            className="h-8 w-8 p-0 rounded-lg"
+                            style={{ color: `hsl(${colors.success})` }}
+                          >
+                            <CreditCard className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -1901,6 +2055,13 @@ className={cn(
                                   قيد التدقيق
                                 </Badge>
                               )}
+                              {/* بادج جاري فتح بلاغ */}
+                              {generatedCustomerIds.has(customer.contract_id) && (
+                                <Badge className="text-[10px] px-2 py-0.5 bg-orange-500 text-white gap-1 animate-pulse">
+                                  <FolderArchive className="w-3 h-3" />
+                                  جاري فتح بلاغ
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1957,46 +2118,74 @@ className={cn(
                         {/* Actions */}
                         <div className="col-span-2 text-center">
                           <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewDetails(customer);
-                              }}
-                              title="عرض التفاصيل"
-                              className="h-9 w-9 rounded-lg hover:bg-teal-50 hover:text-teal-600"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleSendWarning(customer)}
-                              title="إرسال إنذار"
-                              className="h-9 w-9 rounded-lg hover:bg-amber-50 hover:text-amber-600"
-                            >
-                              <AlertTriangle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRecordPayment(customer)}
-                              title="تسجيل دفعة"
-                              className="h-9 w-9 rounded-lg hover:bg-emerald-50 hover:text-emerald-600"
-                            >
-                              <CreditCard className="w-4 h-4" />
-                            </Button>
+                            {/* زر تحويل لقضية رسمية - بارز للعملاء في حالة "جاري فتح بلاغ" */}
+                            {generatedCustomerIds.has(customer.contract_id) ? (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleConvertToOfficialCase(customer)}
+                                className="h-9 px-3 rounded-lg bg-green-600 hover:bg-green-700 text-white gap-1.5 shadow-md"
+                              >
+                                <Scale className="w-4 h-4" />
+                                <span className="text-xs font-semibold">فتح قضية رسمية</span>
+                              </Button>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewDetails(customer);
+                                  }}
+                                  title="عرض التفاصيل"
+                                  className="h-9 w-9 rounded-lg hover:bg-teal-50 hover:text-teal-600"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleSendWarning(customer)}
+                                  title="إرسال إنذار"
+                                  className="h-9 w-9 rounded-lg hover:bg-amber-50 hover:text-amber-600"
+                                >
+                                  <AlertTriangle className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRecordPayment(customer)}
+                                  title="تسجيل دفعة"
+                                  className="h-9 w-9 rounded-lg hover:bg-emerald-50 hover:text-emerald-600"
+                                >
+                                  <CreditCard className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
                                   <MoreVertical className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuContent align="end" className="w-56">
+                                {/* زر تحويل لقضية رسمية - يظهر فقط للعملاء في حالة "جاري فتح بلاغ" */}
+                                {generatedCustomerIds.has(customer.contract_id) && (
+                                  <>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleConvertToOfficialCase(customer)} 
+                                      className="gap-2 cursor-pointer bg-green-50 text-green-700 hover:bg-green-100"
+                                    >
+                                      <Scale className="w-4 h-4" />
+                                      <span>تحويل لقضية رسمية</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
                                 <DropdownMenuItem onClick={() => handleCreateCase(customer)} className="gap-2 cursor-pointer">
                                   <Gavel className="w-4 h-4" />
-                                  <span>رفع دعوى قضائية</span>
+                                  <span>تجهيز الدعوى</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -2198,6 +2387,64 @@ className={cn(
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Generation Progress Dialog */}
+      <Dialog open={bulkGenerationDialogOpen} onOpenChange={setBulkGenerationDialogOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderArchive className="h-5 w-5 text-primary" />
+              إنشاء ملفات القضايا
+            </DialogTitle>
+            <DialogDescription>
+              جاري إنشاء المستندات القانونية لجميع العملاء المحددين
+            </DialogDescription>
+          </DialogHeader>
+          
+          {bulkGenerationProgress && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between text-sm">
+                <span>التقدم:</span>
+                <span className="font-bold">
+                  {bulkGenerationProgress.current} / {bulkGenerationProgress.total}
+                </span>
+              </div>
+              
+              <Progress 
+                value={(bulkGenerationProgress.current / bulkGenerationProgress.total) * 100} 
+                className="h-3"
+              />
+              
+              {bulkGenerationProgress.currentCustomer && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>جاري معالجة: {bulkGenerationProgress.currentCustomer}</span>
+                </div>
+              )}
+              
+              {bulkGenerationProgress.status === 'completed' && (
+                <div className="flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>تم الانتهاء بنجاح! جاري تحميل الملف...</span>
+                </div>
+              )}
+              
+              {bulkGenerationProgress.errors.length > 0 && (
+                <div className="mt-3 p-3 bg-red-50 rounded-lg">
+                  <p className="text-sm font-medium text-red-700 mb-2">
+                    أخطاء ({bulkGenerationProgress.errors.length}):
+                  </p>
+                  <ul className="text-xs text-red-600 space-y-1 max-h-[100px] overflow-y-auto">
+                    {bulkGenerationProgress.errors.map((err, i) => (
+                      <li key={i}>• {err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Reminders Dialog */}
       <BulkRemindersDialog

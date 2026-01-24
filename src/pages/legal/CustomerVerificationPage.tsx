@@ -674,11 +674,16 @@ export default function CustomerVerificationPage() {
 
             {/* بيانات العقد والمركبة */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div
+                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors"
+                onClick={() => contract?.contract_number && navigate(`/contracts/${contract.contract_number}`)}
+              >
                 <FileText className="h-5 w-5 text-teal-600" />
                 <div>
                   <p className="text-xs text-muted-foreground">رقم العقد</p>
-                  <p className="font-semibold">{contract?.contract_number || '-'}</p>
+                  <p className="font-semibold text-teal-600 hover:text-teal-700 hover:underline">
+                    {contract?.contract_number || '-'}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">

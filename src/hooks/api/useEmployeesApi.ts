@@ -185,7 +185,7 @@ export function useEmployeeStats() {
 
       const { data } = await supabase
         .from('employees')
-        .select('status, department')
+        .select('is_active, department')
         .eq('company_id', companyId);
 
       const byDepartment = (data || []).reduce((acc, emp) => {
@@ -197,9 +197,9 @@ export function useEmployeeStats() {
 
       return {
         total: data?.length || 0,
-        active: data?.filter(e => e.status === 'active').length || 0,
-        inactive: data?.filter(e => e.status === 'inactive').length || 0,
-        onLeave: data?.filter(e => e.status === 'on_leave').length || 0,
+        active: data?.filter((e: any) => e.is_active === true).length || 0,
+        inactive: data?.filter((e: any) => e.is_active === false).length || 0,
+        onLeave: 0, // الجدول لا يحتوي على حالة إجازة
         byDepartment,
       };
     },
@@ -324,7 +324,11 @@ async function fetchEmployeesFromSupabase(
 
   if (filters.department) query = query.eq('department', filters.department);
   if (filters.position) query = query.ilike('position', `%${filters.position}%`);
-  if (filters.status) query = query.eq('status', filters.status);
+  // استخدام is_active بدلاً من status لأن الجدول يستخدم boolean
+  if (filters.status) {
+    const isActive = filters.status === 'active';
+    query = query.eq('is_active', isActive);
+  }
   if (filters.search) {
     query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
   }

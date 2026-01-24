@@ -12,7 +12,8 @@ import {
   Users,
   AlertTriangle,
   Send,
-  Bell
+  Bell,
+  Loader2
 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,90 @@ const useTrafficViolationsDashboardStats = () => {
       return violations as any[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes cache
+  });
+};
+
+// Hook to fetch ALL violations with customer/contract data for reminders
+const useAllViolationsWithCustomers = (enabled: boolean) => {
+  return useQuery({
+    queryKey: ['all-violations-with-customers'],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
+
+      // Fetch ALL unpaid violations with customer/contract data
+      const { data: violations, error } = await supabase
+        .from('penalties')
+        .select(`
+          id,
+          penalty_number,
+          violation_type,
+          penalty_date,
+          amount,
+          location,
+          vehicle_plate,
+          vehicle_id,
+          reason,
+          notes,
+          status,
+          payment_status,
+          customer_id,
+          contract_id,
+          created_at,
+          updated_at,
+          issuing_authority,
+          violation_number,
+          violation_date,
+          fine_amount,
+          vehicles (
+            id,
+            plate_number,
+            make,
+            model,
+            year
+          ),
+          customers (
+            id,
+            first_name,
+            last_name,
+            company_name,
+            phone,
+            mobile
+          ),
+          contracts (
+            id,
+            contract_number,
+            status,
+            start_date,
+            end_date,
+            customer_id,
+            customers (
+              id,
+              first_name,
+              last_name,
+              company_name,
+              phone,
+              mobile
+            )
+          )
+        `)
+        .eq('company_id', profile.company_id)
+        .neq('payment_status', 'paid'); // Only unpaid violations
+
+      if (error) throw error;
+
+      return violations as TrafficViolation[];
+    },
+    enabled,
+    staleTime: 30 * 1000, // 30 seconds cache
   });
 };
 
@@ -325,18 +410,35 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
   // State for reminder dialog
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [selectedViolationsForReminder, setSelectedViolationsForReminder] = useState<TrafficViolation[]>([]);
+  const [shouldFetchForReminder, setShouldFetchForReminder] = useState(false);
 
-  // Handler to open reminder dialog with unpaid violations
+  // Fetch all violations with customer data when opening reminder dialog
+  const { data: allViolationsWithCustomers = [], isLoading: isLoadingAllViolations } = useAllViolationsWithCustomers(shouldFetchForReminder);
+
+  // Handler to open reminder dialog with unpaid violations linked to contracts
   const handleOpenReminderDialog = useCallback(() => {
-    // Filter unpaid/partially paid violations from the passed violations prop
-    const unpaidViolations = violations.filter(v => {
-      const paymentStatus = v.payment_status?.toLowerCase();
-      return paymentStatus !== 'paid' && paymentStatus !== 'مدفوعة';
-    });
-    
-    setSelectedViolationsForReminder(unpaidViolations);
-    setIsReminderDialogOpen(true);
-  }, [violations]);
+    setShouldFetchForReminder(true);
+  }, []);
+
+  // When all violations with customers are loaded, filter and open dialog
+  React.useEffect(() => {
+    if (shouldFetchForReminder && allViolationsWithCustomers.length > 0) {
+      // Filter violations that are linked to contracts or have customer data
+      const violationsWithCustomerData = allViolationsWithCustomers.filter(v => {
+        // Has direct customer
+        if (v.customers && (v.customers.phone || v.customers.mobile)) return true;
+        // Has customer through contract
+        if (v.contracts?.customers && (v.contracts.customers.phone || v.contracts.customers.mobile)) return true;
+        // Has contract_id (linked to contract)
+        if (v.contract_id) return true;
+        return false;
+      });
+      
+      setSelectedViolationsForReminder(violationsWithCustomerData);
+      setIsReminderDialogOpen(true);
+      setShouldFetchForReminder(false);
+    }
+  }, [shouldFetchForReminder, allViolationsWithCustomers]);
 
   return (
     <div className="space-y-4">
@@ -410,10 +512,15 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
               variant="outline"
               size="sm"
               onClick={handleOpenReminderDialog}
+              disabled={isLoadingAllViolations}
               className="border-red-200 text-red-600 hover:bg-red-100 rounded-xl"
             >
-              <Send className="w-4 h-4 ml-2" />
-              إرسال تذكيرات
+              {isLoadingAllViolations ? (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 ml-2" />
+              )}
+              {isLoadingAllViolations ? 'جاري التحميل...' : 'إرسال تذكيرات'}
             </Button>
           </div>
         </div>

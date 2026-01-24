@@ -136,18 +136,26 @@ export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDi
     const groupsMap = new Map<string, CustomerViolationsGroup>();
 
     violations.forEach(v => {
-      const customer = v.customers || v.contracts?.customers;
+      // Get customer from direct relation or through contract
+      const directCustomer = v.customers;
+      const contractCustomer = v.contracts?.customers;
+      const customer = directCustomer || contractCustomer;
       const vehicle = v.vehicles;
       const contract = v.contracts;
 
-      // Use customer_id or generate a key from customer data
-      const customerId = v.customer_id || customer?.id || `unknown-${v.id}`;
+      // Use customer_id from violation, contract, or customer object
+      const customerId = v.customer_id || contract?.customer_id || customer?.id || `unknown-${v.id}`;
+      
+      // Skip violations without any customer data
+      if (!customer && !v.customer_id && !contract?.customer_id) {
+        return;
+      }
       
       const customerName = customer 
         ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.company_name || 'غير محدد'
         : 'غير محدد';
       
-      const customerPhone = customer?.phone || customer?.mobile || '';
+      const customerPhone = customer?.phone || (customer as any)?.mobile || '';
 
       if (!groupsMap.has(customerId)) {
         groupsMap.set(customerId, {
@@ -168,11 +176,18 @@ export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDi
       const group = groupsMap.get(customerId)!;
       group.violations.push(v);
       group.totalAmount += Number(v.amount) || Number(v.fine_amount) || 0;
+      
+      // Update phone if we find one (in case first violation didn't have it)
+      if (!group.customerPhone && customerPhone) {
+        group.customerPhone = customerPhone;
+      }
     });
 
-    // Filter out groups without phone numbers (except in test mode)
-    return Array.from(groupsMap.values()).filter(g => g.customerPhone || isTestMode);
-  }, [violations, isTestMode]);
+    // Filter out groups without phone numbers or without customer name
+    return Array.from(groupsMap.values()).filter(g => 
+      g.customerPhone && g.customerName && g.customerName !== 'غير محدد'
+    );
+  }, [violations]);
 
   // If props are provided (single customer mode), use them
   const isSingleCustomerMode = !!propCustomerId || !!propCustomerName;
@@ -283,11 +298,8 @@ export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDi
     }
   };
 
-  // Customers with phone numbers
-  const customersWithPhone = useMemo(() => 
-    customerGroups.filter(g => g.customerPhone), 
-    [customerGroups]
-  );
+  // All customers in groups now have phone numbers (filtered above)
+  const customersWithPhone = customerGroups;
 
   // Send reminders mutation
   const sendRemindersMutation = useMutation({
@@ -511,16 +523,10 @@ export const TrafficViolationReminderDialog: React.FC<TrafficViolationReminderDi
                       <Checkbox
                         checked={selectedCustomers.has(group.customerId)}
                         onCheckedChange={() => toggleCustomer(group.customerId)}
-                        disabled={!group.customerPhone && !isTestMode}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium truncate">{group.customerName}</span>
-                          {!group.customerPhone && (
-                            <Badge variant="destructive" className="text-[10px] px-1">
-                              بدون هاتف
-                            </Badge>
-                          )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{group.violations.length} مخالفة</span>

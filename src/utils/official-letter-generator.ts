@@ -1697,8 +1697,8 @@ export function generateViolationsTransferHtml(data: ViolationsTransferData): st
     
     <!-- المرسل إليه -->
     <div class="recipient-box">
-      <p><strong>إلى / </strong> الإدارة العامة للمرور</p>
-      <p style="margin-right: 40px;">قسم المخالفات المرورية</p>
+      <p><strong>إلى / </strong> سعادة رئيس نيابة المرور</p>
+      <p style="margin-right: 40px;">النيابة العامة</p>
       <p style="margin-right: 40px;">الدوحة - دولة قطر</p>
     </div>
     

@@ -44,6 +44,8 @@ import {
   FileWarning,
   FileStack,
   Send,
+  FileType,
+  File,
 } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
@@ -70,6 +72,7 @@ import {
 } from '@/utils/official-letter-generator';
 import { SendReportTaskDialog } from '@/components/legal/SendReportTaskDialog';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
+import { downloadHtmlAsPdf, downloadHtmlAsDocx } from '@/utils/document-export';
 
 // واجهة المستند
 interface DocumentItem {
@@ -84,6 +87,11 @@ interface DocumentItem {
   onDownload?: () => void;
   onUpload?: (file: File) => void;
   isGenerating?: boolean;
+  // خيارات تحميل المذكرة الشارحة
+  onDownloadPdf?: () => void;
+  onDownloadDocx?: () => void;
+  isDownloadingPdf?: boolean;
+  isDownloadingDocx?: boolean;
 }
 
 // واجهة بيانات تقاضي
@@ -132,8 +140,10 @@ export default function LawsuitPreparationPage() {
   
   // المستندات الداعمة الجديدة
   const [criminalComplaintUrl, setCriminalComplaintUrl] = useState<string | null>(null);
+  const [criminalComplaintHtmlContent, setCriminalComplaintHtmlContent] = useState<string | null>(null);
   const [isGeneratingComplaint, setIsGeneratingComplaint] = useState(false);
   const [violationsTransferUrl, setViolationsTransferUrl] = useState<string | null>(null);
+  const [violationsTransferHtmlContent, setViolationsTransferHtmlContent] = useState<string | null>(null);
   const [isGeneratingTransfer, setIsGeneratingTransfer] = useState(false);
   
   // خيارات المستندات الداعمة (اختياري) - للحافظة
@@ -142,6 +152,10 @@ export default function LawsuitPreparationPage() {
   
   // نافذة إرسال مهمة فتح بلاغ
   const [sendReportDialogOpen, setSendReportDialogOpen] = useState(false);
+  
+  // حالات تحميل المذكرة الشارحة
+  const [isDownloadingMemoPdf, setIsDownloadingMemoPdf] = useState(false);
+  const [isDownloadingMemoDocx, setIsDownloadingMemoDocx] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -470,6 +484,54 @@ export default function LawsuitPreparationPage() {
     }
   }, [contract, calculations, overdueInvoices]);
 
+  // تحميل المذكرة الشارحة كـ PDF
+  const downloadMemoAsPdf = useCallback(async () => {
+    if (!memoHtmlRef.current) {
+      toast.error('يرجى توليد المذكرة الشارحة أولاً');
+      return;
+    }
+
+    setIsDownloadingMemoPdf(true);
+    try {
+      const customerName = (contract as any)?.customers
+        ? `${(contract as any).customers.first_name || ''} ${(contract as any).customers.last_name || ''}`.trim()
+        : 'غير معروف';
+      const filename = `المذكرة_الشارحة_${customerName}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      await downloadHtmlAsPdf(memoHtmlRef.current, filename);
+      toast.success('✅ تم تحميل المذكرة الشارحة بصيغة PDF');
+    } catch (error: any) {
+      console.error('Error downloading PDF:', error);
+      toast.error('حدث خطأ أثناء تحميل الملف');
+    } finally {
+      setIsDownloadingMemoPdf(false);
+    }
+  }, [contract]);
+
+  // تحميل المذكرة الشارحة كـ Word
+  const downloadMemoAsDocx = useCallback(async () => {
+    if (!memoHtmlRef.current) {
+      toast.error('يرجى توليد المذكرة الشارحة أولاً');
+      return;
+    }
+
+    setIsDownloadingMemoDocx(true);
+    try {
+      const customerName = (contract as any)?.customers
+        ? `${(contract as any).customers.first_name || ''} ${(contract as any).customers.last_name || ''}`.trim()
+        : 'غير معروف';
+      const filename = `المذكرة_الشارحة_${customerName}_${new Date().toISOString().split('T')[0]}.docx`;
+      
+      await downloadHtmlAsDocx(memoHtmlRef.current, filename);
+      toast.success('✅ تم تحميل المذكرة الشارحة بصيغة Word');
+    } catch (error: any) {
+      console.error('Error downloading DOCX:', error);
+      toast.error('حدث خطأ أثناء تحميل الملف');
+    } finally {
+      setIsDownloadingMemoDocx(false);
+    }
+  }, [contract]);
+
   // توليد كشف المستندات
   const generateDocumentsList = useCallback(() => {
     if (!contract || !taqadiData) return;
@@ -698,6 +760,7 @@ export default function LawsuitPreparationPage() {
 
     openLetterForPrint(complaintHtml);
     setCriminalComplaintUrl('generated');
+    setCriminalComplaintHtmlContent(complaintHtml); // حفظ المحتوى للإرسال عبر واتساب
     setIsGeneratingComplaint(false);
     setIncludeCriminalComplaint(true); // تفعيل التضمين في الحافظة تلقائياً
     toast.success('✅ تم توليد بلاغ سرقة المركبة!');
@@ -746,6 +809,7 @@ export default function LawsuitPreparationPage() {
 
     openLetterForPrint(transferHtml);
     setViolationsTransferUrl('generated');
+    setViolationsTransferHtmlContent(transferHtml); // حفظ المحتوى للإرسال عبر واتساب
     setIsGeneratingTransfer(false);
     setIncludeViolationsTransfer(true); // تفعيل التضمين في الحافظة تلقائياً
     toast.success('✅ تم توليد طلب تحويل المخالفات!');
@@ -1010,13 +1074,17 @@ export default function LawsuitPreparationPage() {
       {
         id: 'memo',
         name: 'المذكرة الشارحة',
-        description: memoUrl ? '✅ جاهزة للتحميل' : 'توليد تلقائي',
+        description: memoUrl ? '✅ جاهزة للتحميل (PDF / Word)' : 'توليد تلقائي',
         status: memoUrl ? 'ready' : 'pending',
         type: 'mandatory',
         category: 'generated',
         url: memoUrl,
         onGenerate: generateExplanatoryMemo,
         isGenerating: isGeneratingMemo,
+        onDownloadPdf: downloadMemoAsPdf,
+        onDownloadDocx: downloadMemoAsDocx,
+        isDownloadingPdf: isDownloadingMemoPdf,
+        isDownloadingDocx: isDownloadingMemoDocx,
       },
       {
         id: 'claims',
@@ -1128,6 +1196,7 @@ export default function LawsuitPreparationPage() {
     isGeneratingComplaint, generateCriminalComplaint,
     isGeneratingTransfer, generateViolationsTransfer,
     existingContractDoc, uploadContractFile,
+    downloadMemoAsPdf, downloadMemoAsDocx, isDownloadingMemoPdf, isDownloadingMemoDocx,
   ]);
 
   // حساب التقدم
@@ -1558,32 +1627,73 @@ export default function LawsuitPreparationPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => window.open(doc.url!, '_blank')}
+                          title="معاينة"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (doc.url?.startsWith('blob:')) {
-                              // Properly download blob URL
-                              const a = document.createElement('a');
-                              a.href = doc.url;
-                              a.download = `${doc.name}.html`;
-                              a.style.display = 'none';
-                              document.body.appendChild(a);
-                              a.click();
-                              // Clean up after a short delay
-                              setTimeout(() => {
-                                document.body.removeChild(a);
-                              }, 100);
-                            } else {
-                              window.open(doc.url!, '_blank');
-                            }
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        {/* أزرار تحميل PDF و Word للمذكرة الشارحة */}
+                        {doc.id === 'memo' && doc.onDownloadPdf && doc.onDownloadDocx ? (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={doc.onDownloadPdf}
+                              disabled={doc.isDownloadingPdf}
+                              title="تحميل PDF"
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                            >
+                              {doc.isDownloadingPdf ? (
+                                <LoadingSpinner className="h-4 w-4" />
+                              ) : (
+                                <>
+                                  <File className="h-4 w-4 ml-1" />
+                                  PDF
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={doc.onDownloadDocx}
+                              disabled={doc.isDownloadingDocx}
+                              title="تحميل Word"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              {doc.isDownloadingDocx ? (
+                                <LoadingSpinner className="h-4 w-4" />
+                              ) : (
+                                <>
+                                  <FileType className="h-4 w-4 ml-1" />
+                                  Word
+                                </>
+                              )}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (doc.url?.startsWith('blob:')) {
+                                // Properly download blob URL
+                                const a = document.createElement('a');
+                                a.href = doc.url;
+                                a.download = `${doc.name}.html`;
+                                a.style.display = 'none';
+                                document.body.appendChild(a);
+                                a.click();
+                                // Clean up after a short delay
+                                setTimeout(() => {
+                                  document.body.removeChild(a);
+                                }, 100);
+                              } else {
+                                window.open(doc.url!, '_blank');
+                              }
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
                       </>
                     )}
                     
@@ -2021,7 +2131,11 @@ export default function LawsuitPreparationPage() {
         contractId={contractId}
         contractNumber={contract?.contract_number}
         customerName={customerFullName}
+        customerPhone={customer?.phone || customer?.mobile || ''}
+        customerNationalId={customer?.national_id || ''}
         vehiclePlate={vehicle?.plate_number || (contract as any)?.license_plate}
+        criminalComplaintHtml={criminalComplaintHtmlContent}
+        violationsTransferHtml={violationsTransferHtmlContent}
       />
     </div>
   );
