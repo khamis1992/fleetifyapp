@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +14,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Dialog,
   DialogContent,
@@ -30,10 +37,37 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { FileText, Plus, Folder, Trash2 } from 'lucide-react';
+import { FileText, Plus, Folder, Trash2, Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useManualLegalCollections, ManualCollectionItem } from '@/hooks/useManualLegalCollections';
-import { useCustomers } from '@/hooks/api/useCustomersApi';
+import { useCustomerFinancialSummary } from '@/hooks/useCustomerFinancialSummary';
+import { supabase } from '@/integrations/supabase/client';
+import { useCompanyFilter } from '@/hooks/useCompanyScope';
+
+// Custom hook to fetch customers directly from Supabase
+const useCustomersForLegalCollection = () => {
+  const companyFilter = useCompanyFilter();
+  
+  return useQuery({
+    queryKey: ['customers-for-legal', companyFilter.company_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, phone')
+        .eq('company_id', companyFilter.company_id)
+        .order('first_name', { ascending: true });
+      
+      if (error) throw error;
+      
+      return data?.map(c => ({
+        id: c.id,
+        name: c.company_name || `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'عميل بدون اسم',
+        phone: c.phone || ''
+      })) || [];
+    },
+    enabled: !!companyFilter.company_id,
+  });
+};
 
 export const ManualLegalCollectionView: React.FC = () => {
   // Hooks
@@ -46,12 +80,13 @@ export const ManualLegalCollectionView: React.FC = () => {
     deleteCollection 
   } = useManualLegalCollections();
   
-  const { data: customers } = useCustomers({ limit: 100 });
+  const { data: customers, isLoading: customersLoading } = useCustomersForLegalCollection();
   
   // State
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isPlanOpen, setIsPlanOpen] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<ManualCollectionItem | null>(null);
+  const [openCombobox, setOpenCombobox] = useState(false);
   
   // Form States
   const [formData, setFormData] = useState({
@@ -60,6 +95,19 @@ export const ManualLegalCollectionView: React.FC = () => {
     amount: 0,
     description: ''
   });
+
+  // Fetch financial summary when client is selected
+  const { data: financialSummary } = useCustomerFinancialSummary(formData.client_id);
+
+  // Auto-populate amount when financial summary is loaded
+  useEffect(() => {
+    if (financialSummary && formData.client_id) {
+      setFormData(prev => ({
+        ...prev,
+        amount: financialSummary.totalOutstanding || 0
+      }));
+    }
+  }, [financialSummary, formData.client_id]);
 
   const [planData, setPlanData] = useState({
     amount: 0,
@@ -271,28 +319,87 @@ export const ManualLegalCollectionView: React.FC = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>العميل</Label>
-              <Select 
-                onValueChange={(val) => {
-                   const cust = customers?.customers.find((c: any) => c.id === val);
-                   setFormData(prev => ({ 
-                     ...prev, 
-                     client_id: val, 
-                     customer_name: cust ? (cust.full_name || cust.first_name_ar) : '' 
-                   }));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر العميل" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers?.customers?.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.full_name || c.first_name_ar || 'عميل بدون اسم'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    className="w-full justify-between"
+                  >
+                    {formData.client_id
+                      ? customers?.find((customer) => customer.id === formData.client_id)?.name || "اختر العميل..."
+                      : "اختر العميل..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="بحث باسم العميل أو رقم الجوال..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        {customersLoading ? "جاري التحميل..." : "لم يتم العثور على عملاء."}
+                      </CommandEmpty>
+                      <CommandGroup heading="العملاء">
+                        {customers?.map((customer) => (
+                          <CommandItem
+                            key={customer.id}
+                            value={`${customer.name} ${customer.phone}`}
+                            onSelect={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                client_id: customer.id === prev.client_id ? "" : customer.id,
+                                customer_name: customer.name
+                              }));
+                              setOpenCombobox(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.client_id === customer.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{customer.name}</span>
+                              {customer.phone && (
+                                <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
+            
+            {/* Financial Summary Display */}
+            {formData.client_id && financialSummary && (
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <p className="text-xs text-slate-500 mb-2">الملخص المالي للعميل:</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-slate-600">إجمالي الفواتير: </span>
+                    <span className="font-medium">{formatCurrency(financialSummary.totalInvoices)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">المدفوع: </span>
+                    <span className="font-medium text-emerald-600">{formatCurrency(financialSummary.totalPaid)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">المتبقي: </span>
+                    <span className="font-bold text-rose-600">{formatCurrency(financialSummary.totalOutstanding)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-600">المتأخر: </span>
+                    <span className="font-medium text-amber-600">{formatCurrency(financialSummary.overdueAmount)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
              <div className="space-y-2">
               <Label>اسم العميل (أو جهة أخرى)</Label>
               <Input 
@@ -302,7 +409,12 @@ export const ManualLegalCollectionView: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>المبلغ المستحق</Label>
+              <div className="flex justify-between items-center">
+                <Label>المبلغ المستحق</Label>
+                {formData.client_id && financialSummary && (
+                  <span className="text-xs text-slate-500">(تم التعبئة تلقائياً)</span>
+                )}
+              </div>
               <Input 
                 type="number" 
                 value={formData.amount} 

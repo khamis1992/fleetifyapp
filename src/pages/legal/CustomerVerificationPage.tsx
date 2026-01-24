@@ -56,7 +56,11 @@ import {
   Car,
   Hash,
   XCircle,
+  Upload,
+  FileUp,
+  X,
 } from 'lucide-react';
+import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
 
 export default function CustomerVerificationPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -78,6 +82,11 @@ export default function CustomerVerificationPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  
+  // حالة رفع العقد الموقع
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [paymentNote, setPaymentNote] = useState('');
 
   // جلب بيانات المهمة
@@ -145,6 +154,75 @@ export default function CustomerVerificationPage() {
       );
     },
     enabled: !!task?.contract_id,
+  });
+
+  // جلب العقد الموقع إن وجد
+  const { data: signedContract, isLoading: signedContractLoading, refetch: refetchSignedContract } = useQuery({
+    queryKey: ['signed-contract', task?.contract_id],
+    queryFn: async () => {
+      if (!task?.contract_id) return null;
+
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('*')
+        .eq('contract_id', task.contract_id)
+        .eq('document_type', 'signed_contract')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!task?.contract_id,
+  });
+
+  // رفع العقد الموقع
+  const uploadContractMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!task?.contract_id || !companyId || !user?.id) {
+        throw new Error('بيانات غير مكتملة');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${task.contract_id}/signed_contract_${Date.now()}.${fileExt}`;
+      
+      // رفع الملف إلى التخزين
+      const { error: uploadError } = await supabase.storage
+        .from('contract-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // إنشاء سجل المستند
+      const { data: document, error } = await supabase
+        .from('contract_documents')
+        .insert({
+          company_id: companyId,
+          contract_id: task.contract_id,
+          document_type: 'signed_contract',
+          document_name: 'العقد الموقع',
+          file_path: fileName,
+          file_size: file.size,
+          mime_type: file.type,
+          uploaded_by: user.id,
+          notes: 'تم الرفع أثناء التدقيق',
+          is_required: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return document;
+    },
+    onSuccess: () => {
+      toast.success('تم رفع العقد الموقع بنجاح');
+      setContractFile(null);
+      refetchSignedContract();
+    },
+    onError: (error: any) => {
+      toast.error('فشل رفع العقد: ' + error.message);
+    },
   });
 
   // تحديث بيانات التعديل عند تحميل البيانات
@@ -331,6 +409,60 @@ export default function CustomerVerificationPage() {
         })
         .eq('related_id', taskId)
         .eq('related_type', 'verification_task');
+
+      // إرسال رسالة واتساب لمنشئ المهمة
+      if (task?.assigned_by) {
+        try {
+          // جلب بيانات منشئ المهمة
+          const { data: assignerProfile } = await supabase
+            .from('profiles')
+            .select('first_name_ar, last_name_ar, phone, user_id')
+            .eq('id', task.assigned_by)
+            .single();
+
+          // جلب رقم الهاتف من جدول employees إذا لم يكن موجوداً في profiles
+          let assignerPhone = assignerProfile?.phone;
+          if (!assignerPhone && assignerProfile?.user_id) {
+            const { data: empData } = await supabase
+              .from('employees')
+              .select('phone')
+              .eq('user_id', assignerProfile.user_id)
+              .maybeSingle();
+            assignerPhone = empData?.phone;
+          }
+
+          if (assignerPhone) {
+            const assignerName = `${assignerProfile?.first_name_ar || ''} ${assignerProfile?.last_name_ar || ''}`.trim() || 'المسؤول';
+            const customerName = editedData.customer_name || 'العميل';
+            
+            const message = `السلام عليكم ${assignerName}،
+
+✅ *تم إتمام مهمة التدقيق*
+
+تم الانتهاء من تدقيق بيانات العميل:
+👤 *${customerName}*
+
+📋 تفاصيل المهمة:
+• تم التدقيق بواسطة: ${verifierFullName}
+• التاريخ: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}
+
+العميل جاهز الآن لرفع الدعوى القانونية.
+
+شكراً لتعاونكم 🙏`;
+
+            await sendWhatsAppMessage({
+              phone: assignerPhone,
+              message,
+              customerName: assignerName,
+            });
+          }
+        } catch (whatsappError) {
+          console.error('WhatsApp notification error:', whatsappError);
+          // لا نوقف العملية إذا فشل إرسال الواتساب
+        }
+      }
+
+      return { verifierFullName };
     },
     onSuccess: () => {
       toast.success('تم تأكيد جاهزية العميل لرفع الدعوى');
@@ -566,6 +698,140 @@ export default function CustomerVerificationPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* بطاقة رفع العقد الموقع - تظهر فقط إذا لم يوجد عقد موقع */}
+      {!signedContractLoading && !signedContract && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6"
+        >
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-amber-600" />
+                  العقد الموقع
+                </CardTitle>
+                <Badge variant="destructive">
+                  <AlertCircle className="h-3 w-3 ml-1" />
+                  مطلوب
+                </Badge>
+              </div>
+              <CardDescription>
+                لا توجد نسخة موقعة من العقد - يرجى رفع نسخة قبل إتمام التدقيق
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                  isDragging 
+                    ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' 
+                    : 'border-amber-300 hover:border-teal-400'
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const files = e.dataTransfer.files;
+                  if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+                      setContractFile(file);
+                    } else {
+                      toast.error('يرجى رفع ملف PDF أو صورة فقط');
+                    }
+                  }
+                }}
+              >
+                {contractFile ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="p-3 bg-teal-100 rounded-lg">
+                        <FileUp className="h-6 w-6 text-teal-600" />
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-teal-800">{contractFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(contractFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setContractFile(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={() => uploadContractMutation.mutate(contractFile)}
+                      disabled={uploadContractMutation.isPending}
+                      className="gap-2 bg-teal-600 hover:bg-teal-700"
+                    >
+                      {uploadContractMutation.isPending ? (
+                        <>
+                          <LoadingSpinner className="h-4 w-4" />
+                          جاري الرفع...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          رفع العقد
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                      <Upload className="h-8 w-8 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-amber-800 dark:text-amber-200">
+                        اسحب وأفلت العقد الموقع هنا
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        أو
+                      </p>
+                    </div>
+                    <label className="inline-block">
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+                              setContractFile(file);
+                            } else {
+                              toast.error('يرجى رفع ملف PDF أو صورة فقط');
+                            }
+                          }
+                        }}
+                      />
+                      <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg cursor-pointer hover:bg-amber-600 transition-colors">
+                        <FileUp className="h-4 w-4" />
+                        اختر ملف
+                      </span>
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      PDF أو صورة (JPG, PNG)
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* قائمة الفواتير */}
       <motion.div
