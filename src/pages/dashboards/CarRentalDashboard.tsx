@@ -6,7 +6,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { CommandPalette } from '@/components/command-palette';
 
 // Lazy load BentoDashboard
-const BentoDashboard = lazy(() => import('@/components/dashboard/bento/BentoDashboard'));
+const BentoDashboard = lazy(() => import('@/components/dashboard/bento/BentoDashboardRedesigned'));
 
 // Lazy load other heavy components for fallback
 const WelcomeTour = lazy(() => import('@/components/onboarding/WelcomeTour').then(m => ({ default: m.WelcomeTour })));

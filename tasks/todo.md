@@ -112,3 +112,35 @@
    - الموظف يجد المهمة في صفحة **إدارة المهام** > تبويب **"مهام التدقيق"**
    - يضغط على المهمة للانتقال لصفحة التدقيق
 
+## Fix: Phone Number Visibility in Send Verification Task Dialog
+
+**Date:** 2026-01-24
+
+### Issue
+WhatsApp numbers for some employees (e.g., Tarek) were not showing up in the "Send Audit Task" dialog, even though they exist in the system.
+- Cause: The dialog was only querying the `profiles` table. Some users have their phone number stored in the `employees` table (HR record) but not in their user `profile`.
+
+### Changes
+**File:** `src/components/legal/SendVerificationTaskDialog.tsx`
+- Modified the data fetching logic to query both `profiles` and `employees` tables.
+- Merged the data: if a profile has no phone number, it falls back to the phone number found in the `employees` table for the corresponding `user_id`.
+- This ensures that all employees with a phone number in the HR system will display the WhatsApp icon and receive messages.
+
+## Fix: Dashboard Showing Old Design
+
+**Date:** 2026-01-24
+
+### Issue
+The user reported that the "Old Design" of the dashboard was sometimes appearing when refreshing the page.
+- Cause: The file `src/pages/dashboards/CarRentalDashboard.tsx` was still importing the old `BentoDashboard` component (`src/components/dashboard/bento/BentoDashboard.tsx`) instead of the new `BentoDashboardRedesigned` component. This meant that if the user landed on any route using `CarRentalDashboard`, they would see the old design.
+
+### Changes
+1.  **Updated `CarRentalDashboard.tsx`:** Changed the import to use `BentoDashboardRedesigned` directly.
+    - **File:** `src/pages/dashboards/CarRentalDashboard.tsx`
+2.  **Renamed Old Component:** Renamed the old `BentoDashboard.tsx` to `BentoDashboard.legacy.tsx` to preserve it but prevent accidental usage.
+    - **File:** `src/components/dashboard/bento/BentoDashboard.legacy.tsx`
+3.  **Created Wrapper:** Created a new `BentoDashboard.tsx` that re-exports `BentoDashboardRedesigned`.
+    - **File:** `src/components/dashboard/bento/BentoDashboard.tsx`
+    - This ensures that any other part of the system trying to import `BentoDashboard` will automatically get the new Redesigned version.
+
+This guarantees that the old design will no longer appear to the user.

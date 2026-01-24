@@ -78,25 +78,51 @@ export const SendVerificationTaskDialog: React.FC<SendVerificationTaskDialogProp
     queryFn: async () => {
       if (!companyId) return [];
       
-      const { data, error } = await supabase
+      // 1. Fetch profiles (users)
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, user_id, first_name, last_name, first_name_ar, last_name_ar, email, phone, position, position_ar')
         .eq('company_id', companyId)
         .eq('is_active', true)
         .order('first_name_ar');
       
-      if (error) throw error;
+      if (profilesError) throw profilesError;
+
+      // 2. Fetch employees (HR records) to get phone numbers if missing in profile
+      const { data: hrEmployees, error: hrError } = await supabase
+        .from('employees')
+        .select('user_id, phone')
+        .eq('company_id', companyId)
+        .not('user_id', 'is', null);
+
+      if (hrError) console.error('Error fetching HR employees:', hrError);
       
-      // تحويل البيانات لإضافة الاسم الكامل
-      return (data || []).map(emp => ({
-        ...emp,
-        full_name: emp.first_name_ar && emp.last_name_ar 
-          ? `${emp.first_name_ar} ${emp.last_name_ar}`.trim()
-          : emp.first_name && emp.last_name
-            ? `${emp.first_name} ${emp.last_name}`.trim()
-            : emp.email,
-        role: emp.position_ar || emp.position || null,
-      }));
+      // Map HR phones by user_id
+      const hrPhoneMap = new Map();
+      if (hrEmployees) {
+        hrEmployees.forEach(emp => {
+          if (emp.user_id && emp.phone) {
+            hrPhoneMap.set(emp.user_id, emp.phone);
+          }
+        });
+      }
+      
+      // 3. Merge data
+      return (profiles || []).map(emp => {
+        // Use profile phone, fallback to HR employee phone
+        const finalPhone = emp.phone || hrPhoneMap.get(emp.user_id) || null;
+
+        return {
+          ...emp,
+          phone: finalPhone, // Override phone
+          full_name: emp.first_name_ar && emp.last_name_ar 
+            ? `${emp.first_name_ar} ${emp.last_name_ar}`.trim()
+            : emp.first_name && emp.last_name
+              ? `${emp.first_name} ${emp.last_name}`.trim()
+              : emp.email,
+          role: emp.position_ar || emp.position || null,
+        };
+      });
     },
     enabled: !!companyId && open,
   });
