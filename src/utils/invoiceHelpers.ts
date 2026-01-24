@@ -33,17 +33,20 @@ export const extractVehicleNumber = (invoice: any, contract?: any): string => {
  * استخراج اسم العميل من بيانات الفاتورة
  */
 export const extractCustomerName = (invoice: any): string => {
-  // من بيانات العميل المرفقة
-  if (invoice?.customer?.full_name) return invoice.customer.full_name;
-  if (invoice?.customer?.company_name_ar) return invoice.customer.company_name_ar;
+  // من بيانات العميل المرفقة (customer أو customers من Supabase join)
+  const customerData = invoice?.customer || invoice?.customers;
+  
+  if (customerData?.full_name) return customerData.full_name;
+  if (customerData?.company_name_ar) return customerData.company_name_ar;
+  if (customerData?.company_name) return customerData.company_name;
   
   // تجميع الاسم من الأجزاء
-  const firstNameAr = invoice?.customer?.first_name_ar || '';
-  const lastNameAr = invoice?.customer?.last_name_ar || '';
+  const firstNameAr = customerData?.first_name_ar || '';
+  const lastNameAr = customerData?.last_name_ar || '';
   if (firstNameAr || lastNameAr) return `${firstNameAr} ${lastNameAr}`.trim();
   
-  const firstName = invoice?.customer?.first_name || '';
-  const lastName = invoice?.customer?.last_name || '';
+  const firstName = customerData?.first_name || '';
+  const lastName = customerData?.last_name || '';
   if (firstName || lastName) return `${firstName} ${lastName}`.trim();
   
   // من اسم العميل المباشر

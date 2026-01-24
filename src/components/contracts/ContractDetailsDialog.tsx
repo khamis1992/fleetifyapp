@@ -1159,6 +1159,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             open={isPreviewDialogOpen}
             onOpenChange={setIsPreviewDialogOpen}
             invoice={selectedInvoice}
+            customerName={customer?.full_name || customer?.company_name || `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim()}
           />
         )}
       </DialogContent>

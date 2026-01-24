@@ -3649,6 +3649,7 @@ const CustomerDetailsPageNew = () => {
         open={isInvoiceDialogOpen}
         onOpenChange={setIsInvoiceDialogOpen}
         invoice={selectedInvoice}
+        customerName={customerName}
       />
     </div>
   );

@@ -32,6 +32,7 @@ import {
   Building2,
   Landmark,
   Smartphone,
+  Printer,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,11 +98,19 @@ interface Payment {
   };
 }
 
+interface CustomerInfo {
+  name: string;
+  phone?: string;
+  nationalId?: string;
+}
+
 interface ContractPaymentsTabRedesignedProps {
   contractId: string;
   companyId: string;
   invoiceIds: string[];
   formatCurrency: (amount: number) => string;
+  contractNumber?: string;
+  customerInfo?: CustomerInfo;
 }
 
 // ===== Helper Functions =====
@@ -562,6 +571,8 @@ export const ContractPaymentsTabRedesigned = ({
   companyId,
   invoiceIds,
   formatCurrency,
+  contractNumber,
+  customerInfo,
 }: ContractPaymentsTabRedesignedProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -772,6 +783,455 @@ export const ContractPaymentsTabRedesigned = ({
                 {payments.filter(p => !p.invoice_id).length} غير مرتبطة
               </Badge>
             )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                const completedPayments = payments.filter(p => p.payment_status === 'completed');
+                if (completedPayments.length === 0) {
+                  alert('لا توجد دفعات مكتملة للطباعة');
+                  return;
+                }
+
+                const statementNumber = `PAY-${Date.now().toString().slice(-8)}`;
+                const today = new Date();
+                const currentDate = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+
+                const COMPANY_INFO = {
+                  name_ar: 'شركة العراف لتأجير السيارات',
+                  name_en: 'AL-ARAF CAR RENTAL L.L.C',
+                  logo: '/receipts/logo.png',
+                  address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+                  phone: '31411919',
+                  email: 'info@alaraf.qa',
+                  cr: '146832',
+                };
+
+                const totalPaid = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+                const printContent = `
+                  <!DOCTYPE html>
+                  <html dir="rtl" lang="ar">
+                  <head>
+                    <meta charset="UTF-8">
+                    <title>كشف الدفعات - ${contractNumber || ''}</title>
+                    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+                    <style>
+                      @page {
+                        size: A4;
+                        margin: 15mm 20mm 20mm 20mm;
+                      }
+                      
+                      @media print {
+                        * {
+                          -webkit-print-color-adjust: exact !important;
+                          print-color-adjust: exact !important;
+                          color-adjust: exact !important;
+                        }
+                        body { margin: 0; padding: 0; }
+                        .statement-container {
+                          width: 100% !important;
+                          max-width: none !important;
+                          margin: 0 !important;
+                          padding: 15px 25px !important;
+                          border: none !important;
+                        }
+                        .info-box, .grand-total, .signature-section {
+                          page-break-inside: avoid !important;
+                          break-inside: avoid !important;
+                        }
+                        .section-title {
+                          page-break-after: avoid !important;
+                          break-after: avoid !important;
+                        }
+                        table { page-break-inside: auto !important; }
+                        tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+                        thead { display: table-header-group; }
+                        tfoot { display: table-footer-group; }
+                      }
+                      
+                      * { margin: 0; padding: 0; box-sizing: border-box; }
+                      
+                      body {
+                        font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
+                        font-size: 14px;
+                        line-height: 1.8;
+                        color: #000;
+                        background: #fff;
+                        margin: 0;
+                        padding: 20px;
+                        direction: rtl;
+                      }
+                      
+                      .statement-container {
+                        max-width: 210mm;
+                        margin: 0 auto;
+                        padding: 20px 30px;
+                        background: #fff;
+                      }
+                      
+                      .header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        border-bottom: 3px double #1e3a5f;
+                        padding-bottom: 15px;
+                        margin-bottom: 15px;
+                      }
+                      
+                      .company-ar {
+                        flex: 1;
+                        text-align: right;
+                      }
+                      
+                      .company-ar h1 {
+                        color: #1e3a5f;
+                        margin: 0;
+                        font-size: 20px;
+                        font-weight: bold;
+                      }
+                      
+                      .company-ar p {
+                        color: #000;
+                        margin: 2px 0;
+                        font-size: 11px;
+                      }
+                      
+                      .logo-container {
+                        flex: 0 0 130px;
+                        text-align: center;
+                        padding: 0 15px;
+                      }
+                      
+                      .logo-container img {
+                        max-height: 70px;
+                        max-width: 120px;
+                      }
+                      
+                      .company-en {
+                        flex: 1;
+                        text-align: left;
+                      }
+                      
+                      .company-en h1 {
+                        color: #1e3a5f;
+                        margin: 0;
+                        font-size: 14px;
+                        font-weight: bold;
+                      }
+                      
+                      .company-en p {
+                        color: #000;
+                        margin: 2px 0;
+                        font-size: 10px;
+                      }
+                      
+                      .address-bar {
+                        text-align: center;
+                        color: #000;
+                        font-size: 10px;
+                        margin-bottom: 15px;
+                        padding-bottom: 10px;
+                        border-bottom: 1px solid #ccc;
+                      }
+                      
+                      .ref-date {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 20px;
+                        font-size: 13px;
+                        color: #000;
+                      }
+                      
+                      .subject-box {
+                        background: #1e3a5f;
+                        color: #fff;
+                        padding: 15px 20px;
+                        margin-bottom: 20px;
+                        font-size: 18px;
+                        text-align: center;
+                        font-weight: bold;
+                        border: 2px solid #1e3a5f;
+                      }
+                      
+                      .info-box {
+                        background: #f5f5f5;
+                        padding: 15px;
+                        margin-bottom: 20px;
+                        border-radius: 5px;
+                        border-right: 4px solid #1e3a5f;
+                      }
+                      
+                      .info-row {
+                        display: flex;
+                        justify-content: flex-start;
+                        gap: 15px;
+                        padding: 5px 0;
+                        border-bottom: 1px dotted #ddd;
+                      }
+                      
+                      .info-row:last-child { border-bottom: none; }
+                      
+                      .info-label {
+                        font-weight: bold;
+                        color: #1e3a5f;
+                        min-width: 100px;
+                      }
+                      
+                      .section-title {
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: #1e3a5f;
+                        border-bottom: 2px solid #1e3a5f;
+                        padding-bottom: 6px;
+                        margin: 15px 0 10px 0;
+                      }
+                      
+                      table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 15px 0;
+                        border: 1px solid #1e3a5f;
+                      }
+                      
+                      th {
+                        background: #1e3a5f;
+                        color: white;
+                        padding: 10px 8px;
+                        text-align: right;
+                        font-size: 12px;
+                        font-weight: bold;
+                        border: 1px solid #1e3a5f;
+                      }
+                      
+                      td {
+                        padding: 8px;
+                        border: 1px solid #ccc;
+                        font-size: 12px;
+                      }
+                      
+                      tr:nth-child(even) { background: #f9f9f9; }
+                      
+                      .amount-cell {
+                        font-weight: bold;
+                        color: #1e3a5f;
+                      }
+                      
+                      .method-cash { background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 3px; font-size: 10px; }
+                      .method-bank { background: #dbeafe; color: #1e40af; padding: 3px 8px; border-radius: 3px; font-size: 10px; }
+                      .method-card { background: #f3e8ff; color: #7c3aed; padding: 3px 8px; border-radius: 3px; font-size: 10px; }
+                      .method-cheque { background: #fef3c7; color: #d97706; padding: 3px 8px; border-radius: 3px; font-size: 10px; }
+                      
+                      .grand-total {
+                        border: 3px double #1e3a5f;
+                        padding: 15px;
+                        margin: 15px 0;
+                        text-align: center;
+                      }
+                      
+                      .grand-total .label {
+                        font-size: 14px;
+                        margin-bottom: 8px;
+                        color: #1e3a5f;
+                        font-weight: bold;
+                      }
+                      
+                      .grand-total .amount {
+                        font-size: 26px;
+                        font-weight: bold;
+                        color: #1e3a5f;
+                      }
+                      
+                      .signature-section {
+                        margin-top: 25px;
+                        padding-top: 15px;
+                        border-top: 2px solid #1e3a5f;
+                      }
+                      
+                      .signatures {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 30px;
+                      }
+                      
+                      .signature-box {
+                        text-align: center;
+                        width: 180px;
+                      }
+                      
+                      .sign-line {
+                        border-top: 1px solid #000;
+                        margin-top: 50px;
+                        padding-top: 5px;
+                        font-size: 12px;
+                        color: #666;
+                      }
+                      
+                      .stamp-area { text-align: center; }
+                      
+                      .stamp-placeholder {
+                        display: inline-block;
+                        width: 80px;
+                        height: 80px;
+                        border: 2px dashed #ccc;
+                        border-radius: 50%;
+                        line-height: 80px;
+                        color: #999;
+                        font-size: 11px;
+                      }
+                      
+                      .footer {
+                        text-align: center;
+                        color: #000;
+                        font-size: 10px;
+                        margin-top: 30px;
+                        padding-top: 15px;
+                        border-top: 1px solid #ccc;
+                      }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="statement-container">
+                      
+                      <!-- رأسية الشركة -->
+                      <div class="header">
+                        <div class="company-ar">
+                          <h1>${COMPANY_INFO.name_ar}</h1>
+                          <p>ذ.م.م</p>
+                          <p>س.ت: ${COMPANY_INFO.cr}</p>
+                        </div>
+                        
+                        <div class="logo-container">
+                          <img src="${COMPANY_INFO.logo}" alt="شعار الشركة" onerror="this.style.display='none'" />
+                        </div>
+                        
+                        <div class="company-en" dir="ltr">
+                          <h1>${COMPANY_INFO.name_en}</h1>
+                          <p>C.R: ${COMPANY_INFO.cr}</p>
+                        </div>
+                      </div>
+                      
+                      <!-- العنوان -->
+                      <div class="address-bar">
+                        ${COMPANY_INFO.address}<br/>
+                        هاتف: ${COMPANY_INFO.phone} | البريد الإلكتروني: ${COMPANY_INFO.email}
+                      </div>
+                      
+                      <!-- التاريخ والرقم المرجعي -->
+                      <div class="ref-date">
+                        <div><strong>رقم الكشف:</strong> ${statementNumber}</div>
+                        <div><strong>رقم العقد:</strong> ${contractNumber || '-'}</div>
+                        <div><strong>التاريخ:</strong> ${currentDate}</div>
+                      </div>
+                      
+                      <!-- الموضوع -->
+                      <div class="subject-box">
+                        كشف الدفعات المسجلة
+                      </div>
+                      
+                      <!-- بيانات العميل -->
+                      <div class="info-box">
+                        <div class="info-row">
+                          <span class="info-label">اسم العميل:</span>
+                          <span>${customerInfo?.name || 'غير محدد'}</span>
+                        </div>
+                        ${customerInfo?.nationalId ? '<div class="info-row"><span class="info-label">رقم الهوية:</span><span>' + customerInfo.nationalId + '</span></div>' : ''}
+                        ${customerInfo?.phone ? '<div class="info-row"><span class="info-label">رقم الهاتف:</span><span dir="ltr">' + customerInfo.phone + '</span></div>' : ''}
+                      </div>
+                      
+                      <!-- الدفعات -->
+                      <div class="section-title">الدفعات المسجلة (${completedPayments.length})</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width: 35px;">م</th>
+                            <th>رقم الفاتورة</th>
+                            <th>تاريخ الدفع</th>
+                            <th>طريقة الدفع</th>
+                            <th>رقم المرجع</th>
+                            <th>المبلغ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${completedPayments.map((payment, idx) => {
+                            const methodLabels: Record<string, { label: string; cssClass: string }> = {
+                              cash: { label: 'نقدي', cssClass: 'method-cash' },
+                              bank_transfer: { label: 'تحويل بنكي', cssClass: 'method-bank' },
+                              credit_card: { label: 'بطاقة ائتمان', cssClass: 'method-card' },
+                              cheque: { label: 'شيك', cssClass: 'method-cheque' },
+                            };
+                            const method = methodLabels[payment.payment_method] || { label: payment.payment_method || '-', cssClass: '' };
+                            const paymentDate = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '-';
+                            return '<tr>' +
+                              '<td style="text-align: center;">' + (idx + 1) + '</td>' +
+                              '<td>' + (payment.invoice?.invoice_number || '-') + '</td>' +
+                              '<td>' + paymentDate + '</td>' +
+                              '<td style="text-align: center;"><span class="' + method.cssClass + '">' + method.label + '</span></td>' +
+                              '<td>' + (payment.reference_number || '-') + '</td>' +
+                              '<td class="amount-cell">' + formatCurrency(payment.amount || 0) + '</td>' +
+                            '</tr>';
+                          }).join('')}
+                        </tbody>
+                        <tfoot>
+                          <tr style="background: #1e3a5f; color: white;">
+                            <td colspan="5" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
+                            <td style="font-weight: bold; border-color: #1e3a5f;">${formatCurrency(totalPaid)}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                      
+                      <!-- الإجمالي الكلي -->
+                      <div class="grand-total">
+                        <div class="label">إجمالي المبالغ المدفوعة</div>
+                        <div class="amount">${formatCurrency(totalPaid)}</div>
+                        <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                          (${completedPayments.length} دفعة مسجلة)
+                        </div>
+                      </div>
+                      
+                      <!-- التوقيعات -->
+                      <div class="signature-section">
+                        <div class="signatures">
+                          <div class="signature-box">
+                            <div class="sign-line">توقيع العميل</div>
+                          </div>
+                          
+                          <div class="stamp-area">
+                            <div class="stamp-placeholder">الختم</div>
+                          </div>
+                          
+                          <div class="signature-box">
+                            <p style="font-weight: bold; color: #1e3a5f;">${COMPANY_INFO.name_ar}</p>
+                            <div class="sign-line">التوقيع</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- الذيل -->
+                      <div class="footer">
+                        ${COMPANY_INFO.address}<br/>
+                        هاتف: ${COMPANY_INFO.phone} | البريد: ${COMPANY_INFO.email}
+                      </div>
+                      
+                    </div>
+                    
+                    <script>
+                      window.onload = function() { window.print(); }
+                    </script>
+                  </body>
+                  </html>
+                `;
+                
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                  printWindow.document.write(printContent);
+                  printWindow.document.close();
+                }
+              }}
+              className="gap-2 rounded-xl"
+            >
+              <Printer className="w-4 h-4" />
+              طباعة الدفعات
+            </Button>
             <div className="flex items-center gap-2 bg-white border border-neutral-200 rounded-xl px-3 py-2">
               <Label htmlFor="show-all-payments" className="text-sm cursor-pointer whitespace-nowrap">
                 عرض الكل

@@ -626,6 +626,12 @@ const FinancialTab = ({
         companyId={companyId}
         invoiceIds={invoices.map(inv => inv.id)}
         formatCurrency={formatCurrency}
+        contractNumber={contract.contract_number}
+        customerInfo={{
+          name: customerName,
+          phone: contract.customer?.phone,
+          nationalId: contract.customer?.national_id,
+        }}
       />
     </TabsContent>
 
@@ -1522,6 +1528,7 @@ const ContractDetailsPageRedesigned = () => {
               invoice={selectedInvoice}
               open={isPreviewDialogOpen}
               onOpenChange={setIsPreviewDialogOpen}
+              customerName={customerName}
             />
           </>
         )}

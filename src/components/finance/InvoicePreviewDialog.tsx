@@ -1,17 +1,17 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText, Receipt, Download, FileDown, Printer } from "lucide-react";
+import { FileText, Receipt, Printer } from "lucide-react";
 import { PaymentReceipt } from "@/components/payments/PaymentReceipt";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { extractVehicleNumber, extractCustomerName } from "@/utils/invoiceHelpers";
-import { generateReceiptPDF, downloadPDF, generateReceiptHTML, downloadHTML } from "@/utils/receiptGenerator";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 interface InvoicePreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoice: any | null;
+  customerName?: string;
 }
 
 // دالة تحويل الرقم إلى كلمات عربية
@@ -100,9 +100,8 @@ function numberToArabicWords(amount: number): string {
   return result;
 }
 
-export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePreviewDialogProps) {
+export function InvoicePreviewDialog({ open, onOpenChange, invoice, customerName: propCustomerName }: InvoicePreviewDialogProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // Don't render if invoice is null
   if (!invoice) {
@@ -112,42 +111,71 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
   // تحديد حالة الدفع
   const isPaid = invoice.payment_status === 'paid';
 
-  // تحديد اسم الملف
-  const documentType = isPaid ? 'سند_قبض' : 'فاتورة';
-  const invoiceNumber = invoice?.invoice_number || 'invoice';
-  const fileName = `${documentType}_${invoiceNumber}`;
-
-  // معالج التحميل PDF
-  const handleDownloadPDF = async () => {
-    if (!receiptRef.current) return;
-    setIsDownloading(true);
-    try {
-      const blob = await generateReceiptPDF(receiptRef.current, fileName);
-      downloadPDF(blob, `${fileName}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // معالج التحميل HTML
-  const handleDownloadHTML = async () => {
-    if (!receiptRef.current) return;
-    setIsDownloading(true);
-    try {
-      const html = await generateReceiptHTML(receiptRef.current);
-      downloadHTML(html, fileName);
-    } catch (error) {
-      console.error('Error generating HTML:', error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // معالج الطباعة
+  // معالج الطباعة - فتح نافذة جديدة مع المحتوى
   const handlePrint = () => {
-    window.print();
+    if (!receiptRef.current) return;
+    
+    const receiptHTML = receiptRef.current.innerHTML;
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>${isPaid ? 'سند قبض' : 'فاتورة مستحقة'} - ${invoice?.invoice_number || ''}</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <style>
+          @page {
+            size: A4;
+            margin: 15mm 20mm 20mm 20mm;
+          }
+          
+          @media print {
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            body { margin: 0; padding: 0; }
+          }
+          
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          
+          body {
+            font-family: 'Arial', 'Tahoma', sans-serif;
+            background: #fff;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+          }
+          
+          .print-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: #fff;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-container">
+          ${receiptHTML}
+        </div>
+        <script>
+          window.onload = function() { 
+            setTimeout(function() {
+              window.print(); 
+            }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+    }
   };
   
   // تحديد العنوان بناءً على حالة الدفع
@@ -167,8 +195,8 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
   const invoiceDate = invoice.invoice_date || invoice.due_date || new Date().toISOString();
   const formattedDate = format(new Date(invoiceDate), 'dd/MM/yyyy');
   
-  // الحصول على اسم العميل (باستخدام الدالة المركزية)
-  const customerName = extractCustomerName(invoice);
+  // الحصول على اسم العميل (استخدام الاسم الممرر أولاً، ثم الدالة المركزية)
+  const customerName = propCustomerName || extractCustomerName(invoice);
 
   // الحصول على رقم المركبة (باستخدام الدالة المركزية)
   const vehicleNumber = extractVehicleNumber(invoice);
@@ -185,32 +213,14 @@ export function InvoicePreviewDialog({ open, onOpenChange, invoice }: InvoicePre
             {isPaid ? 'سند قبض' : 'فاتورة مستحقة'} #{invoice?.invoice_number || 'غير محدد'}
           </DialogTitle>
           <DialogDescription>
-            {isPaid ? 'معاينة سند القبض قبل الطباعة أو التحميل' : 'معاينة الفاتورة المستحقة قبل الطباعة أو التحميل'}
+            {isPaid ? 'معاينة سند القبض قبل الطباعة' : 'معاينة الفاتورة المستحقة قبل الطباعة'}
           </DialogDescription>
         </DialogHeader>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <Button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {isDownloading ? 'جاري التحميل...' : 'تحميل PDF'}
-          </Button>
-          <Button
-            onClick={handleDownloadHTML}
-            disabled={isDownloading}
-            variant="outline"
-            className="gap-2"
-          >
-            <FileDown className="h-4 w-4" />
-            تحميل HTML
-          </Button>
-          <Button
             onClick={handlePrint}
-            variant="outline"
             className="gap-2"
           >
             <Printer className="h-4 w-4" />

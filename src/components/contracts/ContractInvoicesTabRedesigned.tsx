@@ -771,11 +771,8 @@ export const ContractInvoicesTabRedesigned = ({
               }
               
               const statementNumber = `STM-${Date.now().toString().slice(-8)}`;
-              const currentDateAr = new Date().toLocaleDateString('en-GB', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              });
+              const today = new Date();
+              const currentDateAr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
               
               const COMPANY_INFO = {
                 name_ar: 'شركة العراف لتأجير السيارات',
