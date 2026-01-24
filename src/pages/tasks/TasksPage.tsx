@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ import { PersonalReminders } from '@/components/tasks/PersonalReminders';
 import { UserGoals } from '@/components/tasks/UserGoals';
 import { QuickNotes } from '@/components/tasks/QuickNotes';
 import { MyTasksDashboard } from '@/components/tasks/MyTasksDashboard';
+import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
 import {
   useTasks,
   useDeleteTask,
@@ -70,12 +72,13 @@ import {
   StickyNote,
   ListTodo,
   User,
+  ClipboardCheck,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 type ViewMode = 'kanban' | 'list' | 'grid';
-type TabType = 'all' | 'my-tasks' | 'reminders' | 'goals' | 'notes';
+type TabType = 'all' | 'my-tasks' | 'reminders' | 'goals' | 'notes' | 'verification';
 
 const priorityColors = {
   low: 'bg-slate-400',
@@ -102,7 +105,19 @@ const statusLabels = {
 
 export default function TasksPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = React.useState<TabType>('my-tasks');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // قراءة التبويب من الـ URL
+  const tabFromUrl = searchParams.get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = React.useState<TabType>(tabFromUrl || 'my-tasks');
+  
+  // تحديث التبويب عند تغيير الـ URL
+  React.useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+  
   const [viewMode, setViewMode] = React.useState<ViewMode>('kanban');
   const [filters, setFilters] = React.useState<TaskFilters>({});
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -186,6 +201,7 @@ export default function TasksPage() {
   const tabItems = [
     { id: 'my-tasks' as TabType, label: 'مهامي', icon: <User className="h-4 w-4" /> },
     { id: 'all' as TabType, label: 'كل المهام', icon: <ListTodo className="h-4 w-4" /> },
+    { id: 'verification' as TabType, label: 'مهام التدقيق', icon: <ClipboardCheck className="h-4 w-4" /> },
     { id: 'reminders' as TabType, label: 'تذكيراتي', icon: <Bell className="h-4 w-4" /> },
     { id: 'goals' as TabType, label: 'أهدافي', icon: <Target className="h-4 w-4" /> },
     { id: 'notes' as TabType, label: 'ملاحظات', icon: <StickyNote className="h-4 w-4" /> },
@@ -414,6 +430,11 @@ export default function TasksPage() {
             <div className="min-h-[500px]">
               {renderTasksContent(tasks, isLoading, viewMode, hasActiveFilters, handleTaskClick, handleEditTask, setTaskToDelete, setEditingTask, setShowTaskForm)}
             </div>
+          </TabsContent>
+
+          {/* Verification Tasks Tab */}
+          <TabsContent value="verification" className="mt-6">
+            <VerificationTasksList />
           </TabsContent>
 
           {/* Reminders Tab */}

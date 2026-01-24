@@ -114,6 +114,17 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
 
       if (!companyId || companyId === '__loading__') throw new Error('Company not found');
 
+      // جلب قائمة العقود التي لديها مهام تدقيق معلقة (pending) لإخفائها
+      const { data: pendingVerificationTasks } = await supabase
+        .from('customer_verification_tasks')
+        .select('contract_id')
+        .eq('company_id', companyId)
+        .eq('status', 'pending');
+
+      const contractsWithPendingVerification = new Set(
+        (pendingVerificationTasks || []).map(t => t.contract_id)
+      );
+
       // Try to fetch from cached table first if enabled
       if (useCached) {
         try {
@@ -170,8 +181,13 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
               );
             }
 
+            // فلترة العملاء الذين لديهم مهام تدقيق معلقة
+            const dataWithoutPendingVerification = filteredData.filter((row: any) => 
+              !contractsWithPendingVerification.has(row.contract_id)
+            );
+
             // Convert to DelinquentCustomer format
-            return filteredData.map((row: any) => ({
+            return dataWithoutPendingVerification.map((row: any) => ({
               customer_id: row.customer_id,
               customer_name: row.customer_name,
               customer_code: row.customer_code || '',
@@ -221,7 +237,7 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       }
 
       // Fallback: Dynamic calculation (original logic)
-      return calculateDelinquentCustomersDynamically(companyId, filters);
+      return calculateDelinquentCustomersDynamically(companyId, filters, contractsWithPendingVerification);
     },
     enabled: !!user?.id && !isCompanyLoading,
     staleTime: 1000 * 60 * 2, // 2 minutes - بيانات أحدث
@@ -237,7 +253,8 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
  */
 async function calculateDelinquentCustomersDynamically(
   companyId: string,
-  filters?: UseDelinquentCustomersFilters
+  filters?: UseDelinquentCustomersFilters,
+  contractsWithPendingVerification?: Set<string>
 ): Promise<DelinquentCustomer[]> {
   // Step 1: Get all active contracts with customer and vehicle info
   // Using actual column names from contracts table
@@ -475,6 +492,11 @@ async function calculateDelinquentCustomersDynamically(
     try {
       const customer = contract.customers;
       if (!customer || !contract.customer_id) continue;
+
+      // تجاوز العقود التي لديها مهام تدقيق معلقة
+      if (contractsWithPendingVerification?.has(contract.id)) {
+        continue;
+      }
 
       // الحصول على جميع عقود العميل
       const customerContracts = contractsByCustomer.get(contract.customer_id) || [];

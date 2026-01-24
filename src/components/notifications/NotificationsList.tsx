@@ -1,9 +1,10 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, AlertCircle, Info, XCircle, Check, CheckCheck, Bell } from "lucide-react";
+import { CheckCircle, AlertCircle, Info, XCircle, Check, CheckCheck, Bell, ClipboardCheck, ExternalLink } from "lucide-react";
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -32,6 +33,7 @@ const getNotificationVariant = (type: string) => {
 };
 
 export const NotificationsList = () => {
+  const navigate = useNavigate();
   const { data: notifications = [] } = useNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
@@ -39,12 +41,28 @@ export const NotificationsList = () => {
   const unreadNotifications = notifications.filter(n => !n.is_read);
   const hasUnread = unreadNotifications.length > 0;
 
-  const handleMarkAsRead = (notificationId: string) => {
+  // التحقق مما إذا كان التنبيه من نوع مهمة تدقيق (لا يمكن وضع علامة مقروء عليه يدوياً)
+  const isVerificationTaskNotification = (notification: any) => {
+    return notification.related_type === 'verification_task';
+  };
+
+  const handleMarkAsRead = (notificationId: string, notification: any) => {
+    // لا نسمح بوضع علامة مقروء على تنبيهات مهام التدقيق يدوياً
+    if (isVerificationTaskNotification(notification)) {
+      return;
+    }
     markAsRead.mutate(notificationId);
   };
 
   const handleMarkAllAsRead = () => {
     markAllAsRead.mutate();
+  };
+
+  // فتح مهمة التدقيق
+  const handleOpenVerificationTask = (notification: any) => {
+    if (notification.related_id) {
+      navigate(`/legal/verify/${notification.related_id}`);
+    }
   };
 
   if (notifications.length === 0) {
@@ -78,51 +96,85 @@ export const NotificationsList = () => {
       
       <ScrollArea className="h-96">
         <div className="space-y-1 p-2">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
-                !notification.is_read ? 'bg-primary/5 border-primary/20' : 'bg-background'
-              }`}
-              onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
-            >
-              <div className="flex items-start gap-3">
-                {getNotificationIcon(notification.notification_type)}
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium leading-none">
-                      {notification.title}
+          {notifications.map((notification) => {
+            const isVerificationTask = isVerificationTaskNotification(notification);
+            
+            return (
+              <div
+                key={notification.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors hover:bg-muted/50 ${
+                  !notification.is_read ? 'bg-primary/5 border-primary/20' : 'bg-background'
+                } ${isVerificationTask && !notification.is_read ? 'border-orange-300 bg-orange-50 dark:bg-orange-950/20' : ''}`}
+                onClick={() => {
+                  if (isVerificationTask) {
+                    handleOpenVerificationTask(notification);
+                  } else if (!notification.is_read) {
+                    handleMarkAsRead(notification.id, notification);
+                  }
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  {isVerificationTask ? (
+                    <ClipboardCheck className="h-4 w-4 text-orange-500" />
+                  ) : (
+                    getNotificationIcon(notification.notification_type)
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium leading-none">
+                        {notification.title}
+                      </p>
+                      {isVerificationTask && !notification.is_read ? (
+                        <Badge className="text-xs bg-orange-500 hover:bg-orange-600">
+                          مهمة معلقة
+                        </Badge>
+                      ) : !notification.is_read ? (
+                        <Badge variant={getNotificationVariant(notification.notification_type)} className="text-xs">
+                          New
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {notification.message}
                     </p>
-                    {!notification.is_read && (
-                      <Badge variant={getNotificationVariant(notification.notification_type)} className="text-xs">
-                        New
-                      </Badge>
-                    )}
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                      </p>
+                      {isVerificationTask && !notification.is_read && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenVerificationTask(notification);
+                          }}
+                          className="h-6 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-100 gap-1 px-2"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          فتح المهمة
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                  </p>
+                  {!notification.is_read && !isVerificationTask && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(notification.id, notification);
+                      }}
+                      disabled={markAsRead.isPending}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
-                {!notification.is_read && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkAsRead(notification.id);
-                    }}
-                    disabled={markAsRead.isPending}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Check className="h-3 w-3" />
-                  </Button>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
     </div>

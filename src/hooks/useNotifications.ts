@@ -94,13 +94,15 @@ export const useMarkAllNotificationsAsRead = () => {
 
   return useMutation({
     mutationFn: async () => {
+      // استثناء تنبيهات مهام التدقيق - تبقى حتى يتم إكمال المهمة
       const { error } = await supabase
         .from("user_notifications")
         .update({ 
           is_read: true, 
           read_at: new Date().toISOString() 
         })
-        .eq("is_read", false);
+        .eq("is_read", false)
+        .or("related_type.is.null,related_type.neq.verification_task");
 
       if (error) throw error;
     },

@@ -386,18 +386,32 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             collapsed && !isMobile && 'justify-center'
           )}
         >
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-lg shadow-teal-500/30">
+          {/* Avatar - Clickable to go to Profile */}
+          <button
+            onClick={() => {
+              handleLinkClick();
+              navigate('/profile');
+            }}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-lg shadow-teal-500/30 hover:from-teal-600 hover:to-teal-700 transition-all cursor-pointer"
+            title="الملف الشخصي"
+          >
             {userInitials}
-          </div>
+          </button>
 
           {/* User Info + Logout in one row */}
           {(!collapsed || isMobile) && (
             <div className="flex-1 flex items-center justify-between min-w-0">
-              <div className="min-w-0">
+              <button
+                onClick={() => {
+                  handleLinkClick();
+                  navigate('/profile');
+                }}
+                className="min-w-0 text-right hover:bg-slate-100 rounded-md p-1 -m-1 transition-colors cursor-pointer"
+                title="الملف الشخصي"
+              >
                 <p className="text-xs font-medium text-slate-800 truncate">{userName}</p>
                 <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
-              </div>
+              </button>
               <button
                 onClick={handleSignOut}
                 className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"

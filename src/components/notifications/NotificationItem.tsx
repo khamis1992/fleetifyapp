@@ -11,13 +11,15 @@ import {
   Building2,
   X,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  ClipboardCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { RealTimeAlert } from '@/hooks/useRealTimeAlerts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationItemProps {
   alert: RealTimeAlert;
@@ -28,9 +30,22 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   alert, 
   onDismiss 
 }) => {
+  const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
 
+  // Check if this is a verification task notification
+  const isVerificationTask = alert.data?.related_type === 'verification_task';
+
+  const handleOpenVerificationTask = () => {
+    if (alert.data?.related_id) {
+      navigate(`/legal/verify/${alert.data.related_id}`);
+    }
+  };
+
   const getIcon = () => {
+    // Special icon for verification tasks
+    if (isVerificationTask) return ClipboardCheck;
+    
     switch (alert.type) {
       case 'budget':
         return DollarSign;
@@ -79,7 +94,9 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   return (
     <Card className={`p-3 transition-all duration-200 hover:shadow-md border-l-4 ${
-      alert.severity === 'critical' 
+      isVerificationTask
+        ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20'
+        : alert.severity === 'critical' 
         ? 'border-l-destructive bg-destructive/5' 
         : alert.severity === 'high'
         ? 'border-l-orange-500 bg-orange-500/5'
@@ -115,14 +132,21 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             </div>
           </div>
           
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onDismiss}
-            className="h-6 w-6 p-0 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
-          >
-            <X className="h-3 w-3" />
-          </Button>
+          {!isVerificationTask && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onDismiss}
+              className="h-6 w-6 p-0 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+          {isVerificationTask && (
+            <Badge className="bg-orange-500 text-white text-xs">
+              مهمة معلقة
+            </Badge>
+          )}
         </div>
 
         {/* Badges */}
@@ -200,15 +224,27 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
           </div>
 
           {/* Action Button */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onDismiss}
-            className="h-6 px-2 text-xs hover:bg-primary/10"
-          >
-            <CheckCircle className="h-3 w-3 ml-1" />
-            تأكيد
-          </Button>
+          {isVerificationTask ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleOpenVerificationTask}
+              className="h-6 px-2 text-xs hover:bg-orange-100 border-orange-300 text-orange-600"
+            >
+              <ExternalLink className="h-3 w-3 ml-1" />
+              فتح المهمة
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDismiss}
+              className="h-6 px-2 text-xs hover:bg-primary/10"
+            >
+              <CheckCircle className="h-3 w-3 ml-1" />
+              تأكيد
+            </Button>
+          )}
         </div>
       </div>
     </Card>

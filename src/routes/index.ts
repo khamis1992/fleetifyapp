@@ -170,6 +170,7 @@ const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocum
 // OverdueContracts merged into FinancialDelinquency
 const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));
 const FinancialDelinquency = lazy(() => import('@/pages/legal/FinancialDelinquency'));
+const CustomerVerificationPage = lazy(() => import('@/pages/legal/CustomerVerificationPage'));
 
 // Contract management
 const DuplicateContractsManager = lazy(() => import('@/components/contracts/DuplicateContractsManager'));
@@ -1731,6 +1732,18 @@ const routeConfigs: RouteConfig[] = [
     description: 'Lawsuit Preparation',
     group: 'legal',
     priority: 131,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/legal/verify/:taskId',
+    component: CustomerVerificationPage,
+    lazy: true,
+    exact: true,
+    title: 'تدقيق بيانات العميل',
+    description: 'Customer Data Verification',
+    group: 'legal',
+    priority: 132,
     protected: true,
     layout: 'bento',
   },

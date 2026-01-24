@@ -81,6 +81,8 @@ import {
   Building2,
   User,
   Wallet,
+  UserCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -95,6 +97,7 @@ import {
 import { useDelinquentCustomers, type DelinquentCustomer } from '@/hooks/useDelinquentCustomers';
 import { useDelinquencyStats } from '@/hooks/useDelinquencyStats';
 import { useRefreshDelinquentCustomers } from '@/hooks/useDelinquentCustomers';
+import { useVerificationStatuses } from '@/hooks/useVerificationTasks';
 import { useConvertToLegalCase } from '@/hooks/useConvertToLegalCase';
 import { useGenerateLegalWarning } from '@/hooks/useGenerateLegalWarning';
 import { useContractOperations } from '@/hooks/business/useContractOperations';
@@ -103,6 +106,7 @@ import { CreateLegalCaseDialog } from './CreateLegalCaseDialog';
 import { DelinquentDetailsDialog } from './DelinquentDetailsDialog';
 import { BulkRemindersDialog } from './BulkRemindersDialog';
 import { ScheduleCallsDialog } from './ScheduleCallsDialog';
+import { SendVerificationTaskDialog } from './SendVerificationTaskDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { formatCurrency, cn } from '@/lib/utils';
@@ -261,6 +265,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkRemindersDialogOpen, setBulkRemindersDialogOpen] = useState(false);
   const [scheduleCallsDialogOpen, setScheduleCallsDialogOpen] = useState(false);
+  const [verificationTaskDialogOpen, setVerificationTaskDialogOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   // New UX States
@@ -287,6 +292,13 @@ export const DelinquentCustomersTab: React.FC = () => {
   }), [searchTerm, riskLevelFilter, overduePeriodFilter, amountRangeFilter, violationsFilter]);
 
   const { data: rawCustomers, isLoading: customersLoading, error } = useDelinquentCustomers(filters);
+
+  // Get verification statuses for customers
+  const contractIds = useMemo(() => 
+    (rawCustomers || []).map(c => c.contract_id).filter(Boolean),
+    [rawCustomers]
+  );
+  const { data: verificationStatuses } = useVerificationStatuses(contractIds);
 
   // Apply contract status filter locally
   const filteredCustomers = useMemo(() => {
@@ -1392,6 +1404,19 @@ export const DelinquentCustomersTab: React.FC = () => {
               </Button>
               <Button
                 size="sm"
+                onClick={() => setVerificationTaskDialogOpen(true)}
+                className="gap-2 rounded-xl"
+                variant="outline"
+                style={{
+                  borderColor: `hsl(${colors.primary} / 0.4)`,
+                  color: `hsl(${colors.primary})`,
+                }}
+              >
+                <UserCheck className="h-4 w-4" />
+                إرسال للتدقيق
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={() => setBulkDeleteDialogOpen(true)}
                 disabled={bulkDeleting}
@@ -1711,13 +1736,16 @@ export const DelinquentCustomersTab: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={cn(
-                      'group rounded-2xl border-2 bg-card transition-all duration-300 hover:shadow-lg',
-                      customer.risk_level === 'CRITICAL' && 'border-red-200 hover:border-red-300 hover:bg-red-50/20',
-                      customer.risk_level === 'HIGH' && 'border-orange-200 hover:border-orange-300 hover:bg-orange-50/20',
-                      customer.risk_level === 'MEDIUM' && 'border-amber-200 hover:border-amber-300 hover:bg-amber-50/20',
-                      !customer.risk_level || customer.risk_level === 'LOW' && 'hover:border-teal-200 hover:bg-teal-50/10',
-                    )}
+className={cn(
+                                      'group rounded-2xl border-2 bg-card transition-all duration-300 hover:shadow-lg',
+                                      // تمييز العملاء الذين تم تدقيقهم
+                                      verificationStatuses?.get(customer.contract_id)?.status === 'verified' 
+                                        ? 'border-green-300 bg-green-50/30 hover:border-green-400 hover:bg-green-50/50'
+                                        : customer.risk_level === 'CRITICAL' && 'border-red-200 hover:border-red-300 hover:bg-red-50/20',
+                                      customer.risk_level === 'HIGH' && !verificationStatuses?.get(customer.contract_id) && 'border-orange-200 hover:border-orange-300 hover:bg-orange-50/20',
+                                      customer.risk_level === 'MEDIUM' && !verificationStatuses?.get(customer.contract_id) && 'border-amber-200 hover:border-amber-300 hover:bg-amber-50/20',
+                                      (!customer.risk_level || customer.risk_level === 'LOW') && !verificationStatuses?.get(customer.contract_id) && 'hover:border-teal-200 hover:bg-teal-50/10',
+                                    )}
                   >
                     <div className="p-5">
                       <div className="grid grid-cols-12 gap-4 items-center">
@@ -1807,6 +1835,19 @@ export const DelinquentCustomersTab: React.FC = () => {
                                 <Badge className="text-[10px] px-2 py-0.5 gap-1" style={{ backgroundColor: `hsl(262 83% 58%)`, color: 'white' }}>
                                   <Gavel className="w-3 h-3" />
                                   قضية
+                                </Badge>
+                              )}
+                              {/* بادج التدقيق */}
+                              {verificationStatuses?.get(customer.contract_id)?.status === 'verified' && (
+                                <Badge className="text-[10px] px-2 py-0.5 bg-green-500 text-white gap-1">
+                                  <ClipboardCheck className="w-3 h-3" />
+                                  تم التدقيق من: {verificationStatuses.get(customer.contract_id)?.verifier_name || 'موظف'}
+                                </Badge>
+                              )}
+                              {verificationStatuses?.get(customer.contract_id)?.status === 'pending' && (
+                                <Badge className="text-[10px] px-2 py-0.5 bg-amber-500 text-white gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  قيد التدقيق
                                 </Badge>
                               )}
                             </div>
@@ -2121,6 +2162,17 @@ export const DelinquentCustomersTab: React.FC = () => {
         onOpenChange={setScheduleCallsDialogOpen}
         customers={customers || []}
         selectedCustomers={selectedCustomers}
+      />
+
+      {/* Send Verification Task Dialog */}
+      <SendVerificationTaskDialog
+        open={verificationTaskDialogOpen}
+        onOpenChange={setVerificationTaskDialogOpen}
+        selectedCustomers={selectedCustomers}
+        onSuccess={() => {
+          setSelectedCustomers([]);
+          setSelectedIds(new Set());
+        }}
       />
     </div>
   );

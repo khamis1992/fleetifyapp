@@ -204,11 +204,64 @@ export const useRealTimeAlerts = () => {
         (payload) => {
           console.log('Notification change:', payload);
           const newNotification = payload.new as any;
-          toast({
-            title: "إشعار جديد",
-            description: newNotification.title,
-            variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
-          });
+          
+          // Check if it's a verification task notification
+          if (newNotification.related_type === 'verification_task') {
+            // Play distinctive sound
+            const soundEnabled = localStorage.getItem('notificationSoundEnabled') !== 'false';
+            if (soundEnabled) {
+              try {
+                const audio = new Audio('/sounds/verification-task.mp3');
+                audio.volume = 0.4;
+                audio.play().catch(() => {
+                  // Fallback to Web Audio API
+                  try {
+                    const context = new AudioContext();
+                    const playTone = (frequency: number, startTime: number, duration: number) => {
+                      const oscillator = context.createOscillator();
+                      const gainNode = context.createGain();
+                      oscillator.connect(gainNode);
+                      gainNode.connect(context.destination);
+                      oscillator.frequency.value = frequency;
+                      oscillator.type = 'sine';
+                      gainNode.gain.setValueAtTime(0.15, context.currentTime + startTime);
+                      gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + startTime + duration);
+                      oscillator.start(context.currentTime + startTime);
+                      oscillator.stop(context.currentTime + startTime + duration);
+                    };
+                    playTone(880, 0, 0.15);
+                    playTone(1100, 0.15, 0.15);
+                    playTone(880, 0.35, 0.15);
+                  } catch (e) { console.log('Sound error:', e); }
+                });
+              } catch (e) { console.log('Sound error:', e); }
+            }
+            
+            // Show special toast for verification task
+            toast({
+              title: "📋 مهمة تدقيق جديدة",
+              description: newNotification.message || "تم تكليفك بمهمة تدقيق بيانات عميل",
+              variant: 'default',
+              duration: 10000, // Show longer
+            });
+            
+            // Browser notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('مهمة تدقيق جديدة', {
+                body: newNotification.message || 'تم تكليفك بمهمة تدقيق بيانات عميل',
+                icon: '/favicon.ico',
+                tag: 'verification-task',
+                requireInteraction: true
+              });
+            }
+          } else {
+            toast({
+              title: "إشعار جديد",
+              description: newNotification.title,
+              variant: newNotification.notification_type === 'error' ? 'destructive' : 'default',
+            });
+          }
+          
           queryClient.invalidateQueries({ queryKey: getQueryKey(['real-time-alerts']) });
           // Also invalidate other notification-related queries for sync
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -233,6 +286,76 @@ export const useRealTimeAlerts = () => {
   const highPriorityAlerts = alerts.filter(alert => 
     alert.severity === 'critical' || alert.severity === 'high'
   ).length;
+  
+  // Count verification task notifications
+  const verificationTaskAlerts = alerts.filter(alert => 
+    alert.data?.related_type === 'verification_task'
+  ).length;
+
+  // Update browser tab title when there are verification tasks
+  useEffect(() => {
+    const originalTitle = document.title.replace(/^\(.*?\)\s*/, '');
+    
+    if (verificationTaskAlerts > 0) {
+      document.title = `(${verificationTaskAlerts} مهمة تدقيق) ${originalTitle}`;
+    } else if (totalAlerts > 0) {
+      document.title = `(${totalAlerts}) ${originalTitle}`;
+    } else {
+      document.title = originalTitle;
+    }
+
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [verificationTaskAlerts, totalAlerts]);
+
+  // Play sound for verification task notifications
+  useEffect(() => {
+    if (verificationTaskAlerts > 0) {
+      const soundEnabled = localStorage.getItem('notificationSoundEnabled') !== 'false';
+      if (soundEnabled) {
+        playVerificationTaskSound();
+      }
+    }
+  }, [verificationTaskAlerts]);
+
+  // Play a distinctive sound for verification tasks
+  const playVerificationTaskSound = () => {
+    try {
+      // Try to play audio file first
+      const audio = new Audio('/sounds/verification-task.mp3');
+      audio.volume = 0.4;
+      audio.play().catch(() => {
+        // Fallback to Web Audio API with a distinctive tone
+        try {
+          const context = new AudioContext();
+          
+          // Play two tones for verification task
+          const playTone = (frequency: number, startTime: number, duration: number) => {
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.15, context.currentTime + startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + startTime + duration);
+            oscillator.start(context.currentTime + startTime);
+            oscillator.stop(context.currentTime + startTime + duration);
+          };
+          
+          // Two-tone notification sound
+          playTone(880, 0, 0.15);      // A5
+          playTone(1100, 0.15, 0.15);  // C#6
+          playTone(880, 0.35, 0.15);   // A5
+        } catch (e) {
+          console.log('Could not play verification task sound:', e);
+        }
+      });
+    } catch (error) {
+      console.log('Could not play verification task sound:', error);
+    }
+  };
 
   // Alert management functions
   const dismissAlert = async (alertId: string, alertType: string) => {
@@ -248,6 +371,22 @@ export const useRealTimeAlerts = () => {
           .update({ is_acknowledged: true, acknowledged_at: new Date().toISOString() })
           .eq('id', alertId);
       } else if (alertType === 'notification') {
+        // Check if it's a verification task notification - don't allow manual dismissal
+        const { data: notification } = await supabase
+          .from('user_notifications')
+          .select('related_type')
+          .eq('id', alertId)
+          .single();
+        
+        if (notification?.related_type === 'verification_task') {
+          toast({
+            title: "غير مسموح",
+            description: "تنبيهات مهام التدقيق تبقى حتى إكمال المهمة",
+            variant: "default"
+          });
+          return;
+        }
+        
         await supabase
           .from('user_notifications')
           .update({ is_read: true, read_at: new Date().toISOString() })
@@ -295,11 +434,12 @@ export const useRealTimeAlerts = () => {
         .eq('company_id', companyId)
         .eq('is_acknowledged', false);
 
-      // Mark all notifications as read
+      // Mark all notifications as read (except verification task notifications)
       await supabase
         .from('user_notifications')
         .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('is_read', false);
+        .eq('is_read', false)
+        .or('related_type.is.null,related_type.neq.verification_task');
 
       // Refresh alerts - invalidate all related query keys for synchronization
       queryClient.invalidateQueries({ queryKey: ['real-time-alerts'] });
@@ -330,8 +470,10 @@ export const useRealTimeAlerts = () => {
     totalAlerts,
     criticalAlerts,
     highPriorityAlerts,
+    verificationTaskAlerts,
     dismissAlert,
     markAllAsRead,
-    isSubscribed
+    isSubscribed,
+    playVerificationTaskSound
   };
 };

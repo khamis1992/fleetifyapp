@@ -24,14 +24,14 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'critical' | 'high' | 'budget' | 'vehicle' | 'notification'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'critical' | 'high' | 'budget' | 'vehicle' | 'notification' | 'verification'>('all');
   const [soundEnabled, setSoundEnabled] = useState(() => 
     localStorage.getItem('notificationSoundEnabled') !== 'false'
   );
   const [showSettings, setShowSettings] = useState(false);
   
   const { totalAlerts, criticalAlerts, highPriorityAlerts, isLoading } = useUnifiedNotificationCount();
-  const { alerts, dismissAlert, markAllAsRead } = useRealTimeAlerts();
+  const { alerts, dismissAlert, markAllAsRead, verificationTaskAlerts } = useRealTimeAlerts();
   const { toast } = useToast();
 
   // Persist sound preference
@@ -103,6 +103,7 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
     if (selectedFilter === 'budget') return alert.type === 'budget';
     if (selectedFilter === 'vehicle') return alert.type === 'vehicle';
     if (selectedFilter === 'notification') return alert.type === 'notification';
+    if (selectedFilter === 'verification') return alert.data?.related_type === 'verification_task';
     
     return true;
   });
@@ -169,9 +170,9 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
                 className="absolute -top-1 -right-1"
               >
                 <Badge 
-                  variant={criticalAlerts > 0 ? "destructive" : "secondary"}
+                  variant={verificationTaskAlerts > 0 ? "default" : criticalAlerts > 0 ? "destructive" : "secondary"}
                   className={`min-w-[20px] h-5 text-xs px-1 ${
-                    criticalAlerts > 0 ? 'animate-pulse' : ''
+                    verificationTaskAlerts > 0 ? 'animate-pulse bg-orange-500 hover:bg-orange-600' : criticalAlerts > 0 ? 'animate-pulse' : ''
                   }`}
                 >
                   {totalAlerts > 99 ? '99+' : totalAlerts}
@@ -250,8 +251,14 @@ export const UnifiedNotificationBell: React.FC<UnifiedNotificationBellProps> = (
               </div>
 
               <Tabs value={selectedFilter} onValueChange={(value) => setSelectedFilter(value as any)}>
-                <TabsList className="grid w-full grid-cols-6 h-8">
+                <TabsList className="grid w-full grid-cols-7 h-8">
                   <TabsTrigger value="all" className="text-xs px-1">الكل</TabsTrigger>
+                  <TabsTrigger 
+                    value="verification" 
+                    className={`text-xs px-1 ${verificationTaskAlerts > 0 ? 'text-orange-600 font-bold' : ''}`}
+                  >
+                    تدقيق {verificationTaskAlerts > 0 && `(${verificationTaskAlerts})`}
+                  </TabsTrigger>
                   <TabsTrigger value="critical" className="text-xs px-1">هام</TabsTrigger>
                   <TabsTrigger value="high" className="text-xs px-1">عالي</TabsTrigger>
                   <TabsTrigger value="budget" className="text-xs px-1">موازنة</TabsTrigger>

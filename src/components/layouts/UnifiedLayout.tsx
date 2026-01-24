@@ -24,6 +24,7 @@ import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
+import { VerificationTaskAlert } from '@/components/notifications/VerificationTaskAlert';
 import { cn } from '@/lib/utils';
 
 // Layout Variants
@@ -269,6 +270,7 @@ export const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({
 
       {/* Global Components */}
       <KeyboardShortcuts />
+      <VerificationTaskAlert />
     </div>
   );
 };

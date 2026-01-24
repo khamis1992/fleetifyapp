@@ -30,6 +30,11 @@ interface UltramsgResponse {
 const ULTRAMSG_INSTANCE_ID = 'instance148672';
 const ULTRAMSG_TOKEN = 'rls3i8flwugsei1j';
 
+// ============================================
+// DEBUG: Enable console logging for WhatsApp operations
+// ============================================
+const ENABLE_DEBUG_LOGS = true;
+
 /**
  * Get Ultramsg configuration (fixed values)
  */
@@ -40,32 +45,15 @@ export const getUltramsgConfig = (): UltramsgConfig => {
   };
 };
 
-/**
- * Save Ultramsg configuration (disabled - using fixed values)
- */
-export const saveUltramsgConfig = (_config: UltramsgConfig): void => {
-  console.log('ℹ️ Ultramsg config is fixed and cannot be changed');
-};
-
-/**
- * Clear Ultramsg configuration (disabled - using fixed values)
- */
-export const clearUltramsgConfig = (): void => {
-  console.log('ℹ️ Ultramsg config is fixed and cannot be cleared');
-};
-
-/**
- * Check if Ultramsg is configured (always true with fixed config)
- */
-export const isUltramsgConfigured = (): boolean => {
-  return true;
-};
+// ... existing code ...
 
 /**
  * Format phone number for WhatsApp
  * Removes all non-digit characters and ensures international format
  */
 export const formatPhoneForWhatsApp = (phone: string): string => {
+  if (!phone) return '';
+  
   // Remove all non-digits
   let cleaned = phone.replace(/\D/g, '');
   
@@ -103,29 +91,50 @@ export const sendWhatsAppMessage = async ({ phone, message, customerName }: Send
 
   const formattedPhone = formatPhoneForWhatsApp(phone);
   
+  if (ENABLE_DEBUG_LOGS) {
+    console.log(`🚀 [WHATSAPP] Attempting to send to ${formattedPhone} (${customerName})`);
+    console.log(`📝 [WHATSAPP] Message length: ${message.length}`);
+  }
+
+  if (!formattedPhone || formattedPhone.length < 8) {
+    console.error(`❌ [WHATSAPP] Invalid phone number: ${phone} -> ${formattedPhone}`);
+    return { success: false, error: 'رقم الهاتف غير صحيح' };
+  }
+  
   try {
-    const response = await fetch(`https://api.ultramsg.com/${config.instanceId}/messages/chat`, {
+    const url = `https://api.ultramsg.com/${config.instanceId}/messages/chat`;
+    const body = new URLSearchParams({
+      token: config.token,
+      to: formattedPhone,
+      body: message,
+    });
+
+    if (ENABLE_DEBUG_LOGS) {
+      console.log(`🌐 [WHATSAPP] POST ${url}`);
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        token: config.token,
-        to: formattedPhone,
-        body: message,
-      }),
+      body: body,
     });
 
     const data: UltramsgResponse = await response.json();
     
+    if (ENABLE_DEBUG_LOGS) {
+      console.log(`📩 [WHATSAPP] Response:`, data);
+    }
+
     if (data.sent === 'true' || data.sent === true as any) {
-      console.log(`✅ WhatsApp message sent to ${customerName || phone}:`, {
+      console.log(`✅ [WHATSAPP] Message sent to ${customerName || phone}:`, {
         messageId: data.id,
         phone: formattedPhone,
       });
       return { success: true, messageId: data.id };
     } else {
-      console.error(`❌ Failed to send WhatsApp to ${customerName || phone}:`, data);
+      console.error(`❌ [WHATSAPP] Failed to send to ${customerName || phone}:`, data);
       return { 
         success: false, 
         error: data.error || data.message || 'فشل في إرسال الرسالة' 
@@ -133,7 +142,7 @@ export const sendWhatsAppMessage = async ({ phone, message, customerName }: Send
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'خطأ في الاتصال';
-    console.error(`❌ Network error sending WhatsApp to ${customerName || phone}:`, error);
+    console.error(`❌ [WHATSAPP] Network error sending to ${customerName || phone}:`, error);
     return { success: false, error: errorMessage };
   }
 };

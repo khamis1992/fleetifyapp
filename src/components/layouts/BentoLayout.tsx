@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
 import { TourProvider } from '@/components/tour-guide';
+import { VerificationTaskAlert } from '@/components/notifications/VerificationTaskAlert';
 
 // Lazy load AI Chat Widget for performance
 const AIChatWidget = lazy(() => import('@/components/ai-chat-assistant/AIChatWidget'));
@@ -127,6 +128,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         <Suspense fallback={<div className="w-16 h-16 rounded-full bg-muted animate-pulse" />}>
           <AIChatWidget hideFloatingButton={true} />
         </Suspense>
+
+        {/* Verification Task Alert Modal */}
+        <VerificationTaskAlert />
       </div>
     </TourProvider>
   );
