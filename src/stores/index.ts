@@ -1,6 +1,10 @@
 /**
- * Centralized State Management
- * Replaces multiple contexts with a unified store using Zustand
+ * Minimal App Store - UI State Only
+ * 
+ * This store manages ONLY client-side UI state.
+ * All server state (customers, vehicles, contracts, invoices) is managed by React Query.
+ * 
+ * See: plans/zustand-usage-restriction-and-migration-plan.md
  */
 
 import { create } from 'zustand';
@@ -44,15 +48,7 @@ export interface Notification {
   autoClose?: boolean;
 }
 
-// Entity normalization types
-export interface NormalizedState<T> {
-  entities: Record<string, T>;
-  ids: string[];
-  loading: Record<string, boolean>;
-  error: Record<string, Error | null>;
-}
-
-// Main store interface
+// Main store interface - UI state only (server state removed - now managed by React Query)
 export interface AppStore {
   // Auth state
   user: User | null;
@@ -67,12 +63,6 @@ export interface AppStore {
   sidebarOpen: boolean;
   notifications: Notification[];
 
-  // Normalized entities
-  customers: NormalizedState<any>;
-  vehicles: NormalizedState<any>;
-  contracts: NormalizedState<any>;
-  invoices: NormalizedState<any>;
-
   // Actions
   setAuth: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
@@ -85,29 +75,11 @@ export interface AppStore {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
 
-  // Entity actions
-  setEntity: <T>(entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string, data: T) => void;
-  removeEntity: (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string) => void;
-  setEntityLoading: (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string, loading: boolean) => void;
-  setEntityError: (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string, error: Error | null) => void;
-
-  // Batch actions
-  setEntities: <T>(entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, entities: T[]) => void;
-
   // Reset actions
   resetAuth: () => void;
-  resetEntities: () => void;
 }
 
-// Helper to create normalized state
-const createNormalizedState = <T>(): NormalizedState<T> => ({
-  entities: {},
-  ids: [],
-  loading: {},
-  error: {},
-});
-
-// Create the store
+// Create store
 export const useAppStore = create<AppStore>()(
   devtools(
     subscribeWithSelector(
@@ -123,11 +95,6 @@ export const useAppStore = create<AppStore>()(
           theme: 'system',
           sidebarOpen: true,
           notifications: [],
-
-          customers: createNormalizedState(),
-          vehicles: createNormalizedState(),
-          contracts: createNormalizedState(),
-          invoices: createNormalizedState(),
 
           // Auth actions
           setAuth: (user) => {
@@ -205,92 +172,6 @@ export const useAppStore = create<AppStore>()(
             set({ notifications: [] });
           },
 
-          // Entity actions
-          setEntity: <T>(entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string, data: T) => {
-            set((state) => {
-              const entityState = state[entityType] as NormalizedState<T>;
-              return {
-                [entityType]: {
-                  ...entityState,
-                  entities: {
-                    ...entityState.entities,
-                    [id]: data,
-                  },
-                  ids: entityState.ids.includes(id) ? entityState.ids : [...entityState.ids, id],
-                  error: {
-                    ...entityState.error,
-                    [id]: null,
-                  },
-                },
-              };
-            });
-          },
-
-          removeEntity: (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string) => {
-            set((state) => {
-              const entityState = state[entityType] as NormalizedState<any>;
-              const { [id]: removed, ...entities } = entityState.entities;
-              return {
-                [entityType]: {
-                  ...entityState,
-                  entities,
-                  ids: entityState.ids.filter(i => i !== id),
-                },
-              };
-            });
-          },
-
-          setEntityLoading: (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string, loading: boolean) => {
-            set((state) => {
-              const entityState = state[entityType] as NormalizedState<any>;
-              return {
-                [entityType]: {
-                  ...entityState,
-                  loading: {
-                    ...entityState.loading,
-                    [id]: loading,
-                  },
-                },
-              };
-            });
-          },
-
-          setEntityError: (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, id: string, error: Error | null) => {
-            set((state) => {
-              const entityState = state[entityType] as NormalizedState<any>;
-              return {
-                [entityType]: {
-                  ...entityState,
-                  error: {
-                    ...entityState.error,
-                    [id]: error,
-                  },
-                },
-              };
-            });
-          },
-
-          // Batch actions
-          setEntities: <T>(entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>, entities: T[]) => {
-            const normalizedEntities = entities.reduce((acc, entity) => {
-              if (entity && entity.id) {
-                acc[entity.id] = entity;
-              }
-              return acc;
-            }, {} as Record<string, T>);
-
-            const ids = entities.filter(e => e && e.id).map(e => e.id);
-
-            set((state) => ({
-              [entityType]: {
-                entities: normalizedEntities,
-                ids,
-                loading: {},
-                error: {},
-              },
-            }));
-          },
-
           // Reset actions
           resetAuth: () => {
             set({
@@ -299,25 +180,16 @@ export const useAppStore = create<AppStore>()(
               isLoading: false,
             });
           },
-
-          resetEntities: () => {
-            set({
-              customers: createNormalizedState(),
-              vehicles: createNormalizedState(),
-              contracts: createNormalizedState(),
-              invoices: createNormalizedState(),
-            });
-          },
         }),
         {
           name: 'fleetify-app-store',
-          version: 1,
+          version: 2,
           partialize: (state) => ({
             user: state.user,
             company: state.company,
             theme: state.theme,
             sidebarOpen: state.sidebarOpen,
-            // Don't persist notifications or entity states
+            // Don't persist notifications
           }),
         }
       )
@@ -369,37 +241,6 @@ export const useNotifications = () => {
   };
 };
 
-// Entity selectors with caching
-export const createEntitySelector = <T>(entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>) => {
-  return () => {
-    const store = useAppStore();
-    const entityState = store[entityType] as NormalizedState<T>;
-
-    return {
-      entities: entityState.entities,
-      ids: entityState.ids,
-      loading: entityState.loading,
-      error: entityState.error,
-      getEntity: (id: string) => entityState.entities[id],
-      getEntities: (ids?: string[]) => {
-        const idsToUse = ids || entityState.ids;
-        return idsToUse.map(id => entityState.entities[id]).filter(Boolean);
-      },
-      isLoading: (id: string) => entityState.loading[id] || false,
-      getError: (id: string) => entityState.error[id],
-      setEntity: store.setEntity,
-      removeEntity: store.removeEntity,
-      setEntities: store.setEntities,
-    };
-  };
-};
-
-// Export entity hooks
-export const useCustomers = createEntitySelector('customers');
-export const useVehicles = createEntitySelector('vehicles');
-export const useContracts = createEntitySelector('contracts');
-export const useInvoices = createEntitySelector('invoices');
-
 // Debug utilities
 export const useStoreDebug = () => {
   const store = useAppStore();
@@ -411,38 +252,6 @@ export const useStoreDebug = () => {
     logState: () => {
       if (process.env.NODE_ENV === 'development') {
         console.log('Current Store State:', store.getState());
-      }
-    },
-  };
-};
-
-// State synchronization utilities
-export const useEntitySync = (entityType: keyof Omit<AppStore, 'theme' | 'sidebarOpen' | 'notifications' | 'user' | 'company' | 'isAuthenticated' | 'isLoading' | 'setAuth' | 'setLoading' | 'setCompany' | 'setTheme' | 'toggleSidebar' | 'addNotification' | 'markNotificationRead' | 'clearNotifications'>) => {
-  const store = useAppStore();
-
-  return {
-    syncWithApi: async (apiCall: () => Promise<any[]>) => {
-      try {
-        store.setEntityLoading(entityType, 'list', true);
-        const data = await apiCall();
-        store.setEntities(entityType, data);
-      } catch (error) {
-        console.error(`Failed to sync ${entityType}:`, error);
-        store.setEntityError(entityType, 'list', error as Error);
-      } finally {
-        store.setEntityLoading(entityType, 'list', false);
-      }
-    },
-    syncSingle: async (id: string, apiCall: () => Promise<any>) => {
-      try {
-        store.setEntityLoading(entityType, id, true);
-        const data = await apiCall();
-        store.setEntity(entityType, id, data);
-      } catch (error) {
-        console.error(`Failed to sync ${entityType} ${id}:`, error);
-        store.setEntityError(entityType, id, error as Error);
-      } finally {
-        store.setEntityLoading(entityType, id, false);
       }
     },
   };
