@@ -59,6 +59,7 @@ import {
   Upload,
   FileUp,
   X,
+  Globe,
 } from 'lucide-react';
 import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
 
@@ -74,6 +75,7 @@ export default function CustomerVerificationPage() {
   const [editedData, setEditedData] = useState({
     customer_name: '',
     national_id: '',
+    nationality: '',
     phone: '',
     monthly_rent: 0,
   });
@@ -102,6 +104,7 @@ export default function CustomerVerificationPage() {
             first_name,
             last_name,
             national_id,
+            nationality,
             phone,
             email
           ),
@@ -233,6 +236,7 @@ export default function CustomerVerificationPage() {
       setEditedData({
         customer_name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim(),
         national_id: customer.national_id || '',
+        nationality: customer.nationality || '',
         phone: customer.phone || '',
         monthly_rent: Number(task.contract.monthly_amount) || 0,
       });
@@ -255,6 +259,7 @@ export default function CustomerVerificationPage() {
           first_name: firstName,
           last_name: lastName,
           national_id: editedData.national_id,
+          nationality: editedData.nationality,
           phone: editedData.phone,
         })
         .eq('id', task.customer.id);
@@ -629,6 +634,23 @@ export default function CustomerVerificationPage() {
                   />
                 ) : (
                   <p className="text-lg font-semibold" dir="ltr">{editedData.national_id || '-'}</p>
+                )}
+              </div>
+
+              {/* الجنسية */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  الجنسية
+                </Label>
+                {isEditing ? (
+                  <Input
+                    value={editedData.nationality}
+                    onChange={(e) => setEditedData({ ...editedData, nationality: e.target.value })}
+                    placeholder="أدخل الجنسية"
+                  />
+                ) : (
+                  <p className="text-lg font-semibold">{editedData.nationality || '-'}</p>
                 )}
               </div>
 
