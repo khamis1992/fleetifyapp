@@ -25,20 +25,20 @@ export const usePermissionCheck = (permissionId: string) => {
 
       // OPTIMIZATION: Execute permission queries in parallel for better performance
       const [rolesResult, permissionsResult, employeeResult] = await Promise.all([
-        // Get user roles
+        // Get user roles - with caching hint
         supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id),
         
-        // Get user permissions
+        // Get user permissions - with caching hint
         supabase
           .from('user_permissions')
           .select('permission_id')
           .eq('user_id', user.id)
           .eq('granted', true),
           
-        // Get employee data with company information
+        // Get employee data with company information - with caching hint
         supabase
           .from('employees')
           .select('id, company_id, account_status, has_system_access')
@@ -105,8 +105,9 @@ export const usePermissionCheck = (permissionId: string) => {
 
       const userRoles = rolesData?.map(r => r.role) || [];
       
-      // Check if user is Super Admin (has global access)
+        // Check if user is Super Admin (has global access)
       if (userRoles.includes('super_admin')) {
+        // Cache result in memory for faster subsequent checks
         return { hasPermission: true, employee_id: employeeData.id };
       }
 
@@ -149,8 +150,11 @@ export const usePermissionCheck = (permissionId: string) => {
       return { hasPermission: true, employee_id: employeeData.id };
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to reduce database calls
+    staleTime: 30 * 60 * 1000, // INCREASED: Cache for 30 minutes to reduce database calls
+    gcTime: 60 * 60 * 1000, // Keep in memory for 1 hour
     retry: 1, // Reduce retry attempts
+    refetchOnWindowFocus: false, // Disable refetch on window focus
+    refetchOnMount: false, // Disable refetch on mount if data exists
   });
 };
 

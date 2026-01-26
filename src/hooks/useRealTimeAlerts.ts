@@ -349,11 +349,12 @@ export const useRealTimeAlerts = () => {
           playTone(1100, 0.15, 0.15);  // C#6
           playTone(880, 0.35, 0.15);   // A5
         } catch (e) {
-          console.log('Could not play verification task sound:', e);
+          // Quietly handle errors - browsers block autoplay without user interaction
+          // We don't want to spam the console with these warnings
         }
       });
     } catch (error) {
-      console.log('Could not play verification task sound:', error);
+      // Quietly handle errors
     }
   };
 

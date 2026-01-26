@@ -98,9 +98,9 @@ export const VerificationTaskAlert: React.FC = () => {
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-lg mx-4"
         >
-          <Card className="overflow-hidden border-2 border-orange-400 shadow-2xl">
+          <Card className="overflow-hidden border border-teal-500/20 shadow-2xl">
             {/* Header */}
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 text-white">
+            <div className="bg-gradient-to-r from-teal-600 to-teal-500 p-4 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white/20 rounded-xl">
@@ -138,12 +138,12 @@ export const VerificationTaskAlert: React.FC = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 transition-colors cursor-pointer group"
+                      className="flex items-center justify-between p-3 rounded-xl border border-teal-100 bg-teal-50/50 hover:bg-teal-50 hover:border-teal-500/30 transition-all cursor-pointer group"
                       onClick={() => handleOpenTask(task.id)}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-orange-200 rounded-lg">
-                          <User className="h-4 w-4 text-orange-700" />
+                        <div className="p-2 bg-teal-100 rounded-lg">
+                          <User className="h-4 w-4 text-teal-700" />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">{customerName}</p>
@@ -163,10 +163,10 @@ export const VerificationTaskAlert: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-orange-500 text-white text-xs">
+                        <Badge className="bg-teal-600 text-white text-xs hover:bg-teal-700">
                           معلقة
                         </Badge>
-                        <ArrowLeft className="h-4 w-4 text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ArrowLeft className="h-4 w-4 text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </motion.div>
                   );
@@ -198,13 +198,13 @@ export const VerificationTaskAlert: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={handleDismiss}
-                className="flex-1"
+                className="flex-1 hover:bg-gray-100"
               >
                 تذكيرني لاحقاً
               </Button>
               <Button
                 onClick={handleOpenAllTasks}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white gap-2"
+                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white gap-2"
               >
                 <ClipboardCheck className="h-4 w-4" />
                 عرض مهام التدقيق

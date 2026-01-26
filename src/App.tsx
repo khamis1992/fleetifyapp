@@ -110,8 +110,8 @@ const createQueryClient = () => {
         refetchOnReconnect: true,
 
         // Cache configuration - optimized for performance
-        staleTime: APP_CONFIG.QUERY_STALE_TIME,
-        gcTime: APP_CONFIG.QUERY_CACHE_TIME,
+        staleTime: 5 * 60 * 1000, // INCREASED: 5 minutes stale time
+        gcTime: 15 * 60 * 1000, // INCREASED: 15 minutes garbage collection time
 
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
@@ -123,9 +123,9 @@ const createQueryClient = () => {
           if (error?.status >= 400 && error?.status < 500) {
             return false;
           }
-          return failureCount < 2; // Reduced from 3 to 2 for faster failure detection
+          return failureCount < 1; // REDUCED: 1 retry max
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 1.5 ** attemptIndex, 5000), // Reduced max delay
+        retryDelay: (attemptIndex) => Math.min(1000 * 1.5 ** attemptIndex, 3000), // Reduced max delay
 
         // Network mode - CRITICAL: Use 'always' to prevent infinite loading on navigation
         // 'online' mode causes queries to pause when browser's online status check is slow

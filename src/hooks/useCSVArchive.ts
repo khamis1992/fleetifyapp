@@ -63,27 +63,32 @@ export const useCSVArchive = () => {
 
         console.log('🔍 Fetching CSV archives for user:', user.id, 'company:', profile.company_id);
 
-        // List files from user's company folder
-        const { data: userFiles, error: userError } = await supabase.storage
-          .from('csv-archives')
-          .list(`${user.id}/${profile.company_id}`, {
-            limit: 100,
-            offset: 0,
-            sortBy: { column: 'created_at', order: 'desc' }
-          });
+        // OPTIMIZATION: Run storage queries in parallel
+        const [userFilesResult, rootFilesResult] = await Promise.all([
+          // List files from user's company folder
+          supabase.storage
+            .from('csv-archives')
+            .list(`${user.id}/${profile.company_id}`, {
+              limit: 50, // Reduced from 100 to improve speed
+              offset: 0,
+              sortBy: { column: 'created_at', order: 'desc' }
+            }),
+          
+          // List files from root (like templates)
+          supabase.storage
+            .from('csv-archives')
+            .list('', {
+              limit: 20, // Reduced from 100 as templates are few
+              offset: 0,
+              sortBy: { column: 'created_at', order: 'desc' }
+            })
+        ]);
 
-        console.log('📁 User files result:', { userFiles, userError });
+        const { data: userFiles, error: userError } = userFilesResult;
+        const { data: rootFiles, error: rootError } = rootFilesResult;
 
-        // List files from root (like templates)
-        const { data: rootFiles, error: rootError } = await supabase.storage
-          .from('csv-archives')
-          .list('', {
-            limit: 100,
-            offset: 0,
-            sortBy: { column: 'created_at', order: 'desc' }
-          });
-
-        console.log('📋 Root files result:', { rootFiles, rootError });
+        console.log('📁 User files result:', { count: userFiles?.length || 0 });
+        console.log('📋 Root files result:', { count: rootFiles?.length || 0 });
 
         // Combine both file lists, but ignore errors if one location doesn't exist
         const userFilesWithFlag = (userFiles || []).map(file => ({ 
@@ -102,15 +107,15 @@ export const useCSVArchive = () => {
 
         const allFiles = [...userFilesWithFlag, ...rootFilesWithFlag];
 
-        console.log('🔗 Combined files:', allFiles);
-
-        // Map storage files to CSVArchiveEntry format with better error handling
+        // Map storage files to CSVArchiveEntry format
+        // Moved mapping logic to a separate non-blocking function if possible, but kept here for now
         const mappedFiles: CSVArchiveEntry[] = [];
         
-        for (const file of allFiles) {
+        // Process only up to 50 files to prevent blocking main thread
+        const filesToProcess = allFiles.slice(0, 50);
+        
+        for (const file of filesToProcess) {
           try {
-            console.log('🔄 Processing file:', file.name, 'Type:', file.fileType);
-            
             // Safe file name parsing for user files
             let originalFileName = file.name;
             let uploadType = 'template';
@@ -161,7 +166,6 @@ export const useCSVArchive = () => {
             };
 
             mappedFiles.push(mappedFile);
-            console.log('✅ Successfully mapped file:', file.name);
             
           } catch (fileError) {
             console.error('❌ Error mapping file:', file.name, fileError);
@@ -177,6 +181,10 @@ export const useCSVArchive = () => {
         throw error;
       }
     },
+    // PERFORMANCE: Increase cache time to avoid refetching on every navigation
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Archive a CSV file

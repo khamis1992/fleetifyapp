@@ -475,57 +475,43 @@ export const useTopProfitableVehicles = (limit: number = 10) => {
   return useQuery({
     queryKey: ["top-profitable-vehicles", companyId, limit],
     queryFn: async (): Promise<VehicleProfitData[]> => {
-      // Get vehicles with their revenue
-      const { data, error } = await supabase
-        .rpc("get_vehicle_revenue_summary", { company_id_param: companyId })
-        .limit(limit);
+      // Directly use manual join (RPC function doesn't exist)
+      const { data: vehiclesData, error: vehiclesError } = await supabase
+        .from("vehicles")
+        .select("id, plate_number")
+        .eq("company_id", companyId)
+        .eq("is_active", true);
 
-      if (error) {
-        // Fallback: manually join vehicles and contracts
-        const { data: vehiclesData, error: vehiclesError } = await supabase
-          .from("vehicles")
-          .select("id, plate_number")
-          .eq("company_id", companyId)
-          .eq("is_active", true);
+      if (vehiclesError) throw vehiclesError;
 
-        if (vehiclesError) throw vehiclesError;
+      const { data: contractsData, error: contractsError } = await supabase
+        .from("contracts")
+        .select("vehicle_id, total_paid")
+        .eq("company_id", companyId);
 
-        const { data: contractsData, error: contractsError } = await supabase
-          .from("contracts")
-          .select("vehicle_id, total_paid")
-          .eq("company_id", companyId);
+      if (contractsError) throw contractsError;
 
-        if (contractsError) throw contractsError;
+      // Aggregate revenue by vehicle
+      const revenueMap = new Map<string, number>();
+      contractsData?.forEach(c => {
+        if (c.vehicle_id) {
+          const current = revenueMap.get(c.vehicle_id) || 0;
+          revenueMap.set(c.vehicle_id, current + (Number(c.total_paid) || 0));
+        }
+      });
 
-        // Aggregate revenue by vehicle
-        const revenueMap = new Map<string, number>();
-        contractsData?.forEach(c => {
-          if (c.vehicle_id) {
-            const current = revenueMap.get(c.vehicle_id) || 0;
-            revenueMap.set(c.vehicle_id, current + (Number(c.total_paid) || 0));
-          }
-        });
-
-        // Create result
-        const result = vehiclesData?.map(v => ({
-          vehicleId: v.id,
-          vehicle: v.plate_number,
-          revenue: revenueMap.get(v.id) || 0,
-          profit: revenueMap.get(v.id) || 0 // Simplified: profit = revenue when no cost data
-        }))
-        .filter(v => v.revenue > 0)
-        .sort((a, b) => b.profit - a.profit)
-        .slice(0, limit) || [];
-
-        return result;
-      }
-
-      return data?.map((v: any) => ({
-        vehicleId: v.vehicle_id,
+      // Create result
+      const result = vehiclesData?.map(v => ({
+        vehicleId: v.id,
         vehicle: v.plate_number,
-        revenue: v.total_revenue || 0,
-        profit: v.net_profit || v.total_revenue || 0
-      })) || [];
+        revenue: revenueMap.get(v.id) || 0,
+        profit: revenueMap.get(v.id) || 0 // Simplified: profit = revenue when no cost data
+      }))
+      .filter(v => v.revenue > 0)
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, limit) || [];
+
+      return result;
     },
     enabled: !!companyId,
   });

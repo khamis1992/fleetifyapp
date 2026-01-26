@@ -27,28 +27,8 @@ export const useUnifiedCompanyAccess = () => {
   // Extract company_id early for dependency tracking
   const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
   
-  // CRITICAL FIX: Invalidate queries when companyId becomes available
-  // This fixes the issue where pages show 0 data after navigation because
-  // queries ran with companyId=null and refetchOnMount is false
-  useEffect(() => {
-    const prevId = prevCompanyIdRef.current;
-    
-    // If we had no companyId before and now we have one, invalidate all queries
-    if (prevId === null && userCompanyId !== null && !loading) {
-      console.log('🔄 [useUnifiedCompanyAccess] Company ID available, invalidating queries...', {
-        prevId,
-        newId: userCompanyId
-      });
-      
-      // Invalidate all queries to force refetch with the new companyId
-      // Using a small delay to ensure state has propagated
-      setTimeout(() => {
-        queryClient.invalidateQueries();
-      }, 50);
-    }
-    
-    prevCompanyIdRef.current = userCompanyId;
-  }, [userCompanyId, loading, queryClient]);
+  // CRITICAL FIX: The side-effect for query invalidation has been moved to CompanyContext.tsx
+  // This prevents excessive invalidations when this hook is used in multiple components
   
   // Always call useMemo with the same dependencies to ensure consistent hook order
   const result = useMemo(() => {

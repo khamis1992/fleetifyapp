@@ -40,7 +40,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   }
   const location = useLocation();
 
-  const renderRoute = (route: RouteConfig) => {
+  const renderRoute = React.useCallback((route: RouteConfig) => {
     const Component = route.component;
     const isProtected = route.protected;
     const requiredRole = route.requiredRole;
@@ -122,7 +122,12 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
           </LazyLoadErrorBoundary>
         );
     }
-  };
+  }, [FallbackComponent]);
+
+  // Memoize sorted routes to prevent recalculation on every render
+  const sortedRoutes = React.useMemo(() => {
+    return routes.sort((a, b) => a.priority - b.priority);
+  }, [routes]);
 
   // Debug: Log routes to verify they're loaded - only in development
   React.useEffect(() => {
@@ -135,9 +140,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     <ErrorBoundaryComponent>
       {/* CRITICAL FIX: Use location.key to help React Router track navigation changes */}
       <Routes key={location.key}>
-        {routes
-          .sort((a, b) => a.priority - b.priority)
-          .map((route) => (
+        {sortedRoutes.map((route) => (
             <Route
               key={route.path}
               path={route.path}

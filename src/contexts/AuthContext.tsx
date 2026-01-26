@@ -84,7 +84,13 @@ const clearCachedUser = () => {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(getCachedUser);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoadingState] = useState(true);
+  const loadingRef = useRef(true);
+  
+  const setLoading = (isLoading: boolean) => {
+    loadingRef.current = isLoading;
+    setLoadingState(isLoading);
+  };
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const authListenerRef = useRef<{ subscription: { unsubscribe: () => void } } | null>(null);
@@ -264,6 +270,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       if (mountedRef.current) {
         setLoading(false);
+        // Clear the force timeout since we are done
+        if (initTimeoutRef.current) {
+          clearTimeout(initTimeoutRef.current);
+          initTimeoutRef.current = null;
+        }
         console.log(`📝 [AUTH_CONTEXT] Auth initialization complete in ${Date.now() - initStartTime}ms`);
       }
     }
@@ -289,7 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // CRITICAL FIX: Always clear loading state after a timeout, regardless of init state
       // This prevents infinite loading during navigation
       const forceLoadingTimeout = setTimeout(() => {
-        if (mountedRef.current) {
+        if (mountedRef.current && loadingRef.current) {
           console.warn('⚠️ [AUTH_CONTEXT] Force clearing loading state after 5s to prevent navigation hang');
           setLoading(false);
         }
@@ -299,14 +310,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
       // CRITICAL FIX: Always clear loading if we're in a potentially stuck state
-      const currentLoadingState = loading; // Capture current value
+      const currentLoadingState = loadingRef.current;
       const checkStuckTimeout = setTimeout(() => {
-        if (mountedRef.current && loading) {
+        if (mountedRef.current && loadingRef.current) {
           console.warn('⚠️ [AUTH_CONTEXT] Stuck loading state detected - forcing to false');
           setLoading(false);
         }
       }, 1000);
-
       initTimeoutRef.current = checkStuckTimeout;
     }
 
@@ -472,10 +482,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value: AuthContextType = {
+    const value: AuthContextType = {
     user,
     session,
-    loading,
+    loading: loading, // Use state value for render
     signUp,
     signIn,
     signOut,

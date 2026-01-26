@@ -246,8 +246,8 @@ export const FleetStatusChart: React.FC<FleetStatusChartProps> = ({
       delay={0.6}
     >
       <div className="flex flex-col items-center">
-        <ResponsiveContainer width={220} height={220}>
-          <PieChart>
+        <div style={{ width: 220, height: 220 }}>
+          <PieChart width={220} height={220}>
             <Pie
               data={chartData}
               cx="50%"
@@ -269,7 +269,7 @@ export const FleetStatusChart: React.FC<FleetStatusChartProps> = ({
               }}
             />
           </PieChart>
-        </ResponsiveContainer>
+        </div>
         
         <div className="grid grid-cols-2 gap-3 w-full mt-4">
           {chartData.map((item) => (

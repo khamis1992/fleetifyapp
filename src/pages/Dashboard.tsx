@@ -7,10 +7,10 @@ const BentoDashboard = lazy(() => import('@/components/dashboard/bento/BentoDash
 
 // Loading component
 const DashboardLoader: React.FC = () => (
-  <div className="min-h-screen bg-[#f0efed] flex items-center justify-center">
+  <div className="min-h-screen bg-background flex items-center justify-center">
     <div className="flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-[#e85a4f] border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-neutral-500 font-medium">جاري تحميل لوحة التحكم...</p>
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <p className="text-sm text-muted-foreground font-medium">جاري تحميل لوحة التحكم...</p>
     </div>
   </div>
 );
