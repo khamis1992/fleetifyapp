@@ -186,11 +186,50 @@ export function SendReportTaskDialog({
       const employeeName = `${selectedEmployeeData?.first_name || ''} ${selectedEmployeeData?.last_name || ''}`.trim();
       const taskTitle = taskType === 'police_report' ? 'فتح بلاغ سرقة/خيانة أمانة' : 'تحويل مخالفات مرورية';
 
+      // حفظ المستندات في قاعدة البيانات أولاً
+      const companyId = user?.profile?.company_id;
+      if (companyId && contractId) {
+        // حفظ بلاغ السرقة إذا كان متوفراً
+        if (criminalComplaintHtml) {
+          await supabase
+            .from('lawsuit_documents')
+            .upsert({
+              company_id: companyId,
+              contract_id: contractId,
+              document_type: 'criminal_complaint',
+              document_name: 'بلاغ سرقة المركبة',
+              html_content: criminalComplaintHtml,
+              created_by: user?.id,
+            }, {
+              onConflict: 'contract_id,document_type'
+            });
+        }
+
+        // حفظ طلب تحويل المخالفات إذا كان متوفراً
+        if (violationsTransferHtml) {
+          await supabase
+            .from('lawsuit_documents')
+            .upsert({
+              company_id: companyId,
+              contract_id: contractId,
+              document_type: 'violations_transfer',
+              document_name: 'طلب تحويل المخالفات',
+              html_content: violationsTransferHtml,
+              created_by: user?.id,
+            }, {
+              onConflict: 'contract_id,document_type'
+            });
+        }
+      }
+
+      // إنشاء رابط صفحة المستندات
+      const documentsUrl = `${window.location.origin}/legal/lawsuit/documents/${contractId}`;
+
       // إرسال عبر واتساب إذا مفعل
       if (sendViaWhatsApp && selectedEmployeeData?.phone) {
         setIsSendingWhatsApp(true);
         
-        // إعداد رسالة واتساب
+        // إعداد رسالة واتساب مع رابط المستندات
         const whatsappMessage = `📋 *مهمة جديدة: ${taskTitle}*
 
 مرحباً ${employeeName}،
@@ -212,8 +251,12 @@ ${notes}
 
 ━━━━━━━━━━━━━━━━━━
 
+📎 *المستندات المطلوبة:*
+يمكنك الاطلاع على جميع المستندات وتحميلها من الرابط التالي:
+
+🔗 ${documentsUrl}
+
 ⚠️ يرجى متابعة المهمة وإفادتنا بالنتيجة.
-${attachDocument && isDocumentAvailable ? '📎 *مرفق:* ملف PDF' : ''}
 
 مع تحياتنا،
 *شركة العراف لتأجير السيارات*`;
@@ -229,220 +272,8 @@ ${attachDocument && isDocumentAvailable ? '📎 *مرفق:* ملف PDF' : ''}
           if (messageResult.success) {
             toast({
               title: "✅ تم إرسال الرسالة",
-              description: `تم إرسال تفاصيل المهمة إلى ${employeeName}`,
+              description: `تم إرسال تفاصيل المهمة ورابط المستندات إلى ${employeeName}`,
             });
-          }
-
-          // إرسال ملف PDF مباشرة عبر واتساب
-          console.log('[PDF] ===== PDF SEND DEBUG =====');
-          console.log('[PDF] attachDocument:', attachDocument);
-          console.log('[PDF] isDocumentAvailable:', isDocumentAvailable);
-          console.log('[PDF] taskType:', taskType);
-          console.log('[PDF] has criminalComplaintHtml:', !!criminalComplaintHtml, 'length:', criminalComplaintHtml?.length || 0);
-          console.log('[PDF] has violationsTransferHtml:', !!violationsTransferHtml, 'length:', violationsTransferHtml?.length || 0);
-
-          if (attachDocument && isDocumentAvailable) {
-            const htmlContent = taskType === 'police_report'
-              ? criminalComplaintHtml
-              : violationsTransferHtml;
-
-            console.log('[PDF] Selected HTML content type:', taskType);
-            console.log('[PDF] HTML content exists:', !!htmlContent, 'Length:', htmlContent?.length || 0);
-
-            if (htmlContent) {
-              try {
-                toast({
-                  title: "⏳ جاري إنشاء PDF...",
-                  description: "يتم تحويل المستند إلى PDF وإرساله",
-                });
-
-                const filename = taskType === 'police_report'
-                  ? `police_report_${contractNumber?.replace(/\s+/g, '_') || 'document'}.pdf`
-                  : `violation_transfer_${contractNumber?.replace(/\s+/g, '_') || 'document'}.pdf`;
-
-                console.log('[PDF] Filename:', filename);
-                console.log('[PDF] Starting PDF generation for WhatsApp...');
-
-                // إنشاء PDF مباشرة كـ base64 للإرسال عبر واتساب
-                const { default: html2canvas } = await import('html2canvas');
-                const { jsPDF } = await import('jspdf');
-
-                // أبعاد A4 بالبكسل
-                const A4_WIDTH = 794;
-                const A4_HEIGHT = 1123;
-
-                console.log('[PDF] Creating iframe for HTML rendering...');
-
-                // إنشاء iframe للتحويل
-                const iframe = document.createElement('iframe');
-                iframe.style.position = 'absolute';
-                iframe.style.left = '-9999px';
-                iframe.style.width = `${A4_WIDTH}px`;
-                iframe.style.height = 'auto';
-                iframe.style.border = 'none';
-                document.body.appendChild(iframe);
-
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (!iframeDoc) {
-                  document.body.removeChild(iframe);
-                  throw new Error('Failed to create iframe');
-                }
-
-                const printStyles = `
-                  <style>
-                    @page { size: A4; margin: 0; }
-                    body {
-                      margin: 0;
-                      padding: 20px;
-                      font-family: 'Arial', 'Tahoma', sans-serif;
-                      direction: rtl;
-                      background: white;
-                    }
-                    * { box-sizing: border-box; }
-                  </style>
-                `;
-
-                iframeDoc.open();
-                iframeDoc.write(printStyles + htmlContent);
-                iframeDoc.close();
-
-                console.log('[PDF] HTML written to iframe, waiting for render...');
-
-                // انتظار تحميل المحتوى
-                await new Promise(r => setTimeout(r, 800));
-
-                const body = iframeDoc.body;
-                console.log('[PDF] iframe body ready, element count:', body?.childElementCount || 0);
-
-                // تحويل إلى صورة
-                console.log('[PDF] Converting to canvas using html2canvas...');
-                const canvas = await html2canvas(body, {
-                  scale: 1.5,
-                  useCORS: true,
-                  allowTaint: true,
-                  logging: false,
-                  backgroundColor: '#ffffff',
-                  width: A4_WIDTH,
-                });
-
-                console.log('[PDF] Canvas created, size:', canvas.width, 'x', canvas.height);
-
-                // إنشاء PDF
-                console.log('[PDF] Creating PDF from canvas...');
-                const pdf = new jsPDF({
-                  orientation: 'portrait',
-                  unit: 'mm',
-                  format: 'a4',
-                  compress: true,
-                });
-
-                const imgData = canvas.toDataURL('image/jpeg', 0.85);
-                console.log('[PDF] JPEG image size:', Math.round(imgData.length / 1024), 'KB');
-
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-
-                const ratio = pdfWidth / imgWidth;
-                const contentHeight = imgHeight * ratio;
-
-                let heightLeft = contentHeight;
-                let position = 0;
-                let pageCount = 0;
-
-                while (heightLeft > 0) {
-                  if (pageCount > 0) {
-                    pdf.addPage();
-                  }
-
-                  pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, contentHeight, undefined, 'FAST');
-
-                  heightLeft -= pdfHeight;
-                  position -= pdfHeight;
-                  pageCount++;
-
-                  if (pageCount >= 10) break;
-                }
-
-                document.body.removeChild(iframe);
-
-                // تحويل PDF إلى base64 للإرسال عبر واتساب
-                console.log('[PDF] Converting PDF to base64...');
-                const pdfBase64 = pdf.output('datauristring');
-                const pdfSizeKB = Math.round(pdfBase64.length / 1024);
-                console.log('[PDF] PDF base64 size:', pdfSizeKB, 'KB');
-                console.log('[PDF] PDF base64 starts with:', pdfBase64.substring(0, 50) + '...');
-
-                // التحقق من حجم الملف (Ultramsg حد أقصى 10 ميجابايت للـ base64)
-                if (pdfBase64.length > 10000000) {
-                  console.error('[PDF] ❌ File too large for WhatsApp:', pdfSizeKB, 'KB');
-                  toast({
-                    title: "تنبيه",
-                    description: "حجم ملف PDF كبير جداً للإرسال عبر واتساب (الحد الأقصى 10 ميجابايت)",
-                    variant: "destructive"
-                  });
-                } else {
-                  // إرسال ملف PDF مباشرة عبر واتساب
-                  const documentType = taskType === 'police_report'
-                    ? 'بلاغ سرقة/خيانة أمانة'
-                    : 'طلب تحويل مخالفات مرورية';
-
-                  const caption = `📎 *${documentType}*
-
-━━━━━━━━━━━━━━━━━━
-📋 العقد: ${contractNumber || '-'}
-👤 العميل: ${customerName || '-'}
-━━━━━━━━━━━━━━━━━━`;
-
-                  console.log('[PDF] Calling sendWhatsAppDocument...');
-                  console.log('[PDF] Phone:', selectedEmployeeData.phone);
-                  console.log('[PDF] Filename:', filename);
-                  console.log('[PDF] Caption length:', caption.length);
-
-                  const pdfResult = await sendWhatsAppDocument({
-                    phone: selectedEmployeeData.phone,
-                    documentBase64: pdfBase64,
-                    filename: filename,
-                    caption: caption,
-                    customerName: employeeName
-                  });
-
-                  console.log('[PDF] sendWhatsAppDocument result:', pdfResult);
-
-                  if (pdfResult.success) {
-                    toast({
-                      title: "✅ تم إرسال ملف PDF",
-                      description: `تم إرسال ملف PDF مباشرة إلى ${employeeName}`,
-                    });
-                  } else {
-                    console.error('[PDF] ❌ PDF send failed:', pdfResult.error);
-                    toast({
-                      title: "تنبيه",
-                      description: `فشل إرسال PDF: ${pdfResult.error}`,
-                      variant: "destructive"
-                    });
-                  }
-                }
-              } catch (pdfError) {
-                console.error('[PDF] ❌ PDF generation error:', pdfError);
-                console.error('[PDF] Error stack:', pdfError instanceof Error ? pdfError.stack : 'unknown');
-                toast({
-                  title: "تنبيه",
-                  description: "تم إرسال الرسالة لكن فشل إنشاء/إرسال ملف PDF: " + (pdfError instanceof Error ? pdfError.message : 'خطأ غير معروف'),
-                  variant: "destructive"
-                });
-              }
-            } else {
-              console.error('[PDF] ❌ HTML content is empty!');
-              toast({
-                title: "تنبيه",
-                description: "المحتوى غير متوفر. يرجى توليد المستند أولاً.",
-                variant: "destructive"
-              });
-            }
-          } else {
-            console.log('[PDF] ℹ️ Document attachment not enabled or not available');
           }
         } catch (whatsappError) {
           console.error('WhatsApp error:', whatsappError);
@@ -457,7 +288,6 @@ ${attachDocument && isDocumentAvailable ? '📎 *مرفق:* ملف PDF' : ''}
       }
 
       // حفظ المهمة في قاعدة البيانات
-      const companyId = user?.profile?.company_id;
       if (companyId) {
         const { error } = await supabase.from('tasks').insert({
           title: taskTitle,

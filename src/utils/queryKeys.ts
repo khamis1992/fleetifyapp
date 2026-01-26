@@ -52,6 +52,7 @@ export interface ContractFilters extends PaginationFilters, StatusFilters, Compa
   search?: string;
   contract_type?: string;
   cost_center_id?: string;
+  legal_status?: string;
 }
 
 export interface InvoiceFilters extends PaginationFilters, StatusFilters, CompanyFilters, DateRangeFilters {

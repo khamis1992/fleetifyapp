@@ -158,7 +158,7 @@ function ContractsRedesigned() {
     } else if (activeTab === "cancelled") {
       newFilters.status = "cancelled";
     } else if (activeTab === "legal_action") {
-      newFilters.status = "under_legal_procedure";
+      newFilters.legal_status = "under_legal_action";
     } else if (activeTab === "pending_completion") {
       newFilters.status = "pending_completion";
     } else if (activeTab === "alerts") {

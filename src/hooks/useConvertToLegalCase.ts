@@ -131,18 +131,18 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
 
       if (caseError) throw caseError;
 
-      // Update contract status to "under_legal_procedure"
+      // Update contract legal_status to "under_legal_action" (without changing the original status)
       if (delinquentCustomer.contract_id) {
         const { error: contractUpdateError } = await supabase
           .from('contracts')
           .update({ 
-            status: 'under_legal_procedure',
+            legal_status: 'under_legal_action',
             updated_at: new Date().toISOString()
           })
           .eq('id', delinquentCustomer.contract_id);
 
         if (contractUpdateError) {
-          console.error('Error updating contract status:', contractUpdateError);
+          console.error('Error updating contract legal status:', contractUpdateError);
           // Don't throw - the legal case was created successfully
         }
       }
@@ -407,7 +407,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
 رقم العقد: ${delinquentCustomer.contract_number}
 تاريخ البداية: ${new Date(delinquentCustomer.contract_start_date).toLocaleDateString('en-US')}
 الإيجار الشهري: ${delinquentCustomer.monthly_rent?.toLocaleString()} QAR
-حالة العقد: تحت الإجراء القانوني
+الحالة القانونية: تحت الإجراء القانوني
 
 المركبة:
 - رقم اللوحة: ${delinquentCustomer.vehicle_plate || 'غير محدد'}
@@ -444,8 +444,8 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           case_id: legalCase.id,
           company_id: profile.company_id,
           activity_type: 'contract_updated',
-          activity_title: '📝 تحديث حالة العقد',
-          activity_description: `تم تحويل حالة العقد ${delinquentCustomer.contract_number} إلى "تحت الإجراء القانوني"`,
+          activity_title: '📝 تحديث الحالة القانونية للعقد',
+          activity_description: `تم إضافة الحالة القانونية "تحت الإجراء القانوني" للعقد ${delinquentCustomer.contract_number} (الحالة الأصلية محفوظة)`,
           created_by: user.id,
         },
         {
@@ -582,7 +582,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
       queryClient.invalidateQueries({ queryKey: ['followup-stats'] });
       
       toast.success('✅ تم إنشاء القضية القانونية بنجاح', {
-        description: `رقم القضية: ${data.case_number}\nتم تحديث حالة العقد والمركبة وإضافة العميل للقائمة السوداء\n📅 تم جدولة متابعتين تلقائياً`,
+        description: `رقم القضية: ${data.case_number}\nتم إضافة الحالة القانونية للعقد (الحالة الأصلية محفوظة)\nتم تحديث حالة المركبة وإضافة العميل للقائمة السوداء\n📅 تم جدولة متابعتين تلقائياً`,
         duration: 7000,
       });
     },

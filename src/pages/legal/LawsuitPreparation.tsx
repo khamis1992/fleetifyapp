@@ -177,7 +177,7 @@ export default function LawsuitPreparationPage() {
       if (contractData.customer_id) {
         const { data: customer } = await supabase
           .from('customers')
-          .select('id, first_name, last_name, national_id, phone, email')
+          .select('id, first_name, last_name, national_id, nationality, phone, email, mobile, address')
           .eq('id', contractData.customer_id)
           .single();
         customerData = customer;
@@ -187,7 +187,7 @@ export default function LawsuitPreparationPage() {
       if (contractData.vehicle_id) {
         const { data: vehicle } = await supabase
           .from('vehicles')
-          .select('make, model, year, plate_number, color')
+          .select('make, model, year, plate_number, color, vin')
           .eq('id', contractData.vehicle_id)
           .single();
         vehicleData = vehicle;
@@ -479,13 +479,33 @@ export default function LawsuitPreparationPage() {
       memoUrlRef.current = blobUrl;
       memoHtmlRef.current = memoHtml; // حفظ محتوى HTML
       setMemoUrl(blobUrl);
+      
+      // حفظ المستند في قاعدة البيانات
+      if (companyId && contractId) {
+        supabase
+          .from('lawsuit_documents')
+          .upsert({
+            company_id: companyId,
+            contract_id: contractId,
+            document_type: 'explanatory_memo',
+            document_name: 'المذكرة الشارحة',
+            html_content: memoHtml,
+            created_by: user?.id,
+          }, {
+            onConflict: 'contract_id,document_type'
+          })
+          .then(({ error }) => {
+            if (error) console.error('Error saving document:', error);
+          });
+      }
+      
       toast.success('✅ تم توليد المذكرة الشارحة!');
     } catch (error: any) {
       toast.error('حدث خطأ أثناء توليد المذكرة');
     } finally {
       setIsGeneratingMemo(false);
     }
-  }, [contract, calculations, overdueInvoices]);
+  }, [contract, calculations, overdueInvoices, companyId, contractId, user]);
 
   // تحميل المذكرة الشارحة كـ PDF
   const downloadMemoAsPdf = useCallback(async () => {
@@ -681,8 +701,28 @@ export default function LawsuitPreparationPage() {
     claimsHtmlRef.current = claimsHtml; // حفظ محتوى HTML
     setClaimsStatementUrl(blobUrl);
     setIsGeneratingClaims(false);
+    
+    // حفظ المستند في قاعدة البيانات
+    if (companyId && contractId) {
+      supabase
+        .from('lawsuit_documents')
+        .upsert({
+          company_id: companyId,
+          contract_id: contractId,
+          document_type: 'claims_statement',
+          document_name: 'كشف المطالبات المالية',
+          html_content: claimsHtml,
+          created_by: user?.id,
+        }, {
+          onConflict: 'contract_id,document_type'
+        })
+        .then(({ error }) => {
+          if (error) console.error('Error saving document:', error);
+        });
+    }
+    
     toast.success('✅ تم توليد كشف المطالبات!');
-  }, [overdueInvoices, trafficViolations, contract, calculations, taqadiData]);
+  }, [overdueInvoices, trafficViolations, contract, calculations, taqadiData, companyId, contractId, user]);
 
   // توليد كشف المخالفات المرورية
   const generateViolationsList = useCallback(() => {
@@ -766,8 +806,28 @@ export default function LawsuitPreparationPage() {
     setCriminalComplaintHtmlContent(complaintHtml); // حفظ المحتوى للإرسال عبر واتساب
     setIsGeneratingComplaint(false);
     setIncludeCriminalComplaint(true); // تفعيل التضمين في الحافظة تلقائياً
+    
+    // حفظ المستند في قاعدة البيانات
+    if (companyId && contractId) {
+      supabase
+        .from('lawsuit_documents')
+        .upsert({
+          company_id: companyId,
+          contract_id: contractId,
+          document_type: 'criminal_complaint',
+          document_name: 'بلاغ سرقة المركبة',
+          html_content: complaintHtml,
+          created_by: user?.id,
+        }, {
+          onConflict: 'contract_id,document_type'
+        })
+        .then(({ error }) => {
+          if (error) console.error('Error saving document:', error);
+        });
+    }
+    
     toast.success('✅ تم توليد بلاغ سرقة المركبة!');
-  }, [contract]);
+  }, [contract, companyId, contractId, user]);
 
   // توليد طلب تحويل المخالفات
   const generateViolationsTransfer = useCallback(() => {
@@ -815,8 +875,28 @@ export default function LawsuitPreparationPage() {
     setViolationsTransferHtmlContent(transferHtml); // حفظ المحتوى للإرسال عبر واتساب
     setIsGeneratingTransfer(false);
     setIncludeViolationsTransfer(true); // تفعيل التضمين في الحافظة تلقائياً
+    
+    // حفظ المستند في قاعدة البيانات
+    if (companyId && contractId) {
+      supabase
+        .from('lawsuit_documents')
+        .upsert({
+          company_id: companyId,
+          contract_id: contractId,
+          document_type: 'violations_transfer',
+          document_name: 'طلب تحويل المخالفات',
+          html_content: transferHtml,
+          created_by: user?.id,
+        }, {
+          onConflict: 'contract_id,document_type'
+        })
+        .then(({ error }) => {
+          if (error) console.error('Error saving document:', error);
+        });
+    }
+    
     toast.success('✅ تم توليد طلب تحويل المخالفات!');
-  }, [contract, trafficViolations]);
+  }, [contract, trafficViolations, companyId, contractId, user]);
 
   // توليد حافظة المستندات الموحدة - ملف HTML واحد
   const generateDocumentPortfolio = useCallback(async () => {
@@ -2141,26 +2221,6 @@ export default function LawsuitPreparationPage() {
 
               <Button
                 size="lg"
-                onClick={generateDocumentPortfolio}
-                disabled={isGeneratingPortfolio || !claimsStatementUrl}
-                title={!claimsStatementUrl ? 'يرجى توليد كشف المطالبات المالية أولاً' : ''}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50"
-              >
-                {isGeneratingPortfolio ? (
-                  <>
-                    <LoadingSpinner className="h-5 w-5 ml-2" />
-                    جاري التوليد...
-                  </>
-                ) : (
-                  <>
-                    <FolderOpen className="h-5 w-5 ml-2" />
-                    حافظة المستندات
-                  </>
-                )}
-              </Button>
-
-              <Button
-                size="lg"
                 onClick={registerCaseInSystem}
                 disabled={isRegistering || progressData.percentage < 100}
                 className="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
@@ -2198,15 +2258,6 @@ export default function LawsuitPreparationPage() {
                 )}
               </Button>
 
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => window.open('https://taqadi.sjc.gov.qa/itc/', '_blank')}
-                className="w-full sm:w-auto"
-              >
-                <ExternalLink className="h-4 w-4 ml-2" />
-                فتح تقاضي
-              </Button>
             </div>
 
             {progressData.percentage < 100 && (

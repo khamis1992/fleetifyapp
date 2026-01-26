@@ -19,6 +19,7 @@ export interface Contract {
   end_date?: string;
   monthly_amount: number;
   status: 'active' | 'expired' | 'cancelled' | 'pending';
+  legal_status?: string;
   notes?: string;
   created_at: string;
   updated_at?: string;
@@ -52,6 +53,7 @@ export interface ContractFilters {
   page?: number;
   limit?: number;
   status?: 'active' | 'expired' | 'cancelled' | 'pending';
+  legal_status?: string;
   customerId?: string;
   vehicleId?: string;
   search?: string;
@@ -95,6 +97,7 @@ export function useContracts(filters: ContractFilters = {}) {
           if (filters.page) params.page = filters.page.toString();
           if (filters.limit) params.limit = filters.limit.toString();
           if (filters.status) params.status = filters.status;
+          if (filters.legal_status) params.legal_status = filters.legal_status;
           if (filters.customerId) params.customerId = filters.customerId;
           if (filters.vehicleId) params.vehicleId = filters.vehicleId;
           if (filters.search) params.search = filters.search;
@@ -314,6 +317,9 @@ async function fetchContractsFromSupabase(
 
   if (filters.status) {
     query = query.eq('status', filters.status);
+  }
+  if (filters.legal_status) {
+    query = query.eq('legal_status', filters.legal_status);
   }
   if (filters.customerId) {
     query = query.eq('customer_id', filters.customerId);

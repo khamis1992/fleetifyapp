@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   RefreshCw,
   Search,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +104,72 @@ export default function LawsuitDataPage() {
     refetch();
   };
 
+  // تصدير البيانات إلى Excel
+  const handleExportToExcel = async () => {
+    if (!filteredLawsuits || filteredLawsuits.length === 0) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    try {
+      // استيراد المكتبة ديناميكياً
+      const XLSX = await import('xlsx');
+
+      // تحضير البيانات للتصدير
+      const exportData = filteredLawsuits.map((lawsuit, index) => ({
+        '#': index + 1,
+        'عنوان الدعوى': lawsuit.case_title,
+        'اسم المدعى عليه الأول': lawsuit.defendant_first_name,
+        'اسم المدعى عليه الثاني': lawsuit.defendant_middle_name || '-',
+        'اسم المدعى عليه الأخير': lawsuit.defendant_last_name,
+        'رقم هوية المدعى عليه': lawsuit.defendant_id_number,
+        'جنسية المدعى عليه': lawsuit.defendant_nationality || '-',
+        'عنوان المدعى عليه': lawsuit.defendant_address || '-',
+        'هاتف المدعى عليه': lawsuit.defendant_phone || '-',
+        'بريد المدعى عليه': lawsuit.defendant_email || '-',
+        'قيمة المطالبة': Math.floor(Number(lawsuit.claim_amount)),
+        'قيمة المطالبة كتابتاً': lawsuit.claim_amount_words || '-',
+        'الوقائع': lawsuit.facts || '-',
+        'الطلبات': lawsuit.requests || '-',
+        'تاريخ الإنشاء': format(new Date(lawsuit.created_at), 'dd/MM/yyyy HH:mm', { locale: ar }),
+      }));
+
+      // إنشاء workbook و worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'بيانات التقاضي');
+
+      // تعيين عرض الأعمدة
+      const colWidths = [
+        { wch: 5 },  // #
+        { wch: 40 }, // عنوان الدعوى
+        { wch: 20 }, // اسم الأول
+        { wch: 20 }, // اسم الثاني
+        { wch: 20 }, // اسم الأخير
+        { wch: 15 }, // رقم الهوية
+        { wch: 15 }, // الجنسية
+        { wch: 30 }, // العنوان
+        { wch: 15 }, // الهاتف
+        { wch: 25 }, // البريد
+        { wch: 15 }, // قيمة المطالبة
+        { wch: 40 }, // قيمة المطالبة كتابة
+        { wch: 50 }, // الوقائع
+        { wch: 50 }, // الطلبات
+        { wch: 20 }, // تاريخ الإنشاء
+      ];
+      ws['!cols'] = colWidths;
+
+      // تحميل الملف
+      const fileName = `بيانات_التقاضي_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      toast.success('تم تصدير البيانات بنجاح');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('حدث خطأ أثناء تصدير البيانات');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -135,6 +202,15 @@ export default function LawsuitDataPage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleExportToExcel}
+            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+          >
+            <FileSpreadsheet className="h-4 w-4 ml-2" />
+            تصدير Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => refetch()}
           >
             <RefreshCw className="h-4 w-4 ml-2" />
@@ -161,10 +237,10 @@ export default function LawsuitDataPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">إجمالي المطالبات</p>
-              <p className="text-3xl font-bold text-blue-700 mt-1">
+              <p className="text-3xl font-bold text-blue-700 mt-1" dir="ltr">
                 {lawsuits
                   ?.reduce((sum, l) => sum + Number(l.claim_amount), 0)
-                  .toLocaleString('ar-QA', {
+                  .toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   }) || '0.00'}{' '}

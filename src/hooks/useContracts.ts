@@ -15,6 +15,7 @@ export interface Contract {
   contract_amount: number;
   monthly_amount: number;
   status: string;
+  legal_status?: string;
   contract_type: string;
   description?: string;
   terms?: string;

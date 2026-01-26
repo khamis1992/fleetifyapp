@@ -169,6 +169,7 @@ const SmartDocumentGenerator = lazy(() => import('@/pages/legal/SmartDocumentGen
 const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocuments'));
 // OverdueContracts merged into FinancialDelinquency
 const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));
+const LawsuitDocumentsView = lazy(() => import('@/pages/legal/LawsuitDocumentsView'));
 const FinancialDelinquency = lazy(() => import('@/pages/legal/FinancialDelinquency'));
 const CustomerVerificationPage = lazy(() => import('@/pages/legal/CustomerVerificationPage'));
 
@@ -1746,6 +1747,18 @@ const routeConfigs: RouteConfig[] = [
     priority: 131,
     protected: true,
     layout: 'bento',
+  },
+  {
+    path: '/legal/lawsuit/documents/:contractId',
+    component: LawsuitDocumentsView,
+    lazy: true,
+    exact: true,
+    title: 'مستندات الدعوى',
+    description: 'Lawsuit Documents View',
+    group: 'legal',
+    priority: 131,
+    protected: false, // يمكن الوصول بدون تسجيل دخول لمشاركة الرابط
+    layout: 'minimal',
   },
   {
     path: '/legal/verify/:taskId',
