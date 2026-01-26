@@ -16,7 +16,7 @@ import {
   type ViolationsTransferData,
 } from './official-letter-generator';
 import { generateLegalComplaintHTML, type LegalDocumentData } from './legal-document-generator';
-import { lawsuitService } from '@/services/lawsuitService';
+import { lawsuitService } from '@/services/LawsuitService';
 import { 
   extractLawsuitData, 
   createLawsuitExcelFile,
