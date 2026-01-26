@@ -1,4 +1,5 @@
 import { CheckCircle, Clock, AlertCircle, Pause, XCircle, RefreshCw, FileText } from 'lucide-react';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 export const useContractHelpers = () => {
   const getStatusColor = (status: string) => {
@@ -38,19 +39,7 @@ export const useContractHelpers = () => {
   };
 
   const getCustomerName = (customerData: any) => {
-    if (!customerData) {
-      return 'عميل غير محدد';
-    }
-    
-    if (customerData.customer_type === 'individual') {
-      const arName = `${customerData.first_name_ar || ''} ${customerData.last_name_ar || ''}`.trim();
-      const enName = `${customerData.first_name || ''} ${customerData.last_name || ''}`.trim();
-      const name = arName || enName;
-      return name && name.trim() !== '' ? name : 'عميل غير محدد';
-    } else {
-      const companyName = customerData.company_name_ar || customerData.company_name;
-      return companyName && String(companyName).trim() !== '' ? companyName : 'عميل غير محدد';
-    }
+    return formatCustomerName(customerData);
   };
 
   return {

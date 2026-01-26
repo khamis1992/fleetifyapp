@@ -104,6 +104,7 @@ import { EnhancedPaymentScheduleTabRedesigned } from './EnhancedPaymentScheduleT
 import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesigned';
 import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
 import { ContractHeaderRedesigned } from './ContractHeaderRedesigned';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -1043,11 +1044,7 @@ const ContractDetailsPageRedesigned = () => {
 
   const customerName = useMemo(() => {
     if (!contract?.customer) return 'غير محدد';
-    const customer = contract.customer;
-    if (customer.customer_type === 'company') {
-      return customer.company_name_ar || customer.company_name || 'شركة غير محددة';
-    }
-    return `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim() || 'عميل غير محدد';
+    return formatCustomerName(contract.customer);
   }, [contract?.customer]);
 
   const vehicleName = useMemo(() => {

@@ -11,6 +11,7 @@ import {
 } from "@/utils/delinquency-calculations";
 import { DAILY_LATE_FEE } from "@/utils/calculateDelinquencyAmounts";
 import { toast } from "sonner";
+import { formatCustomerName } from "@/utils/formatCustomerName";
 
 export interface DelinquentCustomer {
   // Customer Info
@@ -638,10 +639,6 @@ async function calculateDelinquentCustomersDynamically(
 
       // Use license_plate from contract or plate_number from vehicles
       const vehiclePlate = contract.license_plate || contract.vehicles?.plate_number || null;
-
-import { formatCustomerName } from "@/utils/formatCustomerName";
-
-// ...
 
       // Build delinquent customer object
       const delinquentCustomer: DelinquentCustomer = {

@@ -44,6 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ContractStatusBadge } from './ContractStatusBadge';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -144,12 +145,7 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
 
   // Customer name
   const customerName = useMemo(() => {
-    if (!contract.customer) return null;
-    const customer = contract.customer;
-    if (customer.customer_type === 'company') {
-      return customer.company_name_ar || customer.company_name || 'شركة غير محددة';
-    }
-    return `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim() || 'عميل غير محدد';
+    return formatCustomerName(contract.customer);
   }, [contract.customer]);
 
   // Vehicle info

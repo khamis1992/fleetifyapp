@@ -72,6 +72,7 @@ import {
 } from '@/utils/official-letter-generator';
 import { SendReportTaskDialog } from '@/components/legal/SendReportTaskDialog';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { downloadHtmlAsPdf, downloadHtmlAsDocx } from '@/utils/document-export';
 
 // واجهة المستند
@@ -177,7 +178,7 @@ export default function LawsuitPreparationPage() {
       if (contractData.customer_id) {
         const { data: customer } = await supabase
           .from('customers')
-          .select('id, first_name, last_name, national_id, nationality, phone, email, mobile, address')
+          .select('id, first_name, first_name_ar, last_name, last_name_ar, national_id, nationality, phone, email, mobile, address, country')
           .eq('id', contractData.customer_id)
           .single();
         customerData = customer;
@@ -341,9 +342,7 @@ export default function LawsuitPreparationPage() {
       const customer = contract.customers as any;
       const vehicle = contract.vehicles as any;
       const vehicleInfo = `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`;
-      const customerFullName = customer 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-        : 'غير معروف';
+      const customerFullName = formatCustomerName(customer);
       
       let factsText = lawsuitService.generateFactsText(
         customerFullName,
@@ -433,7 +432,7 @@ export default function LawsuitPreparationPage() {
 
       const documentData: LegalDocumentData = {
         customer: {
-          customer_name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف' : 'غير معروف',
+          customer_name: formatCustomerName(customer),
           customer_code: customer?.id || '',
           id_number: customer?.national_id || '',
           phone: customer?.phone || '',
@@ -516,9 +515,7 @@ export default function LawsuitPreparationPage() {
 
     setIsDownloadingMemoPdf(true);
     try {
-      const customerName = (contract as any)?.customers
-        ? `${(contract as any).customers.first_name || ''} ${(contract as any).customers.last_name || ''}`.trim()
-        : 'غير معروف';
+      const customerName = formatCustomerName((contract as any)?.customers);
       const filename = `المذكرة_الشارحة_${customerName}_${new Date().toISOString().split('T')[0]}.pdf`;
       
       await downloadHtmlAsPdf(memoHtmlRef.current, filename);
@@ -540,9 +537,7 @@ export default function LawsuitPreparationPage() {
 
     setIsDownloadingMemoDocx(true);
     try {
-      const customerName = (contract as any)?.customers
-        ? `${(contract as any).customers.first_name || ''} ${(contract as any).customers.last_name || ''}`.trim()
-        : 'غير معروف';
+      const customerName = formatCustomerName((contract as any)?.customers);
       const filename = `المذكرة_الشارحة_${customerName}_${new Date().toISOString().split('T')[0]}.docx`;
       
       await downloadHtmlAsDocx(memoHtmlRef.current, filename);
@@ -561,9 +556,7 @@ export default function LawsuitPreparationPage() {
 
     setIsGeneratingDocsList(true);
     const customer = (contract as any)?.customers;
-    const customerName = customer
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
+    const customerName = formatCustomerName(customer);
 
     // بناء قائمة المستندات ديناميكياً من جميع المستندات المرفوعة
     const documents: { name: string; status: 'مرفق' | 'غير مرفق'; url?: string; type?: string }[] = [];
@@ -649,9 +642,7 @@ export default function LawsuitPreparationPage() {
 
     setIsGeneratingClaims(true);
     const customer = (contract as any)?.customers;
-    const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
+    const customerName = formatCustomerName(customer);
 
     const invoicesData = overdueInvoices.map((inv) => {
       const daysLate = Math.floor((new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24));
@@ -733,9 +724,7 @@ export default function LawsuitPreparationPage() {
 
     setIsGeneratingViolations(true);
     const customer = (contract as any)?.customers;
-    const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
+    const customerName = formatCustomerName(customer);
     const vehicle = (contract as any)?.vehicles;
 
     const violationsData = trafficViolations.map((v) => ({
@@ -777,9 +766,7 @@ export default function LawsuitPreparationPage() {
     setIsGeneratingComplaint(true);
     const customer = (contract as any)?.customers;
     const vehicle = (contract as any)?.vehicles;
-    const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
+    const customerName = formatCustomerName(customer);
 
     const complaintHtml = generateCriminalComplaintHtml({
       customerName,
@@ -839,9 +826,7 @@ export default function LawsuitPreparationPage() {
     setIsGeneratingTransfer(true);
     const customer = (contract as any)?.customers;
     const vehicle = (contract as any)?.vehicles;
-    const customerName = customer 
-      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-      : 'غير معروف';
+    const customerName = formatCustomerName(customer);
 
     const transferHtml = generateViolationsTransferHtml({
       customerName,
@@ -1037,7 +1022,7 @@ export default function LawsuitPreparationPage() {
 
     const lawsuitData = {
       defendant: {
-        name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : 'غير معروف',
+        name: formatCustomerName(customer),
         nationalId: customer?.national_id || '',
         phone: customer?.phone || ''
       },
@@ -1338,7 +1323,7 @@ export default function LawsuitPreparationPage() {
       // Create delinquent customer object for the hook
       const delinquentCustomer = {
         customer_id: customer?.id || '',
-        customer_name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : '',
+        customer_name: formatCustomerName(customer),
         customer_code: customer?.id || '',
         contract_id: contractId,
         contract_number: contract.contract_number,
@@ -1545,9 +1530,8 @@ export default function LawsuitPreparationPage() {
       const customer = (contract as any).customers;
       
       // تقسيم اسم العميل إلى أجزاء
-      const nameParts = customer 
-        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim().split(' ')
-        : ['غير', 'معروف'];
+      const fullName = formatCustomerName(customer);
+      const nameParts = fullName.split(' ');
       
       const firstName = nameParts[0] || '';
       const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
@@ -1564,7 +1548,7 @@ export default function LawsuitPreparationPage() {
         defendant_first_name: firstName,
         defendant_middle_name: middleName || null,
         defendant_last_name: lastName,
-        defendant_nationality: customer?.nationality || null,
+        defendant_nationality: customer?.nationality || customer?.country || null,
         defendant_id_number: customer?.national_id || null,
         defendant_address: customer?.address || null,
         defendant_phone: customer?.phone || customer?.mobile || null,
@@ -1626,9 +1610,7 @@ export default function LawsuitPreparationPage() {
 
   const customer = contract.customers as any;
   const vehicle = contract.vehicles as any;
-  const customerFullName = customer 
-    ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-    : 'غير معروف';
+  const customerFullName = formatCustomerName(customer);
 
   return (
     <div className="container mx-auto p-4 max-w-4xl" dir="rtl">
@@ -2280,9 +2262,7 @@ export default function LawsuitPreparationPage() {
               console.log('[SEND REPORT] Auto-generating criminal complaint HTML...');
               const customer = (contract as any)?.customers;
               const vehicle = (contract as any)?.vehicles;
-              const customerName = customer
-                ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-                : 'غير معروف';
+              const customerName = formatCustomerName(customer);
 
               const complaintHtml = generateCriminalComplaintHtml({
                 customerName,

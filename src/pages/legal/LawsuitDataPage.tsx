@@ -292,10 +292,10 @@ export default function LawsuitDataPage() {
                 <TableHead className="text-right font-bold">اسم المدعى عليه الأول</TableHead>
                 <TableHead className="text-right font-bold">اسم المدعى عليه الثالث</TableHead>
                 <TableHead className="text-right font-bold">اسم المدعى عليه الأخير</TableHead>
+                <TableHead className="text-right font-bold">الجنسية</TableHead>
                 <TableHead className="text-right font-bold">رقم هوية المدعى عليه</TableHead>
                 <TableHead className="text-right font-bold">قيمة المطالبة</TableHead>
                 <TableHead className="text-right font-bold">قيمة المطالبة كتابتاً</TableHead>
-                <TableHead className="text-right font-bold">جنسية المدعى عليه</TableHead>
                 <TableHead className="text-right font-bold">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -313,6 +313,9 @@ export default function LawsuitDataPage() {
                     <TableCell>{lawsuit.defendant_middle_name || '-'}</TableCell>
                     <TableCell>{lawsuit.defendant_last_name}</TableCell>
                     <TableCell>
+                      <Badge variant="secondary">{lawsuit.defendant_nationality || '-'}</Badge>
+                    </TableCell>
+                    <TableCell>
                       <Badge variant="outline">{lawsuit.defendant_id_number}</Badge>
                     </TableCell>
                     <TableCell className="font-bold text-teal-700">
@@ -323,7 +326,6 @@ export default function LawsuitDataPage() {
                         {lawsuit.claim_amount_words || '-'}
                       </div>
                     </TableCell>
-                    <TableCell>{lawsuit.defendant_nationality || '-'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
@@ -350,7 +352,7 @@ export default function LawsuitDataPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12">
+                  <TableCell colSpan={9} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-12 w-12 opacity-20" />
                       <p className="text-lg font-medium">لا توجد بيانات</p>

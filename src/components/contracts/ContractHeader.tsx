@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ContractStatusBadge } from './ContractStatusBadge';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -190,7 +191,7 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
               </label>
               <div className="text-right">
                 <div className="font-medium">
-                  {contract.customer.first_name_ar} {contract.customer.last_name_ar}
+                  {formatCustomerName(contract.customer)}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {contract.customer.phone}

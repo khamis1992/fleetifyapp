@@ -80,6 +80,7 @@ import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { getCurrencyConfig } from "@/utils/currencyConfig";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { supabase, supabaseConfig } from "@/integrations/supabase/client";
 
 function ContractsRedesigned() {
@@ -397,12 +398,6 @@ function ContractsRedesigned() {
 
       if (contractError) throw contractError;
 
-      // حذف سجل العميل المتعثر إن وجد
-      await supabase
-        .from('delinquent_customers')
-        .delete()
-        .eq('contract_id', selectedContract.id);
-
       // حذف القضايا القانونية المرتبطة بالعقد
       await supabase
         .from('legal_cases')
@@ -574,33 +569,10 @@ function ContractsRedesigned() {
     );
   };
 
-  // Helper function to check if text contains Arabic characters
-  const containsArabic = (text: string | null | undefined): boolean => {
-    if (!text) return false;
-    return /[\u0600-\u06FF]/.test(text);
-  };
-
-  // Helper function to get Arabic name with fallback
-  const getArabicOrFallback = (arabicField: string | null | undefined, englishField: string | null | undefined): string => {
-    // If arabic field contains Arabic, use it
-    if (containsArabic(arabicField)) return arabicField!;
-    // If english field contains Arabic (data stored incorrectly), use it
-    if (containsArabic(englishField)) return englishField!;
-    // Otherwise, use arabic field if available, then english
-    return arabicField || englishField || "";
-  };
 
   // Helper functions
   const getCustomerName = (contract: any) => {
-    if (!contract.customers) return "غير محدد";
-    const customer = contract.customers;
-    if (customer.customer_type === "company") {
-      const companyName = getArabicOrFallback(customer.company_name_ar, customer.company_name);
-      return companyName || "شركة غير محددة";
-    }
-    const firstName = getArabicOrFallback(customer.first_name_ar, customer.first_name);
-    const lastName = getArabicOrFallback(customer.last_name_ar, customer.last_name);
-    return `${firstName} ${lastName}`.trim() || "عميل غير محدد";
+    return formatCustomerName(contract.customers);
   };
 
   const getVehicleInfo = (contract: any) => {
