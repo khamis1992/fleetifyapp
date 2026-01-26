@@ -91,7 +91,8 @@ export const ContractCard: React.FC<ContractCardProps> = ({
                 </div>
               )}
               <ContractStatusBadge 
-                status={contract.status} 
+                status={contract.status}
+                legalStatus={contract.legal_status}
                 clickable={true}
                 onClick={(e) => {
                   e?.stopPropagation();

@@ -348,7 +348,7 @@ function ContractsRedesigned() {
       const { error } = await supabase
         .from('contracts')
         .update({ 
-          status: 'under_legal_procedure',
+          legal_status: 'under_legal_action',
           updated_at: new Date().toISOString()
         })
         .eq('id', contract.id)
@@ -377,13 +377,21 @@ function ContractsRedesigned() {
     
     setIsRemovingLegal(true);
     try {
-      // تحديث حالة العقد إلى active
+      // إزالة الحالة القانونية من العقد
+      // معالجة الحالات القديمة (status = 'under_legal_procedure') والجديدة (legal_status)
+      const updateData: any = {
+        legal_status: null,
+        updated_at: new Date().toISOString()
+      };
+      
+      // إذا كان العقد من النوع القديم، إعادة الحالة إلى active
+      if (selectedContract.status === 'under_legal_procedure') {
+        updateData.status = 'active';
+      }
+
       const { error: contractError } = await supabase
         .from('contracts')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', selectedContract.id)
         .eq('company_id', companyId);
 
@@ -394,6 +402,13 @@ function ContractsRedesigned() {
         .from('delinquent_customers')
         .delete()
         .eq('contract_id', selectedContract.id);
+
+      // حذف القضايا القانونية المرتبطة بالعقد
+      await supabase
+        .from('legal_cases')
+        .delete()
+        .eq('contract_id', selectedContract.id)
+        .eq('company_id', companyId);
 
       toast({
         title: 'تم إزالة الإجراء القانوني',
@@ -459,7 +474,7 @@ function ContractsRedesigned() {
   };
 
   // Status badge component
-  const StatusBadge = ({ status }: { status: string }) => {
+  const StatusBadge = ({ status, legalStatus, onClick }: { status: string; legalStatus?: string | null; onClick?: (e: React.MouseEvent) => void }) => {
     const statusConfig: Record<string, { icon: any; label: string; bg: string; text: string; border: string }> = {
       active: { icon: CheckCircle, label: "نشط", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
       draft: { icon: FileEdit, label: "مسودة", bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
@@ -470,14 +485,54 @@ function ContractsRedesigned() {
       under_legal_procedure: { icon: Scale, label: "إجراء قانوني", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
     };
 
-    const config = statusConfig[status] || statusConfig.active;
+    const legalStatusConfig: Record<string, { icon: any; label: string; bg: string; text: string; border: string }> = {
+      under_legal_action: { icon: Scale, label: "تحت الإجراء القانوني", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+      legal_case_filed: { icon: Scale, label: "تم رفع دعوى", bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-300" },
+      in_court: { icon: Scale, label: "في المحكمة", bg: "bg-purple-200", text: "text-purple-900", border: "border-purple-400" },
+      judgment_issued: { icon: Scale, label: "صدر حكم", bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
+      execution_phase: { icon: Scale, label: "مرحلة التنفيذ", bg: "bg-indigo-200", text: "text-indigo-900", border: "border-indigo-400" },
+      settled: { icon: CheckCircle, label: "تم التسوية", bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+      closed: { icon: XCircle, label: "مغلق", bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-200" },
+    };
+
+    // معالجة حالة العقود التي status = 'under_legal_procedure' (من الكود القديم)
+    const isLegacyLegalProcedure = status === 'under_legal_procedure';
+    const displayStatus = isLegacyLegalProcedure ? 'active' : status;
+    const effectiveLegalStatus = isLegacyLegalProcedure ? 'under_legal_action' : legalStatus;
+
+    const config = statusConfig[displayStatus] || statusConfig.active;
     const Icon = config.icon;
+    const legalConfig = effectiveLegalStatus ? legalStatusConfig[effectiveLegalStatus] : null;
 
     return (
-      <span className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border", config.bg, config.text, config.border)}>
-        <Icon className="w-3.5 h-3.5" />
-        {config.label}
-      </span>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span 
+          className={cn(
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border",
+            config.bg, config.text, config.border,
+            onClick && "cursor-pointer hover:opacity-80 hover:shadow-md transition-all"
+          )}
+          onClick={onClick}
+          title={onClick ? "انقر لتغيير الحالة" : undefined}
+        >
+          <Icon className="w-3.5 h-3.5" />
+          {config.label}
+        </span>
+        {legalConfig && (
+          <span 
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border",
+              legalConfig.bg, legalConfig.text, legalConfig.border,
+              onClick && "cursor-pointer hover:opacity-80 hover:shadow-md transition-all"
+            )}
+            onClick={onClick}
+            title={onClick ? "انقر لتغيير الحالة" : undefined}
+          >
+            <legalConfig.icon className="w-3.5 h-3.5" />
+            {legalConfig.label}
+          </span>
+        )}
+      </div>
     );
   };
 
@@ -604,7 +659,14 @@ function ContractsRedesigned() {
               </div>
             </div>
           </div>
-          <StatusBadge status={contract.status} />
+          <StatusBadge 
+            status={contract.status} 
+            legalStatus={contract.legal_status}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleManageStatus(contract);
+            }}
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-[rgba(230,230,230,0.5)] rounded-3xl">
@@ -646,12 +708,23 @@ function ContractsRedesigned() {
               {isReactivating ? 'جاري التنشيط...' : 'تنشيط'}
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => handleCancelContract(contract)} className="bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
-              <XCircle className="w-4 h-4 ml-2" />
-              إلغاء
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={() => handleCancelContract(contract)} className="bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
+                <XCircle className="w-4 h-4 ml-2" />
+                إلغاء
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleConvertToLegal(contract)}
+                className="bg-violet-50 text-violet-700 hover:bg-violet-100 rounded-3xl hover:shadow-xl hover:shadow-violet-500/10"
+              >
+                <Scale className="w-4 h-4 ml-2" />
+                تحويل للشؤون القانونية
+              </Button>
+            </>
           )}
-          {contract.status === 'under_legal_procedure' && (
+          {(contract.legal_status || contract.status === 'under_legal_procedure') && (
             <Button 
               variant="outline" 
               size="sm" 

@@ -250,7 +250,7 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
                 )}
                 title="انقر لتغيير حالة العقد"
               >
-                <ContractStatusBadge status={contract.status} />
+                <ContractStatusBadge status={contract.status} legalStatus={contract.legal_status} />
               </div>
               {isExpiringSoon && (
                 <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">

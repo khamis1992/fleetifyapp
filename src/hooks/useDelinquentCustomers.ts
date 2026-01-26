@@ -279,7 +279,10 @@ async function calculateDelinquentCustomersDynamically(
         customer_code,
         first_name,
         last_name,
+        first_name_ar,
+        last_name_ar,
         company_name,
+        company_name_ar,
         customer_type,
         phone,
         email,
@@ -636,12 +639,23 @@ async function calculateDelinquentCustomersDynamically(
       // Use license_plate from contract or plate_number from vehicles
       const vehiclePlate = contract.license_plate || contract.vehicles?.plate_number || null;
 
+import { formatCustomerName } from "@/utils/formatCustomerName";
+
+// ...
+
       // Build delinquent customer object
       const delinquentCustomer: DelinquentCustomer = {
         customer_id: contract.customer_id,
-        customer_name: customer.customer_type === 'individual'
-          ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
-          : customer.company_name || '',
+        customer_name: formatCustomerName({
+          first_name: customer.first_name,
+          last_name: customer.last_name,
+          first_name_ar: customer.first_name_ar,
+          last_name_ar: customer.last_name_ar,
+          company_name: customer.company_name,
+          company_name_ar: customer.company_name_ar,
+          customer_type: customer.customer_type,
+          full_name: null
+        }),
         customer_code: customer.customer_code || '',
         customer_type: customer.customer_type || 'individual',
         phone: customer.phone,

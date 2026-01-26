@@ -73,7 +73,7 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
                 عقد رقم: {contract.contract_number}
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                <ContractStatusBadge status={contract.status} />
+                <ContractStatusBadge status={contract.status} legalStatus={contract.legal_status} />
                 {isExpiringSoon && (
                   <Badge variant="outline" className="text-orange-600 border-orange-600">
                     ينتهي قريباً

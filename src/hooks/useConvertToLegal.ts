@@ -332,8 +332,52 @@ ${notes ? `ملاحظات: ${notes}` : ''}`,
 };
 
 /**
- * Hook لإلغاء الإجراء القانوني واستعادة العقد
+ * Hook لإغلاق قضية قانونية محددة
  */
+export const useCloseLegalCase = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ caseId, reason }: { caseId: string; reason: string }) => {
+      if (!user?.id) throw new Error('المستخدم غير مصرح له');
+
+      const { data: legalCase, error: fetchError } = await supabase
+        .from('legal_cases')
+        .select('id, notes')
+        .eq('id', caseId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const updatedNotes = `${legalCase.notes || ''}\n\nتم إغلاق القضية يدوياً: ${reason}`;
+      const { error: updateError } = await supabase
+        .from('legal_cases')
+        .update({
+          case_status: 'closed',
+          notes: updatedNotes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', caseId);
+
+      if (updateError) throw updateError;
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['legal-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['existing-legal-case'] });
+      
+      toast.success('تم إغلاق القضية بنجاح');
+    },
+    onError: (error: Error) => {
+      toast.error('فشل في إغلاق القضية', {
+        description: error.message,
+      });
+    },
+  });
+};
+
 export const useRevertFromLegal = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();

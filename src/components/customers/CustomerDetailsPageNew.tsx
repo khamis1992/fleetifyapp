@@ -5,7 +5,7 @@
  * @component CustomerDetailsPageNew
  */
 
-import { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -119,6 +119,7 @@ interface CustomerDocument {
   id: string;
   document_name: string;
   document_type: string;
+  file_path?: string;
   file_url?: string;
   uploaded_at: string;
   file_size?: number;
@@ -2671,6 +2672,128 @@ const ActivityTab = ({ customerId, companyId, contracts, payments, violations }:
   );
 };
 
+// ===== Document Card Component =====
+const DocumentCard = ({ doc, index }: { doc: CustomerDocument; index: number }) => {
+  const [fileUrl, setFileUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  const isImage = doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || 
+                 doc.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+
+  React.useEffect(() => {
+    if (doc.file_path) {
+      setIsLoading(true);
+      // الحصول على signed URL للملف
+      supabase.storage
+        .from('documents')
+        .createSignedUrl(doc.file_path, 3600) // صالح لمدة ساعة
+        .then(({ data, error }) => {
+          if (data?.signedUrl) {
+            setFileUrl(data.signedUrl);
+          } else if (error) {
+            console.error('Error getting signed URL:', error);
+          }
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
+    }
+  }, [doc.file_path]);
+
+  const handlePreview = () => {
+    if (fileUrl) {
+      window.open(fileUrl, '_blank');
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!fileUrl) return;
+    
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.document_name || 'document';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab
+      window.open(fileUrl, '_blank');
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.05 }}
+      className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all"
+    >
+      {/* منطقة معاينة الصورة */}
+      <div className="aspect-square bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center overflow-hidden">
+        {isImage && fileUrl ? (
+          <img
+            src={fileUrl}
+            alt={doc.document_name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              if (target.nextElementSibling) {
+                (target.nextElementSibling as HTMLElement).style.display = 'flex';
+              }
+            }}
+          />
+        ) : null}
+        <div className={`flex-col items-center justify-center ${isImage && fileUrl ? 'hidden' : 'flex'}`}>
+          {isLoading ? (
+            <RefreshCw className="w-10 h-10 text-teal-400 animate-spin" />
+          ) : (
+            <FileImage className="w-10 h-10 text-teal-400" />
+          )}
+        </div>
+      </div>
+      
+      {/* معلومات المستند وأزرار الإجراءات */}
+      <div className="p-3">
+        <p className="text-xs font-medium text-slate-900 truncate mb-1">{doc.document_name}</p>
+        <p className="text-[10px] text-slate-500 mb-3">
+          {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
+        </p>
+        
+        {/* أزرار الإجراءات - دائماً مرئية */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1 h-8 text-xs gap-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200 disabled:opacity-50"
+            onClick={handlePreview}
+            disabled={isLoading || !fileUrl}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            معاينة
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-8 w-8 p-0 disabled:opacity-50"
+            onClick={handleDownload}
+            disabled={isLoading || !fileUrl}
+          >
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // ===== Main Component =====
 const CustomerDetailsPageNew = () => {
   const { customerId } = useParams<{ customerId: string }>();
@@ -3517,74 +3640,9 @@ const CustomerDetailsPageNew = () => {
 
           {documents.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {documents.map((doc: CustomerDocument, index: number) => {
-                const isImage = doc.file_path?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || 
-                               doc.document_name?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
-                const imageUrl = doc.file_path 
-                  ? `https://qwhunliohlkkahbspfiu.supabase.co/storage/v1/object/public/customer-documents/${doc.file_path}`
-                  : '';
-                
-                return (
-                  <motion.div
-                    key={doc.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="group relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 overflow-hidden hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all"
-                  >
-                    {/* منطقة معاينة الصورة */}
-                    <div className="aspect-square bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center overflow-hidden">
-                      {isImage && imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={doc.document_name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            if (target.nextElementSibling) {
-                              (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                            }
-                          }}
-                        />
-                      ) : null}
-                      <div className={`flex-col items-center justify-center ${isImage && imageUrl ? 'hidden' : 'flex'}`}>
-                        <FileImage className="w-10 h-10 text-teal-400" />
-                      </div>
-                    </div>
-                    
-                    {/* معلومات المستند وأزرار الإجراءات */}
-                    <div className="p-3">
-                      <p className="text-xs font-medium text-slate-900 truncate mb-1">{doc.document_name}</p>
-                      <p className="text-[10px] text-slate-500 mb-3">
-                        {format(new Date(doc.uploaded_at), 'dd/MM/yyyy')}
-                      </p>
-                      
-                      {/* أزرار الإجراءات - دائماً مرئية */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1 h-8 text-xs gap-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200"
-                          onClick={() => imageUrl && window.open(imageUrl, '_blank')}
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          معاينة
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => imageUrl && window.open(imageUrl, '_blank')}
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+              {documents.map((doc: CustomerDocument, index: number) => (
+                <DocumentCard key={doc.id} doc={doc} index={index} />
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">

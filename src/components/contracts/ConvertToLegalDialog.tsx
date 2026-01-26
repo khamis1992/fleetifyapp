@@ -48,8 +48,10 @@ import {
   Loader2,
   ExternalLink,
   Gavel,
+  XCircle,
+  MessageSquare,
 } from 'lucide-react';
-import { useConvertToLegal, useExistingLegalCase, useCalculateCaseValue, ContractForLegal } from '@/hooks/useConvertToLegal';
+import { useConvertToLegal, useExistingLegalCase, useCalculateCaseValue, ContractForLegal, useCloseLegalCase } from '@/hooks/useConvertToLegal';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -76,6 +78,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const convertMutation = useConvertToLegal();
+  const closeCaseMutation = useCloseLegalCase();
   
   // التحقق من وجود قضية سابقة
   const { data: existingCase, isLoading: isLoadingExisting } = useExistingLegalCase(contract?.id || '');
@@ -152,10 +155,24 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
     }
   };
 
+  const handleCloseGhostCase = async () => {
+    if (!existingCase) return;
+    try {
+      await closeCaseMutation.mutateAsync({
+        caseId: existingCase.id,
+        reason: 'إغلاق قضية غير متزامنة (العقد نشط)',
+      });
+      // The query invalidation in hook will refresh the existingCase data
+    } catch (error) {
+      console.error('Error closing ghost case:', error);
+    }
+  };
+
   if (!contract) return null;
 
   const isLoading = isLoadingExisting || isLoadingValue;
   const hasExistingActiveCase = existingCase && ['active', 'pending', 'on_hold'].includes(existingCase.case_status);
+  const isStateInconsistent = hasExistingActiveCase && contract.status === 'active';
 
   return (
     <>
@@ -181,19 +198,43 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
               {hasExistingActiveCase && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between">
-                    <span>
-                      يوجد قضية مفتوحة سابقاً لهذا العقد: <strong>{existingCase.case_number}</strong>
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleViewExistingCase}
-                      className="mr-2"
-                    >
-                      <ExternalLink className="h-4 w-4 ml-1" />
-                      عرض القضية
-                    </Button>
+                  <AlertDescription className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between w-full">
+                      <span>
+                        يوجد قضية مفتوحة سابقاً لهذا العقد: <strong>{existingCase.case_number}</strong>
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleViewExistingCase}
+                        className="bg-white/50 hover:bg-white"
+                      >
+                        <ExternalLink className="h-4 w-4 ml-1" />
+                        عرض القضية
+                      </Button>
+                    </div>
+                    
+                    {isStateInconsistent && (
+                      <div className="mt-2 pt-2 border-t border-red-200">
+                        <p className="text-sm mb-2 font-medium">
+                          تنبيه: حالة العقد "نشط" ولكن توجد قضية مفتوحة. هذا تعارض في البيانات.
+                        </p>
+                        <Button 
+                          size="sm" 
+                          variant="secondary" 
+                          className="w-full bg-red-100 hover:bg-red-200 text-red-800 border-red-200"
+                          onClick={handleCloseGhostCase}
+                          disabled={closeCaseMutation.isPending}
+                        >
+                          {closeCaseMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin ml-2" />
+                          ) : (
+                            <XCircle className="h-3 w-3 ml-2" />
+                          )}
+                          إغلاق القضية السابقة والمتابعة
+                        </Button>
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}

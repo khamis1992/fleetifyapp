@@ -14,6 +14,7 @@ export interface Contract {
   description?: string | null
   terms?: string | null
   status: ContractStatus
+  legal_status?: LegalStatus | null
   created_by: string
   cost_center_id?: string | null
   journal_entry_id?: string | null
@@ -27,6 +28,15 @@ export interface Contract {
   created_at: string
   updated_at: string
 }
+
+export type LegalStatus = 
+  | 'under_legal_action'
+  | 'legal_case_filed'
+  | 'in_court'
+  | 'judgment_issued'
+  | 'execution_phase'
+  | 'settled'
+  | 'closed'
 
 export type ContractType = 
   | 'rental'
