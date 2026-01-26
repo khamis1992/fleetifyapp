@@ -295,10 +295,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Only initialize if not already done (prevents HMR issues)
     if (!isInitialized.current) {
-      initializeAuth();
-
-      // CRITICAL FIX: Always clear loading state after a timeout, regardless of init state
-      // This prevents infinite loading during navigation
+      // CRITICAL FIX: Set timeout BEFORE calling initializeAuth
+      // This ensures it's stored in initTimeoutRef before the finally block runs
       const forceLoadingTimeout = setTimeout(() => {
         if (mountedRef.current && loadingRef.current) {
           console.warn('⚠️ [AUTH_CONTEXT] Force clearing loading state after 5s to prevent navigation hang');
@@ -307,6 +305,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }, 5000);
 
       initTimeoutRef.current = forceLoadingTimeout;
+      
+      // Now call initializeAuth which will clear the timeout in its finally block
+      initializeAuth();
     } else {
       console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
       // CRITICAL FIX: Always clear loading if we're in a potentially stuck state

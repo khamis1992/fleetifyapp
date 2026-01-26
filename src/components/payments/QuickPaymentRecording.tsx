@@ -44,7 +44,7 @@ interface Invoice {
   contract_id: string | null;
   contracts: {
     contract_number: string;
-    vehicle_number: string | null;
+    vehicle_id: string | null;
     vehicles: {
       plate_number: string;
     } | null;
@@ -514,7 +514,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
             *,
             contracts:contract_id (
               contract_number,
-              vehicle_number,
+              vehicle_id,
               vehicles:vehicle_id (
                 plate_number
               )
@@ -691,8 +691,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
       const payment = { id: firstPaymentId };
 
       // استخراج رقم المركبة من أول فاتورة
-      const vehicleNumber = selectedInvoices[0]?.contracts?.vehicle_number || 
-                           selectedInvoices[0]?.contracts?.vehicles?.plate_number || '';
+      const vehicleNumber = selectedInvoices[0]?.contracts?.vehicles?.plate_number || '';
 
       // Show success screen
       setPaymentSuccess({

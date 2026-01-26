@@ -45,6 +45,16 @@
     - إزالة `ResponsiveContainer` من الرسوم البيانية ذات الأبعاد الثابتة (220×220).
     - استخدام `PieChart` مباشرة مع أبعاد ثابتة لتجنب التحذير.
 
+- [x] 11. **إصلاح خطأ 406 في صفحة Finance Hub (`useDashboardStats.ts`)**:
+    - تصحيح استعلام `profiles` من `user_id` إلى `id`.
+    - جدول `profiles` يستخدم `id` كمفتاح أساسي وليس `user_id`.
+
+- [x] 12. **إصلاح خطأ 400 في استعلامات الفواتير**:
+    - إزالة `vehicle_number` من استعلامات `contracts` في:
+      - `src/hooks/finance/useInvoices.ts`
+      - `src/components/payments/QuickPaymentRecording.tsx`
+    - استخدام `vehicles.plate_number` مباشرة بدلاً من `contracts.vehicle_number` غير الموجود.
+
 ## الملفات المعدلة:
 1. `src/components/notifications/VerificationTaskAlert.tsx`
 2. `src/pages/Dashboard.tsx`
@@ -58,9 +68,12 @@
 10. `src/App.tsx`
 11. `src/hooks/useFleetFinancialAnalytics.ts`
 12. `src/pages/fleet/reports/components/FleetCharts.tsx`
+13. `src/hooks/useDashboardStats.ts`
+14. `src/hooks/finance/useInvoices.ts`
+15. `src/components/payments/QuickPaymentRecording.tsx`
 
 ## النتيجة المتوقعة:
 - تنقل أسرع وأكثر سلاسة بين الصفحات.
 - اختفاء التحذيرات المزعجة في وحدة التحكم (Console).
 - واجهة مستخدم متناسقة بصرياً.
-- عدم ظهور أخطاء 404 في صفحة التقارير.
+- عدم ظهور أخطاء 404 أو 406 أو 400 في جميع الصفحات.

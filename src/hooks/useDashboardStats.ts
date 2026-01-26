@@ -86,7 +86,7 @@ export const useDashboardStats = () => {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .abortSignal(signal!)
         .single();
       
