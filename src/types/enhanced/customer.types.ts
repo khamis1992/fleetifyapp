@@ -18,6 +18,7 @@ export interface Customer extends BaseEntity {
   last_name_ar?: string;
   date_of_birth?: string;
   national_id?: string;
+  nationality?: string;
   passport_number?: string;
   license_number?: string;
 
@@ -127,6 +128,7 @@ export interface CustomerFormData {
   last_name_ar?: string;
   date_of_birth?: string;
   national_id?: string;
+  nationality?: string;
   passport_number?: string;
   license_number?: string;
   license_expiry?: string;

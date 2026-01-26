@@ -118,9 +118,25 @@ class AuditLogger {
     this.pendingLogs = [];
 
     try {
+      // Map fields to match actual database schema
+      const mappedLogs = logsToFlush.map(log => ({
+        user_id: log.user_id,
+        company_id: log.company_id,
+        action: log.action || log.event_type, // Use action or event_type
+        resource_type: log.entity_type, // Map entity_type to resource_type
+        resource_id: log.entity_id, // Map entity_id to resource_id
+        metadata: log.details, // Map details to metadata
+        severity: log.severity,
+        ip_address: log.ip_address,
+        user_agent: log.user_agent,
+        status: log.success ? 'success' : 'failed',
+        error_message: log.error_message,
+        created_at: log.created_at,
+      }));
+
       const { error } = await supabase
         .from('audit_logs')
-        .insert(logsToFlush);
+        .insert(mappedLogs);
 
       if (error) {
         console.error('Failed to flush audit logs:', error);

@@ -288,6 +288,30 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
       .no-print {
         display: none !important;
       }
+      
+      /* منع تقسيم الجداول والعناصر المهمة */
+      table {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      .content, .section, .info-section, .claims-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      thead {
+        display: table-header-group !important;
+      }
+      
+      tfoot {
+        display: table-footer-group !important;
+      }
     }
     
     body {
@@ -336,14 +360,16 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
     }
     
     .logo-container {
-      flex: 0 0 130px;
+      flex: 0 0 180px;
       text-align: center;
       padding: 0 15px;
     }
     
     .logo-container img {
-      max-height: 70px;
-      max-width: 120px;
+      max-height: 140px;
+      max-width: 240px;
+      width: auto;
+      height: auto;
     }
     
     .company-en {

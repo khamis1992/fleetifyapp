@@ -9,11 +9,59 @@ import {
   generateDocumentsListHtml,
   generateClaimsStatementHtml,
   generateCriminalComplaintHtml,
+  generateViolationsTransferHtml,
   type ClaimsStatementData,
   type DocumentsListData,
   type CriminalComplaintData,
+  type ViolationsTransferData,
 } from './official-letter-generator';
+import { generateLegalComplaintHTML, type LegalDocumentData } from './legal-document-generator';
 import { lawsuitService } from '@/services/lawsuitService';
+import { 
+  extractLawsuitData, 
+  createLawsuitExcelFile,
+  type LawsuitExcelData 
+} from './lawsuitExcelGenerator';
+
+// لوقو الشركة كـ Base64 (لضمان ظهوره في ملفات HTML المحفوظة)
+let COMPANY_LOGO_BASE64: string | null = null;
+
+/**
+ * تحويل صورة اللوقو إلى Base64
+ */
+async function loadCompanyLogo(): Promise<string> {
+  if (COMPANY_LOGO_BASE64) return COMPANY_LOGO_BASE64;
+  
+  try {
+    const response = await fetch('/receipts/logo.png');
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        COMPANY_LOGO_BASE64 = reader.result as string;
+        resolve(COMPANY_LOGO_BASE64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Failed to load company logo:', error);
+    return ''; // إرجاع قيمة فارغة في حالة الفشل
+  }
+}
+
+/**
+ * استبدال مسار اللوقو في HTML بـ Base64
+ */
+async function embedLogoInHtml(html: string): Promise<string> {
+  const logoBase64 = await loadCompanyLogo();
+  if (!logoBase64) return html;
+  
+  // استبدال جميع مسارات اللوقو بـ Base64
+  return html
+    .replace(/src="\/receipts\/logo\.png"/g, `src="${logoBase64}"`)
+    .replace(/src='\/receipts\/logo\.png'/g, `src='${logoBase64}'`);
+}
 
 export interface BulkCustomerData {
   contract_id: string;
@@ -43,60 +91,82 @@ export interface CustomerDocuments {
   }[];
 }
 
+export interface DocumentOptions {
+  explanatoryMemo: boolean;          // المذكرة الشارحة
+  claimsStatement: boolean;          // كشف المطالبات المالية
+  documentsList: boolean;            // كشف المستندات المرفوعة
+  violationsList: boolean;           // كشف المخالفات المرورية
+  criminalComplaint: boolean;        // بلاغ سرقة المركبة
+  violationsTransfer: boolean;       // طلب تحويل المخالفات
+}
+
 /**
- * جلب بيانات العميل الكاملة من قاعدة البيانات
+ * جلب بيانات العميل الكاملة من قاعدة البيانات (محسّنة - استعلامات متوازية)
  */
 async function fetchCustomerFullData(contractId: string) {
-  // جلب بيانات العقد
-  const { data: contract, error: contractError } = await supabase
-    .from('contracts')
-    .select(`
-      *,
-      customers (
-        id,
-        first_name,
-        last_name,
-        company_name,
-        national_id,
-        phone,
-        mobile,
-        email,
-        address
-      ),
-      vehicles (
-        id,
-        plate_number,
-        make,
-        model,
-        year,
-        vin
-      )
-    `)
-    .eq('id', contractId)
+  // جلب جميع البيانات بالتوازي لتحسين الأداء
+  const [contractResult, invoicesResult, violationsResult] = await Promise.all([
+    // جلب بيانات العقد
+    supabase
+      .from('contracts')
+      .select(`
+        *,
+        customers (
+          id,
+          first_name,
+          last_name,
+          company_name,
+          national_id,
+          phone,
+          email,
+          address
+        ),
+        vehicles (
+          id,
+          plate_number,
+          make,
+          model,
+          year,
+          vin
+        )
+      `)
+      .eq('id', contractId)
+      .single(),
+    
+    // جلب الفواتير
+    supabase
+      .from('invoices')
+      .select('*')
+      .eq('contract_id', contractId)
+      .neq('status', 'cancelled')
+      .order('due_date', { ascending: true }),
+    
+    // جلب المخالفات المرورية
+    supabase
+      .from('penalties')
+      .select('*')
+      .eq('contract_id', contractId)
+      .neq('payment_status', 'paid')
+  ]);
+
+  if (contractResult.error) throw contractResult.error;
+  if (invoicesResult.error) throw invoicesResult.error;
+  if (violationsResult.error) throw violationsResult.error;
+
+  // جلب معلومات الشركة
+  const { data: companyData } = await supabase
+    .from('companies')
+    .select('*')
+    .eq('id', contractResult.data.company_id)
     .single();
 
-  if (contractError) throw contractError;
-
-  // جلب الفواتير
-  const { data: invoices, error: invoicesError } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('contract_id', contractId)
-    .neq('status', 'cancelled')
-    .order('due_date', { ascending: true });
-
-  if (invoicesError) throw invoicesError;
-
-  // جلب المخالفات المرورية
-  const { data: violations, error: violationsError } = await supabase
-    .from('penalties')
-    .select('*')
-    .eq('contract_id', contractId)
-    .neq('payment_status', 'paid');
-
-  if (violationsError) throw violationsError;
-
-  return { contract, invoices: invoices || [], violations: violations || [] };
+  return { 
+    contract: contractResult.data, 
+    invoices: invoicesResult.data || [], 
+    violations: violationsResult.data || [],
+    vehicleData: contractResult.data.vehicles,
+    companyInfo: companyData || {}
+  };
 }
 
 /**
@@ -109,7 +179,17 @@ function convertAmountToWords(amount: number): string {
 /**
  * إنشاء المستندات لعميل واحد
  */
-async function generateCustomerDocuments(customer: BulkCustomerData): Promise<CustomerDocuments> {
+async function generateCustomerDocuments(
+  customer: BulkCustomerData,
+  options: DocumentOptions = { 
+    explanatoryMemo: true,
+    claimsStatement: true, 
+    documentsList: true, 
+    violationsList: true,
+    criminalComplaint: true,
+    violationsTransfer: true
+  }
+): Promise<CustomerDocuments> {
   const { contract, invoices, violations } = await fetchCustomerFullData(customer.contract_id);
   
   const customerData = contract.customers;
@@ -120,7 +200,7 @@ async function generateCustomerDocuments(customer: BulkCustomerData): Promise<Cu
     : customer.customer_name;
 
   const nationalId = customerData?.national_id || customer.national_id || 'غير محدد';
-  const phone = customerData?.phone || customerData?.mobile || customer.phone || 'غير محدد';
+  const phone = customerData?.phone || customer.phone || 'غير محدد';
   
   // حساب المبالغ المستحقة
   const unpaidInvoices = invoices.filter(inv => 
@@ -139,8 +219,63 @@ async function generateCustomerDocuments(customer: BulkCustomerData): Promise<Cu
 
   const documents: { name: string; content: string }[] = [];
 
-  // 1. كشف المطالبات
-  const claimsData: ClaimsStatementData = {
+  // 1. المذكرة الشارحة (باستخدام نفس التنسيق المستخدم في صفحة تجهيز الدعوى)
+  if (options.explanatoryMemo) {
+    const damagesAmount = Math.round(grandTotal * 0.3);
+    const daysOverdue = contract.start_date 
+      ? Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    const documentData: LegalDocumentData = {
+      customer: {
+        customer_name: customerFullName,
+        customer_code: customerData?.id || customer.customer_id || '',
+        id_number: nationalId,
+        phone: phone,
+        email: customerData?.email || '',
+        contract_number: contract.contract_number || customer.contract_number,
+        contract_start_date: contract.start_date || '',
+        vehicle_plate: vehicleData?.plate_number || 'غير محدد',
+        monthly_rent: Number(contract.monthly_rent) || 0,
+        months_unpaid: unpaidInvoices.length,
+        overdue_amount: totalOverdue,
+        late_penalty: 0, // يمكن حسابه لاحقاً
+        days_overdue: daysOverdue,
+        violations_count: violations.length,
+        violations_amount: violationsTotal,
+        total_debt: grandTotal,
+      } as any,
+      companyInfo: {
+        name_ar: 'شركة العراف لتأجير السيارات',
+        name_en: 'Al-Araf Car Rental',
+        address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+        cr_number: '146832',
+      },
+      vehicleInfo: {
+        plate: vehicleData?.plate_number || 'غير محدد',
+        make: vehicleData?.make || '',
+        model: vehicleData?.model || '',
+        year: vehicleData?.year || 0,
+      },
+      contractInfo: {
+        contract_number: contract.contract_number || customer.contract_number,
+        start_date: contract.start_date 
+          ? new Date(contract.start_date).toLocaleDateString('ar-QA')
+          : '',
+        monthly_rent: Number(contract.monthly_rent) || 0,
+      },
+      damages: damagesAmount,
+    };
+
+    documents.push({
+      name: 'المذكرة_الشارحة.html',
+      content: generateLegalComplaintHTML(documentData),
+    });
+  }
+
+  // 2. كشف المطالبات
+  if (options.claimsStatement) {
+    const claimsData: ClaimsStatementData = {
     customerName: customerFullName,
     nationalId,
     phone,
@@ -177,33 +312,132 @@ async function generateCustomerDocuments(customer: BulkCustomerData): Promise<Cu
     caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
   };
 
-  documents.push({
-    name: 'كشف_المطالبات.html',
-    content: generateClaimsStatementHtml(claimsData),
-  });
+    documents.push({
+      name: 'كشف_المطالبات.html',
+      content: generateClaimsStatementHtml(claimsData),
+    });
+  }
 
-  // 2. كشف المستندات
-  const documentsListData: DocumentsListData = {
-    caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
-    customerName: customerFullName,
-    nationalId,
-    contractNumber: contract.contract_number || customer.contract_number,
-    documents: [
-      { name: 'عقد الإيجار الأصلي', type: 'أصل', copies: 1 },
-      { name: 'صورة الهوية / جواز السفر', type: 'صورة', copies: 1 },
-      { name: 'كشف المطالبات المالية', type: 'أصل', copies: 1 },
-      { name: 'إشعارات التحصيل السابقة', type: 'صورة', copies: 1 },
-    ],
-    totalAmount: grandTotal,
-  };
+  // 3. كشف المستندات (يجب أن يُنشأ في النهاية ليشمل جميع المستندات المولدة)
+  // سيتم إنشاؤه لاحقاً بعد توليد جميع المستندات الأخرى
 
-  documents.push({
-    name: 'كشف_المستندات.html',
-    content: generateDocumentsListHtml(documentsListData),
-  });
+  // 4. كشف المخالفات المرورية
+  if (options.violationsList && violations.length > 0) {
+    const violationsListHtml = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>كشف المخالفات المرورية</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 20mm 20mm 20mm;
+    }
+    
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      body {
+        margin: 0;
+        padding: 20px;
+      }
+      
+      table {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      .info-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      thead {
+        display: table-header-group !important;
+      }
+    }
+    
+    body { font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif; direction: rtl; padding: 40px; line-height: 1.8; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #0d9488; padding-bottom: 20px; }
+    .header h1 { color: #0d9488; font-size: 28px; margin: 10px 0; }
+    .info-section { margin: 20px 0; padding: 15px; background: #f0fdfa; border-right: 4px solid #0d9488; page-break-inside: avoid; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; page-break-inside: avoid; }
+    th, td { padding: 12px; text-align: right; border: 1px solid #ddd; }
+    th { background-color: #0d9488; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr { page-break-inside: avoid; }
+    .total-row { background-color: #fef3c7; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚗 كشف المخالفات المرورية</h1>
+    <p>العقد رقم: ${contract.contract_number || customer.contract_number}</p>
+  </div>
 
-  // 3. بلاغ جنائي (إذا كانت هناك مخالفات أو مبالغ كبيرة)
-  if (grandTotal > 5000 || violations.length > 0) {
+  <div class="info-section">
+    <p><strong>اسم المستأجر:</strong> ${customerFullName}</p>
+    <p><strong>رقم الهوية:</strong> ${nationalId}</p>
+    <p><strong>رقم اللوحة:</strong> ${vehicleData?.plate_number || 'غير محدد'}</p>
+    <p><strong>نوع المركبة:</strong> ${vehicleData ? `${vehicleData.make || ''} ${vehicleData.model || ''}`.trim() : 'غير محدد'}</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>رقم المخالفة</th>
+        <th>التاريخ</th>
+        <th>نوع المخالفة</th>
+        <th>الموقع</th>
+        <th>المبلغ (ريال)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${violations.map((v, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${v.penalty_number || v.violation_number || 'غير محدد'}</td>
+          <td>${v.penalty_date ? new Date(v.penalty_date).toLocaleDateString('ar-QA') : 'غير محدد'}</td>
+          <td>${v.violation_type || 'مخالفة مرورية'}</td>
+          <td>${v.location || 'غير محدد'}</td>
+          <td>${(Number(v.amount) || 0).toFixed(2)}</td>
+        </tr>
+      `).join('')}
+      <tr class="total-row">
+        <td colspan="5" style="text-align: left;">الإجمالي:</td>
+        <td>${violationsTotal.toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-section">
+    <p><strong>إجمالي المخالفات:</strong> ${violations.length} مخالفة</p>
+    <p><strong>المبلغ الإجمالي:</strong> ${violationsTotal.toFixed(2)} ريال قطري</p>
+    <p><strong>التاريخ:</strong> ${new Date().toLocaleDateString('ar-QA')}</p>
+  </div>
+</body>
+</html>
+    `;
+
+    documents.push({
+      name: 'كشف_المخالفات.html',
+      content: violationsListHtml,
+    });
+  }
+
+  // 5. بلاغ سرقة المركبة (إذا كانت هناك مخالفات أو مبالغ كبيرة)
+  if (options.criminalComplaint && (grandTotal > 5000 || violations.length > 0)) {
     const complaintData: CriminalComplaintData = {
       customerName: customerFullName,
       nationalId,
@@ -222,54 +456,250 @@ async function generateCustomerDocuments(customer: BulkCustomerData): Promise<Cu
     };
 
     documents.push({
-      name: 'بلاغ_جنائي.html',
+      name: 'بلاغ_سرقة_المركبة.html',
       content: generateCriminalComplaintHtml(complaintData),
     });
   }
 
+  // 6. طلب تحويل المخالفات
+  if (options.violationsTransfer && violations.length > 0) {
+    const transferData: ViolationsTransferData = {
+      customerName: customerFullName,
+      customerId: nationalId,
+      customerMobile: phone,
+      contractNumber: contract.contract_number || customer.contract_number,
+      contractDate: contract.start_date 
+        ? new Date(contract.start_date).toLocaleDateString('ar-QA')
+        : 'غير محدد',
+      contractEndDate: contract.end_date 
+        ? new Date(contract.end_date).toLocaleDateString('ar-QA')
+        : 'غير محدد',
+      vehicleType: vehicleData 
+        ? `${vehicleData.make || ''} ${vehicleData.model || ''}`.trim()
+        : 'غير محدد',
+      plateNumber: vehicleData?.plate_number || 'غير محدد',
+      violations: violations.map(v => ({
+        violationNumber: v.penalty_number || v.violation_number || 'غير محدد',
+        violationDate: v.penalty_date 
+          ? new Date(v.penalty_date).toLocaleDateString('ar-QA')
+          : 'غير محدد',
+        violationType: v.violation_type || 'مخالفة مرورية',
+        location: v.location || 'غير محدد',
+        fineAmount: Number(v.amount) || 0,
+      })),
+      totalFines: violationsTotal, // إضافة إجمالي المخالفات
+    };
+
+    documents.push({
+      name: 'طلب_تحويل_المخالفات.html',
+      content: generateViolationsTransferHtml(transferData),
+    });
+  }
+
+  // 7. كشف المستندات المرفوعة (يُنشأ في النهاية ليشمل جميع المستندات المولدة)
+  if (options.documentsList) {
+    // بناء قائمة المستندات المولدة
+    const generatedDocuments: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [];
+    
+    // إضافة المستندات المولدة حسب الخيارات
+    if (options.explanatoryMemo) {
+      generatedDocuments.push({ name: 'المذكرة الشارحة', status: 'مرفق' });
+    }
+    
+    if (options.claimsStatement) {
+      generatedDocuments.push({ name: 'كشف المطالبات المالية', status: 'مرفق' });
+    }
+    
+    // إضافة صورة العقد (دائماً موجودة)
+    generatedDocuments.push({ name: 'صورة من العقد', status: 'مرفق' });
+    
+    if (options.violationsList && violations.length > 0) {
+      generatedDocuments.push({ name: 'كشف المخالفات المرورية', status: 'مرفق' });
+    }
+    
+    if (options.criminalComplaint && (grandTotal > 5000 || violations.length > 0)) {
+      generatedDocuments.push({ name: 'بلاغ سرقة المركبة', status: 'مرفق' });
+    }
+    
+    if (options.violationsTransfer && violations.length > 0) {
+      generatedDocuments.push({ name: 'طلب تحويل المخالفات', status: 'مرفق' });
+    }
+    
+    // إضافة المستندات الثابتة للشركة
+    generatedDocuments.push(
+      { name: 'السجل التجاري', status: 'مرفق' },
+      { name: 'شهادة IBAN', status: 'مرفق' },
+      { name: 'البطاقة الشخصية للممثل', status: 'مرفق' },
+      { name: 'صورة الهوية / جواز السفر', status: 'مرفق' }
+    );
+
+    const documentsListData: DocumentsListData = {
+      caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
+      customerName: customerFullName,
+      amount: grandTotal,
+      documents: generatedDocuments,
+    };
+
+    documents.push({
+      name: 'كشف_المستندات.html',
+      content: generateDocumentsListHtml(documentsListData),
+    });
+  }
+
+  // تضمين اللوقو في جميع المستندات
+  const documentsWithLogo = await Promise.all(
+    documents.map(async (doc) => ({
+      ...doc,
+      content: await embedLogoInHtml(doc.content),
+    }))
+  );
+
   return {
     customerName: customerFullName,
     contractNumber: contract.contract_number || customer.contract_number,
-    documents,
+    documents: documentsWithLogo,
   };
 }
 
 /**
- * إنشاء ملف ZIP يحتوي على جميع المستندات
+ * إنشاء ملف ZIP يحتوي على جميع المستندات (محسّنة - معالجة متوازية)
  */
 export async function generateBulkDocumentsZip(
   customers: BulkCustomerData[],
-  onProgress?: (progress: BulkGenerationProgress) => void
+  onProgress?: (progress: BulkGenerationProgress) => void,
+  options?: DocumentOptions
 ): Promise<Blob> {
   const zip = new JSZip();
   const errors: string[] = [];
+  let completed = 0;
+  const lawsuitDataList: LawsuitExcelData[] = [];
 
-  for (let i = 0; i < customers.length; i++) {
-    const customer = customers[i];
+  // معالجة العملاء بالتوازي (5 عملاء في نفس الوقت لتحسين الأداء)
+  const BATCH_SIZE = 5;
+  
+  for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+    const batch = customers.slice(i, i + BATCH_SIZE);
     
-    onProgress?.({
-      current: i + 1,
-      total: customers.length,
-      currentCustomer: customer.customer_name,
-      status: 'generating',
-      errors,
-    });
+    // معالجة الدفعة الحالية بالتوازي
+    const results = await Promise.allSettled(
+      batch.map(async (customer) => {
+        const customerDocs = await generateCustomerDocuments(customer, options);
+        
+        // استخراج بيانات القضية للـ Excel
+        const contractId = customer.contract_id || customer.id;
+        const fullData = await fetchCustomerFullData(contractId);
+        const lawsuitData = extractLawsuitData(
+          customer,
+          fullData.contract,
+          fullData.vehicleData,
+          fullData.invoices,
+          fullData.violations,
+          fullData.companyInfo
+        );
+        
+        return { customer, customerDocs, lawsuitData };
+      })
+    );
 
+    // إضافة النتائج إلى ZIP
+    for (const result of results) {
+      completed++;
+      
+      if (result.status === 'fulfilled') {
+        const { customer, customerDocs, lawsuitData } = result.value;
+        
+        // إضافة بيانات القضية إلى القائمة
+        lawsuitDataList.push(lawsuitData);
+        
+        onProgress?.({
+          current: completed,
+          total: customers.length,
+          currentCustomer: customer.customer_name,
+          status: 'generating',
+          errors,
+        });
+
+        // إنشاء مجلد لكل عميل
+        const folderName = `${customerDocs.contractNumber}_${customerDocs.customerName}`.replace(/[/\\?%*:|"<>]/g, '_');
+        const folder = zip.folder(folderName);
+        
+        if (folder) {
+          for (const doc of customerDocs.documents) {
+            folder.file(doc.name, doc.content);
+          }
+        }
+      } else {
+        const customer = batch[results.indexOf(result)];
+        console.error(`Error generating documents for ${customer.customer_name}:`, result.reason);
+        errors.push(`فشل إنشاء مستندات ${customer.customer_name}: ${result.reason?.message || 'خطأ غير معروف'}`);
+        
+        onProgress?.({
+          current: completed,
+          total: customers.length,
+          currentCustomer: customer.customer_name,
+          status: 'generating',
+          errors,
+        });
+      }
+    }
+  }
+
+  // إنشاء ملف Excel وحفظ البيانات في قاعدة البيانات
+  if (lawsuitDataList.length > 0) {
     try {
-      const customerDocs = await generateCustomerDocuments(customer);
+      onProgress?.({
+        current: customers.length,
+        total: customers.length,
+        currentCustomer: 'إنشاء ملف Excel وحفظ البيانات...',
+        status: 'generating',
+        errors,
+      });
       
-      // إنشاء مجلد لكل عميل
-      const folderName = `${customerDocs.contractNumber}_${customerDocs.customerName}`.replace(/[/\\?%*:|"<>]/g, '_');
-      const folder = zip.folder(folderName);
+      // إنشاء ملف Excel
+      const excelBuffer = createLawsuitExcelFile(lawsuitDataList);
+      zip.file('بيانات_القضايا.xlsx', excelBuffer);
       
-      if (folder) {
-        for (const doc of customerDocs.documents) {
-          folder.file(doc.name, doc.content);
+      // حفظ البيانات في قاعدة البيانات
+      const { data: companyData } = await supabase.auth.getUser();
+      if (companyData.user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('company_id')
+          .eq('user_id', companyData.user.id)
+          .single();
+        
+        if (profile?.company_id) {
+          // تحويل بيانات Excel إلى صيغة قاعدة البيانات
+          const lawsuitRecords = lawsuitDataList.map(lawsuit => ({
+            company_id: profile.company_id,
+            case_title: lawsuit.case_title,
+            facts: lawsuit.facts,
+            requests: lawsuit.requests,
+            claim_amount: lawsuit.claim_amount,
+            claim_amount_words: lawsuit.claim_amount_words,
+            defendant_first_name: lawsuit.defendant_first_name,
+            defendant_middle_name: lawsuit.defendant_middle_name,
+            defendant_last_name: lawsuit.defendant_last_name,
+            defendant_nationality: lawsuit.defendant_nationality,
+            defendant_id_number: lawsuit.defendant_id_number,
+            defendant_address: lawsuit.defendant_address,
+            defendant_phone: lawsuit.defendant_phone,
+            defendant_email: lawsuit.defendant_email,
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('lawsuit_templates')
+            .insert(lawsuitRecords);
+          
+          if (insertError) {
+            console.error('Error saving lawsuit data to database:', insertError);
+            errors.push('فشل حفظ البيانات في قاعدة البيانات');
+          }
         }
       }
     } catch (error) {
-      console.error(`Error generating documents for ${customer.customer_name}:`, error);
-      errors.push(`فشل إنشاء مستندات ${customer.customer_name}: ${(error as Error).message}`);
+      console.error('Error creating Excel file or saving data:', error);
+      errors.push('فشل إنشاء ملف Excel أو حفظ البيانات');
     }
   }
 
@@ -306,7 +736,7 @@ export async function updateCustomersToOpeningComplaint(contractIds: string[]): 
   const { error } = await supabase
     .from('contracts')
     .update({ 
-      legal_status: 'opening_complaint',
+      status: 'under_legal_procedure',
       updated_at: new Date().toISOString(),
     })
     .in('id', contractIds);
@@ -338,7 +768,6 @@ export async function convertToOfficialCase(contractId: string, companyId: strin
     .from('contracts')
     .update({ 
       status: 'under_legal_procedure',
-      legal_status: 'case_opened',
       updated_at: new Date().toISOString(),
     })
     .eq('id', contractId);

@@ -134,11 +134,11 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
 }) => {
   const getCustomerName = () => {
     if (customer.customer_type === 'individual') {
+      const primaryName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
       const arName = `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-      const enName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
-      return arName || enName || 'غير محدد';
+      return primaryName || arName || 'غير محدد';
     }
-    return customer.company_name_ar || customer.company_name || 'غير محدد';
+    return customer.company_name || customer.company_name_ar || 'غير محدد';
   };
 
   const getInitials = () => {

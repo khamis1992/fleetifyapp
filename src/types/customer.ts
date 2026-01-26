@@ -13,6 +13,7 @@ export interface Customer {
   phone: string;
   alternative_phone?: string;
   national_id?: string;
+  nationality?: string;
   passport_number?: string;
   license_number?: string;
   address?: string;
@@ -55,6 +56,7 @@ export interface CustomerFormData {
   phone: string;
   alternative_phone?: string;
   national_id?: string;
+  nationality?: string;
   passport_number?: string;
   license_number?: string;
   license_expiry?: string;

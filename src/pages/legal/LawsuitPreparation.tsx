@@ -156,6 +156,9 @@ export default function LawsuitPreparationPage() {
   // حالات تحميل المذكرة الشارحة
   const [isDownloadingMemoPdf, setIsDownloadingMemoPdf] = useState(false);
   const [isDownloadingMemoDocx, setIsDownloadingMemoDocx] = useState(false);
+  
+  // حالة إرسال إلى بيانات تقاضي
+  const [isSendingToLawsuitData, setIsSendingToLawsuitData] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -1449,6 +1452,77 @@ export default function LawsuitPreparationPage() {
     navigate,
   ]);
 
+  // إرسال البيانات إلى جدول بيانات تقاضي
+  const sendToLawsuitData = useCallback(async () => {
+    if (!contract || !companyId || !taqadiData) {
+      toast.error('بيانات غير مكتملة');
+      return;
+    }
+
+    setIsSendingToLawsuitData(true);
+    
+    try {
+      const customer = (contract as any).customers;
+      
+      // تقسيم اسم العميل إلى أجزاء
+      const nameParts = customer 
+        ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim().split(' ')
+        : ['غير', 'معروف'];
+      
+      const firstName = nameParts[0] || '';
+      const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+
+      // إعداد بيانات القضية
+      const lawsuitRecord = {
+        company_id: companyId,
+        case_title: taqadiData.caseTitle,
+        facts: taqadiData.facts,
+        requests: taqadiData.claims,
+        claim_amount: taqadiData.amount,
+        claim_amount_words: taqadiData.amountInWords,
+        defendant_first_name: firstName,
+        defendant_middle_name: middleName || null,
+        defendant_last_name: lastName,
+        defendant_nationality: customer?.nationality || null,
+        defendant_id_number: customer?.national_id || null,
+        defendant_address: customer?.address || null,
+        defendant_phone: customer?.phone || customer?.mobile || null,
+        defendant_email: customer?.email || null,
+        contract_id: contractId || null,
+        customer_id: customer?.id || null,
+      };
+
+      // إدراج البيانات في الجدول
+      const { error } = await supabase
+        .from('lawsuit_templates')
+        .insert([lawsuitRecord]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('✅ تم إرسال البيانات إلى بيانات تقاضي بنجاح!');
+      
+      // عرض خيار الانتقال إلى الصفحة
+      toast.info(
+        <div className="flex items-center gap-2">
+          <span>هل تريد الانتقال إلى صفحة بيانات تقاضي؟</span>
+          <Button size="sm" variant="outline" onClick={() => navigate('/legal/lawsuit-data')}>
+            انتقال
+          </Button>
+        </div>,
+        { duration: 5000 }
+      );
+
+    } catch (error: any) {
+      console.error('Error sending to lawsuit data:', error);
+      toast.error(`فشل إرسال البيانات: ${error.message || 'خطأ غير معروف'}`);
+    } finally {
+      setIsSendingToLawsuitData(false);
+    }
+  }, [contract, companyId, taqadiData, contractId, navigate]);
+
   // حالة التحميل
   if (companyLoading || contractLoading || invoicesLoading || violationsLoading) {
     return (
@@ -2100,6 +2174,26 @@ export default function LawsuitPreparationPage() {
                   <>
                     <Gavel className="h-5 w-5 ml-2" />
                     تسجيل القضية في النظام
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={sendToLawsuitData}
+                disabled={isSendingToLawsuitData || !taqadiData}
+                className="w-full sm:w-auto border-purple-500 text-purple-700 hover:bg-purple-50 hover:border-purple-600"
+              >
+                {isSendingToLawsuitData ? (
+                  <>
+                    <LoadingSpinner className="h-4 w-4 ml-2" />
+                    جاري الإرسال...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 ml-2" />
+                    إرسال إلى بيانات تقاضي
                   </>
                 )}
               </Button>

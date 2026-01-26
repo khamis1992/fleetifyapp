@@ -393,9 +393,9 @@ const FinancialDelinquencyPage: React.FC = () => {
           />
           <QuickAction
             icon={FileText}
-            label="إعداد دعوى"
+            label="بيانات تقاضي"
             color={colors.primaryDark}
-            onClick={() => toast.info('سيتم فتح صفحة إعداد الدعوى')}
+            onClick={() => navigate('/legal/lawsuit-data')}
           />
         </motion.div>
 

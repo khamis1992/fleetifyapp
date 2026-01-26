@@ -14,6 +14,7 @@ export const baseCustomerSchema = z.object({
   phone: z.string().min(1, 'رقم الهاتف مطلوب'),
   email: z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')),
   national_id: z.string().optional(),
+  nationality: z.string().optional(),
   passport_number: z.string().optional(),
   license_number: z.string().optional(),
   date_of_birth: z.date().optional(),

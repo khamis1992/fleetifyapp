@@ -307,7 +307,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
 
     const rows = customers.map(customer => {
       const customerName = customer.customer_type === 'individual'
-        ? `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim()
+        ? `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim()
         : customer.company_name_ar || customer.company_name || '';
 
       const contracts = contractsMap.get(customer.id) || [];
@@ -399,7 +399,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
 
     customers.forEach(customer => {
       const customerName = customer.customer_type === 'individual'
-        ? `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim()
+        ? `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim()
         : customer.company_name_ar || customer.company_name || '';
 
       const contracts = contractsMap.get(customer.id) || [];
@@ -569,7 +569,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
 
     const tableRows = customers.map((customer, index) => {
       const customerName = customer.customer_type === 'individual'
-        ? `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim()
+        ? `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim()
         : customer.company_name_ar || customer.company_name || '';
 
       const contracts = contractsMap.get(customer.id) || [];

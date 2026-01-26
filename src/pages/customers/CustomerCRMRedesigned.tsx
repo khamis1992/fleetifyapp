@@ -173,11 +173,11 @@ const CustomerTableRow = ({
   onViewDetails: () => void;
 }) => {
   const getNameAr = () => {
-    if (customer.first_name_ar || customer.last_name_ar) {
-      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-    }
     if (customer.first_name || customer.last_name) {
       return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    }
+    if (customer.first_name_ar || customer.last_name_ar) {
+      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
     }
     return customer.customer_code || 'عميل غير معرف';
   };
@@ -185,7 +185,7 @@ const CustomerTableRow = ({
   const nameAr = getNameAr();
   const isNew = lastContact === null;
   const daysSinceContact = lastContact ?? 0;
-  const initials = customer.first_name_ar?.substring(0, 2) || customer.first_name?.substring(0, 2).toUpperCase() || 'ع';
+  const initials = customer.first_name?.substring(0, 2) || customer.first_name_ar?.substring(0, 2) || 'ع';
 
   return (
     <motion.tr
@@ -326,11 +326,11 @@ const CustomerCard = ({
   onViewDetails: () => void;
 }) => {
   const getNameAr = () => {
-    if (customer.first_name_ar || customer.last_name_ar) {
-      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-    }
     if (customer.first_name || customer.last_name) {
       return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    }
+    if (customer.first_name_ar || customer.last_name_ar) {
+      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
     }
     return customer.customer_code || 'عميل غير معرف';
   };
@@ -352,7 +352,7 @@ const CustomerCard = ({
           "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0",
           isNew ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-600'
         )}>
-          {customer.first_name_ar?.substring(0, 2) || customer.first_name?.substring(0, 2).toUpperCase() || 'ع'}
+          {customer.first_name?.substring(0, 2) || customer.first_name_ar?.substring(0, 2) || 'ع'}
         </div>
 
         {/* Info */}
@@ -813,7 +813,7 @@ export default function CustomerCRMRedesigned() {
       const dueInvoicesText = invoiceMonths.length > 0 ? invoiceMonths.join(' و') : 'لا توجد';
 
       return {
-        nameAr: `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معرف',
+        nameAr: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || 'غير معرف',
         phone: customer.phone || '-',
         dueInvoices: dueInvoicesText,
         violationsCount: violations.count,
@@ -921,7 +921,7 @@ export default function CustomerCRMRedesigned() {
 
       return {
         'كود العميل': customer.customer_code,
-        'اسم العميل': `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || `${customer.first_name || ''} ${customer.last_name || ''}`.trim(),
+        'اسم العميل': `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim(),
         'الهاتف': customer.phone,
         'رقم العقد': contract?.contract_number || '-',
         'حالة الدفع': paymentStatus === 'paid' ? 'مسدد' : paymentStatus === 'late' ? 'متأخر' : paymentStatus === 'due' ? 'مستحق' : 'لا فواتير',
@@ -1338,10 +1338,10 @@ export default function CustomerCRMRedesigned() {
             open={callDialogOpen}
             onOpenChange={setCallDialogOpen}
             customerName={
-              (callingCustomer.first_name_ar || callingCustomer.last_name_ar)
-                ? `${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim()
-                : (callingCustomer.first_name || callingCustomer.last_name)
-                  ? `${callingCustomer.first_name || ''} ${callingCustomer.last_name || ''}`.trim()
+              (callingCustomer.first_name || callingCustomer.last_name)
+                ? `${callingCustomer.first_name || ''} ${callingCustomer.last_name || ''}`.trim()
+                : (callingCustomer.first_name_ar || callingCustomer.last_name_ar)
+                  ? `${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim()
                   : callingCustomer.customer_code || 'عميل'
             }
             customerPhone={callingCustomer.phone || ''}
@@ -1355,9 +1355,9 @@ export default function CustomerCRMRedesigned() {
           customerName={(() => {
             const c = customers.find(cust => cust.id === selectedCustomerForPanel);
             if (!c) return undefined;
+            const primaryName = `${c.first_name || ''} ${c.last_name || ''}`.trim();
             const arName = `${c.first_name_ar || ''} ${c.last_name_ar || ''}`.trim();
-            const enName = `${c.first_name || ''} ${c.last_name || ''}`.trim();
-            return arName || enName || c.customer_code;
+            return primaryName || arName || c.customer_code;
           })()}
           customerPhone={customers.find(c => c.id === selectedCustomerForPanel)?.phone}
           customerCode={customers.find(c => c.id === selectedCustomerForPanel)?.customer_code}

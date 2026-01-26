@@ -1712,6 +1712,18 @@ const routeConfigs: RouteConfig[] = [
     layout: 'bento',
   },
   {
+    path: '/legal/lawsuit-data',
+    component: lazy(() => import('@/pages/legal/LawsuitDataPage')),
+    lazy: true,
+    exact: true,
+    title: 'بيانات التقاضي',
+    description: 'Lawsuit Data Management',
+    group: 'legal',
+    priority: 131,
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/legal/overdue-contracts',
     component: FinancialDelinquency, // Redirect old path to new unified page
     lazy: true,

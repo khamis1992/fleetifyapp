@@ -290,6 +290,15 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   
   // Bulk Document Generation States
+  const [documentSelectionDialogOpen, setDocumentSelectionDialogOpen] = useState(false);
+  const [selectedDocuments, setSelectedDocuments] = useState({
+    explanatoryMemo: true,        // المذكرة الشارحة
+    claimsStatement: true,        // كشف المطالبات المالية
+    documentsList: true,          // كشف المستندات المرفوعة
+    violationsList: true,         // كشف المخالفات المرورية
+    criminalComplaint: true,      // بلاغ سرقة المركبة
+    violationsTransfer: true,     // طلب تحويل المخالفات
+  });
   const [bulkGenerationDialogOpen, setBulkGenerationDialogOpen] = useState(false);
   const [bulkGenerationProgress, setBulkGenerationProgress] = useState<BulkGenerationProgress | null>(null);
   const [generatedCustomerIds, setGeneratedCustomerIds] = useState<Set<string>>(new Set());
@@ -577,7 +586,7 @@ export const DelinquentCustomersTab: React.FC = () => {
       // إنشاء ملف ZIP مع جميع المستندات
       const zipBlob = await generateBulkDocumentsZip(customersData, (progress) => {
         setBulkGenerationProgress(progress);
-      });
+      }, selectedDocuments);
 
       // تحميل الملف
       const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm');
@@ -597,7 +606,7 @@ export const DelinquentCustomersTab: React.FC = () => {
       toast.success(`✅ تم إنشاء وتحميل مستندات ${selectedCustomers.length} عميل بنجاح`);
       
       // إعادة تحميل البيانات
-      refreshDelinquentCustomers.refetch();
+      refreshDelinquentCustomers.mutate();
       
       // إلغاء التحديد
       setSelectedCustomers([]);
@@ -638,7 +647,7 @@ export const DelinquentCustomersTab: React.FC = () => {
       navigate(`/legal/cases/${caseId}`);
       
       // إعادة تحميل البيانات
-      refreshDelinquentCustomers.refetch();
+      refreshDelinquentCustomers.mutate();
     } catch (error) {
       toast.dismiss();
       console.error('Error converting to official case:', error);
@@ -1568,7 +1577,7 @@ export const DelinquentCustomersTab: React.FC = () => {
               </Badge>
               <Button
                 size="sm"
-                onClick={handleBulkCreateCases}
+                onClick={() => setDocumentSelectionDialogOpen(true)}
                 disabled={convertToCase.isPending}
                 className="gap-2 rounded-xl"
                 style={{
@@ -2387,6 +2396,272 @@ className={cn(
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document Selection Dialog */}
+      <Dialog open={documentSelectionDialogOpen} onOpenChange={setDocumentSelectionDialogOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <FileText className="h-6 w-6 text-primary" />
+              اختيار المستندات المطلوبة
+            </DialogTitle>
+            <DialogDescription>
+              حدد المستندات التي تريد إنشاءها لـ {selectedCustomers.length} عميل
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">
+                اختر المستندات المطلوبة
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedDocuments({
+                  explanatoryMemo: true,
+                  claimsStatement: true,
+                  documentsList: true,
+                  violationsList: true,
+                  criminalComplaint: true,
+                  violationsTransfer: true,
+                })}
+                className="h-8 text-xs"
+              >
+                تحديد الكل
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              {/* المذكرة الشارحة */}
+              <label 
+                htmlFor="explanatoryMemo" 
+                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedDocuments.explanatoryMemo 
+                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
+                    : 'hover:bg-accent/50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  id="explanatoryMemo"
+                  checked={selectedDocuments.explanatoryMemo}
+                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, explanatoryMemo: e.target.checked }))}
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-base flex items-center gap-2">
+                    📝 المذكرة الشارحة
+                    {selectedDocuments.explanatoryMemo && (
+                      <CheckCircle className="h-4 w-4 text-teal-600" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    مذكرة قانونية تشرح وقائع القضية والمطالبات
+                  </div>
+                </div>
+              </label>
+
+              {/* كشف المطالبات المالية */}
+              <label 
+                htmlFor="claimsStatement" 
+                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedDocuments.claimsStatement 
+                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
+                    : 'hover:bg-accent/50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  id="claimsStatement"
+                  checked={selectedDocuments.claimsStatement}
+                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, claimsStatement: e.target.checked }))}
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-base flex items-center gap-2">
+                    📄 كشف المطالبات المالية
+                    {selectedDocuments.claimsStatement && (
+                      <CheckCircle className="h-4 w-4 text-teal-600" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    يتضمن تفاصيل الفواتير المستحقة والمخالفات المرورية
+                  </div>
+                </div>
+              </label>
+
+              <label 
+                htmlFor="documentsList" 
+                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedDocuments.documentsList 
+                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
+                    : 'hover:bg-accent/50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  id="documentsList"
+                  checked={selectedDocuments.documentsList}
+                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, documentsList: e.target.checked }))}
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-base flex items-center gap-2">
+                    📋 كشف المستندات المرفوعة
+                    {selectedDocuments.documentsList && (
+                      <CheckCircle className="h-4 w-4 text-teal-600" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    قائمة بجميع المستندات والأوراق الثبوتية المرفوعة للقضية
+                  </div>
+                </div>
+              </label>
+
+              {/* كشف المخالفات المرورية */}
+              <label 
+                htmlFor="violationsList" 
+                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedDocuments.violationsList 
+                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
+                    : 'hover:bg-accent/50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  id="violationsList"
+                  checked={selectedDocuments.violationsList}
+                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, violationsList: e.target.checked }))}
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-base flex items-center gap-2">
+                    🚗 كشف المخالفات المرورية
+                    {selectedDocuments.violationsList && (
+                      <CheckCircle className="h-4 w-4 text-teal-600" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    قائمة تفصيلية بجميع المخالفات المرورية غير المسددة
+                  </div>
+                </div>
+              </label>
+
+              {/* بلاغ سرقة المركبة */}
+              <label 
+                htmlFor="criminalComplaint" 
+                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedDocuments.criminalComplaint 
+                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
+                    : 'hover:bg-accent/50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  id="criminalComplaint"
+                  checked={selectedDocuments.criminalComplaint}
+                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, criminalComplaint: e.target.checked }))}
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-base flex items-center gap-2">
+                    ⚖️ بلاغ سرقة المركبة
+                    {selectedDocuments.criminalComplaint && (
+                      <CheckCircle className="h-4 w-4 text-teal-600" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    بلاغ جنائي للنيابة العامة - يُنشأ للحالات التي تتجاوز 5,000 ريال أو تحتوي على مخالفات
+                  </div>
+                </div>
+              </label>
+
+              {/* طلب تحويل المخالفات */}
+              <label 
+                htmlFor="violationsTransfer" 
+                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                  selectedDocuments.violationsTransfer 
+                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
+                    : 'hover:bg-accent/50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  id="violationsTransfer"
+                  checked={selectedDocuments.violationsTransfer}
+                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, violationsTransfer: e.target.checked }))}
+                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-base flex items-center gap-2">
+                    🔄 طلب تحويل المخالفات
+                    {selectedDocuments.violationsTransfer && (
+                      <CheckCircle className="h-4 w-4 text-teal-600" />
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    طلب رسمي لإدارة المرور لتحويل المخالفات إلى اسم المستأجر
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {!selectedDocuments.explanatoryMemo && 
+             !selectedDocuments.claimsStatement && 
+             !selectedDocuments.documentsList && 
+             !selectedDocuments.violationsList &&
+             !selectedDocuments.criminalComplaint &&
+             !selectedDocuments.violationsTransfer && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  ⚠️ يجب اختيار مستند واحد على الأقل
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setDocumentSelectionDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                setDocumentSelectionDialogOpen(false);
+                handleBulkCreateCases();
+              }}
+              disabled={
+                !selectedDocuments.explanatoryMemo && 
+                !selectedDocuments.claimsStatement && 
+                !selectedDocuments.documentsList && 
+                !selectedDocuments.violationsList &&
+                !selectedDocuments.criminalComplaint &&
+                !selectedDocuments.violationsTransfer
+              }
+              className="gap-2"
+              style={{
+                background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
+                color: 'white',
+              }}
+            >
+              <FolderArchive className="h-4 w-4" />
+              إنشاء وتحميل ({
+                [
+                  selectedDocuments.explanatoryMemo,
+                  selectedDocuments.claimsStatement, 
+                  selectedDocuments.documentsList, 
+                  selectedDocuments.violationsList,
+                  selectedDocuments.criminalComplaint,
+                  selectedDocuments.violationsTransfer
+                ].filter(Boolean).length
+              } مستند × {selectedCustomers.length} عميل)
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Generation Progress Dialog */}
       <Dialog open={bulkGenerationDialogOpen} onOpenChange={setBulkGenerationDialogOpen}>

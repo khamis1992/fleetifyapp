@@ -137,15 +137,15 @@ function CustomerRow({
   interactions?: FollowUp[];
   onQuickUpdate?: (id: string, action: 'complete' | 'postpone') => void;
 }) {
-  // Get customer names - prioritize Arabic, then English, then code
+  // Get customer names - prioritize primary fields, then Arabic, then code
   const getNameAr = () => {
-    // أولاً: الاسم العربي
-    if (customer.first_name_ar || customer.last_name_ar) {
-      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
-    }
-    // ثانياً: الاسم الإنجليزي
+    // أولاً: الحقول الأساسية (first_name, last_name)
     if (customer.first_name || customer.last_name) {
       return `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+    }
+    // ثانياً: حقول _ar
+    if (customer.first_name_ar || customer.last_name_ar) {
+      return `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim();
     }
     // ثالثاً: كود العميل
     return customer.customer_code || 'عميل غير معرف';
@@ -699,7 +699,7 @@ export default function CustomerCRMNew() {
       });
 
       return {
-        nameAr: `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معرف',
+        nameAr: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || `${customer.first_name_ar || ''} ${customer.last_name_ar || ''}`.trim() || 'غير معرف',
         phone: customer.phone || '-',
         pendingInvoicesCount: pendingInvoices.length,
         totalRemaining,
@@ -1317,10 +1317,10 @@ export default function CustomerCRMNew() {
           open={callDialogOpen}
           onOpenChange={setCallDialogOpen}
           customerName={
-            (callingCustomer.first_name_ar || callingCustomer.last_name_ar)
-              ? `${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim()
-              : (callingCustomer.first_name || callingCustomer.last_name)
-                ? `${callingCustomer.first_name || ''} ${callingCustomer.last_name || ''}`.trim()
+            (callingCustomer.first_name || callingCustomer.last_name)
+              ? `${callingCustomer.first_name || ''} ${callingCustomer.last_name || ''}`.trim()
+              : (callingCustomer.first_name_ar || callingCustomer.last_name_ar)
+                ? `${callingCustomer.first_name_ar || ''} ${callingCustomer.last_name_ar || ''}`.trim()
                 : callingCustomer.customer_code || 'عميل'
           }
           customerPhone={callingCustomer.phone || ''}
@@ -1334,9 +1334,9 @@ export default function CustomerCRMNew() {
         customerName={(() => {
           const c = customers.find(cust => cust.id === selectedCustomerForPanel);
           if (!c) return undefined;
+          const primaryName = `${c.first_name || ''} ${c.last_name || ''}`.trim();
           const arName = `${c.first_name_ar || ''} ${c.last_name_ar || ''}`.trim();
-          const enName = `${c.first_name || ''} ${c.last_name || ''}`.trim();
-          return arName || enName || c.customer_code;
+          return primaryName || arName || c.customer_code;
         })()}
         customerPhone={customers.find(c => c.id === selectedCustomerForPanel)?.phone}
         customerCode={customers.find(c => c.id === selectedCustomerForPanel)?.customer_code}

@@ -834,25 +834,18 @@ interface Customer {
   emergency_contact_name?: string | null;
 }
 
-// Helper to get full customer name - prioritizing Arabic names
+// Helper to get full customer name - prioritizing primary name fields
 const getCustomerName = (customer: Customer): string => {
-  // Arabic company name first
-  if (customer.company_name_ar) return customer.company_name_ar;
+  // Company name - prefer primary field
   if (customer.company_name) return customer.company_name;
+  if (customer.company_name_ar) return customer.company_name_ar;
   
-  // Arabic personal name
-  if (customer.first_name_ar || customer.last_name_ar) {
-    const firstName = customer.first_name_ar || customer.first_name || '';
-    const lastName = customer.last_name_ar || customer.last_name || '';
-    return `${firstName} ${lastName}`.trim() || 'غير معروف';
-  }
+  // Personal name - prefer primary fields
+  const firstName = customer.first_name || customer.first_name_ar || '';
+  const lastName = customer.last_name || customer.last_name_ar || '';
+  const fullName = `${firstName} ${lastName}`.trim();
   
-  // English personal name
-  if (customer.first_name && customer.last_name) 
-    return `${customer.first_name} ${customer.last_name}`;
-  if (customer.first_name) return customer.first_name;
-  
-  return 'غير معروف';
+  return fullName || 'غير معروف';
 };
 
 interface CustomerInfoStepProps {

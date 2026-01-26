@@ -217,11 +217,36 @@ export const useCustomerOperations = (options: CustomerOperationsOptions = {}) =
         { queryKey: ['customers'] },
         (oldData: unknown) => {
           if (!oldData) return oldData;
-
-          const customerList = oldData as Customer[]
-          return customerList.map((c) =>
-            c.id === customer.id ? { ...c, ...customer } : c
-          );
+          
+          // Handle both array and object with data property
+          if (Array.isArray(oldData)) {
+            return oldData.map((c: Customer) =>
+              c.id === customer.id ? { ...c, ...customer } : c
+            );
+          }
+          
+          // If oldData is an object with customers array (e.g., paginated response)
+          if (typeof oldData === 'object' && oldData !== null) {
+            const dataObj = oldData as Record<string, unknown>;
+            if (Array.isArray(dataObj.data)) {
+              return {
+                ...dataObj,
+                data: dataObj.data.map((c: Customer) =>
+                  c.id === customer.id ? { ...c, ...customer } : c
+                ),
+              };
+            }
+            if (Array.isArray(dataObj.customers)) {
+              return {
+                ...dataObj,
+                customers: dataObj.customers.map((c: Customer) =>
+                  c.id === customer.id ? { ...c, ...customer } : c
+                ),
+              };
+            }
+          }
+          
+          return oldData;
         }
       );
       

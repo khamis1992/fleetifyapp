@@ -208,10 +208,10 @@ export const QuickSearch: React.FC = () => {
   // Helper function to build customer display name
   const getCustomerDisplayName = (customer: any): string => {
     if (customer.customer_type === 'company') {
-      return customer.company_name_ar || customer.company_name || 'شركة';
+      return customer.company_name || customer.company_name_ar || 'شركة';
     }
-    const firstName = customer.first_name_ar || customer.first_name || '';
-    const lastName = customer.last_name_ar || customer.last_name || '';
+    const firstName = customer.first_name || customer.first_name_ar || '';
+    const lastName = customer.last_name || customer.last_name_ar || '';
     return `${firstName} ${lastName}`.trim() || 'عميل';
   };
 

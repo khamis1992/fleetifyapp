@@ -109,12 +109,12 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 
   const getCustomerDisplayName = (customer: any) => {
     if (customer.customer_type === 'individual') {
-      // Prefer Arabic names, fallback to English
-      const firstName = customer.first_name_ar || customer.first_name || '';
-      const lastName = customer.last_name_ar || customer.last_name || '';
+      // Prefer primary name fields, fallback to Arabic fields
+      const firstName = customer.first_name || customer.first_name_ar || '';
+      const lastName = customer.last_name || customer.last_name_ar || '';
       return `${firstName} ${lastName}`.trim() || 'عميل غير مسمى';
     }
-    return customer.company_name_ar || customer.company_name || 'عميل غير مسمى';
+    return customer.company_name || customer.company_name_ar || 'عميل غير مسمى';
   };
 
   const getCustomerSecondaryInfo = (customer: any) => {

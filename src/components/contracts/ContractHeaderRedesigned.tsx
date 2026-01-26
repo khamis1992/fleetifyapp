@@ -149,7 +149,7 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
     if (customer.customer_type === 'company') {
       return customer.company_name_ar || customer.company_name || 'شركة غير محددة';
     }
-    return `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() || 'عميل غير محدد';
+    return `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim() || 'عميل غير محدد';
   }, [contract.customer]);
 
   // Vehicle info

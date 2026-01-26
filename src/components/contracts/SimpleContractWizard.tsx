@@ -432,11 +432,11 @@ const Step1CustomerVehicle: React.FC<{
             last_name_ar: customer.last_name_ar,
             phone: customer.phone,
             national_id: customer.national_id,
-            full_name: customer.first_name_ar && customer.last_name_ar
-              ? `${customer.first_name_ar} ${customer.last_name_ar}`.trim()
-              : customer.first_name && customer.last_name
-                ? `${customer.first_name} ${customer.last_name}`.trim()
-                : customer.first_name_ar || customer.first_name || 'عميل جديد'
+            full_name: customer.first_name && customer.last_name
+              ? `${customer.first_name} ${customer.last_name}`.trim()
+              : customer.first_name_ar && customer.last_name_ar
+                ? `${customer.first_name_ar} ${customer.last_name_ar}`.trim()
+                : customer.first_name || customer.first_name_ar || 'عميل جديد'
           };
           onCustomerCreated?.(newCustomer);
           onUpdate({ customer_id: customer.id });

@@ -17,31 +17,18 @@ export const CustomerDisplayName: React.FC<CustomerDisplayNameProps> = ({
 }) => {
   const getDisplayName = () => {
     if (customer.customer_type === 'individual') {
-      // Prefer Arabic names if available, fallback to English
-      const firstName = customer.first_name_ar || customer.first_name || '';
-      const lastName = customer.last_name_ar || customer.last_name || '';
+      // Prefer primary name fields (first_name, last_name), fallback to _ar fields
+      const firstName = customer.first_name || customer.first_name_ar || '';
+      const lastName = customer.last_name || customer.last_name_ar || '';
       return `${firstName} ${lastName}`.trim() || 'غير محدد';
     } else {
-      // For companies, prefer Arabic name if available
-      return customer.company_name_ar || customer.company_name || 'غير محدد';
+      // For companies, prefer primary name field
+      return customer.company_name || customer.company_name_ar || 'غير محدد';
     }
   };
 
   const getSecondaryName = () => {
-    if (customer.customer_type === 'individual') {
-      // Show English name as secondary if Arabic is primary
-      if (customer.first_name_ar || customer.last_name_ar) {
-        const firstName = customer.first_name || '';
-        const lastName = customer.last_name || '';
-        const englishName = `${firstName} ${lastName}`.trim();
-        return englishName !== getDisplayName() ? englishName : null;
-      }
-    } else {
-      // For companies, show English name as secondary if Arabic is primary
-      if (customer.company_name_ar && customer.company_name) {
-        return customer.company_name !== customer.company_name_ar ? customer.company_name : null;
-      }
-    }
+    // Secondary name is no longer needed since we prioritize primary fields
     return null;
   };
 

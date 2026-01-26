@@ -193,12 +193,14 @@ function getOfficialLetterStyles(): string {
       table {
         width: 100% !important;
         table-layout: fixed !important;
-        page-break-inside: auto !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
       
       tr {
         page-break-inside: avoid !important;
         page-break-after: auto !important;
+        break-inside: avoid !important;
       }
       
       thead {
@@ -207,6 +209,18 @@ function getOfficialLetterStyles(): string {
       
       tfoot {
         display: table-footer-group !important;
+      }
+      
+      /* منع تقسيم العناصر المهمة */
+      .content, .section, .info-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      /* ضمان أن الجداول الكبيرة تبدأ في صفحة جديدة */
+      table.large-table {
+        page-break-before: always !important;
+        break-before: always !important;
       }
     }
     
@@ -279,8 +293,10 @@ function getOfficialLetterStyles(): string {
     }
     
     .logo-container img {
-      max-height: 60px;
-      max-width: 100px;
+      max-height: 120px;
+      max-width: 200px;
+      width: auto;
+      height: auto;
     }
     
     .company-en {
@@ -2107,8 +2123,8 @@ export function generateDocumentPortfolioHtml(data: DocumentPortfolioData): stri
     }
     .company-ar h1 { color: #1e3a5f; margin: 0; font-size: 20px; }
     .company-ar p { color: #000; margin: 2px 0; font-size: 11px; }
-    .logo-container { flex: 0 0 130px; text-align: center; padding: 0 15px; }
-    .logo-container img { max-height: 70px; max-width: 120px; }
+    .logo-container { flex: 0 0 180px; text-align: center; padding: 0 15px; }
+    .logo-container img { max-height: 140px; max-width: 240px; width: auto; height: auto; }
     .company-en { text-align: left; }
     .company-en h1 { color: #1e3a5f; margin: 0; font-size: 14px; }
     .company-en p { color: #000; margin: 2px 0; font-size: 11px; }

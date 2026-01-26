@@ -222,6 +222,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       phone: editingCustomer.phone || '',
       email: editingCustomer.email || undefined,
       national_id: editingCustomer.national_id || undefined,
+      nationality: editingCustomer.nationality || undefined,
       passport_number: editingCustomer.passport_number || undefined,
       license_number: editingCustomer.license_number || undefined,
       notes: editingCustomer.notes || undefined,
@@ -245,6 +246,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
       phone: '',
       email: '',
       national_id: '',
+      nationality: '',
       passport_number: '',
       license_number: '',
       notes: '',
@@ -564,6 +566,26 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
           <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
             <FormField
               control={form.control}
+              name="nationality"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-700 font-medium">الجنسية</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      placeholder="أدخل الجنسية (مثال: قطري، مصري، هندي)" 
+                      className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
+            <FormField
+              control={form.control}
               name="passport_number"
               render={({ field }) => (
                 <FormItem>
@@ -580,6 +602,9 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
               )}
             />
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {customerType === 'individual' && (
             <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 rounded-xl p-4 border border-teal-200/50 shadow-sm hover:shadow-md transition-shadow">
@@ -1173,7 +1198,7 @@ const QuickCustomerDialogContent: React.FC<{
         last_name_ar: ec.last_name_ar,
         phone: ec.phone,
         national_id: ec.national_id,
-        full_name: `${ec.first_name_ar || ec.first_name || ''} ${ec.last_name_ar || ec.last_name || ''}`.trim(),
+        full_name: `${ec.first_name || ec.first_name_ar || ''} ${ec.last_name || ec.last_name_ar || ''}`.trim(),
       });
       form.reset();
       return;
@@ -1295,7 +1320,7 @@ const QuickCustomerDialogContent: React.FC<{
             <Alert className="border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-md">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-900">
-                العميل موجود: {duplicateCheck.existingCustomer.first_name_ar || duplicateCheck.existingCustomer.first_name} {duplicateCheck.existingCustomer.last_name_ar || duplicateCheck.existingCustomer.last_name}
+                العميل موجود: {duplicateCheck.existingCustomer.first_name || duplicateCheck.existingCustomer.first_name_ar} {duplicateCheck.existingCustomer.last_name || duplicateCheck.existingCustomer.last_name_ar}
                 <Button
                   type="button"
                   variant="outline"
@@ -1310,7 +1335,7 @@ const QuickCustomerDialogContent: React.FC<{
                       last_name_ar: ec.last_name_ar,
                       phone: ec.phone,
                       national_id: ec.national_id,
-                      full_name: `${ec.first_name_ar || ec.first_name || ''} ${ec.last_name_ar || ec.last_name || ''}`.trim(),
+                      full_name: `${ec.first_name || ec.first_name_ar || ''} ${ec.last_name || ec.last_name_ar || ''}`.trim(),
                     });
                     form.reset();
                   }}
