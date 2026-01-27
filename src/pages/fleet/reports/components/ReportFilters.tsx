@@ -318,14 +318,19 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
                     حالة المركبة:
                   </span>
                   <div className="flex gap-1 flex-wrap">
-                    {['available', 'rented', 'maintenance', 'reserved', 'reserved_employee'].map((status) => {
+                    {['available', 'rented', 'street_52', 'maintenance', 'out_of_service', 'accident', 'stolen', 'police_station', 'reserved_employee', 'municipality'].map((status) => {
                       const isSelected = filters.vehicleStatus?.includes(status as any);
                       const labels = {
                         available: 'متاحة',
                         rented: 'مؤجرة',
+                        street_52: 'شارع 52',
                         maintenance: 'صيانة',
-                        reserved: 'محجوزة',
+                        out_of_service: 'خارج الخدمة',
+                        accident: 'حادث',
+                        stolen: 'مسروقة',
+                        police_station: 'مركز الشرطة',
                         reserved_employee: 'لموظف',
+                        municipality: 'البلدية',
                       };
                       return (
                         <Button

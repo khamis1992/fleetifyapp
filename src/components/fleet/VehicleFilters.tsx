@@ -20,13 +20,14 @@ const statusOptions = [
   { value: 'all', label: 'جميع الحالات' },
   { value: 'available', label: 'متاحة' },
   { value: 'rented', label: 'مؤجرة' },
+  { value: 'street_52', label: 'شارع 52' },
   { value: 'maintenance', label: 'قيد الصيانة' },
   { value: 'out_of_service', label: 'خارج الخدمة' },
-  { value: 'reserved', label: 'محجوزة' },
-  { value: 'reserved_employee', label: 'محجوزة لموظف' },
   { value: 'accident', label: 'حادث' },
   { value: 'stolen', label: 'مسروقة' },
-  { value: 'police_station', label: 'في مركز الشرطة' }
+  { value: 'police_station', label: 'في مركز الشرطة' },
+  { value: 'reserved_employee', label: 'محجوزة لموظف' },
+  { value: 'municipality', label: 'البلدية' }
 ];
 
 const fuelTypeOptions = [

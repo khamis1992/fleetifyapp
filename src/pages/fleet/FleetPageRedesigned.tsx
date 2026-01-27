@@ -418,13 +418,14 @@ const exportVehiclesToExcel = async (
     const statusLabels: Record<string, string> = {
       available: 'متاحة',
       rented: 'مؤجرة',
+      street_52: 'شارع 52',
       maintenance: 'صيانة',
       out_of_service: 'خارج الخدمة',
-      reserved: 'محجوزة',
-      reserved_employee: 'محجوزة لموظف',
       accident: 'حادث',
       stolen: 'مسروقة',
       police_station: 'في مركز الشرطة',
+      reserved_employee: 'محجوزة لموظف',
+      municipality: 'البلدية',
     };
 
     // Count vehicles with issues
@@ -614,13 +615,14 @@ const exportVehiclesToExcel = async (
 const statusConfig = {
   available: { label: 'متاحة', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
   rented: { label: 'مؤجرة', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+  street_52: { label: 'شارع 52', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
   maintenance: { label: 'صيانة', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
   out_of_service: { label: 'خارج الخدمة', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500' },
-  reserved: { label: 'محجوزة', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-  reserved_employee: { label: 'محجوزة لموظف', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
   accident: { label: 'حادث', color: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' },
   stolen: { label: 'مسروقة', color: 'bg-slate-50 text-slate-700 border-slate-200', dot: 'bg-slate-500' },
   police_station: { label: 'في مركز الشرطة', color: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
+  reserved_employee: { label: 'محجوزة لموظف', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
+  municipality: { label: 'البلدية', color: 'bg-teal-50 text-teal-700 border-teal-200', dot: 'bg-teal-500' },
 };
 
 const statusCycle = ['available', 'rented', 'maintenance', 'out_of_service'] as const;
@@ -1323,13 +1325,14 @@ const FleetPageRedesigned: React.FC = () => {
                 <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="available">متاحة</SelectItem>
                 <SelectItem value="rented">مؤجرة</SelectItem>
+                <SelectItem value="street_52">شارع 52</SelectItem>
                 <SelectItem value="maintenance">صيانة</SelectItem>
                 <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
-                <SelectItem value="reserved">محجوزة</SelectItem>
-                <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
                 <SelectItem value="accident">حادث</SelectItem>
                 <SelectItem value="stolen">مسروقة</SelectItem>
                 <SelectItem value="police_station">في مركز الشرطة</SelectItem>
+                <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
+                <SelectItem value="municipality">البلدية</SelectItem>
               </SelectContent>
             </Select>
 

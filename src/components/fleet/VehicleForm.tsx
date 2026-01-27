@@ -1474,13 +1474,14 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <SelectContent>
                               <SelectItem value="available">متاحة</SelectItem>
                               <SelectItem value="rented">مؤجرة</SelectItem>
+                              <SelectItem value="street_52">شارع 52</SelectItem>
                               <SelectItem value="maintenance">قيد الصيانة</SelectItem>
                               <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
-                              <SelectItem value="reserved">محجوزة</SelectItem>
-                              <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
                               <SelectItem value="accident">حادث</SelectItem>
                               <SelectItem value="stolen">مسروقة</SelectItem>
                               <SelectItem value="police_station">في مركز الشرطة</SelectItem>
+                              <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
+                              <SelectItem value="municipality">البلدية</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
