@@ -14,9 +14,13 @@ interface VehicleStats {
   rentedVehicles: number;
   maintenanceVehicles: number;
   outOfServiceVehicles: number;
-  reservedVehicles: number;
+  reservedVehicles: number; // شارع 52
+  reservedEmployeeVehicles: number;
   accidentVehicles: number;
   policeStationVehicles: number;
+  stolenVehicles: number;
+  municipalityVehicles: number;
+  street52Vehicles: number;
   
   // مؤشرات الأداء
   utilizationRate: number; // معدل الإشغال
@@ -70,9 +74,15 @@ export const useVehicleStats = () => {
       const rentedVehicles = statusCounts['rented'] || 0;
       const maintenanceVehicles = statusCounts['maintenance'] || 0;
       const outOfServiceVehicles = statusCounts['out_of_service'] || 0;
-      const reservedVehicles = (statusCounts['reserved'] || 0) + (statusCounts['reserved_employee'] || 0);
       const accidentVehicles = statusCounts['accident'] || 0;
       const policeStationVehicles = statusCounts['police_station'] || 0;
+      const stolenVehicles = statusCounts['stolen'] || 0;
+      const municipalityVehicles = statusCounts['municipality'] || 0;
+      const street52Vehicles = statusCounts['street_52'] || 0;
+      const reservedEmployeeVehicles = statusCounts['reserved_employee'] || 0;
+      
+      // التوافق مع الكود القديم (reserved كان يشمل street_52)
+      const reservedVehicles = statusCounts['reserved'] || 0;
 
       // معدل الإشغال
       const utilizationRate = totalVehicles > 0 
@@ -177,7 +187,7 @@ export const useVehicleStats = () => {
 
       // حساب Fleet Health Score
       const alertsCount = insuranceExpired + insuranceExpiringSoon + registrationExpired + registrationExpiringSoon + serviceOverdue;
-      const problemVehicles = maintenanceVehicles + outOfServiceVehicles + accidentVehicles + policeStationVehicles;
+      const problemVehicles = maintenanceVehicles + outOfServiceVehicles + accidentVehicles + policeStationVehicles + stolenVehicles;
       
       let healthScore = 100;
       // خصم نقاط للمشاكل
@@ -194,8 +204,12 @@ export const useVehicleStats = () => {
         maintenanceVehicles,
         outOfServiceVehicles,
         reservedVehicles,
+        reservedEmployeeVehicles,
         accidentVehicles,
         policeStationVehicles,
+        stolenVehicles,
+        municipalityVehicles,
+        street52Vehicles,
         utilizationRate,
         averageRevenuePerVehicle,
         totalMonthlyRevenue,
@@ -213,4 +227,3 @@ export const useVehicleStats = () => {
     staleTime: 5 * 60 * 1000, // 5 دقائق
   });
 };
-

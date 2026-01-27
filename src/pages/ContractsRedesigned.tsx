@@ -349,6 +349,7 @@ function ContractsRedesigned() {
       const { error } = await supabase
         .from('contracts')
         .update({ 
+          status: 'under_legal_procedure',
           legal_status: 'under_legal_action',
           updated_at: new Date().toISOString()
         })

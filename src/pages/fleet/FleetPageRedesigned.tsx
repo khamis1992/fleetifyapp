@@ -82,7 +82,6 @@ import {
 import { VehicleForm } from '@/components/fleet/VehicleForm';
 import { VehicleGroupManagement } from '@/components/fleet/VehicleGroupManagement';
 import { VehicleCSVUpload } from '@/components/fleet/VehicleCSVUpload';
-import { VehicleSplitView } from '@/components/fleet/VehicleSplitView';
 import { FleetSmartDashboard } from '@/components/fleet/FleetSmartDashboard';
 import { useSyncVehicleStatus } from '@/hooks/useSyncVehicleStatus';
 import { VehicleStatusChangeDialog } from '@/components/fleet/VehicleStatusChangeDialog';
@@ -905,7 +904,6 @@ const FleetPageRedesigned: React.FC = () => {
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
   const [showGroupManagement, setShowGroupManagement] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
   const [sortBy, setSortBy] = useState('newest');
   const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set());
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -1088,30 +1086,7 @@ const FleetPageRedesigned: React.FC = () => {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              {/* View Toggle */}
-              <div className="hidden md:flex items-center bg-neutral-100 rounded-lg p-1 border">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5",
-                    viewMode === 'grid' && 'bg-white text-neutral-900 shadow-sm'
-                  )}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  شبكة
-                </button>
-                <button
-                  onClick={() => setViewMode('split')}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5",
-                    viewMode === 'split' && 'bg-white text-neutral-900 shadow-sm'
-                  )}
-                >
-                  <Columns className="w-4 h-4" />
-                  مقسم
-                </button>
-              </div>
-
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -1350,16 +1325,8 @@ const FleetPageRedesigned: React.FC = () => {
           </div>
         </div>
 
-        {/* Split View */}
-        {viewMode === 'split' ? (
-          <VehicleSplitView
-            vehicles={vehiclesData?.data || []}
-            isLoading={vehiclesLoading}
-            companyId={user?.profile?.company_id || null}
-            onEditVehicle={handleEditVehicle}
-            onDeleteVehicle={(vehicle) => setVehicleToDelete(vehicle)}
-          />
-        ) : vehiclesLoading ? (
+        {/* Vehicle List */}
+        {vehiclesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="h-72 bg-white rounded-xl border animate-pulse" />
