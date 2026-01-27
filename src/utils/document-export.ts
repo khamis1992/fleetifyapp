@@ -706,117 +706,438 @@ function replaceTemplateVariables(
 }
 
 /**
- * تحويل القالب النصي إلى DOCX
+ * تحويل القالب النصي إلى DOCX بتنسيق يطابق PDF
  */
 export async function downloadTemplateAsDocx(
   template: string,
   variables: Record<string, string>,
   filename: string = 'document.docx'
 ): Promise<void> {
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, TextDirection } = await import('docx');
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, TextDirection, ShadingType } = await import('docx');
   const { saveAs } = await import('file-saver');
   
   // استبدال المتغيرات
   const content = replaceTemplateVariables(template, variables);
   
-  // تقسيم المحتوى إلى أقسام
-  const sections = content.split('====================================');
-  
   const children: any[] = [];
   
+  // 1. Header - ترويسة الشركة
+  children.push(
+    new Table({
+      rows: [
+        new TableRow({
+          children: [
+            // الشركة بالعربي (يمين)
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: variables.PLAINTIFF_COMPANY_NAME || 'شركة العراف لتأجير السيارات', size: 24, font: 'Arial', bold: true, rightToLeft: true })],
+                  alignment: AlignmentType.RIGHT,
+                  bidirectional: true
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: 'ذ.م.م', size: 20, font: 'Arial', rightToLeft: true })],
+                  alignment: AlignmentType.RIGHT,
+                  bidirectional: true
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `س.ت: ${variables.PLAINTIFF_CR || '146832'}`, size: 20, font: 'Arial', rightToLeft: true })],
+                  alignment: AlignmentType.RIGHT,
+                  bidirectional: true
+                })
+              ],
+              width: { size: 40, type: WidthType.PERCENTAGE },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.DOUBLE, size: 6, color: '1e3a5f' }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            }),
+            // مساحة للشعار (وسط)
+            new TableCell({
+              children: [new Paragraph({ text: '' })],
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.DOUBLE, size: 6, color: '1e3a5f' }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            }),
+            // الشركة بالإنجليزي (يسار)
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: 'AL-ARAF CAR RENTAL L.L.C', size: 20, font: 'Arial', bold: true })],
+                  alignment: AlignmentType.LEFT
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `C.R: ${variables.PLAINTIFF_CR || '146832'}`, size: 18, font: 'Arial' })],
+                  alignment: AlignmentType.LEFT
+                })
+              ],
+              width: { size: 40, type: WidthType.PERCENTAGE },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.DOUBLE, size: 6, color: '1e3a5f' }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+            })
+          ]
+        })
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    })
+  );
+  
+  // 2. Address Bar
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: variables.PLAINTIFF_ADDRESS || 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+          size: 20,
+          font: 'Arial',
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 100, after: 100 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'cccccc' } },
+      bidirectional: true
+    })
+  );
+  
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'هاتف: 31411919 | البريد الإلكتروني: info@alaraf.qa',
+          size: 18,
+          font: 'Arial',
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      bidirectional: true
+    })
+  );
+  
+  // 3. التاريخ والرقم المرجعي
+  const today = new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const refNumber = `ALR/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(Math.random() * 9000) + 1000}`;
+  
+  children.push(
+    new Table({
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: `الرقم المرجعي: ${refNumber}`, size: 22, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: `التاريخ: ${today}`, size: 22, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.LEFT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
+            })
+          ]
+        })
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    })
+  );
+  
+  // 4. Subject Box (صندوق الموضوع بخلفية زرقاء)
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'مذكرة شارحة مقدمة إلى محكمة الاستثمار',
+          bold: true,
+          size: 28,
+          font: 'Arial',
+          color: 'ffffff',
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200, after: 100 },
+      shading: { fill: '1e3a5f', type: ShadingType.CLEAR },
+      bidirectional: true
+    })
+  );
+  
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'في دعوى مطالبة مالية وتعويضات عقدية - إخلال بالتزامات عقد إيجار مركبة',
+          size: 22,
+          font: 'Arial',
+          color: 'ffffff',
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      shading: { fill: '1e3a5f', type: ShadingType.CLEAR },
+      bidirectional: true
+    })
+  );
+  
+  // 5. Info Box (معلومات الأطراف بخلفية رمادية)
+  children.push(
+    new Table({
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: 'المدعية:', size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SOLID, size: 8, color: '1e3a5f' } }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: `${variables.PLAINTIFF_COMPANY_NAME} – ذ.م.م`, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
+            })
+          ]
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: 'المدعى عليه:', size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SOLID, size: 8, color: '1e3a5f' } }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: variables.DEFENDANT_NAME, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
+            })
+          ]
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: 'رقم الهوية:', size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SOLID, size: 8, color: '1e3a5f' } }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: variables.DEFENDANT_QID, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } }
+            })
+          ]
+        })
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    })
+  );
+  
+  // 6. الأقسام (Sections)
+  const sections = [
+    {
+      title: 'أولاً: الوقائع',
+      content: `حيث إن الثابت بالأوراق أن الشركة المدعية أبرمت مع المدعى عليه بتاريخ ${variables.CONTRACT_DATE} عقد إيجار مركبة، التزم بموجبه المدعى عليه بسداد الإيجار الشهري في مواعيده، والمحافظة على المركبة، وتحمل كافة الالتزامات المترتبة على استخدامها.`
+    },
+    {
+      title: 'ثانياً: المطالبات المالية المباشرة',
+      isTable: true
+    },
+    {
+      title: 'ثالثاً: الأساس القانوني',
+      content: 'تستند هذه الدعوى إلى أحكام القانون المدني القطري رقم (22) لسنة 2004، ولا سيما المواد: 171، 263، 266، 267، 589'
+    },
+    {
+      title: 'رابعاً: الطلبات',
+      isList: true
+    }
+  ];
+  
   for (const section of sections) {
-    const lines = section.trim().split('\n').filter(line => line.trim());
-    
-    if (lines.length === 0) continue;
-    
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      
-      // تخطي الخطوط الفارغة
-      if (!trimmedLine) continue;
-      
-      // عنوان رئيسي (يبدأ بـ "أولاً:" أو "ثانياً:" إلخ)
-      if (trimmedLine.match(/^(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً):/)) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: trimmedLine,
-                bold: true,
-                size: 28,
-                font: 'Arial',
-                color: '1e3a5f',
-                rightToLeft: true
-              }),
-            ],
-            alignment: AlignmentType.RIGHT,
-            spacing: { before: 300, after: 150 },
-            bidirectional: true,
+    // عنوان القسم
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: section.title,
+            bold: true,
+            size: 28,
+            font: 'Arial',
+            color: '1e3a5f',
+            rightToLeft: true
           })
-        );
-      }
-      // عنوان فرعي (ينتهي بـ ":")
-      else if (trimmedLine.endsWith(':')) {
+        ],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 300, after: 150 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: '1e3a5f' } },
+        bidirectional: true
+      })
+    );
+    
+    // محتوى القسم
+    if (section.isTable) {
+      // جدول المطالبات المالية
+      children.push(
+        new Table({
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: 'البند', size: 22, font: 'Arial', bold: true, color: 'ffffff', rightToLeft: true })], alignment: AlignmentType.CENTER, bidirectional: true })],
+                  width: { size: 10, type: WidthType.PERCENTAGE },
+                  shading: { fill: '1e3a5f', type: ShadingType.CLEAR }
+                }),
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: 'البيان', size: 22, font: 'Arial', bold: true, color: 'ffffff', rightToLeft: true })], alignment: AlignmentType.CENTER, bidirectional: true })],
+                  shading: { fill: '1e3a5f', type: ShadingType.CLEAR }
+                }),
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: 'المبلغ (ر.ق)', size: 22, font: 'Arial', bold: true, color: 'ffffff', rightToLeft: true })], alignment: AlignmentType.CENTER, bidirectional: true })],
+                  width: { size: 20, type: WidthType.PERCENTAGE },
+                  shading: { fill: '1e3a5f', type: ShadingType.CLEAR }
+                })
+              ]
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '1', size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'f9f9f9', type: ShadingType.CLEAR } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'إيجار متأخر غير مسدد', size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })], shading: { fill: 'f9f9f9', type: ShadingType.CLEAR } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: variables.UNPAID_RENT_AMOUNT, size: 22, font: 'Arial', bold: true, color: 'd32f2f' })], alignment: AlignmentType.CENTER })], shading: { fill: 'f9f9f9', type: ShadingType.CLEAR } })
+              ]
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '2', size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.CENTER })] }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'غرامات تأخير اتفاقية', size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })] }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: variables.LATE_FEES_TOTAL, size: 22, font: 'Arial', bold: true, color: 'd32f2f' })], alignment: AlignmentType.CENTER })] })
+              ]
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '3', size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.CENTER })], shading: { fill: 'f9f9f9', type: ShadingType.CLEAR } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'تعويض عن الأضرار والخسائر', size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })], shading: { fill: 'f9f9f9', type: ShadingType.CLEAR } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: variables.DAMAGES_COMPENSATION, size: 22, font: 'Arial', bold: true, color: 'd32f2f' })], alignment: AlignmentType.CENTER })], shading: { fill: 'f9f9f9', type: ShadingType.CLEAR } })
+              ]
+            }),
+            new TableRow({
+              children: [
+                new TableCell({ 
+                  children: [new Paragraph({ children: [new TextRun({ text: 'الإجمالي المطالب به', size: 24, font: 'Arial', bold: true, color: 'ffffff', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                  columnSpan: 2,
+                  shading: { fill: '1e3a5f', type: ShadingType.CLEAR }
+                }),
+                new TableCell({ 
+                  children: [new Paragraph({ children: [new TextRun({ text: variables.TOTAL_CLAIM_AMOUNT, size: 26, font: 'Arial', bold: true, color: 'ffffff' })], alignment: AlignmentType.CENTER })],
+                  shading: { fill: '1e3a5f', type: ShadingType.CLEAR }
+                })
+              ]
+            })
+          ],
+          width: { size: 100, type: WidthType.PERCENTAGE }
+        })
+      );
+    } else if (section.isList) {
+      // قائمة الطلبات
+      const requests = [
+        `إلزام المدعى عليه بسداد مبلغ ${variables.TOTAL_CLAIM_AMOUNT} ريال قطري.`,
+        'الأمر بتحويل المخالفات المرورية.',
+        'فسخ عقد الإيجار.',
+        'إلزامه بالتعويض والرسوم والمصاريف.'
+      ];
+      
+      requests.forEach((request, index) => {
         children.push(
           new Paragraph({
             children: [
               new TextRun({
-                text: trimmedLine,
-                bold: true,
+                text: `${index + 1}. ${request}`,
                 size: 24,
                 font: 'Arial',
                 rightToLeft: true
-              }),
-            ],
-            alignment: AlignmentType.RIGHT,
-            spacing: { before: 150, after: 80 },
-            bidirectional: true,
-          })
-        );
-      }
-      // جدول (يبدأ بـ "|")
-      else if (trimmedLine.startsWith('|')) {
-        // سنتعامل مع الجداول لاحقاً
-        continue;
-      }
-      // نقطة في قائمة (تبدأ بـ "-")
-      else if (trimmedLine.startsWith('-')) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '• ' + trimmedLine.substring(1).trim(),
-                size: 24,
-                font: 'Arial',
-                rightToLeft: true
-              }),
+              })
             ],
             alignment: AlignmentType.RIGHT,
             spacing: { before: 80, after: 80 },
-            bidirectional: true,
+            bidirectional: true
           })
         );
-      }
+      });
+    } else if (section.content) {
       // فقرة عادية
-      else {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: trimmedLine,
-                size: 24,
-                font: 'Arial',
-                rightToLeft: true
-              }),
-            ],
-            alignment: AlignmentType.RIGHT,
-            spacing: { before: 80, after: 80, line: 300 },
-            bidirectional: true,
-          })
-        );
-      }
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: section.content,
+              size: 24,
+              font: 'Arial',
+              rightToLeft: true
+            })
+          ],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 100, after: 100, line: 360 },
+          shading: { fill: 'fafafa', type: ShadingType.CLEAR },
+          border: {
+            top: { style: BorderStyle.SINGLE, size: 1, color: 'e0e0e0' },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: 'e0e0e0' },
+            left: { style: BorderStyle.SINGLE, size: 1, color: 'e0e0e0' },
+            right: { style: BorderStyle.SINGLE, size: 1, color: 'e0e0e0' }
+          },
+          bidirectional: true
+        })
+      );
     }
   }
+  
+  // 7. الختام
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'وتفضلوا بقبول فائق الاحترام والتقدير،،،',
+          size: 24,
+          font: 'Arial',
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 300, after: 200 },
+      bidirectional: true
+    })
+  );
+  
+  // 8. التوقيع
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `عن ${variables.PLAINTIFF_COMPANY_NAME}`,
+          size: 26,
+          font: 'Arial',
+          bold: true,
+          color: '1e3a5f',
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200, after: 100 },
+      bidirectional: true
+    })
+  );
+  
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: variables.AUTHORIZED_SIGNATORY,
+          size: 24,
+          font: 'Arial',
+          bold: true,
+          rightToLeft: true
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 400 },
+      border: { top: { style: BorderStyle.DOUBLE, size: 4, color: '1e3a5f' } },
+      bidirectional: true
+    })
+  );
   
   // إنشاء المستند
   const doc = new Document({
@@ -826,9 +1147,9 @@ export async function downloadTemplateAsDocx(
           page: {
             margin: {
               top: 1440,
-              right: 1800,
+              right: 1440,
               bottom: 1440,
-              left: 1080,
+              left: 1440,
             },
           },
           textDirection: TextDirection.RIGHT_TO_LEFT,

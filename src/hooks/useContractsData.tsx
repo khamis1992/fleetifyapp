@@ -428,7 +428,23 @@ export const useContractsData = (filters: any = {}) => {
     const expiredContracts = statsContracts.filter((c: any) => c.status === 'expired');
     const suspendedContracts = statsContracts.filter((c: any) => c.status === 'suspended');
     const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
-    const legalProcedureContracts = statsContracts.filter((c: any) => c.status === 'under_legal_procedure');
+    
+    // --- Detailed Legal Analysis ---
+    // 1. Contracts specifically in 'under_legal_procedure' status
+    const legalStatusContracts = statsContracts.filter((c: any) => c.status === 'under_legal_procedure');
+    
+    // 2. Contracts that are Active BUT have a legal_status flag (High Risk)
+    const activeWithLegalIssues = activeContracts.filter((c: any) => c.legal_status && c.legal_status !== '');
+    
+    // 3. Cancelled/Expired contracts that have legal issues
+    const cancelledWithLegalIssues = cancelledContracts.filter((c: any) => c.legal_status && c.legal_status !== '');
+    const expiredWithLegalIssues = expiredContracts.filter((c: any) => c.legal_status && c.legal_status !== '');
+
+    // 4. Total Legal Cases (Union of all legal situations)
+    // Includes: status='under_legal_procedure' OR (any status + has legal_status)
+    const totalLegalCases = statsContracts.filter((c: any) => 
+      c.status === 'under_legal_procedure' || (c.legal_status && c.legal_status !== '')
+    );
     
     // Include both active and under_review contracts in revenue calculation
     // Use monthly_amount for monthly revenue, not contract_amount (total contract value)
@@ -437,12 +453,9 @@ export const useContractsData = (filters: any = {}) => {
     console.log('📊 [CONTRACTS_STATS] Statistics calculated:', {
       total: statsContracts.length,
       active: activeContracts.length,
-      underReview: underReviewContracts.length,
-      draft: draftContracts.length,
-      cancelled: cancelledContracts.length,
-      expired: expiredContracts.length,
-      suspended: suspendedContracts.length,
-      legalProcedure: legalProcedureContracts.length,
+      activeWithLegal: activeWithLegalIssues.length,
+      legalStatus: legalStatusContracts.length,
+      totalLegal: totalLegalCases.length,
       totalRevenue
     });
 
@@ -453,7 +466,14 @@ export const useContractsData = (filters: any = {}) => {
       expiredContracts,
       suspendedContracts,
       cancelledContracts,
-      legalProcedureContracts,
+      legalProcedureContracts: legalStatusContracts, // Keep backward compatibility
+      
+      // New Detailed Stats
+      activeWithLegalIssues,
+      cancelledWithLegalIssues,
+      expiredWithLegalIssues,
+      totalLegalCases,
+      
       totalRevenue
     };
   }, [allContractsForStats]);

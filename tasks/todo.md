@@ -1,116 +1,36 @@
-# خطة إصلاح: حذف المركبة نهائياً
+# Tasks
 
-## المشكلة
-1. زر حذف المركبة في صفحة المركبات لا يعمل
-2. الحذف الحالي هو soft delete (تعطيل فقط)
-3. المطلوب: حذف نهائي (hard delete) لحذف المركبات الوهمية التجريبية
+- [x] Investigate duplicated customer profiles <!-- id: 1 -->
+- [x] Check customer details for UUIDs c5d375c3-6f0d-4967-a04e-f9d842942020 and b8ecb837-e5d6-4fd2-8714-a8ecf515f45e in `customers` table <!-- id: 2 -->
+- [x] Fetch contracts for both customer UUIDs from `contracts` table <!-- id: 3 -->
+- [x] Compare contracts to determine if they are identical <!-- id: 4 -->
+- [x] Analyze why two profiles exist (e.g., different phone numbers, emails, creation sources) <!-- id: 5 -->
+- [x] Report findings to the user <!-- id: 6 -->
 
-## التحليل الأولي
-بعد فحص الكود:
+## Review
+- **Findings**: The customer "Abdel Ghafoor Darrar" is duplicated.
+  - Profile 1 (`b8ecb...`): "عبد الغفور" (Space), created 13:16. Contract: AGR-202504-408522 (3 years, 54k).
+  - Profile 2 (`c5d37...`): "عبدالغفور" (No Space), created 13:17. Contract: AGR-202502-0422 (10 years, 195k).
+- **Reason**: Manual data entry error. Both profiles have same Phone and ID. Contracts are for the *same vehicle* (Bestune T77) but different terms/dates. It seems the user re-entered the customer to create a new corrected/different contract instead of editing the first one.
 
-1. **في `FleetPageRedesigned.tsx`**:
-   - زر الحذف موجود في السطر 734-737
-   - يستدعي `onDelete` عند الضغط عليه
-   - `onDelete` يشير إلى `() => setVehicleToDelete(vehicle)`
-   - يوجد `AlertDialog` لتأكيد الحذف (السطر 1495-1525)
-   - عند التأكيد، يتم استدعاء `handleDeleteVehicle` (السطر 942-953)
+## Fixes (Deletion Issue)
+- **Problem**: Deleting contract `AGR-202502-0422` failed with 409 Conflict and a React warning.
+- **Root Cause**:
+  1. **Backend**: The contract had 5 linked traffic violations. The deletion function was not clearing these violations before deleting the contract, causing a foreign key constraint error.
+  2. **Frontend**: The delete confirmation dialog had a `<div>` nested inside a `<p>` (via `AlertDialogDescription`), causing React warnings.
+- **Solution**:
+  1. Updated `ContractDetailsPageRedesigned.tsx` to explicitly delete related traffic violations before deleting the contract.
+  2. Fixed the dialog structure by using `asChild` on `AlertDialogDescription` to allow proper nesting of `<div>` elements.
 
-2. **في `useVehicles.ts`**:
-   - `useDeleteVehicle` hook موجود (السطر 518-585)
-   - الحذف في الحقيقة هو **تعطيل** (soft delete): `is_active: false`
-   - يعرض toast بنجاح: "تم تعطيل المركبة بنجاح"
+## Update (Traffic Violations)
+- **Change**: Modified the deletion logic to **unlink** traffic violations instead of deleting them.
+- **Implementation**: Instead of `DELETE FROM traffic_violations`, the code now executes `UPDATE traffic_violations SET contract_id = NULL`.
+- **Reason**: This preserves the traffic violations in the system (linked to the vehicle) so they can be re-assigned to the correct contract later, while still allowing the incorrect contract to be deleted.
 
-3. **المشكلة المحتملة**:
-   - قد يكون زر الحذف في الـ `DropdownMenu` لا يستدعي الـ handler بشكل صحيح
-   - أو قد يكون هناك event propagation يمنع التنفيذ
-
-## الحل المطلوب
-فحص وإصلاح زر الحذف في `VehicleCard` component داخل `FleetPageRedesigned.tsx`:
-1. التأكد من أن `onDelete` يتم استدعاؤه بشكل صحيح
-2. إضافة `stopPropagation` إذا لزم الأمر
-3. التأكد من أن `AlertDialog` يظهر عند الضغط على الحذف
-
-## قائمة المهام
-
-- [x] 1. فحص الكود الحالي لزر الحذف في `FleetPageRedesigned.tsx`
-- [x] 2. التحقق من أن `onDelete` handler يتم تمريره بشكل صحيح
-- [x] 3. إصلاح المشكلة: إضافة `stopPropagation` و `preventDefault` لزر الحذف
-- [x] 4. إصلاح جميع الأزرار الأخرى في القائمة المنسدلة بنفس الطريقة
-- [x] 5. تعديل `useDeleteVehicle` hook لحذف المركبة نهائياً بدلاً من التعطيل
-- [x] 6. تحديث رسالة التأكيد لتوضيح أن الحذف نهائي وخطير
-- [ ] 7. اختبار الحذف على مركبة تجريبية
-
-## السبب الحقيقي للمشكلة
-المشكلة في السطر 734 من `FleetPageRedesigned.tsx`:
-- الـ `DropdownMenuItem` يستدعي `onDelete` لكن لا يمنع event propagation
-- عندما تضغط على الحذف، الـ card نفسه يستقبل الضغطة ويفتح صفحة التفاصيل
-- يجب إضافة `stopPropagation` و `preventDefault` للـ `onClick` handler
-
-## الملفات المتأثرة
-- `src/pages/fleet/FleetPageRedesigned.tsx`
-
-## ملاحظات
-- البساطة هي الأساس - إصلاح بسيط وواضح
-- عدم التأثير على باقي وظائف الصفحة
-
----
-
-## ملخص التنفيذ
-
-### التعديلات المنفذة
-1. ✅ تم إصلاح زر الحذف في `VehicleCard` component
-2. ✅ تم إصلاح جميع أزرار القائمة المنسدلة (عقد جديد، صيانة، نسخ، تعديل، حذف)
-
-### المشكلة الأساسية
-كانت المشكلة في السطر 734 من `FleetPageRedesigned.tsx`:
-- عند الضغط على زر الحذف في القائمة المنسدلة، كان الـ event ينتقل إلى الـ card الأب
-- الـ card الأب لديه `onClick={onView}` الذي يفتح صفحة تفاصيل المركبة
-- لذلك كان يتم فتح صفحة التفاصيل بدلاً من حذف المركبة
-
-### الحل المطبق
-تم إضافة `stopPropagation()` و `preventDefault()` لجميع أزرار القائمة المنسدلة:
-
-```typescript
-<DropdownMenuItem 
-  onClick={(e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onDelete();
-  }} 
-  className="gap-2 text-red-600"
->
-  <Trash2 className="w-4 h-4" />
-  حذف
-</DropdownMenuItem>
-```
-
-### النتيجة المتوقعة
-الآن عند الضغط على زر الحذف:
-1. ✅ يتم منع انتقال الـ event إلى الـ card الأب
-2. ✅ يتم استدعاء `onDelete()` فقط
-3. ✅ يظهر `AlertDialog` لتأكيد الحذف
-4. ✅ عند التأكيد، يتم حذف (تعطيل) المركبة
-
-**✅ تم إصلاح المشكلة بنجاح!**
-
-### التحديث الثاني: تغيير إلى Hard Delete
-بناءً على طلب المستخدم، تم تغيير الحذف من soft delete إلى **hard delete**:
-
-**التعديلات الإضافية:**
-1. ✅ تم تعديل `useDeleteVehicle` في `src/hooks/useVehicles.ts`:
-   - تغيير من `.update({ is_active: false })` إلى `.delete()`
-   - تحديث رسالة النجاح: "تم حذف المركبة نهائياً من النظام"
-   - تحديث severity في audit log إلى `critical`
-
-2. ✅ تم تحديث مربع حوار التأكيد في `FleetPageRedesigned.tsx`:
-   - عنوان أحمر: "حذف نهائي للمركبة"
-   - رسالة تحذير واضحة: "⚠️ تحذير: هذا الإجراء لا يمكن التراجع عنه!"
-   - زر الحذف: "حذف نهائياً" بدلاً من "حذف"
-
-**⚠️ تحذير مهم:**
-- الحذف الآن **نهائي** (hard delete)
-- سيتم حذف المركبة نهائياً من قاعدة البيانات
-- لا يمكن استرجاع البيانات بعد الحذف
-- مناسب لحذف المركبات الوهمية التجريبية فقط
-
-**✅ جاهز للاستخدام!**
+## New Feature (Customer Deletion)
+- **Feature**: Added "Delete Customer" option to the customer details page.
+- **Changes**:
+  - Updated `CustomerDetailsPageNew.tsx` to enable the deletion option in the dropdown menu.
+  - Implemented `handleDeleteCustomer` function to delete the customer from Supabase.
+  - Added a confirmation dialog (`AlertDialog`) that warns about active contracts and outstanding debts before deletion.
+  - Ensured that deleting a customer will trigger database cascades (if configured) or fail if constraints exist (users are warned about active contracts).

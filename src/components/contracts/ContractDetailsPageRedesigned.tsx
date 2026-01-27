@@ -1310,6 +1310,13 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsDeleting(true);
     try {
+      // 1. Unlink traffic violations (keep them in system, just remove contract link)
+      await supabase
+        .from('traffic_violations')
+        .update({ contract_id: null })
+        .eq('contract_id', contract.id);
+
+      // 2. Delete other related records that are specific to this contract
       await supabase.from('delinquent_customers').delete().eq('contract_id', contract.id);
       await supabase.from('payments').delete().eq('contract_id', contract.id);
       await supabase.from('invoices').delete().eq('contract_id', contract.id);
@@ -1627,14 +1634,16 @@ const ContractDetailsPageRedesigned = () => {
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-rose-600">الحذف النهائي</AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="space-y-4">
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
                 <p>هل أنت متأكد من حذف العقد #{contract.contract_number} نهائياً؟</p>
                 {relatedDataCounts && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      سيتم حذف {relatedDataCounts.invoices} فاتورة، {relatedDataCounts.payments} دفعة، و {relatedDataCounts.violations} مخالفة مرتبطة بهذا العقد. هذا الإجراء لا يمكن التراجع عنه!
+                      سيتم حذف {relatedDataCounts.invoices} فاتورة و {relatedDataCounts.payments} دفعة نهائياً.
+                      <br />
+                      <strong>تنبيه:</strong> سيتم فك ارتباط {relatedDataCounts.violations} مخالفة مرورية عن هذا العقد والاحتفاظ بها في النظام.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -1668,8 +1677,8 @@ const ContractDetailsPageRedesigned = () => {
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-emerald-600">إزالة الإجراء القانوني</AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="space-y-4">
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
                 <p>هل أنت متأكد من إزالة الإجراء القانوني للعقد #{contract.contract_number}؟</p>
                 <Alert className="border-emerald-200 bg-emerald-50">
                   <CheckCircle className="h-4 w-4 text-emerald-600" />
@@ -1705,8 +1714,8 @@ const ContractDetailsPageRedesigned = () => {
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-600">إلغاء الفاتورة</AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="space-y-4">
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-sm text-muted-foreground">
                 <p>هل أنت متأكد من إلغاء الفاتورة <strong>{invoiceToCancel?.invoice_number}</strong>؟</p>
                 <Alert className="border-red-200 bg-red-50">
                   <AlertTriangle className="h-4 w-4 text-red-600" />

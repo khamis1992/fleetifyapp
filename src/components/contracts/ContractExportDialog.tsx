@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
   Download,
@@ -24,7 +27,9 @@ import {
   Car,
   Banknote,
   Clock,
-  Sparkles
+  Sparkles,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,6 +80,16 @@ const exportOptions: ExportOption[] = [
   }
 ];
 
+const statusOptions = [
+  { value: 'active', label: 'نشط' },
+  { value: 'under_legal_procedure', label: 'إجراء قانوني' },
+  { value: 'cancelled', label: 'ملغي' },
+  { value: 'expired', label: 'منتهي' },
+  { value: 'draft', label: 'مسودة' },
+  { value: 'under_review', label: 'قيد المراجعة' },
+  { value: 'suspended', label: 'معلق' },
+];
+
 export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   open,
   onOpenChange
@@ -85,7 +100,11 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   const { formatCurrency, currency } = useCurrencyFormatter();
   const [customStartDate, setCustomStartDate] = React.useState('');
   const [customEndDate, setCustomEndDate] = React.useState('');
-  const [contractStatus, setContractStatus] = React.useState('all');
+  
+  // Multi-select for statuses
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>([]);
+  const [statusesOpen, setStatusesOpen] = React.useState(false);
+
   const [contractType, setContractType] = React.useState('all');
   const [includeCustomer, setIncludeCustomer] = React.useState(true);
   const [includeFinancial, setIncludeFinancial] = React.useState(true);
@@ -95,7 +114,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
   // Fetch contracts for export
   const { data: contracts, error, isLoading } = useQuery({
-    queryKey: ['contracts-export', user?.profile?.company_id, contractStatus, contractType, dateRange, customStartDate, customEndDate],
+    queryKey: ['contracts-export', user?.profile?.company_id, selectedStatuses, contractType, dateRange, customStartDate, customEndDate],
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
       
@@ -109,8 +128,9 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
         `)
         .eq('company_id', user.profile.company_id);
 
-      if (contractStatus !== 'all') {
-        baseQuery = baseQuery.eq('status', contractStatus);
+      // Status Filter Logic (Multiple)
+      if (selectedStatuses.length > 0) {
+        baseQuery = baseQuery.in('status', selectedStatuses);
       }
       
       if (contractType !== 'all') {
@@ -176,6 +196,16 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
       totalValue: contracts.reduce((sum, c) => sum + (c.contract_amount || 0), 0)
     };
   }, [contracts]);
+
+  const toggleStatus = (value: string) => {
+    setSelectedStatuses(current => {
+      if (current.includes(value)) {
+        return current.filter(item => item !== value);
+      } else {
+        return [...current, value];
+      }
+    });
+  };
 
   const generatePDF = () => {
     if (!contracts || contracts.length === 0) {
@@ -620,18 +650,94 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                       <BarChart3 className="w-4 h-4 text-teal-500" />
                       حالة العقد
                     </Label>
-                    <Select value={contractStatus} onValueChange={setContractStatus}>
-                      <SelectTrigger className="bg-white/50 border-slate-200/50 rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع الحالات</SelectItem>
-                        <SelectItem value="active">نشط</SelectItem>
-                        <SelectItem value="under_legal_procedure">إجراء قانوني</SelectItem>
-                        <SelectItem value="cancelled">ملغي</SelectItem>
-                        <SelectItem value="expired">منتهي</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    
+                    {/* Multi-Select Status Filter */}
+                    <Popover open={statusesOpen} onOpenChange={setStatusesOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={statusesOpen}
+                          className="w-full justify-between bg-white/50 border-slate-200/50 rounded-xl h-10"
+                        >
+                          <span className="truncate">
+                            {selectedStatuses.length === 0
+                              ? "جميع الحالات"
+                              : selectedStatuses.length === 1
+                                ? statusOptions.find((status) => status.value === selectedStatuses[0])?.label
+                                : `${selectedStatuses.length} حالات مختارة`}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="ابحث عن حالة..." />
+                          <CommandList>
+                            <CommandEmpty>لم يتم العثور على حالة.</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                onSelect={() => {
+                                  setSelectedStatuses([]);
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <div className={cn(
+                                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                  selectedStatuses.length === 0
+                                    ? "bg-primary text-primary-foreground"
+                                    : "opacity-50 [&_svg]:invisible"
+                                )}>
+                                  <Check className={cn("h-4 w-4")} />
+                                </div>
+                                <span>جميع الحالات</span>
+                              </CommandItem>
+                              
+                              {statusOptions.map((status) => (
+                                <CommandItem
+                                  key={status.value}
+                                  onSelect={() => toggleStatus(status.value)}
+                                  className="cursor-pointer"
+                                >
+                                  <div className={cn(
+                                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                    selectedStatuses.includes(status.value)
+                                      ? "bg-primary text-primary-foreground"
+                                      : "opacity-50 [&_svg]:invisible"
+                                  )}>
+                                    <Check className={cn("h-4 w-4")} />
+                                  </div>
+                                  <span>{status.label}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    {/* Display Selected Statuses Tags */}
+                    {selectedStatuses.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {selectedStatuses.map(statusValue => {
+                          const status = statusOptions.find(s => s.value === statusValue);
+                          return (
+                            <Badge key={statusValue} variant="secondary" className="px-2 py-0.5 text-xs">
+                              {status?.label}
+                              <button
+                                className="mr-1 hover:text-red-500"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStatus(statusValue);
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { calculateContractTotalAmount } from '@/utils/contractCalculations';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
@@ -2802,6 +2803,7 @@ const CustomerDetailsPageNew = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
+  const { formatCurrency } = useCurrencyFormatter();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -3017,6 +3019,35 @@ const CustomerDetailsPageNew = () => {
     }
   }, [customerId, selectedDocumentType, uploadDocument, toast]);
 
+  const handleDeleteCustomer = async () => {
+    if (!customerId || !companyId) return;
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم حذف العميل',
+        description: 'تم حذف العميل بنجاح',
+      });
+      navigate('/customers');
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء حذف العميل. قد يكون مرتبطاً ببيانات أخرى.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   // Loading & Error States
   if (isAuthenticating || !companyId || loadingCustomer) {
     return <PageSkeletonFallback />;
@@ -3201,7 +3232,10 @@ const CustomerDetailsPageNew = () => {
                     مشاركة
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2 text-red-600">
+                  <DropdownMenuItem 
+                    className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
                     <Trash2 className="w-4 h-4" />
                     حذف العميل
                   </DropdownMenuItem>
@@ -3727,6 +3761,44 @@ const CustomerDetailsPageNew = () => {
         invoice={selectedInvoice}
         customerName={customerName}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">حذف العميل</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-sm text-muted-foreground">
+                <p>هل أنت متأكد من حذف العميل <strong>{customerName}</strong>؟</p>
+                <p>لا يمكن التراجع عن هذا الإجراء.</p>
+                
+                {(stats.activeContracts > 0 || stats.totalLateAmount > 0) && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-md text-red-700 text-sm">
+                    <p className="font-semibold mb-1">تحذير:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {stats.activeContracts > 0 && (
+                        <li>يوجد {stats.activeContracts} عقود نشطة لهذا العميل.</li>
+                      )}
+                      {stats.totalLateAmount > 0 && (
+                        <li>يوجد مبالغ مستحقة/متأخرة.</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteCustomer}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

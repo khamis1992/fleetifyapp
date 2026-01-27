@@ -54,6 +54,7 @@ import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteCont
 import { ContractAmendmentForm } from "@/components/contracts";
 import { ContractPDFImportRedesigned } from "@/components/contracts/ContractPDFImportRedesigned";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ContractsStatistics } from '@/components/contracts/ContractsStatistics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -207,6 +208,9 @@ function ContractsRedesigned() {
       underReviewContracts: [],
       cancelledContracts: [],
       legalProcedureContracts: [],
+      activeWithLegalIssues: [],
+      cancelledWithLegalIssues: [],
+      totalLegalCases: [],
       totalRevenue: 0,
     },
     [statistics]
@@ -829,50 +833,17 @@ function ContractsRedesigned() {
         </div>
 
         <div className="max-w-[1600px] mx-auto px-6 py-8 space-y-6">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard
-              title="نشط"
-              value={safeStatistics.activeContracts?.length || 0}
-              icon={CheckCircle}
-              color="emerald"
-              description="العقود النشطة"
-            />
-            <StatCard
-              title="إجراء قانوني"
-              value={safeStatistics.legalProcedureContracts?.length || 0}
-              icon={AlertTriangle}
-              color="rose"
-              description="تحت الإجراء القانوني"
-            />
-            <StatCard
-              title="ملغية"
-              value={safeStatistics.cancelledContracts?.length || 0}
-              icon={XCircle}
-              color="slate"
-              description="العقود الملغية"
-            />
-          </div>
-
-          {/* Revenue Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-3xl p-6 shadow-xl shadow-teal-500/20"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-teal-50 text-sm font-medium mb-2">إجمالي الإيرادات الشهرية المتوقعة</p>
-                <h2 className="text-4xl font-bold text-white mb-1">
-                  {formatCurrencyWithSymbol(safeStatistics.totalRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </h2>
-                <p className="text-teal-100 text-sm">من {safeStatistics.activeContracts?.length || 0} عقد نشط</p>
-              </div>
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-            </div>
-          </motion.div>
+          {/* Stats Grid - Redesigned using ContractsStatistics component */}
+          <ContractsStatistics 
+            activeCount={safeStatistics.activeContracts?.length || 0}
+            draftCount={safeStatistics.draftContracts?.length || 0}
+            underReviewCount={safeStatistics.underReviewContracts?.length || 0}
+            cancelledCount={safeStatistics.cancelledContracts?.length || 0}
+            totalRevenue={safeStatistics.totalRevenue || 0}
+            activeWithLegalCount={safeStatistics.activeWithLegalIssues?.length || 0}
+            legalTotalCount={safeStatistics.totalLegalCases?.length || 0}
+            cancelledWithLegalCount={safeStatistics.cancelledWithLegalIssues?.length || 0}
+          />
 
           {/* Drafts Section */}
           {contractDrafts.loadDrafts.data && contractDrafts.loadDrafts.data.length > 0 && (
