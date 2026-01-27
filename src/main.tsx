@@ -165,4 +165,4 @@ if (import.meta.env.DEV) {
   root.render(<App />);
 }
 
-console.log('✅ [MAIN] App render called');// Cache bust: Mon, Nov 24, 2025  4:45:06 AM
+console.log('✅ [MAIN] App render called');// Cache bust: Tue, Jan 27, 2026  12:00:00 PM - Service Worker v2 Update

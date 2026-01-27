@@ -205,227 +205,8 @@ function parseHtmlToSections(html: string): ParsedSection[] {
 }
 
 /**
- * تحليل HTML المحسّن مع الحفاظ على التنسيق
- */
-function parseHtmlToDocxElements(html: string): any[] {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const elements: any[] = [];
-
-  function processElement(element: HTMLElement): void {
-    const tagName = element.tagName.toLowerCase();
-    const className = element.className;
-
-    // 1. معالجة الترويسة (Header)
-    if (className.includes('header')) {
-      const companyAr = element.querySelector('.company-ar')?.textContent?.trim() || '';
-      // استخراج النص من company-ar سطر سطر إذا وجد
-      const companyArLines = element.querySelector('.company-ar')?.innerHTML.split('<br>').map(s => s.replace(/<[^>]*>/g, '').trim()).filter(s => s) || [];
-      
-      const companyEnLines = element.querySelector('.company-en')?.innerHTML.split('<br>').map(s => s.replace(/<[^>]*>/g, '').trim()).filter(s => s) || [];
-
-      elements.push({
-        type: 'header-table',
-        companyAr: companyArLines.length > 0 ? companyArLines : [companyAr],
-        companyEn: companyEnLines
-      });
-      return;
-    }
-
-    // 2. معالجة معلومات التاريخ والمرجع (Meta Info)
-    if (className.includes('meta-info') || className.includes('ref-date')) {
-      const dateText = element.querySelector('div:last-child')?.textContent?.trim() || ''; // التاريخ هو الثاني في HTML
-      const refText = element.querySelector('div:first-child')?.textContent?.trim() || ''; // المرجع هو الأول
-      
-      // تصحيح: في generateLegalComplaintHTML، العنصر الأول هو المرجع والثاني هو التاريخ
-      // لكن في CSS: float: right للأول (المرجع) و float: left للثاني (التاريخ)
-      // مما يعني بصرياً: المرجع يمين، التاريخ يسار
-      
-      elements.push({
-        type: 'meta-table',
-        left: dateText,  // سيظهر يساراً
-        right: refText   // سيظهر يميناً
-      });
-      return;
-    }
-
-    // 2.5 معالجة شريط العنوان (Address Bar)
-    if (className.includes('address-bar')) {
-       const text = element.textContent?.trim() || '';
-       const lines = element.innerHTML.split(/<br\s*\/?>/i).map(l => l.replace(/<[^>]*>/g, '').trim()).filter(l => l);
-       
-       elements.push({
-         type: 'address-bar',
-         lines: lines.length > 0 ? lines : [text]
-       });
-       return;
-    }
-
-    // 3. معالجة صندوق الموضوع (Subject Box)
-    if (className.includes('subject-box')) {
-      const lines = Array.from(element.childNodes)
-        .map(n => n.textContent?.trim())
-        .filter(t => t);
-      elements.push({
-        type: 'subject-box',
-        lines
-      });
-      return;
-    }
-
-    // 4. معالجة صندوق المعلومات (Info Box)
-    if (className.includes('info-box')) {
-      const infoRows: {label: string, value: string}[] = [];
-      const rows = element.querySelectorAll('.info-row');
-      rows.forEach((row) => {
-        const label = row.querySelector('.info-label')?.textContent?.trim() || '';
-        const value = Array.from(row.childNodes)
-          .filter(n => n.nodeType === Node.TEXT_NODE || (n.nodeType === Node.ELEMENT_NODE && !(n as HTMLElement).classList.contains('info-label')))
-          .map(n => n.textContent?.trim())
-          .filter(t => t)
-          .join(' ');
-        
-        if (label || value) {
-          infoRows.push({ label, value });
-        }
-      });
-      elements.push({
-        type: 'info-box-table',
-        rows: infoRows
-      });
-      return;
-    }
-
-    // 5. معالجة عنوان القسم (Section Title)
-    if (className.includes('section-title')) {
-      elements.push({
-        type: 'section-title',
-        content: element.textContent?.trim() || '',
-      });
-      return;
-    }
-
-    // 6. معالجة الجداول (Tables)
-    if (tagName === 'table') {
-      const rows: string[][] = [];
-      // Header row
-      const headerCells: string[] = [];
-      element.querySelectorAll('thead th').forEach(th => headerCells.push(th.textContent?.trim() || ''));
-      if (headerCells.length > 0) rows.push(headerCells);
-
-      // Body rows
-      element.querySelectorAll('tbody tr').forEach((tr) => {
-        const cells: string[] = [];
-        tr.querySelectorAll('td').forEach((cell) => {
-          cells.push(cell.textContent?.trim() || '');
-        });
-        if (cells.length > 0) {
-          rows.push(cells);
-        }
-      });
-      
-      // Footer row (Totals)
-      const footerRow = element.querySelector('tr.total-row');
-      if (footerRow) {
-         const cells: string[] = [];
-         footerRow.querySelectorAll('td').forEach(td => cells.push(td.textContent?.trim() || ''));
-         if (cells.length > 0) rows.push(cells);
-      }
-
-      if (rows.length > 0) {
-        elements.push({
-          type: 'table',
-          rows,
-        });
-      }
-      return;
-    }
-
-    // 7. معالجة الفقرات والنصوص العادية
-    if (tagName === 'p') {
-      // محاولة استخراج النصوص الغامقة (Bold)
-      const children: {text: string, bold: boolean}[] = [];
-      
-      // دالة لإضافة علامات Unicode للتحكم بالاتجاه
-      const addBidiMarkers = (text: string): string => {
-        // إضافة RLM (Right-to-Left Mark) قبل وبعد الأقواس والأرقام
-        // هذا يساعد في عرض النص بشكل صحيح في Word
-        return text
-          .replace(/\(/g, '\u200F(\u200F')  // RLM قبل وبعد القوس الفاتح
-          .replace(/\)/g, '\u200F)\u200F'); // RLM قبل وبعد القوس الغالق
-      };
-      
-      element.childNodes.forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          // الحفاظ على المسافات وتنظيف الأسطر الجديدة
-          let t = node.textContent?.replace(/[\n\r\t]+/g, ' ') || '';
-          // تطبيق علامات BiDi
-          t = addBidiMarkers(t);
-          if (t) children.push({ text: t, bold: false });
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          const el = node as HTMLElement;
-          let t = el.textContent?.replace(/[\n\r\t]+/g, ' ') || '';
-          // تطبيق علامات BiDi
-          t = addBidiMarkers(t);
-          if (el.tagName.toLowerCase() === 'strong' || el.tagName.toLowerCase() === 'b') {
-             if (t) children.push({ text: t, bold: true });
-          } else {
-             if (t) children.push({ text: t, bold: false });
-          }
-        }
-      });
-
-      if (children.length > 0) {
-        elements.push({
-          type: 'paragraph-mixed',
-          children
-        });
-      } else {
-         const text = element.textContent?.trim();
-         if (text) {
-            elements.push({ type: 'paragraph', content: addBidiMarkers(text) });
-         }
-      }
-      return;
-    }
-
-    // معالجة العناوين
-    if (['h1', 'h2', 'h3', 'h4'].includes(tagName)) {
-      elements.push({
-        type: 'heading',
-        level: parseInt(tagName[1]),
-        content: element.textContent?.trim() || '',
-      });
-      return;
-    }
-
-    // معالجة div العامة (للمرور على العناصر الفرعية والنصوص)
-    if (tagName === 'div') {
-      element.childNodes.forEach((child) => {
-        if (child.nodeType === Node.ELEMENT_NODE) {
-          processElement(child as HTMLElement);
-        } else if (child.nodeType === Node.TEXT_NODE) {
-          const text = child.textContent?.trim();
-          if (text) {
-             // إضافة النصوص المباشرة كفقرات
-             elements.push({ type: 'paragraph', content: text });
-          }
-        }
-      });
-    }
-  }
-
-  doc.body.childNodes.forEach((node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      processElement(node as HTMLElement);
-    }
-  });
-
-  return elements;
-}
-
-/**
- * تحميل HTML كملف Word (DOCX) - نسخة محسّنة مع نص قابل للتحرير
+ * تحميل HTML كملف Word (DOCX) - نسخة مطابقة تماماً لـ PDF
+ * تقوم بتحويل HTML مباشرة إلى DOCX مع الحفاظ على التنسيق
  * @param htmlContent محتوى HTML
  * @param filename اسم الملف
  */
@@ -433,286 +214,734 @@ export async function downloadHtmlAsDocx(
   htmlContent: string,
   filename: string = 'document.docx'
 ): Promise<void> {
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType, TextDirection } = await import('docx');
-  const { saveAs } = await import('file-saver');
+  // استيراد المكتبات
+  let docxModule: any;
+  let fileSaverModule: any;
+  
+  try {
+    docxModule = await import('docx');
+    fileSaverModule = await import('file-saver');
+  } catch (importError) {
+    console.error('Failed to import docx or file-saver:', importError);
+    throw new Error('فشل تحميل مكتبات إنشاء الملفات. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+  }
+  
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, 
+          WidthType, BorderStyle, ShadingType, TextDirection, Header, Footer, PageNumber, 
+          convertInchesToTwip, UnderlineType } = docxModule;
+  const { saveAs } = fileSaverModule;
 
-  const elements = parseHtmlToDocxElements(htmlContent);
+  // إنشاء parser لتحليل HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlContent, 'text/html');
+  
+  // التحقق من صحة الـ HTML
+  if (!doc || !doc.body) {
+    throw new Error('Failed to parse HTML content');
+  }
+  
+  // استخراج البيانات الأساسية من HTML
+  const extractCompanyInfo = () => {
+    const companyAr = doc.querySelector('.company-ar h1')?.textContent?.trim() || 'شركة العراف لتأجير السيارات';
+    const companyEn = doc.querySelector('.company-en h1')?.textContent?.trim() || 'AL-ARAF CAR RENTAL L.L.C';
+    const cr = doc.querySelector('.company-ar')?.textContent?.match(/س\.ت:\s*(\d+)/)?.[1] || '146832';
+    return { companyAr, companyEn, cr };
+  };
+
+  const extractMetaInfo = () => {
+    const refDate = doc.querySelector('.ref-date');
+    const refNumber = refDate?.querySelector('div:first-child')?.textContent?.replace('الرقم المرجعي:', '').trim() || '';
+    const dateText = refDate?.querySelector('div:last-child')?.textContent?.replace('التاريخ:', '').trim() || 
+                     new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
+    return { refNumber, dateText };
+  };
+
+  const extractSubject = () => {
+    const subjectBox = doc.querySelector('.subject-box');
+    const mainTitle = subjectBox?.querySelector('strong')?.textContent?.trim() || 'مذكرة شارحة مقدمة إلى محكمة الاستثمار';
+    const subtitle = Array.from(subjectBox?.querySelectorAll('span') || [])
+      .map(s => s.textContent?.trim()).filter(Boolean).join(' - ') || 
+      'في دعوى مطالبة مالية وتعويضات عقدية - إخلال بالتزامات عقد إيجار مركبة';
+    return { mainTitle, subtitle };
+  };
+
+  const extractInfoBox = () => {
+    try {
+      const infoRows = doc.querySelectorAll('.info-row');
+      const info: { label: string; value: string }[] = [];
+      infoRows.forEach(row => {
+        try {
+          const label = row.querySelector('.info-label')?.textContent?.trim() || '';
+          const value = Array.from(row.childNodes)
+            .filter(n => n.nodeType === Node.TEXT_NODE || ((n as Element).className !== 'info-label' && !(n as Element).classList?.contains('info-label')))
+            .map(n => n.textContent?.trim())
+            .filter(Boolean).join(' ');
+          if (label) info.push({ label, value });
+        } catch (e) {
+          // Skip problematic rows
+        }
+      });
+      return info;
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const extractSections = () => {
+    const sections: { title: string; content?: string; isTable?: boolean; isList?: boolean; html?: HTMLElement }[] = [];
+    const sectionElements = doc.querySelectorAll('.section');
+    
+    sectionElements.forEach(section => {
+      const titleEl = section.querySelector('.section-title');
+      const title = titleEl?.textContent?.trim() || '';
+      const contentEl = section.querySelector('.section-content');
+      const table = section.querySelector('table');
+      
+      if (table) {
+        sections.push({ title, isTable: true, html: table as HTMLElement });
+      } else if (contentEl) {
+        // التحقق من وجود قائمة
+        const hasList = contentEl.querySelector('.requests-list') || contentEl.querySelectorAll('.request-item').length > 0;
+        if (hasList) {
+          sections.push({ title, isList: true, html: contentEl as HTMLElement });
+        } else {
+          const content = contentEl.textContent?.trim() || '';
+          sections.push({ title, content });
+        }
+      }
+    });
+    
+    return sections;
+  };
+
+  const extractClaimsTableData = () => {
+    const table = doc.querySelector('.section table');
+    if (!table) return null;
+    
+    const rows: string[][] = [];
+    table.querySelectorAll('tr').forEach(tr => {
+      const cells: string[] = [];
+      tr.querySelectorAll('th, td').forEach(cell => {
+        cells.push(cell.textContent?.trim() || '');
+      });
+      if (cells.length > 0) rows.push(cells);
+    });
+    return rows;
+  };
+
+  // Helper type for TableRow and TableCell
+  type TableRowType = InstanceType<typeof TableRow>;
+  type TableCellType = InstanceType<typeof TableCell>;
+
+  // استخراج جميع البيانات
+  const companyInfo = extractCompanyInfo();
+  const metaInfo = extractMetaInfo();
+  const subject = extractSubject();
+  const infoBox = extractInfoBox();
+  const claimsTable = extractClaimsTableData();
+
   const children: any[] = [];
 
-  for (const element of elements) {
-    
-    // 1. Header Table (Invisible)
-    if (element.type === 'header-table') {
-      children.push(
-        new Table({
-          rows: [
-            new TableRow({
-              children: [
-                // Right Cell (Arabic) - في RTL، الخلية الأولى تكون على اليمين
-                new TableCell({
-                  children: element.companyAr.map((line: string) => new Paragraph({
-                    children: [new TextRun({ text: line, size: 24, font: 'Arial', bold: true, rightToLeft: true })],
-                    alignment: AlignmentType.RIGHT,
-                    bidirectional: true
-                  })),
-                  width: { size: 50, type: WidthType.PERCENTAGE },
-                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
-                }),
-                // Left Cell (English) - في RTL، الخلية الثانية تكون على اليسار
-                new TableCell({
-                  children: element.companyEn.map((line: string) => new Paragraph({
-                    children: [new TextRun({ text: line, size: 20, font: 'Arial', rightToLeft: false })],
-                    alignment: AlignmentType.LEFT
-                  })),
-                  width: { size: 50, type: WidthType.PERCENTAGE },
-                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
-                }),
-              ],
-            }),
-          ],
-          width: { size: 100, type: WidthType.PERCENTAGE },
-        })
-      );
-      // فاصل
-      children.push(new Paragraph({ spacing: { before: 80, after: 80 } }));
-    }
-
-    // 2. Meta Table (Date & Ref)
-    else if (element.type === 'meta-table') {
-      children.push(
-        new Table({
-          rows: [
-            new TableRow({
-              children: [
-                // Right (Ref usually) - في RTL، الخلية الأولى تكون على اليمين
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: element.right, size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-                  width: { size: 50, type: WidthType.PERCENTAGE },
-                  borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
-                }),
-                // Left (Date usually) - في RTL، الخلية الثانية تكون على اليسار
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: element.left, size: 22, font: 'Arial', rightToLeft: false })], alignment: AlignmentType.LEFT })],
-                  width: { size: 50, type: WidthType.PERCENTAGE },
-                  borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
-                }),
-              ],
-            }),
-          ],
-          width: { size: 100, type: WidthType.PERCENTAGE },
-        })
-      );
-      children.push(new Paragraph({ spacing: { before: 150 } }));
-    }
-
-    // 2.5 Address Bar
-    else if (element.type === 'address-bar') {
-      element.lines.forEach((line: string, index: number) => {
-        const isLast = index === element.lines.length - 1;
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: line,
-                size: 20,
-                font: 'Arial',
-                rightToLeft: true
-              })
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: isLast ? { after: 200, before: 100 } : { before: 100 },
-            bidirectional: true,
-            border: isLast ? { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'cccccc' } } : undefined
-          })
-        );
-      });
-    }
-
-    // 3. Subject Box
-    else if (element.type === 'subject-box') {
-      children.push(
-        new Paragraph({
-          children: element.lines.map((line: string, idx: number) => new TextRun({
-            text: line,
-            bold: true,
-            size: idx === 0 ? 28 : 24,
-            font: 'Arial',
-            color: '1e3a5f',
-            break: idx > 0 ? 1 : 0
-          })),
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 150, after: 150 },
-          border: {
-            top: { style: BorderStyle.SINGLE, space: 8 },
-            bottom: { style: BorderStyle.SINGLE, space: 8 },
-            left: { style: BorderStyle.SINGLE, space: 8 },
-            right: { style: BorderStyle.SINGLE, space: 8 },
-          },
-          shading: {
-            fill: 'F5F5F5',
-            type: ShadingType.CLEAR,
-          },
-          bidirectional: true
-        })
-      );
-    }
-
-    // 4. Info Box Table
-    else if (element.type === 'info-box-table') {
-      children.push(
-        new Table({
-          rows: element.rows.map((row: any) => new TableRow({
-            children: [
-              // Label - في RTL، الخلية الأولى تكون على اليمين
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: row.label, size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-                width: { size: 20, type: WidthType.PERCENTAGE },
-                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
-              }),
-              // Value - في RTL، الخلية الثانية تكون على اليسار
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: row.value, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
-              })
-            ]
-          })),
-          width: { size: 100, type: WidthType.PERCENTAGE },
-        })
-      );
-      children.push(new Paragraph({ spacing: { before: 150 } }));
-    }
-
-    // 5. Section Title
-    else if (element.type === 'section-title') {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: element.content,
-              bold: true,
-              size: 26,
-              font: 'Arial',
-              color: '1e3a5f',
-              rightToLeft: true
-            }),
-          ],
-          alignment: AlignmentType.RIGHT,
-          spacing: { before: 150, after: 80 },
-          bidirectional: true,
-        })
-      );
-    }
-
-    // 6. Mixed Paragraph (Bold + Normal)
-    else if (element.type === 'paragraph-mixed') {
-      children.push(
-        new Paragraph({
-          children: element.children.map((child: any) => {
-            return new TextRun({
-              text: child.text,
-              bold: child.bold,
-              size: 24,
-              // استخدام خط Arial الذي يدعم العربية والإنجليزية والأرقام بشكل ممتاز
-              font: 'Arial',
-              // جميع النصوص RTL لأن المستند عربي
-              rightToLeft: true,
-            });
-          }),
-          alignment: AlignmentType.RIGHT,
-          spacing: { before: 80, after: 80, line: 300 }, // تقليل المسافات
-          bidirectional: true,
-        })
-      );
-    }
-
-    // 7. Normal Paragraph
-    else if (element.type === 'paragraph') {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: element.content,
-              size: 24,
-              font: 'Arial',
-              rightToLeft: true
-            }),
-          ],
-          alignment: AlignmentType.RIGHT,
-          spacing: { before: 80, after: 80, line: 300 },
-          bidirectional: true,
-        })
-      );
-    }
-
-    // 8. Data Table
-    else if (element.type === 'table' && element.rows) {
-      const tableRows = element.rows.map((row: string[], rowIndex: number) =>
+  // 1. الترويسة - Header (مطابقة للPDF)
+  // في RTL: الخلية الأولى تظهر على اليمين
+  children.push(
+    new Table({
+      rows: [
         new TableRow({
-          children: row.map((cell: string) =>
+          children: [
+            // الشركة العربية (الخلية الأولى = اليمين في RTL)
             new TableCell({
               children: [
                 new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: cell,
-                      bold: rowIndex === 0,
-                      size: 22,
-                      font: 'Arial',
-                      rightToLeft: true
-                    }),
-                  ],
-                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: companyInfo.companyAr, size: 24, font: 'Arial', bold: true, color: '1e3a5f', rightToLeft: true })],
+                  alignment: AlignmentType.RIGHT,
                   bidirectional: true,
                 }),
+                new Paragraph({
+                  children: [new TextRun({ text: 'ذ.م.م', size: 20, font: 'Arial', rightToLeft: true })],
+                  alignment: AlignmentType.RIGHT,
+                  bidirectional: true,
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `س.ت: ${companyInfo.cr}`, size: 20, font: 'Arial', rightToLeft: true })],
+                  alignment: AlignmentType.RIGHT,
+                  bidirectional: true,
+                })
               ],
-              verticalAlign: 'center',
+              width: { size: 35, type: WidthType.PERCENTAGE },
               borders: {
-                top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
-                right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.DOUBLE, size: 6, color: '1e3a5f' },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE }
               },
-              shading: rowIndex === 0 ? { fill: 'EEEEEE', type: ShadingType.CLEAR } : undefined
+            }),
+            // مساحة الشعار (وسط)
+            new TableCell({
+              children: [new Paragraph({ text: '' })],
+              width: { size: 30, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.DOUBLE, size: 6, color: '1e3a5f' },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE }
+              },
+            }),
+            // الشركة الإنجليزية (الخلية الأخيرة = اليسار في RTL)
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: companyInfo.companyEn, size: 18, font: 'Arial', bold: true, color: '1e3a5f' })],
+                  alignment: AlignmentType.LEFT
+                }),
+                new Paragraph({
+                  children: [new TextRun({ text: `C.R: ${companyInfo.cr}`, size: 16, font: 'Arial' })],
+                  alignment: AlignmentType.LEFT
+                })
+              ],
+              width: { size: 35, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.DOUBLE, size: 6, color: '1e3a5f' },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE }
+              },
             })
-          ),
+          ]
         })
-      );
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      // @ts-ignore
+      visuallyRightToLeft: true,
+    })
+  );
 
+  // 2. شريط العنوان
+  const addressBar = doc.querySelector('.address-bar');
+  if (addressBar) {
+    const addressLines = addressBar.innerHTML.split(/<br\s*\/?>/i)
+      .map(l => l.replace(/<[^>]*>/g, '').trim())
+      .filter(l => l);
+    
+    addressLines.forEach((line, idx) => {
       children.push(
-        new Table({
-          rows: tableRows,
-          width: {
-            size: 100,
-            type: WidthType.PERCENTAGE,
-          },
+        new Paragraph({
+          children: [new TextRun({ text: line, size: 18, font: 'Arial', rightToLeft: true })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: idx === 0 ? 100 : 40, after: idx === addressLines.length - 1 ? 150 : 40 },
+          bidirectional: true,
+          border: idx === addressLines.length - 1 ? { 
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: 'cccccc' } 
+          } : undefined
         })
       );
-      children.push(new Paragraph({ spacing: { before: 150 } }));
-    }
+    });
   }
 
-  // إنشاء المستند
-  const doc = new Document({
-    sections: [
-      {
-        properties: {
-          page: {
-            margin: {
-              top: 1440, // 1 inch
-              right: 1800, // 1.25 inch - margin أكبر على اليمين (بداية الصفحة في RTL)
-              bottom: 1440, // 1 inch
-              left: 1080, // 0.75 inch - margin أصغر على اليسار
+  // 3. الرقم المرجعي والتاريخ
+  // في RTL: الخلية الأولى = اليمين، الخلية الثانية = اليسار
+  children.push(
+    new Table({
+      rows: [
+        new TableRow({
+          children: [
+            // اليمين: الرقم المرجعي (الخلية الأولى في RTL)
+            new TableCell({
+              children: [new Paragraph({ 
+                children: [new TextRun({ 
+                  text: `الرقم المرجعي: ${metaInfo.refNumber}`, 
+                  size: 20, 
+                  font: 'Arial', 
+                  rightToLeft: true 
+                })], 
+                alignment: AlignmentType.RIGHT, 
+                bidirectional: true,
+              })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1 },
+                bottom: { style: BorderStyle.SINGLE, size: 1 },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE }
+              }
+            }),
+            // اليسار: التاريخ (الخلية الثانية في RTL)
+            new TableCell({
+              children: [new Paragraph({ 
+                children: [new TextRun({ 
+                  text: `التاريخ: ${metaInfo.dateText}`, 
+                  size: 20, 
+                  font: 'Arial', 
+                  rightToLeft: true 
+                })], 
+                alignment: AlignmentType.RIGHT, 
+                bidirectional: true,
+              })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1 },
+                bottom: { style: BorderStyle.SINGLE, size: 1 },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE }
+              }
+            })
+          ]
+        })
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      // @ts-ignore
+      visuallyRightToLeft: true,
+    })
+  );
+
+  children.push(new Paragraph({ spacing: { before: 150 } }));
+
+  // 4. صندوق الموضوع (بلون خلفية مطابق)
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ 
+          text: subject.mainTitle, 
+          bold: true, 
+          size: 26, 
+          font: 'Arial', 
+          color: 'ffffff',
+          rightToLeft: true,
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 60 },
+      shading: { fill: '1e3a5f', type: ShadingType.CLEAR },
+      bidirectional: true,
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ 
+          text: subject.subtitle, 
+          size: 20, 
+          font: 'Arial', 
+          color: 'ffffff',
+          rightToLeft: true,
+        })
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 150 },
+      shading: { fill: '1e3a5f', type: ShadingType.CLEAR },
+      bidirectional: true,
+    })
+  );
+
+  // 5. صندوق معلومات الأطراف
+  // في RTL: الخلية الأولى = اليمين (التسمية)، الخلية الثانية = اليسار (القيمة)
+  if (infoBox.length > 0) {
+    children.push(
+      new Table({
+        rows: infoBox.map(row => new TableRow({
+          children: [
+            // اليمين: التسمية (الخلية الأولى في RTL)
+            new TableCell({
+              children: [new Paragraph({ 
+                children: [new TextRun({ 
+                  text: row.label, 
+                  size: 22, 
+                  font: 'Arial', 
+                  bold: true, 
+                  color: '1e3a5f',
+                  rightToLeft: true 
+                })], 
+                alignment: AlignmentType.RIGHT, 
+                bidirectional: true,
+              })],
+              width: { size: 25, type: WidthType.PERCENTAGE },
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.SINGLE, size: 6, color: '1e3a5f' },
+                right: { style: BorderStyle.NONE }
+              },
+              verticalAlign: 'center',
+            }),
+            // اليسار: القيمة (الخلية الثانية في RTL)
+            new TableCell({
+              children: [new Paragraph({ 
+                children: [new TextRun({ 
+                  text: row.value, 
+                  size: 22, 
+                  font: 'Arial',
+                  rightToLeft: true 
+                })], 
+                alignment: AlignmentType.RIGHT, 
+                bidirectional: true,
+              })],
+              width: { size: 75, type: WidthType.PERCENTAGE },
+              shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE }
+              },
+              verticalAlign: 'center',
+            })
+          ]
+        })),
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        // @ts-ignore
+        visuallyRightToLeft: true,
+      })
+    );
+    children.push(new Paragraph({ spacing: { before: 200 } }));
+  }
+
+  // 6. معالجة الأقسام (الوقائع، المطالبات، الأساس القانوني، الطلبات)
+  const processContentParagraphs = (container: HTMLElement) => {
+    const paragraphs: any[] = [];
+    const elements = container.querySelectorAll('p, .legal-article, .request-item');
+    
+    elements.forEach(el => {
+      const isLegalArticle = el.classList.contains('legal-article');
+      const isRequestItem = el.classList.contains('request-item');
+      
+      // استخراج النص مع الحفاظ على التنسيق المختلط (bold + normal)
+      const textRuns: any[] = [];
+      el.childNodes.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent?.trim();
+          if (text) {
+            textRuns.push(new TextRun({ 
+              text: text + ' ', 
+              size: 22, 
+              font: 'Arial',
+              rightToLeft: true,
+            }));
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as HTMLElement;
+          const text = el.textContent?.trim();
+          if (text) {
+            textRuns.push(new TextRun({ 
+              text: text + ' ', 
+              bold: el.tagName === 'STRONG' || el.tagName === 'B', 
+              size: 22, 
+              font: 'Arial',
+              rightToLeft: true,
+            }));
+          }
+        }
+      });
+
+      if (textRuns.length > 0) {
+        paragraphs.push(
+          new Paragraph({
+            children: textRuns,
+            alignment: AlignmentType.JUSTIFIED, // ⭐ JUSTIFIED for proper Arabic typography
+            spacing: {
+              before: isLegalArticle || isRequestItem ? 80 : 120,
+              after: isLegalArticle || isRequestItem ? 80 : 120,
+              line: 360
             },
+            bidirectional: true,
+            indent: isLegalArticle ? { right: 400 } : undefined
+          })
+        );
+      }
+    });
+    
+    return paragraphs;
+  };
+
+  // معالجة الأقسام من HTML مباشرة
+  try {
+    const sections = doc.querySelectorAll('.section');
+    sections.forEach((section, sectionIndex) => {
+      try {
+        const titleEl = section.querySelector('.section-title');
+        const contentEl = section.querySelector('.section-content');
+        const tableEl = section.querySelector('table');
+        
+        if (titleEl) {
+      const titleText = titleEl.textContent?.trim() || '';
+      const titleColor = (titleEl as HTMLElement).style.color || '1e3a5f';
+      
+      // عنوان القسم
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ 
+              text: titleText, 
+              bold: true, 
+              size: 26, 
+              font: 'Arial', 
+              color: titleColor.includes('d32f2f') ? 'd32f2f' : '1e3a5f',
+              underline: {
+                type: UnderlineType.SINGLE,
+                color: titleColor.includes('d32f2f') ? 'd32f2f' : '1e3a5f'
+              },
+              rightToLeft: true,
+            })
+          ],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 280, after: 150 },
+          bidirectional: true,
+        })
+      );
+
+      // معالجة الجدول (جدول المطالبات المالية)
+      if (tableEl) {
+        const rows: TableRowType[] = [];
+        tableEl.querySelectorAll('tr').forEach((tr, rowIndex) => {
+          const isHeader = tr.closest('thead') !== null || rowIndex === 0;
+          const isTotal = tr.classList.contains('total-row');
+          
+          const cells: TableCellType[] = [];
+          tr.querySelectorAll('th, td').forEach(cell => {
+            const cellText = cell.textContent?.trim() || '';
+            const isAmount = cell.classList.contains('amount');
+            const colspan = cell.getAttribute('colspan');
+            
+            cells.push(new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ 
+                  text: cellText, 
+                  bold: isHeader || isTotal, 
+                  size: isTotal ? 24 : 20, 
+                  font: 'Arial',
+                  color: isHeader || isTotal ? 'ffffff' : (isAmount ? 'd32f2f' : '000000'),
+                  rightToLeft: true 
+                })],
+                alignment: isAmount || isHeader ? AlignmentType.CENTER : AlignmentType.RIGHT,
+                bidirectional: true
+              })],
+              shading: isHeader || isTotal 
+                ? { fill: '1e3a5f', type: ShadingType.CLEAR } 
+                : (rowIndex % 2 === 1 ? { fill: 'f9f9f9', type: ShadingType.CLEAR } : undefined),
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: '333333' },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: '333333' },
+                left: { style: BorderStyle.SINGLE, size: 1, color: '333333' },
+                right: { style: BorderStyle.SINGLE, size: 1, color: '333333' }
+              },
+              columnSpan: colspan ? parseInt(colspan) : undefined
+            }));
+          });
+          
+          if (cells.length > 0) {
+            rows.push(new TableRow({ children: cells }));
+          }
+        });
+        
+        if (rows.length > 0) {
+          children.push(
+            new Table({
+              rows,
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              // @ts-ignore
+              visuallyRightToLeft: true,
+            })
+          );
+        }
+      }
+      
+      // معالجة المحتوى النصي (فقط إذا لم يكن هناك جدول أو معالجة الجدول منفصلة)
+      if (contentEl && !tableEl) {
+        const contentParagraphs = processContentParagraphs(contentEl as HTMLElement);
+        children.push(...contentParagraphs);
+      } else if (contentEl && tableEl) {
+        // معالجة الفقرات النصية فقط (تجاهل الجدول)
+        const nonTableContent = Array.from(contentEl.children).filter(el => el.tagName !== 'TABLE');
+        nonTableContent.forEach(el => {
+          const text = el.textContent?.trim();
+          if (text) {
+            children.push(
+              new Paragraph({
+                children: [new TextRun({
+                  text: text,
+                  size: 22,
+                  font: 'Arial',
+                  rightToLeft: true
+                })],
+                alignment: AlignmentType.JUSTIFIED, // ⭐ JUSTIFIED for proper Arabic typography
+                spacing: { before: 100, after: 100, line: 360 },
+                bidirectional: true,
+              })
+            );
+          }
+        });
+      }
+    }
+    } catch (sectionError) {
+      console.warn(`Error processing section ${sectionIndex}:`, sectionError);
+    }
+    });
+  } catch (sectionsError) {
+    console.warn('Error processing sections:', sectionsError);
+  }
+
+  // 7. الختام
+  children.push(new Paragraph({ spacing: { before: 200 } }));
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ 
+        text: 'وتفضلوا بقبول فائق الاحترام والتقدير،،،', 
+        size: 22, 
+        font: 'Arial',
+        rightToLeft: true,
+      })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200, after: 300 },
+      bidirectional: true,
+    })
+  );
+
+  // 8. التوقيع والختم
+  // في RTL: الخلية الأولى = اليمين (الختم)، الخلية الثانية = اليسار (التوقيع)
+  const signatureSection = doc.querySelector('.signature-section, table');
+  if (signatureSection) {
+    // استخراج اسم المفوض من HTML
+    const signatoryName = doc.querySelector('.signatory .name')?.textContent?.trim() || 
+                          'خميس هاشم الجبر';
+    
+    children.push(
+      new Table({
+        rows: [
+          new TableRow({
+            children: [
+              // اليمين: الختم (الخلية الأولى في RTL)
+              new TableCell({
+                children: [
+                  new Paragraph({ 
+                    children: [new TextRun({ text: '[ختم الشركة]', size: 18, font: 'Arial', color: '666666', rightToLeft: true })], 
+                    alignment: AlignmentType.CENTER,
+                    bidirectional: true,
+                  })
+                ],
+                width: { size: 50, type: WidthType.PERCENTAGE },
+                borders: {
+                  top: { style: BorderStyle.NONE },
+                  bottom: { style: BorderStyle.NONE },
+                  left: { style: BorderStyle.NONE },
+                  right: { style: BorderStyle.NONE }
+                }
+              }),
+              // اليسار: التوقيع (الخلية الثانية في RTL)
+              new TableCell({
+                children: [
+                  new Paragraph({ 
+                    children: [new TextRun({ 
+                      text: companyInfo.companyAr, 
+                      size: 22, 
+                      font: 'Arial', 
+                      bold: true, 
+                      color: '1e3a5f',
+                      rightToLeft: true 
+                    })], 
+                    alignment: AlignmentType.CENTER,
+                    bidirectional: true,
+                  }),
+                  new Paragraph({ 
+                    children: [new TextRun({ text: '[التوقيع]', size: 18, font: 'Arial', color: '666666', rightToLeft: true })], 
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 200 },
+                    bidirectional: true,
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({ 
+                      text: signatoryName, 
+                      size: 22, 
+                      font: 'Arial', 
+                      bold: true,
+                      rightToLeft: true 
+                    })],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 100 },
+                    border: { top: { style: BorderStyle.SINGLE, size: 2, color: '1e3a5f' } },
+                    bidirectional: true,
+                  })
+                ],
+                width: { size: 50, type: WidthType.PERCENTAGE },
+                borders: {
+                  top: { style: BorderStyle.NONE },
+                  bottom: { style: BorderStyle.NONE },
+                  left: { style: BorderStyle.NONE },
+                  right: { style: BorderStyle.NONE }
+                }
+              })
+            ]
+          })
+        ],
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        // @ts-ignore
+        visuallyRightToLeft: true,
+      })
+    );
+  }
+
+  // 9. الذيل
+  const footer = doc.querySelector('.footer');
+  if (footer) {
+    const footerText = footer.textContent?.trim() || 
+                       `${companyInfo.companyAr} | س.ت: ${companyInfo.cr}`;
+    children.push(new Paragraph({ spacing: { before: 300 } }));
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ 
+          text: footerText, 
+          size: 16, 
+          font: 'Arial',
+          rightToLeft: true,
+        })],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 100 },
+        border: { top: { style: BorderStyle.SINGLE, size: 1, color: 'cccccc' } },
+        bidirectional: true,
+      })
+    );
+  }
+
+  // التحقق من وجود عناصر
+  if (children.length === 0) {
+    throw new Error('No content found to generate document');
+  }
+
+  // إنشاء المستند النهائي مع إعدادات RTL كاملة
+  const finalDoc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: 'Arial',
+            size: 24,
+            rightToLeft: true,
           },
-          textDirection: TextDirection.RIGHT_TO_LEFT, // تعيين اتجاه الصفحة إلى RTL
+          paragraph: {
+            alignment: AlignmentType.RIGHT,
+          },
         },
-        children,
       },
-    ],
+    },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: convertInchesToTwip(0.6),
+            right: convertInchesToTwip(0.8),
+            bottom: convertInchesToTwip(0.6),
+            left: convertInchesToTwip(0.8),
+          },
+        },
+        // @ts-ignore
+        textDirection: TextDirection.RIGHT_TO_LEFT || 'tbRl',
+      },
+      children,
+    }],
   });
 
   // تصدير الملف
-  const blob = await Packer.toBlob(doc);
+  const blob = await Packer.toBlob(finalDoc);
   saveAs(blob, filename);
 }
 
@@ -931,7 +1160,7 @@ export async function downloadTemplateAsDocx(
               children: [new Paragraph({ children: [new TextRun({ text: 'المدعية:', size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
               width: { size: 20, type: WidthType.PERCENTAGE },
               shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
-              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SOLID, size: 8, color: '1e3a5f' } }
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SINGLE, size: 8, color: '1e3a5f' } }
             }),
             new TableCell({
               children: [new Paragraph({ children: [new TextRun({ text: `${variables.PLAINTIFF_COMPANY_NAME} – ذ.م.م`, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
@@ -946,7 +1175,7 @@ export async function downloadTemplateAsDocx(
               children: [new Paragraph({ children: [new TextRun({ text: 'المدعى عليه:', size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
               width: { size: 20, type: WidthType.PERCENTAGE },
               shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
-              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SOLID, size: 8, color: '1e3a5f' } }
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SINGLE, size: 8, color: '1e3a5f' } }
             }),
             new TableCell({
               children: [new Paragraph({ children: [new TextRun({ text: variables.DEFENDANT_NAME, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
@@ -961,7 +1190,7 @@ export async function downloadTemplateAsDocx(
               children: [new Paragraph({ children: [new TextRun({ text: 'رقم الهوية:', size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
               width: { size: 20, type: WidthType.PERCENTAGE },
               shading: { fill: 'f5f5f5', type: ShadingType.CLEAR },
-              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SOLID, size: 8, color: '1e3a5f' } }
+              borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.SINGLE, size: 8, color: '1e3a5f' } }
             }),
             new TableCell({
               children: [new Paragraph({ children: [new TextRun({ text: variables.DEFENDANT_QID, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
@@ -1098,7 +1327,7 @@ export async function downloadTemplateAsDocx(
                 rightToLeft: true
               })
             ],
-            alignment: AlignmentType.RIGHT,
+            alignment: AlignmentType.JUSTIFIED, // ⭐ JUSTIFIED for proper Arabic typography
             spacing: { before: 80, after: 80 },
             bidirectional: true
           })
@@ -1116,7 +1345,7 @@ export async function downloadTemplateAsDocx(
               rightToLeft: true
             })
           ],
-          alignment: AlignmentType.RIGHT,
+          alignment: AlignmentType.JUSTIFIED, // ⭐ JUSTIFIED for proper Arabic typography
           spacing: { before: 100, after: 100, line: 360 },
           shading: { fill: 'fafafa', type: ShadingType.CLEAR },
           border: {
@@ -1198,7 +1427,8 @@ export async function downloadTemplateAsDocx(
               left: 1440,
             },
           },
-          textDirection: TextDirection.RIGHT_TO_LEFT,
+          // @ts-ignore
+        textDirection: TextDirection.RIGHT_TO_LEFT || 'tbRl',
         },
         children,
       },

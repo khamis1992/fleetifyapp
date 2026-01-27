@@ -74,6 +74,8 @@ import { SendReportTaskDialog } from '@/components/legal/SendReportTaskDialog';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { downloadHtmlAsPdf, downloadHtmlAsDocx, downloadTemplateAsDocx } from '@/utils/document-export';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 // قالب المذكرة الشارحة
 const MEMO_TEMPLATE = `مذكرة شارحة مقدمة إلى عدالة محكمة الاستثمار
@@ -256,6 +258,9 @@ export default function LawsuitPreparationPage() {
   
   // حالة إرسال إلى بيانات تقاضي
   const [isSendingToLawsuitData, setIsSendingToLawsuitData] = useState(false);
+  
+  // حالة تحميل ZIP
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -446,32 +451,40 @@ export default function LawsuitPreparationPage() {
       const vehicleInfo = `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`;
       const customerFullName = formatCustomerName(customer) || 'غير محدد';
       
+      // Calculate claim amount (excluding violations as they are requested to be transferred)
+      const claimAmount = calculations.total - calculations.violationsFines;
+      const claimAmountFormatted = claimAmount.toLocaleString('ar-QA');
+      const claimAmountInWords = lawsuitService.convertAmountToWords(claimAmount);
+      
       let factsText = lawsuitService.generateFactsText(
         customerFullName,
         contract.start_date,
         vehicleInfo,
-        calculations.total
+        claimAmount // Use claim amount without violations
       );
       
       if (calculations.violationsCount > 0) {
         factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${calculations.violationsCount}) مخالفة بإجمالي مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري.`;
       }
       
-      let claimsText = lawsuitService.generateClaimsText(calculations.total);
-      
-      if (calculations.violationsCount > 0) {
-        claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.overdueRent.toLocaleString('ar-QA')}) ريال قطري قيمة الإيجارات المتأخرة.
-2. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري قيمة المخالفات المرورية.
-3. إلزام المدعى عليه بالفوائد القانونية من تاريخ الاستحقاق وحتى تمام السداد.
+      // Generate claims text matching the Explanatory Memorandum
+      let claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmountFormatted}) ريال قطري.
+2. الأمر بتحويل المخالفات المرورية المسجلة على المركبة إلى الرقم الشخصي للمدعى عليه.
+3. الحكم بفسخ عقد الإيجار.
 4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
+      
+      if (calculations.violationsCount === 0) {
+        claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmountFormatted}) ريال قطري.
+2. الحكم بفسخ عقد الإيجار.
+3. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
       }
       
       setTaqadiData({
         caseTitle: lawsuitService.generateCaseTitle(customerFullName),
         facts: factsText,
         claims: claimsText,
-        amount: calculations.total,
-        amountInWords: calculations.amountInWords,
+        amount: claimAmount,
+        amountInWords: claimAmountInWords,
       });
     }
   }, [contract, calculations]);
@@ -549,7 +562,7 @@ export default function LawsuitPreparationPage() {
           days_overdue: Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24)),
           violations_count: calculations.violationsCount,
           violations_amount: calculations.violationsFines,
-          total_debt: calculations.total,
+          total_debt: calculations.total - calculations.violationsFines, // Exclude violations from total debt for the memo
         } as any,
         companyInfo: {
           name_ar: 'شركة العراف لتأجير السيارات',
@@ -649,7 +662,7 @@ export default function LawsuitPreparationPage() {
       toast.success('✅ تم تحميل المذكرة الشارحة بصيغة Word (مطابق للنسخة PDF)');
     } catch (error: any) {
       console.error('Error downloading DOCX:', error);
-      toast.error('حدث خطأ أثناء تحميل الملف');
+      toast.error('حدث خطأ أثناء تحميل الملف: ' + (error.message || 'خطأ غير معروف'));
     } finally {
       setIsDownloadingMemoDocx(false);
     }
@@ -1622,6 +1635,148 @@ export default function LawsuitPreparationPage() {
     navigate,
   ]);
 
+  // تحميل جميع المستندات كملف ZIP
+  const downloadAllAsZip = useCallback(async () => {
+    if (!contract) {
+      toast.error('جاري تحميل بيانات العقد...');
+      return;
+    }
+
+    setIsDownloadingZip(true);
+    toast.info('جاري تجهيز ملف ZIP...');
+
+    try {
+      const zip = new JSZip();
+      const customer = (contract as any)?.customers;
+      const customerName = formatCustomerName(customer);
+      const folderName = `دعوى_${customerName}_${contract.contract_number}`.replace(/[/\\?%*:|"<>]/g, '-');
+
+      // 1. إضافة المذكرة الشارحة (PDF)
+      if (memoHtmlRef.current) {
+        try {
+          const { default: html2canvas } = await import('html2canvas');
+          const { jsPDF } = await import('jspdf');
+
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'absolute';
+          iframe.style.left = '-9999px';
+          iframe.style.width = '794px';
+          document.body.appendChild(iframe);
+
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            iframeDoc.open();
+            iframeDoc.write(memoHtmlRef.current);
+            iframeDoc.close();
+
+            await new Promise(r => setTimeout(r, 800));
+
+            const canvas = await html2canvas(iframeDoc.body, {
+              scale: 1.5,
+              useCORS: true,
+              allowTaint: true,
+              logging: false,
+              backgroundColor: '#ffffff',
+              width: 794,
+            });
+
+            const pdf = new jsPDF({
+              orientation: 'portrait',
+              unit: 'mm',
+              format: 'a4',
+              compress: true,
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.85);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = pdfWidth / imgWidth;
+            const contentHeight = imgHeight * ratio;
+
+            let heightLeft = contentHeight;
+            let position = 0;
+            let pageCount = 0;
+
+            while (heightLeft > 0 && pageCount < 10) {
+              if (pageCount > 0) pdf.addPage();
+              pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, contentHeight, undefined, 'FAST');
+              heightLeft -= pdfHeight;
+              position -= pdfHeight;
+              pageCount++;
+            }
+
+            document.body.removeChild(iframe);
+
+            const pdfBlob = pdf.output('blob');
+            zip.file(`${folderName}/1_المذكرة_الشارحة.pdf`, pdfBlob);
+          }
+        } catch (error) {
+          console.error('Error adding memo to ZIP:', error);
+        }
+      }
+
+      // 2. إضافة كشف المطالبات المالية (HTML)
+      if (claimsHtmlRef.current) {
+        zip.file(`${folderName}/2_كشف_المطالبات_المالية.html`, claimsHtmlRef.current);
+      }
+
+      // 3. إضافة المستندات الداعمة (HTML)
+      if (criminalComplaintHtmlContent) {
+        zip.file(`${folderName}/3_بلاغ_سرقة_المركبة.html`, criminalComplaintHtmlContent);
+      }
+
+      if (violationsTransferHtmlContent) {
+        zip.file(`${folderName}/4_طلب_تحويل_المخالفات.html`, violationsTransferHtmlContent);
+      }
+
+      // 4. إضافة مستندات الشركة (PDF/Images)
+      const companyDocs = [
+        { type: 'commercial_register', name: '5_السجل_التجاري' },
+        { type: 'iban_certificate', name: '6_شهادة_IBAN' },
+        { type: 'representative_id', name: '7_البطاقة_الشخصية_للممثل' },
+      ];
+
+      for (const docInfo of companyDocs) {
+        const doc = getDocByType(docInfo.type as any);
+        if (doc?.file_url) {
+          try {
+            const response = await fetch(doc.file_url);
+            const blob = await response.blob();
+            const ext = blob.type.includes('pdf') ? 'pdf' : blob.type.includes('image') ? 'jpg' : 'file';
+            zip.file(`${folderName}/${docInfo.name}.${ext}`, blob);
+          } catch (error) {
+            console.error(`Error fetching ${docInfo.name}:`, error);
+          }
+        }
+      }
+
+      // 5. إضافة عقد الإيجار
+      if (contractFileUrl) {
+        try {
+          const response = await fetch(contractFileUrl);
+          const blob = await response.blob();
+          const ext = blob.type.includes('pdf') ? 'pdf' : blob.type.includes('image') ? 'jpg' : 'file';
+          zip.file(`${folderName}/8_عقد_الإيجار.${ext}`, blob);
+        } catch (error) {
+          console.error('Error fetching contract:', error);
+        }
+      }
+
+      // توليد وتحميل ملف ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, `${folderName}.zip`);
+
+      toast.success('✅ تم تحميل جميع المستندات بنجاح!');
+    } catch (error: any) {
+      console.error('Error creating ZIP:', error);
+      toast.error('حدث خطأ أثناء إنشاء ملف ZIP');
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  }, [contract, memoHtmlRef, claimsHtmlRef, criminalComplaintHtmlContent, violationsTransferHtmlContent, contractFileUrl, getDocByType]);
+
   // إرسال البيانات إلى جدول بيانات تقاضي
   const sendToLawsuitData = useCallback(async () => {
     if (!contract || !companyId || !taqadiData) {
@@ -1819,14 +1974,20 @@ export default function LawsuitPreparationPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  // TODO: Implement download all as ZIP
-                  toast.info('قريباً: تحميل جميع المستندات كملف ZIP');
-                }}
-                disabled={progressData.percentage < 100}
+                onClick={downloadAllAsZip}
+                disabled={progressData.percentage < 100 || isDownloadingZip}
               >
-                <FolderDown className="h-4 w-4 ml-2" />
-                تحميل الكل
+                {isDownloadingZip ? (
+                  <>
+                    <LoadingSpinner className="h-4 w-4 ml-2" />
+                    جاري التحميل...
+                  </>
+                ) : (
+                  <>
+                    <FolderDown className="h-4 w-4 ml-2" />
+                    تحميل الكل ZIP
+                  </>
+                )}
               </Button>
             </div>
           </CardHeader>
@@ -2341,6 +2502,26 @@ export default function LawsuitPreparationPage() {
                   <>
                     <Send className="h-4 w-4 ml-2" />
                     إرسال إلى بيانات تقاضي
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={downloadAllAsZip}
+                disabled={progressData.percentage < 100 || isDownloadingZip}
+                className="w-full sm:w-auto border-green-500 text-green-700 hover:bg-green-50 hover:border-green-600"
+              >
+                {isDownloadingZip ? (
+                  <>
+                    <LoadingSpinner className="h-5 w-5 ml-2" />
+                    جاري التحميل...
+                  </>
+                ) : (
+                  <>
+                    <FolderDown className="h-5 w-5 ml-2" />
+                    تحميل الكل ZIP
                   </>
                 )}
               </Button>

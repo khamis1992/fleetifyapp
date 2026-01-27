@@ -7,8 +7,8 @@
  * - Push notifications (future)
  */
 
-const CACHE_NAME = 'fleetify-v1';
-const RUNTIME_CACHE = 'fleetify-runtime';
+const CACHE_NAME = 'fleetify-v2';
+const RUNTIME_CACHE = 'fleetify-runtime-v2';
 
 // Critical assets to cache on install
 const CRITICAL_ASSETS = [
@@ -86,6 +86,38 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           // Fallback to cache if network fails
           return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Navigation requests (HTML) - Network First, then Cache
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Check for valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Clone and cache the updated HTML
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
+
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try to serve from cache (offline fallback)
+          return caches.match(request).then((response) => {
+            if (response) {
+              return response;
+            }
+            // If entry not found in cache, fallback to index.html
+            return caches.match('/index.html');
+          });
         })
     );
     return;
