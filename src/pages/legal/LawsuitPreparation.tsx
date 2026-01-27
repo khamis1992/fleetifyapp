@@ -73,7 +73,103 @@ import {
 import { SendReportTaskDialog } from '@/components/legal/SendReportTaskDialog';
 import { generateLegalComplaintHTML, type LegalDocumentData } from '@/utils/legal-document-generator';
 import { formatCustomerName } from '@/utils/formatCustomerName';
-import { downloadHtmlAsPdf, downloadHtmlAsDocx } from '@/utils/document-export';
+import { downloadHtmlAsPdf, downloadHtmlAsDocx, downloadTemplateAsDocx } from '@/utils/document-export';
+
+// قالب المذكرة الشارحة
+const MEMO_TEMPLATE = `مذكرة شارحة مقدمة إلى عدالة محكمة الاستثمار
+
+====================================
+أولًا: أطراف الدعوى
+====================================
+
+المدعية:
+{{PLAINTIFF_COMPANY_NAME}}
+ومقرها: {{PLAINTIFF_ADDRESS}}
+ومقيدة بالسجل التجاري رقم: {{PLAINTIFF_CR}}
+
+المدعى عليه:
+السيد / {{DEFENDANT_NAME}}
+حامل البطاقة الشخصية رقم: {{DEFENDANT_QID}}
+
+====================================
+ثانيًا: موضوع الدعوى
+====================================
+
+مطالبة مالية وتعويضات عقدية، مع طلب تحويل مخالفات مرورية، وطلبات احتياطية، تأسيسًا على إخلال المدعى عليه بالتزاماته الناشئة عن عقد إيجار مركبة.
+
+====================================
+ثالثًا: الوقائع
+====================================
+
+حيث إن الثابت بالأوراق أن الشركة المدعية أبرمت مع المدعى عليه بتاريخ {{CONTRACT_DATE}} عقد إيجار مركبة، التزم بموجبه المدعى عليه بسداد الإيجار الشهري في مواعيده، والمحافظة على المركبة، وتحمل كافة الالتزامات المترتبة على استخدامها، وعلى الأخص المخالفات المرورية، ورد المركبة بالحالة التي تسلمها عليها عند انتهاء العلاقة التعاقدية.
+
+وحيث نص العقد صراحةً على أن مدة العلاقة التعاقدية {{CONTRACT_DURATION}} تنتهي في {{CONTRACT_END_DATE}}، وبقيمة إيجار شهري قدرها {{MONTHLY_RENT}} ريال قطري، وبإجمالي التزامات مالية قدرها {{TOTAL_RENT}} ريال قطري، تُسدد على {{INSTALLMENTS_COUNT}} دفعة شهرية وفق جدول السداد المرفق بالعقد، مع وديعة ضمان مقدارها {{SECURITY_DEPOSIT}} ريال قطري.
+
+وحيث تضمّن العقد بندًا صريحًا بفرض غرامة تأخير مقدارها {{LATE_FEE_PER_DAY}} ريالًا قطريًا عن كل يوم تأخير بعد مهلة السماح، فضلًا عن التزام المستأجر بتحمل جميع المخالفات المرورية المسجلة على المركبة خلال فترة حيازته لها.
+
+إلا أن المدعى عليه أخلّ بالتزاماته العقدية إخلالًا جسيمًا، إذ امتنع عن سداد الأشهر التالية:
+{{UNPAID_MONTHS_LIST}}
+
+كما تسبب في أضرار بالمركبة، فضلًا عن تسجيل مخالفات مرورية متعددة نتيجة استخدامه الفعلي لها.
+
+====================================
+رابعًا: ماهية المطالبات المالية
+====================================
+
+جدول المطالبات المالية:
+
+البند 1: متبقي إيجارات غير مسددة - {{UNPAID_RENT_AMOUNT}} ريال قطري
+البند 2: غرامات تأخير اتفاقية - {{LATE_FEES_TOTAL}} ريال قطري
+البند 3: تعويض عن الأضرار والخسائر - {{DAMAGES_COMPENSATION}} ريال قطري
+
+إجمالي المطالبة المالية: {{TOTAL_CLAIM_AMOUNT}} ريال قطري
+
+------------------------------------
+جدول المخالفات المرورية (غير مشمولة بالمطالبة):
+------------------------------------
+
+{{TRAFFIC_VIOLATIONS_TABLE}}
+
+====================================
+خامسًا: الطلب المتعلق بالمخالفات المرورية
+====================================
+
+الطلب الأصلي:
+الأمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال مدة الإيجار إلى الرقم الشخصي للمدعى عليه {{DEFENDANT_QID}} لدى الإدارة العامة للمرور.
+
+الطلب الاحتياطي:
+وفي حال تعذر التحويل، إلزام المدعى عليه بسداد قيمتها كاملة وفق الكشوف الرسمية.
+
+====================================
+سادسًا: الطلبات الاحتياطية الأخرى
+====================================
+
+- الحكم بفسخ عقد الإيجار.
+- التعويض عن الحرمان من الانتفاع بالمركبة.
+- تثبيت حق المقاصة بوديعة الضمان.
+- التعويض عن التأخير حتى السداد التام.
+
+====================================
+سابعًا: الأساس القانوني
+====================================
+
+استنادًا إلى القانون المدني القطري رقم (22) لسنة 2004، المواد:
+171، 263، 266، 267، 589
+
+====================================
+ثامنًا: الطلبات الختامية
+====================================
+
+تلتمس الشركة المدعية الحكم بما يلي:
+- إلزام المدعى عليه بسداد مبلغ {{TOTAL_CLAIM_AMOUNT}} ريال قطري.
+- الأمر بتحويل المخالفات المرورية.
+- فسخ عقد الإيجار.
+- إلزامه بالتعويض والرسوم والمصاريف.
+
+وتفضلوا بقبول فائق الاحترام والتقدير،
+
+عن {{PLAINTIFF_COMPANY_NAME}}
+{{AUTHORIZED_SIGNATORY}}`;
 
 // واجهة المستند
 interface DocumentItem {
@@ -536,17 +632,44 @@ export default function LawsuitPreparationPage() {
 
   // تحميل المذكرة الشارحة كـ Word
   const downloadMemoAsDocx = useCallback(async () => {
-    if (!memoHtmlRef.current) {
+    if (!contract || !calculations) {
       toast.error('يرجى توليد المذكرة الشارحة أولاً');
       return;
     }
 
     setIsDownloadingMemoDocx(true);
     try {
-      const customerName = formatCustomerName((contract as any)?.customers);
+      const customer = (contract as any)?.customers;
+      const customerName = formatCustomerName(customer);
       const filename = `المذكرة_الشارحة_${customerName}_${new Date().toISOString().split('T')[0]}.docx`;
       
-      await downloadHtmlAsDocx(memoHtmlRef.current, filename);
+      // تحضير المتغيرات للقالب
+      const variables: Record<string, string> = {
+        PLAINTIFF_COMPANY_NAME: 'شركة العراف لتأجير السيارات',
+        PLAINTIFF_ADDRESS: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+        PLAINTIFF_CR: '146832',
+        DEFENDANT_NAME: customerName,
+        DEFENDANT_QID: customer?.national_id || customer?.id_number || '',
+        CONTRACT_DATE: contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '',
+        CONTRACT_DURATION: contract.duration_years ? `${contract.duration_years} سنوات` : '',
+        CONTRACT_END_DATE: contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : '',
+        MONTHLY_RENT: (Number(contract.monthly_amount) || 0).toLocaleString('en-US'),
+        TOTAL_RENT: (Number(contract.total_amount) || 0).toLocaleString('en-US'),
+        INSTALLMENTS_COUNT: contract.installments_count?.toString() || '',
+        SECURITY_DEPOSIT: (Number(contract.security_deposit) || 0).toLocaleString('en-US'),
+        LATE_FEE_PER_DAY: '120',
+        UNPAID_MONTHS_LIST: overdueInvoices.map(inv => `- ${inv.description || 'دفعة'}`).join('\n'),
+        UNPAID_RENT_AMOUNT: (calculations.overdueAmount || 0).toLocaleString('en-US'),
+        LATE_FEES_TOTAL: (calculations.lateFees || 0).toLocaleString('en-US'),
+        DAMAGES_COMPENSATION: (calculations.damagesAmount || 0).toLocaleString('en-US'),
+        TOTAL_CLAIM_AMOUNT: (calculations.totalClaim || 0).toLocaleString('en-US'),
+        TRAFFIC_VIOLATIONS_TABLE: calculations.violationsCount > 0 
+          ? `عدد المخالفات: ${calculations.violationsCount}\nقيمة المخالفات: ${(calculations.violationsAmount || 0).toLocaleString('en-US')} ريال قطري`
+          : 'لا توجد مخالفات مرورية مسجلة',
+        AUTHORIZED_SIGNATORY: 'خميس هاشم الجبر',
+      };
+      
+      await downloadTemplateAsDocx(MEMO_TEMPLATE, variables, filename);
       toast.success('✅ تم تحميل المذكرة الشارحة بصيغة Word');
     } catch (error: any) {
       console.error('Error downloading DOCX:', error);
@@ -554,7 +677,7 @@ export default function LawsuitPreparationPage() {
     } finally {
       setIsDownloadingMemoDocx(false);
     }
-  }, [contract]);
+  }, [contract, calculations, overdueInvoices]);
 
   // توليد كشف المستندات
   const generateDocumentsList = useCallback(() => {

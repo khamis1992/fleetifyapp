@@ -328,16 +328,32 @@ function parseHtmlToDocxElements(html: string): any[] {
     if (tagName === 'p') {
       // محاولة استخراج النصوص الغامقة (Bold)
       const children: {text: string, bold: boolean}[] = [];
+      
+      // دالة لإضافة علامات Unicode للتحكم بالاتجاه
+      const addBidiMarkers = (text: string): string => {
+        // إضافة RLM (Right-to-Left Mark) قبل وبعد الأقواس والأرقام
+        // هذا يساعد في عرض النص بشكل صحيح في Word
+        return text
+          .replace(/\(/g, '\u200F(\u200F')  // RLM قبل وبعد القوس الفاتح
+          .replace(/\)/g, '\u200F)\u200F'); // RLM قبل وبعد القوس الغالق
+      };
+      
       element.childNodes.forEach(node => {
         if (node.nodeType === Node.TEXT_NODE) {
-          const t = node.textContent?.trim();
+          // الحفاظ على المسافات وتنظيف الأسطر الجديدة
+          let t = node.textContent?.replace(/[\n\r\t]+/g, ' ') || '';
+          // تطبيق علامات BiDi
+          t = addBidiMarkers(t);
           if (t) children.push({ text: t, bold: false });
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node as HTMLElement;
+          let t = el.textContent?.replace(/[\n\r\t]+/g, ' ') || '';
+          // تطبيق علامات BiDi
+          t = addBidiMarkers(t);
           if (el.tagName.toLowerCase() === 'strong' || el.tagName.toLowerCase() === 'b') {
-             children.push({ text: el.textContent?.trim() || '', bold: true });
+             if (t) children.push({ text: t, bold: true });
           } else {
-             children.push({ text: el.textContent?.trim() || '', bold: false });
+             if (t) children.push({ text: t, bold: false });
           }
         }
       });
@@ -350,7 +366,7 @@ function parseHtmlToDocxElements(html: string): any[] {
       } else {
          const text = element.textContent?.trim();
          if (text) {
-            elements.push({ type: 'paragraph', content: text });
+            elements.push({ type: 'paragraph', content: addBidiMarkers(text) });
          }
       }
       return;
@@ -394,7 +410,7 @@ export async function downloadHtmlAsDocx(
   htmlContent: string,
   filename: string = 'document.docx'
 ): Promise<void> {
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType } = await import('docx');
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType, TextDirection } = await import('docx');
   const { saveAs } = await import('file-saver');
 
   const elements = parseHtmlToDocxElements(htmlContent);
@@ -409,21 +425,21 @@ export async function downloadHtmlAsDocx(
           rows: [
             new TableRow({
               children: [
-                // Left Cell (English)
+                // Right Cell (Arabic) - في RTL، الخلية الأولى تكون على اليمين
                 new TableCell({
-                  children: element.companyEn.map((line: string) => new Paragraph({
-                    children: [new TextRun({ text: line, size: 20, font: 'Times New Roman' })],
-                    alignment: AlignmentType.LEFT
+                  children: element.companyAr.map((line: string) => new Paragraph({
+                    children: [new TextRun({ text: line, size: 24, font: 'Arial', bold: true, rightToLeft: true })],
+                    alignment: AlignmentType.RIGHT,
+                    bidirectional: true
                   })),
                   width: { size: 50, type: WidthType.PERCENTAGE },
                   borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
                 }),
-                // Right Cell (Arabic)
+                // Left Cell (English) - في RTL، الخلية الثانية تكون على اليسار
                 new TableCell({
-                  children: element.companyAr.map((line: string) => new Paragraph({
-                    children: [new TextRun({ text: line, size: 24, font: 'Traditional Arabic', bold: true, rightToLeft: true })],
-                    alignment: AlignmentType.RIGHT,
-                    bidirectional: true
+                  children: element.companyEn.map((line: string) => new Paragraph({
+                    children: [new TextRun({ text: line, size: 20, font: 'Arial', rightToLeft: false })],
+                    alignment: AlignmentType.LEFT
                   })),
                   width: { size: 50, type: WidthType.PERCENTAGE },
                   borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
@@ -435,7 +451,7 @@ export async function downloadHtmlAsDocx(
         })
       );
       // فاصل
-      children.push(new Paragraph({ spacing: { before: 100, after: 100 } }));
+      children.push(new Paragraph({ spacing: { before: 80, after: 80 } }));
     }
 
     // 2. Meta Table (Date & Ref)
@@ -445,15 +461,15 @@ export async function downloadHtmlAsDocx(
           rows: [
             new TableRow({
               children: [
-                // Left (Date usually)
+                // Right (Ref usually) - في RTL، الخلية الأولى تكون على اليمين
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: element.left, size: 22, font: 'Times New Roman' })], alignment: AlignmentType.LEFT })],
+                  children: [new Paragraph({ children: [new TextRun({ text: element.right, size: 22, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
                   width: { size: 50, type: WidthType.PERCENTAGE },
                   borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
                 }),
-                // Right (Ref usually)
+                // Left (Date usually) - في RTL، الخلية الثانية تكون على اليسار
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: element.right, size: 22, font: 'Times New Roman', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                  children: [new Paragraph({ children: [new TextRun({ text: element.left, size: 22, font: 'Arial', rightToLeft: false })], alignment: AlignmentType.LEFT })],
                   width: { size: 50, type: WidthType.PERCENTAGE },
                   borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
                 }),
@@ -463,7 +479,7 @@ export async function downloadHtmlAsDocx(
           width: { size: 100, type: WidthType.PERCENTAGE },
         })
       );
-      children.push(new Paragraph({ spacing: { before: 200 } }));
+      children.push(new Paragraph({ spacing: { before: 150 } }));
     }
 
     // 3. Subject Box
@@ -474,17 +490,17 @@ export async function downloadHtmlAsDocx(
             text: line,
             bold: true,
             size: idx === 0 ? 28 : 24,
-            font: 'Traditional Arabic',
+            font: 'Arial',
             color: '1e3a5f',
             break: idx > 0 ? 1 : 0
           })),
           alignment: AlignmentType.CENTER,
-          spacing: { before: 200, after: 200 },
+          spacing: { before: 150, after: 150 },
           border: {
-            top: { style: BorderStyle.SINGLE, space: 10 },
-            bottom: { style: BorderStyle.SINGLE, space: 10 },
-            left: { style: BorderStyle.SINGLE, space: 10 },
-            right: { style: BorderStyle.SINGLE, space: 10 },
+            top: { style: BorderStyle.SINGLE, space: 8 },
+            bottom: { style: BorderStyle.SINGLE, space: 8 },
+            left: { style: BorderStyle.SINGLE, space: 8 },
+            right: { style: BorderStyle.SINGLE, space: 8 },
           },
           shading: {
             fill: 'F5F5F5',
@@ -501,13 +517,15 @@ export async function downloadHtmlAsDocx(
         new Table({
           rows: element.rows.map((row: any) => new TableRow({
             children: [
+              // Label - في RTL، الخلية الأولى تكون على اليمين
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: row.value, size: 24, font: 'Traditional Arabic', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                children: [new Paragraph({ children: [new TextRun({ text: row.label, size: 24, font: 'Arial', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                width: { size: 20, type: WidthType.PERCENTAGE },
                 borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
               }),
+              // Value - في RTL، الخلية الثانية تكون على اليسار
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: row.label, size: 24, font: 'Traditional Arabic', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-                width: { size: 20, type: WidthType.PERCENTAGE },
+                children: [new Paragraph({ children: [new TextRun({ text: row.value, size: 24, font: 'Arial', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
                 borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
               })
             ]
@@ -515,7 +533,7 @@ export async function downloadHtmlAsDocx(
           width: { size: 100, type: WidthType.PERCENTAGE },
         })
       );
-      children.push(new Paragraph({ spacing: { before: 200 } }));
+      children.push(new Paragraph({ spacing: { before: 150 } }));
     }
 
     // 5. Section Title
@@ -527,13 +545,13 @@ export async function downloadHtmlAsDocx(
               text: element.content,
               bold: true,
               size: 26,
-              font: 'Traditional Arabic',
+              font: 'Arial',
               color: '1e3a5f',
               rightToLeft: true
             }),
           ],
           alignment: AlignmentType.RIGHT,
-          spacing: { before: 200, after: 100 },
+          spacing: { before: 150, after: 80 },
           bidirectional: true,
         })
       );
@@ -543,15 +561,19 @@ export async function downloadHtmlAsDocx(
     else if (element.type === 'paragraph-mixed') {
       children.push(
         new Paragraph({
-          children: element.children.map((child: any) => new TextRun({
-            text: " " + child.text + " ", // add slight spacing for mixed scripts
-            bold: child.bold,
-            size: 24,
-            font: child.bold ? 'Traditional Arabic' : 'Traditional Arabic', // Or specific font for English parts if detected
-            rightToLeft: true
-          })),
-          alignment: AlignmentType.JUSTIFIED,
-          spacing: { before: 100, after: 100, line: 360 },
+          children: element.children.map((child: any) => {
+            return new TextRun({
+              text: child.text,
+              bold: child.bold,
+              size: 24,
+              // استخدام خط Arial الذي يدعم العربية والإنجليزية والأرقام بشكل ممتاز
+              font: 'Arial',
+              // جميع النصوص RTL لأن المستند عربي
+              rightToLeft: true,
+            });
+          }),
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 80, after: 80, line: 300 }, // تقليل المسافات
           bidirectional: true,
         })
       );
@@ -565,12 +587,12 @@ export async function downloadHtmlAsDocx(
             new TextRun({
               text: element.content,
               size: 24,
-              font: 'Traditional Arabic',
+              font: 'Arial',
               rightToLeft: true
             }),
           ],
           alignment: AlignmentType.RIGHT,
-          spacing: { before: 100, after: 100, line: 360 },
+          spacing: { before: 80, after: 80, line: 300 },
           bidirectional: true,
         })
       );
@@ -589,7 +611,7 @@ export async function downloadHtmlAsDocx(
                       text: cell,
                       bold: rowIndex === 0,
                       size: 22,
-                      font: 'Traditional Arabic',
+                      font: 'Arial',
                       rightToLeft: true
                     }),
                   ],
@@ -619,7 +641,7 @@ export async function downloadHtmlAsDocx(
           },
         })
       );
-      children.push(new Paragraph({ spacing: { before: 200 } }));
+      children.push(new Paragraph({ spacing: { before: 150 } }));
     }
   }
 
@@ -631,11 +653,12 @@ export async function downloadHtmlAsDocx(
           page: {
             margin: {
               top: 1440, // 1 inch
-              right: 1440,
-              bottom: 1440,
-              left: 1440,
+              right: 1800, // 1.25 inch - margin أكبر على اليمين (بداية الصفحة في RTL)
+              bottom: 1440, // 1 inch
+              left: 1080, // 0.75 inch - margin أصغر على اليسار
             },
           },
+          textDirection: TextDirection.RIGHT_TO_LEFT, // تعيين اتجاه الصفحة إلى RTL
         },
         children,
       },
@@ -662,6 +685,162 @@ export async function downloadDocument(
   } else {
     await downloadHtmlAsDocx(htmlContent, `${baseName}.docx`);
   }
+}
+
+/**
+ * استبدال المتغيرات في القالب
+ */
+function replaceTemplateVariables(
+  template: string,
+  variables: Record<string, string>
+): string {
+  let result = template;
+  
+  // استبدال جميع المتغيرات في القالب
+  Object.entries(variables).forEach(([key, value]) => {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    result = result.replace(regex, value || '');
+  });
+  
+  return result;
+}
+
+/**
+ * تحويل القالب النصي إلى DOCX
+ */
+export async function downloadTemplateAsDocx(
+  template: string,
+  variables: Record<string, string>,
+  filename: string = 'document.docx'
+): Promise<void> {
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, TextDirection } = await import('docx');
+  const { saveAs } = await import('file-saver');
+  
+  // استبدال المتغيرات
+  const content = replaceTemplateVariables(template, variables);
+  
+  // تقسيم المحتوى إلى أقسام
+  const sections = content.split('====================================');
+  
+  const children: any[] = [];
+  
+  for (const section of sections) {
+    const lines = section.trim().split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) continue;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // تخطي الخطوط الفارغة
+      if (!trimmedLine) continue;
+      
+      // عنوان رئيسي (يبدأ بـ "أولاً:" أو "ثانياً:" إلخ)
+      if (trimmedLine.match(/^(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً|سابعاً|ثامناً):/)) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmedLine,
+                bold: true,
+                size: 28,
+                font: 'Arial',
+                color: '1e3a5f',
+                rightToLeft: true
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 300, after: 150 },
+            bidirectional: true,
+          })
+        );
+      }
+      // عنوان فرعي (ينتهي بـ ":")
+      else if (trimmedLine.endsWith(':')) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmedLine,
+                bold: true,
+                size: 24,
+                font: 'Arial',
+                rightToLeft: true
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 150, after: 80 },
+            bidirectional: true,
+          })
+        );
+      }
+      // جدول (يبدأ بـ "|")
+      else if (trimmedLine.startsWith('|')) {
+        // سنتعامل مع الجداول لاحقاً
+        continue;
+      }
+      // نقطة في قائمة (تبدأ بـ "-")
+      else if (trimmedLine.startsWith('-')) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: '• ' + trimmedLine.substring(1).trim(),
+                size: 24,
+                font: 'Arial',
+                rightToLeft: true
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 80, after: 80 },
+            bidirectional: true,
+          })
+        );
+      }
+      // فقرة عادية
+      else {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmedLine,
+                size: 24,
+                font: 'Arial',
+                rightToLeft: true
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 80, after: 80, line: 300 },
+            bidirectional: true,
+          })
+        );
+      }
+    }
+  }
+  
+  // إنشاء المستند
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: 1440,
+              right: 1800,
+              bottom: 1440,
+              left: 1080,
+            },
+          },
+          textDirection: TextDirection.RIGHT_TO_LEFT,
+        },
+        children,
+      },
+    ],
+  });
+  
+  // تصدير الملف
+  const blob = await Packer.toBlob(doc);
+  saveAs(blob, filename);
 }
 
 // ============================================================================

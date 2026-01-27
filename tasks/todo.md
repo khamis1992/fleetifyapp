@@ -1,28 +1,98 @@
-# Tasks
+# إصلاح مشكلة حالة المركبة عند التحويل للشؤون القانونية
 
-- [x] Check codebase for multi-tab enforcement logic or shared state issues
-- [x] Investigate Supabase auth initialization for potential race conditions or null references
-- [x] Look for `useState` usage in non-component files (utils, etc.)
-- [x] Fix the issue causing "Cannot read properties of null (reading 'useState')" in new tabs
-- [x] Add a review section with summary of changes
-- [x] Fix dangerous React import in src/utils/navigationOptimization.ts
-- [x] Verify if src/hooks/useUnifiedCompanyAccess.ts has similar issues
-- [x] Check src/hooks/useDashboardStats.ts for similar issues
+## المشكلة
+عند تحويل العقد للشؤون القانونية، النظام يغير حالة المركبة من `rented` إلى `available` بشكل خاطئ.
+المركبة يجب أن تبقى `rented` لأن العقد لا يزال قائماً والعميل لا يزال يستخدم المركبة.
 
-## Review
+## المهام
 
-### Changes Summary
-1.  **Fixed `src/utils/navigationOptimization.ts`**:
-    *   Found a critical issue where `React` was imported at the *end* of the file (line 135) but `React.useState` was used earlier (line 87).
-    *   This "import hoisting" reliance is fragile and can cause `React` to be undefined/null during module evaluation in some environments (like a fresh tab load where module resolution order might differ or strict ESM is enforced).
-    *   Refactored the file to use standard imports at the top: `import React, { useEffect, useRef, useState } from 'react';`.
-    *   Replaced `React.useState` with `useState` for consistency and safety.
+- [x] 1. حذف الكود الذي يغير حالة المركبة إلى `available` من `useConvertToLegal.ts`
+- [x] 2. تعديل الـ trigger في قاعدة البيانات لإضافة معالجة `under_legal_procedure`
+- [x] 3. تطبيق الـ migration على قاعدة البيانات
+- [x] 4. تصحيح حالة المركبات المتأثرة
 
-### Impact Analysis
-*   **Why this caused the error**: The error `Cannot read properties of null (reading 'useState')` occurs when `useState` is accessed on a `null` object. In the original code, `React.useState` was called. If `React` (the default import) was `null` or undefined due to the hoisting issue, this exact error would occur.
-*   **Why only in new tabs?**: In a single-tab session (SPA navigation), the `React` module is likely already loaded and cached by the bundler/browser. When opening a new tab, the module graph is re-evaluated. If the circular dependency or hoisting resolution behaves differently (race condition in module loader), `React` might not be ready when `navigationOptimization.ts` is executed.
-*   **Risk**: Low. Standardizing imports is a best practice and fixes a definite bug.
+## الملفات المتأثرة
+- `src/hooks/useConvertToLegal.ts` - حذف السطور 240-253
+- `supabase/migrations/` - إنشاء migration جديد لتعديل الـ trigger
 
-### Verification
-*   Verified `src/hooks/useUnifiedCompanyAccess.ts` and `src/hooks/useDashboardStats.ts` do not have this issue.
-*   The fix aligns with standard React development practices.
+## التفاصيل التقنية
+
+### الكود الحالي الخاطئ (السطور 240-253 في useConvertToLegal.ts):
+```typescript
+// تحديث حالة المركبة إلى متوفرة
+if (contract.vehicle_id) {
+  const { error: vehicleError } = await supabase
+    .from('vehicles')
+    .update({
+      status: 'available',  // ❌ خطأ!
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', contract.vehicle_id);
+}
+```
+
+### الحل:
+1. حذف هذا الكود بالكامل
+2. تعديل الـ trigger ليتعامل مع `under_legal_procedure` بحيث لا يغير حالة المركبة
+
+## التغييرات المُنفذة
+
+### 1. تعديل `src/hooks/useConvertToLegal.ts`
+- ✅ حذف السطور 240-253 التي كانت تغير حالة المركبة إلى `available`
+- ✅ إضافة تعليق توضيحي: المركبة تبقى `rented` لأن العقد لا يزال قائماً
+
+### 2. إنشاء migration جديد: `20260127000005_fix_vehicle_status_on_legal_transfer.sql`
+- ✅ تعديل دالة `update_vehicle_status_from_contract()`
+- ✅ إضافة معالجة لحالة `under_legal_procedure`:
+  - عند تحويل العقد للشؤون القانونية، المركبة **تبقى** `rented`
+  - لا يتم تغيير حالة المركبة
+- ✅ إضافة تعليق توضيحي على الدالة
+
+## المراجعة
+
+✅ **تم إصلاح المشكلة بنجاح**
+
+### ما تم تنفيذه:
+1. حذف الكود الذي كان يغير حالة المركبة إلى `available` عند التحويل للشؤون القانونية
+2. تعديل الـ trigger في قاعدة البيانات ليتعامل بشكل صحيح مع حالة `under_legal_procedure`
+3. الآن عند تحويل العقد للشؤون القانونية:
+   - ✅ حالة العقد تتغير إلى `under_legal_procedure`
+   - ✅ حالة المركبة **تبقى** `rented`
+   - ✅ العقد لا يزال مرتبطاً بالمركبة
+   - ✅ المركبة لا تظهر كمتاحة للإيجار
+
+### الملفات المعدلة:
+- `src/hooks/useConvertToLegal.ts` - حذف الكود الخاطئ
+- `supabase/migrations/20260127000005_fix_vehicle_status_on_legal_transfer.sql` - migration جديد
+
+### 3. تطبيق الـ migration على قاعدة البيانات
+- ✅ تم تطبيق migration `20260127000005_fix_vehicle_status_on_legal_transfer.sql` بنجاح
+- ✅ الـ trigger الآن يتعامل بشكل صحيح مع حالة `under_legal_procedure`
+
+### 4. تصحيح حالة المركبات المتأثرة
+- ✅ تم العثور على **58 مركبة** كانت في وضع خاطئ:
+  - لديها عقود بحالة `under_legal_procedure`
+  - لكن حالتها كانت `available` بشكل خاطئ
+- ✅ تم تصحيح حالة جميع المركبات إلى `rented`
+- ✅ المركبة 7074 الآن حالتها `rented` بشكل صحيح
+
+## النتيجة النهائية
+
+✅ **تم حل المشكلة بالكامل!**
+
+### ما تم إنجازه:
+1. ✅ حذف الكود الخاطئ من `useConvertToLegal.ts`
+2. ✅ تعديل الـ trigger في قاعدة البيانات
+3. ✅ تطبيق الـ migration على قاعدة البيانات
+4. ✅ تصحيح حالة 58 مركبة كانت متأثرة بالمشكلة
+
+### السلوك الجديد:
+- عند تحويل عقد للشؤون القانونية:
+  - ✅ حالة العقد تصبح `under_legal_procedure`
+  - ✅ حالة المركبة **تبقى** `rented` (لا تتغير)
+  - ✅ المركبة لا تظهر كمتاحة للإيجار
+  - ✅ العقد يبقى مرتبطاً بالمركبة
+
+### اختبار:
+يمكنك الآن زيارة المركبة 7074 والتأكد من أنها تظهر كـ "مؤجرة" وليس "متاحة":
+http://localhost:8080/fleet/vehicles/8f846a26-d337-4b04-ba14-27730da95d99

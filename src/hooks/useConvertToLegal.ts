@@ -237,20 +237,9 @@ ${notes ? `ملاحظات: ${notes}` : ''}`,
 
       if (contractError) throw contractError;
 
-      // تحديث حالة المركبة إلى متوفرة
-      if (contract.vehicle_id) {
-        const { error: vehicleError } = await supabase
-          .from('vehicles')
-          .update({
-            status: 'available',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', contract.vehicle_id);
-
-        if (vehicleError) {
-          console.warn('Error updating vehicle status:', vehicleError);
-        }
-      }
+      // ملاحظة: لا نغير حالة المركبة هنا
+      // المركبة تبقى 'rented' لأن العقد لا يزال قائماً
+      // فقط تم تحويله للشؤون القانونية لمتابعة المستحقات المالية
 
       // تسجيل العملية في سجل العمليات
       try {

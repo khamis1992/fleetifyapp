@@ -112,6 +112,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isInitialized.current = true;
 
     try {
+      // 🚀 OPTIMIZATION: Check if we even have a token in localStorage before calling getSession
+      // This avoids the 5-8s timeout if the user is definitely not logged in
+      const hasToken = typeof window !== 'undefined' && 
+        (localStorage.getItem('supabase.auth.token') || localStorage.getItem('fleetify_auth_cache'));
+      
+      if (!hasToken && !window.location.hash.includes('access_token')) {
+        console.log('📝 [AUTH_CONTEXT] No token found in storage - skipping getSession');
+        setLoading(false);
+        return;
+      }
+
       // Add timeout to getSession call to prevent hanging (increased to 8s for slow networks)
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<never>((_, reject) =>

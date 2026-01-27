@@ -46,10 +46,15 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     headers: { 'x-client-info': 'fleetify-web' },
     fetch: (url, options) => {
       // Add timeout to prevent hanging requests
+      // Log requests that take too long
+      const timeoutMs = 15000; // Increased to 15s to be safe
       return Promise.race([
         fetch(url, options),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+          setTimeout(() => {
+            console.warn(`[SUPABASE] Request timed out after ${timeoutMs}ms:`, url);
+            reject(new Error('Request timeout'));
+          }, timeoutMs)
         )
       ]);
     },
