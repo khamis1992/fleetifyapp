@@ -632,7 +632,8 @@ export default function LawsuitPreparationPage() {
 
   // تحميل المذكرة الشارحة كـ Word
   const downloadMemoAsDocx = useCallback(async () => {
-    if (!contract || !calculations) {
+    // التحقق من وجود محتوى HTML (المذكرة المولدة)
+    if (!memoHtmlRef.current) {
       toast.error('يرجى توليد المذكرة الشارحة أولاً');
       return;
     }
@@ -643,41 +644,16 @@ export default function LawsuitPreparationPage() {
       const customerName = formatCustomerName(customer);
       const filename = `المذكرة_الشارحة_${customerName}_${new Date().toISOString().split('T')[0]}.docx`;
       
-      // تحضير المتغيرات للقالب
-      const variables: Record<string, string> = {
-        PLAINTIFF_COMPANY_NAME: 'شركة العراف لتأجير السيارات',
-        PLAINTIFF_ADDRESS: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-        PLAINTIFF_CR: '146832',
-        DEFENDANT_NAME: customerName,
-        DEFENDANT_QID: customer?.national_id || customer?.id_number || '',
-        CONTRACT_DATE: contract.start_date ? new Date(contract.start_date).toLocaleDateString('ar-QA') : '',
-        CONTRACT_DURATION: contract.duration_years ? `${contract.duration_years} سنوات` : '',
-        CONTRACT_END_DATE: contract.end_date ? new Date(contract.end_date).toLocaleDateString('ar-QA') : '',
-        MONTHLY_RENT: (Number(contract.monthly_amount) || 0).toLocaleString('en-US'),
-        TOTAL_RENT: (Number(contract.total_amount) || 0).toLocaleString('en-US'),
-        INSTALLMENTS_COUNT: contract.installments_count?.toString() || '',
-        SECURITY_DEPOSIT: (Number(contract.security_deposit) || 0).toLocaleString('en-US'),
-        LATE_FEE_PER_DAY: '120',
-        UNPAID_MONTHS_LIST: overdueInvoices.map(inv => `- ${inv.description || 'دفعة'}`).join('\n'),
-        UNPAID_RENT_AMOUNT: (calculations.overdueAmount || 0).toLocaleString('en-US'),
-        LATE_FEES_TOTAL: (calculations.lateFees || 0).toLocaleString('en-US'),
-        DAMAGES_COMPENSATION: (calculations.damagesAmount || 0).toLocaleString('en-US'),
-        TOTAL_CLAIM_AMOUNT: (calculations.totalClaim || 0).toLocaleString('en-US'),
-        TRAFFIC_VIOLATIONS_TABLE: calculations.violationsCount > 0 
-          ? `عدد المخالفات: ${calculations.violationsCount}\nقيمة المخالفات: ${(calculations.violationsAmount || 0).toLocaleString('en-US')} ريال قطري`
-          : 'لا توجد مخالفات مرورية مسجلة',
-        AUTHORIZED_SIGNATORY: 'خميس هاشم الجبر',
-      };
-      
-      await downloadTemplateAsDocx(MEMO_TEMPLATE, variables, filename);
-      toast.success('✅ تم تحميل المذكرة الشارحة بصيغة Word');
+      // استخدام محتوى HTML مباشرة لضمان التطابق مع PDF
+      await downloadHtmlAsDocx(memoHtmlRef.current, filename);
+      toast.success('✅ تم تحميل المذكرة الشارحة بصيغة Word (مطابق للنسخة PDF)');
     } catch (error: any) {
       console.error('Error downloading DOCX:', error);
       toast.error('حدث خطأ أثناء تحميل الملف');
     } finally {
       setIsDownloadingMemoDocx(false);
     }
-  }, [contract, calculations, overdueInvoices]);
+  }, [contract]);
 
   // توليد كشف المستندات
   const generateDocumentsList = useCallback(() => {

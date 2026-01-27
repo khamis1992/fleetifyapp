@@ -233,15 +233,32 @@ function parseHtmlToDocxElements(html: string): any[] {
     }
 
     // 2. معالجة معلومات التاريخ والمرجع (Meta Info)
-    if (className.includes('meta-info')) {
-      const dateText = element.querySelector('div:first-child')?.textContent?.trim() || '';
-      const refText = element.querySelector('div:last-child')?.textContent?.trim() || '';
+    if (className.includes('meta-info') || className.includes('ref-date')) {
+      const dateText = element.querySelector('div:last-child')?.textContent?.trim() || ''; // التاريخ هو الثاني في HTML
+      const refText = element.querySelector('div:first-child')?.textContent?.trim() || ''; // المرجع هو الأول
+      
+      // تصحيح: في generateLegalComplaintHTML، العنصر الأول هو المرجع والثاني هو التاريخ
+      // لكن في CSS: float: right للأول (المرجع) و float: left للثاني (التاريخ)
+      // مما يعني بصرياً: المرجع يمين، التاريخ يسار
+      
       elements.push({
         type: 'meta-table',
-        left: dateText,
-        right: refText
+        left: dateText,  // سيظهر يساراً
+        right: refText   // سيظهر يميناً
       });
       return;
+    }
+
+    // 2.5 معالجة شريط العنوان (Address Bar)
+    if (className.includes('address-bar')) {
+       const text = element.textContent?.trim() || '';
+       const lines = element.innerHTML.split(/<br\s*\/?>/i).map(l => l.replace(/<[^>]*>/g, '').trim()).filter(l => l);
+       
+       elements.push({
+         type: 'address-bar',
+         lines: lines.length > 0 ? lines : [text]
+       });
+       return;
     }
 
     // 3. معالجة صندوق الموضوع (Subject Box)
@@ -382,11 +399,17 @@ function parseHtmlToDocxElements(html: string): any[] {
       return;
     }
 
-    // معالجة div العامة (للمرور على العناصر الفرعية)
+    // معالجة div العامة (للمرور على العناصر الفرعية والنصوص)
     if (tagName === 'div') {
       element.childNodes.forEach((child) => {
         if (child.nodeType === Node.ELEMENT_NODE) {
           processElement(child as HTMLElement);
+        } else if (child.nodeType === Node.TEXT_NODE) {
+          const text = child.textContent?.trim();
+          if (text) {
+             // إضافة النصوص المباشرة كفقرات
+             elements.push({ type: 'paragraph', content: text });
+          }
         }
       });
     }
@@ -480,6 +503,29 @@ export async function downloadHtmlAsDocx(
         })
       );
       children.push(new Paragraph({ spacing: { before: 150 } }));
+    }
+
+    // 2.5 Address Bar
+    else if (element.type === 'address-bar') {
+      element.lines.forEach((line: string, index: number) => {
+        const isLast = index === element.lines.length - 1;
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: line,
+                size: 20,
+                font: 'Arial',
+                rightToLeft: true
+              })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: isLast ? { after: 200, before: 100 } : { before: 100 },
+            bidirectional: true,
+            border: isLast ? { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'cccccc' } } : undefined
+          })
+        );
+      });
     }
 
     // 3. Subject Box

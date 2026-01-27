@@ -34,3 +34,11 @@
   - Implemented `handleDeleteCustomer` function to delete the customer from Supabase.
   - Added a confirmation dialog (`AlertDialog`) that warns about active contracts and outstanding debts before deletion.
   - Ensured that deleting a customer will trigger database cascades (if configured) or fail if constraints exist (users are warned about active contracts).
+
+## Fix (Explanatory Memorandum Word Export)
+- **Problem**: The generated Word document for "Explanatory Memorandum" (مذكرة شارحة) had different text content than the PDF version.
+- **Root Cause**: The PDF was generated from an HTML template (`generateLegalComplaintHTML`), while the Word document used a separate, simpler text template (`MEMO_TEMPLATE`).
+- **Solution**:
+  - Updated `src/pages/legal/LawsuitPreparation.tsx` to use the same HTML content for Word generation via `downloadHtmlAsDocx` utility.
+  - Enhanced `src/utils/document-export.ts` to better parse the specific HTML structure of the memorandum (handling `address-bar`, `ref-date` / `meta-info`, and text nodes in divs).
+  - This ensures the Word document is a faithful conversion of the PDF/HTML content, maintaining identical text and structure.
