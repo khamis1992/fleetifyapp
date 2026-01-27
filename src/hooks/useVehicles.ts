@@ -521,7 +521,7 @@ export const useDeleteVehicle = () => {
   
   return useMutation({
     mutationFn: async (vehicleId: string) => {
-      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle mutation started", level: "info" });
+      Sentry.addBreadcrumb({ category: "vehicles", message: "Vehicle deletion started", level: "info" });
       // Get vehicle details before deletion for audit log
       const { data: vehicleData } = await supabase
         .from("vehicles")
@@ -529,9 +529,10 @@ export const useDeleteVehicle = () => {
         .eq("id", vehicleId)
         .single()
       
+      // Hard delete - permanently remove the vehicle
       const { error } = await supabase
         .from("vehicles")
-        .update({ is_active: false })
+        .delete()
         .eq("id", vehicleId)
 
       if (error) throw error
@@ -558,26 +559,23 @@ export const useDeleteVehicle = () => {
             model: result.vehicleData?.model,
             year: result.vehicleData?.year,
             vin: result.vehicleData?.vin,
-            is_active: true,
           },
-          new_values: {
-            is_active: false,
-          },
-          changes_summary: `Deactivated vehicle ${vehicleName}`,
-          severity: 'high',
+          new_values: null,
+          changes_summary: `Permanently deleted vehicle ${vehicleName}`,
+          severity: 'critical',
         }
       )
       
       toast({
-        title: "تم بنجاح",
-        description: "تم تعطيل المركبة بنجاح",
+        title: "تم الحذف بنجاح",
+        description: "تم حذف المركبة نهائياً من النظام",
       })
     },
     onError: (error) => {
-      console.error("Error deactivating vehicle:", error)
+      console.error("Error deleting vehicle:", error)
       toast({
         title: "خطأ",
-        description: "فشل في تعطيل المركبة",
+        description: "فشل في حذف المركبة",
         variant: "destructive",
       })
     }

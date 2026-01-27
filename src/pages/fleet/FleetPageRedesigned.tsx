@@ -713,25 +713,60 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onQuickAction('rent')} className="gap-2">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onQuickAction('rent');
+                }} 
+                className="gap-2"
+              >
                 <FileText className="w-4 h-4 text-blue-500" />
                 عقد جديد
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onQuickAction('maintenance')} className="gap-2">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onQuickAction('maintenance');
+                }} 
+                className="gap-2"
+              >
                 <Wrench className="w-4 h-4 text-amber-500" />
                 صيانة
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onCopy} className="gap-2">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onCopy();
+                }} 
+                className="gap-2"
+              >
                 <Copy className="w-4 h-4" />
                 نسخ
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onEdit} className="gap-2">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onEdit();
+                }} 
+                className="gap-2"
+              >
                 <Edit3 className="w-4 h-4" />
                 تعديل
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onDelete} className="gap-2 text-red-600">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onDelete();
+                }} 
+                className="gap-2 text-red-600"
+              >
                 <Trash2 className="w-4 h-4" />
                 حذف
               </DropdownMenuItem>
@@ -1498,12 +1533,16 @@ const FleetPageRedesigned: React.FC = () => {
       <AlertDialog open={!!vehicleToDelete} onOpenChange={(open) => !open && setVehicleToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-red-600">حذف نهائي للمركبة</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
               {vehicleToDelete && (
                 <>
-                  سيتم حذف المركبة <strong>{vehicleToDelete.plate_number}</strong> ({vehicleToDelete.make} {vehicleToDelete.model}).
-                  هذا الإجراء لا يمكن التراجع عنه.
+                  <p>
+                    سيتم حذف المركبة <strong>{vehicleToDelete.plate_number}</strong> ({vehicleToDelete.make} {vehicleToDelete.model}) <strong>نهائياً</strong> من النظام.
+                  </p>
+                  <p className="text-red-600 font-semibold">
+                    ⚠️ تحذير: هذا الإجراء لا يمكن التراجع عنه! سيتم حذف المركبة وجميع البيانات المرتبطة بها نهائياً.
+                  </p>
                 </>
               )}
             </AlertDialogDescription>
@@ -1515,7 +1554,7 @@ const FleetPageRedesigned: React.FC = () => {
               className="bg-red-600 hover:bg-red-700"
               disabled={deleteVehicle.isPending}
             >
-              {deleteVehicle.isPending ? 'جاري الحذف...' : 'حذف'}
+              {deleteVehicle.isPending ? 'جاري الحذف...' : 'حذف نهائياً'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
