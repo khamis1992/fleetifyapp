@@ -164,6 +164,7 @@ export default function LawsuitPreparationPage() {
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
     queryKey: ['contract-details', contractId],
+    staleTime: 0, // Force fresh data
     queryFn: async () => {
       const { data: contractData, error } = await supabase
         .from('contracts')
@@ -176,11 +177,16 @@ export default function LawsuitPreparationPage() {
 
       let customerData = null;
       if (contractData.customer_id) {
-        const { data: customer } = await supabase
+        const { data: customer, error: customerError } = await supabase
           .from('customers')
-          .select('id, first_name, first_name_ar, last_name, last_name_ar, national_id, nationality, phone, email, mobile, address, country')
+          .select('id, first_name, first_name_ar, last_name, last_name_ar, customer_type, company_name, company_name_ar, national_id, nationality, phone, email, address, country')
           .eq('id', contractData.customer_id)
           .single();
+        
+        if (customerError) {
+          console.error('Error fetching customer:', customerError);
+        }
+        
         customerData = customer;
       }
 
@@ -342,7 +348,7 @@ export default function LawsuitPreparationPage() {
       const customer = contract.customers as any;
       const vehicle = contract.vehicles as any;
       const vehicleInfo = `${vehicle?.make || ''} ${vehicle?.model || ''} ${vehicle?.year || ''}`;
-      const customerFullName = formatCustomerName(customer);
+      const customerFullName = formatCustomerName(customer) || 'غير محدد';
       
       let factsText = lawsuitService.generateFactsText(
         customerFullName,

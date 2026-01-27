@@ -5,7 +5,7 @@
  * by managing component state and preventing unnecessary re-renders.
  */
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // Track navigation history to prevent duplicate renders
@@ -84,7 +84,7 @@ export const useScrollRestoration = (enabled = true) => {
  */
 export const useNavigationTransition = () => {
   const location = useLocation();
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -130,6 +130,3 @@ export const getNavigationStats = () => {
     }))
   };
 };
-
-// Fix for React import
-import React from 'react';

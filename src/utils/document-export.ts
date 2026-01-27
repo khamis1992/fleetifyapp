@@ -119,7 +119,7 @@ function parseHtmlToSections(html: string): ParsedSection[] {
         });
       }
       // الفقرات
-      else if (tagName === 'p' || tagName === 'div') {
+      else if (tagName === 'p') {
         const text = element.textContent?.trim();
         if (text && text.length > 0) {
           sections.push({
@@ -127,6 +127,25 @@ function parseHtmlToSections(html: string): ParsedSection[] {
             content: text,
           });
         }
+      }
+      // div - معالجة خاصة للحفاظ على التنسيق
+      else if (tagName === 'div') {
+        // إذا كان div يحتوي على نص مباشر، أضفه كفقرة
+        const directText = Array.from(element.childNodes)
+          .filter(n => n.nodeType === Node.TEXT_NODE)
+          .map(n => n.textContent?.trim())
+          .filter(t => t && t.length > 0)
+          .join(' ');
+        
+        if (directText) {
+          sections.push({
+            type: 'paragraph',
+            content: directText,
+          });
+        }
+        
+        // معالجة العناصر الفرعية
+        element.childNodes.forEach(processNode);
       }
       // الجداول
       else if (tagName === 'table') {
@@ -157,9 +176,26 @@ function parseHtmlToSections(html: string): ParsedSection[] {
           });
         });
       }
+      // br - إضافة سطر فارغ
+      else if (tagName === 'br') {
+        sections.push({
+          type: 'paragraph',
+          content: '',
+        });
+      }
       // المعالجة التكرارية للعناصر الأخرى
       else {
         element.childNodes.forEach(processNode);
+      }
+    }
+    // معالجة النصوص المباشرة
+    else if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text && text.length > 0) {
+        sections.push({
+          type: 'paragraph',
+          content: text,
+        });
       }
     }
   }
@@ -169,7 +205,188 @@ function parseHtmlToSections(html: string): ParsedSection[] {
 }
 
 /**
- * تحميل HTML كملف Word (DOCX)
+ * تحليل HTML المحسّن مع الحفاظ على التنسيق
+ */
+function parseHtmlToDocxElements(html: string): any[] {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const elements: any[] = [];
+
+  function processElement(element: HTMLElement): void {
+    const tagName = element.tagName.toLowerCase();
+    const className = element.className;
+
+    // 1. معالجة الترويسة (Header)
+    if (className.includes('header')) {
+      const companyAr = element.querySelector('.company-ar')?.textContent?.trim() || '';
+      // استخراج النص من company-ar سطر سطر إذا وجد
+      const companyArLines = element.querySelector('.company-ar')?.innerHTML.split('<br>').map(s => s.replace(/<[^>]*>/g, '').trim()).filter(s => s) || [];
+      
+      const companyEnLines = element.querySelector('.company-en')?.innerHTML.split('<br>').map(s => s.replace(/<[^>]*>/g, '').trim()).filter(s => s) || [];
+
+      elements.push({
+        type: 'header-table',
+        companyAr: companyArLines.length > 0 ? companyArLines : [companyAr],
+        companyEn: companyEnLines
+      });
+      return;
+    }
+
+    // 2. معالجة معلومات التاريخ والمرجع (Meta Info)
+    if (className.includes('meta-info')) {
+      const dateText = element.querySelector('div:first-child')?.textContent?.trim() || '';
+      const refText = element.querySelector('div:last-child')?.textContent?.trim() || '';
+      elements.push({
+        type: 'meta-table',
+        left: dateText,
+        right: refText
+      });
+      return;
+    }
+
+    // 3. معالجة صندوق الموضوع (Subject Box)
+    if (className.includes('subject-box')) {
+      const lines = Array.from(element.childNodes)
+        .map(n => n.textContent?.trim())
+        .filter(t => t);
+      elements.push({
+        type: 'subject-box',
+        lines
+      });
+      return;
+    }
+
+    // 4. معالجة صندوق المعلومات (Info Box)
+    if (className.includes('info-box')) {
+      const infoRows: {label: string, value: string}[] = [];
+      const rows = element.querySelectorAll('.info-row');
+      rows.forEach((row) => {
+        const label = row.querySelector('.info-label')?.textContent?.trim() || '';
+        const value = Array.from(row.childNodes)
+          .filter(n => n.nodeType === Node.TEXT_NODE || (n.nodeType === Node.ELEMENT_NODE && !(n as HTMLElement).classList.contains('info-label')))
+          .map(n => n.textContent?.trim())
+          .filter(t => t)
+          .join(' ');
+        
+        if (label || value) {
+          infoRows.push({ label, value });
+        }
+      });
+      elements.push({
+        type: 'info-box-table',
+        rows: infoRows
+      });
+      return;
+    }
+
+    // 5. معالجة عنوان القسم (Section Title)
+    if (className.includes('section-title')) {
+      elements.push({
+        type: 'section-title',
+        content: element.textContent?.trim() || '',
+      });
+      return;
+    }
+
+    // 6. معالجة الجداول (Tables)
+    if (tagName === 'table') {
+      const rows: string[][] = [];
+      // Header row
+      const headerCells: string[] = [];
+      element.querySelectorAll('thead th').forEach(th => headerCells.push(th.textContent?.trim() || ''));
+      if (headerCells.length > 0) rows.push(headerCells);
+
+      // Body rows
+      element.querySelectorAll('tbody tr').forEach((tr) => {
+        const cells: string[] = [];
+        tr.querySelectorAll('td').forEach((cell) => {
+          cells.push(cell.textContent?.trim() || '');
+        });
+        if (cells.length > 0) {
+          rows.push(cells);
+        }
+      });
+      
+      // Footer row (Totals)
+      const footerRow = element.querySelector('tr.total-row');
+      if (footerRow) {
+         const cells: string[] = [];
+         footerRow.querySelectorAll('td').forEach(td => cells.push(td.textContent?.trim() || ''));
+         if (cells.length > 0) rows.push(cells);
+      }
+
+      if (rows.length > 0) {
+        elements.push({
+          type: 'table',
+          rows,
+        });
+      }
+      return;
+    }
+
+    // 7. معالجة الفقرات والنصوص العادية
+    if (tagName === 'p') {
+      // محاولة استخراج النصوص الغامقة (Bold)
+      const children: {text: string, bold: boolean}[] = [];
+      element.childNodes.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const t = node.textContent?.trim();
+          if (t) children.push({ text: t, bold: false });
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as HTMLElement;
+          if (el.tagName.toLowerCase() === 'strong' || el.tagName.toLowerCase() === 'b') {
+             children.push({ text: el.textContent?.trim() || '', bold: true });
+          } else {
+             children.push({ text: el.textContent?.trim() || '', bold: false });
+          }
+        }
+      });
+
+      if (children.length > 0) {
+        elements.push({
+          type: 'paragraph-mixed',
+          children
+        });
+      } else {
+         const text = element.textContent?.trim();
+         if (text) {
+            elements.push({ type: 'paragraph', content: text });
+         }
+      }
+      return;
+    }
+
+    // معالجة العناوين
+    if (['h1', 'h2', 'h3', 'h4'].includes(tagName)) {
+      elements.push({
+        type: 'heading',
+        level: parseInt(tagName[1]),
+        content: element.textContent?.trim() || '',
+      });
+      return;
+    }
+
+    // معالجة div العامة (للمرور على العناصر الفرعية)
+    if (tagName === 'div') {
+      element.childNodes.forEach((child) => {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          processElement(child as HTMLElement);
+        }
+      });
+    }
+  }
+
+  doc.body.childNodes.forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      processElement(node as HTMLElement);
+    }
+  });
+
+  return elements;
+}
+
+/**
+ * تحميل HTML كملف Word (DOCX) - نسخة محسّنة مع نص قابل للتحرير
  * @param htmlContent محتوى HTML
  * @param filename اسم الملف
  */
@@ -177,75 +394,220 @@ export async function downloadHtmlAsDocx(
   htmlContent: string,
   filename: string = 'document.docx'
 ): Promise<void> {
-  // استيراد ديناميكي لتجنب مشاكل SSR
-  const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType } = await import('docx');
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType } = await import('docx');
   const { saveAs } = await import('file-saver');
 
-  const sections = parseHtmlToSections(htmlContent);
-  const children: (InstanceType<typeof Paragraph> | InstanceType<typeof Table>)[] = [];
+  const elements = parseHtmlToDocxElements(htmlContent);
+  const children: any[] = [];
 
-  for (const section of sections) {
-    if (section.type === 'heading') {
+  for (const element of elements) {
+    
+    // 1. Header Table (Invisible)
+    if (element.type === 'header-table') {
+      children.push(
+        new Table({
+          rows: [
+            new TableRow({
+              children: [
+                // Left Cell (English)
+                new TableCell({
+                  children: element.companyEn.map((line: string) => new Paragraph({
+                    children: [new TextRun({ text: line, size: 20, font: 'Times New Roman' })],
+                    alignment: AlignmentType.LEFT
+                  })),
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                }),
+                // Right Cell (Arabic)
+                new TableCell({
+                  children: element.companyAr.map((line: string) => new Paragraph({
+                    children: [new TextRun({ text: line, size: 24, font: 'Traditional Arabic', bold: true, rightToLeft: true })],
+                    alignment: AlignmentType.RIGHT,
+                    bidirectional: true
+                  })),
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                  borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                }),
+              ],
+            }),
+          ],
+          width: { size: 100, type: WidthType.PERCENTAGE },
+        })
+      );
+      // فاصل
+      children.push(new Paragraph({ spacing: { before: 100, after: 100 } }));
+    }
+
+    // 2. Meta Table (Date & Ref)
+    else if (element.type === 'meta-table') {
+      children.push(
+        new Table({
+          rows: [
+            new TableRow({
+              children: [
+                // Left (Date usually)
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: element.left, size: 22, font: 'Times New Roman' })], alignment: AlignmentType.LEFT })],
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                  borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                }),
+                // Right (Ref usually)
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: element.right, size: 22, font: 'Times New Roman', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                  borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                }),
+              ],
+            }),
+          ],
+          width: { size: 100, type: WidthType.PERCENTAGE },
+        })
+      );
+      children.push(new Paragraph({ spacing: { before: 200 } }));
+    }
+
+    // 3. Subject Box
+    else if (element.type === 'subject-box') {
+      children.push(
+        new Paragraph({
+          children: element.lines.map((line: string, idx: number) => new TextRun({
+            text: line,
+            bold: true,
+            size: idx === 0 ? 28 : 24,
+            font: 'Traditional Arabic',
+            color: '1e3a5f',
+            break: idx > 0 ? 1 : 0
+          })),
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 200 },
+          border: {
+            top: { style: BorderStyle.SINGLE, space: 10 },
+            bottom: { style: BorderStyle.SINGLE, space: 10 },
+            left: { style: BorderStyle.SINGLE, space: 10 },
+            right: { style: BorderStyle.SINGLE, space: 10 },
+          },
+          shading: {
+            fill: 'F5F5F5',
+            type: ShadingType.CLEAR,
+          },
+          bidirectional: true
+        })
+      );
+    }
+
+    // 4. Info Box Table
+    else if (element.type === 'info-box-table') {
+      children.push(
+        new Table({
+          rows: element.rows.map((row: any) => new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: row.value, size: 24, font: 'Traditional Arabic', rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: row.label, size: 24, font: 'Traditional Arabic', bold: true, rightToLeft: true })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+                width: { size: 20, type: WidthType.PERCENTAGE },
+                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+              })
+            ]
+          })),
+          width: { size: 100, type: WidthType.PERCENTAGE },
+        })
+      );
+      children.push(new Paragraph({ spacing: { before: 200 } }));
+    }
+
+    // 5. Section Title
+    else if (element.type === 'section-title') {
       children.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: section.content,
+              text: element.content,
               bold: true,
-              size: section.level === 1 ? 32 : section.level === 2 ? 28 : 24,
+              size: 26,
               font: 'Traditional Arabic',
+              color: '1e3a5f',
+              rightToLeft: true
             }),
           ],
-          heading: section.level === 1 ? HeadingLevel.HEADING_1 : 
-                   section.level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
           alignment: AlignmentType.RIGHT,
           spacing: { before: 200, after: 100 },
           bidirectional: true,
         })
       );
-    } else if (section.type === 'paragraph' || section.type === 'list') {
+    }
+
+    // 6. Mixed Paragraph (Bold + Normal)
+    else if (element.type === 'paragraph-mixed') {
+      children.push(
+        new Paragraph({
+          children: element.children.map((child: any) => new TextRun({
+            text: " " + child.text + " ", // add slight spacing for mixed scripts
+            bold: child.bold,
+            size: 24,
+            font: child.bold ? 'Traditional Arabic' : 'Traditional Arabic', // Or specific font for English parts if detected
+            rightToLeft: true
+          })),
+          alignment: AlignmentType.JUSTIFIED,
+          spacing: { before: 100, after: 100, line: 360 },
+          bidirectional: true,
+        })
+      );
+    }
+
+    // 7. Normal Paragraph
+    else if (element.type === 'paragraph') {
       children.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: section.content,
+              text: element.content,
               size: 24,
               font: 'Traditional Arabic',
+              rightToLeft: true
             }),
           ],
           alignment: AlignmentType.RIGHT,
-          spacing: { before: 100, after: 100 },
+          spacing: { before: 100, after: 100, line: 360 },
           bidirectional: true,
         })
       );
-    } else if (section.type === 'table' && section.rows) {
-      const tableRows = section.rows.map(
-        (row, rowIndex) =>
-          new TableRow({
-            children: row.map(
-              (cell) =>
-                new TableCell({
+    }
+
+    // 8. Data Table
+    else if (element.type === 'table' && element.rows) {
+      const tableRows = element.rows.map((row: string[], rowIndex: number) =>
+        new TableRow({
+          children: row.map((cell: string) =>
+            new TableCell({
+              children: [
+                new Paragraph({
                   children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({
-                          text: cell,
-                          bold: rowIndex === 0,
-                          size: 22,
-                          font: 'Traditional Arabic',
-                        }),
-                      ],
-                      alignment: AlignmentType.RIGHT,
-                      bidirectional: true,
+                    new TextRun({
+                      text: cell,
+                      bold: rowIndex === 0,
+                      size: 22,
+                      font: 'Traditional Arabic',
+                      rightToLeft: true
                     }),
                   ],
-                  width: {
-                    size: 100 / row.length,
-                    type: WidthType.PERCENTAGE,
-                  },
-                })
-            ),
-          })
+                  alignment: AlignmentType.CENTER,
+                  bidirectional: true,
+                }),
+              ],
+              verticalAlign: 'center',
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+                left: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+                right: { style: BorderStyle.SINGLE, size: 1, color: '000000' },
+              },
+              shading: rowIndex === 0 ? { fill: 'EEEEEE', type: ShadingType.CLEAR } : undefined
+            })
+          ),
+        })
       );
 
       children.push(
@@ -257,6 +619,7 @@ export async function downloadHtmlAsDocx(
           },
         })
       );
+      children.push(new Paragraph({ spacing: { before: 200 } }));
     }
   }
 
@@ -267,10 +630,10 @@ export async function downloadHtmlAsDocx(
         properties: {
           page: {
             margin: {
-              top: 720, // 0.5 inch
-              right: 720,
-              bottom: 720,
-              left: 720,
+              top: 1440, // 1 inch
+              right: 1440,
+              bottom: 1440,
+              left: 1440,
             },
           },
         },

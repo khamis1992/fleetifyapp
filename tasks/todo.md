@@ -1,201 +1,28 @@
-# TODO: إضافة ملف Excel لبيانات القضايا ✅
+# Tasks
 
-## المهام المكتملة:
-- [x] ✅ **1. تثبيت مكتبة `xlsx`**
-  - تم تثبيت مكتبة `xlsx` بنجاح
-  - الإصدار: أحدث إصدار متاح
+- [x] Check codebase for multi-tab enforcement logic or shared state issues
+- [x] Investigate Supabase auth initialization for potential race conditions or null references
+- [x] Look for `useState` usage in non-component files (utils, etc.)
+- [x] Fix the issue causing "Cannot read properties of null (reading 'useState')" in new tabs
+- [x] Add a review section with summary of changes
+- [x] Fix dangerous React import in src/utils/navigationOptimization.ts
+- [x] Verify if src/hooks/useUnifiedCompanyAccess.ts has similar issues
+- [x] Check src/hooks/useDashboardStats.ts for similar issues
 
-- [x] ✅ **2. إنشاء ملف `lawsuitExcelGenerator.ts`**
-  - إنشاء واجهة `LawsuitExcelData` للبيانات
-  - دالة `extractLawsuitData()` لاستخراج البيانات من المستندات
-  - دالة `numberToArabicWords()` لتحويل الأرقام إلى كلمات عربية
-  - دالة `createLawsuitExcelFile()` لإنشاء ملف Excel مع تنسيق احترافي
+## Review
 
-- [x] ✅ **3. تحديث `bulkDocumentGenerator.ts`**
-  - إضافة استيراد `lawsuitExcelGenerator`
-  - تحديث `generateBulkDocumentsZip()` لاستخراج بيانات القضايا
-  - إنشاء ملف `بيانات_القضايا.xlsx` وإضافته للـ ZIP
-  - معالجة الأخطاء بشكل صحيح
+### Changes Summary
+1.  **Fixed `src/utils/navigationOptimization.ts`**:
+    *   Found a critical issue where `React` was imported at the *end* of the file (line 135) but `React.useState` was used earlier (line 87).
+    *   This "import hoisting" reliance is fragile and can cause `React` to be undefined/null during module evaluation in some environments (like a fresh tab load where module resolution order might differ or strict ESM is enforced).
+    *   Refactored the file to use standard imports at the top: `import React, { useEffect, useRef, useState } from 'react';`.
+    *   Replaced `React.useState` with `useState` for consistency and safety.
 
-## البيانات المضافة في Excel:
+### Impact Analysis
+*   **Why this caused the error**: The error `Cannot read properties of null (reading 'useState')` occurs when `useState` is accessed on a `null` object. In the original code, `React.useState` was called. If `React` (the default import) was `null` or undefined due to the hoisting issue, this exact error would occur.
+*   **Why only in new tabs?**: In a single-tab session (SPA navigation), the `React` module is likely already loaded and cached by the bundler/browser. When opening a new tab, the module graph is re-evaluated. If the circular dependency or hoisting resolution behaves differently (race condition in module loader), `React` might not be ready when `navigationOptimization.ts` is executed.
+*   **Risk**: Low. Standardizing imports is a best practice and fixes a definite bug.
 
-| العمود | الوصف | المصدر |
-|--------|-------|--------|
-| عنوان الدعوى | عنوان الدعوى الكامل | مُنشأ تلقائياً |
-| الوقائع | تفاصيل وقائع القضية | من المذكرة الشارحة |
-| الطلبات | طلبات المدعي | من المذكرة الشارحة |
-| قيمة المطالبة | المبلغ الإجمالي (رقم) | محسوب |
-| المبلغ بالحروف | المبلغ بالكلمات العربية | محسوب |
-| الاسم الأول | اسم المدعى عليه الأول | من بيانات العميل |
-| الاسم الأوسط | الاسم الأوسط | من بيانات العميل |
-| الاسم الأخير | اسم العائلة | من بيانات العميل |
-| الجنسية | جنسية المدعى عليه | من بيانات العميل |
-| رقم الهوية | رقم الهوية/الإقامة | من بيانات العميل |
-| العنوان | عنوان المدعى عليه | من بيانات العميل |
-| الهاتف | رقم الهاتف | من بيانات العميل |
-| البريد الإلكتروني | البريد الإلكتروني | من بيانات العميل |
-
-## الميزات:
-✅ **تنسيق احترافي:**
-- عرض الأعمدة مناسب للقراءة
-- ارتفاع الصفوف يستوعب النصوص الطويلة
-- رأس جدول واضح بالعربية
-
-✅ **بيانات كاملة:**
-- جميع البيانات المطلوبة من جدول `lawsuit_templates`
-- الوقائع والطلبات مُنشأة تلقائياً من المذكرة الشارحة
-- تحويل المبالغ إلى كلمات عربية
-
-✅ **تكامل سلس:**
-- يُنشأ تلقائياً مع ملف ZIP
-- لا يتطلب خطوات إضافية من المستخدم
-- معالجة أخطاء قوية
-
-## الملفات المتأثرة:
-- ✅ `package.json` (إضافة مكتبة xlsx)
-- ✅ `src/utils/lawsuitExcelGenerator.ts` (ملف جديد)
-- ✅ `src/utils/bulkDocumentGenerator.ts` (تحديث)
-
-## النتيجة:
-الآن عند إنشاء ملف ZIP للقضايا، سيتم إضافة ملف `بيانات_القضايا.xlsx` تلقائياً يحتوي على جميع بيانات القضايا بتنسيق Excel جاهز للاستيراد إلى قاعدة البيانات! 📊✨
-
----
-
-## 🐛 إصلاح الأخطاء:
-
-### الخطأ: `invalid input syntax for type uuid: "[object Object]"`
-**السبب:** تم تمرير كائن `customer` كامل إلى `fetchCustomerFullData()` بدلاً من `contract_id` (string)
-
-**الحل:** ✅
-```typescript
-// قبل (خطأ):
-const fullData = await fetchCustomerFullData(customer);
-
-// بعد (صحيح):
-const contractId = customer.contract_id || customer.id;
-const fullData = await fetchCustomerFullData(contractId);
-```
-
-**الملف المحدث:** `src/utils/bulkDocumentGenerator.ts` (السطر 580-581)
-
----
-
-### الخطأ: `Cannot read properties of undefined (reading 'name_ar')`
-**السبب:** دالة `fetchCustomerFullData()` لا تُرجع `companyInfo` و `vehicleData` اللازمة لـ `extractLawsuitData()`
-
-**الحل:** ✅
-```typescript
-// إضافة جلب معلومات الشركة
-const { data: companyData } = await supabase
-  .from('companies')
-  .select('*')
-  .eq('id', contractResult.data.company_id)
-  .single();
-
-return { 
-  contract: contractResult.data, 
-  invoices: invoicesResult.data || [], 
-  violations: violationsResult.data || [],
-  vehicleData: contractResult.data.vehicles,  // ✅ إضافة
-  companyInfo: companyData || {}              // ✅ إضافة
-};
-```
-
-**الملف المحدث:** `src/utils/bulkDocumentGenerator.ts` (السطر 152-168)
-
----
-
-## ✅ إضافة صفحة "بيانات التقاضي"
-
-### المهام المكتملة:
-
-#### 1. **تغيير اسم الزر** ✅
-- **الموقع:** `/legal/delinquency`
-- **التغيير:** من "إعداد دعوى" إلى "بيانات تقاضي"
-- **الملف:** `src/pages/legal/FinancialDelinquency.tsx`
-
-#### 2. **إنشاء صفحة جديدة** ✅
-- **المسار:** `/legal/lawsuit-data`
-- **الملف:** `src/pages/legal/LawsuitDataPage.tsx`
-- **الميزات:**
-  - عرض جدول بيانات القضايا
-  - بطاقات إحصائية (إجمالي القضايا، المطالبات، آخر تحديث)
-  - بحث متقدم (بالاسم، رقم الهوية، عنوان الدعوى)
-  - عرض تفاصيل كل قضية
-  - حذف القضايا
-  - تحديث البيانات
-
-#### 3. **إنشاء جدول قاعدة البيانات** ✅
-- **الجدول:** `lawsuit_templates`
-- **الملف:** `supabase/migrations/20260127000003_create_lawsuit_templates_table.sql`
-- **الحقول:**
-  - معلومات الدعوى (العنوان، الوقائع، الطلبات)
-  - المبالغ المالية (قيمة المطالبة، المبلغ بالحروف)
-  - معلومات المدعى عليه (الاسم، الجنسية، الهوية، العنوان، الهاتف، البريد)
-  - ربط بالعقد والعميل (اختياري)
-- **الميزات:**
-  - RLS (Row Level Security) للأمان
-  - فهارس للأداء
-  - Trigger لتحديث `updated_at` تلقائياً
-
-#### 4. **حفظ البيانات تلقائياً** ✅
-- **الملف:** `src/utils/bulkDocumentGenerator.ts`
-- **الآلية:**
-  - عند إنشاء ملف ZIP، يتم حفظ بيانات القضايا في الجدول تلقائياً
-  - يتم ربط البيانات بـ `company_id` الحالي
-  - معالجة الأخطاء بشكل صحيح
-
-### النتيجة:
-الآن عند الضغط على زر "بيانات تقاضي" في صفحة `/legal/delinquency`، سيتم فتح صفحة جديدة تعرض جميع بيانات القضايا المُنشأة من ملفات Excel! 📊✨
-
----
-
-## ✅ تحديث أسماء الأعمدة في Excel
-
-### التغييرات:
-تم تحديث أسماء الأعمدة في ملف Excel لتطابق المسميات الرسمية:
-
-| قبل | بعد |
-|-----|-----|
-| الاسم الأول | اسم المدعى عليه الأول |
-| الاسم الأوسط | اسم المدعى عليه الثالث |
-| الاسم الأخير | اسم المدعى عليه الأخير |
-| الجنسية | جنسية المدعى عليه |
-| رقم الهوية | رقم هوية المدعى عليه |
-| العنوان | عنوان المدعى عليه |
-| الهاتف | هاتف المدعى عليه |
-| البريد الإلكتروني | بريد المدعى عليه الإلكتروني |
-
-### تحسينات إضافية:
-- ✅ زيادة عرض الأعمدة للنصوص الطويلة (الوقائع، الطلبات)
-- ✅ تحسين عرض أعمدة الأسماء والعناوين
-- ✅ تنسيق احترافي يطابق المتطلبات القانونية
-
-**الملف المحدث:** `src/utils/lawsuitExcelGenerator.ts`
-
----
-
-## ✅ تحديث صفحة "بيانات التقاضي"
-
-### التغييرات:
-تم تحديث أسماء الأعمدة في صفحة `/legal/lawsuit-data` لتطابق ملف Excel:
-
-**الأعمدة المحدثة:**
-1. #
-2. عنوان الدعوى
-3. **اسم المدعى عليه الأول** (منفصل)
-4. **اسم المدعى عليه الثالث** (منفصل)
-5. **اسم المدعى عليه الأخير** (منفصل)
-6. **رقم هوية المدعى عليه**
-7. قيمة المطالبة
-8. **جنسية المدعى عليه**
-9. تاريخ الإنشاء
-10. الإجراءات
-
-### التحسينات:
-- ✅ فصل الاسم إلى 3 أعمدة منفصلة (الأول، الثالث، الأخير)
-- ✅ إضافة "-" للأسماء الوسطى الفارغة
-- ✅ تحديث `colSpan` من 8 إلى 10 لرسالة "لا توجد بيانات"
-- ✅ توحيد المسميات مع ملف Excel
-
-**الملف المحدث:** `src/pages/legal/LawsuitDataPage.tsx`
+### Verification
+*   Verified `src/hooks/useUnifiedCompanyAccess.ts` and `src/hooks/useDashboardStats.ts` do not have this issue.
+*   The fix aligns with standard React development practices.

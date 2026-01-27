@@ -4,7 +4,7 @@
  * 
  * القواعد:
  * 1. إذا كان العميل شركة (corporate/company): الأولوية للاسم العربي للشركة، ثم الإنجليزي
- * 2. إذا كان العميل فرد (individual): الأولوية للاسم الكامل العربي، ثم الإنجليزي
+ * 2. إذا كان العميل فرد (individual): الأولوية للاسم الإنجليزي (first_name + last_name)، ثم العربي
  */
 
 export interface CustomerNameData {
@@ -35,22 +35,22 @@ export const formatCustomerName = (customer: CustomerNameData | null | undefined
     // Fallback if no company name
     return customer.full_name || 'شركة بدون اسم';
   } else {
-    // للأفراد: الاسم العربي أولاً
-    const firstNameAr = customer.first_name_ar || '';
-    const lastNameAr = customer.last_name_ar || '';
-    const fullNameAr = `${firstNameAr} ${lastNameAr}`.trim();
-
-    if (fullNameAr) {
-      return fullNameAr;
-    }
-
-    // ثم الاسم الإنجليزي
+    // للأفراد: الاسم الإنجليزي أولاً
     const firstName = customer.first_name || '';
     const lastName = customer.last_name || '';
     const fullNameEn = `${firstName} ${lastName}`.trim();
 
     if (fullNameEn) {
       return fullNameEn;
+    }
+
+    // ثم الاسم العربي
+    const firstNameAr = customer.first_name_ar || '';
+    const lastNameAr = customer.last_name_ar || '';
+    const fullNameAr = `${firstNameAr} ${lastNameAr}`.trim();
+
+    if (fullNameAr) {
+      return fullNameAr;
     }
     
     // Fallback

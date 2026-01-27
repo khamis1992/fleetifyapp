@@ -150,7 +150,8 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
       // ===== 1. تحديث حالة المركبة وإضافة تنبيه الاسترداد =====
       if (delinquentCustomer.vehicle_id) {
         try {
-          // تحديث حالة المركبة إلى "out_of_service" مع ملاحظة الاسترداد
+          // تم إيقاف تحديث حالة المركبة بناءً على طلب المستخدم (يجب أن تبقى الحالة كما هي حتى إلغاء العقد)
+          /*
           await supabase
             .from('vehicles')
             .update({
@@ -159,6 +160,7 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
               updated_at: new Date().toISOString(),
             })
             .eq('id', delinquentCustomer.vehicle_id);
+          */
 
           // إنشاء تنبيه استرداد المركبة
           await supabase.from('vehicle_alerts').insert({

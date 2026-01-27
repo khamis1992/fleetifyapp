@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { calculateContractTotalAmount } from '@/utils/contractCalculations';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { 
   useCustomerDocuments, 
@@ -271,7 +272,7 @@ const PersonalInfoTab = ({ customer }: { customer: any }) => {
   const infoItems = [
     { label: 'صاحب العمل', value: customer.employer || '-', icon: Building2 },
     { label: 'المجموعة', value: customer.group_name || 'عميل عادي', icon: Users },
-    { label: 'الاسم الكامل', value: `${customer.first_name || customer.first_name_ar || ''} ${customer.last_name || customer.last_name_ar || ''}`.trim() || '-', icon: User },
+    { label: 'الاسم الكامل', value: formatCustomerName(customer), icon: User },
     { label: 'المنصب', value: customer.job_title || '-', icon: Briefcase },
     { label: 'الاسم الأول', value: customer.first_name || customer.first_name_ar || '-', icon: User },
     { label: 'الاسم الأوسط', value: customer.middle_name || '-', icon: User },
@@ -2937,12 +2938,7 @@ const CustomerDetailsPageNew = () => {
   // Computed
   const customerName = useMemo(() => {
     if (!customer) return 'غير محدد';
-    if (customer.customer_type === 'corporate') {
-      return customer.company_name || customer.company_name_ar || 'شركة';
-    }
-    const firstName = customer.first_name || customer.first_name_ar || '';
-    const lastName = customer.last_name || customer.last_name_ar || '';
-    return `${firstName} ${lastName}`.trim() || 'غير محدد';
+    return formatCustomerName(customer);
   }, [customer]);
 
   const stats = useMemo(() => {
