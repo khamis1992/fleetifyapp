@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Contract } from '@/types/contracts';
+import { calculateContractTotalAmount } from '@/utils/contractCalculations';
 
 interface Invoice {
   id: string;
@@ -31,7 +32,7 @@ interface FinancialDashboardProps {
 export const FinancialDashboard = ({ contract, formatCurrency, invoices = [] }: FinancialDashboardProps) => {
   // حساب البيانات المالية من الفواتير (مصدر موحد)
   const financialData = useMemo(() => {
-    const contractAmount = contract.contract_amount || 0;
+    const contractAmount = calculateContractTotalAmount(contract);
     const monthlyAmount = contract.monthly_amount || 0;
     
     // حساب المدفوع من الفواتير (نفس طريقة حساب تبويب الفواتير)

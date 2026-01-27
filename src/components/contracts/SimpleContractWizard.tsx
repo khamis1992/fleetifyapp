@@ -1034,7 +1034,7 @@ export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
         .eq('company_id', companyId)
         .in('status', ['available', 'rented']) // Only show relevant vehicles
         .order('make')
-        .limit(50); // Limit for faster loading
+        .limit(200); // Increased limit to show more vehicles
 
       if (!error && data) {
         // In edit mode, ensure the contract's vehicle is always included

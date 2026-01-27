@@ -13,6 +13,7 @@ import { useContractValidationBadges, useContractIssuesCount } from '@/hooks/use
 import { ContractStatusBadge } from './ContractStatusBadge';
 import { ContractStatusManagement } from './ContractStatusManagement';
 import { Badge } from '@/components/ui/badge';
+import { calculateContractTotalAmount } from '@/utils/contractCalculations';
 
 interface ContractCardProps {
   contract: any;
@@ -178,7 +179,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">قيمة العقد</p>
                 <p className="font-bold text-lg">
-                  {formatCurrency(contract.contract_amount ?? 0)}
+                  {formatCurrency(calculateContractTotalAmount(contract))}
                 </p>
                 {contract.monthly_amount && (
                   <p className="text-sm text-muted-foreground mt-1">

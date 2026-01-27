@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { calculateContractTotalAmount } from '@/utils/contractCalculations';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { 
   useCustomerDocuments, 
@@ -2879,7 +2880,7 @@ const CustomerDetailsPageNew = () => {
         .eq('customer_id', customerId)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(100);
       if (error) {
         console.error('Error fetching invoices:', error);
         return [];
@@ -2947,17 +2948,35 @@ const CustomerDetailsPageNew = () => {
   const stats = useMemo(() => {
     const activeContracts = contracts.filter(c => c.status === 'active').length;
     const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalContractAmount = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.contract_amount || 0), 0);
-    const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.total_paid || 0), 0);
+    const totalContractAmount = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + calculateContractTotalAmount(c), 0);
+    const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.paid_amount || 0), 0);
     const outstandingAmount = totalContractAmount - totalPaid;
-    const paidOnTime = payments.filter(p => p.payment_status === 'completed').length;
-    // إذا لم تكن هناك عقود أو مدفوعات، لا تظهر نسبة
-    const commitmentRate = activeContracts > 0 && payments.length > 0 
-      ? Math.round((paidOnTime / payments.length) * 100) 
-      : null;
+    
+    // حساب المبالغ المتأخرة
+    const today = new Date();
+    const overdueInvoicesAmount = customerInvoices
+      .filter(inv => {
+        const isUnpaid = inv.payment_status !== 'paid' && inv.payment_status !== 'completed';
+        const isOverdue = inv.due_date && new Date(inv.due_date) < today;
+        return isUnpaid && isOverdue;
+      })
+      .reduce((sum, inv) => sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 0);
 
-    return { activeContracts, outstandingAmount, commitmentRate, totalPayments };
-  }, [contracts, payments]);
+    const unpaidViolationsAmount = trafficViolations
+      .filter(v => v.status !== 'paid')
+      .reduce((sum, v) => sum + (v.fine_amount || 0), 0);
+
+    const totalLateAmount = overdueInvoicesAmount + unpaidViolationsAmount;
+
+    return { 
+      activeContracts, 
+      outstandingAmount, 
+      totalPayments,
+      overdueInvoicesAmount,
+      unpaidViolationsAmount,
+      totalLateAmount
+    };
+  }, [contracts, payments, customerInvoices, trafficViolations]);
 
   const getInitials = (name: string): string => {
     if (!name || name === 'غير محدد') return '؟';
@@ -3330,29 +3349,31 @@ const CustomerDetailsPageNew = () => {
             </div>
           </motion.div>
 
-          {/* بطاقة نسبة الالتزام */}
+          {/* بطاقة المبالغ المتأخرة */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-emerald-100 shadow-sm hover:shadow-lg hover:shadow-emerald-500/10 transition-all overflow-hidden group"
+            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-lg hover:shadow-red-500/10 transition-all overflow-hidden group"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full" />
+            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-red-500 to-red-600 rounded-full" />
 
             <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-emerald-100">
-                <TrendingUp className="w-7 h-7 text-emerald-600" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-red-100">
+                <AlertTriangle className="w-7 h-7 text-red-600" />
               </div>
             </div>
 
             <div className="text-center">
-              <p className={`text-4xl font-black mb-2 ${stats.commitmentRate !== null ? 'text-emerald-600' : 'text-slate-300'}`}>
-                {stats.commitmentRate !== null ? `${stats.commitmentRate}%` : '-'}
+              <p className="text-4xl font-black text-red-600 mb-2">
+                {stats.totalLateAmount.toLocaleString()}
+                <span className="text-xl font-bold mr-1">ر.ق</span>
               </p>
-              <p className="text-sm font-medium text-slate-600">نسبة الالتزام</p>
-              {stats.commitmentRate === null && (
-                <p className="text-xs text-slate-400 mt-1">لا توجد عقود</p>
-              )}
+              <p className="text-sm font-medium text-slate-600">المبالغ المتأخرة</p>
+              <div className="mt-2 text-xs text-slate-500 flex flex-col gap-1">
+                <span>فواتير: {stats.overdueInvoicesAmount.toLocaleString()} ر.ق</span>
+                <span>مخالفات: {stats.unpaidViolationsAmount.toLocaleString()} ر.ق</span>
+              </div>
             </div>
           </motion.div>
 

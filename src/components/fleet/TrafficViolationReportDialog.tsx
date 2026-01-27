@@ -60,6 +60,7 @@ interface ReportFilters {
   includeUnlinkedSection: boolean;
   minAmount: string;
   maxAmount: string;
+  vehicleType: 'all' | 'limousine' | 'private';
 }
 
 interface VehicleGroup {
@@ -86,6 +87,13 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
   violations: passedViolations,
 }) => {
   const { formatCurrency } = useCurrencyFormatter();
+
+  // Helper function to determine vehicle type based on plate number
+  const getVehicleType = (plateNumber: string): 'limousine' | 'private' => {
+    // Extract only digits from plate number
+    const digits = plateNumber?.replace(/\D/g, '') || '';
+    return digits.length === 4 ? 'limousine' : 'private';
+  };
   
   const [filters, setFilters] = useState<ReportFilters>({
     onlyLinkedToVehicles: true,
@@ -98,6 +106,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     sortBy: 'violations_count',
     includeAdvancedStats: true,
     includeUnlinkedSection: true,
+    vehicleType: 'all',
     minAmount: '',
     maxAmount: '',
   });
@@ -211,6 +220,15 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
       // فلتر مركبة محددة
       if (filters.selectedVehicleId !== 'all' && v.vehicle_id !== filters.selectedVehicleId) {
         return false;
+      }
+
+      // فلتر نوع المركبة
+      if (filters.vehicleType !== 'all') {
+        const plateNumber = v.vehicles?.plate_number || v.penalty_number || '';
+        const vehicleType = getVehicleType(plateNumber);
+        if (vehicleType !== filters.vehicleType) {
+          return false;
+        }
       }
 
       // فلتر التاريخ
@@ -1539,6 +1557,27 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                 <SelectItem value="confirmed">مؤكدة</SelectItem>
                 <SelectItem value="pending">قيد المراجعة</SelectItem>
                 <SelectItem value="cancelled">ملغاة</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* فلتر نوع المركبة */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-neutral-500" />
+              نوع المركبة
+            </Label>
+            <Select
+              value={filters.vehicleType}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, vehicleType: value as any }))}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="اختر نوع المركبة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع المركبات</SelectItem>
+                <SelectItem value="limousine">ليموزين (4 أرقام)</SelectItem>
+                <SelectItem value="private">خصوصي (أكثر من 4 أرقام)</SelectItem>
               </SelectContent>
             </Select>
           </div>

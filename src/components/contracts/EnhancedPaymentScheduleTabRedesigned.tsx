@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import { calculateContractTotalAmount } from '@/utils/contractCalculations';
 import {
   Select,
   SelectContent,
@@ -532,7 +533,7 @@ export const EnhancedPaymentScheduleTabRedesigned = ({
 
   // Calculate stats - using invoices for consistency with other tabs
   const stats = useMemo(() => {
-    const totalAmount = contract.contract_amount || 0;
+    const totalAmount = calculateContractTotalAmount(contract);
     // حساب المدفوع من الفواتير (نفس مصدر البيانات المستخدم في التبويبات الأخرى)
     const totalPaidFromInvoices = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
     const totalPaid = invoices.length > 0 ? totalPaidFromInvoices : (contract.total_paid || 0);

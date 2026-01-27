@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, FileText, Calendar } from 'lucide-react';
 import { 
   useTrafficViolationsReport, 
@@ -17,18 +18,50 @@ export const TrafficViolationReports = () => {
     startDate: '',
     endDate: ''
   });
+  const [vehicleType, setVehicleType] = useState<'all' | 'limousine' | 'private'>('all');
 
   const { formatCurrency } = useCurrencyFormatter();
 
-  const { data: violationsData, isLoading: violationsLoading, error: violationsError } = useTrafficViolationsReport(
+  // Helper function to determine vehicle type based on plate number
+  const getVehicleType = (plateNumber: string): 'limousine' | 'private' => {
+    // Extract only digits from plate number
+    const digits = plateNumber?.replace(/\D/g, '') || '';
+    return digits.length === 4 ? 'limousine' : 'private';
+  };
+
+  const { data: rawViolationsData, isLoading: violationsLoading, error: violationsError } = useTrafficViolationsReport(
     dateRange.startDate,
     dateRange.endDate
   );
 
-  const { data: paymentsData, isLoading: paymentsLoading, error: paymentsError } = useTrafficViolationPaymentsReport(
+  const { data: rawPaymentsData, isLoading: paymentsLoading, error: paymentsError } = useTrafficViolationPaymentsReport(
     dateRange.startDate,
     dateRange.endDate
   );
+
+  // Filter violations by vehicle type
+  const violationsData = useMemo(() => {
+    if (!rawViolationsData) return rawViolationsData;
+    if (vehicleType === 'all') return rawViolationsData;
+    
+    return rawViolationsData.filter(violation => {
+      const plateNumber = violation.vehicle?.plate_number || violation.vehicle_id || '';
+      const type = getVehicleType(plateNumber);
+      return type === vehicleType;
+    });
+  }, [rawViolationsData, vehicleType]);
+
+  // Filter payments by vehicle type
+  const paymentsData = useMemo(() => {
+    if (!rawPaymentsData) return rawPaymentsData;
+    if (vehicleType === 'all') return rawPaymentsData;
+    
+    return rawPaymentsData.filter(payment => {
+      const plateNumber = payment.penalty?.vehicle?.plate_number || '';
+      const type = getVehicleType(plateNumber);
+      return type === vehicleType;
+    });
+  }, [rawPaymentsData, vehicleType]);
 
   // Debug logging
   console.log("Violations data:", violationsData);
@@ -71,12 +104,22 @@ export const TrafficViolationReports = () => {
     const paidViolations = dataToUse.filter(v => v.payment_status === 'paid');
     const unpaidViolations = dataToUse.filter(v => v.payment_status === 'unpaid');
     const confirmedViolations = dataToUse.filter(v => v.status === 'confirmed');
+    const limousineViolations = dataToUse.filter(v => {
+      const plateNumber = v.vehicle?.plate_number || v.vehicle_id || '';
+      return getVehicleType(plateNumber) === 'limousine';
+    });
+    const privateViolations = dataToUse.filter(v => {
+      const plateNumber = v.vehicle?.plate_number || v.vehicle_id || '';
+      return getVehicleType(plateNumber) === 'private';
+    });
+
+    const vehicleTypeLabel = vehicleType === 'limousine' ? ' - ليموزين' : vehicleType === 'private' ? ' - خصوصي' : '';
 
     const content = `
       <div class="summary-stats">
         <div class="stat-card">
           <div class="stat-value">${dataToUse.length}</div>
-          <div class="stat-label">إجمالي المخالفات</div>
+          <div class="stat-label">إجمالي المخالفات${vehicleTypeLabel}</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${confirmedViolations.length}</div>
@@ -90,6 +133,16 @@ export const TrafficViolationReports = () => {
           <div class="stat-value">${paidViolations.length}</div>
           <div class="stat-label">المخالفات المدفوعة</div>
         </div>
+        ${vehicleType === 'all' ? `
+        <div class="stat-card">
+          <div class="stat-value">${limousineViolations.length}</div>
+          <div class="stat-label">مخالفات ليموزين</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${privateViolations.length}</div>
+          <div class="stat-label">مخالفات خصوصي</div>
+        </div>
+        ` : ''}
       </div>
 
       <table>
@@ -98,6 +151,7 @@ export const TrafficViolationReports = () => {
             <th>رقم المخالفة</th>
             <th>التاريخ</th>
             <th>لوحة المركبة</th>
+            <th>نوع المركبة</th>
             <th>المبلغ (د.ك)</th>
             <th>الحالة</th>
             <th>حالة الدفع</th>
@@ -106,23 +160,30 @@ export const TrafficViolationReports = () => {
           </tr>
         </thead>
         <tbody>
-          ${dataToUse.map(item => `
+          ${dataToUse.map(item => {
+            const plateNumber = item.vehicle?.plate_number || item.vehicle_id || '-';
+            const vType = getVehicleType(plateNumber);
+            const vTypeLabel = vType === 'limousine' ? 'ليموزين' : 'خصوصي';
+            return `
             <tr>
               <td>${item.penalty_number}</td>
               <td>${format(new Date(item.penalty_date), 'dd/MM/yyyy')}</td>
-              <td>${item.vehicle?.plate_number || item.vehicle_id || '-'}</td>
+              <td>${plateNumber}</td>
+              <td>${vTypeLabel}</td>
               <td>${formatCurrency(item.amount, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
               <td>${item.status === 'confirmed' ? 'مؤكدة' : item.status === 'pending' ? 'معلقة' : item.status}</td>
               <td>${item.payment_status === 'paid' ? 'مدفوعة' : item.payment_status === 'unpaid' ? 'غير مدفوعة' : item.payment_status}</td>
               <td>${item.reason}</td>
               <td>${item.location || '-'}</td>
             </tr>
-          `).join('')}
+            `;
+          }).join('')}
         </tbody>
       </table>
     `;
 
-    const title = `تقرير المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!violationsData || violationsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
+    const vehicleTypeTitle = vehicleType === 'limousine' ? ' - ليموزين' : vehicleType === 'private' ? ' - خصوصي' : '';
+    const title = `تقرير المخالفات المرورية${vehicleTypeTitle}${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!violationsData || violationsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
     exportTrafficViolationReportToHTML(content, title, 'Fleetify');
   };
 
@@ -161,12 +222,22 @@ export const TrafficViolationReports = () => {
     const completedPayments = dataToUse.filter(p => p.status === 'completed');
     const cashPayments = dataToUse.filter(p => p.payment_method === 'cash');
     const bankTransfers = dataToUse.filter(p => p.payment_method === 'bank_transfer');
+    const limousinePayments = dataToUse.filter(p => {
+      const plateNumber = p.penalty?.vehicle?.plate_number || '';
+      return getVehicleType(plateNumber) === 'limousine';
+    });
+    const privatePayments = dataToUse.filter(p => {
+      const plateNumber = p.penalty?.vehicle?.plate_number || '';
+      return getVehicleType(plateNumber) === 'private';
+    });
+
+    const vehicleTypeLabel = vehicleType === 'limousine' ? ' - ليموزين' : vehicleType === 'private' ? ' - خصوصي' : '';
 
     const content = `
       <div class="summary-stats">
         <div class="stat-card">
           <div class="stat-value">${dataToUse.length}</div>
-          <div class="stat-label">إجمالي المدفوعات</div>
+          <div class="stat-label">إجمالي المدفوعات${vehicleTypeLabel}</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">${completedPayments.length}</div>
@@ -180,6 +251,16 @@ export const TrafficViolationReports = () => {
           <div class="stat-value">${cashPayments.length}</div>
           <div class="stat-label">المدفوعات النقدية</div>
         </div>
+        ${vehicleType === 'all' ? `
+        <div class="stat-card">
+          <div class="stat-value">${limousinePayments.length}</div>
+          <div class="stat-label">مدفوعات ليموزين</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${privatePayments.length}</div>
+          <div class="stat-label">مدفوعات خصوصي</div>
+        </div>
+        ` : ''}
       </div>
 
       <table>
@@ -194,10 +275,15 @@ export const TrafficViolationReports = () => {
             <th>الحالة</th>
             <th>المرجع</th>
             <th>لوحة المركبة</th>
+            <th>نوع المركبة</th>
           </tr>
         </thead>
         <tbody>
-          ${dataToUse.map(item => `
+          ${dataToUse.map(item => {
+            const plateNumber = item.penalty?.vehicle?.plate_number || '-';
+            const vType = getVehicleType(plateNumber);
+            const vTypeLabel = vType === 'limousine' ? 'ليموزين' : 'خصوصي';
+            return `
             <tr>
               <td>${item.payment_number}</td>
               <td>${item.penalty_number}</td>
@@ -207,14 +293,17 @@ export const TrafficViolationReports = () => {
               <td>${item.payment_type}</td>
               <td>${item.status === 'completed' ? 'مكتملة' : item.status === 'pending' ? 'معلقة' : item.status}</td>
               <td>${item.reference_number || '-'}</td>
-              <td>${item.penalty?.vehicle?.plate_number || '-'}</td>
+              <td>${plateNumber}</td>
+              <td>${vTypeLabel}</td>
             </tr>
-          `).join('')}
+            `;
+          }).join('')}
         </tbody>
       </table>
     `;
 
-    const title = `تقرير مدفوعات المخالفات المرورية${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!paymentsData || paymentsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
+    const vehicleTypeTitle = vehicleType === 'limousine' ? ' - ليموزين' : vehicleType === 'private' ? ' - خصوصي' : '';
+    const title = `تقرير مدفوعات المخالفات المرورية${vehicleTypeTitle}${dateRange.startDate ? ` (${dateRange.startDate} إلى ${dateRange.endDate || 'الحالي'})` : ''}${(!paymentsData || paymentsData.length === 0) ? ' - بيانات تجريبية' : ''}`;
     exportTrafficViolationReportToHTML(content, title, 'Fleetify');
   };
 
@@ -229,7 +318,7 @@ export const TrafficViolationReports = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="startDate">تاريخ البداية</Label>
               <Input
@@ -247,6 +336,19 @@ export const TrafficViolationReports = () => {
                 value={dateRange.endDate}
                 onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
               />
+            </div>
+            <div>
+              <Label htmlFor="vehicleType">نوع المركبة</Label>
+              <Select value={vehicleType} onValueChange={(value: 'all' | 'limousine' | 'private') => setVehicleType(value)}>
+                <SelectTrigger id="vehicleType">
+                  <SelectValue placeholder="اختر نوع المركبة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المركبات</SelectItem>
+                  <SelectItem value="limousine">ليموزين (4 أرقام)</SelectItem>
+                  <SelectItem value="private">خصوصي (أكثر من 4 أرقام)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
