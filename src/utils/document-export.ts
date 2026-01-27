@@ -601,32 +601,41 @@ export async function downloadHtmlAsDocx(
   const processContentParagraphs = (container: HTMLElement) => {
     const paragraphs: any[] = [];
     const elements = container.querySelectorAll('p, .legal-article, .request-item');
-    
+
+    // Helper function to clean text - remove extra spaces and newlines
+    const cleanText = (text: string | undefined | null): string => {
+      if (!text) return '';
+      return text
+        .replace(/\s*\n\s+/g, ' ')  // Replace newlines with surrounding spaces with single space
+        .replace(/\s+/g, ' ')        // Replace multiple spaces with single space
+        .trim();                    // Remove leading/trailing spaces
+    };
+
     elements.forEach(el => {
       const isLegalArticle = el.classList.contains('legal-article');
       const isRequestItem = el.classList.contains('request-item');
-      
+
       // استخراج النص مع الحفاظ على التنسيق المختلط (bold + normal)
       const textRuns: any[] = [];
       el.childNodes.forEach(node => {
         if (node.nodeType === Node.TEXT_NODE) {
-          const text = node.textContent?.trim();
+          const text = cleanText(node.textContent);
           if (text) {
-            textRuns.push(new TextRun({ 
-              text: text + ' ', 
-              size: 22, 
+            textRuns.push(new TextRun({
+              text: text + ' ',
+              size: 22,
               font: 'Arial',
               rightToLeft: true,
             }));
           }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node as HTMLElement;
-          const text = el.textContent?.trim();
+          const text = cleanText(el.textContent);
           if (text) {
-            textRuns.push(new TextRun({ 
-              text: text + ' ', 
-              bold: el.tagName === 'STRONG' || el.tagName === 'B', 
-              size: 22, 
+            textRuns.push(new TextRun({
+              text: text + ' ',
+              bold: el.tagName === 'STRONG' || el.tagName === 'B',
+              size: 22,
               font: 'Arial',
               rightToLeft: true,
             }));
@@ -650,7 +659,7 @@ export async function downloadHtmlAsDocx(
         );
       }
     });
-    
+
     return paragraphs;
   };
 
@@ -671,11 +680,11 @@ export async function downloadHtmlAsDocx(
       children.push(
         new Paragraph({
           children: [
-            new TextRun({ 
-              text: titleText, 
-              bold: true, 
-              size: 26, 
-              font: 'Arial', 
+            new TextRun({
+              text: titleText,
+              bold: true,
+              size: 26,
+              font: 'Arial',
               color: titleColor.includes('d32f2f') ? 'd32f2f' : '1e3a5f',
               underline: {
                 type: UnderlineType.SINGLE,
@@ -684,7 +693,7 @@ export async function downloadHtmlAsDocx(
               rightToLeft: true,
             })
           ],
-          alignment: AlignmentType.RIGHT,
+          alignment: AlignmentType.LEFT, // Section titles on the LEFT
           spacing: { before: 280, after: 150 },
           bidirectional: true,
         })
@@ -751,10 +760,19 @@ export async function downloadHtmlAsDocx(
         const contentParagraphs = processContentParagraphs(contentEl as HTMLElement);
         children.push(...contentParagraphs);
       } else if (contentEl && tableEl) {
+        // Helper function to clean text - remove extra spaces and newlines
+        const cleanText = (text: string | undefined | null): string => {
+          if (!text) return '';
+          return text
+            .replace(/\s*\n\s+/g, ' ')  // Replace newlines with surrounding spaces with single space
+            .replace(/\s+/g, ' ')        // Replace multiple spaces with single space
+            .trim();                    // Remove leading/trailing spaces
+        };
+
         // معالجة الفقرات النصية فقط (تجاهل الجدول)
         const nonTableContent = Array.from(contentEl.children).filter(el => el.tagName !== 'TABLE');
         nonTableContent.forEach(el => {
-          const text = el.textContent?.trim();
+          const text = cleanText(el.textContent);
           if (text) {
             children.push(
               new Paragraph({
@@ -1238,7 +1256,7 @@ export async function downloadTemplateAsDocx(
             rightToLeft: true
           })
         ],
-        alignment: AlignmentType.RIGHT,
+        alignment: AlignmentType.LEFT, // Section titles on the LEFT
         spacing: { before: 300, after: 150 },
         border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: '1e3a5f' } },
         bidirectional: true
