@@ -11,6 +11,7 @@ import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizar
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 import { Sparkline } from './Sparkline';
 import { useAIChat } from '@/contexts/AIChatContext';
+import { EmployeeWorkspaceWidget } from '@/components/dashboard/EmployeeWorkspaceWidget';
 import {
   Car,
   FileText,
@@ -36,6 +37,7 @@ import {
   Activity,
   Zap,
   Target,
+  Briefcase,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -490,6 +492,17 @@ const BentoDashboardRedesigned: React.FC = () => {
               </div>
 
               <div className="h-6 w-px bg-neutral-200" />
+
+              {/* Employee Workspace Button */}
+              <motion.button
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg text-sm font-semibold hover:shadow-lg shadow-teal-500/20 transition-all"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/employee-workspace')}
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>مساحة عملي</span>
+              </motion.button>
 
               {/* Fleetify AI Assistant */}
               <motion.button

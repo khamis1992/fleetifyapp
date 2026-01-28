@@ -1,21 +1,21 @@
 {
   "name": "taqadi-automation",
-  "version": "2.0.0",
-  "description": "أداة أتمتة تقاضي بالذكاء الاصطناعي - لتعبئة نماذج الدعاوى تلقائياً",
-  "main": "index.js",
+  "version": "1.0.0",
+  "description": "Automated lawsuit submission to Taqadi platform",
+  "main": "src/index.js",
+  "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "start:ai": "node index-ai.js",
-    "install-browser": "npx playwright install chromium"
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node src/test.js"
   },
+  "keywords": ["taqadi", "automation", "puppeteer", "lawsuit"],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "playwright": "^1.40.0",
-    "commander": "^11.1.0",
-    "chalk": "^4.1.2",
-    "openai": "^4.20.0",
-    "dotenv": "^16.3.1"
-  },
-  "author": "Al-Araf Company",
-  "license": "MIT"
+    "puppeteer": "^22.0.0",
+    "adm-zip": "^0.5.10",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
 }
-

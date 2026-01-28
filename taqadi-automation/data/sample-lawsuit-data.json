@@ -1,0 +1,75 @@
+{
+  "contractId": "f2ecdec0-2038-45d3-92ac-3f3d455627bb",
+  "prepareUrl": "http://localhost:8080/legal/lawsuit/prepare/f2ecdec0-2038-45d3-92ac-3f3d455627bb",
+  
+  "taqadiData": {
+    "caseTitle": "دعوى مطالبة مالية وتعويضات عقدية",
+    "facts": "حيث إن الثابت بالأوراق أن الشركة المدعية أبرمت مع المدعى عليه عقد إيجار مركبة...",
+    "claims": "1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ...\n2. الأمر بتحويل المخالفات المرورية...",
+    "amount": 50000,
+    "amountInWords": "خمسون ألف ريال قطري"
+  },
+  
+  "parties": {
+    "plaintiff1": {
+      "type": "company",
+      "name": "شركة العراف لتأجير السيارات",
+      "role": "plaintiff",
+      "order": 1,
+      "commercialReg": "86",
+      "phone": "97444417171",
+      "email": "alaraf@alaraf.qa",
+      "address": "الدوحة - قطر",
+      "bankDetails": {
+        "nameAr": "بنك قطر الوطني",
+        "nameEn": "QNB",
+        "iban": "QA78CBQA000000004610677455001",
+        "swift": "QNBAQAQAXXX",
+        "address": "الدوحة قطر",
+        "country": "قطري"
+      }
+    },
+    "plaintiff2": {
+      "type": "individual",
+      "name": "خميس هاشم الجبر",
+      "role": "plaintiff",
+      "order": 2,
+      "firstName": "خميس",
+      "middleName": "هاشم",
+      "thirdName": "",
+      "lastName": "الجبر",
+      "nationality": "قطر",
+      "idType": "بطاقة شخصية قطرية",
+      "idNumber": "29263400736",
+      "birthDate": "10/07/1992",
+      "gender": "ذكر",
+      "phone": "97466707063",
+      "email": "Khamis-1992@hotmail.com",
+      "address": "الدوحة - قطر",
+      "bankDetails": {
+        "nameAr": "بنك قطر الوطني",
+        "nameEn": "Qnb",
+        "iban": "QA78CBQA000000004610677455001",
+        "swift": "QNBAQAQAXXX",
+        "address": "الدوحة قطر",
+        "country": "قطري"
+      }
+    },
+    "defendant": {
+      "type": "individual",
+      "name": "محمد أحمد",
+      "role": "defendant",
+      "order": 1,
+      "firstName": "محمد",
+      "middleName": "",
+      "thirdName": "",
+      "lastName": "أحمد",
+      "nationality": "قطر",
+      "idType": "بطاقة شخصية قطرية",
+      "idNumber": "12345678901",
+      "phone": "97412345678",
+      "email": "test@example.com",
+      "address": "الدوحة - قطر"
+    }
+  }
+}

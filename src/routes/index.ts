@@ -46,6 +46,7 @@ const MobileAppOverdue: React.FC = () => React.createElement(MobileApp, { initia
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const DashboardLanding = lazy(() => import('@/pages/dashboard/DashboardLanding'));
+const EmployeeWorkspace = lazy(() => import('@/pages/EmployeeWorkspace'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
@@ -472,6 +473,18 @@ const routeConfigs: RouteConfig[] = [
     description: 'New professional dashboard design',
     group: 'dashboard',
     priority: 11,
+    protected: true,
+    layout: 'bento',
+  },
+  {
+    path: '/employee-workspace',
+    component: EmployeeWorkspace,
+    lazy: true,
+    exact: true,
+    title: 'Employee Workspace',
+    description: 'Employee workspace for managing assigned contracts and tasks',
+    group: 'dashboard',
+    priority: 12,
     protected: true,
     layout: 'bento',
   },

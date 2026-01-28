@@ -48,6 +48,7 @@ import { ContractCreationProgress } from "@/components/contracts/ContractCreatio
 import { ContractCancellationDialog } from "@/components/contracts/ContractCancellationDialog";
 import { ContractDeleteDialog } from "@/components/contracts/ContractDeleteDialog";
 import { UnifiedContractUpload } from "@/components/contracts/UnifiedContractUpload";
+import { ContractsNeedingAttention } from "@/components/contracts/ContractsNeedingAttention";
 import { LateFinesSettings } from "@/components/contracts/LateFinesSettings";
 import SendRemindersDialog from "@/components/contracts/SendRemindersDialog";
 import { BulkDeleteContractsDialog } from "@/components/contracts/BulkDeleteContractsDialog";
@@ -157,6 +158,12 @@ function ContractsRedesigned() {
     }
     if (activeTab === "active") {
       newFilters.status = "active";
+    } else if (activeTab === "draft") {
+      // Don't set status filter - let client-side filter handle it to match statistics
+      newFilters.showDraftLike = true;
+    } else if (activeTab === "incomplete") {
+      // Show contracts with missing data or zero amounts
+      newFilters.showIncomplete = true;
     } else if (activeTab === "cancelled") {
       newFilters.status = "cancelled";
     } else if (activeTab === "legal_action") {
@@ -845,6 +852,11 @@ function ContractsRedesigned() {
             cancelledWithLegalCount={safeStatistics.cancelledWithLegalIssues?.length || 0}
           />
 
+          {/* Contracts Needing Attention */}
+          {safeContracts && safeContracts.length > 0 && (
+            <ContractsNeedingAttention contracts={safeContracts} />
+          )}
+
           {/* Drafts Section */}
           {contractDrafts.loadDrafts.data && contractDrafts.loadDrafts.data.length > 0 && (
             <motion.div
@@ -936,6 +948,8 @@ function ContractsRedesigned() {
                   {[
                     { id: "all", label: "جميع العقود" },
                     { id: "active", label: "النشطة" },
+                    { id: "draft", label: "مسودة" },
+                    { id: "incomplete", label: "غير مكتمل" },
                     { id: "cancelled", label: "الملغية" },
                     { id: "legal_action", label: "الإجراء القانوني" },
                     { id: "pending_completion", label: "بانتظار الإكمال" },

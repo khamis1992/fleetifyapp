@@ -120,6 +120,7 @@ export const useContractsData = (filters: any = {}) => {
       filters?.page,
       filters?.pageSize,
       filters?.status,
+      filters?.legal_status,
       filters?.contract_type,
       filters?.customer_id,
       filters?.cost_center_id,
@@ -281,6 +282,11 @@ export const useContractsData = (filters: any = {}) => {
         }
       }
 
+      // Apply legal_status filter at database level
+      if (filters?.legal_status && filters.legal_status !== '') {
+        query = query.eq('legal_status', filters.legal_status);
+      }
+
       // Apply search filter at database level
       if (searchTerm) {
         if (customerIds.length > 0) {
@@ -429,6 +435,15 @@ export const useContractsData = (filters: any = {}) => {
     const suspendedContracts = statsContracts.filter((c: any) => c.status === 'suspended');
     const cancelledContracts = statsContracts.filter((c: any) => c.status === 'cancelled');
     
+    // Incomplete contracts (missing data or zero amounts)
+    const incompleteContracts = statsContracts.filter((c: any) => {
+      const hasZeroAmount = isZeroAmount(c);
+      const missingCustomer = !c.customer_id;
+      const missingVehicle = !c.vehicle_id;
+      const isExpiredActive = c.end_date && new Date(c.end_date) < new Date() && c.status === 'active';
+      return hasZeroAmount || missingCustomer || missingVehicle || isExpiredActive;
+    });
+    
     // --- Detailed Legal Analysis ---
     // 1. Contracts specifically in 'under_legal_procedure' status
     const legalStatusContracts = statsContracts.filter((c: any) => c.status === 'under_legal_procedure');
@@ -466,6 +481,7 @@ export const useContractsData = (filters: any = {}) => {
       expiredContracts,
       suspendedContracts,
       cancelledContracts,
+      incompleteContracts, // New: contracts with missing data
       legalProcedureContracts: legalStatusContracts, // Keep backward compatibility
       
       // New Detailed Stats
@@ -550,9 +566,42 @@ export const useContractsData = (filters: any = {}) => {
         }
       }
 
+      // Special filter for draft-like contracts (matches statistics logic)
+      if (filters.showDraftLike) {
+        const isZeroAmount = (contract.contract_amount === 0 || contract.contract_amount === null) && 
+                             (contract.monthly_amount === 0 || contract.monthly_amount === null);
+        const isDraftStatus = contract.status === 'draft';
+        const isNotFinalStatus = !['cancelled', 'expired', 'suspended', 'under_review'].includes(contract.status);
+        
+        // Include: explicit draft status OR (zero amount AND not in final cancelled/expired/suspended status)
+        if (!(isDraftStatus || (isZeroAmount && isNotFinalStatus))) {
+          return false;
+        }
+      }
+      
+      // Special filter for incomplete contracts (missing data or zero amounts)
+      if (filters.showIncomplete) {
+        const isZeroAmount = (contract.contract_amount === 0 || contract.contract_amount === null) && 
+                             (contract.monthly_amount === 0 || contract.monthly_amount === null);
+        const missingCustomer = !contract.customer_id;
+        const missingVehicle = !contract.vehicle_id;
+        const isExpired = contract.end_date && new Date(contract.end_date) < new Date() && contract.status === 'active';
+        
+        if (!(isZeroAmount || missingCustomer || missingVehicle || isExpired)) {
+          return false;
+        }
+      }
+      
       // Status filter
       if (filters.status && filters.status !== 'all' && filters.status !== '') {
         if (contract.status !== filters.status) {
+          return false;
+        }
+      }
+
+      // Legal status filter
+      if (filters.legal_status && filters.legal_status !== '') {
+        if (contract.legal_status !== filters.legal_status) {
           return false;
         }
       }
@@ -626,6 +675,7 @@ export const useContractsData = (filters: any = {}) => {
     contracts, 
     filters.search, 
     filters.status, 
+    filters.legal_status,
     filters.contract_type, 
     filters.customer_id, 
     filters.cost_center_id, 

@@ -1,0 +1,8 @@
+node_modules/
+downloads/
+work/
+logs/*.png
+logs/*.log
+taqadi-user-data/
+.env
+*.zip

@@ -261,6 +261,11 @@ export default function LawsuitPreparationPage() {
   
   // حالة تحميل ZIP
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  
+  // حالة أتمتة تقاضي
+  const [isTaqadiAutomating, setIsTaqadiAutomating] = useState(false);
+  const [taqadiAutomationStatus, setTaqadiAutomationStatus] = useState<string>('');
+  const [taqadiServerRunning, setTaqadiServerRunning] = useState(false);
 
   // جلب بيانات العقد
   const { data: contract, isLoading: contractLoading } = useQuery({
@@ -1394,6 +1399,12 @@ export default function LawsuitPreparationPage() {
     return { total: generatedDocs.length, ready: readyDocs.length, percentage };
   }, [documentsList]);
 
+  // حساب المحتوى المتاح للتحميل كـ ZIP
+  const hasContentForZip = useMemo(() => {
+    // Check if there's at least ONE document (generated, company, or contract) ready
+    return documentsList.some(d => d.status === 'ready');
+  }, [documentsList]);
+
   // Helper function to upload HTML content as a document
   const uploadHtmlDocument = useCallback(async (htmlContent: string, fileName: string): Promise<string | null> => {
     if (!companyId || !contractId) return null;
@@ -1847,6 +1858,90 @@ export default function LawsuitPreparationPage() {
     }
   }, [contract, companyId, taqadiData, contractId, navigate]);
 
+  // التحقق من حالة سيرفر الأتمتة
+  const checkTaqadiServer = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:3001/health');
+      const data = await response.json();
+      setTaqadiServerRunning(data.status === 'ok');
+      return data.status === 'ok';
+    } catch {
+      setTaqadiServerRunning(false);
+      return false;
+    }
+  }, []);
+
+  // تشغيل أتمتة تقاضي
+  const startTaqadiAutomation = useCallback(async () => {
+    if (!contract || !contractId) {
+      toast.error('لا يوجد عقد للمعالجة');
+      return;
+    }
+
+    // التحقق من أن جميع المستندات جاهزة
+    if (progressData.percentage < 100) {
+      toast.error('يجب توليد جميع المستندات أولاً');
+      return;
+    }
+
+    setIsTaqadiAutomating(true);
+    setTaqadiAutomationStatus('جاري التحقق من السيرفر...');
+
+    try {
+      // التحقق من السيرفر
+      const serverRunning = await checkTaqadiServer();
+      
+      if (!serverRunning) {
+        toast.error('سيرفر الأتمتة غير متاح. يرجى تشغيل: node server.js');
+        setTaqadiAutomationStatus('السيرفر غير متاح');
+        return;
+      }
+
+      setTaqadiAutomationStatus('جاري رفع الدعوى إلى تقاضي...');
+      toast.info('🚀 بدء أتمتة رفع الدعوى...');
+
+      // استدعاء API الأتمتة
+      const response = await fetch('http://localhost:3001/api/taqadi/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contractId: contractId,
+          prepareUrl: window.location.href,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setTaqadiAutomationStatus(`✅ نجح! رقم القضية: ${result.caseNumber}`);
+        toast.success(`✅ تم رفع الدعوى بنجاح! رقم القضية: ${result.caseNumber}`, {
+          duration: 10000,
+        });
+      } else {
+        throw new Error(result.error || 'فشلت الأتمتة');
+      }
+
+    } catch (error: any) {
+      console.error('Taqadi automation error:', error);
+      setTaqadiAutomationStatus('❌ فشلت الأتمتة');
+      toast.error(`فشلت أتمتة تقاضي: ${error.message}`);
+    } finally {
+      setIsTaqadiAutomating(false);
+    }
+  }, [contract, contractId, progressData, checkTaqadiServer]);
+
+  // إيقاف أتمتة تقاضي
+  const stopTaqadiAutomation = useCallback(() => {
+    setIsTaqadiAutomating(false);
+    setTaqadiAutomationStatus('تم الإيقاف يدوياً');
+    toast.info('تم إيقاف الأتمتة');
+  }, []);
+
+  // التحقق من السيرفر عند تحميل الصفحة
+  useEffect(() => {
+    checkTaqadiServer();
+  }, [checkTaqadiServer]);
+
   // حالة التحميل
   if (companyLoading || contractLoading || invoicesLoading || violationsLoading) {
     return (
@@ -1975,7 +2070,7 @@ export default function LawsuitPreparationPage() {
                 variant="outline"
                 size="sm"
                 onClick={downloadAllAsZip}
-                disabled={progressData.percentage < 100 || isDownloadingZip}
+                disabled={!hasContentForZip || isDownloadingZip}
               >
                 {isDownloadingZip ? (
                   <>
@@ -2510,7 +2605,7 @@ export default function LawsuitPreparationPage() {
                 variant="outline"
                 size="lg"
                 onClick={downloadAllAsZip}
-                disabled={progressData.percentage < 100 || isDownloadingZip}
+                disabled={!hasContentForZip || isDownloadingZip}
                 className="w-full sm:w-auto border-green-500 text-green-700 hover:bg-green-50 hover:border-green-600"
               >
                 {isDownloadingZip ? (
@@ -2526,7 +2621,47 @@ export default function LawsuitPreparationPage() {
                 )}
               </Button>
 
+              {/* زر رفع إلى تقاضي (أتمتة) */}
+              {!isTaqadiAutomating ? (
+                <Button
+                  size="lg"
+                  onClick={startTaqadiAutomation}
+                  disabled={progressData.percentage < 100 || !taqadiServerRunning}
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                >
+                  <Upload className="h-5 w-5 ml-2" />
+                  رفع إلى تقاضي (أتمتة)
+                  {!taqadiServerRunning && (
+                    <Badge variant="destructive" className="mr-2 text-xs">
+                      السيرفر متوقف
+                    </Badge>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={stopTaqadiAutomation}
+                  variant="destructive"
+                  className="w-full sm:w-auto"
+                >
+                  <AlertCircle className="h-5 w-5 ml-2" />
+                  إيقاف الأتمتة
+                </Button>
+              )}
+
             </div>
+            
+            {/* حالة الأتمتة */}
+            {(isTaqadiAutomating || taqadiAutomationStatus) && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  {isTaqadiAutomating && <LoadingSpinner className="h-4 w-4" />}
+                  <span className="text-sm font-medium text-blue-900">
+                    {taqadiAutomationStatus || 'جاري المعالجة...'}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {progressData.percentage < 100 && (
               <p className="text-center text-sm text-muted-foreground mt-3">
