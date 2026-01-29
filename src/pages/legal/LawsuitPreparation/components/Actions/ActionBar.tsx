@@ -10,7 +10,6 @@ import {
   Gavel, 
   FileStack, 
   FolderDown, 
-  Send, 
   Upload, 
   AlertCircle,
   ArrowLeft,
@@ -91,27 +90,6 @@ export function ActionBar() {
                 )}
               </Button>
               
-              {/* Send to Lawsuit Data */}
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={actions.sendToLawsuitData}
-                disabled={ui.isSendingToLawsuitData || !state.taqadiData}
-                className="w-full sm:w-auto border-purple-500 text-purple-700 hover:bg-purple-50 hover:border-purple-600"
-              >
-                {ui.isSendingToLawsuitData ? (
-                  <>
-                    <LoadingSpinner className="h-4 w-4 ml-2" />
-                    جاري الإرسال...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 ml-2" />
-                    إرسال إلى بيانات تقاضي
-                  </>
-                )}
-              </Button>
-              
               {/* Download ZIP */}
               <Button
                 variant="outline"
@@ -161,6 +139,40 @@ export function ActionBar() {
                 </Button>
               )}
             </div>
+            
+            {/* Server Status Warning */}
+            {!ui.taqadiServerRunning && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-red-900">
+                      <p className="font-semibold mb-1">سيرفر الأتمتة متوقف</p>
+                      <p className="text-red-700">
+                        يجب تشغيل السيرفر أولاً لاستخدام ميزة الرفع التلقائي إلى تقاضي
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.open('https://github.com/yourusername/fleetifyapp/blob/main/taqadi-automation/QUICK_START.md', '_blank');
+                    }}
+                    className="border-red-300 text-red-700 hover:bg-red-100 whitespace-nowrap"
+                  >
+                    📖 دليل التشغيل
+                  </Button>
+                </div>
+                <div className="mt-3 p-3 bg-white rounded border border-red-200">
+                  <p className="text-xs font-mono text-gray-700 mb-2">لتشغيل السيرفر، افتح Terminal وشغل:</p>
+                  <code className="block bg-gray-900 text-green-400 p-2 rounded text-xs font-mono">
+                    cd taqadi-automation<br />
+                    node server.js
+                  </code>
+                </div>
+              </div>
+            )}
             
             {/* Automation Status */}
             {(ui.isTaqadiAutomating || ui.taqadiAutomationStatus) && (

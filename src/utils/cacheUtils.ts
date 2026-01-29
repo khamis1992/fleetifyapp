@@ -2,27 +2,35 @@
  * Cache Invalidation Utilities
  * 
  * Centralized cache invalidation strategies for React Query and Supabase
+ * 
+ * IMPORTANT: These utilities now support multi-tab environments
+ * Use the hook versions (useCacheInvalidation) when possible
  */
 
 import { QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { broadcastQueryInvalidation, broadcastCacheClear } from './tabSyncManager';
 
-// Global query client instance
-let queryClientInstance: QueryClient | null = null;
+// MULTI-TAB FIX: Use WeakMap to store query client per tab
+// This prevents conflicts when multiple tabs are open
+const queryClientInstances = new WeakMap<Window, QueryClient>();
 
 export const setQueryClient = (client: QueryClient) => {
-  queryClientInstance = client;
+  queryClientInstances.set(window, client);
+  console.log('📝 [CACHE_UTILS] Query client registered for current tab');
 };
 
 export const getQueryClient = (): QueryClient | null => {
-  return queryClientInstance;
+  return queryClientInstances.get(window) || null;
 };
 
 /**
  * Invalidate specific query keys
+ * MULTI-TAB: Broadcasts invalidation to other tabs
  */
 export const invalidateQueries = async (queryKeys: string | string[]) => {
-  if (!queryClientInstance) {
+  const client = getQueryClient();
+  if (!client) {
     console.warn('Query client not initialized for cache invalidation');
     return;
   }
@@ -31,8 +39,11 @@ export const invalidateQueries = async (queryKeys: string | string[]) => {
   
   for (const key of keys) {
     try {
-      await queryClientInstance.invalidateQueries({ queryKey: [key] });
+      await client.invalidateQueries({ queryKey: [key] });
       console.log(`✅ Cache invalidated for query: ${key}`);
+      
+      // MULTI-TAB: Notify other tabs
+      broadcastQueryInvalidation(key);
     } catch (error) {
       console.error(`❌ Error invalidating cache for query ${key}:`, error);
     }
@@ -41,18 +52,23 @@ export const invalidateQueries = async (queryKeys: string | string[]) => {
 
 /**
  * Invalidate queries by prefix
+ * MULTI-TAB: Broadcasts invalidation to other tabs
  */
 export const invalidateQueriesByPrefix = async (prefix: string) => {
-  if (!queryClientInstance) {
+  const client = getQueryClient();
+  if (!client) {
     console.warn('Query client not initialized for cache invalidation');
     return;
   }
 
   try {
-    await queryClientInstance.invalidateQueries({
+    await client.invalidateQueries({
       predicate: (query) => query.queryKey[0]?.toString().startsWith(prefix)
     });
     console.log(`✅ Cache invalidated for queries with prefix: ${prefix}`);
+    
+    // MULTI-TAB: Notify other tabs
+    broadcastQueryInvalidation(`${prefix}*`);
   } catch (error) {
     console.error(`❌ Error invalidating cache for prefix ${prefix}:`, error);
   }
@@ -60,16 +76,21 @@ export const invalidateQueriesByPrefix = async (prefix: string) => {
 
 /**
  * Invalidate all queries
+ * MULTI-TAB: Broadcasts invalidation to other tabs
  */
 export const invalidateAllQueries = async () => {
-  if (!queryClientInstance) {
+  const client = getQueryClient();
+  if (!client) {
     console.warn('Query client not initialized for cache invalidation');
     return;
   }
 
   try {
-    await queryClientInstance.invalidateQueries();
+    await client.invalidateQueries();
     console.log('✅ All cache invalidated');
+    
+    // MULTI-TAB: Notify other tabs
+    broadcastCacheClear();
   } catch (error) {
     console.error('❌ Error invalidating all cache:', error);
   }
@@ -95,7 +116,8 @@ export const invalidateEntityQueries = async (entity: 'customers' | 'contracts' 
  * Prefetch common queries to improve perceived performance
  */
 export const prefetchCommonQueries = async () => {
-  if (!queryClientInstance) {
+  const client = getQueryClient();
+  if (!client) {
     console.warn('Query client not initialized for prefetching');
     return;
   }
@@ -104,7 +126,7 @@ export const prefetchCommonQueries = async () => {
     // Prefetch commonly accessed data
     const prefetchPromises = [
       // Add common queries here
-      // queryClientInstance.prefetchQuery({
+      // client.prefetchQuery({
       //   queryKey: ['dashboard-stats'],
       //   queryFn: fetchDashboardStats,
       // }),
@@ -159,13 +181,14 @@ export const cacheWithInvalidation = async <T>(
   fetcher: () => Promise<T>,
   invalidateTriggers?: string[]
 ): Promise<T> => {
-  if (!queryClientInstance) {
+  const client = getQueryClient();
+  if (!client) {
     // Fallback to direct fetch if query client not available
     return fetcher();
   }
 
   // Check if data exists in cache
-  const cachedData = queryClientInstance.getQueryData<T>([key]);
+  const cachedData = client.getQueryData<T>([key]);
   if (cachedData) {
     return cachedData;
   }
@@ -174,7 +197,7 @@ export const cacheWithInvalidation = async <T>(
   const data = await fetcher();
 
   // Store in cache
-  queryClientInstance.setQueryData([key], data);
+  client.setQueryData([key], data);
 
   // Set up invalidation triggers
   if (invalidateTriggers) {

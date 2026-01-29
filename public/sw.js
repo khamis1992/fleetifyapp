@@ -63,6 +63,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip non-GET requests (HEAD, POST, PUT, DELETE, etc.)
+  // Cache API only supports GET requests
+  if (request.method !== 'GET') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Network-first strategy for API calls
   if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
     event.respondWith(
@@ -76,10 +83,14 @@ self.addEventListener('fetch', (event) => {
           // Clone the response
           const responseToCache = response.clone();
 
-          // Cache successful API responses
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseToCache);
-          });
+          // Cache successful API responses (only GET requests)
+          if (request.method === 'GET') {
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseToCache).catch((error) => {
+                console.warn('[Service Worker] Failed to cache API response:', error);
+              });
+            });
+          }
 
           return response;
         })
@@ -101,11 +112,15 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
 
-          // Clone and cache the updated HTML
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
+          // Clone and cache the updated HTML (only GET requests)
+          if (request.method === 'GET') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache).catch((error) => {
+                console.warn('[Service Worker] Failed to cache navigation:', error);
+              });
+            });
+          }
 
           return response;
         })
@@ -139,10 +154,14 @@ self.addEventListener('fetch', (event) => {
         // Clone the response
         const responseToCache = response.clone();
 
-        // Cache the fetched resource
-        caches.open(RUNTIME_CACHE).then((cache) => {
-          cache.put(request, responseToCache);
-        });
+        // Cache the fetched resource (only GET requests)
+        if (request.method === 'GET') {
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, responseToCache).catch((error) => {
+              console.warn('[Service Worker] Failed to cache static asset:', error);
+            });
+          });
+        }
 
         return response;
       });

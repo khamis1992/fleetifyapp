@@ -105,13 +105,13 @@ const createQueryClient = () => {
     defaultOptions: {
       queries: {
         // Performance optimizations
-        refetchOnMount: true, // CRITICAL FIX: Changed from false to prevent stale data on navigation
-        refetchOnWindowFocus: false,
+        refetchOnMount: 'always', // MULTI-TAB FIX: Force refetch to ensure fresh data
+        refetchOnWindowFocus: true, // MULTI-TAB FIX: Refetch when switching between tabs
         refetchOnReconnect: true,
 
-        // Cache configuration - optimized for performance
-        staleTime: 5 * 60 * 1000, // INCREASED: 5 minutes stale time
-        gcTime: 15 * 60 * 1000, // INCREASED: 15 minutes garbage collection time
+        // Cache configuration - optimized for multi-tab support
+        staleTime: 1 * 60 * 1000, // REDUCED: 1 minute stale time to reduce conflicts
+        gcTime: 5 * 60 * 1000, // REDUCED: 5 minutes garbage collection time
 
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
@@ -127,9 +127,9 @@ const createQueryClient = () => {
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 1.5 ** attemptIndex, 3000), // Reduced max delay
 
-        // Network mode - CRITICAL: Use 'always' to prevent infinite loading on navigation
-        // 'online' mode causes queries to pause when browser's online status check is slow
-        networkMode: 'always',
+        // Network mode - MULTI-TAB FIX: Use 'online' to prevent conflicts
+        // This ensures queries only run when actually online
+        networkMode: 'online',
 
         // Performance monitoring - disabled to prevent errors
         // onSuccess and onError callbacks removed for stability
@@ -150,14 +150,75 @@ const createQueryClient = () => {
 
 // === Main App Component ===
 const App: React.FC = () => {
-  // Initialize query client with memoization
-  const queryClient = useMemo(() => createQueryClient(), []);
+  // Get or create unique tab ID
+  const tabId = useMemo(() => {
+    let id = sessionStorage.getItem('fleetify_tab_id');
+    if (!id) {
+      id = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('fleetify_tab_id', id);
+    }
+    console.log(`🔍 [APP] Tab ID: ${id}`);
+    return id;
+  }, []);
+
+  // Initialize query client with memoization and tab-specific configuration
+  const queryClient = useMemo(() => {
+    const client = createQueryClient();
+    
+    // Add tab ID to query key hash for isolation between tabs
+    // This ensures each tab has its own cache namespace
+    const originalHashFn = client.getDefaultOptions().queries?.queryKeyHashFn;
+    
+    client.setDefaultOptions({
+      ...client.getDefaultOptions(),
+      queries: {
+        ...client.getDefaultOptions().queries,
+        queryKeyHashFn: (queryKey) => {
+          // Add tab ID to query key for cache isolation
+          const keyWithTab = [...(Array.isArray(queryKey) ? queryKey : [queryKey]), `__tab_${tabId}`];
+          return originalHashFn 
+            ? originalHashFn(keyWithTab) 
+            : JSON.stringify(keyWithTab);
+        },
+      },
+    });
+    
+    console.log(`🔍 [APP] Query client initialized for tab: ${tabId}`);
+    return client;
+  }, [tabId]);
 
   // Initialize cache utilities
   React.useEffect(() => {
     // Set the query client instance for cache utilities
     import('./utils/cacheUtils').then(({ setQueryClient }) => {
       setQueryClient(queryClient);
+    });
+  }, [queryClient]);
+
+  // Initialize tab sync manager
+  React.useEffect(() => {
+    import('./utils/tabSyncManager').then(({ tabSyncManager, broadcastQueryInvalidation }) => {
+      console.log('🔄 [APP] Tab sync manager initialized');
+
+      // Listen for query invalidation from other tabs
+      const unsubscribe = tabSyncManager.on('QUERY_INVALIDATE', (message) => {
+        if (message.type === 'QUERY_INVALIDATE') {
+          console.log(`🔄 [APP] Invalidating query from another tab: ${message.queryKey}`);
+          queryClient.invalidateQueries({ queryKey: [message.queryKey] });
+        }
+      });
+
+      // Listen for cache clear from other tabs
+      const unsubscribeCacheClear = tabSyncManager.on('CACHE_CLEAR', () => {
+        console.log('🔄 [APP] Clearing cache from another tab');
+        queryClient.clear();
+      });
+
+      // Cleanup on unmount
+      return () => {
+        unsubscribe();
+        unsubscribeCacheClear();
+      };
     });
   }, [queryClient]);
 

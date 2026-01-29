@@ -38,8 +38,8 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    // Disable cross-tab sync to prevent multi-tab conflicts
-    storageKey: 'supabase.auth.token',
+    // Enable cross-tab sync via BroadcastChannel API
+    // By not specifying storageKey, Supabase will handle multi-tab sync automatically
   },
   // Add retry logic for better reliability
   global: {

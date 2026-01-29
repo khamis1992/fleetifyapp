@@ -29,6 +29,7 @@ interface AuthCache {
   user: AuthUser;
   timestamp: number;
   version: string;
+  tabId?: string;
 }
 
 // Helper to get cached user data
@@ -58,15 +59,35 @@ const getCachedUser = (): AuthUser | null => {
   }
 };
 
+// Generate unique tab ID
+const generateTabId = (): string => {
+  const tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  sessionStorage.setItem('tab_id', tabId);
+  return tabId;
+};
+
+// Get or create tab ID
+const getTabId = (): string => {
+  let tabId = sessionStorage.getItem('tab_id');
+  if (!tabId) {
+    tabId = generateTabId();
+  }
+  return tabId;
+};
+
 // Helper to save user to cache
 const cacheUser = (user: AuthUser) => {
   try {
     const cacheData: AuthCache = {
       user,
       timestamp: Date.now(),
-      version: CACHE_VERSION
+      version: CACHE_VERSION,
+      tabId: getTabId()
     };
     localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(cacheData));
+    
+    // Notify other tabs about cache update
+    localStorage.setItem(AUTH_CACHE_KEY + '_updated', Date.now().toString());
   } catch (error) {
     console.warn('📝 [AUTH_CACHE] Failed to save cache:', error);
   }
@@ -100,10 +121,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isInitialized = useRef(false);
   const mountedRef = useRef(true);
 
+  // Lock mechanism to prevent race conditions during initialization
+  const acquireInitLock = (): boolean => {
+    try {
+      const lockKey = 'auth_init_lock';
+      const lockTimeout = 5000; // 5 seconds
+      
+      const existingLock = localStorage.getItem(lockKey);
+      if (existingLock) {
+        const lockTime = parseInt(existingLock);
+        if (Date.now() - lockTime < lockTimeout) {
+          // Active lock from another tab
+          return false;
+        }
+      }
+      
+      // Acquire the lock
+      localStorage.setItem(lockKey, Date.now().toString());
+      return true;
+    } catch (error) {
+      console.warn('📝 [AUTH_CONTEXT] Failed to acquire lock:', error);
+      return true; // Allow initialization on error
+    }
+  };
+
+  const releaseInitLock = () => {
+    try {
+      localStorage.removeItem('auth_init_lock');
+    } catch (error) {
+      console.warn('📝 [AUTH_CONTEXT] Failed to release lock:', error);
+    }
+  };
+
   const initializeAuth = async () => {
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
       console.log('📝 [AUTH_CONTEXT] Already initialized, skipping...');
+      return;
+    }
+
+    // Try to acquire initialization lock
+    if (!acquireInitLock()) {
+      console.log('📝 [AUTH_CONTEXT] Another tab is initializing, waiting...');
+      
+      // Wait a bit then use cached data
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const cachedUser = getCachedUser();
+      if (cachedUser) {
+        setUser(cachedUser);
+        setLoading(false);
+        console.log('📝 [AUTH_CONTEXT] Using cached user from another tab initialization');
+      }
       return;
     }
 
@@ -279,6 +347,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSessionError('خطأ في تهيئة جلسة تسجيل الدخول');
       }
     } finally {
+      // Release the initialization lock
+      releaseInitLock();
+      
       if (mountedRef.current) {
         setLoading(false);
         // Clear the force timeout since we are done
@@ -290,6 +361,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }
   };
+
+  // Storage event listener for cross-tab sync
+  React.useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!mountedRef.current) return;
+
+      // Listen for auth token changes from other tabs
+      if (e.key === 'supabase.auth.token' && e.newValue !== e.oldValue) {
+        console.log('🔄 [AUTH_CONTEXT] Auth state changed in another tab');
+        
+        if (e.newValue) {
+          // User signed in from another tab
+          console.log('🔄 [AUTH_CONTEXT] User signed in from another tab - reinitializing');
+          isInitialized.current = false;
+          initializeAuth();
+        } else {
+          // User signed out from another tab
+          console.log('🔄 [AUTH_CONTEXT] User signed out from another tab');
+          setUser(null);
+          setSession(null);
+          clearCachedUser();
+        }
+      }
+      
+      // Listen for cache changes from other tabs
+      if (e.key === AUTH_CACHE_KEY && e.newValue !== e.oldValue) {
+        console.log('🔄 [AUTH_CONTEXT] User cache changed in another tab');
+        
+        if (e.newValue) {
+          const cachedUser = getCachedUser();
+          if (cachedUser) {
+            setUser(cachedUser);
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   // Safety timeout to prevent infinite loading - FIXED: Ensure loading state is always cleared
   React.useEffect(() => {

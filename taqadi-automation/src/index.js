@@ -53,21 +53,59 @@ export async function automateTaqadiLawsuit(config) {
     await navigateWithRetry(page, prepareUrl);
     await sleep(3000);
     
-    // التحقق من تسجيل الدخول
-    const isLoginPage = await page.evaluate(() => {
+    // التحقق من تسجيل الدخول (بالتحقق من URL أيضاً)
+    const currentUrl = page.url();
+    logger.info(`📍 URL الحالي: ${currentUrl}`);
+    
+    const isLoginPage = currentUrl.includes('/auth') || await page.evaluate(() => {
       return document.body.innerText.includes('تسجيل الدخول') || 
-             document.body.innerText.includes('البريد الإلكتروني');
+             document.body.innerText.includes('البريد الإلكتروني') ||
+             document.body.innerText.includes('مرحباً بك');
     });
     
+    logger.info(`🔍 هل هي صفحة تسجيل دخول؟ ${isLoginPage}`);
+    
     if (isLoginPage) {
-      logger.warning('⚠️ يجب تسجيل الدخول يدوياً في FleetifyApp');
-      logger.info('📍 الصفحة الحالية: صفحة تسجيل الدخول');
-      logger.info('⏳ انتظر 30 ثانية لتسجيل الدخول يدوياً...');
-      await sleep(30000);
+      logger.info('🔐 صفحة تسجيل الدخول - محاولة تسجيل الدخول التلقائي...');
       
-      // الانتقال مرة أخرى لصفحة التجهيز
-      await navigateWithRetry(page, prepareUrl);
-      await sleep(3000);
+      try {
+        // البحث عن حقل البريد الإلكتروني
+        await page.waitForSelector('input[type="email"], input[placeholder*="example"]', { timeout: 5000 });
+        
+        // ملء البريد الإلكتروني
+        await page.type('input[type="email"], input[placeholder*="example"]', 'khamis-1992@hotmail.com');
+        await sleep(500);
+        
+        // ملء كلمة المرور
+        await page.type('input[type="password"]', '123456789');
+        await sleep(500);
+        
+        // النقر على زر تسجيل الدخول
+        await page.evaluate(() => {
+          const buttons = Array.from(document.querySelectorAll('button'));
+          const loginBtn = buttons.find(b => b.textContent.includes('تسجيل الدخول'));
+          if (loginBtn) loginBtn.click();
+        });
+        
+        logger.info('⏳ انتظار إكمال تسجيل الدخول...');
+        await sleep(5000);
+        
+        // الانتقال مرة أخرى لصفحة التجهيز
+        await navigateWithRetry(page, prepareUrl);
+        await sleep(3000);
+        
+        logger.success('✅ تم تسجيل الدخول بنجاح');
+        
+      } catch (error) {
+        logger.warning('⚠️ فشل تسجيل الدخول التلقائي');
+        logger.info('📍 يرجى تسجيل الدخول يدوياً في المتصفح المفتوح');
+        logger.info('⏳ انتظر 60 ثانية لتسجيل الدخول يدوياً...');
+        await sleep(60000);
+        
+        // الانتقال مرة أخرى لصفحة التجهيز
+        await navigateWithRetry(page, prepareUrl);
+        await sleep(3000);
+      }
     }
     
     // انتظار تحميل الصفحة بالكامل
