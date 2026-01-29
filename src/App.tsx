@@ -150,7 +150,7 @@ const createQueryClient = () => {
 
 // === Main App Component ===
 const App: React.FC = () => {
-  // Get or create unique tab ID
+  // Get or create unique tab ID (للتتبع فقط، ليس للعزل)
   const tabId = useMemo(() => {
     let id = sessionStorage.getItem('fleetify_tab_id');
     if (!id) {
@@ -161,29 +161,23 @@ const App: React.FC = () => {
     return id;
   }, []);
 
-  // Initialize query client with memoization and tab-specific configuration
+  // Initialize query client with shared cache (no tab isolation)
+  // This allows all tabs to share the same data
   const queryClient = useMemo(() => {
     const client = createQueryClient();
     
-    // Add tab ID to query key hash for isolation between tabs
-    // This ensures each tab has its own cache namespace
-    const originalHashFn = client.getDefaultOptions().queries?.queryKeyHashFn;
-    
+    // Add metadata for tracking only (not for cache isolation)
     client.setDefaultOptions({
       ...client.getDefaultOptions(),
       queries: {
         ...client.getDefaultOptions().queries,
-        queryKeyHashFn: (queryKey) => {
-          // Add tab ID to query key for cache isolation
-          const keyWithTab = [...(Array.isArray(queryKey) ? queryKey : [queryKey]), `__tab_${tabId}`];
-          return originalHashFn 
-            ? originalHashFn(keyWithTab) 
-            : JSON.stringify(keyWithTab);
-        },
+        meta: {
+          tabId: tabId, // للتتبع والـ logging فقط
+        }
       },
     });
     
-    console.log(`🔍 [APP] Query client initialized for tab: ${tabId}`);
+    console.log(`🔍 [APP] Query client initialized with shared cache for tab: ${tabId}`);
     return client;
   }, [tabId]);
 
@@ -195,32 +189,62 @@ const App: React.FC = () => {
     });
   }, [queryClient]);
 
-  // Initialize tab sync manager
+  // Initialize advanced tab sync manager
   React.useEffect(() => {
-    import('./utils/tabSyncManager').then(({ tabSyncManager, broadcastQueryInvalidation }) => {
-      console.log('🔄 [APP] Tab sync manager initialized');
-
-      // Listen for query invalidation from other tabs
-      const unsubscribe = tabSyncManager.on('QUERY_INVALIDATE', (message) => {
-        if (message.type === 'QUERY_INVALIDATE') {
-          console.log(`🔄 [APP] Invalidating query from another tab: ${message.queryKey}`);
-          queryClient.invalidateQueries({ queryKey: [message.queryKey] });
+    import('./utils/advancedTabSync').then(({ advancedTabSync }) => {
+      console.log('🔄 [APP] Advanced tab sync manager initializing...');
+      
+      // تهيئة النظام المتقدم
+      advancedTabSync.initialize(queryClient, tabId);
+      
+      // الاستماع لتحديثات البيانات من التبويبات الأخرى
+      const unsubscribeDataSync = advancedTabSync.onDataUpdate((message) => {
+        if (message.type === 'DATA_UPDATE' && message.data !== undefined) {
+          console.log(`🔄 [APP] Received data update from tab ${message.tabId}:`, message.queryKey);
+          queryClient.setQueryData(message.queryKey, message.data);
         }
       });
-
-      // Listen for cache clear from other tabs
-      const unsubscribeCacheClear = tabSyncManager.on('CACHE_CLEAR', () => {
-        console.log('🔄 [APP] Clearing cache from another tab');
-        queryClient.clear();
+      
+      // الاستماع لإبطال الاستعلامات
+      const unsubscribeInvalidate = advancedTabSync.onInvalidate((queryKey) => {
+        console.log(`🔄 [APP] Invalidating query from another tab:`, queryKey);
+        queryClient.invalidateQueries({ queryKey });
       });
-
+      
+      // الاستماع لطلبات المزامنة من التبويبات الجديدة
+      const unsubscribeSyncRequest = advancedTabSync.onSyncRequest(() => {
+        console.log('🔄 [APP] Sync request received, sending cache data...');
+        
+        // إرسال جميع البيانات الحالية للتبويبة الجديدة
+        const cache = queryClient.getQueryCache();
+        const allQueries = cache.getAll();
+        
+        let sentCount = 0;
+        allQueries.forEach(query => {
+          if (query.state.data !== undefined) {
+            advancedTabSync.broadcastDataUpdate(
+              query.queryKey,
+              query.state.data,
+              query.state.dataUpdatedAt || Date.now()
+            );
+            sentCount++;
+          }
+        });
+        
+        console.log(`🔄 [APP] Sent ${sentCount} queries to requesting tab`);
+      });
+      
+      console.log('✅ [APP] Advanced tab sync manager initialized successfully');
+      
       // Cleanup on unmount
       return () => {
-        unsubscribe();
-        unsubscribeCacheClear();
+        unsubscribeDataSync();
+        unsubscribeInvalidate();
+        unsubscribeSyncRequest();
+        advancedTabSync.cleanup();
       };
     });
-  }, [queryClient]);
+  }, [queryClient, tabId]);
 
   // Debug: Check routes
   console.log('🔍 [App] routeConfigs length:', routeConfigs.length);

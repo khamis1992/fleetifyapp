@@ -3,13 +3,12 @@
  * 
  * Centralized cache invalidation strategies for React Query and Supabase
  * 
- * IMPORTANT: These utilities now support multi-tab environments
+ * IMPORTANT: These utilities now support multi-tab environments with advanced sync
  * Use the hook versions (useCacheInvalidation) when possible
  */
 
 import { QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { broadcastQueryInvalidation, broadcastCacheClear } from './tabSyncManager';
 
 // MULTI-TAB FIX: Use WeakMap to store query client per tab
 // This prevents conflicts when multiple tabs are open
@@ -26,7 +25,7 @@ export const getQueryClient = (): QueryClient | null => {
 
 /**
  * Invalidate specific query keys
- * MULTI-TAB: Broadcasts invalidation to other tabs
+ * MULTI-TAB: Broadcasts invalidation to other tabs via advanced sync
  */
 export const invalidateQueries = async (queryKeys: string | string[]) => {
   const client = getQueryClient();
@@ -42,8 +41,10 @@ export const invalidateQueries = async (queryKeys: string | string[]) => {
       await client.invalidateQueries({ queryKey: [key] });
       console.log(`✅ Cache invalidated for query: ${key}`);
       
-      // MULTI-TAB: Notify other tabs
-      broadcastQueryInvalidation(key);
+      // MULTI-TAB: Notify other tabs via advanced sync
+      import('./advancedTabSync').then(({ advancedTabSync }) => {
+        advancedTabSync.broadcastInvalidate([key]);
+      });
     } catch (error) {
       console.error(`❌ Error invalidating cache for query ${key}:`, error);
     }
@@ -52,7 +53,7 @@ export const invalidateQueries = async (queryKeys: string | string[]) => {
 
 /**
  * Invalidate queries by prefix
- * MULTI-TAB: Broadcasts invalidation to other tabs
+ * MULTI-TAB: Broadcasts invalidation to other tabs via advanced sync
  */
 export const invalidateQueriesByPrefix = async (prefix: string) => {
   const client = getQueryClient();
@@ -67,8 +68,10 @@ export const invalidateQueriesByPrefix = async (prefix: string) => {
     });
     console.log(`✅ Cache invalidated for queries with prefix: ${prefix}`);
     
-    // MULTI-TAB: Notify other tabs
-    broadcastQueryInvalidation(`${prefix}*`);
+    // MULTI-TAB: Notify other tabs via advanced sync
+    import('./advancedTabSync').then(({ advancedTabSync }) => {
+      advancedTabSync.broadcastInvalidate([`${prefix}*`]);
+    });
   } catch (error) {
     console.error(`❌ Error invalidating cache for prefix ${prefix}:`, error);
   }
@@ -76,7 +79,7 @@ export const invalidateQueriesByPrefix = async (prefix: string) => {
 
 /**
  * Invalidate all queries
- * MULTI-TAB: Broadcasts invalidation to other tabs
+ * MULTI-TAB: Broadcasts invalidation to other tabs via advanced sync
  */
 export const invalidateAllQueries = async () => {
   const client = getQueryClient();
@@ -89,8 +92,10 @@ export const invalidateAllQueries = async () => {
     await client.invalidateQueries();
     console.log('✅ All cache invalidated');
     
-    // MULTI-TAB: Notify other tabs
-    broadcastCacheClear();
+    // MULTI-TAB: Notify other tabs via advanced sync
+    import('./advancedTabSync').then(({ advancedTabSync }) => {
+      advancedTabSync.broadcastInvalidate(['*']);
+    });
   } catch (error) {
     console.error('❌ Error invalidating all cache:', error);
   }
@@ -110,6 +115,52 @@ export const invalidateEntityQueries = async (entity: 'customers' | 'contracts' 
 
   const keys = prefixes[entity] || [entity];
   await Promise.all(keys.map(key => invalidateQueries(key)));
+};
+
+/**
+ * Update query data with multi-tab synchronization
+ * MULTI-TAB: Broadcasts data update to other tabs
+ */
+export const updateQueryData = <T>(queryKey: any[], updater: (old: T | undefined) => T) => {
+  const client = getQueryClient();
+  if (!client) {
+    console.warn('Query client not initialized for data update');
+    return;
+  }
+
+  const newData = client.setQueryData<T>(queryKey, updater);
+  
+  // MULTI-TAB: Synchronize with other tabs via advanced sync
+  if (newData !== undefined) {
+    import('./advancedTabSync').then(({ advancedTabSync }) => {
+      advancedTabSync.broadcastDataUpdate(queryKey, newData, Date.now());
+    });
+  }
+  
+  return newData;
+};
+
+/**
+ * Set query data with multi-tab synchronization
+ * MULTI-TAB: Broadcasts data update to other tabs
+ */
+export const setQueryData = <T>(queryKey: any[], data: T) => {
+  const client = getQueryClient();
+  if (!client) {
+    console.warn('Query client not initialized for data update');
+    return;
+  }
+
+  client.setQueryData<T>(queryKey, data);
+  
+  // MULTI-TAB: Synchronize with other tabs via advanced sync
+  if (data !== undefined) {
+    import('./advancedTabSync').then(({ advancedTabSync }) => {
+      advancedTabSync.broadcastDataUpdate(queryKey, data, Date.now());
+    });
+  }
+  
+  return data;
 };
 
 /**
