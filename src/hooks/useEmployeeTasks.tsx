@@ -93,6 +93,40 @@ export const useEmployeeTasks = (options: UseEmployeeTasksOptions = {}) => {
 
       if (error) throw error;
 
+      // Fetch general tasks
+      const { data: generalTasks, error: generalTasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('assigned_to', profile.id)
+        .neq('status', 'cancelled');
+
+      if (generalTasksError) {
+        console.error('Error fetching general tasks:', generalTasksError);
+      }
+
+      // Transform genericTasks to EmployeeTask format
+      const transformedGenericTasks: EmployeeTask[] = (generalTasks || []).map(task => ({
+        id: task.id,
+        type: 'task', // Ensure 'task' is added to EmployeeTask type definition
+        title: task.title,
+        title_ar: task.title,
+        description: task.description,
+        contract_id: '',
+        contract_number: '',
+        customer_id: '',
+        customer_name: 'مهمة عامة',
+        customer_phone: '',
+        scheduled_date: task.due_date || task.created_at,
+        scheduled_time: '',
+        priority: task.priority as any,
+        status: task.status === 'in_progress' ? 'pending' : (task.status as any),
+        outcome: '',
+        outcome_notes: '',
+        completed_at: task.completed_at,
+        created_at: task.created_at,
+        assigned_to: task.assigned_to || ''
+      }));
+
       // Transform to EmployeeTask format
       const transformedTasks: EmployeeTask[] = (data || []).map(followup => {
         const customerName = followup.customers?.customer_type === 'corporate'
@@ -126,7 +160,9 @@ export const useEmployeeTasks = (options: UseEmployeeTasksOptions = {}) => {
         };
       });
 
-      return transformedTasks;
+      // Combine and sort
+      const allTasks = [...transformedTasks, ...transformedGenericTasks];
+      return allTasks.sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
     },
     enabled: !!profile?.id && enabled,
     staleTime: 30 * 1000, // 30 seconds

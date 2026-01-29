@@ -187,7 +187,7 @@ export const PRIORITY_REASONS: PriorityReason[] = [
 
 export interface EmployeeTask {
   id: string;
-  type: 'followup' | 'payment_collection' | 'contract_renewal' | 'violation_check' | 'customer_contact';
+  type: 'followup' | 'payment_collection' | 'contract_renewal' | 'violation_check' | 'customer_contact' | 'task';
   title: string;
   title_ar: string;
   description?: string;

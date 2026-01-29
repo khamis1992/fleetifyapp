@@ -912,7 +912,7 @@ const ContractDetailsPageRedesigned = () => {
         throw new Error('رقم العقد أو الشركة مفقود');
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('contracts')
         .select(`
           *,
@@ -940,9 +940,18 @@ const ContractDetailsPageRedesigned = () => {
             status
           )
         `)
-        .eq('contract_number', contractNumber)
-        .eq('company_id', companyId)
-        .single();
+        .eq('company_id', companyId);
+
+      // Check if input is UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractNumber);
+      
+      if (isUUID) {
+        query = query.eq('id', contractNumber);
+      } else {
+        query = query.eq('contract_number', contractNumber);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) throw error;
       return data as Contract;

@@ -1,212 +1,67 @@
-# TODO Tasks - Contract Status Improvements
+# Employee Workspace Redesign Plan
 
-## ✅ تم إنجاز جميع المقترحات بنجاح!
+## Objective
+Redesign the Employee Workspace page (`/employee-workspace`) to improve usability, visual appeal, and focus on actionable items. The goal is to create a clean, modern dashboard that helps employees track their contracts, tasks, and performance efficiently.
 
----
+## Proposed Changes
 
-## المقترح 1: توحيد تعريف "المسودة" ✅
+### 1. Layout & Structure
+- **Move to a Clean Dashboard Layout**: Replace the current "Bento/Glass" heavy style with a cleaner, professional card-based layout.
+- **Header**: Simplified header with greeting, date, and primary actions (Refresh).
+- **Grid System**: Use a responsive grid (likely 3 columns on large screens).
+  - **Left/Center (2 columns)**: Main actionable content (Priority items, Tasks, Active Contracts).
+  - **Right (1 column)**: Performance metrics, Quick Actions, Activity.
 
-### المهام المنجزة:
-- ✅ إضافة تاب "مسودة" في واجهة المستخدم
-- ✅ توحيد منطق الفلترة مع الإحصائيات
-- ✅ الفلتر الآن يعرض جميع العقود المسودة (33 عقد)
+### 2. Component Refactoring
+- **Cards**: Use standard `shadcn/ui` Card components with subtle styling instead of custom `GlassCard`.
+- **Typography**: Improve hierarchy with clear section headings.
+- **Colors**: Align with Fleetify's Teal/Blue brand colors, reducing the rainbow effect of the current stats cards.
 
-### الملفات المعدلة:
-1. `src/pages/ContractsRedesigned.tsx` - إضافة التاب والفلتر
-2. `src/hooks/useContractsData.tsx` - تحديث منطق الفلترة
+### 3. Key Sections
+- **Quick Stats**: Compact row at the top or integrated into sidebar.
+- **"Attention Needed" (Priority)**: Highlight overdue contracts or urgent tasks at the very top of the main area.
+- **Tasks Module**: A clear list of today's tasks with check buttons.
+- **Contracts Module**: A sortable/filterable list of assigned contracts.
+- **Performance Widget**: A clear visualization (e.g., progress bars or rings) of the employee's score.
 
----
+### 4. Implementation Steps
+1.  [x] **Analyze & Backup**: Ensure current logic is understood (data fetching hooks).
+2.  [x] **Scaffold New Layout**: Create the basic grid structure using Tailwind CSS.
+3.  [x] **Implement Header & Stats**: distinct clean section.
+4.  [x] **Implement Main Content Area**:
+    - [x] Priority/Alerts Section.
+    - [x] Tasks List (Tabular or clean list).
+    - [x] Contracts List (Grid or List view).
+5.  [x] **Implement Sidebar**:
+    - [x] Performance Metrics.
+    - [x] Quick Actions (Vertical menu).
+6.  [x] **Review & Refine**: Check responsiveness and Arabic (RTL) alignment.
 
-## المقترح 2: إضافة حالة "غير مكتمل" (Incomplete) ✅
+## Excel Export Enhancement
+### Objective
+Create a detailed, professional Excel report for employees that includes all relevant data in a single file.
 
-### المهام المنجزة:
-- ✅ إنشاء migration لدعم الحالات الجديدة
-- ✅ إضافة فلتر "غير مكتمل" في واجهة المستخدم
-- ✅ تحديث منطق الإحصائيات لحساب العقود غير المكتملة
-- ✅ الفلتر يعرض العقود التي:
-  - قيمة صفرية
-  - بدون عميل
-  - بدون مركبة
-  - منتهية ولكن نشطة
+### Implementation Steps
+1.  [x] **Create Export Utility**: Develop `src/utils/exports/employeeReport.ts` using `exceljs`.
+    -   Support multi-sheet export (Summary, Contracts, Tasks, Collections).
+    -   Add professional styling (headers, colors, column widths).
+2.  [x] **Integrate with Workspace**: Update `EmployeeWorkspace.tsx` to use the new utility.
+    -   Pass comprehensive data (performance, contracts, tasks, collections) to the export function.
+    -   Update the export button label to reflect the enhanced functionality.
 
-### الملفات المعدلة:
-1. `supabase/migrations/20260128000001_add_contract_improvements.sql` - Migration شامل
-2. `src/pages/ContractsRedesigned.tsx` - إضافة تاب "غير مكتمل"
-3. `src/hooks/useContractsData.tsx` - منطق الفلترة والإحصائيات
+## User Verification
+- Please verify if this cleaner, structured approach aligns with your expectations for "Redesign".
 
----
+## Completion Summary
+- Successfully redesigned the page using `shadcn/ui` components (Card, Badge, Tabs, Button, Input).
+- Implemented a responsive grid layout.
+- Added search functionality for contracts.
+- Improved visual hierarchy with clear sections for "Priority", "Tasks", and "Contracts".
+- Unified the color scheme to Fleetify's branding.
+- **Excel Export**: Replaced the basic CSV-like export with a comprehensive 4-sheet Excel workbook featuring styled headers, detailed metrics, and complete lists of contracts and tasks.
 
-## المقترح 3: إضافة "حالة فرعية" (Sub-Status) ✅
-
-### المهام المنجزة:
-- ✅ إضافة حقل `sub_status` في جدول العقود
-- ✅ دعم الحالات الفرعية:
-  - `pending_data` - بانتظار إدخال البيانات
-  - `pending_approval` - بانتظار الموافقة
-  - `pending_signature` - بانتظار التوقيع
-  - `pending_payment` - بانتظار الدفعة الأولى
-  - `zero_amount` - قيمة صفرية
-  - `test_contract` - عقد تجريبي
-
-### الملفات المعدلة:
-1. `supabase/migrations/20260128000001_add_contract_improvements.sql` - إضافة الحقل
-
----
-
-## المقترح 4: نظام "علامات" (Tags) للعقود ✅
-
-### المهام المنجزة:
-- ✅ إنشاء جدول `contract_tags` للعلامات
-- ✅ إنشاء جدول `contract_tag_assignments` لربط العقود بالعلامات
-- ✅ إضافة RLS policies للأمان
-- ✅ إنشاء function للتعليم التلقائي (`auto_tag_contract`)
-- ✅ إضافة trigger للتعليم التلقائي عند تغيير القيم
-
-### العلامات المدعومة:
-- 🟠 قيمة صفرية (zero_amount)
-- 🟡 يحتاج مراجعة (needs_review)
-- 🟣 عقد اختباري (test_contract)
-- 🔵 بانتظار بيانات (pending_data)
-- 🔴 أولوية عالية (high_priority)
-
-### الملفات المعدلة:
-1. `supabase/migrations/20260128000001_add_contract_improvements.sql` - جداول وfunctions
-
----
-
-## المقترح 5: لوحة "العقود التي تحتاج انتباه" ✅
-
-### المهام المنجزة:
-- ✅ إنشاء مكون `ContractsNeedingAttention`
-- ✅ دمج المكون في صفحة العقود
-- ✅ عرض ملخص للمشاكل:
-  - عقود بقيمة صفرية
-  - عقود بدون عميل
-  - عقود بدون مركبة
-  - عقود منتهية ولكن نشطة
-- ✅ عرض أول 5 عقود تحتاج انتباه
-- ✅ زر لعرض جميع العقود
-
-### الملفات المضافة:
-1. `src/components/contracts/ContractsNeedingAttention.tsx` - المكون الجديد
-
-### الملفات المعدلة:
-1. `src/pages/ContractsRedesigned.tsx` - دمج المكون
-
----
-
-## 📊 ملخص التحسينات
-
-### قبل التحسينات:
-- ❌ عدم تطابق بين الإحصائيات والفلاتر
-- ❌ صعوبة تتبع العقود غير المكتملة
-- ❌ عدم وجود نظام تصنيف مرن
-- ❌ عدم وجود تنبيهات استباقية
-
-### بعد التحسينات:
-- ✅ تطابق 100% بين الإحصائيات والفلاتر
-- ✅ فلتر مخصص للعقود غير المكتملة
-- ✅ نظام علامات مرن للتصنيف
-- ✅ لوحة تنبيهات استباقية
-- ✅ حالات فرعية لتتبع دقيق
-- ✅ تعليم تلقائي للعقود
-
----
-
-## 🎯 الفوائد المحققة
-
-### 1. تحسين تجربة المستخدم
-- وضوح أكبر في حالات العقود
-- سهولة الوصول للعقود التي تحتاج إجراء
-- تنبيهات استباقية للمشاكل
-
-### 2. تحسين جودة البيانات
-- تحديد العقود ذات البيانات الناقصة
-- تصنيف تلقائي للعقود
-- تتبع دقيق للحالات
-
-### 3. تحسين الأداء
-- فلترة فعالة على client-side
-- indexes محسّنة للاستعلامات
-- تقليل الاستعلامات المتكررة
-
-### 4. مرونة عالية
-- نظام علامات قابل للتوسع
-- حالات فرعية مخصصة
-- إمكانية إضافة علامات جديدة
-
----
-
-## 📝 الملفات المعدلة والمضافة
-
-### Migrations:
-1. ✅ `supabase/migrations/20260128000001_add_contract_improvements.sql`
-
-### Components:
-1. ✅ `src/components/contracts/ContractsNeedingAttention.tsx` (جديد)
-
-### Pages:
-1. ✅ `src/pages/ContractsRedesigned.tsx`
-
-### Hooks:
-1. ✅ `src/hooks/useContractsData.tsx`
-
----
-
-## 🚀 الخطوات التالية (اختيارية)
-
-### تحسينات مستقبلية:
-1. إضافة واجهة إدارة العلامات (Tags Manager)
-2. إضافة تقارير مفصلة للعقود غير المكتملة
-3. إضافة إشعارات تلقائية للعقود التي تحتاج انتباه
-4. إضافة dashboard مخصص للعقود غير المكتملة
-5. إضافة bulk actions للعقود غير المكتملة
-
-### اختبارات مطلوبة:
-1. ✅ اختبار الفلاتر الجديدة
-2. ✅ اختبار لوحة "العقود التي تحتاج انتباه"
-3. ⏳ اختبار التعليم التلقائي للعقود
-4. ⏳ اختبار الأداء مع عدد كبير من العقود
-5. ⏳ اختبار RLS policies للعلامات
-
----
-
-## 💡 ملاحظات مهمة
-
-### Migration:
-- يجب تشغيل migration على قاعدة البيانات: `20260128000001_add_contract_improvements.sql`
-- Migration آمن ولا يؤثر على البيانات الموجودة
-- يضيف حقول وجداول جديدة فقط
-
-### الأداء:
-- جميع التحسينات محسّنة للأداء
-- Indexes مضافة للحقول الجديدة
-- Filtering على client-side لتقليل الاستعلامات
-
-### الأمان:
-- RLS policies مطبقة على جميع الجداول الجديدة
-- Users يمكنهم فقط رؤية وإدارة بيانات شركتهم
-- Triggers آمنة ولا تؤثر على الأداء
-
----
-
-## ✨ النتيجة النهائية
-
-تم تنفيذ **جميع المقترحات الخمسة** بنجاح! النظام الآن:
-
-1. ✅ يعرض العقود المسودة بشكل صحيح (33 عقد)
-2. ✅ يوفر فلتر للعقود غير المكتملة
-3. ✅ يدعم الحالات الفرعية للتتبع الدقيق
-4. ✅ يوفر نظام علامات مرن للتصنيف
-5. ✅ يعرض لوحة تنبيهات استباقية للعقود التي تحتاج انتباه
-
-**الوقت المستغرق**: ~2 ساعة  
-**عدد الملفات المعدلة**: 4  
-**عدد الملفات المضافة**: 2  
-**عدد الأسطر المضافة**: ~500+
-
----
-
-## 🎉 شكراً!
-
-تم إنجاز جميع التحسينات المطلوبة بنجاح. النظام الآن أكثر قوة ومرونة ووضوحاً للمستخدمين!
+## Review - CSS Updates
+- **Employee Workspace**: Updated "New Note" (ملاحظة جديدة) button color.
+  - Changed background from `bg-amber-100` to `bg-[#F4904E]` (orange).
+  - Updated hover state to `hover:bg-[#F4904E]/90`.
+  - Removed `text-amber-700` as it was overridden by `text-white` in the loop.

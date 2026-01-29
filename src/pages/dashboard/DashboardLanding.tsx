@@ -37,6 +37,7 @@ import {
   Bell,
   Settings,
   MapPin,
+  Briefcase,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -71,7 +72,10 @@ const DashboardLanding: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    console.log('Current user email:', user?.email);
+    console.log('Email check result:', user?.email?.toLowerCase().trim() === 'khamis-1992@hotmail.com');
+    console.log('Email after transform:', user?.email?.toLowerCase().trim());
+  }, [user]);
 
   // Fleet Status Query
   const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
@@ -412,6 +416,30 @@ const DashboardLanding: React.FC = () => {
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
+
+              {/* My Workspace Button */}
+              <motion.button
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg transition-all shadow-md shadow-emerald-500/20"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/employee-workspace')}
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>مساحة عملي</span>
+              </motion.button>
+
+              {/* Team Management Button - Visible only to specific user */}
+              {(user?.email && (user.email.includes('khamis-1992@hotmail.com') || user.email === 'khamis-1992@hotmail.com')) && (
+                <motion.button
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-indigo-700 hover:shadow-lg transition-all shadow-md shadow-indigo-500/20"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/team-management')}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>إدارة الفريق</span>
+                </motion.button>
+              )}
 
               <motion.button
                 className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl text-sm font-semibold hover:from-teal-600 hover:to-teal-700 hover:shadow-lg transition-all shadow-md shadow-teal-500/20"

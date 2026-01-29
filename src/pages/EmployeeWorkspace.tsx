@@ -1,6 +1,6 @@
 /**
- * Employee Workspace Page - Redesigned (Bento Style)
- * صفحة مساحة عمل الموظف - تصميم حديث
+ * Employee Workspace Page - Redesigned
+ * صفحة مساحة عمل الموظف - تصميم احترافي
  */
 
 import React, { useState } from 'react';
@@ -14,14 +14,14 @@ import {
   Clock, 
   AlertCircle,
   Phone,
-  Car,
   FileText,
   DollarSign,
   Calendar,
   Search,
   Star,
+  MoreHorizontal,
   TrendingUp,
-  MoreHorizontal
+  Filter
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,18 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useEmployeeTasks } from '@/hooks/useEmployeeTasks';
 import { useEmployeePerformance } from '@/hooks/useEmployeePerformance';
+import { useMonthlyCollections } from '@/hooks/useMonthlyCollections';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
   QuickPaymentDialog,
@@ -43,65 +49,17 @@ import {
   AddNoteDialog,
 } from '@/components/employee/dialogs';
 import { ExportButton } from '@/components/shared/ExportButton';
-import { exportEmployeeContracts, exportEmployeeTasks } from '@/utils/exportToExcel';
+import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-
-// --- Shared Components ---
-
-const GlassCard = ({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay, type: "spring", bounce: 0.4 }}
-    className={cn(
-      "bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-3xl overflow-hidden",
-      className
-    )}
-  >
-    {children}
-  </motion.div>
-);
-
-const StatCard = ({ title, value, subtitle, icon: Icon, color, delay }: any) => (
-  <GlassCard className="p-6 flex flex-col justify-between h-full group hover:shadow-md transition-all duration-300" delay={delay}>
-    <div className="flex justify-between items-start mb-4">
-      <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110 duration-300", color)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {subtitle && (
-        <span className={cn("text-xs font-bold px-2 py-1 rounded-full bg-white/50", 
-          subtitle.includes('متأخر') ? 'text-red-600 bg-red-50' : 'text-neutral-500'
-        )}>
-          {subtitle}
-        </span>
-      )}
-    </div>
-    <div>
-      <h3 className="text-2xl font-black text-neutral-800 mb-1">{value}</h3>
-      <p className="text-xs font-medium text-neutral-500">{title}</p>
-    </div>
-  </GlassCard>
-);
-
-const ActionButton = ({ icon: Icon, label, color, onClick }: any) => (
-  <motion.button
-    whileHover={{ scale: 1.02, y: -2 }}
-    whileTap={{ scale: 0.98 }}
-    onClick={onClick}
-    className="flex flex-col items-center justify-center p-4 bg-white/50 hover:bg-white/80 border border-white/60 rounded-2xl transition-all shadow-sm gap-3 group"
-  >
-    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-all", color)}>
-      <Icon className="w-6 h-6" />
-    </div>
-    <span className="text-xs font-bold text-neutral-700">{label}</span>
-  </motion.button>
-);
+import { VerificationTasksList } from '@/components/tasks/VerificationTasksList';
 
 export const EmployeeWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { formatCurrency } = useCurrencyFormatter();
-  const [activeTab, setActiveTab] = useState<'overview' | 'contracts' | 'tasks'>('overview');
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Dialog states
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -134,39 +92,51 @@ export const EmployeeWorkspace: React.FC = () => {
     refetch: refetchPerformance
   } = useEmployeePerformance();
 
-  const isLoading = isLoadingContracts || isLoadingTasks || isLoadingPerformance;
+  const {
+    collections,
+    stats: collectionStats,
+    isLoading: isLoadingCollections,
+    refetch: refetchCollections
+  } = useMonthlyCollections();
+
+  const isLoading = isLoadingContracts || isLoadingTasks || isLoadingPerformance || isLoadingCollections;
 
   const handleRefresh = () => {
     refetchContracts();
     refetchTasks();
     refetchPerformance();
+    refetchCollections();
   };
 
   // Quick Actions Configuration
   const quickActions = [
     { 
       icon: Phone, 
-      label: 'مكالمة', 
-      color: 'bg-gradient-to-br from-blue-500 to-blue-600',
-      onClick: () => setShowCallDialog(true)
+      label: 'تسجيل مكالمة', 
+      onClick: () => setShowCallDialog(true),
+      variant: 'default',
+      className: 'bg-blue-600 hover:bg-blue-700'
     },
     { 
       icon: DollarSign, 
-      label: 'دفعة', 
-      color: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
-      onClick: () => setShowPaymentDialog(true)
+      label: 'تسجيل دفعة', 
+      onClick: () => setShowPaymentDialog(true),
+      variant: 'default',
+      className: 'bg-emerald-600 hover:bg-emerald-700'
     },
     { 
       icon: Calendar, 
-      label: 'موعد', 
-      color: 'bg-gradient-to-br from-purple-500 to-purple-600',
-      onClick: () => setShowFollowupDialog(true)
+      label: 'جدولة موعد', 
+      onClick: () => setShowFollowupDialog(true),
+      variant: 'secondary',
+      className: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
     },
     { 
       icon: FileText, 
-      label: 'ملاحظة', 
-      color: 'bg-gradient-to-br from-amber-500 to-amber-600',
-      onClick: () => setShowNoteDialog(true)
+      label: 'ملاحظة جديدة', 
+      onClick: () => setShowNoteDialog(true),
+      variant: 'secondary',
+      className: 'bg-[#8f51d2] hover:bg-[#8f51d2]/90'
     },
   ];
 
@@ -179,333 +149,596 @@ export const EmployeeWorkspace: React.FC = () => {
     balance_due: contract.balance_due || 0,
   }));
 
+  // Filter contracts based on search
+  const filteredContracts = contracts.filter(c => 
+    c.contract_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.customers?.first_name_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.customers?.company_name_ar?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-neutral-100 to-neutral-200 p-6 font-sans" dir="rtl">
+    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 font-sans" dir="rtl">
       
       {/* --- Header --- */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3 mb-2"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20 text-white">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2 bg-teal-100 rounded-lg text-teal-700">
               <Briefcase className="w-6 h-6" />
             </div>
-            <div>
-              <h1 className="text-2xl font-black text-neutral-900">مساحة عملي</h1>
-              <p className="text-sm text-neutral-500 font-medium">أهلاً بك، {user?.email?.split('@')[0]}</p>
-            </div>
-          </motion.div>
+            <h1 className="text-2xl font-bold text-gray-900">مساحة عملي</h1>
+          </div>
+          <p className="text-sm text-gray-500 mr-12">
+            أهلاً بك، {user?.email?.split('@')[0]} - إليك ملخص أعمالك اليوم
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
           <NotificationBell />
+          
           <ExportButton
             onExportExcel={async () => {
-              if (activeTab === 'contracts') {
-                exportEmployeeContracts(contracts, user?.email?.split('@')[0] || 'موظف');
-              } else if (activeTab === 'tasks') {
-                exportEmployeeTasks(tasks, user?.email?.split('@')[0] || 'موظف');
+              try {
+                await exportEmployeeWorkspaceReport({
+                  employeeName: user?.email?.split('@')[0] || 'موظف',
+                  contracts,
+                  tasks,
+                  performance: performance || null,
+                  performanceGrade: performanceGrade || null,
+                  collections,
+                  stats: {
+                    contractStats,
+                    taskStats,
+                    collectionStats
+                  }
+                });
+                toast({
+                  title: 'تم التصدير بنجاح',
+                  description: 'تم تصدير التقرير الشامل إلى Excel',
+                });
+              } catch (error) {
+                console.error('Export error:', error);
+                toast({
+                  title: 'خطأ في التصدير',
+                  description: error instanceof Error ? error.message : 'فشل تصدير التقرير',
+                  variant: 'destructive',
+                });
               }
             }}
-            label="تصدير"
+            label="تصدير تقرير شامل (Excel)"
             variant="outline"
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="bg-white/50 backdrop-blur-md border-neutral-200 hover:bg-white text-neutral-600 rounded-xl"
-          >
-            <ArrowRight className="ml-2 h-4 w-4" />
-            الرئيسية
-          </Button>
+          
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={isLoading}
-            className="bg-white/50 backdrop-blur-md border-neutral-200 hover:bg-white text-neutral-600 rounded-xl"
+            className="h-9"
           >
             <RefreshCw className={cn("ml-2 h-4 w-4", isLoading && "animate-spin")} />
             تحديث
           </Button>
+
+           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/dashboard')}
+            className="h-9"
+          >
+            <ArrowRight className="ml-2 h-4 w-4" />
+            الرئيسية
+          </Button>
         </div>
       </header>
 
-      {/* --- Main Layout --- */}
+      {/* --- Stats Overview --- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
+          <CardContent className="p-6 flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">إجمالي العقود</p>
+              <h3 className="text-2xl font-bold text-gray-900">{contractStats.totalContracts}</h3>
+              <p className="text-xs text-teal-600 mt-1 font-medium">{contractStats.activeContracts} عقد نشط</p>
+            </div>
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <FileText className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
+          <CardContent className="p-6 flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">المبالغ المستحقة</p>
+              <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(contractStats.totalBalanceDue)}</h3>
+              <p className="text-xs text-amber-600 mt-1 font-medium">تحصيل مطلوب</p>
+            </div>
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
+          <CardContent className="p-6 flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">مهام اليوم</p>
+              <h3 className="text-2xl font-bold text-gray-900">{taskStats.todayTasks}</h3>
+              <p className="text-xs text-emerald-600 mt-1 font-medium">{taskStats.completionRate}% نسبة الإنجاز</p>
+            </div>
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-gray-200 hover:border-teal-200 transition-colors">
+          <CardContent className="p-6 flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">نقاط الأداء</p>
+              <h3 className="text-2xl font-bold text-gray-900">{performance ? Math.round(performance.performance_score) : 0}</h3>
+              <p className="text-xs text-purple-600 mt-1 font-medium">{performanceGrade?.label_ar || 'جيد'}</p>
+            </div>
+            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+              <Star className="w-5 h-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-12 gap-6">
         
-        {/* Left Column (Stats & Main Content) */}
+        {/* --- Main Content (Left) --- */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
           
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard 
-              title="إجمالي العقود" 
-              value={contractStats.totalContracts} 
-              subtitle={`${contractStats.activeContracts} نشط`}
-              icon={FileText} 
-              color="bg-blue-500" 
-              delay={0.1}
-            />
-            <StatCard 
-              title="المبالغ المستحقة" 
-              value={formatCurrency(contractStats.totalBalanceDue)} 
-              subtitle={contractStats.totalBalanceDue > 0 ? "متأخر" : "لا يوجد"}
-              icon={DollarSign} 
-              color="bg-amber-500" 
-              delay={0.2}
-            />
-            <StatCard 
-              title="مهام اليوم" 
-              value={`${taskStats.todayTasks}`} 
-              subtitle={`${taskStats.completionRate}% منجز`}
-              icon={CheckCircle} 
-              color="bg-emerald-500" 
-              delay={0.3}
-            />
-            <StatCard 
-              title="نقاط الأداء" 
-              value={performance ? Math.round(performance.performance_score) : 0} 
-              subtitle={performanceGrade?.label_ar}
-              icon={Star} 
-              color="bg-purple-500" 
-              delay={0.4}
-            />
-          </div>
-
-          {/* Tasks & Priorities Section */}
-          <GlassCard className="min-h-[500px]" delay={0.5}>
-            <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-              <div className="flex gap-2 bg-neutral-100 p-1 rounded-xl">
-                {['overview', 'contracts', 'tasks'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab as any)}
-                    className={cn(
-                      "px-4 py-2 rounded-lg text-xs font-bold transition-all",
-                      activeTab === tab 
-                        ? "bg-white text-teal-600 shadow-sm" 
-                        : "text-neutral-500 hover:text-neutral-700"
-                    )}
-                  >
-                    {tab === 'overview' && 'نظرة عامة'}
-                    {tab === 'contracts' && `العقود (${contractStats.totalContracts})`}
-                    {tab === 'tasks' && `المهام (${taskStats.totalTasks})`}
-                  </button>
-                ))}
-              </div>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <MoreHorizontal className="w-5 h-5 text-neutral-400" />
-              </Button>
+          <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+            <div className="flex items-center justify-between mb-4">
+              <TabsList className="bg-white border p-1 h-auto">
+                <TabsTrigger value="overview" className="px-4 py-2 text-sm">نظرة عامة</TabsTrigger>
+                <TabsTrigger value="collections" className="px-4 py-2 text-sm">التحصيل الشهري</TabsTrigger>
+                <TabsTrigger value="contracts" className="px-4 py-2 text-sm">العقود ({contractStats.totalContracts})</TabsTrigger>
+                <TabsTrigger value="tasks" className="px-4 py-2 text-sm">المهام ({taskStats.totalTasks})</TabsTrigger>
+              </TabsList>
             </div>
 
-            <ScrollArea className="h-[450px] p-6">
-              <AnimatePresence mode="wait">
-                
-                {/* View: Overview */}
-                {activeTab === 'overview' && (
-                  <motion.div 
-                    key="overview"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-6"
-                  >
-                    {/* Priority Contracts */}
-                    <div>
-                      <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-500" />
-                        يحتاج اهتمامك
-                      </h3>
-                      {priorityContracts.length > 0 ? (
-                        <div className="space-y-3">
-                          {priorityContracts.slice(0, 3).map((contract, idx) => (
-                            <div key={contract.id} className="group p-4 rounded-2xl bg-gradient-to-r from-red-50/50 to-transparent border border-red-100 hover:border-red-200 transition-all cursor-pointer">
-                              <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-lg">
-                                    {contract.priority_reason === 'overdue_payment' ? '💰' : '⚠️'}
-                                  </div>
-                                  <div>
-                                    <h4 className="text-sm font-bold text-neutral-900">{contract.customer_name}</h4>
-                                    <p className="text-xs text-neutral-500 mt-0.5">عقد #{contract.contract_number}</p>
-                                  </div>
-                                </div>
-                                <Badge variant="outline" className="bg-white/80 border-red-200 text-red-700 text-[10px]">
-                                  {contract.priority_reason_ar}
-                                </Badge>
-                              </div>
-                              <div className="mt-3 flex items-center gap-4 text-xs font-medium text-neutral-600">
-                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> تأخير {contract.days_overdue} يوم</span>
-                                <span className="flex items-center gap-1 text-red-600 font-bold"><DollarSign className="w-3 h-3" /> {formatCurrency(contract.balance_due)}</span>
-                              </div>
-                            </div>
-                          ))}
+            {/* View: Overview */}
+            <TabsContent value="overview" className="space-y-6 mt-0">
+              
+              {/* Priority Section */}
+              {priorityContracts.length > 0 && (
+                <Card className="border-l-4 border-l-amber-500 shadow-sm overflow-hidden">
+                  <CardHeader className="bg-amber-50/30 pb-3 border-b border-amber-100/50">
+                    <CardTitle className="text-sm font-bold text-amber-800 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      يحتاج اهتمامك الفوري
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {priorityContracts.slice(0, 3).map((contract, idx) => (
+                      <div 
+                        key={contract.id} 
+                        className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-amber-50/10 transition-colors cursor-pointer"
+                        onClick={() => {
+                           setSelectedContractId(contract.id);
+                           // Optional: Open contract details or highlight
+                        }}
+                      >
+                        <div className="flex items-center gap-4">
+                           <div className="flex flex-col items-center justify-center w-10 h-10 rounded-full bg-amber-100 text-amber-600 text-xs font-bold">
+                             {idx + 1}
+                           </div>
+                           <div>
+                             <h4 className="font-semibold text-gray-900">{contract.customer_name}</h4>
+                             <p className="text-xs text-gray-500">عقد #{contract.contract_number}</p>
+                           </div>
                         </div>
-                      ) : (
-                        <div className="text-center py-8 bg-neutral-50/50 rounded-2xl border border-dashed border-neutral-200">
-                          <p className="text-sm text-neutral-500">لا توجد عقود تحتاج اهتمام فوري 🎉</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Today's Tasks */}
-                    <div>
-                      <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-blue-500" />
-                        مهام اليوم
-                      </h3>
-                      {todayTasks.length > 0 ? (
-                        <div className="space-y-3">
-                          {todayTasks.map((task, idx) => (
-                            <div key={task.id} className="flex items-center p-3 bg-white rounded-xl border border-neutral-100 shadow-sm hover:shadow-md transition-all">
-                              <div className={cn("w-2 h-10 rounded-full mr-3", 
-                                task.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'
-                              )} />
-                              <div className="flex-1">
-                                <h4 className="text-sm font-bold text-neutral-800 line-clamp-1">{task.title_ar || task.title}</h4>
-                                <div className="flex items-center gap-3 mt-1 text-xs text-neutral-500">
-                                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {task.scheduled_time || '09:00 ص'}</span>
-                                  <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" /> {task.customer_name}</span>
-                                </div>
-                              </div>
-                              <Button size="sm" variant={task.status === 'completed' ? "ghost" : "default"} className={cn("rounded-lg h-8 text-xs", task.status === 'completed' && "text-emerald-600")}>
-                                {task.status === 'completed' ? <CheckCircle className="w-4 h-4" /> : "إنجاز"}
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 bg-neutral-50/50 rounded-2xl border border-dashed border-neutral-200">
-                          <p className="text-sm text-neutral-500">لا مهام مجدولة لليوم</p>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* View: Contracts List */}
-                {activeTab === 'contracts' && (
-                  <motion.div
-                    key="contracts"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="grid grid-cols-1 gap-3"
-                  >
-                    <div className="relative mb-4">
-                      <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-                      <input 
-                        type="text" 
-                        placeholder="بحث في عقودي..." 
-                        className="w-full bg-neutral-50 border-none rounded-xl py-2.5 pr-10 pl-4 text-sm focus:ring-2 focus:ring-teal-500/20 outline-none"
-                      />
-                    </div>
-                    {contracts.map((contract) => (
-                      <div key={contract.id} className="p-4 bg-white rounded-2xl border border-neutral-100 shadow-sm hover:border-teal-200 transition-all cursor-pointer group">
-                        <div className="flex justify-between">
-                          <div className="flex gap-3">
-                            <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-lg">
-                              👤
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-bold text-neutral-900 group-hover:text-teal-600 transition-colors">
-                                {contract.customers?.first_name_ar || contract.customers?.company_name_ar}
-                              </h4>
-                              <p className="text-xs text-neutral-500">#{contract.contract_number}</p>
-                            </div>
-                          </div>
-                          <Badge variant="outline" className={cn("h-6", 
-                            contract.status === 'active' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-neutral-50 text-neutral-600"
-                          )}>
-                            {contract.status === 'active' ? 'نشط' : contract.status}
+                        <div className="text-left">
+                          <Badge variant="outline" className="bg-white border-amber-200 text-amber-700 mb-1">
+                            {contract.priority_reason_ar}
                           </Badge>
+                          <p className="text-xs text-red-600 font-bold flex items-center justify-end gap-1">
+                            {contract.priority_reason === 'overdue_payment' ? (
+                               <>{formatCurrency(contract.balance_due)} مستحق</>
+                            ) : (
+                               <>متأخر {contract.days_overdue} يوم</>
+                            )}
+                          </p>
                         </div>
                       </div>
                     ))}
-                  </motion.div>
-                )}
+                  </CardContent>
+                </Card>
+              )}
 
-              </AnimatePresence>
-            </ScrollArea>
-          </GlassCard>
+              {/* Today's Tasks */}
+              <Card className="shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-teal-600" />
+                    مهام اليوم
+                  </CardTitle>
+                  <Badge variant="secondary" className="font-normal">
+                    {todayTasks.length} مهام متبقية
+                  </Badge>
+                </CardHeader>
+                <CardContent>
+                  {todayTasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {todayTasks.map((task) => (
+                        <div 
+                          key={task.id} 
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-xl border transition-all",
+                            task.status === 'completed' 
+                              ? "bg-gray-50 border-gray-100 opacity-70" 
+                              : "bg-white border-gray-100 hover:border-teal-200 hover:shadow-sm"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full",
+                              task.status === 'completed' ? "bg-gray-300" : "bg-teal-500"
+                            )} />
+                            <div>
+                              <p className={cn(
+                                "text-sm font-medium",
+                                task.status === 'completed' ? "text-gray-500 line-through" : "text-gray-900"
+                              )}>
+                                {task.title_ar || task.title}
+                              </p>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> {task.scheduled_time || '09:00 ص'}
+                                </span>
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                  <Briefcase className="w-3 h-3" /> {task.customer_name}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {task.status !== 'completed' && (
+                            <Button size="sm" variant="outline" className="h-8 text-xs hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200">
+                              إنجاز
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 bg-gray-50/50 rounded-xl border border-dashed">
+                      <p className="text-gray-500 text-sm">لا توجد مهام مجدولة لهذا اليوم 🎉</p>
+                      <Button variant="link" className="text-teal-600 text-xs mt-2" onClick={() => setShowFollowupDialog(true)}>
+                        + إضافة مهمة جديدة
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+            </TabsContent>
+
+            {/* View: Monthly Collections */}
+            <TabsContent value="collections" className="space-y-6 mt-0">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="bg-white border shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-500 mb-1">المستهدف هذا الشهر</p>
+                    <h3 className="text-xl font-bold text-gray-900">{formatCurrency(collectionStats.totalDue)}</h3>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-500 mb-1">تم تحصيله</p>
+                    <h3 className="text-xl font-bold text-emerald-600">{formatCurrency(collectionStats.totalCollected)}</h3>
+                    <Progress value={collectionStats.collectionRate} className="h-1.5 mt-2 bg-emerald-100" />
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-500 mb-1">المتبقي</p>
+                    <h3 className="text-xl font-bold text-amber-600">{formatCurrency(collectionStats.totalPending)}</h3>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Collections List */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col sm:flex-row justify-between gap-4">
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-emerald-600" />
+                      قائمة التحصيل الشهري
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[500px] pr-4">
+                    {collections.length > 0 ? (
+                      <div className="space-y-3">
+                        {collections.map((item) => (
+                          <div 
+                            key={item.invoice_id} 
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-emerald-200 hover:shadow-sm transition-all bg-white group"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div className={cn(
+                                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
+                                item.status === 'paid' ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
+                              )}>
+                                {item.status === 'paid' ? <CheckCircle className="w-5 h-5" /> : <DollarSign className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                                  {item.customer_name}
+                                </h4>
+                                <p className="text-xs text-gray-500 flex items-center gap-2">
+                                  <span>عقد #{item.contract_number}</span>
+                                  <span className="text-gray-300">•</span>
+                                  <span>فاتورة #{item.invoice_number}</span>
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                              <div className="text-left">
+                                <p className="font-bold text-gray-900">{formatCurrency(item.amount)}</p>
+                                <p className="text-xs text-gray-500">استحقاق: {new Date(item.due_date).toLocaleDateString('ar-EG')}</p>
+                              </div>
+                              
+                              {item.status === 'paid' ? (
+                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200">
+                                  مدفوع
+                                </Badge>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                    غير مدفوع
+                                  </Badge>
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
+                                    onClick={() => {
+                                      navigate(`/finance/payments/quick?customerId=${item.customer_id}&customerName=${encodeURIComponent(item.customer_name)}`);
+                                    }}
+                                  >
+                                    تسجيل دفعة
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className="text-gray-500">لا توجد مستحقات لهذا الشهر</p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* View: Contracts */}
+            <TabsContent value="contracts" className="mt-0">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col sm:flex-row justify-between gap-4">
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      سجل العقود
+                    </CardTitle>
+                    <div className="relative w-full sm:w-64">
+                      <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+                      <Input
+                        placeholder="بحث برقم العقد أو الاسم..."
+                        className="pr-9"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[500px] pr-4">
+                    <div className="space-y-3">
+                      {filteredContracts.length > 0 ? filteredContracts.map((contract) => (
+                        <div 
+                          key={contract.id} 
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all bg-white group"
+                        >
+                          <div 
+                            className="flex items-center gap-4 mb-3 sm:mb-0 cursor-pointer"
+                            onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
+                          >
+                            <Avatar className="h-10 w-10 border bg-gray-50">
+                              <AvatarFallback className="text-blue-600 bg-blue-50 font-bold">
+                                {contract.customers?.first_name_ar?.[0] || 'C'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                                {contract.customers?.first_name_ar || contract.customers?.company_name_ar}
+                              </h4>
+                              <p className="text-xs text-gray-500 flex items-center gap-2">
+                                <span>#{contract.contract_number}</span>
+                                <span className="text-gray-300">•</span>
+                                <span className={cn(
+                                  "font-medium",
+                                  (contract.balance_due || 0) > 0 ? "text-amber-600" : "text-emerald-600"
+                                )}>
+                                  {(contract.balance_due || 0) > 0 ? `مستحق: ${formatCurrency(contract.balance_due || 0)}` : 'مدفوع بالكامل'}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 self-end sm:self-auto">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 rounded-full"
+                              onClick={() => {
+                                 // Construct URL with parameters for pre-selecting the customer
+                                 const customerName = contract.customers?.first_name_ar || contract.customers?.company_name_ar || '';
+                                 const customerId = contract.customer_id;
+                                 const phone = contract.customers?.phone || '';
+                                 
+                                 // Navigate to Quick Payment page with params
+                                 navigate(`/finance/payments/quick?customerId=${customerId}&customerName=${encodeURIComponent(customerName)}&phone=${phone}`);
+                              }}
+                              title="تسجيل دفعة"
+                            >
+                              <DollarSign className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-purple-600 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 rounded-full"
+                              onClick={() => {
+                                 setSelectedContractId(contract.id);
+                                 setShowNoteDialog(true);
+                              }}
+                              title="إضافة ملاحظة"
+                            >
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 rounded-full"
+                              onClick={() => {
+                                 setSelectedContractId(contract.id);
+                                 setShowFollowupDialog(true);
+                              }}
+                              title="جدولة متابعة"
+                            >
+                              <Calendar className="w-4 h-4" />
+                            </Button>
+
+                            <Badge variant={contract.status === 'active' ? 'default' : 'secondary'} className={cn(
+                              contract.status === 'active' ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : ""
+                            )}>
+                              {contract.status === 'active' ? 'نشط' : 
+                               contract.status === 'under_legal_procedure' ? 'تحت الإجراء القانوني' :
+                               contract.status}
+                            </Badge>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="text-center py-12">
+                           <p className="text-gray-500">لا توجد عقود مطابقة للبحث</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* View: Tasks */}
+            <TabsContent value="tasks" className="mt-0">
+               <Card className="shadow-sm">
+                 <CardHeader>
+                    <CardTitle className="text-lg font-bold">جميع المهام</CardTitle>
+                    <CardDescription>عرض وإدارة جميع المهام المجدولة والسابقة</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                    <ScrollArea className="h-[500px]">
+                      <div className="space-y-2">
+                        {tasks.map((task) => (
+                           <div key={task.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                              <div className="flex justify-between items-start">
+                                 <div>
+                                    <h4 className="font-medium text-gray-900">{task.title_ar || task.title}</h4>
+                                    <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                                       <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {task.scheduled_date}</span>
+                                       <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {task.scheduled_time}</span>
+                                    </div>
+                                 </div>
+                                 <Badge variant={task.status === 'completed' ? 'secondary' : 'outline'}>
+                                    {task.status === 'completed' ? 'مكتمل' : 'قيد الانتظار'}
+                                 </Badge>
+                              </div>
+                           </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                 </CardContent>
+               </Card>
+            </TabsContent>
+          </Tabs>
 
         </div>
 
-        {/* Right Column (Sidebar) */}
+        {/* --- Sidebar (Right) --- */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           
-          {/* Performance Card */}
-          <GlassCard className="relative p-6 bg-gradient-to-b from-[#11A798] to-[#2FC6B5] text-white border-none" delay={0.6}>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-10 translate-x-10" />
-            
-            <div className="relative z-10 text-center mb-6">
-              <h3 className="text-sm font-medium text-teal-100 mb-2">أداؤك الشهري</h3>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-5xl font-black">{performance ? Math.round(performance.performance_score) : 0}</span>
-                <span className="text-xl text-teal-200">/ 100</span>
-              </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold">
-                <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
-                {performanceGrade?.label_ar || 'جيد'}
-              </div>
-            </div>
+          {/* Verification Tasks */}
+          <VerificationTasksList limit={5} />
 
-            <div className="space-y-4 relative z-10">
+          {/* Performance Detailed */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-bold">تحليل الأداء</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-2">
+              
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs font-medium text-teal-100">
-                  <span>نسبة التحصيل</span>
-                  <span>{performance ? Math.round(performance.collection_rate) : 0}%</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">نسبة التحصيل</span>
+                  <span className="font-bold text-gray-900">{performance ? Math.round(performance.collection_rate) : 0}%</span>
                 </div>
-                <Progress value={performance?.collection_rate || 0} className="h-2 bg-teal-900/30" indicatorClassName="bg-emerald-400" />
+                <Progress value={performance?.collection_rate || 0} className="h-2" />
               </div>
+
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs font-medium text-teal-100">
-                  <span>إنجاز المهام</span>
-                  <span>{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">إنجاز المهام</span>
+                  <span className="font-bold text-gray-900">{performance ? Math.round(performance.followup_completion_rate) : 0}%</span>
                 </div>
-                <Progress value={performance?.followup_completion_rate || 0} className="h-2 bg-teal-900/30" indicatorClassName="bg-blue-400" />
+                <Progress value={performance?.followup_completion_rate || 0} className="h-2" />
               </div>
-            </div>
-          </GlassCard>
+              
+              <Separator />
+              
+              <div className="pt-2">
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  أداؤك هذا الشهر {performanceGrade?.label_ar === 'ممتاز' ? 'رائع!' : 'جيد.'} استمر في متابعة العملاء المتأخرين لتحسين نسبة التحصيل لديك.
+                </p>
+              </div>
 
-          {/* Quick Actions */}
-          <GlassCard className="p-5" delay={0.7}>
-            <h3 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-teal-600" />
-              إجراء سريع
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {quickActions.map((action, idx) => (
-                <ActionButton key={idx} {...action} />
-              ))}
-            </div>
-          </GlassCard>
+            </CardContent>
+          </Card>
 
-          {/* Activity Log Preview */}
-          <GlassCard className="p-5" delay={0.8}>
-            <h3 className="text-sm font-bold text-neutral-900 mb-4">آخر النشاطات</h3>
-            <div className="space-y-4">
-              {[1, 2].map((_, i) => (
-                <div key={i} className="flex gap-3 relative pb-4 border-l border-neutral-200 last:border-0 last:pb-0 mr-1.5 pr-4">
-                  <div className="absolute -right-1.5 top-0 w-3 h-3 rounded-full bg-neutral-200 border-2 border-white ring-1 ring-neutral-100" />
-                  <div>
-                    <p className="text-xs text-neutral-800 font-medium">تم تسجيل دفعة جديدة</p>
-                    <p className="text-[10px] text-neutral-400 mt-0.5">منذ 2 ساعة • عقد #1234</p>
+          {/* Activity Log (Simplified) */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold">النشاط الأخير</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative border-r border-gray-200 mr-2 space-y-6">
+                {[1, 2, 3].map((_, i) => (
+                  <div key={i} className="relative pr-6">
+                    <div className="absolute -right-[5px] top-1 w-2.5 h-2.5 rounded-full bg-gray-200 ring-4 ring-white" />
+                    <p className="text-sm font-medium text-gray-900">تم تحديث حالة العقد #123{i}</p>
+                    <p className="text-xs text-gray-500 mt-1">منذ {i + 2} ساعات</p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* --- Dialogs --- */}
       <QuickPaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}

@@ -173,7 +173,8 @@ const InvoiceDisputes = lazy(() => import('@/pages/legal/InvoiceDisputes'));
 const SmartDocumentGenerator = lazy(() => import('@/pages/legal/SmartDocumentGenerator'));
 const CompanyLegalDocuments = lazy(() => import('@/pages/legal/CompanyLegalDocuments'));
 // OverdueContracts merged into FinancialDelinquency
-const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));
+// LawsuitPreparation now uses the new folder-based architecture
+const LawsuitPreparation = lazy(() => import('@/pages/legal/LawsuitPreparation'));  
 const LawsuitDocumentsView = lazy(() => import('@/pages/legal/LawsuitDocumentsView'));
 const FinancialDelinquency = lazy(() => import('@/pages/legal/FinancialDelinquency'));
 const CustomerVerificationPage = lazy(() => import('@/pages/legal/CustomerVerificationPage'));
