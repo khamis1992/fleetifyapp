@@ -9,7 +9,7 @@ import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { User, Settings, LogOut } from 'lucide-react';
+import { User, Settings, LogOut, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QuickSearch } from '@/components/navigation/QuickSearch';
 import { KeyboardShortcuts } from '@/components/navigation/KeyboardShortcuts';
@@ -83,6 +83,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               
               {/* Attendance Button */}
               <HeaderAttendanceButton />
+              
+              {/* Team Management Button - Only for khamis-1992@hotmail.com */}
+              {user?.email === 'khamis-1992@hotmail.com' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/team-management')}
+                  className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white border-0 shadow-sm hover:shadow-md transition-all"
+                >
+                  <Users className="h-4 w-4" />
+                  <span className="hidden md:inline">إدارة الفريق</span>
+                </Button>
+              )}
               
               {/* User Info in Header */}
             <DropdownMenu>

@@ -47,6 +47,10 @@ const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const DashboardLanding = lazy(() => import('@/pages/dashboard/DashboardLanding'));
 const EmployeeWorkspace = lazy(() => import('@/pages/EmployeeWorkspace'));
+const TeamManagement = lazy(() => import('@/pages/TeamManagement'));
+const TeamReports = lazy(() => import('@/pages/TeamReports'));
+const TeamEmployeeDetails = lazy(() => import('@/pages/EmployeeDetails'));
+const EmployeeDetailedReport = lazy(() => import('@/pages/EmployeeDetailedReport'));
 const Finance = lazy(() => import('@/pages/Finance'));
 const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
@@ -479,6 +483,30 @@ const routeConfigs: RouteConfig[] = [
   {
     path: '/employee-workspace',
     component: EmployeeWorkspace,
+    lazy: true,
+    exact: true,
+  },
+  {
+    path: '/team-management',
+    component: TeamManagement,
+    lazy: true,
+    exact: true,
+  },
+  {
+    path: '/team-reports',
+    component: TeamReports,
+    lazy: true,
+    exact: true,
+  },
+  {
+    path: '/employee/:employeeId',
+    component: TeamEmployeeDetails,
+    lazy: true,
+    exact: true,
+  },
+  {
+    path: '/employee/:employeeId/report',
+    component: EmployeeDetailedReport,
     lazy: true,
     exact: true,
     title: 'Employee Workspace',

@@ -42,6 +42,9 @@ import {
   ScheduleFollowupDialog,
   AddNoteDialog,
 } from '@/components/employee/dialogs';
+import { ExportButton } from '@/components/shared/ExportButton';
+import { exportEmployeeContracts, exportEmployeeTasks } from '@/utils/exportToExcel';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 // --- Shared Components ---
 
@@ -198,6 +201,18 @@ export const EmployeeWorkspace: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <NotificationBell />
+          <ExportButton
+            onExportExcel={async () => {
+              if (activeTab === 'contracts') {
+                exportEmployeeContracts(contracts, user?.email?.split('@')[0] || 'موظف');
+              } else if (activeTab === 'tasks') {
+                exportEmployeeTasks(tasks, user?.email?.split('@')[0] || 'موظف');
+              }
+            }}
+            label="تصدير"
+            variant="outline"
+          />
           <Button
             variant="outline"
             size="sm"
