@@ -1,9 +1,10 @@
-import { useState, type ChangeEvent, type FormEvent, type FC } from 'react';
+import { useState, type ChangeEvent, type FormEvent, type FC, useEffect } from 'react';
 import { Eye, EyeOff, CheckCircle, Shield, Zap, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -12,13 +13,49 @@ import { supabase } from '@/integrations/supabase/client';
 export const AuthForm: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
+  // Constants for localStorage keys
+  const REMEMBER_ME_KEY = 'fleetify_remember_me';
+  const REMEMBERED_EMAIL_KEY = 'fleetify_remembered_email';
+  const REMEMBERED_PASSWORD_KEY = 'fleetify_remembered_password';
+
   const { signIn } = useAuth();
   const { toast } = useToast();
+
+  // Load saved credentials on component mount
+  useEffect(() => {
+    const loadSavedCredentials = () => {
+      try {
+        // Check if remember me was enabled
+        const rememberMeEnabled = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+        if (rememberMeEnabled) {
+          const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+          const savedPassword = localStorage.getItem(REMEMBERED_PASSWORD_KEY);
+
+          if (savedEmail && savedPassword) {
+            setFormData({
+              email: savedEmail,
+              password: savedPassword
+            });
+            setRememberMe(true);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load saved credentials:', error);
+        // Clear potentially corrupted data
+        localStorage.removeItem(REMEMBER_ME_KEY);
+        localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+        localStorage.removeItem(REMEMBERED_PASSWORD_KEY);
+      }
+    };
+
+    loadSavedCredentials();
+  }, []); // Empty dependency array - only run on mount
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -30,21 +67,41 @@ export const AuthForm: FC = () => {
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
-    
+
     setIsLoading(true);
 
     try {
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        try {
+          localStorage.setItem(REMEMBER_ME_KEY, 'true');
+          localStorage.setItem(REMEMBERED_EMAIL_KEY, formData.email);
+          localStorage.setItem(REMEMBERED_PASSWORD_KEY, formData.password);
+        } catch (error) {
+          console.warn('Failed to save credentials:', error);
+        }
+      } else {
+        // Clear saved credentials if remember me is unchecked
+        try {
+          localStorage.removeItem(REMEMBER_ME_KEY);
+          localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+          localStorage.removeItem(REMEMBERED_PASSWORD_KEY);
+        } catch (error) {
+          console.warn('Failed to clear saved credentials:', error);
+        }
+      }
+
       const { error } = await signIn(formData.email, formData.password);
-      
+
       if (error) {
         let errorMessage = 'خطأ في تسجيل الدخول';
-        
+
         if (error.message.includes('Invalid login credentials')) {
           errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = 'يرجى تأكيد البريد الإلكتروني أولاً';
         }
-        
+
         toast({
           title: "خطأ",
           description: errorMessage,
@@ -388,7 +445,29 @@ export const AuthForm: FC = () => {
                   </div>
                 </motion.div>
 
-                <motion.div 
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.55 }}
+                >
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      disabled={isLoading}
+                      className="border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                    />
+                    <label
+                      htmlFor="remember"
+                      className="text-sm text-slate-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      تذكر بياناتي
+                    </label>
+                  </div>
+                </motion.div>
+
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}

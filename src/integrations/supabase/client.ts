@@ -44,19 +44,34 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
   // Add retry logic for better reliability
   global: {
     headers: { 'x-client-info': 'fleetify-web' },
-    fetch: (url, options) => {
-      // Add timeout to prevent hanging requests
-      // Log requests that take too long
-      const timeoutMs = 15000; // Increased to 15s to be safe
-      return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) =>
-          setTimeout(() => {
-            console.warn(`[SUPABASE] Request timed out after ${timeoutMs}ms:`, url);
-            reject(new Error('Request timeout'));
-          }, timeoutMs)
-        )
-      ]);
+    fetch: async (url, options, retries = 2, delay = 1000) => {
+      // Add timeout to prevent hanging requests with retry logic
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const timeoutMs = 25000; // Increased to 25s for slow networks
+          const response = await Promise.race([
+            fetch(url, options),
+            new Promise((_, reject) =>
+              setTimeout(() => {
+                console.warn(`[SUPABASE] Attempt ${attempt + 1}: Request timed out after ${timeoutMs}ms:`, url);
+                reject(new Error('Request timeout'));
+              }, timeoutMs)
+            )
+          ]);
+
+          if (response.ok || attempt === retries - 1) {
+            return response;
+          }
+        } catch (error) {
+          if (attempt === retries - 1) {
+            console.error(`[SUPABASE] All ${retries} attempts failed for:`, url);
+            throw error;
+          }
+          console.warn(`[SUPABASE] Attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2; // Exponential backoff
+        }
+      }
     },
   },
   // Realtime configuration for better performance

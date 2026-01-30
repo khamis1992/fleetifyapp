@@ -82,6 +82,18 @@ export const authService = {
 
   async signIn(email: string, password: string) {
     try {
+      // Add timeout wrapper for signIn operation
+      const signInWithTimeout = async () => {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Authentication timeout - please try again')), 30000)
+        );
+
+        return Promise.race([
+          supabase.auth.signInWithPassword({ email, password }),
+          timeoutPromise
+        ]);
+      };
+
       // Validate input with rate limiting
       const validation = withRateLimit('signin', async () => {
         return validateInput(loginSchema, { email, password });
@@ -93,15 +105,24 @@ export const authService = {
         return { error: new Error(errorMessage) };
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: validationResult.data!.email,
-        password: validationResult.data!.password
-      });
+      const { error } = await signInWithTimeout();
 
       return { error };
     } catch (error) {
       console.error('📝 [AUTH_SERVICE] Sign in error:', error);
-      return { error: error instanceof Error ? error : new Error('خطأ غير معروف في تسجيل الدخول') };
+      let errorMessage = 'حدث خطأ أثناء تسجيل الدخول';
+
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'انتهت مهلة الاتصال. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى';
+        } else if (error.message.includes('Network')) {
+          errorMessage = 'خطأ في الشبكة. يرجى التحقق من الاتصال والمحاولة مرة أخرى';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      return { error: new Error(errorMessage) };
     }
   },
 

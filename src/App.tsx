@@ -290,7 +290,10 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
+      <BrowserRouter future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}>
         <QueryClientProvider client={queryClient}>
           {/* Temporarily disabled ThemeProvider for debugging */}
           {/* <ThemeProvider
@@ -319,12 +322,7 @@ const App: React.FC = () => {
                                 </SuspenseBoundary>
 
                                 {/* Global UI Components */}
-                                {/* Temporarily disabled CommandPalette for debugging */}
-                                {false && (
-                                  <Suspense fallback={<Skeleton className="h-10 w-64" />}>
-                                    <CommandPalette />
-                                  </Suspense>
-                                )}
+                                {/* CommandPalette disabled for now */}
 
                                 {/* PWA Install Prompt */}
                                 {APP_CONFIG.ENABLE_PWA && (

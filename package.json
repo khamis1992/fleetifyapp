@@ -71,6 +71,7 @@
     "fix:contract-status": "tsx scripts/fix-contract-status.ts",
     "check:env": "tsx scripts/check-env.ts",
     "verify:deployment": "tsx scripts/check-env.ts && npm run build",
+    "test:login": "node test-login.js",
     "type-check": "tsc --noEmit",
     "type-coverage": "type-coverage",
     "type-coverage:detail": "type-coverage --detail",
