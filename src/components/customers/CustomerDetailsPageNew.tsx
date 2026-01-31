@@ -3025,6 +3025,46 @@ const CustomerDetailsPageNew = () => {
     if (!customerId || !companyId) return;
 
     try {
+      // التحقق من وجود عقود نشطة
+      const { data: activeContracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id, contract_number, status')
+        .eq('customer_id', customerId)
+        .in('status', ['active', 'pending', 'under_legal_procedure']);
+
+      if (contractsError) throw contractsError;
+
+      if (activeContracts && activeContracts.length > 0) {
+        toast({
+          title: 'لا يمكن الحذف',
+          description: `العميل لديه ${activeContracts.length} عقود نشطة. يجب إلغاء أو إنهاء العقود أولاً.`,
+          variant: 'destructive',
+        });
+        setIsDeleteDialogOpen(false);
+        return;
+      }
+
+      // التحقق من وجود مديونيات
+      const { data: unpaidInvoices, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, total_amount, paid_amount')
+        .eq('customer_id', customerId)
+        .neq('payment_status', 'paid');
+
+      if (invoicesError) throw invoicesError;
+
+      if (unpaidInvoices && unpaidInvoices.length > 0) {
+        const totalDue = unpaidInvoices.reduce((sum, inv) => sum + (inv.total_amount - (inv.paid_amount || 0)), 0);
+        toast({
+          title: 'لا يمكن الحذف',
+          description: `العميل لديه ${unpaidInvoices.length} فواتير غير مدفوعة بقيمة ${formatCurrency(totalDue)}. يجب تسوية المديونيات أولاً.`,
+          variant: 'destructive',
+        });
+        setIsDeleteDialogOpen(false);
+        return;
+      }
+
+      // حذف العميل
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -3035,14 +3075,14 @@ const CustomerDetailsPageNew = () => {
 
       toast({
         title: 'تم حذف العميل',
-        description: 'تم حذف العميل بنجاح',
+        description: 'تم حذف العميل وجميع بياناته بنجاح',
       });
       navigate('/customers');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting customer:', error);
       toast({
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء حذف العميل. قد يكون مرتبطاً ببيانات أخرى.',
+        title: 'خطأ في الحذف',
+        description: error.message || 'حدث خطأ أثناء حذف العميل. قد يكون مرتبطاً ببيانات أخرى.',
         variant: 'destructive',
       });
     } finally {
@@ -3276,6 +3316,15 @@ const CustomerDetailsPageNew = () => {
               >
                 <Edit3 className="w-4 h-4" />
                 تعديل
+              </Button>
+              
+              <Button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                variant="outline"
+                className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4" />
+                حذف العميل نهائياً
               </Button>
             </div>
           </div>
@@ -3816,23 +3865,49 @@ const CustomerDetailsPageNew = () => {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-destructive">حذف العميل</AlertDialogTitle>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <AlertDialogTitle className="text-xl font-bold text-red-600">
+                حذف العميل نهائياً
+              </AlertDialogTitle>
+            </div>
             <AlertDialogDescription asChild>
-              <div className="text-sm text-muted-foreground">
-                <p>هل أنت متأكد من حذف العميل <strong>{customerName}</strong>؟</p>
-                <p>لا يمكن التراجع عن هذا الإجراء.</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-700 font-medium mb-2">
+                    هل أنت متأكد من حذف العميل:
+                  </p>
+                  <p className="text-base font-bold text-gray-900">{customerName}</p>
+                  <p className="text-xs text-gray-500 mt-1">رقم الهوية: {customer?.national_id || 'غير محدد'}</p>
+                </div>
                 
+                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-red-700">
+                      <p className="font-bold mb-2">⚠️ تحذير مهم:</p>
+                      <ul className="space-y-1 text-xs">
+                        <li>• سيتم حذف جميع بيانات العميل نهائياً</li>
+                        <li>• لا يمكن التراجع عن هذا الإجراء</li>
+                        <li>• سيتم الاحتفاظ بالعقود والفواتير المرتبطة (للأرشيف)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
                 {(stats.activeContracts > 0 || stats.totalLateAmount > 0) && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-md text-red-700 text-sm">
-                    <p className="font-semibold mb-1">تحذير:</p>
-                    <ul className="list-disc list-inside space-y-1">
+                  <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
+                    <p className="font-bold text-amber-800 mb-2 text-sm">⚠️ ملاحظات:</p>
+                    <ul className="space-y-1 text-xs text-amber-700">
                       {stats.activeContracts > 0 && (
-                        <li>يوجد {stats.activeContracts} عقود نشطة لهذا العميل.</li>
+                        <li>• يوجد <strong>{stats.activeContracts} عقود نشطة</strong> - يُفضل إلغاؤها أولاً</li>
                       )}
                       {stats.totalLateAmount > 0 && (
-                        <li>يوجد مبالغ مستحقة/متأخرة.</li>
+                        <li>• يوجد مبالغ مستحقة بقيمة <strong>{formatCurrency(stats.totalLateAmount)}</strong></li>
                       )}
                     </ul>
                   </div>
@@ -3840,13 +3915,16 @@ const CustomerDetailsPageNew = () => {
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="flex-1">
+              إلغاء
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteCustomer}
-              className="bg-destructive hover:bg-destructive/90"
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
             >
-              حذف
+              <Trash2 className="w-4 h-4 ml-2" />
+              حذف نهائياً
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
