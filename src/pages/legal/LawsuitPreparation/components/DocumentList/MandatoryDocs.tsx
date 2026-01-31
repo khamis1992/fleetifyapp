@@ -39,6 +39,14 @@ export function MandatoryDocs() {
     actions.uploadDocument(docId, file);
   };
   
+  const handleDownloadMemoPdf = () => {
+    actions.downloadMemoPdf();
+  };
+  
+  const handleDownloadMemoDocx = () => {
+    actions.downloadMemoDocx();
+  };
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -84,6 +92,8 @@ export function MandatoryDocs() {
               index={index}
               onGenerate={doc.category === 'generated' ? () => handleGenerateDocument(doc.id as keyof DocumentsState) : undefined}
               onUpload={doc.category === 'contract' ? (file) => handleUploadDocument(doc.id as keyof DocumentsState, file) : undefined}
+              onDownloadPdf={doc.id === 'memo' ? handleDownloadMemoPdf : undefined}
+              onDownloadDocx={doc.id === 'memo' ? handleDownloadMemoDocx : undefined}
             />
           ))}
         </CardContent>

@@ -103,12 +103,57 @@ export interface FinancialCalculations {
 // Taqadi Data
 // ==========================================
 
+export interface TaqadiDefendantInfo {
+  // معلومات أساسية
+  fullName: string;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
+  
+  // معلومات الهوية
+  idNumber: string | null;
+  idType: string | null;
+  nationality: string | null;
+  
+  // معلومات الاتصال
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
+export interface TaqadiContractInfo {
+  contractNumber: string;
+  startDate: string;
+  endDate: string | null;
+  monthlyAmount: number | null;
+}
+
+export interface TaqadiVehicleInfo {
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  plateNumber: string | null;
+  color: string | null;
+  vin: string | null;
+  fullDescription: string;
+}
+
 export interface TaqadiData {
+  // بيانات الدعوى
   caseTitle: string;
   facts: string;
   claims: string;
   amount: number;
   amountInWords: string;
+  
+  // بيانات المدعى عليه
+  defendant: TaqadiDefendantInfo;
+  
+  // بيانات العقد
+  contract: TaqadiContractInfo;
+  
+  // بيانات السيارة
+  vehicle: TaqadiVehicleInfo;
 }
 
 // ==========================================
@@ -271,6 +316,10 @@ export interface LawsuitPreparationContextValue {
     startTaqadiAutomation: () => Promise<void>;
     stopTaqadiAutomation: () => void;
     checkTaqadiServer: () => Promise<boolean>;
+    
+    // Document Downloads
+    downloadMemoPdf: () => Promise<void>;
+    downloadMemoDocx: () => Promise<void>;
     
     // Utilities
     copyToClipboard: (text: string, field: string) => Promise<void>;

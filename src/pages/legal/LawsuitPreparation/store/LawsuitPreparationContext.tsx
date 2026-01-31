@@ -305,7 +305,7 @@ export function LawsuitPreparationProvider({
   }, [state.overdueInvoices, state.trafficViolations]);
   
   useEffect(() => {
-    if (state.contract && state.calculations) {
+    if (state.contract && state.calculations && state.customer) {
       const customerName = formatCustomerName(state.customer) || 'غير محدد';
       const claimAmount = state.calculations.total - state.calculations.violationsFines;
       
@@ -326,6 +326,26 @@ export function LawsuitPreparationProvider({
         claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('ar-QA')}) ريال قطري.\n2. الحكم بفسخ عقد الإيجار.\n3. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
       }
       
+      // استخراج معلومات المدعى عليه
+      const fullName = customerName;
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || null;
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : null;
+      const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null;
+      
+      // تحديد نوع الهوية
+      let idType = 'بطاقة شخصية';
+      if (state.customer.nationality === 'Qatar' || state.customer.nationality === 'قطر') {
+        idType = 'بطاقة قطرية';
+      } else if (state.customer.national_id && state.customer.national_id.length > 10) {
+        idType = 'جواز سفر';
+      }
+      
+      // معلومات السيارة
+      const vehicleFullDesc = state.vehicle 
+        ? `${state.vehicle.make || ''} ${state.vehicle.model || ''} ${state.vehicle.year || ''} - ${state.vehicle.plateNumber || ''}`.trim()
+        : 'غير محدد';
+      
       dispatch({
         type: 'UPDATE_TAQADI_DATA',
         payload: {
@@ -334,6 +354,39 @@ export function LawsuitPreparationProvider({
           claims: claimsText,
           amount: claimAmount,
           amountInWords: lawsuitService.convertAmountToWords(claimAmount),
+          
+          // بيانات المدعى عليه
+          defendant: {
+            fullName: fullName,
+            firstName: firstName,
+            middleName: middleName,
+            lastName: lastName,
+            idNumber: state.customer.national_id,
+            idType: idType,
+            nationality: state.customer.nationality || state.customer.country,
+            phone: state.customer.phone,
+            email: state.customer.email,
+            address: state.customer.address,
+          },
+          
+          // بيانات العقد
+          contract: {
+            contractNumber: state.contract.contract_number,
+            startDate: state.contract.start_date,
+            endDate: state.contract.end_date,
+            monthlyAmount: state.contract.monthly_amount,
+          },
+          
+          // بيانات السيارة
+          vehicle: {
+            make: state.vehicle?.make || null,
+            model: state.vehicle?.model || null,
+            year: state.vehicle?.year || null,
+            plateNumber: state.vehicle?.plate_number || null,
+            color: state.vehicle?.color || null,
+            vin: state.vehicle?.vin || null,
+            fullDescription: vehicleFullDesc,
+          },
         },
       });
     }
@@ -469,16 +522,39 @@ export function LawsuitPreparationProvider({
     dispatch({ type: 'UPLOAD_DOCUMENT_START', payload: { docId } });
     
     try {
+      // Determine the correct bucket based on document type
+      const isContractDocument = docId === 'contract';
+      const bucketName = isContractDocument ? 'contract-documents' : 'legal-documents';
+      
       const fileName = `contracts/${companyId}/${contractId}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('legal-documents')
+        .from(bucketName)
         .upload(fileName, file);
       
       if (uploadError) throw uploadError;
       
       const { data: urlData } = supabase.storage
-        .from('legal-documents')
+        .from(bucketName)
         .getPublicUrl(fileName);
+      
+      // If it's a contract document, save to contract_documents table
+      if (isContractDocument) {
+        const { error: dbError } = await supabase
+          .from('contract_documents')
+          .insert({
+            contract_id: contractId,
+            company_id: companyId,
+            file_path: fileName,
+            document_name: file.name,
+            document_type: 'signed_contract',
+            mime_type: file.type,
+          });
+        
+        if (dbError) {
+          console.error('Failed to save contract document to database:', dbError);
+          // Continue anyway - file is uploaded
+        }
+      }
       
       dispatch({ 
         type: 'UPLOAD_DOCUMENT_SUCCESS', 
@@ -649,6 +725,173 @@ export function LawsuitPreparationProvider({
     dispatch({ type: 'SET_INCLUDE_VIOLATIONS_TRANSFER', payload: value });
   }, []);
   
+  const downloadMemoPdf = useCallback(async () => {
+    try {
+      const memoHtml = contentRefs.current.memoHtml;
+      if (!memoHtml) {
+        toast.error('يجب توليد المذكرة الشارحة أولاً');
+        return;
+      }
+      
+      // Dynamic import for heavy libraries
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      
+      // Create iframe for rendering
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '794px';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        document.body.removeChild(iframe);
+        toast.error('فشل في إنشاء PDF');
+        return;
+      }
+      
+      // Write HTML to iframe
+      iframeDoc.open();
+      iframeDoc.write(memoHtml);
+      iframeDoc.close();
+      
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      toast.info('جاري تحويل المذكرة إلى PDF...');
+      
+      // Capture canvas
+      const canvas = await html2canvas(iframeDoc.body, {
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794,
+      });
+      
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = pdfWidth / imgWidth;
+      const contentHeight = imgHeight * ratio;
+      
+      // Add pages if content is long
+      let heightLeft = contentHeight;
+      let position = 0;
+      let pageCount = 0;
+      
+      while (heightLeft > 0 && pageCount < 10) {
+        if (pageCount > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, contentHeight, undefined, 'FAST');
+        heightLeft -= pdfHeight;
+        position -= pdfHeight;
+        pageCount++;
+      }
+      
+      // Cleanup
+      document.body.removeChild(iframe);
+      
+      // Download
+      const customerName = formatCustomerName(state.customer) || 'عميل';
+      const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('تم تحميل المذكرة بصيغة PDF');
+    } catch (error) {
+      console.error('Error downloading memo as PDF:', error);
+      toast.error('فشل في تحميل المذكرة بصيغة PDF');
+    }
+  }, [state.customer, state.contract]);
+  
+  const downloadMemoDocx = useCallback(async () => {
+    try {
+      const memoHtml = contentRefs.current.memoHtml;
+      if (!memoHtml) {
+        toast.error('يجب توليد المذكرة الشارحة أولاً');
+        return;
+      }
+      
+      toast.info('جاري تحويل المذكرة إلى Word...');
+      
+      // Dynamic import for html-to-docx
+      const HTMLtoDOCX = (await import('html-to-docx')).default;
+      
+      // Wrap HTML in complete document structure
+      const completeHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      direction: rtl;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  ${memoHtml}
+</body>
+</html>`;
+      
+      // Convert HTML to DOCX
+      const docxBuffer = await HTMLtoDOCX(completeHtml, null, {
+        table: { row: { cantSplit: true } },
+        footer: true,
+        pageNumber: true,
+        font: 'Arial',
+        fontSize: 24,
+        orientation: 'portrait',
+        margins: {
+          top: 720,
+          right: 720,
+          bottom: 720,
+          left: 720
+        }
+      });
+      
+      // Create blob from buffer
+      const docxBlob = new Blob([docxBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+      
+      // Download
+      const customerName = formatCustomerName(state.customer) || 'عميل';
+      const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.docx`;
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(docxBlob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup URL
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+      }, 100);
+      
+      toast.success('تم تحميل المذكرة بصيغة Word');
+    } catch (error) {
+      console.error('Error downloading memo as DOCX:', error);
+      toast.error(`فشل في تحميل المذكرة بصيغة Word: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    }
+  }, [state.customer, state.contract]);
+  
   const markCaseAsOpened = useCallback(async () => {
     if (!user?.id || !companyId || !state.contract || !state.customer) {
       toast.error('بيانات غير كاملة');
@@ -742,6 +985,8 @@ export function LawsuitPreparationProvider({
       setIncludeCriminalComplaint,
       setIncludeViolationsTransfer,
       markCaseAsOpened,
+      downloadMemoPdf,
+      downloadMemoDocx,
     },
   };
   
