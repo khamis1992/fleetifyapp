@@ -121,15 +121,31 @@ export async function registerLegalCase(
       : undefined,
   };
   
+  // Generate case number using database function
+  const { data: caseNumberData, error: caseNumberError } = await supabase
+    .rpc('generate_case_number', { company_uuid: companyId });
+  
+  if (caseNumberError) {
+    console.error('Failed to generate case number:', caseNumberError);
+  }
+  
+  // Fallback case number if RPC fails
+  const caseNumber = caseNumberData || `LC-${new Date().getFullYear()}-${Date.now()}`;
+  
+  // Generate case title
+  const caseTitle = taqadiData?.caseTitle || `قضية عقد ${contract.contract_number}`;
+  
   // Insert into legal_cases directly
   const { data: newCase, error: caseError } = await supabase
     .from('legal_cases')
     .insert({
+      case_number: caseNumber,
+      title: caseTitle,
       company_id: companyId,
-      client_id: customer?.id,
+      customer_id: customer?.id,
       contract_id: contractId,
-      case_type: 'rental_dispute',
-      status: 'active',
+      case_type: 'contract_dispute',
+      status: 'open',
       filing_date: new Date().toISOString(),
       claim_amount: calculations.total,
       description: taqadiData?.facts,
@@ -140,6 +156,71 @@ export async function registerLegalCase(
   
   if (caseError || !newCase) {
     throw new Error('فشل في إنشاء القضية: ' + (caseError?.message || 'خطأ غير معروف'));
+  }
+  
+  // Insert into lawsuit_templates for lawsuit-data page
+  try {
+    const customerName = formatCustomerName(customer);
+    const nameParts = customerName.split(' ');
+    
+    const lawsuitRecord = {
+      company_id: companyId,
+      case_title: caseTitle,
+      facts: taqadiData?.facts || '',
+      requests: taqadiData?.claims || '',
+      claim_amount: calculations.total,
+      claim_amount_words: taqadiData?.amountInWords || '',
+      defendant_first_name: nameParts[0] || '',
+      defendant_middle_name: nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null,
+      defendant_last_name: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
+      defendant_nationality: customer?.nationality || customer?.country || null,
+      defendant_id_number: customer?.national_id || null,
+      defendant_address: customer?.address || null,
+      defendant_phone: customer?.phone || null,
+      defendant_email: customer?.email || null,
+      contract_id: contractId,
+      customer_id: customer?.id || null,
+      // Contract data
+      contract_number: contract.contract_number,
+      contract_start_date: contract.start_date,
+      contract_end_date: contract.end_date,
+      monthly_rent: contract.monthly_amount,
+      total_contract_amount: contract.monthly_amount ? contract.monthly_amount * 12 : null,
+      // Vehicle data
+      vehicle_plate_number: vehicle?.plate_number || (contract as any).license_plate,
+      vehicle_type: vehicle?.make,
+      vehicle_model: vehicle?.model,
+      vehicle_year: vehicle?.year,
+      // Financial data
+      months_unpaid: overdueInvoices.length,
+      overdue_amount: calculations.overdueRent,
+      late_penalty: calculations.lateFees,
+      days_overdue: Math.floor(
+        (new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24)
+      ),
+      compensation_amount: calculations.damagesFee,
+      // Invoices data
+      invoices_count: overdueInvoices.length,
+      total_invoices_amount: calculations.overdueRent,
+      total_penalties: calculations.lateFees,
+      // Violations data
+      violations_count: calculations.violationsCount,
+      violations_amount: calculations.violationsFines,
+      // Auto-created flag
+      auto_created: false,
+    };
+    
+    const { error: lawsuitTemplateError } = await supabase
+      .from('lawsuit_templates')
+      .insert([lawsuitRecord]);
+    
+    if (lawsuitTemplateError) {
+      console.error('Failed to insert into lawsuit_templates:', lawsuitTemplateError);
+      // Don't throw - this is not critical for case registration
+    }
+  } catch (e) {
+    console.error('Error inserting lawsuit template:', e);
+    // Don't throw - this is not critical for case registration
   }
   
   // Upload documents

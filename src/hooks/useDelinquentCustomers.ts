@@ -94,6 +94,8 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
   return useQuery({
     queryKey: ['delinquent-customers', companyFilter, filters, useCached],
     queryFn: async (): Promise<DelinquentCustomer[]> => {
+      console.time('⏱️ [DELINQUENT] Total fetch time');
+      
       if (!user?.id) throw new Error('User not authenticated');
 
       // Get company_id from companyFilter or profile
@@ -238,13 +240,15 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
       }
 
       // Fallback: Dynamic calculation (original logic)
-      return calculateDelinquentCustomersDynamically(companyId, filters, contractsWithPendingVerification);
+      const result = await calculateDelinquentCustomersDynamically(companyId, filters, contractsWithPendingVerification);
+      console.timeEnd('⏱️ [DELINQUENT] Total fetch time');
+      return result;
     },
     enabled: !!user?.id && !isCompanyLoading,
-    staleTime: 1000 * 60 * 2, // 2 minutes - بيانات أحدث
-    gcTime: 1000 * 60 * 10, // 10 minutes
-    refetchOnWindowFocus: true, // تحديث عند العودة للتطبيق
-    refetchOnMount: true, // تحديث عند الدخول للصفحة
+    staleTime: 1000 * 60 * 5, // 5 minutes - زيادة الكاش
+    gcTime: 1000 * 60 * 15, // 15 minutes
+    refetchOnWindowFocus: false, // تعطيل التحديث التلقائي
+    refetchOnMount: false, // تعطيل التحديث عند الدخول
     retry: 1, // محاولة واحدة فقط عند الفشل
   });
 };
@@ -391,13 +395,14 @@ async function calculateDelinquentCustomersDynamically(
     console.warn('Error fetching overdue invoices:', error);
   }
 
-  // Get payments (handle errors gracefully) - تقسيم الطلبات
+  // Get payments (handle errors gracefully) - تحسين: جلب آخر دفعة فقط لكل عميل
   try {
     const customerBatches: string[][] = [];
     for (let i = 0; i < customerIds.length; i += BATCH_SIZE) {
       customerBatches.push(customerIds.slice(i, i + BATCH_SIZE));
     }
     
+    console.time('⏱️ [DELINQUENT] Fetch payments');
     const paymentResults = await Promise.all(
       customerBatches.map(async (batch) => {
         const { data, error } = await supabase
@@ -406,7 +411,8 @@ async function calculateDelinquentCustomersDynamically(
           .eq('company_id', companyId)
           .in('customer_id', batch)
           .in('payment_status', ['completed', 'paid', 'approved'])
-          .order('payment_date', { ascending: false });
+          .order('payment_date', { ascending: false })
+          .limit(1000); // تحديد عدد النتائج
         
         if (error) {
           console.warn('Error fetching payment batch:', error);
@@ -417,6 +423,7 @@ async function calculateDelinquentCustomersDynamically(
     );
     
     payments = paymentResults.flat();
+    console.timeEnd('⏱️ [DELINQUENT] Fetch payments');
   } catch (error) {
     console.warn('Error fetching payments:', error);
   }
@@ -424,6 +431,7 @@ async function calculateDelinquentCustomersDynamically(
   // Step 3: Get traffic violations for vehicles in these contracts (handle errors gracefully)
   // المخالفات مرتبطة بـ vehicle_id وليس customer_id
   try {
+    console.time('⏱️ [DELINQUENT] Fetch violations');
     // Get vehicle IDs from contracts
     const vehicleIds = contracts
       .map(c => c.vehicle_id)
@@ -456,12 +464,14 @@ async function calculateDelinquentCustomersDynamically(
         console.log(`📋 [DELINQUENT] Found ${violations.length} unpaid traffic violations for ${vehicleIds.length} vehicles`);
       }
     }
+    console.timeEnd('⏱️ [DELINQUENT] Fetch violations');
   } catch (error) {
     console.warn('Error fetching violations:', error);
   }
 
   // Step 4: Get legal cases history for these customers (handle errors gracefully)
   try {
+    console.time('⏱️ [DELINQUENT] Fetch legal cases');
     const { data: legalCasesData, error: legalCasesError } = await supabase
       .from('legal_cases')
       .select('client_id, case_status')
@@ -471,6 +481,7 @@ async function calculateDelinquentCustomersDynamically(
     if (!legalCasesError && legalCasesData) {
       legalCases = legalCasesData;
     }
+    console.timeEnd('⏱️ [DELINQUENT] Fetch legal cases');
   } catch (error) {
     console.warn('Error fetching legal cases:', error);
   }

@@ -156,6 +156,7 @@ export interface UIState {
   isDownloadingZip: boolean;
   isSendingToLawsuitData: boolean;
   isTaqadiAutomating: boolean;
+  isMarkingCaseOpened: boolean;
   showTaqadiData: boolean;
   taqadiServerRunning: boolean;
   taqadiAutomationStatus: string;
@@ -235,6 +236,11 @@ export type LawsuitPreparationAction =
   | { type: 'TAQADI_AUTOMATION_STOP' }
   | { type: 'SET_TAQADI_SERVER_STATUS'; payload: boolean }
   
+  // Mark Case as Opened
+  | { type: 'MARK_CASE_OPENED_START' }
+  | { type: 'MARK_CASE_OPENED_COMPLETE' }
+  | { type: 'MARK_CASE_OPENED_ERROR'; payload: Error }
+  
   // UI Actions
   | { type: 'TOGGLE_TAQADI_DATA' }
   | { type: 'SET_COPIED_FIELD'; payload: string | null }
@@ -271,6 +277,7 @@ export interface LawsuitPreparationContextValue {
     toggleTaqadiData: () => void;
     setIncludeCriminalComplaint: (value: boolean) => void;
     setIncludeViolationsTransfer: (value: boolean) => void;
+    markCaseAsOpened: () => Promise<void>;
   };
 }
 

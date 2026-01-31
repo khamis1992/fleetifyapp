@@ -15,6 +15,7 @@ import { registerLegalCase } from '../utils/caseRegistration';
 import { exportDocumentsAsZip } from '../utils/zipExport';
 import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
+import { toast } from 'sonner';
 
 import { 
   lawsuitPreparationReducer, 
@@ -200,7 +201,12 @@ export function LawsuitPreparationProvider({
   useQuery({
     queryKey: ['contract-document', contractId, companyId],
     queryFn: async () => {
-      if (!contractId || !companyId) return null;
+      if (!contractId || !companyId) {
+        console.log('[Contract Document] Missing contractId or companyId');
+        return null;
+      }
+      
+      console.log('[Contract Document] Fetching for contract:', contractId);
       
       const { data, error } = await supabase
         .from('contract_documents')
@@ -212,16 +218,50 @@ export function LawsuitPreparationProvider({
         .limit(1)
         .maybeSingle();
       
-      if (error || !data?.file_path) return null;
+      if (error) {
+        console.error('[Contract Document] Query error:', error);
+        dispatch({
+          type: 'UPLOAD_DOCUMENT_ERROR',
+          payload: { docId: 'contract', error: 'فشل في جلب ملف العقد من قاعدة البيانات' }
+        });
+        return null;
+      }
+      
+      if (!data) {
+        console.warn('[Contract Document] No contract document found');
+        dispatch({
+          type: 'UPLOAD_DOCUMENT_ERROR',
+          payload: { docId: 'contract', error: 'لم يتم العثور على ملف العقد. يرجى رفع ملف العقد الموقع.' }
+        });
+        return null;
+      }
+      
+      if (!data.file_path) {
+        console.error('[Contract Document] No file_path in document');
+        dispatch({
+          type: 'UPLOAD_DOCUMENT_ERROR',
+          payload: { docId: 'contract', error: 'مسار الملف غير موجود' }
+        });
+        return null;
+      }
+      
+      console.log('[Contract Document] Found document:', data.document_name, 'at path:', data.file_path);
       
       const { data: urlData } = supabase.storage
         .from('contract-documents')
         .getPublicUrl(data.file_path);
       
       if (urlData?.publicUrl) {
+        console.log('[Contract Document] Public URL generated:', urlData.publicUrl);
         dispatch({ 
           type: 'UPLOAD_DOCUMENT_SUCCESS', 
           payload: { docId: 'contract', url: urlData.publicUrl } 
+        });
+      } else {
+        console.error('[Contract Document] Failed to generate public URL');
+        dispatch({
+          type: 'UPLOAD_DOCUMENT_ERROR',
+          payload: { docId: 'contract', error: 'فشل في توليد رابط الملف' }
         });
       }
       
@@ -609,6 +649,72 @@ export function LawsuitPreparationProvider({
     dispatch({ type: 'SET_INCLUDE_VIOLATIONS_TRANSFER', payload: value });
   }, []);
   
+  const markCaseAsOpened = useCallback(async () => {
+    if (!user?.id || !companyId || !state.contract || !state.customer) {
+      toast.error('بيانات غير كاملة');
+      throw new Error('بيانات غير كاملة');
+    }
+    
+    dispatch({ type: 'MARK_CASE_OPENED_START' });
+    
+    try {
+      const contract = state.contract;
+      const customer = state.customer;
+      const delinquencyData = state.calculations;
+      
+      // 1. Update contract status to under_legal_procedure
+      const { error: contractError } = await supabase
+        .from('contracts')
+        .update({ status: 'under_legal_procedure' })
+        .eq('id', contract.id);
+      
+      if (contractError) throw contractError;
+      
+      // 2. Create legal case record
+      const customerName = formatCustomerName(customer);
+      const caseTitle = `قضية تحصيل مستحقات - ${customerName}`;
+      
+      const { data: legalCase, error: caseError } = await supabase
+        .from('legal_cases')
+        .insert({
+          company_id: companyId,
+          contract_id: contract.id,
+          client_id: customer.id,
+          client_name: customerName,
+          client_phone: customer.phone,
+          client_email: customer.email,
+          case_number: `LC-${Date.now()}`,
+          case_title: caseTitle,
+          case_title_ar: caseTitle,
+          case_type: 'collection',
+          case_status: 'open',
+          case_value: delinquencyData?.total || contract.balance_due || 0,
+          priority: 'high',
+          filing_date: new Date().toISOString(),
+          created_by: user.id,
+        })
+        .select()
+        .single();
+      
+      if (caseError) throw caseError;
+      
+      dispatch({ type: 'MARK_CASE_OPENED_COMPLETE' });
+      
+      toast.success('تم فتح القضية بنجاح! سيتم نقلك إلى صفحة القضايا...');
+      
+      // Navigate to cases page
+      setTimeout(() => {
+        navigate('/legal/cases?view=cases');
+      }, 1500);
+      
+      return legalCase;
+    } catch (error: any) {
+      dispatch({ type: 'MARK_CASE_OPENED_ERROR', payload: error as Error });
+      toast.error(`خطأ في فتح القضية: ${error.message}`);
+      throw error;
+    }
+  }, [state, user, companyId, navigate]);
+  
   // Check Taqadi server on mount
   useEffect(() => {
     checkTaqadiServer();
@@ -635,6 +741,7 @@ export function LawsuitPreparationProvider({
       toggleTaqadiData,
       setIncludeCriminalComplaint,
       setIncludeViolationsTransfer,
+      markCaseAsOpened,
     },
   };
   

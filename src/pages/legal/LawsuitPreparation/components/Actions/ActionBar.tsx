@@ -7,17 +7,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Gavel, 
   FileStack, 
-  FolderDown, 
-  Upload, 
-  AlertCircle,
   ArrowLeft,
   Database,
+  CheckCircle,
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLawsuitPreparationContext } from '../../store';
 
@@ -25,8 +21,6 @@ export function ActionBar() {
   const navigate = useNavigate();
   const { state, actions } = useLawsuitPreparationContext();
   const { ui } = state;
-  
-  const allMandatoryReady = ui.progress.percentage === 100;
   
   return (
     <>
@@ -81,128 +75,26 @@ export function ActionBar() {
                 )}
               </Button>
               
-              {/* Register Case */}
+              {/* Mark Case as Opened */}
               <Button
                 size="lg"
-                onClick={actions.registerCase}
-                disabled={ui.isRegistering || !allMandatoryReady}
-                className="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+                onClick={actions.markCaseAsOpened}
+                disabled={ui.isMarkingCaseOpened}
+                className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
               >
-                {ui.isRegistering ? (
+                {ui.isMarkingCaseOpened ? (
                   <>
                     <LoadingSpinner className="h-5 w-5 ml-2" />
-                    جاري التسجيل...
+                    جاري المعالجة...
                   </>
                 ) : (
                   <>
-                    <Gavel className="h-5 w-5 ml-2" />
-                    تسجيل القضية في النظام
+                    <CheckCircle className="h-5 w-5 ml-2" />
+                    تم فتح قضية
                   </>
                 )}
               </Button>
-              
-              {/* Download ZIP */}
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={actions.downloadAllAsZip}
-                disabled={ui.isDownloadingZip}
-                className="w-full sm:w-auto border-green-500 text-green-700 hover:bg-green-50 hover:border-green-600"
-              >
-                {ui.isDownloadingZip ? (
-                  <>
-                    <LoadingSpinner className="h-5 w-5 ml-2" />
-                    جاري التحميل...
-                  </>
-                ) : (
-                  <>
-                    <FolderDown className="h-5 w-5 ml-2" />
-                    تحميل الكل ZIP
-                  </>
-                )}
-              </Button>
-              
-              {/* Taqadi Automation */}
-              {!ui.isTaqadiAutomating ? (
-                <Button
-                  size="lg"
-                  onClick={actions.startTaqadiAutomation}
-                  disabled={!allMandatoryReady || !ui.taqadiServerRunning}
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                >
-                  <Upload className="h-5 w-5 ml-2" />
-                  رفع إلى تقاضي (أتمتة)
-                  {!ui.taqadiServerRunning && (
-                    <Badge variant="destructive" className="mr-2 text-xs">
-                      متوقف
-                    </Badge>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  onClick={actions.stopTaqadiAutomation}
-                  variant="destructive"
-                  className="w-full sm:w-auto"
-                >
-                  <AlertCircle className="h-5 w-5 ml-2" />
-                  إيقاف الأتمتة
-                </Button>
-              )}
             </div>
-            
-            {/* Server Status Warning */}
-            {!ui.taqadiServerRunning && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-red-900">
-                      <p className="font-semibold mb-1">سيرفر الأتمتة متوقف</p>
-                      <p className="text-red-700">
-                        يجب تشغيل السيرفر أولاً لاستخدام ميزة الرفع التلقائي إلى تقاضي
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.open('https://github.com/yourusername/fleetifyapp/blob/main/taqadi-automation/QUICK_START.md', '_blank');
-                    }}
-                    className="border-red-300 text-red-700 hover:bg-red-100 whitespace-nowrap"
-                  >
-                    📖 دليل التشغيل
-                  </Button>
-                </div>
-                <div className="mt-3 p-3 bg-white rounded border border-red-200">
-                  <p className="text-xs font-mono text-gray-700 mb-2">لتشغيل السيرفر، افتح Terminal وشغل:</p>
-                  <code className="block bg-gray-900 text-green-400 p-2 rounded text-xs font-mono">
-                    cd taqadi-automation<br />
-                    node server.js
-                  </code>
-                </div>
-              </div>
-            )}
-            
-            {/* Automation Status */}
-            {(ui.isTaqadiAutomating || ui.taqadiAutomationStatus) && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  {ui.isTaqadiAutomating && <LoadingSpinner className="h-4 w-4" />}
-                  <span className="text-sm font-medium text-blue-900">
-                    {ui.taqadiAutomationStatus || 'جاري المعالجة...'}
-                  </span>
-                </div>
-              </div>
-            )}
-            
-            {/* Warning if not all ready */}
-            {!allMandatoryReady && (
-              <p className="text-center text-sm text-muted-foreground mt-3">
-                ⚠️ يجب تجهيز جميع المستندات المولدة ({ui.progress.ready}/{ui.progress.total}) قبل رفع الدعوى
-              </p>
-            )}
           </CardContent>
         </Card>
       </motion.div>

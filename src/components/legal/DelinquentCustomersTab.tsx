@@ -304,7 +304,7 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [generatedCustomerIds, setGeneratedCustomerIds] = useState<Set<string>>(new Set());
 
   // New UX States
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(20); // زيادة من 12 إلى 20
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [sortField, setSortField] = useState<SortField>('total_debt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');

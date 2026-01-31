@@ -131,6 +131,7 @@ export function createInitialState(contractId: string | null = null): LawsuitPre
       isDownloadingZip: false,
       isSendingToLawsuitData: false,
       isTaqadiAutomating: false,
+      isMarkingCaseOpened: false,
       showTaqadiData: false,
       taqadiServerRunning: false,
       taqadiAutomationStatus: '',
@@ -513,6 +514,40 @@ export function lawsuitPreparationReducer(
         ui: {
           ...state.ui,
           taqadiServerRunning: action.payload,
+        },
+      };
+    }
+    
+    // ==========================================
+    // Mark Case as Opened
+    // ==========================================
+    
+    case 'MARK_CASE_OPENED_START': {
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          isMarkingCaseOpened: true,
+        },
+      };
+    }
+    
+    case 'MARK_CASE_OPENED_COMPLETE': {
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          isMarkingCaseOpened: false,
+        },
+      };
+    }
+    
+    case 'MARK_CASE_OPENED_ERROR': {
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          isMarkingCaseOpened: false,
         },
       };
     }

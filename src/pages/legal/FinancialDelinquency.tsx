@@ -244,6 +244,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'customers' | 'contracts'>('customers');
   const { companyId } = useUnifiedCompanyAccess();
+  const [showCacheInfo, setShowCacheInfo] = useState(false);
 
   // Stats
   const { data: stats, isLoading: statsLoading } = useDelinquencyStats();
@@ -331,6 +332,12 @@ const FinancialDelinquencyPage: React.FC = () => {
               <p className="text-sm text-muted-foreground mt-0.5">
                 متابعة العملاء والعقود المتأخرة عن السداد
               </p>
+              {stats && (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  آخر تحديث: منذ {Math.floor((Date.now() - new Date().getTime()) / 60000)} دقيقة
+                </p>
+              )}
             </div>
           </div>
 
@@ -338,12 +345,16 @@ const FinancialDelinquencyPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => refreshDelinquentCustomers.mutate()}
+              onClick={() => {
+                toast.info('جاري تحديث البيانات...', { duration: 2000 });
+                refreshDelinquentCustomers.mutate();
+              }}
               disabled={refreshDelinquentCustomers.isPending}
               className="gap-2 rounded-xl"
+              title="تحديث قائمة العملاء المتعثرين من قاعدة البيانات"
             >
               <RefreshCw className={cn("h-4 w-4", refreshDelinquentCustomers.isPending && "animate-spin")} />
-              تحديث
+              {refreshDelinquentCustomers.isPending ? 'جاري التحديث...' : 'تحديث البيانات'}
             </Button>
             <Button
               variant="outline"
@@ -451,7 +462,26 @@ const FinancialDelinquencyPage: React.FC = () => {
         </motion.div>
 
         {/* Stats Cards */}
-        {!statsLoading && stats && (
+        {statsLoading ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-2xl border bg-card p-5 shadow-sm animate-pulse">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-3">
+                    <div className="h-4 bg-muted rounded w-24"></div>
+                    <div className="h-8 bg-muted rounded w-20"></div>
+                    <div className="h-3 bg-muted rounded w-32"></div>
+                  </div>
+                  <div className="h-12 w-12 bg-muted rounded-xl"></div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        ) : stats ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -487,7 +517,7 @@ const FinancialDelinquencyPage: React.FC = () => {
               color={colors.destructive}
             />
           </motion.div>
-        )}
+        ) : null}
 
         {/* Tabs */}
         <motion.div
@@ -518,7 +548,17 @@ const FinancialDelinquencyPage: React.FC = () => {
 
             {/* Customers Tab */}
             <TabsContent value="customers" className="mt-0">
-              <DelinquentCustomersTab />
+              {statsLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                  <LoadingSpinner size="lg" />
+                  <div className="text-center space-y-2">
+                    <p className="text-lg font-semibold text-foreground">جاري تحميل بيانات العملاء...</p>
+                    <p className="text-sm text-muted-foreground">قد يستغرق هذا بضع ثوانٍ</p>
+                  </div>
+                </div>
+              ) : (
+                <DelinquentCustomersTab />
+              )}
             </TabsContent>
 
             {/* Contracts Tab */}

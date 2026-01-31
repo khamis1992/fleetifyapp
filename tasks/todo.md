@@ -1,67 +1,84 @@
-# Employee Workspace Redesign Plan
+# مشكلة عدم ظهور العقود في صفحة Employee Workspace
 
-## Objective
-Redesign the Employee Workspace page (`/employee-workspace`) to improve usability, visual appeal, and focus on actionable items. The goal is to create a clean, modern dashboard that helps employees track their contracts, tasks, and performance efficiently.
+## المشكلة
+الموظف أسامة لا يرى عقوده في صفحة `/employee-workspace`
 
-## Proposed Changes
+## التحليل الأولي
+1. ✅ الكود يبحث عن العقود باستخدام `assigned_to_profile_id`
+2. ✅ Migration موجود يضيف هذا العمود (`20260128000002_employee_workspace_system.sql`)
+3. ✅ Migration تم تطبيقه - العمود موجود في قاعدة البيانات
+4. ✅ تم العثور على الموظف أسامة (ID: `da3bd48d-7d74-4106-b7ac-c0842f05d43b`)
+5. ❌ **المشكلة**: الموظف أسامة ليس لديه أي عقود معينة له!
 
-### 1. Layout & Structure
-- **Move to a Clean Dashboard Layout**: Replace the current "Bento/Glass" heavy style with a cleaner, professional card-based layout.
-- **Header**: Simplified header with greeting, date, and primary actions (Refresh).
-- **Grid System**: Use a responsive grid (likely 3 columns on large screens).
-  - **Left/Center (2 columns)**: Main actionable content (Priority items, Tasks, Active Contracts).
-  - **Right (1 column)**: Performance metrics, Quick Actions, Activity.
+## إحصائيات قاعدة البيانات
+- إجمالي العقود النشطة: **164 عقد**
+- العقود المعينة لموظفين: **2 عقد فقط**
+- العقود المعينة لأسامة: **0 عقد**
 
-### 2. Component Refactoring
-- **Cards**: Use standard `shadcn/ui` Card components with subtle styling instead of custom `GlassCard`.
-- **Typography**: Improve hierarchy with clear section headings.
-- **Colors**: Align with Fleetify's Teal/Blue brand colors, reducing the rainbow effect of the current stats cards.
+## خطة العمل
 
-### 3. Key Sections
-- **Quick Stats**: Compact row at the top or integrated into sidebar.
-- **"Attention Needed" (Priority)**: Highlight overdue contracts or urgent tasks at the very top of the main area.
-- **Tasks Module**: A clear list of today's tasks with check buttons.
-- **Contracts Module**: A sortable/filterable list of assigned contracts.
-- **Performance Widget**: A clear visualization (e.g., progress bars or rings) of the employee's score.
+### المرحلة 1: التحقق من قاعدة البيانات ✅
+- [x] التحقق من أن Migration تم تطبيقه
+- [x] التحقق من وجود عمود `assigned_to_profile_id` في جدول contracts
+- [x] البحث عن profile_id للموظف أسامة
+- [x] التحقق من العقود المعينة له
 
-### 4. Implementation Steps
-1.  [x] **Analyze & Backup**: Ensure current logic is understood (data fetching hooks).
-2.  [x] **Scaffold New Layout**: Create the basic grid structure using Tailwind CSS.
-3.  [x] **Implement Header & Stats**: distinct clean section.
-4.  [x] **Implement Main Content Area**:
-    - [x] Priority/Alerts Section.
-    - [x] Tasks List (Tabular or clean list).
-    - [x] Contracts List (Grid or List view).
-5.  [x] **Implement Sidebar**:
-    - [x] Performance Metrics.
-    - [x] Quick Actions (Vertical menu).
-6.  [x] **Review & Refine**: Check responsiveness and Arabic (RTL) alignment.
+### المرحلة 2: إصلاح مشكلة عدم ظهور الموظفين في التوزيع الذكي ✅
+- [x] المشكلة: `employee_capacity_view` غير موجود في قاعدة البيانات
+- [x] إنشاء View - تم بنجاح!
+- [x] إنشاء Functions المطلوبة:
+  - `calculate_customer_difficulty` - لحساب صعوبة التعامل مع العميل
+  - `calculate_employee_capacity` - لحساب قدرة الموظف
+- [x] إنشاء جدول `distribution_history` - لتسجيل عمليات التوزيع
+- [x] التحقق من البيانات - يظهر 4 موظفين:
+  - طارق العريبي (0 عقود)
+  - أسامة عبدالمنعم (0 عقود)
+  - طارق البوزيدي (2 عقود)
+  - KHAMIS AL-JABOR (0 عقود)
+- [x] جميع المكونات المطلوبة للتوزيع الذكي جاهزة!
 
-## Excel Export Enhancement
-### Objective
-Create a detailed, professional Excel report for employees that includes all relevant data in a single file.
+### المرحلة 3: تعيين العقود للموظف أسامة
+الآن يمكنك استخدام أحد الخيارات التالية:
 
-### Implementation Steps
-1.  [x] **Create Export Utility**: Develop `src/utils/exports/employeeReport.ts` using `exceljs`.
-    -   Support multi-sheet export (Summary, Contracts, Tasks, Collections).
-    -   Add professional styling (headers, colors, column widths).
-2.  [x] **Integrate with Workspace**: Update `EmployeeWorkspace.tsx` to use the new utility.
-    -   Pass comprehensive data (performance, contracts, tasks, collections) to the export function.
-    -   Update the export button label to reflect the enhanced functionality.
+**الخيار 1: التوزيع الذكي (موصى به) ⭐**
+1. اذهب إلى صفحة Team Management
+2. اضغط على "توزيع ذكي للعقود"
+3. اختر الموظفين (أسامة وآخرين)
+4. اختر العقود المراد توزيعها
+5. اضغط "تطبيق التوزيع"
 
-## User Verification
-- Please verify if this cleaner, structured approach aligns with your expectations for "Redesign".
+**الخيار 2: تعيين يدوي**
+استخدام صفحة Team Management لتعيين عقود محددة لأسامة
 
-## Completion Summary
-- Successfully redesigned the page using `shadcn/ui` components (Card, Badge, Tabs, Button, Input).
-- Implemented a responsive grid layout.
-- Added search functionality for contracts.
-- Improved visual hierarchy with clear sections for "Priority", "Tasks", and "Contracts".
-- Unified the color scheme to Fleetify's branding.
-- **Excel Export**: Replaced the basic CSV-like export with a comprehensive 4-sheet Excel workbook featuring styled headers, detailed metrics, and complete lists of contracts and tasks.
+**الخيار 3: تعيين سريع عبر SQL (للمطورين)**
+يمكن تعيين جميع العقود لأسامة مباشرة
 
-## Review - CSS Updates
-- **Employee Workspace**: Updated "New Note" (ملاحظة جديدة) button color.
-  - Changed background from `bg-amber-100` to `bg-[#F4904E]` (orange).
-  - Updated hover state to `hover:bg-[#F4904E]/90`.
-  - Removed `text-amber-700` as it was overridden by `text-white` in the loop.
+### المرحلة 4: المراجعة
+- [ ] التأكد من ظهور العقود في صفحة Employee Workspace
+- [ ] توثيق الحل
+
+---
+
+## ملخص الإصلاحات
+
+### 1. المشكلة الأساسية
+- الموظف أسامة ليس لديه عقود معينة له
+- 164 عقد نشط في الشركة، فقط 2 منها معينة لموظفين
+
+### 2. مشكلة التوزيع الذكي
+- `employee_capacity_view` كان مفقوداً
+- Functions مطلوبة كانت مفقودة
+- جدول `distribution_history` كان مفقوداً
+
+### 3. ما تم إصلاحه
+✅ إنشاء `employee_capacity_view` - يعرض الموظفين مع قدراتهم
+✅ إنشاء `calculate_customer_difficulty()` - لحساب صعوبة العميل
+✅ إنشاء `calculate_employee_capacity()` - لحساب قدرة الموظف
+✅ إنشاء جدول `distribution_history` - لتسجيل التوزيعات
+
+### 4. الخطوة التالية
+الآن يمكن استخدام نظام التوزيع الذكي لتوزيع العقود على الموظفين بما فيهم أسامة!
+
+## الملاحظات
+- الكود في `useEmployeeContracts.tsx` يستخدم `.eq('assigned_to_profile_id', profile.id)`
+- Migration يضيف الأعمدة: `assigned_to_profile_id`, `assigned_at`, `assigned_by_profile_id`, `assignment_notes`

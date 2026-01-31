@@ -185,7 +185,7 @@ export function DocumentItem({
           <div className="relative">
             <input
               type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -197,6 +197,7 @@ export function DocumentItem({
               size="sm" 
               variant={document.status === 'ready' ? 'ghost' : 'default'}
               disabled={document.isUploading}
+              title={document.uploadError || (document.status === 'ready' ? 'تغيير الملف' : 'رفع الملف')}
             >
               {document.isUploading ? (
                 <LoadingSpinner className="h-4 w-4" />
