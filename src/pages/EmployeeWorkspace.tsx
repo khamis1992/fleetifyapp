@@ -46,6 +46,7 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import {
   QuickPaymentDialog,
   CallLogDialog,
@@ -642,7 +643,7 @@ export const EmployeeWorkspace: React.FC = () => {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
-                                  {contract.customers?.first_name_ar || contract.customers?.company_name_ar}
+                                  {formatCustomerName(contract.customers)}
                                 </h4>
                                 <Badge variant="outline" className={cn("text-xs font-bold border-2", statusStyle.badge)}>
                                   <StatusIcon className="w-3 h-3 ml-1" />

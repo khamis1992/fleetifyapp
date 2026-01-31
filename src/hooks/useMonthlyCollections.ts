@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 export interface MonthlyCollectionItem {
   contract_id: string;
@@ -102,9 +103,7 @@ export const useMonthlyCollections = () => {
         .map(inv => {
           const contract = inv.contracts as any;
           const customer = contract.customers;
-          const customerName = customer?.customer_type === 'corporate'
-            ? (customer?.company_name_ar || customer?.company_name)
-            : `${customer?.first_name_ar || customer?.first_name || ''} ${customer?.last_name_ar || customer?.last_name || ''}`.trim();
+          const customerName = formatCustomerName(customer);
 
           let status: MonthlyCollectionItem['status'] = 'unpaid';
           if (inv.payment_status === 'paid') status = 'paid';

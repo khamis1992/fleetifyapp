@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { EmployeeContractFilters, PriorityContract, ContractPriority } from '@/types/employee-workspace.types';
 import { differenceInDays, parseISO } from 'date-fns';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 interface UseEmployeeContractsOptions {
   filters?: EmployeeContractFilters;
@@ -127,9 +128,7 @@ export const useEmployeeContracts = (options: UseEmployeeContractsOptions = {}) 
       const today = new Date();
 
       for (const contract of contracts) {
-        const customerName = contract.customers?.customer_type === 'corporate'
-          ? (contract.customers?.company_name_ar || contract.customers?.company_name)
-          : `${contract.customers?.first_name_ar || contract.customers?.first_name || ''} ${contract.customers?.last_name_ar || contract.customers?.last_name || ''}`.trim();
+        const customerName = formatCustomerName(contract.customers);
 
         // Check for overdue payments
         if (contract.balance_due && contract.balance_due > 0) {
