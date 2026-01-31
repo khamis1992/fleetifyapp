@@ -24,7 +24,6 @@ import {
   DollarSign,
   Calendar,
   CreditCard,
-  Info,
   Wallet,
   AlertTriangle,
   AlertCircle,
@@ -33,7 +32,6 @@ import {
   Activity,
   CheckCircle,
   CheckCircle2,
-  Clock,
   Trash2,
   Plus,
   Eye,
@@ -42,14 +40,11 @@ import {
   LayoutDashboard,
   FileCheck,
   Receipt,
-  Wrench,
   Phone,
   Mail,
   MapPin,
   Building2,
-  Share2,
   Download,
-  Bell,
   Palette,
   Gauge,
   Fuel,
@@ -308,7 +303,7 @@ const CustomerVehicleCards = ({
   </motion.div>
 );
 
-// ===== Quick Actions Bar =====
+// ===== Quick Actions Bar - System Colors =====
 const QuickActionsBar = ({
   contract,
   onRenew,
@@ -333,50 +328,49 @@ const QuickActionsBar = ({
       label: 'تجديد العقد',
       icon: RefreshCw,
       onClick: onRenew,
-      color: 'bg-teal-500 hover:bg-teal-600 text-white border-transparent',
+      variant: 'default' as const,
+      className: 'bg-[#00A896] hover:bg-[#007A6B] text-white border-0',
       show: contract.status === 'active',
     },
     {
       label: 'تعديل العقد',
       icon: FileEdit,
       onClick: onAmend,
-      color: 'border-teal-200 text-teal-700 hover:bg-teal-50',
+      variant: 'outline' as const,
+      className: 'border-[#00A896] text-[#00A896] hover:bg-[#E6F7F5]',
       show: contract.status === 'active',
     },
     {
       label: 'تحويل للشؤون القانونية',
       icon: Scale,
       onClick: onConvertToLegal,
-      color: 'border-violet-200 text-violet-700 hover:bg-violet-50',
+      variant: 'outline' as const,
+      className: 'border-violet-300 text-violet-700 hover:bg-violet-50',
       show: contract.status === 'active' || contract.status === 'cancelled',
     },
     {
       label: 'إزالة الإجراء القانوني',
-      icon: Scale,
+      icon: CheckCircle2,
       onClick: onRemoveLegal,
-      color: 'border-emerald-200 text-emerald-700 hover:bg-emerald-50',
+      variant: 'outline' as const,
+      className: 'border-emerald-300 text-emerald-700 hover:bg-emerald-50',
       show: contract.status === 'under_legal_procedure',
     },
     {
       label: 'إنهاء العقد',
       icon: XCircle,
       onClick: onTerminate,
-      color: 'border-rose-200 text-rose-700 hover:bg-rose-50',
+      variant: 'outline' as const,
+      className: 'border-rose-300 text-rose-700 hover:bg-rose-50',
       show: contract.status === 'active',
     },
     {
       label: 'إعادة تفعيل العقد',
-      icon: CheckCircle2,
+      icon: RefreshCw,
       onClick: onReactivate,
-      color: 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent',
+      variant: 'default' as const,
+      className: 'bg-emerald-500 hover:bg-emerald-600 text-white border-0',
       show: contract.status === 'cancelled',
-    },
-    {
-      label: 'حذف العقد نهائياً',
-      icon: Trash2,
-      onClick: onDeletePermanent,
-      color: 'bg-rose-600 hover:bg-rose-700 text-white border-transparent',
-      show: true, // يظهر دائماً لجميع الحالات
     },
   ];
 
@@ -385,10 +379,10 @@ const QuickActionsBar = ({
   return (
     <motion.div
       variants={fadeInUp}
-      className="bg-white rounded-2xl border border-neutral-200 p-4"
+      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
     >
       <div className="flex items-center gap-3 overflow-x-auto">
-        <span className="text-sm font-medium text-neutral-500 whitespace-nowrap">إجراءات سريعة:</span>
+        <span className="text-sm font-medium text-slate-500 whitespace-nowrap">إجراءات سريعة:</span>
         {visibleActions.map((action, idx) => (
           <motion.div
             key={idx}
@@ -396,16 +390,33 @@ const QuickActionsBar = ({
             whileTap={{ scale: 0.98 }}
           >
             <Button
-              variant={action.color.includes('border') ? 'outline' : 'default'}
+              variant={action.variant}
               size="sm"
               onClick={action.onClick}
-              className={cn("gap-2 whitespace-nowrap rounded-xl", action.color)}
+              className={cn("gap-2 whitespace-nowrap rounded-lg", action.className)}
             >
               <action.icon className="w-4 h-4" />
               {action.label}
             </Button>
           </motion.div>
         ))}
+        
+        <div className="flex-1" />
+        
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onDeletePermanent}
+            className="gap-2 rounded-lg bg-rose-600 hover:bg-rose-700"
+          >
+            <Trash2 className="w-4 h-4" />
+            حذف نهائي
+          </Button>
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -566,42 +577,42 @@ const FinancialTab = ({
   }>;
 }) => (
   <Tabs defaultValue="overview" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
+    <TabsList className="w-full justify-start bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
       <TabsTrigger
         value="overview"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <LayoutDashboard className="w-4 h-4" />
         نظرة عامة
       </TabsTrigger>
       <TabsTrigger
         value="invoices"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <Receipt className="w-4 h-4" />
         الفواتير
       </TabsTrigger>
       <TabsTrigger
         value="payments"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <CreditCard className="w-4 h-4" />
         الدفعات
       </TabsTrigger>
       <TabsTrigger
         value="schedule"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <Wallet className="w-4 h-4" />
         جدول الدفعات
       </TabsTrigger>
     </TabsList>
 
-    <TabsContent value="overview" className="mt-6">
+    <TabsContent value="overview" className="mt-0">
       <FinancialDashboard contract={contract} formatCurrency={formatCurrency} invoices={invoices} />
     </TabsContent>
 
-    <TabsContent value="invoices" className="mt-6">
+    <TabsContent value="invoices" className="mt-0">
       <ContractInvoicesTabRedesigned
         invoices={invoices}
         formatCurrency={formatCurrency}
@@ -622,7 +633,7 @@ const FinancialTab = ({
       />
     </TabsContent>
 
-    <TabsContent value="payments" className="mt-6">
+    <TabsContent value="payments" className="mt-0">
       <ContractPaymentsTabRedesigned
         contractId={contractId}
         companyId={companyId}
@@ -637,7 +648,7 @@ const FinancialTab = ({
       />
     </TabsContent>
 
-    <TabsContent value="schedule" className="mt-6">
+    <TabsContent value="schedule" className="mt-0">
       <EnhancedPaymentScheduleTabRedesigned
         contract={contract}
         formatCurrency={formatCurrency}
@@ -814,36 +825,36 @@ const DocumentsTab = ({
   contract: Contract;
 }) => (
   <Tabs defaultValue="documents" className="w-full">
-    <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
+    <TabsList className="w-full justify-start bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
       <TabsTrigger
         value="documents"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <Folder className="w-4 h-4" />
         المستندات
       </TabsTrigger>
       <TabsTrigger
         value="timeline"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <GitBranch className="w-4 h-4" />
         الجدول الزمني
       </TabsTrigger>
       <TabsTrigger
         value="activity"
-        className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+        className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
       >
         <Activity className="w-4 h-4" />
         النشاط
       </TabsTrigger>
     </TabsList>
 
-    <TabsContent value="documents" className="mt-6">
+    <TabsContent value="documents" className="mt-0">
       <ContractDocuments contractId={contract.id} />
     </TabsContent>
 
-    <TabsContent value="timeline" className="mt-6">
-      <Card className="border-neutral-200">
+    <TabsContent value="timeline" className="mt-0">
+      <Card className="border-slate-200">
         <CardHeader>
           <CardTitle className="text-lg">الجدول الزمني للعقد</CardTitle>
         </CardHeader>
@@ -853,15 +864,15 @@ const DocumentsTab = ({
       </Card>
     </TabsContent>
 
-    <TabsContent value="activity" className="mt-6">
-      <Card className="border-neutral-200">
+    <TabsContent value="activity" className="mt-0">
+      <Card className="border-slate-200">
         <CardHeader>
           <CardTitle className="text-lg">سجل النشاط</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-16 text-neutral-500">
-            <div className="w-20 h-20 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-              <Activity className="w-10 h-10 text-neutral-400" />
+          <div className="text-center py-16 text-slate-500">
+            <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+              <Activity className="w-10 h-10 text-slate-400" />
             </div>
             <p>سجل النشاط سيظهر هنا</p>
           </div>
@@ -1405,7 +1416,7 @@ const ContractDetailsPageRedesigned = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gradient-to-br from-neutral-100 via-white to-neutral-100"
+      className="min-h-screen bg-slate-50"
       dir="rtl"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -1442,16 +1453,16 @@ const ContractDetailsPageRedesigned = () => {
         {/* Main Tabs */}
         <motion.div
           variants={fadeInUp}
-          className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm"
+          className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm"
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b border-neutral-200 px-6">
-              <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none flex gap-1 overflow-x-auto">
+            <div className="px-6 pt-4">
+              <TabsList className="w-full justify-start bg-white border border-slate-200 p-1 rounded-xl h-auto mb-2">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-4 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500 hover:bg-teal-50/50 whitespace-nowrap"
+                    className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-3 gap-2 transition-all whitespace-nowrap"
                   >
                     <tab.icon className="w-4 h-4" />
                     {tab.label}

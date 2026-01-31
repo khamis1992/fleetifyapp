@@ -177,6 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const initializeAuth = async () => {
+
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
       console.log('📝 [AUTH_CONTEXT] Already initialized, skipping...');

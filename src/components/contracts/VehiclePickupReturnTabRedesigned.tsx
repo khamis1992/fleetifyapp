@@ -531,22 +531,22 @@ export const VehiclePickupReturnTabRedesigned = ({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pickup' | 'return')} className="w-full">
-        <TabsList className="w-full justify-start bg-transparent h-auto p-0 rounded-none border-b border-neutral-200">
+        <TabsList className="w-full justify-start bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
           <TabsTrigger
             value="pickup"
-            className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-teal-500"
+            className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
           >
             <ArrowRight className="w-4 h-4" />
             استلام المركبة
-            <Badge variant="outline" className="mr-2">{pickupRecords.length}</Badge>
+            <Badge variant="outline" className="mr-2 data-[state=active]:border-white/50 data-[state=active]:text-white">{pickupRecords.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="return"
-            className="data-[state=active]:bg-amber-50 data-[state=active]:text-amber-600 rounded-t-lg px-5 py-3 gap-2 transition-all border-b-2 border-transparent data-[state=active]:border-amber-500"
+            className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg px-5 py-2.5 gap-2 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
             تسليم المركبة
-            <Badge variant="outline" className="mr-2">{returnRecords.length}</Badge>
+            <Badge variant="outline" className="mr-2 data-[state=active]:border-white/50 data-[state=active]:text-white">{returnRecords.length}</Badge>
           </TabsTrigger>
         </TabsList>
 

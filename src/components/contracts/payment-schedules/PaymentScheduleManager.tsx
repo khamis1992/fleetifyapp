@@ -158,17 +158,29 @@ export const PaymentScheduleManager = ({
             </div>
           ) : (
             <Tabs defaultValue="all">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">
+              <TabsList className="grid w-full grid-cols-4 bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
+                <TabsTrigger 
+                  value="all"
+                  className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2 transition-all"
+                >
                   الكل ({schedules.length})
                 </TabsTrigger>
-                <TabsTrigger value="pending">
+                <TabsTrigger 
+                  value="pending"
+                  className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2 transition-all"
+                >
                   معلقة ({pendingSchedules.length})
                 </TabsTrigger>
-                <TabsTrigger value="overdue">
+                <TabsTrigger 
+                  value="overdue"
+                  className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2 transition-all"
+                >
                   متأخرة ({overdueSchedules.length})
                 </TabsTrigger>
-                <TabsTrigger value="paid">
+                <TabsTrigger 
+                  value="paid"
+                  className="data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2 transition-all"
+                >
                   مدفوعة ({paidSchedules.length})
                 </TabsTrigger>
               </TabsList>

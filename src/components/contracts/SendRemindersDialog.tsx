@@ -464,12 +464,18 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
         <div className="space-y-6 py-4">
           {/* Tabs for Send / Test */}
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'send' | 'test')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="send" className="gap-2">
+            <TabsList className="grid w-full grid-cols-2 bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
+              <TabsTrigger 
+                value="send" 
+                className="gap-2 data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2.5 transition-all"
+              >
                 <Send className="h-4 w-4" />
                 إرسال للعملاء
               </TabsTrigger>
-              <TabsTrigger value="test" className="gap-2">
+              <TabsTrigger 
+                value="test" 
+                className="gap-2 data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2.5 transition-all"
+              >
                 <TestTube className="h-4 w-4" />
                 تجربة الإرسال
               </TabsTrigger>

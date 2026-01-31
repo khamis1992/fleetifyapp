@@ -57,3 +57,40 @@ npm install
 ```
 
 ثم اختبار تحميل المستندات من الصفحتين للتأكد من التطابق الكامل.
+
+---
+
+## 8. تسجيل دخول تلقائي في البيئة المحلية
+
+### الملفات المعدلة:
+
+#### `src/contexts/AuthContext.tsx`
+```typescript
+// في بداية دالة initializeAuth
+if (import.meta.env.DEV && window.location.hostname === 'localhost') {
+  console.log('🔓 Development mode - auto login');
+  
+  // تسجيل دخول تلقائي بحساب khamis
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: 'khamis-1992@hotmail.com',
+    password: '123456789',
+  });
+  
+  if (data.user) {
+    const authUser = authService.mapSupabaseUser(data.user);
+    setUser(authUser);
+    setSession(data.session);
+    cacheUser(authUser);
+  }
+  
+  setLoading(false);
+  return;
+}
+```
+
+### النتيجة:
+✅ عند فتح `http://localhost:*` سيتم تسجيل دخول تلقائي
+✅ يستخدم حساب **khamis-1992@hotmail.com** الحقيقي
+✅ بيانات **شركة العراف** ستظهر بشكل طبيعي
+✅ يعمل **فقط** في البيئة المحلية (localhost)
+✅ في Production سيعمل نظام المصادقة بشكل طبيعي

@@ -298,12 +298,18 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
 
   return (
     <Tabs defaultValue="schedules" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="schedules" className="flex items-center gap-2">
+      <TabsList className="grid w-full grid-cols-2 bg-white border border-slate-200 p-1 rounded-xl h-auto mb-6">
+        <TabsTrigger 
+          value="schedules" 
+          className="flex items-center gap-2 data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2.5 transition-all"
+        >
           <CreditCard className="h-4 w-4" />
           جدول الدفع
         </TabsTrigger>
-        <TabsTrigger value="invoices" className="flex items-center gap-2">
+        <TabsTrigger 
+          value="invoices" 
+          className="flex items-center gap-2 data-[state=active]:bg-[#00A896] data-[state=active]:text-white rounded-lg py-2.5 transition-all"
+        >
           <FileText className="h-4 w-4" />
           الفواتير
         </TabsTrigger>
