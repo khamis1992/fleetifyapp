@@ -59,20 +59,31 @@ const getCachedUser = (): AuthUser | null => {
   }
 };
 
-// Generate unique tab ID
+// CRITICAL FIX: Generate unique tab ID with exception handling
 const generateTabId = (): string => {
   const tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  sessionStorage.setItem('tab_id', tabId);
+  try {
+    sessionStorage.setItem('tab_id', tabId);
+  } catch (error) {
+    console.warn('📝 [AUTH_CONTEXT] Cannot write to sessionStorage (private mode or quota exceeded):', error);
+    // Continue with in-memory tabId only
+  }
   return tabId;
 };
 
-// Get or create tab ID
+// CRITICAL FIX: Get or create tab ID with exception handling
 const getTabId = (): string => {
-  let tabId = sessionStorage.getItem('tab_id');
-  if (!tabId) {
-    tabId = generateTabId();
+  try {
+    let tabId = sessionStorage.getItem('tab_id');
+    if (!tabId) {
+      tabId = generateTabId();
+    }
+    return tabId;
+  } catch (error) {
+    console.warn('📝 [AUTH_CONTEXT] Cannot read from sessionStorage:', error);
+    // Fallback: generate new ID without storage
+    return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
-  return tabId;
 };
 
 // Helper to save user to cache
@@ -121,23 +132,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isInitialized = useRef(false);
   const mountedRef = useRef(true);
 
-  // Lock mechanism to prevent race conditions during initialization
+  // CRITICAL FIX: Lock mechanism with proper exception handling
   const acquireInitLock = (): boolean => {
     try {
       const lockKey = 'auth_init_lock';
       const lockTimeout = 5000; // 5 seconds
       
-      const existingLock = localStorage.getItem(lockKey);
-      if (existingLock) {
-        const lockTime = parseInt(existingLock);
-        if (Date.now() - lockTime < lockTimeout) {
-          // Active lock from another tab
-          return false;
+      try {
+        const existingLock = localStorage.getItem(lockKey);
+        if (existingLock) {
+          const lockTime = parseInt(existingLock);
+          if (Date.now() - lockTime < lockTimeout) {
+            // Active lock from another tab
+            return false;
+          }
         }
+      } catch (readError) {
+        console.warn('📝 [AUTH_CONTEXT] Cannot read lock (storage disabled):', readError);
+        // If we can't read, assume no lock exists
       }
       
       // Acquire the lock
-      localStorage.setItem(lockKey, Date.now().toString());
+      try {
+        localStorage.setItem(lockKey, Date.now().toString());
+      } catch (writeError) {
+        console.warn('📝 [AUTH_CONTEXT] Cannot write lock (storage disabled):', writeError);
+        // Continue without lock in extreme cases (iOS private mode)
+      }
+      
       return true;
     } catch (error) {
       console.warn('📝 [AUTH_CONTEXT] Failed to acquire lock:', error);
@@ -149,7 +171,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       localStorage.removeItem('auth_init_lock');
     } catch (error) {
-      console.warn('📝 [AUTH_CONTEXT] Failed to release lock:', error);
+      console.warn('📝 [AUTH_CONTEXT] Failed to release lock (storage disabled):', error);
+      // Ignore - lock will expire naturally
     }
   };
 

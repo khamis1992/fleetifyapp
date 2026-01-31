@@ -31,6 +31,11 @@ interface TabInfo {
   priority: number;
 }
 
+interface QueuedMessage {
+  message: TabSyncMessage;
+  timestamp: number;
+}
+
 class AdvancedTabSyncManager {
   private channel: BroadcastChannel | null = null;
   private tabId: string = '';
@@ -46,19 +51,35 @@ class AdvancedTabSyncManager {
   // Timers
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+  
+  // CRITICAL FIX: Message throttling to prevent message storms
+  private messageQueue: QueuedMessage[] = [];
+  private isThrottled: boolean = false;
+  private readonly THROTTLE_DELAY = 100; // Max 10 messages/second per tab
+  
+  // CRITICAL FIX: Deduplication for invalidations
+  private recentInvalidations: Map<string, number> = new Map();
+  private readonly INVALIDATION_COOLDOWN = 5000; // 5 seconds between same query invalidations
 
   initialize(queryClient: QueryClient, tabId: string) {
     this.queryClient = queryClient;
     this.tabId = tabId;
     
-    // التحقق من دعم BroadcastChannel
-    if (typeof BroadcastChannel === 'undefined') {
-      console.warn('🔄 [ADVANCED_SYNC] BroadcastChannel not supported');
+    // CRITICAL FIX: Better error handling for BroadcastChannel
+    try {
+      // التحقق من دعم BroadcastChannel
+      if (typeof BroadcastChannel === 'undefined') {
+        console.warn('🔄 [ADVANCED_SYNC] BroadcastChannel not supported - tab sync disabled');
+        return;
+      }
+      
+      // إنشاء BroadcastChannel
+      this.channel = new BroadcastChannel('fleetify-advanced-sync');
+    } catch (error) {
+      console.error('🔄 [ADVANCED_SYNC] Failed to create BroadcastChannel:', error);
+      console.warn('🔄 [ADVANCED_SYNC] Tab sync disabled - each tab will work independently');
       return;
     }
-    
-    // إنشاء BroadcastChannel
-    this.channel = new BroadcastChannel('fleetify-advanced-sync');
     
     // الاستماع للرسائل
     this.channel.addEventListener('message', (event) => {
@@ -196,17 +217,58 @@ class AdvancedTabSyncManager {
   private handleDataUpdate(message: TabSyncMessage & { type: 'DATA_UPDATE' }) {
     // DISABLED: Direct data updates cause conflicts and performance issues
     // Instead, we invalidate the query to trigger a fresh fetch
-    if (this.queryClient && message.queryKey) {
-      console.log(`🔄 [ADVANCED_SYNC] Invalidating query from tab ${message.tabId}:`, message.queryKey);
-      this.queryClient.invalidateQueries({ queryKey: message.queryKey });
+    if (!this.queryClient || !message.queryKey) return;
+    
+    // CRITICAL FIX: Use deduplication for invalidations
+    const queryKeyStr = JSON.stringify(message.queryKey);
+    if (!this.shouldInvalidate(queryKeyStr)) {
+      console.log(`⏭️ [ADVANCED_SYNC] Skipping duplicate invalidation:`, message.queryKey);
+      return;
     }
+    
+    console.log(`🔄 [ADVANCED_SYNC] Invalidating query from tab ${message.tabId}:`, message.queryKey);
+    this.queryClient.invalidateQueries({ queryKey: message.queryKey });
   }
 
   private handleInvalidate(message: TabSyncMessage & { type: 'INVALIDATE' }) {
-    if (this.queryClient) {
-      this.queryClient.invalidateQueries({ queryKey: message.queryKey });
-      console.log(`🔄 [ADVANCED_SYNC] Query invalidated from tab ${message.tabId}:`, message.queryKey);
+    if (!this.queryClient || !message.queryKey) return;
+    
+    // CRITICAL FIX: Use deduplication for invalidations
+    const queryKeyStr = JSON.stringify(message.queryKey);
+    if (!this.shouldInvalidate(queryKeyStr)) {
+      console.log(`⏭️ [ADVANCED_SYNC] Skipping duplicate invalidation:`, message.queryKey);
+      return;
     }
+    
+    this.queryClient.invalidateQueries({ queryKey: message.queryKey });
+    console.log(`🔄 [ADVANCED_SYNC] Query invalidated from tab ${message.tabId}:`, message.queryKey);
+  }
+  
+  /**
+   * CRITICAL FIX: Check if query should be invalidated (deduplication)
+   */
+  private shouldInvalidate(queryKeyStr: string): boolean {
+    const lastInvalidation = this.recentInvalidations.get(queryKeyStr);
+    const now = Date.now();
+    
+    // Rate limit: Max 1 invalidation per 5 seconds per query
+    if (lastInvalidation && now - lastInvalidation < this.INVALIDATION_COOLDOWN) {
+      return false;
+    }
+    
+    // Record this invalidation
+    this.recentInvalidations.set(queryKeyStr, now);
+    
+    // Clean up old entries (older than cooldown period)
+    if (this.recentInvalidations.size > 100) {
+      this.recentInvalidations.forEach((timestamp, key) => {
+        if (now - timestamp > this.INVALIDATION_COOLDOWN) {
+          this.recentInvalidations.delete(key);
+        }
+      });
+    }
+    
+    return true;
   }
 
   private handleSyncRequest(message: TabSyncMessage & { type: 'SYNC_REQUEST' }) {
@@ -293,22 +355,28 @@ class AdvancedTabSyncManager {
   }
 
   private startHeartbeat() {
+    // CRITICAL FIX: Reduced frequency and only leader sends heartbeat
     this.heartbeatInterval = setInterval(() => {
+      // Only leader sends heartbeat
       if (this.isLeader) {
-        this.broadcast({
+        this.throttledBroadcast({
           type: 'LEADER_HEARTBEAT',
           tabId: this.tabId,
           timestamp: Date.now()
         });
       }
       
-      // Ping للتبويبات الأخرى
-      this.broadcast({
-        type: 'PING',
-        tabId: this.tabId,
-        timestamp: Date.now()
-      });
-    }, 3000);
+      // CRITICAL FIX: Reduced ping frequency from 3s to 10s
+      // Only send ping if we haven't sent a message recently
+      const lastMessage = this.messageQueue[this.messageQueue.length - 1];
+      if (!lastMessage || Date.now() - lastMessage.timestamp > 8000) {
+        this.throttledBroadcast({
+          type: 'PING',
+          tabId: this.tabId,
+          timestamp: Date.now()
+        });
+      }
+    }, 10000); // Reduced from 3s to 10s
   }
 
   // ============ Conflict Resolution ============
@@ -378,14 +446,73 @@ class AdvancedTabSyncManager {
 
   // ============ Public API ============
   
-  broadcast(message: TabSyncMessage) {
-    if (this.channel) {
-      try {
-        this.channel.postMessage(message);
-      } catch (error) {
-        console.error('🔄 [ADVANCED_SYNC] Error broadcasting message:', error);
-      }
+  /**
+   * CRITICAL FIX: Throttled broadcast to prevent message storms
+   */
+  private throttledBroadcast(message: TabSyncMessage): void {
+    this.messageQueue.push({ message, timestamp: Date.now() });
+    
+    if (!this.isThrottled) {
+      this.isThrottled = true;
+      
+      setTimeout(() => {
+        this.processMessageQueue();
+        this.isThrottled = false;
+      }, this.THROTTLE_DELAY);
     }
+  }
+  
+  /**
+   * Process queued messages in batch
+   */
+  private processMessageQueue(): void {
+    if (this.messageQueue.length === 0) return;
+    
+    // Deduplicate messages by type and queryKey
+    const uniqueMessages = new Map<string, QueuedMessage>();
+    
+    this.messageQueue.forEach(item => {
+      const key = this.getMessageKey(item.message);
+      const existing = uniqueMessages.get(key);
+      
+      // Keep the most recent message for each key
+      if (!existing || item.timestamp > existing.timestamp) {
+        uniqueMessages.set(key, item);
+      }
+    });
+    
+    // Send deduplicated messages
+    uniqueMessages.forEach(item => {
+      if (this.channel) {
+        try {
+          this.channel.postMessage(item.message);
+        } catch (error) {
+          console.error('🔄 [ADVANCED_SYNC] Error broadcasting message:', error);
+        }
+      }
+    });
+    
+    // Clear queue
+    this.messageQueue = [];
+    
+    console.log(`📤 [ADVANCED_SYNC] Processed ${uniqueMessages.size} unique messages`);
+  }
+  
+  /**
+   * Get unique key for message deduplication
+   */
+  private getMessageKey(message: TabSyncMessage): string {
+    if (message.type === 'DATA_UPDATE' || message.type === 'INVALIDATE') {
+      return `${message.type}:${JSON.stringify(message.queryKey)}`;
+    }
+    return `${message.type}:${message.tabId || 'global'}`;
+  }
+  
+  /**
+   * Public broadcast method (uses throttling internally)
+   */
+  broadcast(message: TabSyncMessage) {
+    this.throttledBroadcast(message);
   }
 
   broadcastDataUpdate(queryKey: any[], data: any, timestamp: number) {

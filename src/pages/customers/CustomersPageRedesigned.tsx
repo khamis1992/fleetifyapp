@@ -41,6 +41,7 @@ import {
   Trash2,
   Download,
   IdCard,
+  Gavel,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,6 +120,7 @@ interface ProCustomerCardProps {
   canEdit: boolean;
   canDelete: boolean;
   index: number;
+  navigate: any; // Add navigate prop
 }
 
 const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
@@ -131,6 +133,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
   canEdit,
   canDelete,
   index,
+  navigate,
 }) => {
   const getCustomerName = () => {
     if (customer.customer_type === 'individual') {
@@ -255,7 +258,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
               <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(); }} className="gap-2">
               <Eye className="w-4 h-4" />
               عرض التفاصيل
@@ -266,6 +269,23 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
                 تعديل
               </DropdownMenuItem>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                // البحث عن عقد نشط للعميل
+                const activeContract = customer.contracts?.find((c: any) => c.status === 'active');
+                if (activeContract) {
+                  navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
+                } else {
+                  toast.error('لا يوجد عقد نشط لهذا العميل');
+                }
+              }} 
+              className="gap-2 text-teal-700 focus:text-teal-700 focus:bg-teal-50"
+            >
+              <Gavel className="w-4 h-4" />
+              إنشاء قضية قانونية
+            </DropdownMenuItem>
             {canDelete && (
               <>
                 <DropdownMenuSeparator />
@@ -1013,6 +1033,7 @@ const CustomersPageRedesigned: React.FC = () => {
                   canEdit={canEdit}
                   canDelete={canDelete}
                   index={index}
+                  navigate={navigate}
                 />
               ))}
             </div>

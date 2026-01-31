@@ -471,12 +471,23 @@ export default function CustomerVerificationPage() {
       return { verifierFullName };
     },
     onSuccess: () => {
-      toast.success('تم تأكيد جاهزية العميل لرفع الدعوى');
+      toast.success('تم تأكيد جاهزية العميل لرفع الدعوى', {
+        description: '✅ تم إنشاء قضية تلقائياً في بيانات التقاضي',
+        action: {
+          label: 'عرض القضية',
+          onClick: () => navigate('/legal/lawsuit-data')
+        }
+      });
       queryClient.invalidateQueries({ queryKey: ['verification-task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['my-verification-tasks'] });
-      navigate('/legal/cases');
+      queryClient.invalidateQueries({ queryKey: ['lawsuit_templates'] });
+      
+      // الانتقال إلى صفحة بيانات التقاضي بدلاً من القضايا
+      setTimeout(() => {
+        navigate('/legal/lawsuit-data');
+      }, 2000);
     },
     onError: (error: any) => {
       toast.error('فشل التأكيد: ' + error.message);

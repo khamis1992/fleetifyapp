@@ -74,6 +74,8 @@ import {
   PhoneIncoming,
   Bell,
   Loader2,
+  Gavel,
+  Database,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -3218,7 +3220,7 @@ const CustomerDetailsPageNew = () => {
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={handleEdit} className="gap-2">
                     <Edit3 className="w-4 h-4" />
                     تعديل البيانات
@@ -3230,6 +3232,33 @@ const CustomerDetailsPageNew = () => {
                   <DropdownMenuItem className="gap-2">
                     <Share2 className="w-4 h-4" />
                     مشاركة
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="gap-2 text-teal-700 focus:text-teal-700 focus:bg-teal-50"
+                    onClick={() => {
+                      // الانتقال إلى صفحة تجهيز القضية للعقد النشط
+                      const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
+                      if (activeContract) {
+                        navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
+                      } else {
+                        toast({
+                          title: 'لا يوجد عقد نشط',
+                          description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية',
+                          variant: 'destructive'
+                        });
+                      }
+                    }}
+                  >
+                    <Gavel className="w-4 h-4" />
+                    إنشاء قضية قانونية
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="gap-2 text-blue-700 focus:text-blue-700 focus:bg-blue-50"
+                    onClick={() => navigate('/legal/lawsuit-data')}
+                  >
+                    <Database className="w-4 h-4" />
+                    عرض بيانات التقاضي
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
@@ -3404,6 +3433,29 @@ const CustomerDetailsPageNew = () => {
                 <span>فواتير: {stats.overdueInvoicesAmount.toLocaleString()} ر.ق</span>
                 <span>مخالفات: {stats.unpaidViolationsAmount.toLocaleString()} ر.ق</span>
               </div>
+              
+              {/* زر إنشاء قضية إذا كان هناك رصيد متأخر */}
+              {stats.totalLateAmount > 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
+                    if (activeContract) {
+                      navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
+                    } else {
+                      toast({
+                        title: 'لا يوجد عقد نشط',
+                        description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية',
+                        variant: 'destructive'
+                      });
+                    }
+                  }}
+                  className="mt-3 w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white gap-2"
+                >
+                  <Gavel className="w-4 h-4" />
+                  إنشاء قضية
+                </Button>
+              )}
             </div>
           </motion.div>
 

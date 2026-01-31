@@ -191,6 +191,33 @@ const App: React.FC = () => {
 
   // Initialize advanced tab sync manager
   React.useEffect(() => {
+    // CRITICAL FIX: Track recent invalidations to prevent loops
+    const recentInvalidations = new Map<string, number>();
+    const INVALIDATION_COOLDOWN = 3000; // 3 seconds
+    
+    const shouldInvalidate = (queryKey: any[]): boolean => {
+      const queryKeyStr = JSON.stringify(queryKey);
+      const lastInvalidation = recentInvalidations.get(queryKeyStr);
+      const now = Date.now();
+      
+      if (lastInvalidation && now - lastInvalidation < INVALIDATION_COOLDOWN) {
+        return false; // Skip duplicate invalidation
+      }
+      
+      recentInvalidations.set(queryKeyStr, now);
+      
+      // Clean up old entries
+      if (recentInvalidations.size > 100) {
+        recentInvalidations.forEach((timestamp, key) => {
+          if (now - timestamp > INVALIDATION_COOLDOWN) {
+            recentInvalidations.delete(key);
+          }
+        });
+      }
+      
+      return true;
+    };
+    
     import('./utils/advancedTabSync').then(({ advancedTabSync }) => {
       console.log('🔄 [APP] Advanced tab sync manager initializing...');
       
@@ -198,18 +225,29 @@ const App: React.FC = () => {
       advancedTabSync.initialize(queryClient, tabId);
       
       // الاستماع لتحديثات البيانات من التبويبات الأخرى
-      // DISABLED: Applying data updates from other tabs can cause conflicts
-      // Instead, we only invalidate queries to trigger fresh fetches
+      // CRITICAL FIX: Added deduplication to prevent recursive loops
       const unsubscribeDataSync = advancedTabSync.onDataUpdate((message) => {
         if (message.type === 'DATA_UPDATE' && message.queryKey) {
+          // Check if we should invalidate (deduplication)
+          if (!shouldInvalidate(message.queryKey)) {
+            console.log(`⏭️ [APP] Skipping duplicate invalidation:`, message.queryKey);
+            return;
+          }
+          
           console.log(`🔄 [APP] Invalidating query from tab ${message.tabId}:`, message.queryKey);
-          // بدلاً من نسخ البيانات، نطلب إعادة جلبها
           queryClient.invalidateQueries({ queryKey: message.queryKey });
         }
       });
       
       // الاستماع لإبطال الاستعلامات
+      // CRITICAL FIX: Added deduplication to prevent recursive loops
       const unsubscribeInvalidate = advancedTabSync.onInvalidate((queryKey) => {
+        // Check if we should invalidate (deduplication)
+        if (!shouldInvalidate(queryKey)) {
+          console.log(`⏭️ [APP] Skipping duplicate invalidation:`, queryKey);
+          return;
+        }
+        
         console.log(`🔄 [APP] Invalidating query from another tab:`, queryKey);
         queryClient.invalidateQueries({ queryKey });
       });

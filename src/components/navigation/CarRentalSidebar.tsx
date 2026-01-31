@@ -414,6 +414,22 @@ export function CarRentalSidebar() {
                           </NavLink>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                          <NavLink to="/legal/delinquency" className={getNavClassName}>
+                            <Target className="h-4 w-4" />
+                            {(!collapsed || isMobile) && <span>إدارة المتعثرات</span>}
+                          </NavLink>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                          <NavLink to="/legal/lawsuit-data" className={getNavClassName}>
+                            <FileText className="h-4 w-4" />
+                            {(!collapsed || isMobile) && <span>بيانات التقاضي</span>}
+                          </NavLink>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </Collapsible>

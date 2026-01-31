@@ -21,6 +21,12 @@ class TabSyncManager {
   private isInitialized = false;
   private activeTabs: Set<string> = new Set();
   private pingInterval: ReturnType<typeof setInterval> | null = null;
+  
+  // CRITICAL FIX: localStorage fallback for unsupported browsers
+  private useFallback: boolean = false;
+  private fallbackInterval: ReturnType<typeof setInterval> | null = null;
+  private lastFallbackCheck: number = 0;
+  private readonly FALLBACK_KEY = 'fleetify_tab_sync_fallback';
 
   constructor() {
     this.tabId = this.generateTabId();
@@ -28,25 +34,39 @@ class TabSyncManager {
   }
 
   /**
-   * Generate unique tab ID
+   * Generate unique tab ID with exception handling
+   * CRITICAL FIX: Handle storage exceptions (iOS private mode, quota exceeded)
    */
   private generateTabId(): string {
-    let tabId = sessionStorage.getItem('fleetify_tab_id');
-    if (!tabId) {
-      tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('fleetify_tab_id', tabId);
+    try {
+      let tabId = sessionStorage.getItem('fleetify_tab_id');
+      if (!tabId) {
+        tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        try {
+          sessionStorage.setItem('fleetify_tab_id', tabId);
+        } catch (storageError) {
+          console.warn('🔄 [TAB_SYNC] Cannot write to sessionStorage (private mode or quota exceeded):', storageError);
+          // Continue with in-memory tabId only
+        }
+      }
+      return tabId;
+    } catch (error) {
+      console.error('🔄 [TAB_SYNC] Error generating tab ID:', error);
+      // Fallback: use timestamp-based ID without storage
+      return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    return tabId;
   }
 
   /**
-   * Initialize BroadcastChannel
+   * Initialize BroadcastChannel with fallback
+   * CRITICAL FIX: Add localStorage fallback for unsupported browsers
    */
   private initChannel(): void {
     try {
       // Check if BroadcastChannel is supported
       if (typeof BroadcastChannel === 'undefined') {
-        console.warn('🔄 [TAB_SYNC] BroadcastChannel not supported in this browser');
+        console.warn('🔄 [TAB_SYNC] BroadcastChannel not supported - using localStorage fallback');
+        this.setupLocalStorageFallback();
         return;
       }
 
@@ -81,6 +101,101 @@ class TabSyncManager {
       console.log(`🔄 [TAB_SYNC] Initialized for tab: ${this.tabId}`);
     } catch (error) {
       console.error('🔄 [TAB_SYNC] Error initializing BroadcastChannel:', error);
+      // CRITICAL FIX: Fallback to localStorage on error
+      this.setupLocalStorageFallback();
+    }
+  }
+  
+  /**
+   * CRITICAL FIX: localStorage fallback for browsers without BroadcastChannel
+   * Used in: iOS Safari private mode, older browsers, Capacitor apps
+   */
+  private setupLocalStorageFallback(): void {
+    console.log('🔄 [TAB_SYNC] Setting up localStorage fallback');
+    this.useFallback = true;
+    
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', (event) => {
+      if (event.key === this.FALLBACK_KEY && event.newValue) {
+        try {
+          const message = JSON.parse(event.newValue) as TabSyncMessage;
+          this.handleMessage(message);
+        } catch (error) {
+          console.error('🔄 [TAB_SYNC] Error parsing fallback message:', error);
+        }
+      }
+    });
+    
+    // Poll for messages (as backup for storage events)
+    this.fallbackInterval = setInterval(() => {
+      this.checkFallbackMessages();
+    }, 1000); // Check every second
+    
+    // Notify other tabs
+    this.broadcastViaFallback({
+      type: 'TAB_OPENED',
+      tabId: this.tabId,
+      timestamp: Date.now()
+    });
+    
+    // Start ping mechanism
+    this.startPingMechanism();
+    
+    // Listen for tab close
+    window.addEventListener('beforeunload', () => {
+      this.broadcastViaFallback({
+        type: 'TAB_CLOSED',
+        tabId: this.tabId,
+        timestamp: Date.now()
+      });
+    });
+    
+    this.isInitialized = true;
+    console.log(`🔄 [TAB_SYNC] Fallback initialized for tab: ${this.tabId}`);
+  }
+  
+  /**
+   * Broadcast message via localStorage fallback
+   */
+  private broadcastViaFallback(message: TabSyncMessage): void {
+    try {
+      const messageStr = JSON.stringify(message);
+      localStorage.setItem(this.FALLBACK_KEY, messageStr);
+      
+      // Clear after a short delay to allow other tabs to read
+      setTimeout(() => {
+        try {
+          const current = localStorage.getItem(this.FALLBACK_KEY);
+          if (current === messageStr) {
+            localStorage.removeItem(this.FALLBACK_KEY);
+          }
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }, 100);
+    } catch (error) {
+      console.error('🔄 [TAB_SYNC] Error broadcasting via fallback:', error);
+      // If localStorage also fails, we're in extreme conditions
+      // Continue without sync (isolated tab mode)
+    }
+  }
+  
+  /**
+   * Check for fallback messages
+   */
+  private checkFallbackMessages(): void {
+    try {
+      const messageStr = localStorage.getItem(this.FALLBACK_KEY);
+      if (messageStr) {
+        const message = JSON.parse(messageStr) as TabSyncMessage;
+        
+        // Only process if message is recent (within last 2 seconds)
+        if (Date.now() - message.timestamp < 2000) {
+          this.handleMessage(message);
+        }
+      }
+    } catch (error) {
+      // Ignore read errors
     }
   }
 
@@ -149,8 +264,14 @@ class TabSyncManager {
 
   /**
    * Broadcast message to all other tabs
+   * CRITICAL FIX: Support both BroadcastChannel and localStorage fallback
    */
   broadcast(message: TabSyncMessage): void {
+    if (this.useFallback) {
+      this.broadcastViaFallback(message);
+      return;
+    }
+    
     if (!this.channel) {
       console.warn('🔄 [TAB_SYNC] Channel not initialized, cannot broadcast');
       return;
@@ -161,6 +282,8 @@ class TabSyncManager {
       console.log(`🔄 [TAB_SYNC] Broadcasted message:`, message);
     } catch (error) {
       console.error('🔄 [TAB_SYNC] Error broadcasting message:', error);
+      // CRITICAL FIX: Fallback to localStorage if broadcast fails
+      this.broadcastViaFallback(message);
     }
   }
 
@@ -209,11 +332,17 @@ class TabSyncManager {
 
   /**
    * Cleanup resources
+   * CRITICAL FIX: Also cleanup fallback resources
    */
   cleanup(): void {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
+    }
+    
+    if (this.fallbackInterval) {
+      clearInterval(this.fallbackInterval);
+      this.fallbackInterval = null;
     }
 
     if (this.channel) {

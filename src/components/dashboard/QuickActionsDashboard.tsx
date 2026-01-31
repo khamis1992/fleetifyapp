@@ -15,7 +15,9 @@ import {
   Download,
   Upload,
   Clock,
-  Zap
+  Zap,
+  Gavel,
+  Database
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -101,6 +103,25 @@ const QuickActionsDashboard: React.FC = () => {
       color: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
       route: '/search',
       requiresCompanyAccess: true
+    },
+    {
+      id: 'lawsuit-data',
+      title: 'بيانات التقاضي',
+      description: 'عرض وإدارة بيانات القضايا المُنشأة',
+      icon: Database,
+      color: 'from-teal-50 to-teal-100 border-teal-300 hover:border-teal-400',
+      route: '/legal/lawsuit-data',
+      badge: 'جديد',
+      requiresAdmin: true
+    },
+    {
+      id: 'delinquency',
+      title: 'إدارة المتعثرات',
+      description: 'متابعة العملاء المتعثرين ماليًا',
+      icon: Gavel,
+      color: 'from-red-50 to-red-100 border-red-300 hover:border-red-400',
+      route: '/legal/delinquency',
+      requiresAdmin: true
     }
   ];
 

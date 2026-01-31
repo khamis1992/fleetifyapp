@@ -309,6 +309,61 @@ export function LawsuitPreparationProvider({
   // Actions
   // ==========================================
   
+  // دالة لتحميل الصور (اللوقو، التوقيع، الختم) كـ Base64
+  const loadImageAsBase64 = async (path: string): Promise<string> => {
+    try {
+      const response = await fetch(path);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error(`Failed to load image ${path}:`, error);
+      return '';
+    }
+  };
+
+  // دالة لتضمين جميع الصور في HTML
+  const embedImagesInHtml = async (html: string): Promise<string> => {
+    try {
+      // تحميل جميع الصور
+      const [logoBase64, signatureBase64, stampBase64] = await Promise.all([
+        loadImageAsBase64('/receipts/logo.png'),
+        loadImageAsBase64('/receipts/signature.png'),
+        loadImageAsBase64('/receipts/stamp.png'),
+      ]);
+      
+      // استبدال جميع المسارات
+      let result = html;
+      
+      if (logoBase64) {
+        result = result
+          .replace(/src="\/receipts\/logo\.png"/g, `src="${logoBase64}"`)
+          .replace(/src='\/receipts\/logo\.png'/g, `src='${logoBase64}'`);
+      }
+      
+      if (signatureBase64) {
+        result = result
+          .replace(/src="\/receipts\/signature\.png"/g, `src="${signatureBase64}"`)
+          .replace(/src='\/receipts\/signature\.png'/g, `src='${signatureBase64}'`);
+      }
+      
+      if (stampBase64) {
+        result = result
+          .replace(/src="\/receipts\/stamp\.png"/g, `src="${stampBase64}"`)
+          .replace(/src='\/receipts\/stamp\.png'/g, `src='${stampBase64}'`);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Failed to embed images:', error);
+      return html;
+    }
+  };
+
   const generateDocument = useCallback(async (docId: keyof DocumentsState) => {
     dispatch({ type: 'GENERATE_DOCUMENT_START', payload: { docId } });
     
@@ -317,7 +372,14 @@ export function LawsuitPreparationProvider({
       const currentState = state;
       
       // Generate document using utility
-      const { url, html } = await generateDocumentUtil(docId, currentState);
+      const { url, html: originalHtml } = await generateDocumentUtil(docId, currentState);
+      
+      // تضمين اللوقو والتوقيع والختم في HTML
+      const html = await embedImagesInHtml(originalHtml);
+      
+      // إنشاء URL جديد مع الصور المضمّنة
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const urlWithImages = URL.createObjectURL(blob);
       
       // Store HTML in refs for ZIP download
       if (docId === 'memo') contentRefs.current.memoHtml = html;
@@ -327,7 +389,7 @@ export function LawsuitPreparationProvider({
       
       dispatch({ 
         type: 'GENERATE_DOCUMENT_SUCCESS', 
-        payload: { docId, url, html } 
+        payload: { docId, url: urlWithImages, html } 
       });
     } catch (error) {
       dispatch({ 

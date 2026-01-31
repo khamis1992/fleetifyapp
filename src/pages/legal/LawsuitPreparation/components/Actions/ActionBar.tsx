@@ -13,6 +13,7 @@ import {
   Upload, 
   AlertCircle,
   ArrowLeft,
+  Database,
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
@@ -29,15 +30,25 @@ export function ActionBar() {
   
   return (
     <>
-      {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        onClick={() => navigate(-1)} 
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 ml-2" />
-        رجوع
-      </Button>
+      {/* Navigation Buttons */}
+      <div className="flex items-center justify-between mb-4">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-4 w-4 ml-2" />
+          رجوع
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/legal/lawsuit-data')}
+          className="border-teal-300 text-teal-700 hover:bg-teal-50"
+        >
+          <Database className="h-4 w-4 ml-2" />
+          عرض جميع القضايا
+        </Button>
+      </div>
       
       {/* Main Action Bar */}
       <motion.div

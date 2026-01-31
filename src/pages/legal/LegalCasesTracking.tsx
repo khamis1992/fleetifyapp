@@ -1547,6 +1547,15 @@ export const LegalCasesTracking: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <Button
+              onClick={() => navigate('/legal/lawsuit-data')}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">بيانات التقاضي</span>
+            </Button>
+            <Button
               onClick={() => setShowTriggersConfig(true)}
               variant="outline"
               size="sm"
