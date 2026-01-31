@@ -3,7 +3,7 @@
  * صفحة مساحة عمل الموظف - تصميم احترافي
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -25,7 +25,9 @@ import {
   XCircle,
   PauseCircle,
   Scale,
-  PlayCircle
+  PlayCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -65,6 +67,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const { formatCurrency } = useCurrencyFormatter();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
   
   // Dialog states
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -160,6 +163,47 @@ export const EmployeeWorkspace: React.FC = () => {
     c.customers?.first_name_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.customers?.company_name_ar?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Group invoices by customer for monthly collections
+  const groupedCollections = useMemo(() => {
+    const groups = new Map<string, {
+      customer_id: string;
+      customer_name: string;
+      customer_phone?: string;
+      total_amount: number;
+      invoices: typeof collections;
+    }>();
+
+    collections.forEach(item => {
+      if (!groups.has(item.customer_id)) {
+        groups.set(item.customer_id, {
+          customer_id: item.customer_id,
+          customer_name: item.customer_name,
+          customer_phone: undefined, // سنحصل عليه من العقد
+          total_amount: 0,
+          invoices: []
+        });
+      }
+
+      const group = groups.get(item.customer_id)!;
+      group.total_amount += item.amount - item.paid_amount;
+      group.invoices.push(item);
+    });
+
+    return Array.from(groups.values()).sort((a, b) => b.total_amount - a.total_amount);
+  }, [collections]);
+
+  const toggleCustomerExpanded = (customerId: string) => {
+    setExpandedCustomers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(customerId)) {
+        newSet.delete(customerId);
+      } else {
+        newSet.add(customerId);
+      }
+      return newSet;
+    });
+  };
 
   // Get contract status styling
   const getContractStatusStyle = (status: string) => {
@@ -511,7 +555,7 @@ export const EmployeeWorkspace: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Collections List */}
+              {/* Collections List - Grouped by Customer */}
               <Card className="shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -519,69 +563,157 @@ export const EmployeeWorkspace: React.FC = () => {
                       <DollarSign className="w-5 h-5 text-emerald-600" />
                       قائمة التحصيل الشهري
                     </CardTitle>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {groupedCollections.length} عميل
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[500px] pr-4">
-                    {collections.length > 0 ? (
+                    {groupedCollections.length > 0 ? (
                       <div className="space-y-3">
-                        {collections.map((item) => (
-                          <div 
-                            key={item.invoice_id} 
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-emerald-200 hover:shadow-sm transition-all bg-white group"
-                          >
-                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                              <div className={cn(
-                                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm",
-                                item.status === 'paid' ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
-                              )}>
-                                {item.status === 'paid' ? <CheckCircle className="w-5 h-5" /> : <DollarSign className="w-5 h-5" />}
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">
-                                  {item.customer_name}
-                                </h4>
-                                <p className="text-xs text-gray-500 flex items-center gap-2">
-                                  <span>عقد #{item.contract_number}</span>
-                                  <span className="text-gray-300">•</span>
-                                  <span>فاتورة #{item.invoice_number}</span>
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-col sm:flex-row items-center gap-4">
-                              <div className="text-left">
-                                <p className="font-bold text-gray-900">{formatCurrency(item.amount)}</p>
-                                <p className="text-xs text-gray-500">استحقاق: {new Date(item.due_date).toLocaleDateString('ar-EG')}</p>
-                              </div>
-                              
-                              {item.status === 'paid' ? (
-                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200">
-                                  مدفوع
-                                </Badge>
-                              ) : (
-                                <div className="flex gap-2">
-                                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                    غير مدفوع
-                                  </Badge>
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
+                        {groupedCollections.map((group) => {
+                          const isExpanded = expandedCustomers.has(group.customer_id);
+                          
+                          return (
+                            <div 
+                              key={group.customer_id}
+                              className="rounded-xl border-2 border-gray-200 bg-white overflow-hidden hover:border-emerald-300 transition-all"
+                            >
+                              {/* Customer Header */}
+                              <div 
+                                className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white hover:from-emerald-50 hover:to-white transition-all"
+                              >
+                                <div className="flex items-center gap-4 flex-1">
+                                  <Avatar 
+                                    className="h-12 w-12 border-2 border-emerald-200 shadow-sm cursor-pointer hover:border-emerald-400 transition-all"
                                     onClick={() => {
-                                      navigate(`/finance/payments/quick?customerId=${item.customer_id}&customerName=${encodeURIComponent(item.customer_name)}`);
+                                      // الانتقال لأول عقد للعميل
+                                      const firstInvoice = group.invoices[0];
+                                      if (firstInvoice?.contract_number) {
+                                        navigate(`/contracts/${firstInvoice.contract_number}`);
+                                      }
                                     }}
                                   >
+                                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold text-lg">
+                                      {group.customer_name.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <h4 
+                                      className="font-bold text-gray-900 text-base mb-1 cursor-pointer hover:text-emerald-600 hover:underline transition-colors"
+                                      onClick={() => {
+                                        // الانتقال لأول عقد للعميل
+                                        const firstInvoice = group.invoices[0];
+                                        if (firstInvoice?.contract_number) {
+                                          navigate(`/contracts/${firstInvoice.contract_number}`);
+                                        }
+                                      }}
+                                    >
+                                      {group.customer_name}
+                                    </h4>
+                                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                                      <span className="flex items-center gap-1">
+                                        <FileText className="w-3 h-3" />
+                                        {group.invoices.length} فاتورة
+                                      </span>
+                                      <span className="text-gray-300">•</span>
+                                      <span className="flex items-center gap-1 font-bold text-amber-600">
+                                        <DollarSign className="w-3 h-3" />
+                                        {formatCurrency(group.total_amount)} مستحق
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-9"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/finance/payments/quick?customerId=${group.customer_id}&customerName=${encodeURIComponent(group.customer_name)}`);
+                                    }}
+                                  >
+                                    <DollarSign className="w-4 h-4 ml-2" />
                                     تسجيل دفعة
                                   </Button>
+                                  
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-9 w-9 p-0 border-gray-300 hover:border-emerald-400 hover:bg-emerald-50"
+                                    onClick={() => toggleCustomerExpanded(group.customer_id)}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-4 h-4 text-gray-600" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Invoices List (Expandable) */}
+                              {isExpanded && (
+                                <div className="border-t border-gray-200 bg-gray-50/50">
+                                  <div className="p-3 space-y-2">
+                                    {group.invoices.map((invoice) => (
+                                      <div 
+                                        key={invoice.invoice_id}
+                                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-emerald-200 hover:shadow-sm transition-all cursor-pointer group/invoice"
+                                        onClick={() => navigate(`/contracts/${invoice.contract_number}`)}
+                                      >
+                                        <div className="flex items-center gap-3 flex-1">
+                                          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover/invoice:bg-emerald-100 group-hover/invoice:text-emerald-600 transition-colors">
+                                            <FileText className="w-4 h-4" />
+                                          </div>
+                                          <div>
+                                            <p className="text-sm font-semibold text-gray-900 group-hover/invoice:text-emerald-600 transition-colors">
+                                              فاتورة #{invoice.invoice_number}
+                                            </p>
+                                            <p className="text-xs text-gray-500 group-hover/invoice:text-emerald-600 transition-colors">
+                                              عقد #{invoice.contract_number}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3">
+                                          <div className="text-left">
+                                            <p className="text-sm font-bold text-gray-900">
+                                              {formatCurrency(invoice.amount - invoice.paid_amount)}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                              استحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                                            </p>
+                                          </div>
+                                          
+                                          <Badge 
+                                            variant="outline" 
+                                            className={cn(
+                                              "text-xs",
+                                              invoice.status === 'overdue' 
+                                                ? "bg-red-50 text-red-700 border-red-200" 
+                                                : "bg-amber-50 text-amber-700 border-amber-200"
+                                            )}
+                                          >
+                                            {invoice.status === 'overdue' ? 'متأخر' : 'مستحق'}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-center py-12">
-                        <p className="text-gray-500">لا توجد مستحقات لهذا الشهر</p>
+                        <DollarSign className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 font-medium">لا توجد مستحقات لهذا الشهر</p>
+                        <p className="text-xs text-gray-400 mt-2">جميع الفواتير مدفوعة 🎉</p>
                       </div>
                     )}
                   </ScrollArea>
