@@ -198,10 +198,13 @@ const App: React.FC = () => {
       advancedTabSync.initialize(queryClient, tabId);
       
       // الاستماع لتحديثات البيانات من التبويبات الأخرى
+      // DISABLED: Applying data updates from other tabs can cause conflicts
+      // Instead, we only invalidate queries to trigger fresh fetches
       const unsubscribeDataSync = advancedTabSync.onDataUpdate((message) => {
-        if (message.type === 'DATA_UPDATE' && message.data !== undefined) {
-          console.log(`🔄 [APP] Received data update from tab ${message.tabId}:`, message.queryKey);
-          queryClient.setQueryData(message.queryKey, message.data);
+        if (message.type === 'DATA_UPDATE' && message.queryKey) {
+          console.log(`🔄 [APP] Invalidating query from tab ${message.tabId}:`, message.queryKey);
+          // بدلاً من نسخ البيانات، نطلب إعادة جلبها
+          queryClient.invalidateQueries({ queryKey: message.queryKey });
         }
       });
       
@@ -212,26 +215,11 @@ const App: React.FC = () => {
       });
       
       // الاستماع لطلبات المزامنة من التبويبات الجديدة
+      // DISABLED: Sending full cache data causes performance issues and tab freezing
+      // Instead, let each tab fetch its own data with refetchOnWindowFocus
       const unsubscribeSyncRequest = advancedTabSync.onSyncRequest(() => {
-        console.log('🔄 [APP] Sync request received, sending cache data...');
-        
-        // إرسال جميع البيانات الحالية للتبويبة الجديدة
-        const cache = queryClient.getQueryCache();
-        const allQueries = cache.getAll();
-        
-        let sentCount = 0;
-        allQueries.forEach(query => {
-          if (query.state.data !== undefined) {
-            advancedTabSync.broadcastDataUpdate(
-              query.queryKey,
-              query.state.data,
-              query.state.dataUpdatedAt || Date.now()
-            );
-            sentCount++;
-          }
-        });
-        
-        console.log(`🔄 [APP] Sent ${sentCount} queries to requesting tab`);
+        console.log('🔄 [APP] Sync request received (cache sync disabled for performance)');
+        // التبويبة الجديدة ستجلب البيانات تلقائياً عبر refetchOnWindowFocus
       });
       
       console.log('✅ [APP] Advanced tab sync manager initialized successfully');

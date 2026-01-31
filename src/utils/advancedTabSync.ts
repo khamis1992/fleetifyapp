@@ -194,27 +194,11 @@ class AdvancedTabSyncManager {
   // ============ Data Synchronization ============
   
   private handleDataUpdate(message: TabSyncMessage & { type: 'DATA_UPDATE' }) {
-    const queryKeyStr = JSON.stringify(message.queryKey);
-    const currentVersion = this.dataVersions.get(queryKeyStr) || 0;
-    
-    // كشف التعارض
-    if (message.version < currentVersion) {
-      console.warn(`⚠️ [ADVANCED_SYNC] Conflict detected for query:`, message.queryKey);
-      this.broadcast({
-        type: 'CONFLICT_DETECTED',
-        queryKey: message.queryKey,
-        versions: [currentVersion, message.version],
-        tabId: this.tabId
-      });
-      return;
-    }
-    
-    // تحديث البيانات
-    if (this.queryClient && message.data !== undefined) {
-      this.queryClient.setQueryData(message.queryKey, message.data);
-      this.dataVersions.set(queryKeyStr, message.version);
-      
-      console.log(`🔄 [ADVANCED_SYNC] Data updated from tab ${message.tabId}:`, message.queryKey);
+    // DISABLED: Direct data updates cause conflicts and performance issues
+    // Instead, we invalidate the query to trigger a fresh fetch
+    if (this.queryClient && message.queryKey) {
+      console.log(`🔄 [ADVANCED_SYNC] Invalidating query from tab ${message.tabId}:`, message.queryKey);
+      this.queryClient.invalidateQueries({ queryKey: message.queryKey });
     }
   }
 
@@ -226,31 +210,12 @@ class AdvancedTabSyncManager {
   }
 
   private handleSyncRequest(message: TabSyncMessage & { type: 'SYNC_REQUEST' }) {
-    // إرسال جميع البيانات الحالية للتبويبة الطالبة
-    if (this.queryClient) {
-      const cache = this.queryClient.getQueryCache();
-      const allQueries = cache.getAll();
-      
-      const queries = allQueries
-        .filter(query => query.state.data !== undefined)
-        .map(query => ({
-          queryKey: query.queryKey,
-          data: query.state.data,
-          timestamp: query.state.dataUpdatedAt,
-          version: this.dataVersions.get(JSON.stringify(query.queryKey)) || 1
-        }));
-      
-      if (queries.length > 0) {
-        this.broadcast({
-          type: 'SYNC_RESPONSE',
-          queries,
-          tabId: this.tabId,
-          timestamp: Date.now()
-        });
-        
-        console.log(`📤 [ADVANCED_SYNC] Sent ${queries.length} queries to tab ${message.tabId}`);
-      }
-    }
+    // DISABLED: Sending full cache causes performance issues
+    // Let each tab fetch its own data
+    console.log(`📤 [ADVANCED_SYNC] Sync request from tab ${message.tabId} (cache sync disabled)`);
+    
+    // Instead of sending data, just acknowledge the new tab
+    // The new tab will fetch data automatically via refetchOnWindowFocus
   }
 
   private handleSyncResponse(message: TabSyncMessage & { type: 'SYNC_RESPONSE' }) {
@@ -484,30 +449,9 @@ class AdvancedTabSyncManager {
   }
 
   private sendCacheToTab(targetTabId: string) {
-    if (this.queryClient) {
-      const cache = this.queryClient.getQueryCache();
-      const allQueries = cache.getAll();
-      
-      const queries = allQueries
-        .filter(query => query.state.data !== undefined)
-        .map(query => ({
-          queryKey: query.queryKey,
-          data: query.state.data,
-          timestamp: query.state.dataUpdatedAt,
-          version: this.dataVersions.get(JSON.stringify(query.queryKey)) || 1
-        }));
-      
-      if (queries.length > 0) {
-        this.broadcast({
-          type: 'SYNC_RESPONSE',
-          queries,
-          tabId: this.tabId,
-          timestamp: Date.now()
-        });
-        
-        console.log(`📤 [ADVANCED_SYNC] Sent ${queries.length} queries to new tab`);
-      }
-    }
+    // DISABLED: Sending cache to new tabs causes performance issues
+    console.log(`📤 [ADVANCED_SYNC] New tab ${targetTabId} will fetch its own data`);
+    // The new tab will automatically fetch data via refetchOnWindowFocus
   }
 
   cleanup() {

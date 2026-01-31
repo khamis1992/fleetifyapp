@@ -175,7 +175,8 @@ const RouteErrorFallback: React.FC<RouteErrorFallbackProps> = ({
     // HMR/React hooks error - needs full page reload
     if (message.includes('usestate') || message.includes('useeffect') || 
         message.includes('useref') || message.includes('usecontext') ||
-        message.includes('invalid hook call') || message.includes('hooks can only be called')) {
+        message.includes('invalid hook call') || message.includes('hooks can only be called') ||
+        message.includes('must be used within') || message.includes('useauth must be used')) {
       return 'hmr_error';
     }
     if (message.includes('chunk') || message.includes('dynamically imported')) {

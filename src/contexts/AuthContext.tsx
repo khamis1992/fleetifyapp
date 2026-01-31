@@ -182,8 +182,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // 🚀 OPTIMIZATION: Check if we even have a token in localStorage before calling getSession
       // This avoids the 5-8s timeout if the user is definitely not logged in
-      const hasToken = typeof window !== 'undefined' && 
-        (localStorage.getItem('supabase.auth.token') || localStorage.getItem('fleetify_auth_cache'));
+      // Use the correct Supabase storage key pattern
+      const hasToken = typeof window !== 'undefined' && (() => {
+        // Check for any Supabase auth token (pattern: sb-*-auth-token)
+        const keys = Object.keys(localStorage);
+        return keys.some(key => key.startsWith('sb-') && key.includes('-auth-token')) || 
+               localStorage.getItem('fleetify_auth_cache');
+      })();
       
       if (!hasToken && !window.location.hash.includes('access_token')) {
         console.log('📝 [AUTH_CONTEXT] No token found in storage - skipping getSession');
@@ -368,7 +373,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!mountedRef.current) return;
 
       // Listen for auth token changes from other tabs
-      if (e.key === 'supabase.auth.token' && e.newValue !== e.oldValue) {
+      // Check for any Supabase auth token key (pattern: sb-*-auth-token)
+      if (e.key && e.key.startsWith('sb-') && e.key.includes('-auth-token') && e.newValue !== e.oldValue) {
         console.log('🔄 [AUTH_CONTEXT] Auth state changed in another tab');
         
         if (e.newValue) {
