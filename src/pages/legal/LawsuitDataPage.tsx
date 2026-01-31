@@ -25,6 +25,7 @@ import {
   RefreshCw,
   Search,
   FileSpreadsheet,
+  AlertCircle,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +52,18 @@ interface LawsuitTemplate {
   defendant_phone: string;
   defendant_email: string;
   created_at: string;
+  // من المذكرة الشارحة
+  months_unpaid?: number;
+  overdue_amount?: number;
+  late_penalty?: number;
+  days_overdue?: number;
+  // من كشف المطالبات المالية
+  invoices_count?: number;
+  total_invoices_amount?: number;
+  total_penalties?: number;
+  // من كشف المخالفات المرورية
+  violations_count?: number;
+  violations_amount?: number;
 }
 
 export default function LawsuitDataPage() {
@@ -129,6 +142,18 @@ export default function LawsuitDataPage() {
         'بريد المدعى عليه': lawsuit.defendant_email || '-',
         'قيمة المطالبة': Math.floor(Number(lawsuit.claim_amount)),
         'قيمة المطالبة كتابتاً': lawsuit.claim_amount_words || '-',
+        // من المذكرة الشارحة
+        'عدد الأشهر المتأخرة': lawsuit.months_unpaid || 0,
+        'قيمة الإيجار المتأخر': lawsuit.overdue_amount || 0,
+        'غرامات التأخير': lawsuit.late_penalty || 0,
+        'عدد الأيام المتأخرة': lawsuit.days_overdue || 0,
+        // من كشف المطالبات المالية
+        'عدد الفواتير المتأخرة': lawsuit.invoices_count || 0,
+        'إجمالي المبالغ المستحقة': lawsuit.total_invoices_amount || 0,
+        'إجمالي الغرامات': lawsuit.total_penalties || 0,
+        // من كشف المخالفات المرورية
+        'عدد المخالفات': lawsuit.violations_count || 0,
+        'قيمة المخالفات': lawsuit.violations_amount || 0,
         'الوقائع': lawsuit.facts || '-',
         'الطلبات': lawsuit.requests || '-',
         'تاريخ الإنشاء': format(new Date(lawsuit.created_at), 'dd/MM/yyyy HH:mm', { locale: ar }),
@@ -153,6 +178,15 @@ export default function LawsuitDataPage() {
         { wch: 25 }, // البريد
         { wch: 15 }, // قيمة المطالبة
         { wch: 40 }, // قيمة المطالبة كتابة
+        { wch: 18 }, // عدد الأشهر المتأخرة
+        { wch: 18 }, // قيمة الإيجار المتأخر
+        { wch: 18 }, // غرامات التأخير
+        { wch: 18 }, // عدد الأيام المتأخرة
+        { wch: 20 }, // عدد الفواتير المتأخرة
+        { wch: 22 }, // إجمالي المبالغ المستحقة
+        { wch: 18 }, // إجمالي الغرامات
+        { wch: 15 }, // عدد المخالفات
+        { wch: 18 }, // قيمة المخالفات
         { wch: 50 }, // الوقائع
         { wch: 50 }, // الطلبات
         { wch: 20 }, // تاريخ الإنشاء
@@ -220,7 +254,7 @@ export default function LawsuitDataPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-6 bg-gradient-to-br from-teal-50 to-white border-teal-200">
           <div className="flex items-center justify-between">
             <div>
@@ -254,16 +288,69 @@ export default function LawsuitDataPage() {
         <Card className="p-6 bg-gradient-to-br from-amber-50 to-white border-amber-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">آخر تحديث</p>
-              <p className="text-lg font-bold text-amber-700 mt-1">
-                {lawsuits && lawsuits.length > 0
-                  ? format(new Date(lawsuits[0].created_at), 'dd MMM yyyy', {
-                      locale: ar,
-                    })
-                  : 'لا يوجد'}
+              <p className="text-sm text-muted-foreground">إجمالي الفواتير المتأخرة</p>
+              <p className="text-3xl font-bold text-amber-700 mt-1">
+                {lawsuits?.reduce((sum, l) => sum + (l.invoices_count || 0), 0) || 0}
               </p>
             </div>
-            <RefreshCw className="h-12 w-12 text-amber-600 opacity-20" />
+            <FileSpreadsheet className="h-12 w-12 text-amber-600 opacity-20" />
+          </div>
+        </Card>
+
+        <Card className="p-6 bg-gradient-to-br from-red-50 to-white border-red-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">إجمالي المخالفات</p>
+              <p className="text-3xl font-bold text-red-700 mt-1">
+                {lawsuits?.reduce((sum, l) => sum + (l.violations_count || 0), 0) || 0}
+              </p>
+            </div>
+            <AlertCircle className="h-12 w-12 text-red-600 opacity-20" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Additional Stats - Financial Details */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">إجمالي الإيجار المتأخر</p>
+              <p className="text-xl font-bold text-blue-700 mt-1" dir="ltr">
+                {lawsuits
+                  ?.reduce((sum, l) => sum + (l.overdue_amount || 0), 0)
+                  .toLocaleString() || '0'}{' '}
+                <span className="text-xs">ر.ق</span>
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-br from-amber-50 to-white border-amber-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">إجمالي الغرامات</p>
+              <p className="text-xl font-bold text-amber-700 mt-1" dir="ltr">
+                {lawsuits
+                  ?.reduce((sum, l) => sum + (l.late_penalty || 0) + (l.total_penalties || 0), 0)
+                  .toLocaleString() || '0'}{' '}
+                <span className="text-xs">ر.ق</span>
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-br from-red-50 to-white border-red-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">إجمالي قيمة المخالفات</p>
+              <p className="text-xl font-bold text-red-700 mt-1" dir="ltr">
+                {lawsuits
+                  ?.reduce((sum, l) => sum + (l.violations_amount || 0), 0)
+                  .toLocaleString() || '0'}{' '}
+                <span className="text-xs">ر.ق</span>
+              </p>
+            </div>
           </div>
         </Card>
       </div>
@@ -296,6 +383,18 @@ export default function LawsuitDataPage() {
                 <TableHead className="text-right font-bold">رقم هوية المدعى عليه</TableHead>
                 <TableHead className="text-right font-bold">قيمة المطالبة</TableHead>
                 <TableHead className="text-right font-bold">قيمة المطالبة كتابتاً</TableHead>
+                {/* من المذكرة الشارحة */}
+                <TableHead className="text-right font-bold bg-blue-50">عدد الأشهر المتأخرة</TableHead>
+                <TableHead className="text-right font-bold bg-blue-50">قيمة الإيجار المتأخر</TableHead>
+                <TableHead className="text-right font-bold bg-blue-50">غرامات التأخير</TableHead>
+                <TableHead className="text-right font-bold bg-blue-50">عدد الأيام المتأخرة</TableHead>
+                {/* من كشف المطالبات المالية */}
+                <TableHead className="text-right font-bold bg-amber-50">عدد الفواتير المتأخرة</TableHead>
+                <TableHead className="text-right font-bold bg-amber-50">إجمالي المبالغ المستحقة</TableHead>
+                <TableHead className="text-right font-bold bg-amber-50">إجمالي الغرامات</TableHead>
+                {/* من كشف المخالفات المرورية */}
+                <TableHead className="text-right font-bold bg-red-50">عدد المخالفات</TableHead>
+                <TableHead className="text-right font-bold bg-red-50">قيمة المخالفات</TableHead>
                 <TableHead className="text-right font-bold">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -326,6 +425,44 @@ export default function LawsuitDataPage() {
                         {lawsuit.claim_amount_words || '-'}
                       </div>
                     </TableCell>
+                    {/* من المذكرة الشارحة */}
+                    <TableCell className="bg-blue-50/30">
+                      <Badge variant="outline" className="bg-blue-100">
+                        {lawsuit.months_unpaid || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="bg-blue-50/30 font-semibold text-blue-700">
+                      {lawsuit.overdue_amount ? Math.floor(lawsuit.overdue_amount).toLocaleString() : '0'}
+                    </TableCell>
+                    <TableCell className="bg-blue-50/30 font-semibold text-blue-700">
+                      {lawsuit.late_penalty ? Math.floor(lawsuit.late_penalty).toLocaleString() : '0'}
+                    </TableCell>
+                    <TableCell className="bg-blue-50/30">
+                      <Badge variant="outline" className="bg-blue-100">
+                        {lawsuit.days_overdue || 0}
+                      </Badge>
+                    </TableCell>
+                    {/* من كشف المطالبات المالية */}
+                    <TableCell className="bg-amber-50/30">
+                      <Badge variant="outline" className="bg-amber-100">
+                        {lawsuit.invoices_count || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="bg-amber-50/30 font-semibold text-amber-700">
+                      {lawsuit.total_invoices_amount ? Math.floor(lawsuit.total_invoices_amount).toLocaleString() : '0'}
+                    </TableCell>
+                    <TableCell className="bg-amber-50/30 font-semibold text-amber-700">
+                      {lawsuit.total_penalties ? Math.floor(lawsuit.total_penalties).toLocaleString() : '0'}
+                    </TableCell>
+                    {/* من كشف المخالفات المرورية */}
+                    <TableCell className="bg-red-50/30">
+                      <Badge variant="outline" className="bg-red-100">
+                        {lawsuit.violations_count || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="bg-red-50/30 font-semibold text-red-700">
+                      {lawsuit.violations_amount ? Math.floor(lawsuit.violations_amount).toLocaleString() : '0'}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
@@ -352,7 +489,7 @@ export default function LawsuitDataPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12">
+                  <TableCell colSpan={18} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-12 w-12 opacity-20" />
                       <p className="text-lg font-medium">لا توجد بيانات</p>
