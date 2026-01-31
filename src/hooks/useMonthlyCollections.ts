@@ -104,9 +104,9 @@ export const useMonthlyCollections = () => {
             : `${customer?.first_name_ar || customer?.first_name || ''} ${customer?.last_name_ar || customer?.last_name || ''}`.trim();
 
           let status: MonthlyCollectionItem['status'] = 'unpaid';
-          if (inv.status === 'paid') status = 'paid';
+          if (inv.payment_status === 'paid') status = 'paid';
           else if (inv.paid_amount && inv.paid_amount > 0 && inv.paid_amount < inv.total_amount) status = 'partially_paid';
-          else if (new Date(inv.due_date) < new Date() && inv.status !== 'paid') status = 'overdue';
+          else if (new Date(inv.due_date) < new Date() && inv.payment_status !== 'paid') status = 'overdue';
 
           return {
             contract_id: contract.id,
@@ -122,18 +122,12 @@ export const useMonthlyCollections = () => {
           } as MonthlyCollectionItem;
         })
         .filter(item => {
-          // Filter out paid invoices that are not from this month
-          // We want to see:
-          // 1. ALL Pending/Overdue/Partially Paid invoices (regardless of date)
-          // 2. Paid invoices ONLY if they were due this month (to show recent success)
+          // عرض فقط الفواتير غير المدفوعة
+          // نريد رؤية:
+          // 1. جميع الفواتير غير المدفوعة (Pending/Overdue/Partially Paid)
+          // 2. إخفاء جميع الفواتير المدفوعة بالكامل
           
-          if (item.status !== 'paid') return true;
-          
-          const dueDate = new Date(item.due_date);
-          const startOfCurrentMonth = new Date(startDate);
-          const endOfCurrentMonth = new Date(endDate);
-          
-          return dueDate >= startOfCurrentMonth && dueDate <= endOfCurrentMonth;
+          return item.status !== 'paid';
         });
     },
     enabled: !!profile?.id

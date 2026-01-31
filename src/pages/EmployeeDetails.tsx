@@ -92,7 +92,23 @@ export const EmployeeDetails: React.FC = () => {
       case 'active': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'pending': return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'completed': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'under_legal_procedure': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'cancelled': return 'bg-red-50 text-red-700 border-red-200';
+      case 'suspended': return 'bg-orange-50 text-orange-700 border-orange-200';
       default: return 'bg-neutral-50 text-neutral-700 border-neutral-200';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'نشط';
+      case 'pending': return 'معلق';
+      case 'completed': return 'مكتمل';
+      case 'under_legal_procedure': return 'تحت الإجراء القانوني';
+      case 'cancelled': return 'ملغي';
+      case 'suspended': return 'موقوف';
+      case 'expired': return 'منتهي';
+      default: return status;
     }
   };
 
@@ -358,7 +374,7 @@ export const EmployeeDetails: React.FC = () => {
                             #{contract.contract_number}
                           </h4>
                           <Badge variant="outline" className={cn('text-xs', getStatusColor(contract.status))}>
-                            {contract.status === 'active' ? 'نشط' : contract.status}
+                            {getStatusLabel(contract.status)}
                           </Badge>
                         </div>
                         <p className="text-xs text-neutral-600 mb-2">
@@ -431,7 +447,7 @@ export const EmployeeDetails: React.FC = () => {
                         {task.title_ar || task.title}
                       </h4>
                       <Badge variant="outline" className={cn('text-xs', getStatusColor(task.status))}>
-                        {task.status === 'pending' ? 'معلق' : task.status === 'completed' ? 'مكتمل' : task.status}
+                        {getStatusLabel(task.status)}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-neutral-500">
