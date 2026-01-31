@@ -293,9 +293,9 @@ export const DelinquentCustomersTab: React.FC = () => {
   const [documentSelectionDialogOpen, setDocumentSelectionDialogOpen] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState({
     explanatoryMemo: true,        // المذكرة الشارحة
-    claimsStatement: true,        // كشف المطالبات المالية
+    claimsStatement: true,        // كشف المطالبات المالية (يشمل المخالفات)
     documentsList: true,          // كشف المستندات المرفوعة
-    violationsList: true,         // كشف المخالفات المرورية
+    violationsList: false,        // غير مستخدم - المخالفات مدمجة في كشف المطالبات
     criminalComplaint: true,      // بلاغ سرقة المركبة
     violationsTransfer: true,     // طلب تحويل المخالفات
   });
@@ -654,12 +654,12 @@ export const DelinquentCustomersTab: React.FC = () => {
         days_overdue: c.days_overdue,
       }));
 
-      // جميع المستندات مفعلة بشكل افتراضي
+      // جميع المستندات مفعلة بشكل افتراضي (ما عدا violationsList لأنه مدمج في claims)
       const allDocumentsOptions = {
         explanatoryMemo: true,
         claimsStatement: true,
         documentsList: true,
-        violationsList: true,
+        violationsList: false,  // المخالفات مدمجة في كشف المطالبات
         criminalComplaint: true,
         violationsTransfer: true,
       };
@@ -1640,32 +1640,17 @@ export const DelinquentCustomersTab: React.FC = () => {
               </Badge>
               <Button
                 size="sm"
-                onClick={() => setDocumentSelectionDialogOpen(true)}
+                onClick={() => handleQuickBulkDownload()}
                 disabled={convertToCase.isPending}
                 className="gap-2 rounded-xl"
                 style={{
                   background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
                   color: 'white',
                 }}
-                title="اختيار المستندات المطلوبة للتحميل"
+                title="تحميل جميع المستندات"
               >
                 <Download className="h-4 w-4" />
                 تحميل المستندات
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => handleQuickBulkDownload()}
-                disabled={convertToCase.isPending}
-                className="gap-2 rounded-xl"
-                variant="outline"
-                style={{
-                  borderColor: `hsl(${colors.primary} / 0.4)`,
-                  color: `hsl(${colors.primary})`,
-                }}
-                title="تحميل جميع المستندات مباشرة بدون اختيار"
-              >
-                <Zap className="h-4 w-4" />
-                تحميل سريع
               </Button>
               <Button
                 size="sm"
@@ -2501,7 +2486,7 @@ className={cn(
                   explanatoryMemo: true,
                   claimsStatement: true,
                   documentsList: true,
-                  violationsList: true,
+                  violationsList: false,  // المخالفات مدمجة في كشف المطالبات
                   criminalComplaint: true,
                   violationsTransfer: true,
                 })}
@@ -2598,34 +2583,7 @@ className={cn(
                 </div>
               </label>
 
-              {/* كشف المخالفات المرورية */}
-              <label 
-                htmlFor="violationsList" 
-                className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                  selectedDocuments.violationsList 
-                    ? 'bg-teal-50 border-teal-500 hover:bg-teal-100' 
-                    : 'hover:bg-accent/50'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  id="violationsList"
-                  checked={selectedDocuments.violationsList}
-                  onChange={(e) => setSelectedDocuments(prev => ({ ...prev, violationsList: e.target.checked }))}
-                  className="mt-1 h-5 w-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-base flex items-center gap-2">
-                    🚗 كشف المخالفات المرورية
-                    {selectedDocuments.violationsList && (
-                      <CheckCircle className="h-4 w-4 text-teal-600" />
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    قائمة تفصيلية بجميع المخالفات المرورية غير المسددة
-                  </div>
-                </div>
-              </label>
+              {/* ملاحظة: كشف المخالفات مدمج في كشف المطالبات المالية */}
 
               {/* بلاغ سرقة المركبة */}
               <label 
@@ -2689,7 +2647,6 @@ className={cn(
             {!selectedDocuments.explanatoryMemo && 
              !selectedDocuments.claimsStatement && 
              !selectedDocuments.documentsList && 
-             !selectedDocuments.violationsList &&
              !selectedDocuments.criminalComplaint &&
              !selectedDocuments.violationsTransfer && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -2716,7 +2673,6 @@ className={cn(
                 !selectedDocuments.explanatoryMemo && 
                 !selectedDocuments.claimsStatement && 
                 !selectedDocuments.documentsList && 
-                !selectedDocuments.violationsList &&
                 !selectedDocuments.criminalComplaint &&
                 !selectedDocuments.violationsTransfer
               }
@@ -2732,7 +2688,6 @@ className={cn(
                   selectedDocuments.explanatoryMemo,
                   selectedDocuments.claimsStatement, 
                   selectedDocuments.documentsList, 
-                  selectedDocuments.violationsList,
                   selectedDocuments.criminalComplaint,
                   selectedDocuments.violationsTransfer
                 ].filter(Boolean).length

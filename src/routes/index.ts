@@ -52,7 +52,7 @@ const TeamReports = lazy(() => import('@/pages/TeamReports'));
 const TeamEmployeeDetails = lazy(() => import('@/pages/EmployeeDetails'));
 const EmployeeDetailedReport = lazy(() => import('@/pages/EmployeeDetailedReport'));
 const Finance = lazy(() => import('@/pages/Finance'));
-const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
+const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMRedesigned'));
 const Contracts = lazy(() => import('@/pages/ContractsRedesigned'));
@@ -543,7 +543,7 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/customers',
-    component: CustomersPageRedesigned,
+    component: CustomersPageNew,
     lazy: true,
     exact: true,
     title: 'Customers',

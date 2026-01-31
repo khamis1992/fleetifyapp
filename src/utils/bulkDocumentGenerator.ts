@@ -23,8 +23,10 @@ import {
   type LawsuitExcelData 
 } from './lawsuitExcelGenerator';
 
-// لوقو الشركة كـ Base64 (لضمان ظهوره في ملفات HTML المحفوظة)
+// الصور كـ Base64 (لضمان ظهورها في ملفات HTML المحفوظة)
 let COMPANY_LOGO_BASE64: string | null = null;
+let COMPANY_SIGNATURE_BASE64: string | null = null;
+let COMPANY_STAMP_BASE64: string | null = null;
 
 /**
  * تحويل HTML إلى ملف Word (DOCX)
@@ -80,40 +82,86 @@ async function convertHtmlToDocx(htmlContent: string, title: string = 'Document'
 }
 
 /**
- * تحويل صورة اللوقو إلى Base64
+ * تحميل صورة كـ Base64
  */
-async function loadCompanyLogo(): Promise<string> {
-  if (COMPANY_LOGO_BASE64) return COMPANY_LOGO_BASE64;
-  
+async function loadImageAsBase64(path: string): Promise<string> {
   try {
-    const response = await fetch('/receipts/logo.png');
+    const response = await fetch(path);
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        COMPANY_LOGO_BASE64 = reader.result as string;
-        resolve(COMPANY_LOGO_BASE64);
-      };
+      reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error('Failed to load company logo:', error);
-    return ''; // إرجاع قيمة فارغة في حالة الفشل
+    console.error(`Failed to load image ${path}:`, error);
+    return '';
   }
 }
 
 /**
- * استبدال مسار اللوقو في HTML بـ Base64
+ * تحويل صورة اللوقو إلى Base64
  */
-async function embedLogoInHtml(html: string): Promise<string> {
-  const logoBase64 = await loadCompanyLogo();
-  if (!logoBase64) return html;
+async function loadCompanyLogo(): Promise<string> {
+  if (COMPANY_LOGO_BASE64) return COMPANY_LOGO_BASE64;
+  COMPANY_LOGO_BASE64 = await loadImageAsBase64('/receipts/logo.png');
+  return COMPANY_LOGO_BASE64;
+}
 
-  // استبدال جميع مسارات اللوقو بـ Base64
-  return html
-    .replace(/src="\/receipts\/logo\.png"/g, `src="${logoBase64}"`)
-    .replace(/src='\/receipts\/logo\.png'/g, `src='${logoBase64}'`);
+/**
+ * تحويل صورة التوقيع إلى Base64
+ */
+async function loadCompanySignature(): Promise<string> {
+  if (COMPANY_SIGNATURE_BASE64) return COMPANY_SIGNATURE_BASE64;
+  COMPANY_SIGNATURE_BASE64 = await loadImageAsBase64('/receipts/signature.png');
+  return COMPANY_SIGNATURE_BASE64;
+}
+
+/**
+ * تحويل صورة الختم إلى Base64
+ */
+async function loadCompanyStamp(): Promise<string> {
+  if (COMPANY_STAMP_BASE64) return COMPANY_STAMP_BASE64;
+  COMPANY_STAMP_BASE64 = await loadImageAsBase64('/receipts/stamp.png');
+  return COMPANY_STAMP_BASE64;
+}
+
+/**
+ * استبدال مسارات اللوقو والتوقيع والختم في HTML بـ Base64
+ */
+async function embedImagesInHtml(html: string): Promise<string> {
+  // تحميل جميع الصور بالتوازي
+  const [logoBase64, signatureBase64, stampBase64] = await Promise.all([
+    loadCompanyLogo(),
+    loadCompanySignature(),
+    loadCompanyStamp(),
+  ]);
+
+  let result = html;
+
+  // استبدال اللوقو
+  if (logoBase64) {
+    result = result
+      .replace(/src="\/receipts\/logo\.png"/g, `src="${logoBase64}"`)
+      .replace(/src='\/receipts\/logo\.png'/g, `src='${logoBase64}'`);
+  }
+
+  // استبدال التوقيع
+  if (signatureBase64) {
+    result = result
+      .replace(/src="\/receipts\/signature\.png"/g, `src="${signatureBase64}"`)
+      .replace(/src='\/receipts\/signature\.png'/g, `src='${signatureBase64}'`);
+  }
+
+  // استبدال الختم
+  if (stampBase64) {
+    result = result
+      .replace(/src="\/receipts\/stamp\.png"/g, `src="${stampBase64}"`)
+      .replace(/src='\/receipts\/stamp\.png'/g, `src='${stampBase64}'`);
+  }
+
+  return result;
 }
 
 /**
@@ -320,10 +368,11 @@ async function fetchCustomerFullData(contractId: string) {
     
     // جلب المخالفات المرورية
     supabase
-      .from('penalties')
+      .from('traffic_violations')
       .select('*')
       .eq('contract_id', contractId)
-      .neq('payment_status', 'paid')
+      .neq('status', 'paid')
+      .order('violation_date', { ascending: false })
   ]);
 
   if (contractResult.error) throw contractResult.error;
@@ -355,6 +404,7 @@ function convertAmountToWords(amount: number): string {
 
 /**
  * إنشاء المستندات لعميل واحد
+ * يستخدم نفس منطق التوليد الموجود في صفحة تجهيز الدعوى
  */
 async function generateCustomerDocuments(
   customer: BulkCustomerData,
@@ -380,26 +430,40 @@ async function generateCustomerDocuments(
   const nationalId = customerData?.national_id || customer.national_id || 'غير محدد';
   const phone = customerData?.phone || customer.phone || 'غير محدد';
 
-  // حساب المبالغ المستحقة
+  // حساب المبالغ المستحقة - نفس المنطق المستخدم في صفحة تجهيز الدعوى
   const unpaidInvoices = invoices.filter(inv =>
     (inv.total_amount || 0) - (inv.paid_amount || 0) > 0
   );
   
-  const totalOverdue = unpaidInvoices.reduce((sum, inv) => 
-    sum + ((inv.total_amount || 0) - (inv.paid_amount || 0)), 0
-  );
-
-  const violationsTotal = violations.reduce((sum, v) => 
-    sum + (Number(v.amount) || 0), 0
-  );
-
-  const grandTotal = totalOverdue + violationsTotal;
+  // حساب غرامات التأخير لكل فاتورة (120 ريال/يوم، حد أقصى 3000)
+  const invoicesWithPenalties = unpaidInvoices.map(inv => {
+    const dueDate = new Date(inv.due_date);
+    const today = new Date();
+    const daysLate = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
+    const penalty = remaining > 0 ? Math.min(daysLate * 120, 3000) : 0;
+    
+    return {
+      ...inv,
+      daysLate,
+      penalty,
+      remaining,
+    };
+  });
+  
+  const totalOverdue = invoicesWithPenalties.reduce((sum, inv) => sum + inv.remaining, 0);
+  const totalPenalties = invoicesWithPenalties.reduce((sum, inv) => sum + inv.penalty, 0);
+  const violationsTotal = violations.reduce((sum, v) => sum + (Number(v.total_amount) || Number(v.fine_amount) || 0), 0);
+  const damagesFee = 10000; // رسوم الأضرار الثابتة
+  
+  // الإجمالي الكلي (بدون المخالفات للمطالبة الأساسية)
+  const claimAmount = totalOverdue + totalPenalties + damagesFee;
+  const grandTotal = claimAmount + violationsTotal;
 
   const documents: { name: string; content: string | Blob; type?: 'html' | 'docx' }[] = [];
 
-  // 1. المذكرة الشارحة (باستخدام نفس التنسيق المستخدم في صفحة تجهيز الدعوى)
+  // 1. المذكرة الشارحة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
   if (options.explanatoryMemo) {
-    const damagesAmount = Math.round(grandTotal * 0.3);
     const daysOverdue = contract.start_date 
       ? Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))
       : 0;
@@ -414,14 +478,14 @@ async function generateCustomerDocuments(
         contract_number: contract.contract_number || customer.contract_number,
         contract_start_date: contract.start_date || '',
         vehicle_plate: vehicleData?.plate_number || 'غير محدد',
-        monthly_rent: Number(contract.monthly_rent) || 0,
+        monthly_rent: Number(contract.monthly_amount) || 0,
         months_unpaid: unpaidInvoices.length,
         overdue_amount: totalOverdue,
-        late_penalty: 0, // يمكن حسابه لاحقاً
+        late_penalty: totalPenalties,
         days_overdue: daysOverdue,
         violations_count: violations.length,
         violations_amount: violationsTotal,
-        total_debt: grandTotal,
+        total_debt: claimAmount, // المبلغ بدون المخالفات
       } as any,
       companyInfo: {
         name_ar: 'شركة العراف لتأجير السيارات',
@@ -440,9 +504,9 @@ async function generateCustomerDocuments(
         start_date: contract.start_date 
           ? new Date(contract.start_date).toLocaleDateString('ar-QA')
           : '',
-        monthly_rent: Number(contract.monthly_rent) || 0,
+        monthly_rent: Number(contract.monthly_amount) || 0,
       },
-      damages: damagesAmount,
+      damages: damagesFee,
     };
 
     const memoHtml = generateLegalComplaintHTML(documentData);
@@ -467,42 +531,32 @@ async function generateCustomerDocuments(
     }
   }
 
-  // 2. كشف المطالبات
+  // 2. كشف المطالبات - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
   if (options.claimsStatement) {
     const claimsData: ClaimsStatementData = {
     customerName: customerFullName,
     nationalId,
     phone,
     contractNumber: contract.contract_number || customer.contract_number,
-    contractStartDate: contract.start_date 
-      ? new Date(contract.start_date).toLocaleDateString('ar-QA')
-      : 'غير محدد',
-    contractEndDate: contract.end_date 
-      ? new Date(contract.end_date).toLocaleDateString('ar-QA')
-      : 'غير محدد',
-    invoices: unpaidInvoices.map(inv => {
-      const dueDate = new Date(inv.due_date);
-      const today = new Date();
-      const daysLate = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
-      return {
-        invoiceNumber: inv.invoice_number || `INV-${inv.id.slice(0, 8)}`,
-        dueDate: dueDate.toLocaleDateString('ar-QA'),
-        totalAmount: inv.total_amount || 0,
-        paidAmount: inv.paid_amount || 0,
-        daysLate,
-      };
-    }),
+    contractStartDate: contract.start_date || '',  // نفس صفحة تجهيز الدعوى
+    contractEndDate: contract.end_date || '',  // نفس صفحة تجهيز الدعوى
+    invoices: invoicesWithPenalties.map(inv => ({
+      invoiceNumber: inv.invoice_number || `INV-${inv.id.slice(0, 8)}`,
+      dueDate: inv.due_date,  // نفس صفحة تجهيز الدعوى - تُمرر كـ string
+      totalAmount: inv.total_amount || 0,
+      paidAmount: inv.paid_amount || 0,
+      daysLate: inv.daysLate,
+      penalty: inv.penalty,
+    })),
     violations: violations.map(v => ({
-      violationNumber: v.penalty_number || v.violation_number || 'غير محدد',
-      violationDate: v.penalty_date 
-        ? new Date(v.penalty_date).toLocaleDateString('ar-QA')
-        : 'غير محدد',
+      violationNumber: v.violation_number || 'غير محدد',
+      violationDate: v.violation_date || '',  // نفس صفحة تجهيز الدعوى - تُمرر كـ string
       violationType: v.violation_type || 'مخالفة مرورية',
       location: v.location || 'غير محدد',
-      fineAmount: Number(v.amount) || 0,
+      fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
     })),
-    totalOverdue: grandTotal,
-    amountInWords: convertAmountToWords(grandTotal),
+    totalOverdue: totalOverdue + violationsTotal + totalPenalties, // نفس صفحة تجهيز الدعوى
+    amountInWords: convertAmountToWords(totalOverdue + violationsTotal + totalPenalties),
     caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
   };
 
@@ -512,141 +566,76 @@ async function generateCustomerDocuments(
     });
   }
 
-  // 3. كشف المستندات (يجب أن يُنشأ في النهاية ليشمل جميع المستندات المولدة)
-  // سيتم إنشاؤه لاحقاً بعد توليد جميع المستندات الأخرى
-
-  // 4. كشف المخالفات المرورية
-  if (options.violationsList && violations.length > 0) {
-    const violationsListHtml = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>كشف المخالفات المرورية</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 15mm 20mm 20mm 20mm;
+  // 3. كشف المستندات المرفوعة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
+  if (options.documentsList) {
+    // بناء قائمة المستندات المولدة
+    const generatedDocuments: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [];
+    
+    // إضافة المستندات المولدة حسب الخيارات
+    if (options.explanatoryMemo) {
+      generatedDocuments.push({ name: 'المذكرة الشارحة', status: 'مرفق' });
     }
     
-    @media print {
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color-adjust: exact !important;
-      }
-      
-      body {
-        margin: 0;
-        padding: 20px;
-      }
-      
-      table {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      
-      tr {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      
-      .info-section {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      
-      thead {
-        display: table-header-group !important;
-      }
+    if (options.claimsStatement) {
+      generatedDocuments.push({ name: 'كشف المطالبات المالية', status: 'مرفق' });
     }
     
-    body { font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif; direction: rtl; padding: 40px; line-height: 1.8; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #0d9488; padding-bottom: 20px; }
-    .header h1 { color: #0d9488; font-size: 28px; margin: 10px 0; }
-    .info-section { margin: 20px 0; padding: 15px; background: #f0fdfa; border-right: 4px solid #0d9488; page-break-inside: avoid; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; page-break-inside: avoid; }
-    th, td { padding: 12px; text-align: right; border: 1px solid #ddd; }
-    th { background-color: #0d9488; color: white; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    tr { page-break-inside: avoid; }
-    .total-row { background-color: #fef3c7; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>🚗 كشف المخالفات المرورية</h1>
-    <p>العقد رقم: ${contract.contract_number || customer.contract_number}</p>
-  </div>
+    // إضافة صورة العقد (دائماً موجودة)
+    generatedDocuments.push({ name: 'صورة من العقد', status: 'مرفق' });
+    
+    // ملاحظة: المخالفات مدمجة في كشف المطالبات، لا تُضاف كمستند منفصل
+    
+    if (options.criminalComplaint) {
+      generatedDocuments.push({ name: 'بلاغ سرقة المركبة', status: 'مرفق' });
+    }
+    
+    if (options.violationsTransfer && violations.length > 0) {
+      generatedDocuments.push({ name: 'طلب تحويل المخالفات', status: 'مرفق' });
+    }
+    
+    // إضافة المستندات الثابتة للشركة
+    generatedDocuments.push(
+      { name: 'السجل التجاري', status: 'مرفق' },
+      { name: 'شهادة IBAN', status: 'مرفق' },
+      { name: 'البطاقة الشخصية للممثل', status: 'مرفق' }
+    );
 
-  <div class="info-section">
-    <p><strong>اسم المستأجر:</strong> ${customerFullName}</p>
-    <p><strong>رقم الهوية:</strong> ${nationalId}</p>
-    <p><strong>رقم اللوحة:</strong> ${vehicleData?.plate_number || 'غير محدد'}</p>
-    <p><strong>نوع المركبة:</strong> ${vehicleData ? `${vehicleData.make || ''} ${vehicleData.model || ''}`.trim() : 'غير محدد'}</p>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>رقم المخالفة</th>
-        <th>التاريخ</th>
-        <th>نوع المخالفة</th>
-        <th>الموقع</th>
-        <th>المبلغ (ريال)</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${violations.map((v, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${v.penalty_number || v.violation_number || 'غير محدد'}</td>
-          <td>${v.penalty_date ? new Date(v.penalty_date).toLocaleDateString('ar-QA') : 'غير محدد'}</td>
-          <td>${v.violation_type || 'مخالفة مرورية'}</td>
-          <td>${v.location || 'غير محدد'}</td>
-          <td>${(Number(v.amount) || 0).toFixed(2)}</td>
-        </tr>
-      `).join('')}
-      <tr class="total-row">
-        <td colspan="5" style="text-align: left;">الإجمالي:</td>
-        <td>${violationsTotal.toFixed(2)}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="info-section">
-    <p><strong>إجمالي المخالفات:</strong> ${violations.length} مخالفة</p>
-    <p><strong>المبلغ الإجمالي:</strong> ${violationsTotal.toFixed(2)} ريال قطري</p>
-    <p><strong>التاريخ:</strong> ${new Date().toLocaleDateString('ar-QA')}</p>
-  </div>
-</body>
-</html>
-    `;
+    const documentsListData: DocumentsListData = {
+      caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
+      customerName: customerFullName,
+      amount: claimAmount, // المبلغ المطالب به (بدون المخالفات)
+      documents: generatedDocuments,
+    };
 
     documents.push({
-      name: 'كشف_المخالفات.html',
-      content: violationsListHtml,
+      name: 'كشف_المستندات.html',
+      content: generateDocumentsListHtml(documentsListData),
     });
   }
 
-  // 5. بلاغ سرقة المركبة (إذا كانت هناك مخالفات أو مبالغ كبيرة)
-  if (options.criminalComplaint && (grandTotal > 5000 || violations.length > 0)) {
+  // ملاحظة: كشف المخالفات المرورية مدمج داخل كشف المطالبات المالية
+  // لا حاجة لمستند منفصل - نفس منطق صفحة تجهيز الدعوى
+  
+  // 5. بلاغ سرقة المركبة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
+  if (options.criminalComplaint) {
     const complaintData: CriminalComplaintData = {
       customerName: customerFullName,
-      nationalId,
-      phone,
-      contractNumber: contract.contract_number || customer.contract_number,
-      contractStartDate: contract.start_date 
+      customerNationality: customerData?.nationality || '',
+      customerId: nationalId,
+      customerMobile: phone,
+      contractDate: contract.start_date 
         ? new Date(contract.start_date).toLocaleDateString('ar-QA')
         : 'غير محدد',
-      vehiclePlate: vehicleData?.plate_number || 'غير محدد',
-      vehicleModel: vehicleData 
+      contractEndDate: contract.end_date 
+        ? new Date(contract.end_date).toLocaleDateString('ar-QA')
+        : 'غير محدد',
+      vehicleType: vehicleData 
         ? `${vehicleData.make || ''} ${vehicleData.model || ''} ${vehicleData.year || ''}`.trim()
         : 'غير محدد',
-      totalDebt: grandTotal,
-      amountInWords: convertAmountToWords(grandTotal),
-      complaintType: violations.length > 0 ? 'مخالفات مرورية وديون' : 'ديون متراكمة',
+      plateNumber: vehicleData?.plate_number || 'غير محدد',
+      plateType: 'خصوصي',
+      manufactureYear: vehicleData?.year?.toString() || '',
+      chassisNumber: vehicleData?.vin || '',
     };
 
     documents.push({
@@ -655,7 +644,7 @@ async function generateCustomerDocuments(
     });
   }
 
-  // 6. طلب تحويل المخالفات
+  // 6. طلب تحويل المخالفات - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
   if (options.violationsTransfer && violations.length > 0) {
     const transferData: ViolationsTransferData = {
       customerName: customerFullName,
@@ -681,7 +670,7 @@ async function generateCustomerDocuments(
         location: v.location || 'غير محدد',
         fineAmount: Number(v.amount) || 0,
       })),
-      totalFines: violationsTotal, // إضافة إجمالي المخالفات
+      totalFines: violationsTotal,
     };
 
     documents.push({
@@ -690,63 +679,13 @@ async function generateCustomerDocuments(
     });
   }
 
-  // 7. كشف المستندات المرفوعة (يُنشأ في النهاية ليشمل جميع المستندات المولدة)
-  if (options.documentsList) {
-    // بناء قائمة المستندات المولدة
-    const generatedDocuments: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [];
-    
-    // إضافة المستندات المولدة حسب الخيارات
-    if (options.explanatoryMemo) {
-      generatedDocuments.push({ name: 'المذكرة الشارحة', status: 'مرفق' });
-    }
-    
-    if (options.claimsStatement) {
-      generatedDocuments.push({ name: 'كشف المطالبات المالية', status: 'مرفق' });
-    }
-    
-    // إضافة صورة العقد (دائماً موجودة)
-    generatedDocuments.push({ name: 'صورة من العقد', status: 'مرفق' });
-    
-    if (options.violationsList && violations.length > 0) {
-      generatedDocuments.push({ name: 'كشف المخالفات المرورية', status: 'مرفق' });
-    }
-    
-    if (options.criminalComplaint && (grandTotal > 5000 || violations.length > 0)) {
-      generatedDocuments.push({ name: 'بلاغ سرقة المركبة', status: 'مرفق' });
-    }
-    
-    if (options.violationsTransfer && violations.length > 0) {
-      generatedDocuments.push({ name: 'طلب تحويل المخالفات', status: 'مرفق' });
-    }
-    
-    // إضافة المستندات الثابتة للشركة
-    generatedDocuments.push(
-      { name: 'السجل التجاري', status: 'مرفق' },
-      { name: 'شهادة IBAN', status: 'مرفق' },
-      { name: 'البطاقة الشخصية للممثل', status: 'مرفق' },
-      { name: 'صورة الهوية / جواز السفر', status: 'مرفق' }
-    );
-
-    const documentsListData: DocumentsListData = {
-      caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
-      customerName: customerFullName,
-      amount: grandTotal,
-      documents: generatedDocuments,
-    };
-
-    documents.push({
-      name: 'كشف_المستندات.html',
-      content: generateDocumentsListHtml(documentsListData),
-    });
-  }
-
-  // تضمين اللوقو في جميع المستندات HTML فقط
-  const documentsWithLogo = await Promise.all(
+  // تضمين اللوقو والتوقيع والختم في جميع المستندات HTML
+  const documentsWithImages = await Promise.all(
     documents.map(async (doc) => {
       if (typeof doc.content === 'string') {
         return {
           ...doc,
-          content: await embedLogoInHtml(doc.content),
+          content: await embedImagesInHtml(doc.content),
         };
       }
       return doc;
@@ -758,7 +697,7 @@ async function generateCustomerDocuments(
     // 1. جلب مستندات العقد (العقد + المستندات القانونية المرفوعة)
     const contractDocs = await fetchContractDocuments(customer.contract_id, companyId);
     for (const doc of contractDocs) {
-      documentsWithLogo.push({
+      documentsWithImages.push({
         name: doc.name,
         content: doc.blob,
       });
@@ -773,7 +712,7 @@ async function generateCustomerDocuments(
   return {
     customerName: customerFullName,
     contractNumber: contract.contract_number || customer.contract_number,
-    documents: documentsWithLogo,
+    documents: documentsWithImages,
   };
 }
 
@@ -946,21 +885,42 @@ export async function generateBulkDocumentsZip(
     errors,
   });
 
-  return await zip.generateAsync({ type: 'blob' });
+  // توليد ملف ZIP مع ضغط أفضل
+  return await zip.generateAsync({ 
+    type: 'blob',
+    compression: 'DEFLATE',
+    compressionOptions: {
+      level: 6
+    },
+    mimeType: 'application/zip'
+  });
 }
 
 /**
  * تحميل ملف ZIP
  */
 export function downloadZipFile(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
+  // التأكد من أن الملف له امتداد .zip
+  if (!filename.endsWith('.zip')) {
+    filename = filename + '.zip';
+  }
+  
+  // إنشاء Blob جديد مع نوع MIME صحيح
+  const zipBlob = new Blob([blob], { type: 'application/zip' });
+  
+  const url = URL.createObjectURL(zipBlob);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.setAttribute('type', 'application/zip');
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  
+  // تنظيف URL بعد فترة قصيرة
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 100);
 }
 
 /**

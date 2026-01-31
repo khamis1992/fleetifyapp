@@ -28,6 +28,7 @@ export interface Customer {
   emergency_contact_phone?: string;
   is_blacklisted?: boolean;
   blacklist_reason?: string;
+  is_vip?: boolean;
   documents?: any;
   notes?: string;
   is_active?: boolean;
