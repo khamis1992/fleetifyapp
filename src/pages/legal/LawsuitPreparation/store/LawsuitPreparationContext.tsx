@@ -317,13 +317,13 @@ export function LawsuitPreparationProvider({
       );
       
       if (state.calculations.violationsCount > 0) {
-        factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${state.calculations.violationsCount}) مخالفة بإجمالي مبلغ (${state.calculations.violationsFines.toLocaleString('ar-QA')}) ريال قطري.`;
+        factsText += `\n\nبالإضافة إلى ذلك، ترتبت على المدعى عليه مخالفات مرورية بسبب استخدام السيارة المؤجرة بعدد (${state.calculations.violationsCount}) مخالفة بإجمالي مبلغ (${state.calculations.violationsFines.toLocaleString('en-US')}) ريال قطري.`;
       }
       
-      let claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('ar-QA')}) ريال قطري.\n2. الأمر بتحويل المخالفات المرورية المسجلة على المركبة إلى الرقم الشخصي للمدعى عليه.\n3. الحكم بفسخ عقد الإيجار.\n4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
+      let claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('en-US')}) ريال قطري.\n2. الأمر بتحويل المخالفات المرورية المسجلة على المركبة إلى الرقم الشخصي للمدعى عليه.\n3. الحكم بفسخ عقد الإيجار.\n4. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
       
       if (state.calculations.violationsCount === 0) {
-        claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('ar-QA')}) ريال قطري.\n2. الحكم بفسخ عقد الإيجار.\n3. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
+        claimsText = `1. إلزام المدعى عليه بأن يؤدي للمدعية مبلغ (${claimAmount.toLocaleString('en-US')}) ريال قطري.\n2. الحكم بفسخ عقد الإيجار.\n3. إلزام المدعى عليه بالرسوم والمصاريف ومقابل أتعاب المحاماة.`;
       }
       
       // استخراج معلومات المدعى عليه
@@ -827,8 +827,15 @@ export function LawsuitPreparationProvider({
       
       toast.info('جاري تحويل المذكرة إلى Word...');
       
-      // Dynamic import for html-to-docx
-      const HTMLtoDOCX = (await import('html-to-docx')).default;
+      // Import html-docx-js with safe fallback
+      const htmlDocxModule = await import('html-docx-js');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const htmlDocx = (htmlDocxModule as any).default || htmlDocxModule;
+      
+      if (!htmlDocx || typeof htmlDocx.asBlob !== 'function') {
+        console.error('html-docx-js library not loaded correctly:', htmlDocx);
+        throw new Error('فشل في تحميل مكتبة تحويل Word');
+      }
       
       // Wrap HTML in complete document structure
       const completeHtml = `<!DOCTYPE html>
@@ -841,6 +848,8 @@ export function LawsuitPreparationProvider({
       direction: rtl;
       text-align: right;
     }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #000; padding: 8px; }
   </style>
 </head>
 <body>
@@ -849,24 +858,14 @@ export function LawsuitPreparationProvider({
 </html>`;
       
       // Convert HTML to DOCX
-      const docxBuffer = await HTMLtoDOCX(completeHtml, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: true,
-        font: 'Arial',
-        fontSize: 24,
+      const docxBlob = htmlDocx.asBlob(completeHtml, {
         orientation: 'portrait',
         margins: {
-          top: 720,
-          right: 720,
-          bottom: 720,
-          left: 720
+          top: 1440,
+          right: 1440,
+          bottom: 1440,
+          left: 1440
         }
-      });
-      
-      // Create blob from buffer
-      const docxBlob = new Blob([docxBuffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
       });
       
       // Download
@@ -888,6 +887,43 @@ export function LawsuitPreparationProvider({
       toast.success('تم تحميل المذكرة بصيغة Word');
     } catch (error) {
       console.error('Error downloading memo as DOCX:', error);
+      
+      // Attempt fallback to html-to-docx if primary method fails
+      try {
+        console.log('Attempting fallback to html-to-docx...');
+        const { default: HTMLtoDOCX } = await import('html-to-docx');
+        
+        const memoHtml = contentRefs.current.memoHtml;
+        if (!memoHtml) throw new Error('No content');
+
+        const fileBuffer = await HTMLtoDOCX(memoHtml, null, {
+          table: { row: { cantSplit: true } },
+          footer: true,
+          pageNumber: true,
+        });
+        
+        const blob = new Blob([fileBuffer], { 
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+        });
+        
+        const customerName = formatCustomerName(state.customer) || 'عميل';
+        const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.docx`;
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => URL.revokeObjectURL(link.href), 100);
+        
+        toast.success('تم تحميل المذكرة بصيغة Word (طريقة بديلة)');
+        return;
+      } catch (fallbackError) {
+        console.error('Fallback DOCX generation failed:', fallbackError);
+      }
+
       toast.error(`فشل في تحميل المذكرة بصيغة Word: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
     }
   }, [state.customer, state.contract]);

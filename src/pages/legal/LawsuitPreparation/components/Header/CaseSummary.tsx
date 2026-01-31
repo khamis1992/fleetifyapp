@@ -42,7 +42,7 @@ export function CaseSummary() {
             </div>
             <div className="text-left">
               <div className="text-2xl font-bold text-white">
-                {calculations.total.toLocaleString('ar-QA')} ر.ق
+                {calculations.total.toLocaleString('en-US')} ر.ق
               </div>
               <p className="text-xs text-white/60">إجمالي المطالبة</p>
             </div>

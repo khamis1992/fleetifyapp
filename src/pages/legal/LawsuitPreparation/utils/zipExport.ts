@@ -226,10 +226,10 @@ export function generateCaseSummary(state: LawsuitPreparationState): string {
 تاريخ العقد: ${contract.start_date}
 
 المطالبات المالية:
-- إيجار متأخر: ${calculations.overdueRent.toLocaleString('ar-QA')} ر.ق
-- غرامات تأخير: ${calculations.lateFees.toLocaleString('ar-QA')} ر.ق
-- مخالفات مرورية: ${calculations.violationsFines.toLocaleString('ar-QA')} ر.ق (${calculations.violationsCount} مخالفة)
-- إجمالي المطالبة: ${calculations.total.toLocaleString('ar-QA')} ر.ق
+- إيجار متأخر: ${calculations.overdueRent.toLocaleString('en-US')} ر.ق
+- غرامات تأخير: ${calculations.lateFees.toLocaleString('en-US')} ر.ق
+- مخالفات مرورية: ${calculations.violationsFines.toLocaleString('en-US')} ر.ق (${calculations.violationsCount} مخالفة)
+- إجمالي المطالبة: ${calculations.total.toLocaleString('en-US')} ر.ق
 
 الفواتير المتأخرة: ${overdueInvoices.length} فاتورة
 

@@ -127,7 +127,7 @@ export function TaqadiDataCard() {
                   <div className="grid grid-cols-2 gap-3">
                     <CopyableField
                       label="المبلغ"
-                      value={taqadiData.amount.toLocaleString('ar-QA')}
+                      value={taqadiData.amount.toLocaleString('en-US')}
                       fieldId="amount"
                     />
                     <CopyableField
@@ -231,7 +231,7 @@ export function TaqadiDataCard() {
                   <CopyableField
                     label="القيمة الإيجارية الشهرية"
                     value={taqadiData.contract.monthlyAmount 
-                      ? `${taqadiData.contract.monthlyAmount.toLocaleString('ar-QA')} ر.ق`
+                      ? `${taqadiData.contract.monthlyAmount.toLocaleString('en-US')} ر.ق`
                       : '-'
                     }
                     fieldId="contract-monthly"
@@ -300,7 +300,7 @@ ${taqadiData.facts}
 الطلبات:
 ${taqadiData.claims}
 
-المبلغ: ${taqadiData.amount.toLocaleString('ar-QA')} ر.ق
+المبلغ: ${taqadiData.amount.toLocaleString('en-US')} ر.ق
 المبلغ كتابةً: ${taqadiData.amountInWords}
 
 === بيانات المدعى عليه ===
@@ -319,7 +319,7 @@ ${taqadiData.claims}
 رقم العقد: ${taqadiData.contract.contractNumber}
 تاريخ البدء: ${new Date(taqadiData.contract.startDate).toLocaleDateString('ar-QA')}
 تاريخ الانتهاء: ${taqadiData.contract.endDate ? new Date(taqadiData.contract.endDate).toLocaleDateString('ar-QA') : '-'}
-القيمة الشهرية: ${taqadiData.contract.monthlyAmount ? taqadiData.contract.monthlyAmount.toLocaleString('ar-QA') + ' ر.ق' : '-'}
+القيمة الشهرية: ${taqadiData.contract.monthlyAmount ? taqadiData.contract.monthlyAmount.toLocaleString('en-US') + ' ر.ق' : '-'}
 
 === بيانات السيارة ===
 الوصف الكامل: ${taqadiData.vehicle.fullDescription}
