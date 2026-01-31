@@ -26,6 +26,7 @@ export interface MonthlyCollectionStats {
   pendingCount: number;
 }
 
+// Updated: 2026-01-31 - Fixed payment status display
 export const useMonthlyCollections = () => {
   const { user } = useAuth();
 
@@ -68,6 +69,7 @@ export const useMonthlyCollections = () => {
           total_amount,
           paid_amount,
           status,
+          payment_status,
           due_date,
           contract_id,
           contracts!inner (
@@ -90,6 +92,7 @@ export const useMonthlyCollections = () => {
         .eq('contracts.assigned_to_profile_id', profile.id)
         .lte('due_date', endDate) // Include all invoices due up to end of this month (overdue included)
         .neq('status', 'cancelled')
+        .neq('payment_status', 'paid') // استبعاد الفواتير المدفوعة من الاستعلام مباشرة
         .order('due_date', { ascending: true }); // Oldest first (priority)
 
       if (error) throw error;
@@ -121,14 +124,8 @@ export const useMonthlyCollections = () => {
             due_date: inv.due_date,
           } as MonthlyCollectionItem;
         })
-        .filter(item => {
-          // عرض فقط الفواتير غير المدفوعة
-          // نريد رؤية:
-          // 1. جميع الفواتير غير المدفوعة (Pending/Overdue/Partially Paid)
-          // 2. إخفاء جميع الفواتير المدفوعة بالكامل
-          
-          return item.status !== 'paid';
-        });
+        // لا حاجة للفلترة هنا - تم استبعاد الفواتير المدفوعة من الاستعلام
+        ;
     },
     enabled: !!profile?.id
   });
