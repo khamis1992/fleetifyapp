@@ -21,7 +21,11 @@ import {
   Star,
   MoreHorizontal,
   TrendingUp,
-  Filter
+  Filter,
+  XCircle,
+  PauseCircle,
+  Scale,
+  PlayCircle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -155,6 +159,68 @@ export const EmployeeWorkspace: React.FC = () => {
     c.customers?.first_name_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.customers?.company_name_ar?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Get contract status styling
+  const getContractStatusStyle = (status: string) => {
+    switch (status) {
+      case 'active':
+        return {
+          badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+          border: 'border-emerald-200',
+          bg: 'bg-emerald-50/30',
+          icon: PlayCircle,
+          label: 'نشط'
+        };
+      case 'expired':
+        return {
+          badge: 'bg-red-100 text-red-700 border-red-200',
+          border: 'border-red-200',
+          bg: 'bg-red-50/30',
+          icon: XCircle,
+          label: 'منتهي'
+        };
+      case 'cancelled':
+        return {
+          badge: 'bg-gray-100 text-gray-700 border-gray-200',
+          border: 'border-gray-200',
+          bg: 'bg-gray-50/30',
+          icon: XCircle,
+          label: 'ملغي'
+        };
+      case 'suspended':
+        return {
+          badge: 'bg-orange-100 text-orange-700 border-orange-200',
+          border: 'border-orange-200',
+          bg: 'bg-orange-50/30',
+          icon: PauseCircle,
+          label: 'موقوف'
+        };
+      case 'under_legal_procedure':
+        return {
+          badge: 'bg-purple-100 text-purple-700 border-purple-200',
+          border: 'border-purple-200',
+          bg: 'bg-purple-50/30',
+          icon: Scale,
+          label: 'تحت الإجراء القانوني'
+        };
+      case 'pending':
+        return {
+          badge: 'bg-amber-100 text-amber-700 border-amber-200',
+          border: 'border-amber-200',
+          bg: 'bg-amber-50/30',
+          icon: Clock,
+          label: 'معلق'
+        };
+      default:
+        return {
+          badge: 'bg-gray-100 text-gray-700 border-gray-200',
+          border: 'border-gray-200',
+          bg: 'bg-gray-50/30',
+          icon: FileText,
+          label: status
+        };
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 font-sans" dir="rtl">
@@ -545,93 +611,133 @@ export const EmployeeWorkspace: React.FC = () => {
                 <CardContent>
                   <ScrollArea className="h-[500px] pr-4">
                     <div className="space-y-3">
-                      {filteredContracts.length > 0 ? filteredContracts.map((contract) => (
+                      {filteredContracts.length > 0 ? filteredContracts.map((contract) => {
+                        const statusStyle = getContractStatusStyle(contract.status);
+                        const StatusIcon = statusStyle.icon;
+                        
+                        return (
                         <div 
                           key={contract.id} 
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all bg-white group"
+                          className={cn(
+                            "flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border-2 hover:shadow-md transition-all group relative overflow-hidden",
+                            statusStyle.border,
+                            statusStyle.bg
+                          )}
                         >
+                          {/* Status indicator bar */}
+                          <div className={cn(
+                            "absolute right-0 top-0 bottom-0 w-1",
+                            statusStyle.badge.split(' ')[0].replace('bg-', 'bg-').replace('-100', '-500')
+                          )} />
+                          
                           <div 
-                            className="flex items-center gap-4 mb-3 sm:mb-0 cursor-pointer"
+                            className="flex items-center gap-4 mb-3 sm:mb-0 cursor-pointer flex-1"
                             onClick={() => navigate(`/contracts/${contract.contract_number || contract.id}`)}
                           >
-                            <Avatar className="h-10 w-10 border bg-gray-50">
-                              <AvatarFallback className="text-blue-600 bg-blue-50 font-bold">
+                            <Avatar className="h-12 w-12 border-2 shadow-sm">
+                              <AvatarFallback className={cn("font-bold text-lg", statusStyle.badge)}>
                                 {contract.customers?.first_name_ar?.[0] || 'C'}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
-                                {contract.customers?.first_name_ar || contract.customers?.company_name_ar}
-                              </h4>
-                              <p className="text-xs text-gray-500 flex items-center gap-2">
-                                <span>#{contract.contract_number}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
+                                  {contract.customers?.first_name_ar || contract.customers?.company_name_ar}
+                                </h4>
+                                <Badge variant="outline" className={cn("text-xs font-bold border-2", statusStyle.badge)}>
+                                  <StatusIcon className="w-3 h-3 ml-1" />
+                                  {statusStyle.label}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-gray-600 flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold">#{contract.contract_number}</span>
                                 <span className="text-gray-300">•</span>
+                                {contract.customers?.phone && (
+                                  <>
+                                    <a 
+                                      href={`tel:${contract.customers.phone}`}
+                                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Phone className="w-3 h-3" />
+                                      {contract.customers.phone}
+                                    </a>
+                                    <span className="text-gray-300">•</span>
+                                  </>
+                                )}
                                 <span className={cn(
                                   "font-medium",
                                   (contract.balance_due || 0) > 0 ? "text-amber-600" : "text-emerald-600"
                                 )}>
-                                  {(contract.balance_due || 0) > 0 ? `مستحق: ${formatCurrency(contract.balance_due || 0)}` : 'مدفوع بالكامل'}
+                                  {(contract.balance_due || 0) > 0 ? `مستحق: ${formatCurrency(contract.balance_due || 0)}` : '✓ مدفوع بالكامل'}
                                 </span>
                               </p>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-2 self-end sm:self-auto">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 rounded-full"
-                              onClick={() => {
-                                 // Construct URL with parameters for pre-selecting the customer
-                                 const customerName = contract.customers?.first_name_ar || contract.customers?.company_name_ar || '';
-                                 const customerId = contract.customer_id;
-                                 const phone = contract.customers?.phone || '';
-                                 
-                                 // Navigate to Quick Payment page with params
-                                 navigate(`/finance/payments/quick?customerId=${customerId}&customerName=${encodeURIComponent(customerName)}&phone=${phone}`);
-                              }}
-                              title="تسجيل دفعة"
-                            >
-                              <DollarSign className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 text-purple-600 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 rounded-full"
-                              onClick={() => {
-                                 setSelectedContractId(contract.id);
-                                 setShowNoteDialog(true);
-                              }}
-                              title="إضافة ملاحظة"
-                            >
-                              <FileText className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 rounded-full"
-                              onClick={() => {
-                                 setSelectedContractId(contract.id);
-                                 setShowFollowupDialog(true);
-                              }}
-                              title="جدولة متابعة"
-                            >
-                              <Calendar className="w-4 h-4" />
-                            </Button>
-
-                            <Badge variant={contract.status === 'active' ? 'default' : 'secondary'} className={cn(
-                              contract.status === 'active' ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : ""
-                            )}>
-                              {contract.status === 'active' ? 'نشط' : 
-                               contract.status === 'under_legal_procedure' ? 'تحت الإجراء القانوني' :
-                               contract.status}
-                            </Badge>
+                            {/* زر الاتصال - متاح لجميع العقود */}
+                            {contract.customers?.phone && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-teal-600 bg-teal-50 hover:bg-teal-100 hover:text-teal-700 rounded-full"
+                                onClick={() => window.location.href = `tel:${contract.customers.phone}`}
+                                title={`اتصال: ${contract.customers.phone}`}
+                              >
+                                <Phone className="w-4 h-4" />
+                              </Button>
+                            )}
+                            
+                            {/* أزرار العمل - فقط للعقود النشطة */}
+                            {contract.status === 'active' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 rounded-full"
+                                  onClick={() => {
+                                     const customerName = contract.customers?.first_name_ar || contract.customers?.company_name_ar || '';
+                                     const customerId = contract.customer_id;
+                                     const phone = contract.customers?.phone || '';
+                                     navigate(`/finance/payments/quick?customerId=${customerId}&customerName=${encodeURIComponent(customerName)}&phone=${phone}`);
+                                  }}
+                                  title="تسجيل دفعة"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 text-purple-600 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 rounded-full"
+                                  onClick={() => {
+                                     setSelectedContractId(contract.id);
+                                     setShowNoteDialog(true);
+                                  }}
+                                  title="إضافة ملاحظة"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 rounded-full"
+                                  onClick={() => {
+                                     setSelectedContractId(contract.id);
+                                     setShowFollowupDialog(true);
+                                  }}
+                                  title="جدولة متابعة"
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-blue-600">
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
-                      )) : (
+                      )}) : (
                         <div className="text-center py-12">
                            <p className="text-gray-500">لا توجد عقود مطابقة للبحث</p>
                         </div>
