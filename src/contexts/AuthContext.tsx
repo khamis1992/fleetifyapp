@@ -177,6 +177,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const initializeAuth = async () => {
+    // DEVELOPMENT BYPASS: تسجيل دخول تلقائي في البيئة المحلية
+    if (import.meta.env.DEV && window.location.hostname === 'localhost') {
+      console.log('🔓 [AUTH_CONTEXT] Development mode - auto login with khamis-1992@hotmail.com');
+      
+      try {
+        // محاولة تسجيل الدخول تلقائياً بحساب khamis
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: 'khamis-1992@hotmail.com',
+          password: '123456789',
+        });
+        
+        if (error) {
+          console.error('🔓 [AUTH_CONTEXT] Auto login failed:', error);
+          // إذا فشل، استخدم مستخدم وهمي
+          const mockUser: AuthUser = {
+            id: 'dev-user-id',
+            email: 'khamis-1992@hotmail.com',
+            user_metadata: {},
+            app_metadata: {},
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+          };
+          setUser(mockUser);
+        } else if (data.user) {
+          console.log('✅ [AUTH_CONTEXT] Auto login successful');
+          const authUser = authService.mapSupabaseUser(data.user);
+          setUser(authUser);
+          setSession(data.session);
+          cacheUser(authUser);
+        }
+        
+        setLoading(false);
+        isInitialized.current = true;
+        return;
+      } catch (err) {
+        console.error('🔓 [AUTH_CONTEXT] Auto login error:', err);
+      }
+    }
 
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
