@@ -584,7 +584,7 @@ export const DelinquentCustomersTab: React.FC = () => {
       }));
 
       // إنشاء ملف ZIP مع جميع المستندات
-      const zipBlob = await generateBulkDocumentsZip(customersData, (progress) => {
+      const zipBlob = await generateBulkDocumentsZip(customersData, companyId, (progress) => {
         setBulkGenerationProgress(progress);
       }, selectedDocuments);
 
@@ -621,7 +621,70 @@ export const DelinquentCustomersTab: React.FC = () => {
         setBulkGenerationProgress(null);
       }, 2000);
     }
-  }, [selectedCustomers, refreshDelinquentCustomers]);
+  }, [selectedCustomers, selectedDocuments, refreshDelinquentCustomers]);
+
+  // تحميل سريع - جميع المستندات بدون dialog
+  const handleQuickBulkDownload = useCallback(async () => {
+    if (selectedCustomers.length === 0) {
+      toast.error('لم يتم تحديد أي عملاء');
+      return;
+    }
+
+    setBulkGenerationDialogOpen(true);
+    setBulkGenerationProgress({
+      current: 0,
+      total: selectedCustomers.length,
+      currentCustomer: '',
+      status: 'generating',
+      errors: [],
+    });
+
+    try {
+      toast.loading(`جاري تحميل المستندات لـ ${selectedCustomers.length} عميل...`);
+
+      // تحويل بيانات العملاء للصيغة المطلوبة
+      const customersData: BulkCustomerData[] = selectedCustomers.map(c => ({
+        contract_id: c.contract_id,
+        contract_number: c.contract_number,
+        customer_name: c.customer_name,
+        customer_id: c.customer_id,
+        national_id: c.national_id,
+        phone: c.phone,
+        total_due: c.total_due,
+        days_overdue: c.days_overdue,
+      }));
+
+      // جميع المستندات مفعلة بشكل افتراضي
+      const allDocumentsOptions = {
+        explanatoryMemo: true,
+        claimsStatement: true,
+        documentsList: true,
+        violationsList: true,
+        criminalComplaint: true,
+        violationsTransfer: true,
+      };
+
+      // إنشاء ملف ZIP مع جميع المستندات
+      const zipBlob = await generateBulkDocumentsZip(customersData, companyId, (progress) => {
+        setBulkGenerationProgress(progress);
+      }, allDocumentsOptions);
+
+      // تحميل الملف
+      const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm');
+      downloadZipFile(zipBlob, `مستندات_${selectedCustomers.length}_عميل_${timestamp}.zip`);
+
+      toast.success(`✅ تم تحميل مستندات ${selectedCustomers.length} عميل بنجاح`);
+      
+    } catch (error) {
+      console.error('Error in quick bulk download:', error);
+      toast.error('حدث خطأ أثناء تحميل المستندات');
+    } finally {
+      setTimeout(() => {
+        setBulkGenerationDialogOpen(false);
+        setBulkGenerationProgress(null);
+      }, 2000);
+    }
+  }, [selectedCustomers]);
 
   // تحويل عميل واحد إلى قضية رسمية
   const handleConvertToOfficialCase = useCallback(async (customer: DelinquentCustomer) => {
@@ -1584,9 +1647,25 @@ export const DelinquentCustomersTab: React.FC = () => {
                   background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
                   color: 'white',
                 }}
+                title="اختيار المستندات المطلوبة للتحميل"
               >
-                <FileText className="h-4 w-4" />
-                إنشاء قضايا
+                <Download className="h-4 w-4" />
+                تحميل المستندات
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleQuickBulkDownload()}
+                disabled={convertToCase.isPending}
+                className="gap-2 rounded-xl"
+                variant="outline"
+                style={{
+                  borderColor: `hsl(${colors.primary} / 0.4)`,
+                  color: `hsl(${colors.primary})`,
+                }}
+                title="تحميل جميع المستندات مباشرة بدون اختيار"
+              >
+                <Zap className="h-4 w-4" />
+                تحميل سريع
               </Button>
               <Button
                 size="sm"
@@ -1594,8 +1673,8 @@ export const DelinquentCustomersTab: React.FC = () => {
                 className="gap-2 rounded-xl"
                 variant="outline"
                 style={{
-                  borderColor: `hsl(${colors.primary} / 0.4)`,
-                  color: `hsl(${colors.primary})`,
+                  borderColor: `hsl(${colors.info} / 0.4)`,
+                  color: `hsl(${colors.info})`,
                 }}
               >
                 <UserCheck className="h-4 w-4" />
@@ -2402,11 +2481,11 @@ className={cn(
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-6 w-6 text-primary" />
-              اختيار المستندات المطلوبة
+              <Download className="h-6 w-6 text-primary" />
+              تحميل المستندات
             </DialogTitle>
             <DialogDescription>
-              حدد المستندات التي تريد إنشاءها لـ {selectedCustomers.length} عميل
+              حدد المستندات التي تريد تحميلها لـ {selectedCustomers.length} عميل
             </DialogDescription>
           </DialogHeader>
           
@@ -2647,8 +2726,8 @@ className={cn(
                 color: 'white',
               }}
             >
-              <FolderArchive className="h-4 w-4" />
-              إنشاء وتحميل ({
+              <Download className="h-4 w-4" />
+              تحميل الملفات ({
                 [
                   selectedDocuments.explanatoryMemo,
                   selectedDocuments.claimsStatement, 
@@ -2668,11 +2747,11 @@ className={cn(
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FolderArchive className="h-5 w-5 text-primary" />
-              إنشاء ملفات القضايا
+              <Download className="h-5 w-5 text-primary" />
+              تحميل المستندات
             </DialogTitle>
             <DialogDescription>
-              جاري إنشاء المستندات القانونية لجميع العملاء المحددين
+              جاري تحميل المستندات القانونية لجميع العملاء المحددين
             </DialogDescription>
           </DialogHeader>
           

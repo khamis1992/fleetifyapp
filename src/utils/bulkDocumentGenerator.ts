@@ -27,6 +27,59 @@ import {
 let COMPANY_LOGO_BASE64: string | null = null;
 
 /**
+ * تحويل HTML إلى ملف Word (DOCX)
+ */
+async function convertHtmlToDocx(htmlContent: string, title: string = 'Document'): Promise<Blob> {
+  try {
+    const { default: HTMLtoDOCX } = await import('html-to-docx');
+    
+    // Wrap HTML in complete document structure
+    const completeHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      direction: rtl;
+      text-align: right;
+    }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #000; padding: 8px; }
+  </style>
+</head>
+<body>
+  ${htmlContent}
+</body>
+</html>`;
+    
+    // Convert HTML to DOCX
+    const fileBuffer = await HTMLtoDOCX(completeHtml, null, {
+      table: { row: { cantSplit: true } },
+      footer: true,
+      pageNumber: true,
+      font: 'Arial',
+      fontSize: 24,
+      orientation: 'portrait',
+      margins: {
+        top: 720,
+        right: 720,
+        bottom: 720,
+        left: 720
+      }
+    });
+    
+    // Create blob from buffer
+    return new Blob([fileBuffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+    });
+  } catch (error) {
+    console.error('Error converting HTML to DOCX:', error);
+    throw new Error('فشل تحويل HTML إلى Word');
+  }
+}
+
+/**
  * تحويل صورة اللوقو إلى Base64
  */
 async function loadCompanyLogo(): Promise<string> {
@@ -56,11 +109,135 @@ async function loadCompanyLogo(): Promise<string> {
 async function embedLogoInHtml(html: string): Promise<string> {
   const logoBase64 = await loadCompanyLogo();
   if (!logoBase64) return html;
-  
+
   // استبدال جميع مسارات اللوقو بـ Base64
   return html
     .replace(/src="\/receipts\/logo\.png"/g, `src="${logoBase64}"`)
     .replace(/src='\/receipts\/logo\.png'/g, `src='${logoBase64}'`);
+}
+
+/**
+ * جلب ملف من Supabase Storage
+ */
+async function fetchFileFromStorage(bucket: string, path: string): Promise<Blob | null> {
+  try {
+    const { data, error } = await supabase.storage.from(bucket).download(path);
+    if (error || !data) return null;
+    return data;
+  } catch (error) {
+    console.error(`Error fetching file from ${bucket}/${path}:`, error);
+    return null;
+  }
+}
+
+/**
+ * جلب الملفات المرفوعة لعقد معين
+ */
+async function fetchContractDocuments(contractId: string, companyId: string): Promise<{name: string, blob: Blob}[]> {
+  const documents: {name: string, blob: Blob}[] = [];
+
+  try {
+    // 1. جلب العقد من contract-documents bucket
+    const { data: contractFiles } = await supabase.storage
+      .from('contract-documents')
+      .list(`contracts/${companyId}/${contractId}`);
+
+    if (contractFiles && contractFiles.length > 0) {
+      for (const file of contractFiles) {
+        const blob = await fetchFileFromStorage(
+          'contract-documents',
+          `contracts/${companyId}/${contractId}/${file.name}`
+        );
+        if (blob) {
+          documents.push({
+            name: `عقد_الإيجار.${file.name.split('.').pop() || 'pdf'}`,
+            blob
+          });
+        }
+      }
+    }
+
+    // 2. جلب المستندات القانونية من legal-documents bucket
+    const { data: legalFiles } = await supabase.storage
+      .from('legal-documents')
+      .list(`contracts/${companyId}/${contractId}`);
+
+    if (legalFiles && legalFiles.length > 0) {
+      for (const file of legalFiles) {
+        const blob = await fetchFileFromStorage(
+          'legal-documents',
+          `contracts/${companyId}/${contractId}/${file.name}`
+        );
+        if (blob) {
+          // تحديد نوع المستند من الاسم
+          let docName = file.name;
+          if (file.name.toLowerCase().includes('memo')) docName = 'المذكرة_الشارحة.pdf';
+          else if (file.name.toLowerCase().includes('claim')) docName = 'صحيفة_المطالبات.pdf';
+          else if (file.name.toLowerCase().includes('doc')) docName = 'كشف_المستندات.pdf';
+          else if (file.name.toLowerCase().includes('violation')) docName = 'كشف_المخالفات.pdf';
+
+          documents.push({ name: docName, blob });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching contract documents:', error);
+  }
+
+  return documents;
+}
+
+/**
+ * جلب مستندات الشركة (السجل التجاري، شهادة IBAN، إلخ)
+ */
+async function fetchCompanyDocuments(companyId: string): Promise<{name: string, blob: Blob, type: string}[]> {
+  const documents: {name: string, blob: Blob, type: string}[] = [];
+
+  try {
+    // جلب من جدول company_legal_documents
+    const { data: companyDocs } = await supabase
+      .from('company_legal_documents')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('is_active', true);
+
+    if (companyDocs && companyDocs.length > 0) {
+      for (const doc of companyDocs) {
+        if (doc.file_url) {
+          try {
+            const response = await fetch(doc.file_url);
+            if (response.ok) {
+              const blob = await response.blob();
+              let docName = 'مستند_الشركة.pdf';
+
+              switch (doc.document_type) {
+                case 'commercial_register':
+                  docName = 'السجل_التجاري.pdf';
+                  break;
+                case 'iban_certificate':
+                  docName = 'شهادة_IBAN.pdf';
+                  break;
+                case 'representative_id':
+                  docName = 'هوية_الممثل.pdf';
+                  break;
+                case 'authorization_letter':
+                  docName = 'خطاب_التفويض.pdf';
+                  break;
+              }
+
+              documents.push({ name: docName, blob, type: doc.document_type });
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch company document ${doc.document_type}:`, error);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching company documents:', error);
+  }
+
+  return documents;
 }
 
 export interface BulkCustomerData {
@@ -181,29 +358,30 @@ function convertAmountToWords(amount: number): string {
  */
 async function generateCustomerDocuments(
   customer: BulkCustomerData,
-  options: DocumentOptions = { 
+  companyId: string,
+  options: DocumentOptions = {
     explanatoryMemo: true,
-    claimsStatement: true, 
-    documentsList: true, 
+    claimsStatement: true,
+    documentsList: true,
     violationsList: true,
     criminalComplaint: true,
     violationsTransfer: true
   }
 ): Promise<CustomerDocuments> {
-  const { contract, invoices, violations } = await fetchCustomerFullData(customer.contract_id);
-  
+  const { contract, invoices, violations, companyInfo } = await fetchCustomerFullData(customer.contract_id);
+
   const customerData = contract.customers;
   const vehicleData = contract.vehicles;
-  
+
   const customerFullName = customerData
     ? `${customerData.first_name || ''} ${customerData.last_name || ''}`.trim() || customerData.company_name || customer.customer_name
     : customer.customer_name;
 
   const nationalId = customerData?.national_id || customer.national_id || 'غير محدد';
   const phone = customerData?.phone || customer.phone || 'غير محدد';
-  
+
   // حساب المبالغ المستحقة
-  const unpaidInvoices = invoices.filter(inv => 
+  const unpaidInvoices = invoices.filter(inv =>
     (inv.total_amount || 0) - (inv.paid_amount || 0) > 0
   );
   
@@ -217,7 +395,7 @@ async function generateCustomerDocuments(
 
   const grandTotal = totalOverdue + violationsTotal;
 
-  const documents: { name: string; content: string }[] = [];
+  const documents: { name: string; content: string | Blob; type?: 'html' | 'docx' }[] = [];
 
   // 1. المذكرة الشارحة (باستخدام نفس التنسيق المستخدم في صفحة تجهيز الدعوى)
   if (options.explanatoryMemo) {
@@ -267,10 +445,26 @@ async function generateCustomerDocuments(
       damages: damagesAmount,
     };
 
+    const memoHtml = generateLegalComplaintHTML(documentData);
+    
+    // إضافة نسخة HTML
     documents.push({
       name: 'المذكرة_الشارحة.html',
-      content: generateLegalComplaintHTML(documentData),
+      content: memoHtml,
+      type: 'html',
     });
+    
+    // إضافة نسخة Word (DOCX)
+    try {
+      const memoDocxBlob = await convertHtmlToDocx(memoHtml, 'المذكرة الشارحة');
+      documents.push({
+        name: 'المذكرة_الشارحة.docx',
+        content: memoDocxBlob,
+        type: 'docx',
+      });
+    } catch (error) {
+      console.warn('فشل إنشاء نسخة Word من المذكرة الشارحة:', error);
+    }
   }
 
   // 2. كشف المطالبات
@@ -546,13 +740,35 @@ async function generateCustomerDocuments(
     });
   }
 
-  // تضمين اللوقو في جميع المستندات
+  // تضمين اللوقو في جميع المستندات HTML فقط
   const documentsWithLogo = await Promise.all(
-    documents.map(async (doc) => ({
-      ...doc,
-      content: await embedLogoInHtml(doc.content),
-    }))
+    documents.map(async (doc) => {
+      if (typeof doc.content === 'string') {
+        return {
+          ...doc,
+          content: await embedLogoInHtml(doc.content),
+        };
+      }
+      return doc;
+    })
   );
+
+  // جلب الملفات الفعلية المرفوعة للعميل
+  try {
+    // 1. جلب مستندات العقد (العقد + المستندات القانونية المرفوعة)
+    const contractDocs = await fetchContractDocuments(customer.contract_id, companyId);
+    for (const doc of contractDocs) {
+      documentsWithLogo.push({
+        name: doc.name,
+        content: doc.blob,
+      });
+    }
+
+    // 2. جلب مستندات الشركة (مرة واحدة فقط - ستكون مكررة لكل عميل لكنها ضرورية)
+    // نجلبها في generateBulkDocumentsZip مرة واحدة ونوزعها على جميع العملاء
+  } catch (error) {
+    console.warn('فشل جلب الملفات المرفوعة:', error);
+  }
 
   return {
     customerName: customerFullName,
@@ -566,6 +782,7 @@ async function generateCustomerDocuments(
  */
 export async function generateBulkDocumentsZip(
   customers: BulkCustomerData[],
+  companyId: string,
   onProgress?: (progress: BulkGenerationProgress) => void,
   options?: DocumentOptions
 ): Promise<Blob> {
@@ -574,17 +791,20 @@ export async function generateBulkDocumentsZip(
   let completed = 0;
   const lawsuitDataList: LawsuitExcelData[] = [];
 
+  // جلب مستندات الشركة مرة واحدة (مشتركة بين جميع العملاء)
+  const companyDocuments = await fetchCompanyDocuments(companyId);
+
   // معالجة العملاء بالتوازي (5 عملاء في نفس الوقت لتحسين الأداء)
   const BATCH_SIZE = 5;
-  
+
   for (let i = 0; i < customers.length; i += BATCH_SIZE) {
     const batch = customers.slice(i, i + BATCH_SIZE);
-    
+
     // معالجة الدفعة الحالية بالتوازي
     const results = await Promise.allSettled(
       batch.map(async (customer) => {
-        const customerDocs = await generateCustomerDocuments(customer, options);
-        
+        const customerDocs = await generateCustomerDocuments(customer, companyId, options);
+
         // استخراج بيانات القضية للـ Excel
         const contractId = customer.contract_id || customer.id;
         const fullData = await fetchCustomerFullData(contractId);
@@ -596,7 +816,7 @@ export async function generateBulkDocumentsZip(
           fullData.violations,
           fullData.companyInfo
         );
-        
+
         return { customer, customerDocs, lawsuitData };
       })
     );
@@ -625,7 +845,12 @@ export async function generateBulkDocumentsZip(
         
         if (folder) {
           for (const doc of customerDocs.documents) {
-            folder.file(doc.name, doc.content);
+            // التحقق من نوع المحتوى (Blob للـ Word، string للـ HTML)
+            if (doc.content instanceof Blob) {
+              folder.file(doc.name, doc.content);
+            } else {
+              folder.file(doc.name, doc.content);
+            }
           }
         }
       } else {
@@ -700,6 +925,16 @@ export async function generateBulkDocumentsZip(
     } catch (error) {
       console.error('Error creating Excel file or saving data:', error);
       errors.push('فشل إنشاء ملف Excel أو حفظ البيانات');
+    }
+  }
+
+  // إضافة مستندات الشركة المشتركة في مجلد منفصل
+  if (companyDocuments.length > 0) {
+    const companyFolder = zip.folder('مستندات_الشركة');
+    if (companyFolder) {
+      for (const doc of companyDocuments) {
+        companyFolder.file(doc.name, doc.blob);
+      }
     }
   }
 
