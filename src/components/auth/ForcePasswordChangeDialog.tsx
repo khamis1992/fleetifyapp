@@ -59,7 +59,7 @@ const ForcePasswordChangeDialog: React.FC = () => {
       }, 1000);
       
     } catch (err: unknown) {
-      const errorMessage = err?.message || 'تعذر تغيير كلمة المرور';
+      const errorMessage = (err as Error)?.message || 'تعذر تغيير كلمة المرور';
       toast({ title: 'خطأ', description: errorMessage, variant: 'destructive' });
     } finally {
       setSubmitting(false);

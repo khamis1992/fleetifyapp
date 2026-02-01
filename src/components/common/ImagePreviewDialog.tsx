@@ -3,7 +3,7 @@
  * Displays images in a modal dialog for preview without downloading
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
@@ -39,7 +39,7 @@ export function ImagePreviewDialog({
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
 
   // Generate public URL when imageUrl changes
-  useState(() => {
+  useEffect(() => {
     const fetchPublicUrl = async () => {
       if (!imageUrl) {
         setPublicUrl(null);
@@ -56,8 +56,8 @@ export function ImagePreviewDialog({
       try {
         const { data } = supabase.storage.from('documents').getPublicUrl(imageUrl);
         setPublicUrl(data.publicUrl);
-      } catch (error) {
-        console.error('Error getting public URL:', error);
+      } catch (err) {
+        console.error('Error getting public URL:', err);
         toast.error('فشل في تحميل الصورة');
       }
     };
