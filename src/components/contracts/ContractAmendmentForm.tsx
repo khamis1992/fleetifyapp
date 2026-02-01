@@ -83,19 +83,6 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
 
   const hasChanges = Object.values(changes).some(changed => changed);
 
-  const getAmendmentTypeLabel = (type: AmendmentType): string => {
-    const labels: Record<AmendmentType, string> = {
-      extend_duration: 'تمديد المدة',
-      change_amount: 'تعديل المبلغ',
-      change_terms: 'تعديل الشروط',
-      change_vehicle: 'تغيير المركبة',
-      change_dates: 'تعديل التواريخ',
-      change_payment: 'تعديل الدفعات',
-      other: 'أخرى'
-    };
-    return labels[type];
-  };
-
   const getAmendmentTypeIcon = (type: AmendmentType) => {
     const icons: Record<AmendmentType, any> = {
       extend_duration: Calendar,
@@ -147,8 +134,8 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
       // Update the contract directly
       const { error } = await supabase
         .from('contracts')
-        .update(updateData)
-        .eq('id', contract.id);
+        .update(updateData as any)
+        .eq('id' as any, contract.id);
 
       if (error) {
         console.error('Contract update error:', error);
@@ -174,7 +161,7 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
     }
   };
 
-  const Icon = getAmendmentTypeIcon(formData.amendment_type);
+  void getAmendmentTypeIcon(formData.amendment_type); // Available for future use
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

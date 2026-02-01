@@ -15,8 +15,7 @@ import {
   MessageSquare, 
   User, 
   Calendar,
-  AlertTriangle,
-  Send
+  AlertTriangle
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +40,7 @@ interface ApprovalStep {
   rejected_at?: string;
   comments?: string;
   created_at: string;
+  approver?: any;
 }
 
 export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> = ({
@@ -56,7 +56,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
   const { logAudit } = useAuditLog();
 
   // Fetch real approval workflow steps
-  const { data: approvalSteps, isLoading } = useQuery({
+  const { data: approvalSteps, isLoading } = useQuery<ApprovalStep[]>({
     queryKey: ['contract-approval-steps', contract?.id],
     queryFn: async () => {
       if (!contract?.id) return [];
@@ -67,11 +67,11 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
           *,
           approver:profiles!contract_approval_steps_approver_id_fkey(first_name, last_name, email)
         `)
-        .eq('contract_id', contract.id)
+        .eq('contract_id' as any, contract.id)
         .order('step_order');
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as any as ApprovalStep[];
     },
     enabled: !!contract?.id
   });
@@ -87,9 +87,10 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       const { data: userRoles } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id);
+        .eq('user_id' as any, user.id);
       
-      const hasApprovalRole = userRoles?.some(r => 
+      const roles = userRoles as Array<{ role: string }> | null;
+      const hasApprovalRole = roles?.some(r => 
         r.role === 'company_admin' || r.role === 'manager'
       );
       
@@ -121,8 +122,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
           approved_at: action === 'approve' ? new Date().toISOString() : null,
           rejected_at: action === 'reject' ? new Date().toISOString() : null,
           comments
-        })
-        .eq('id', pendingStep.id);
+        } as any)
+        .eq('id' as any, pendingStep.id);
 
       if (stepError) throw stepError;
 
@@ -136,9 +137,10 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
         const { data: allSteps } = await supabase
           .from('contract_approval_steps')
           .select('status')
-          .eq('contract_id', contract.id);
+          .eq('contract_id' as any, contract.id);
         
-        const allApproved = allSteps?.every((step: any) => 
+        const stepsData = allSteps as Array<{ status: string }> | null;
+        const allApproved = stepsData?.every((step) => 
           step.status === 'approved'
         );
         
@@ -151,8 +153,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       if (newContractStatus !== contract.status) {
         const { error: contractError } = await supabase
           .from('contracts')
-          .update({ status: newContractStatus })
-          .eq('id', contract.id);
+          .update({ status: newContractStatus } as any)
+          .eq('id' as any, contract.id);
 
         if (contractError) throw contractError;
       }

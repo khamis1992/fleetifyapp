@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Settings, Save, FileText } from 'lucide-react'
+import { Settings, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess'
@@ -52,7 +52,7 @@ export function CompanyDocumentSettings({
       const { data, error } = await supabase
         .from('companies')
         .select('settings')
-        .eq('id', companyId)
+        .eq('id' as any, companyId)
         .single()
 
       if (error) {
@@ -60,7 +60,7 @@ export function CompanyDocumentSettings({
         throw error
       }
 
-      const settingsData = data?.settings as any
+      const settingsData = (data as any)?.settings as any
       
       // If no settings exist or document_saving is empty, use defaults
       if (!settingsData || !settingsData.document_saving) {
@@ -108,12 +108,12 @@ export function CompanyDocumentSettings({
       const { data: currentData, error: fetchError } = await supabase
         .from('companies')
         .select('settings')
-        .eq('id', companyId)
+        .eq('id' as any, companyId)
         .single()
 
       if (fetchError) throw fetchError
 
-      const currentSettings = (currentData?.settings as any) || {}
+      const currentSettings = ((currentData as any)?.settings as any) || {}
       const updatedSettings = {
         ...currentSettings,
         document_saving: settings
@@ -121,8 +121,8 @@ export function CompanyDocumentSettings({
 
       const { error } = await supabase
         .from('companies')
-        .update({ settings: updatedSettings })
-        .eq('id', companyId)
+        .update({ settings: updatedSettings } as any)
+        .eq('id' as any, companyId)
 
       if (error) throw error
 
