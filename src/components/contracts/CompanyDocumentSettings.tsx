@@ -120,8 +120,8 @@ export function CompanyDocumentSettings({
       }
 
       const { error } = await (supabase
-        .from('companies')
-        .update({ settings: updatedSettings }) as any)
+        .from('companies') as any)
+        .update({ settings: updatedSettings })
         .eq('id', companyId)
 
       if (error) throw error

@@ -134,7 +134,7 @@ export const ContractAmendmentForm: React.FC<ContractAmendmentFormProps> = ({
       // Update the contract directly
       const { error } = await (supabase
         .from('contracts')
-        .update(updateData) as any)
+        .update(updateData as any) as any)
         .eq('id', contract.id);
 
       if (error) {

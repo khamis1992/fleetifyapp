@@ -123,7 +123,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
           approved_at: action === 'approve' ? new Date().toISOString() : null,
           rejected_at: action === 'reject' ? new Date().toISOString() : null,
           comments
-        }) as any)
+        } as any) as any)
         .eq('id', pendingStep.id);
 
       if (stepError) throw stepError;
@@ -154,7 +154,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       if (newContractStatus !== contract.status) {
         const { error: contractError } = await (supabase
           .from('contracts')
-          .update({ status: newContractStatus }) as any)
+          .update({ status: newContractStatus } as any) as any)
           .eq('id', contract.id);
 
         if (contractError) throw contractError;
