@@ -30,19 +30,28 @@ class CapacitorStorageAdapter {
   /**
    * Sync values from Preferences to localStorage cache (for native platforms)
    * This runs once on startup to ensure synchronous access works
+   * FIXED: Now syncs ALL Preferences keys to localStorage for complete compatibility
    */
   private async syncFromPreferences(): Promise<void> {
     try {
-      // Get all keys we care about
-      const keys = ['supabase.auth.token', 'fleetify_auth_cache'];
+      console.log('[CapacitorStorage] Starting sync from Preferences to localStorage...');
+      
+      // Get all keys from Preferences
+      const { keys } = await Preferences.keys();
+      console.log('[CapacitorStorage] Found', keys.length, 'keys in Preferences');
+      
+      // Sync all keys to localStorage cache
       for (const key of keys) {
         const { value } = await Preferences.get({ key });
         if (value) {
           localStorage.setItem(CACHE_PREFIX + key, value);
+          console.log('[CapacitorStorage] Synced key:', key);
         }
       }
+      
+      console.log('[CapacitorStorage] Sync complete');
     } catch (error) {
-      console.warn('[CapacitorStorage] Error syncing from Preferences:', error);
+      console.error('[CapacitorStorage] Error syncing from Preferences:', error);
     }
   }
 
@@ -61,7 +70,8 @@ class CapacitorStorageAdapter {
 
   /**
    * Set item - returns Promise but also updates localStorage cache synchronously
-   * FIXED: Now saves to Preferences first, then localStorage to ensure consistency
+   * FIXED: Now updates localStorage cache immediately for synchronous access,
+   * then saves to Preferences asynchronously
    */
   async setItem(key: string, value: string): Promise<void> {
     if (!this.isNative) {
@@ -70,21 +80,24 @@ class CapacitorStorageAdapter {
       return;
     }
     
-    // On native: save to Preferences first, then update localStorage cache
+    // CRITICAL FIX: Update localStorage cache FIRST for immediate synchronous access
+    // This ensures getItem() can retrieve the value immediately after setItem()
+    localStorage.setItem(CACHE_PREFIX + key, value);
+    console.log('[CapacitorStorage] Set item in cache:', key);
+    
+    // Then save to Preferences asynchronously (don't block)
     try {
       await Preferences.set({ key, value });
-      // Only update localStorage cache after successful Preferences save
-      localStorage.setItem(CACHE_PREFIX + key, value);
+      console.log('[CapacitorStorage] Saved to Preferences:', key);
     } catch (error) {
       console.error('[CapacitorStorage] Error setting item in Preferences:', key, error);
-      // Don't update localStorage if Preferences save failed to avoid inconsistency
-      throw error;
+      // Don't throw - we already updated localStorage cache
     }
   }
 
   /**
    * Remove item - returns Promise but also updates localStorage cache synchronously
-   * FIXED: Now removes from Preferences first, then localStorage to ensure consistency
+   * FIXED: Now removes from localStorage cache immediately, then Preferences asynchronously
    */
   async removeItem(key: string): Promise<void> {
     if (!this.isNative) {
@@ -93,15 +106,17 @@ class CapacitorStorageAdapter {
       return;
     }
     
-    // On native: remove from Preferences first, then localStorage cache
+    // CRITICAL FIX: Remove from localStorage cache FIRST for immediate effect
+    localStorage.removeItem(CACHE_PREFIX + key);
+    console.log('[CapacitorStorage] Removed item from cache:', key);
+    
+    // Then remove from Preferences asynchronously (don't block)
     try {
       await Preferences.remove({ key });
-      // Only remove from localStorage cache after successful Preferences removal
-      localStorage.removeItem(CACHE_PREFIX + key);
+      console.log('[CapacitorStorage] Removed from Preferences:', key);
     } catch (error) {
       console.error('[CapacitorStorage] Error removing item from Preferences:', key, error);
-      // Don't remove from localStorage if Preferences removal failed
-      throw error;
+      // Don't throw - we already removed from localStorage cache
     }
   }
 }

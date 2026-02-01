@@ -54,6 +54,13 @@ export const MobileLogin: React.FC = () => {
 
   // SIMPLIFIED: Single useEffect for all redirect logic
   useEffect(() => {
+    console.log('🔄 [MobileLogin useEffect] State:', {
+      hasRedirected: hasRedirectedRef.current,
+      authLoading,
+      user: !!user,
+      loginSuccess
+    });
+    
     // Skip if already redirected or still loading
     if (hasRedirectedRef.current || authLoading) return;
     
@@ -128,8 +135,19 @@ export const MobileLogin: React.FC = () => {
         return;
       }
 
-      if (data.user) {
+      if (data.user && data.session) {
         console.log('✅ [MobileLogin] Login successful for user:', data.user.email);
+        console.log('🔑 [MobileLogin] Session received:', {
+          access_token: data.session.access_token ? 'present' : 'missing',
+          refresh_token: data.session.refresh_token ? 'present' : 'missing',
+          expires_at: data.session.expires_at
+        });
+
+        // CRITICAL: Check if session is being saved to storage
+        setTimeout(async () => {
+          const { data: { session: checkSession } } = await supabase.auth.getSession();
+          console.log('🔍 [MobileLogin] Session check after 1s:', checkSession ? 'Session found' : 'Session NOT found');
+        }, 1000);
 
         // Save credentials for biometric login (don't block on this)
         try {
@@ -144,6 +162,7 @@ export const MobileLogin: React.FC = () => {
         setLoginSuccess(true);
         console.log('🔄 [MobileLogin] Waiting for AuthContext to update user state...');
       } else {
+        console.error('❌ [MobileLogin] Login response missing user or session:', { user: !!data.user, session: !!data.session });
         setError('فشل تسجيل الدخول - يرجى المحاولة مرة أخرى');
         setIsSubmitting(false);
       }
