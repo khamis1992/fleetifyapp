@@ -6,14 +6,10 @@
  * @component ContractInvoicesTabRedesigned
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Receipt,
-  FileText,
-  Calendar,
-  DollarSign,
-  User,
   CheckCircle,
   Clock,
   AlertTriangle,
@@ -22,24 +18,19 @@ import {
   Download,
   Printer,
   MoreVertical,
-  Filter,
   Search,
-  TrendingUp,
   Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-  Building2,
   CreditCard,
-  ChevronDown,
+  Calendar,
+  FileText,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -52,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
+import { format, differenceInDays, isAfter } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Invoice } from '@/types/finance.types';
 
@@ -62,18 +53,18 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
   }
-};
+} as const;
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
   }
-};
+} as const;
 
 // ===== Types =====
 interface CustomerInfo {
@@ -109,7 +100,7 @@ interface ContractInvoicesTabRedesignedProps {
 
 // ===== Helper Functions =====
 const getInvoiceStatusInfo = (invoice: Invoice) => {
-  const status = invoice.payment_status || invoice.status;
+  const status = String(invoice.payment_status || invoice.status || '');
 
   if (status === 'paid' || status === 'completed') {
     return {
@@ -193,15 +184,17 @@ const InvoiceMetrics = ({
     const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
     const totalPaid = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
     const totalPending = invoices.reduce((sum, inv) => {
-      if (inv.payment_status === 'paid' || inv.payment_status === 'cancelled') return sum;
+      const status = String(inv.payment_status || '');
+      if (status === 'paid' || status === 'cancelled') return sum;
       return sum + (inv.balance_due || inv.total_amount || 0);
     }, 0);
 
     // Fix overdue calculation: Include ALL due payments where balance > 0 and due date has passed
     const today = new Date();
     const totalOverdue = invoices.reduce((sum, inv) => {
+      const status = String(inv.payment_status || '');
       // Skip if paid or cancelled
-      if (inv.payment_status === 'paid' || inv.payment_status === 'cancelled') return sum;
+      if (status === 'paid' || status === 'cancelled') return sum;
 
       // Check if there's a balance due
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
@@ -213,27 +206,29 @@ const InvoiceMetrics = ({
       }
 
       // Also include invoices explicitly marked as overdue
-      if (inv.payment_status === 'overdue') {
+      if (status === 'overdue') {
         return sum + balanceDue;
       }
 
       return sum;
     }, 0);
 
-    const paidCount = invoices.filter(inv => inv.payment_status === 'paid').length;
-    const pendingCount = invoices.filter(inv =>
-      inv.payment_status !== 'paid' && inv.payment_status !== 'cancelled'
-    ).length;
+    const paidCount = invoices.filter(inv => String(inv.payment_status || '') === 'paid').length;
+    const pendingCount = invoices.filter(inv => {
+      const status = String(inv.payment_status || '');
+      return status !== 'paid' && status !== 'cancelled';
+    }).length;
 
     // Fix overdue count: Include all invoices with balance > 0 and past due date
     const overdueCount = invoices.filter(inv => {
-      if (inv.payment_status === 'paid' || inv.payment_status === 'cancelled') return false;
+      const status = String(inv.payment_status || '');
+      if (status === 'paid' || status === 'cancelled') return false;
 
       const balanceDue = inv.balance_due ?? (inv.total_amount || 0) - (inv.paid_amount || 0);
       if (balanceDue <= 0) return false;
 
       if (inv.due_date && isAfter(today, new Date(inv.due_date))) return true;
-      if (inv.payment_status === 'overdue') return true;
+      if (status === 'overdue') return true;
 
       return false;
     }).length;
@@ -305,7 +300,7 @@ const InvoiceMetrics = ({
             <div className={cn("w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md", metric.color)}>
               <metric.icon className="w-5 h-5 text-white" />
             </div>
-            <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, metric.textColor)}>
+            <div className={cn("px-2 py-1 rounded-lg text-xs font-medium", metric.bgColor, 'text-neutral-700')}>
               {metric.subtext.split(' • ')[0]}
             </div>
           </div>
@@ -324,7 +319,6 @@ const InvoiceCard = ({
   onPay,
   onPreview,
   onCancel,
-  isCancelling,
 }: {
   invoice: Invoice;
   formatCurrency: (amount: number) => string;
@@ -334,9 +328,10 @@ const InvoiceCard = ({
   isCancelling?: boolean;
 }) => {
   const statusInfo = getInvoiceStatusInfo(invoice);
-  const StatusIcon = statusInfo.icon;
+  const paymentStatus = String(invoice.payment_status || '');
+  const invoiceStatus = String(invoice.status || '');
 
-  const isOverdue = invoice.due_date && isAfter(new Date(), new Date(invoice.due_date)) && invoice.payment_status !== 'paid';
+  const isOverdue = invoice.due_date && isAfter(new Date(), new Date(invoice.due_date)) && paymentStatus !== 'paid';
   const daysUntilDue = invoice.due_date ? differenceInDays(new Date(invoice.due_date), new Date()) : null;
 
   return (
@@ -384,7 +379,7 @@ const InvoiceCard = ({
               <Printer className="w-4 h-4" />
               <span>طباعة</span>
             </DropdownMenuItem>
-            {(invoice.payment_status !== 'paid' && invoice.status !== 'cancelled') && (
+            {(paymentStatus !== 'paid' && invoiceStatus !== 'cancelled') && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onCancel} className="gap-2 text-red-600 focus:text-red-600">
@@ -443,7 +438,7 @@ const InvoiceCard = ({
             )} dir="ltr">
               {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: ar }) : '-'}
             </span>
-            {daysUntilDue !== null && daysUntilDue < 7 && invoice.payment_status !== 'paid' && (
+            {daysUntilDue !== null && daysUntilDue < 7 && paymentStatus !== 'paid' && (
               <Badge variant="outline" className={cn(
                 "text-xs",
                 isOverdue ? "border-red-200 text-red-600" : "border-amber-200 text-amber-600"
@@ -466,7 +461,7 @@ const InvoiceCard = ({
           <Eye className="w-4 h-4" />
           <span>معاينة</span>
         </Button>
-        {invoice.payment_status !== 'paid' && invoice.status !== 'cancelled' && (
+        {paymentStatus !== 'paid' && invoiceStatus !== 'cancelled' && (
           <Button
             size="sm"
             onClick={onPay}
@@ -716,7 +711,7 @@ export const ContractInvoicesTabRedesigned = ({
     // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(inv => {
-        const status = inv.payment_status || inv.status;
+        const status = String(inv.payment_status || inv.status || '');
         if (statusFilter === 'partial') {
           return status === 'partial' || status === 'partially_paid';
         }
@@ -1460,5 +1455,4 @@ export const ContractInvoicesTabRedesigned = ({
   );
 };
 
-// Import useState
-import { useState } from 'react';
+export default ContractInvoicesTabRedesigned;
