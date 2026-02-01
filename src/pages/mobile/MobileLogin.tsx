@@ -98,7 +98,7 @@ export const MobileLogin: React.FC = () => {
           setShowBiometricPrompt(true);
         } else {
           setTimeout(() => {
-            navigate('/mobile/home', { replace: true });
+            navigate('/mobile/employee/home', { replace: true });
           }, 300);
         }
       } else {
@@ -123,7 +123,7 @@ export const MobileLogin: React.FC = () => {
       if (result.success) {
         console.log('✅ [MobileLogin] Biometric login successful');
         setTimeout(() => {
-          navigate('/mobile/home', { replace: true });
+          navigate('/mobile/employee/home', { replace: true });
         }, 300);
       } else {
         setError(result.error || 'فشلت المصادقة البيومترية');
@@ -144,7 +144,7 @@ export const MobileLogin: React.FC = () => {
       if (result.success) {
         setBiometricSetupSuccess(true);
         setTimeout(() => {
-          navigate('/mobile/home', { replace: true });
+          navigate('/mobile/employee/home', { replace: true });
         }, 1500);
       } else {
         setError(result.error || 'فشل تسجيل البصمة');
@@ -160,7 +160,7 @@ export const MobileLogin: React.FC = () => {
   const skipBiometricSetup = () => {
     setShowBiometricPrompt(false);
     setTimeout(() => {
-      navigate('/mobile/home', { replace: true });
+      navigate('/mobile/employee/home', { replace: true });
     }, 300);
   };
 
