@@ -29,6 +29,7 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
 // Mobile app pages
 const MobileLogin = lazy(() => import('@/pages/mobile/MobileLogin'));
+const MobileDiagnostics = lazy(() => import('@/pages/mobile/MobileDiagnostics'));
 const MobileApp = lazy(() => import('@/pages/mobile/MobileApp').then(m => ({ default: m.MobileApp })));
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
 const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
@@ -340,6 +341,17 @@ const routeConfigs: RouteConfig[] = [
     description: 'Mobile app login screen',
     group: 'mobile',
     priority: 1,
+    protected: false,
+  },
+  {
+    path: '/mobile/diagnostics',
+    component: MobileDiagnostics,
+    lazy: true,
+    exact: true,
+    title: 'Mobile Diagnostics',
+    description: 'Mobile app diagnostics',
+    group: 'mobile',
+    priority: 2,
     protected: false,
   },
   {

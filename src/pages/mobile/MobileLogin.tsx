@@ -623,15 +623,21 @@ export const MobileLogin: React.FC = () => {
           </button>
         </motion.div>
 
-        {/* Version */}
-        <motion.p
+        {/* Version & Diagnostics */}
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
-          className="text-center text-xs text-white/20 pb-2"
+          className="text-center pb-2 space-y-2"
         >
-          الإصدار 2.0.0
-        </motion.p>
+          <p className="text-xs text-white/20">الإصدار 2.0.0</p>
+          <button
+            onClick={() => navigate('/mobile/diagnostics')}
+            className="text-xs text-white/30 hover:text-white/50 transition-colors"
+          >
+            🔧 تشخيص المشاكل
+          </button>
+        </motion.div>
       </motion.div>
 
       {/* Biometric Setup Prompt Modal */}
