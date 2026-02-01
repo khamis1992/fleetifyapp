@@ -67,8 +67,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // CRITICAL FIX: Simplified loading check
   // If we have a user, NEVER show loading - this is the key fix for navigation
+  
+  // DEBUG: Log state for mobile routes
+  if (location.pathname.startsWith('/mobile')) {
+    console.log('🛡️ [ProtectedRoute] Mobile route check:', {
+      path: location.pathname,
+      user: !!user,
+      loading,
+      isInitializing,
+      hasTimedOut
+    });
+  }
+  
   if (user) {
     // User exists - proceed immediately, don't wait for anything
+    console.log('✅ [ProtectedRoute] User authenticated, allowing access to:', location.pathname);
   } else if ((loading || isInitializing) && !hasTimedOut) {
     // Only show loading if no user AND auth is still loading
     return (
@@ -84,6 +97,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Mobile routes should redirect to mobile login page
     const isMobileRoute = location.pathname.startsWith('/mobile');
     const authPath = isMobileRoute ? '/mobile' : '/auth';
+    console.warn('❌ [ProtectedRoute] No user found, redirecting to:', authPath, 'from:', location.pathname);
     return <Navigate to={authPath} state={{ from: location }} replace />;
   }
 

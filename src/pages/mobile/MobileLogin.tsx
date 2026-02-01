@@ -84,12 +84,12 @@ export const MobileLogin: React.FC = () => {
     if (loginSuccess) {
       const timeout = setTimeout(() => {
         if (!hasRedirectedRef.current) {
-          console.warn('⚠️ [MobileLogin] AuthContext timeout - navigating directly');
+          console.warn('⚠️ [MobileLogin] AuthContext timeout (2s) - navigating directly');
           hasRedirectedRef.current = true;
           setIsSubmitting(false);
           navigate('/mobile/employee/home', { replace: true });
         }
-      }, 5000);
+      }, 2000); // Reduced from 5s to 2s for faster fallback
       
       return () => clearTimeout(timeout);
     }

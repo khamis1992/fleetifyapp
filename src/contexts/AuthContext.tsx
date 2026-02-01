@@ -385,22 +385,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               console.log('🔍 [AUTH_CONTEXT] SIGNED_IN event received - session:', session.user.email);
               setSession(session);
 
+              // CRITICAL FIX: Set basic user IMMEDIATELY to unblock UI
+              if (mountedRef.current) {
+                console.log('🔍 [AUTH_CONTEXT] Setting basic user IMMEDIATELY:', session.user.email);
+                setUser(session.user as AuthUser);
+                setSessionError(null);
+              }
+
+              // Then try to fetch full profile in background (with timeout)
               try {
-                console.log('🔍 [AUTH_CONTEXT] Fetching current user profile...');
-                const authUser = await authService.getCurrentUser();
+                console.log('🔍 [AUTH_CONTEXT] Fetching full user profile in background...');
+                const profilePromise = authService.getCurrentUser();
+                const timeoutPromise = new Promise<null>((resolve) => 
+                  setTimeout(() => {
+                    console.warn('⚠️ [AUTH_CONTEXT] Profile fetch timeout - using basic user');
+                    resolve(null);
+                  }, 5000)
+                );
+                
+                const authUser = await Promise.race([profilePromise, timeoutPromise]);
                 if (mountedRef.current && authUser) {
-                  console.log('🔍 [AUTH_CONTEXT] Setting user state with full profile:', authUser.email);
+                  console.log('🔍 [AUTH_CONTEXT] Updating with full profile:', authUser.email);
                   setUser(authUser);
                   cacheUser(authUser); // 🚀 Save to cache
-                  setSessionError(null);
                 }
               } catch (error) {
                 console.error('📝 [AUTH_CONTEXT] Error fetching user profile:', error);
-                if (mountedRef.current) {
-                  console.log('🔍 [AUTH_CONTEXT] Setting user state with basic user:', session.user.email);
-                  setUser(session.user as AuthUser);
-                  setSessionError('خطأ في تحميل بيانات المستخدم');
-                }
+                // Don't worry - basic user already set above
+                console.log('🔍 [AUTH_CONTEXT] Continuing with basic user (profile fetch failed)');
               }
             }
 
