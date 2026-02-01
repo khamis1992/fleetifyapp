@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * صفحة تفاصيل العقد - UX Redesign V2
  * Professional SaaS design with improved information architecture

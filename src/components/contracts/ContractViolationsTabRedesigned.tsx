@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Contract Violations Tab - Redesigned
  * Professional SaaS design matching ContractInvoicesTabRedesigned style

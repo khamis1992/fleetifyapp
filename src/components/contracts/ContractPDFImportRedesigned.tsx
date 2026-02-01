@@ -23,7 +23,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { extractTextFromPDFSmart, convertPDFToImage, needsOCR } from '@/services/contractPDFExtractor';
 import { extractContractFields } from '@/services/contractDataExtractor';
 import { hybridOCR, HybridOCRProgress } from '@/services/hybridOCRService';
 import { matchCustomer, CustomerMatch } from '@/services/contractCustomerMatcher';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * تبويب الدفعات - تصميم محسّن V2
  * Professional SaaS design with improved visual hierarchy

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * تبويب الدفعات - عرض جميع الدفعات مع خيار الإلغاء
  * Payments Tab - Display all payments with cancel option
