@@ -29,10 +29,8 @@ export const ContractHealthDashboard: React.FC = () => {
     checkRequirements,
     cleanup,
     processPending,
-    processFailedJournals,
     isCleaningUp,
     isProcessingPending,
-    isProcessingJournals,
     hasUnresolvedCriticalIssues,
     requiresAttention,
     canManageHealth

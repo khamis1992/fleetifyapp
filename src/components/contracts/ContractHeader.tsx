@@ -151,7 +151,7 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
             </label>
             <div className="text-right">
               <div className="font-medium">
-                {contract.daily_rate?.toLocaleString('ar-SA')} ريال
+                {((contract as any).daily_rate || 0).toLocaleString('ar-SA')} ريال
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
             </label>
             <div className="text-right">
               <div className="font-bold text-lg">
-                {contract.total_amount?.toLocaleString('ar-SA')} ريال
+                {((contract as any).total_amount || contract.contract_amount || 0).toLocaleString('ar-SA')} ريال
               </div>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
                   {formatCustomerName(contract.customer)}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {contract.customer.phone}
+                  {String((contract.customer as any).phone || '')}
                 </div>
               </div>
             </div>
@@ -208,10 +208,10 @@ export const ContractHeader = React.memo<ContractHeaderProps>(({
               </label>
               <div className="text-right">
                 <div className="font-medium">
-                  {contract.vehicle.make} {contract.vehicle.model}
+                  {String((contract.vehicle as any).make || '')} {String((contract.vehicle as any).model || '')}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {contract.vehicle.plate_number}
+                  {String((contract.vehicle as any).plate_number || '')}
                 </div>
               </div>
             </div>
