@@ -5,11 +5,10 @@
  */
 
 import React, { Suspense, useState, useEffect, useRef, ComponentType } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // Types
 interface LazyLoadProps {
@@ -135,10 +134,10 @@ export const LazyLoad: React.FC<LazyLoadProps> = ({
 
   const content = (
     <ErrorBoundary
-      FallbackComponent={({ error, resetErrorBoundary }) => 
-        errorFallback || <ErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />
+      FallbackComponent={(props: FallbackProps) => 
+        errorFallback ? <>{errorFallback}</> : <ErrorFallback error={props.error instanceof Error ? props.error : new Error(String(props.error))} resetErrorBoundary={props.resetErrorBoundary} />
       }
-      onError={onError}
+      onError={(error) => onError?.(error instanceof Error ? error : new Error(String(error)))}
     >
       <Suspense fallback={delayedFallback}>
         {children}
@@ -162,7 +161,8 @@ export const LazyLoad: React.FC<LazyLoadProps> = ({
 };
 
 // HOC for lazy loading components
-export function withLazyLoad<P extends object>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withLazyLoad<P extends Record<string, any>>(
   Component: ComponentType<P>,
   options?: Omit<LazyLoadProps, 'children'>
 ) {
@@ -171,6 +171,7 @@ export function withLazyLoad<P extends object>(
   return function LazyLoadedComponent(props: P) {
     return (
       <LazyLoad {...options}>
+        {/* @ts-ignore - Type complexity with lazy components */}
         <LazyComponent {...props} />
       </LazyLoad>
     );

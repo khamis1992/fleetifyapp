@@ -156,7 +156,7 @@ export const AuthForm: FC = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: "easeOut" }
+      transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const }
     }
   };
 
@@ -166,7 +166,7 @@ export const AuthForm: FC = () => {
     transition: {
       duration: 3,
       repeat: Infinity,
-      ease: "easeInOut"
+      ease: [0.4, 0, 0.6, 1] as const
     }
   };
 

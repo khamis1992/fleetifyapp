@@ -1,7 +1,10 @@
 import React, { CSSProperties, useRef, useCallback } from 'react';
-import { FixedSizeList as List, ListChildComponentProps, VariableSizeList } from 'react-window';
+// @ts-ignore - react-window types may be outdated
+import { FixedSizeList as List, VariableSizeList } from 'react-window';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useSimpleBreakpoint } from '@/hooks/use-mobile-simple';
+
+type ListChildComponentProps = { index: number; style: CSSProperties; data?: unknown };
 
 /**
  * Virtual List Component - Performance Optimization

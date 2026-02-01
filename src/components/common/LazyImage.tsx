@@ -91,7 +91,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   threshold,
   ...props
 }) => {
-  const { imageSrc, imgRef, isLoaded, error } = useLazyImage(src, {
+  const { imageSrc, imgRef, isLoaded, error: _error } = useLazyImage(src, {
     rootMargin,
     threshold,
   });
