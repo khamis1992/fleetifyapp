@@ -7,10 +7,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, DollarSign, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { differenceInDays, isAfter, isBefore } from 'date-fns';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 
@@ -43,16 +42,16 @@ export const ContractSummary = React.memo<ContractSummaryProps>(({
 
   // Calculate financial metrics
   const financialMetrics = React.useMemo(() => {
-    const totalInvoiced = invoices.reduce((sum, invoice) => sum + (invoice.amount || 0), 0);
+    const totalInvoiced = invoices.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
     const totalPaid = invoices
       .filter(inv => inv.status === 'paid')
-      .reduce((sum, invoice) => sum + (invoice.amount || 0), 0);
+      .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
     const totalPending = invoices
       .filter(inv => inv.status === 'pending')
-      .reduce((sum, invoice) => sum + (invoice.amount || 0), 0);
+      .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
     const totalOverdue = invoices
       .filter(inv => inv.status === 'pending' && new Date(inv.due_date) < new Date())
-      .reduce((sum, invoice) => sum + (invoice.amount || 0), 0);
+      .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
 
     return {
       totalInvoiced,

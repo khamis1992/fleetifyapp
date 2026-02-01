@@ -13,7 +13,6 @@ import {
   FileText
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/integrations/supabase/client'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { formatDistanceToNow } from 'date-fns'
 import { ar } from 'date-fns/locale'

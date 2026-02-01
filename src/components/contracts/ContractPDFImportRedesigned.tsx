@@ -16,20 +16,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import {
-  extractTextFromPDFSmart,
-  convertPDFToImage,
-  needsOCR,
-} from '@/services/contractPDFExtractor';
+import { extractTextFromPDFSmart, convertPDFToImage, needsOCR } from '@/services/contractPDFExtractor';
 import { extractContractFields } from '@/services/contractDataExtractor';
 import { hybridOCR, HybridOCRProgress } from '@/services/hybridOCRService';
 import { matchCustomer, CustomerMatch } from '@/services/contractCustomerMatcher';
@@ -38,26 +32,19 @@ import {
   FileText,
   FileCheck,
   X,
-  Eye,
   ChevronDown,
   ChevronUp,
   Search,
   User,
   Car,
-  Calendar,
   DollarSign,
   AlertCircle,
   CheckCircle,
-  Sparkles,
   Zap,
   ArrowRight,
   ArrowLeft,
   RefreshCw,
-  Settings,
-  CreditCard,
   Hash,
-  Phone,
-  MapPin,
 } from 'lucide-react';
 
 // ============================================================================
@@ -149,7 +136,7 @@ export const ContractPDFImportRedesigned: React.FC<ContractPDFImportRedesignedPr
   open,
   onOpenChange,
   onComplete,
-  ocrConfig,
+  ocrConfig: _ocrConfig,
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
