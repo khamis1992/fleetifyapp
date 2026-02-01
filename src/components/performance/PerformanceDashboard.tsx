@@ -198,7 +198,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ isOp
         <div className="p-4 border-t bg-slate-50">
           <div className="text-xs text-slate-600">
             <div>• Auto-refresh: {autoRefresh ? 'Enabled (2s interval)' : 'Disabled'}</div>
-            <div>• Cache hit rate >= 80%: Good | 50-79%: Fair | < 50%: Poor</div>
+            <div>• Cache hit rate &gt;= 80%: Good | 50-79%: Fair | &lt; 50%: Poor</div>
             <div>• Slow query thresholds vary by query type</div>
             <div>• Last updated: {new Date().toLocaleTimeString()}</div>
           </div>

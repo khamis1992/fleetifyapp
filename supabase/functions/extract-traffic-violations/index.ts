@@ -291,9 +291,9 @@ serve(async (req) => {
           testResults.tests[0].http_status = response.status;
           testResults.tests[0].response = response.ok ? 'API key works!' : responseData;
           console.log(`[${requestId}] JWT test result:`, response.status);
-        } catch (error) {
+        } catch (error: unknown) {
           testResults.tests[0].status = 'error';
-          testResults.tests[0].error = error.message;
+          testResults.tests[0].error = error instanceof Error ? error.message : String(error);
           console.error(`[${requestId}] JWT test error:`, error);
         }
       } else {
@@ -331,9 +331,9 @@ serve(async (req) => {
           testResults.tests[0].http_status = response.status;
           testResults.tests[0].response = response.ok ? 'API key works!' : responseData;
           console.log(`[${requestId}] Bearer test result:`, response.status);
-        } catch (error) {
+        } catch (error: unknown) {
           testResults.tests[0].status = 'error';
-          testResults.tests[0].error = error.message;
+          testResults.tests[0].error = error instanceof Error ? error.message : String(error);
           console.error(`[${requestId}] Bearer test error:`, error);
         }
       }
