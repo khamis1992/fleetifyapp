@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Fingerprint, Shield, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useBiometricAuth } from '@/hooks/useBiometricAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const MobileLogin: React.FC = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +18,8 @@ export const MobileLogin: React.FC = () => {
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
   const [biometricSetupSuccess, setBiometricSetupSuccess] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   // Biometric auth hook
   const {
@@ -47,6 +51,30 @@ export const MobileLogin: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedEmail]);
+
+  // CRITICAL: Redirect when user is authenticated after login
+  useEffect(() => {
+    if (user && !authLoading && loginSuccess && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      console.log('✅ [MobileLogin] User authenticated, navigating to employee home');
+      
+      // Check if biometric setup should be shown
+      if (biometricAvailable && !hasSavedCredentials && !showBiometricPrompt) {
+        setShowBiometricPrompt(true);
+      } else if (!showBiometricPrompt) {
+        navigate('/mobile/employee/home', { replace: true });
+      }
+    }
+  }, [user, authLoading, loginSuccess, navigate, biometricAvailable, hasSavedCredentials, showBiometricPrompt]);
+
+  // Also redirect if user is already logged in when visiting login page
+  useEffect(() => {
+    if (user && !authLoading && !loginSuccess && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      console.log('✅ [MobileLogin] Already authenticated, redirecting to employee home');
+      navigate('/mobile/employee/home', { replace: true });
+    }
+  }, [user, authLoading, loginSuccess, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,14 +121,10 @@ export const MobileLogin: React.FC = () => {
         // Save credentials for biometric login
         await saveCredentials(email.trim());
 
-        // Show biometric setup prompt if biometric is available and not yet set up
-        if (biometricAvailable && !hasSavedCredentials) {
-          setShowBiometricPrompt(true);
-        } else {
-          setTimeout(() => {
-            navigate('/mobile/employee/home', { replace: true });
-          }, 300);
-        }
+        // Set login success flag - the useEffect will handle navigation
+        // once AuthContext updates the user state
+        setLoginSuccess(true);
+        console.log('🔄 [MobileLogin] Waiting for AuthContext to update user state...');
       } else {
         setError('فشل تسجيل الدخول - يرجى المحاولة مرة أخرى');
         setIsSubmitting(false);
@@ -122,9 +146,8 @@ export const MobileLogin: React.FC = () => {
 
       if (result.success) {
         console.log('✅ [MobileLogin] Biometric login successful');
-        setTimeout(() => {
-          navigate('/mobile/employee/home', { replace: true });
-        }, 300);
+        setLoginSuccess(true);
+        console.log('🔄 [MobileLogin] Waiting for AuthContext to update user state...');
       } else {
         setError(result.error || 'فشلت المصادقة البيومترية');
       }
