@@ -11,7 +11,6 @@ import { NumberDisplay } from '@/components/ui/NumberDisplay';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import {
   FileText,
-  Calendar,
   DollarSign,
   User,
   Car,
@@ -42,23 +41,22 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 
-// SECURITY FIX: Added proper types to replace 'any'
-interface VehicleConditionReportData {
-  [key: string]: unknown;
-}
+// Extended contract type for dialog with vehicle data
+type ExtendedContract = Contract & {
+  vehicle?: Record<string, unknown>;
+  license_plate?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  vehicle_status?: string;
+  plate_number?: string;
+  account_id?: string;
+};
 
 interface ContractDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: Contract & {
-    vehicle?: Record<string, unknown>;
-    license_plate?: string;
-    make?: string;
-    model?: string;
-    year?: number;
-    vehicle_status?: string;
-    plate_number?: string;
-  };
+  contract: ExtendedContract;
   onEdit?: (contract: Contract) => void;
   onCreateInvoice?: (contract: Contract) => void;
   onAmendContract?: (contract: Contract) => void;
@@ -89,14 +87,9 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   React.useEffect(() => {
     if (contract) {
       setEditData({
-        contract_type: contract.contract_type || '',
-        start_date: contract.start_date || '',
-        end_date: contract.end_date || '',
-        contract_amount: contract.contract_amount || 0,
-        monthly_amount: contract.monthly_amount || 0,
+        ...contract,
         description: contract.description || '',
         terms: contract.terms || '',
-        ...contract
       });
     }
   }, [contract]);
@@ -105,16 +98,16 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   const { data: customer } = useQuery({
     queryKey: ['customer', contract?.customer_id],
     queryFn: async () => {
-      if (!contract?.customer_id) return null;
-      const { data } = await supabase
+      if (!contract?.customer_id || !companyId) return null;
+      const { data } = await (supabase
         .from('customers')
-        .select('*')
+        .select('*') as any)
         .eq('id', contract.customer_id)
         .eq('company_id', companyId)
         .single();
       return data;
     },
-    enabled: !!contract?.customer_id
+    enabled: !!contract?.customer_id && !!companyId
   });
 
   const { data: vehicle } = useQuery({
@@ -127,14 +120,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         hasVehicleId: !!contract?.vehicle_id
       });
       
-      if (!contract?.vehicle_id) {
+      if (!contract?.vehicle_id || !companyId) {
         console.log('⚠️ [VEHICLE_FETCH] No vehicle_id found in contract');
         return null;
       }
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('vehicles')
-        .select('*')
+        .select('*') as any)
         .eq('id', contract.vehicle_id)
         .eq('company_id', companyId)
         .single();
@@ -147,38 +140,38 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       console.log('✅ [VEHICLE_FETCH] Successfully fetched vehicle:', data);
       return data;
     },
-    enabled: !!contract?.vehicle_id
+    enabled: !!contract?.vehicle_id && !!companyId
   });
 
   const { data: chartOfAccount } = useQuery({
     queryKey: ['chart-of-account', contract?.account_id],
     queryFn: async () => {
-      if (!contract?.account_id) return null;
-      const { data } = await supabase
+      if (!contract?.account_id || !companyId) return null;
+      const { data } = await (supabase
         .from('chart_of_accounts')
-        .select('*')
+        .select('*') as any)
         .eq('id', contract.account_id)
         .eq('company_id', companyId)
         .single();
       return data;
     },
-    enabled: !!contract?.account_id
+    enabled: !!contract?.account_id && !!companyId
   });
 
   const { data: invoices } = useQuery({
     queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
-      if (!contract?.id) return [];
-      const { data } = await supabase
+      if (!contract?.id || !companyId) return [];
+      const { data } = await (supabase
         .from('invoices')
-        .select('*')
+        .select('*') as any)
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
-        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
-      return data || [];
+      return (data || []) as Invoice[];
     },
-    enabled: !!contract?.id
+    enabled: !!contract?.id && !!companyId
   });
 
   // Fetch vehicle inspections
@@ -232,9 +225,13 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
   const handleSave = async () => {
     try {
-      const { error } = await supabase
+      if (!companyId) {
+        toast.error('معرف الشركة غير متوفر');
+        return;
+      }
+      const { error } = await (supabase
         .from('contracts')
-        .update(editData)
+        .update(editData) as any)
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
@@ -242,7 +239,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
       toast.success('تم تحديث العقد بنجاح');
       setIsEditing(false);
-      onEdit?.(editData);
+      onEdit?.({ ...contract, ...editData });
     } catch (error) {
       console.error('Error updating contract:', error);
       toast.error('حدث خطأ في تحديث العقد');

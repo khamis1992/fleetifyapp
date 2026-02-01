@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Upload, Archive, FolderOpen, Brain, Wand2 } from "lucide-react";
+import { Archive, FolderOpen, Brain, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { CSVArchiveManager } from "@/components/csv/CSVArchiveManager";
 import { CSVArchiveSelector } from "@/components/csv/CSVArchiveSelector";
@@ -31,7 +31,7 @@ export function ContractCSVUploadWithArchive({ open, onOpenChange, onUploadCompl
   const [enableAI, setEnableAI] = useState(true);
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'processing'>('upload');
   
-  const { uploadContracts, isUploading, progress, results } = useContractCSVUpload();
+  const { uploadContracts, progress, results } = useContractCSVUpload();
   const { 
     processContractData, 
     applyCorrections, 
