@@ -110,10 +110,30 @@ export const MobileLogin: React.FC = () => {
     try {
       console.log('🔐 [MobileLogin] Attempting login with:', { email });
 
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      // MOBILE FIX: Use Promise.race with timeout to prevent hanging
+      const loginPromise = supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
+      
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('LOGIN_TIMEOUT')), 15000) // 15s timeout for mobile
+      );
+
+      let data, authError;
+      try {
+        const result = await Promise.race([loginPromise, timeoutPromise]);
+        data = result.data;
+        authError = result.error;
+      } catch (timeoutErr: any) {
+        if (timeoutErr.message === 'LOGIN_TIMEOUT') {
+          console.error('❌ [MobileLogin] Login timeout after 15s');
+          setError('انتهت مهلة الاتصال. تحقق من اتصال الإنترنت وحاول مرة أخرى');
+          setIsSubmitting(false);
+          return;
+        }
+        throw timeoutErr;
+      }
 
       console.log('🔐 [MobileLogin] Supabase response:', { data, error: authError });
 
@@ -128,6 +148,8 @@ export const MobileLogin: React.FC = () => {
           errorMessage = 'يرجى تأكيد البريد الإلكتروني أولاً';
         } else if (authError.message.includes('Too many requests')) {
           errorMessage = 'محاولات كثيرة جداً، يرجى المحاولة لاحقاً';
+        } else if (authError.message.includes('fetch') || authError.message.includes('network')) {
+          errorMessage = 'خطأ في الاتصال بالخادم. تحقق من الإنترنت';
         }
 
         setError(errorMessage);

@@ -178,18 +178,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const initializeAuth = async () => {
-    // DEVELOPMENT BYPASS: تسجيل دخول تلقائي في البيئة المحلية فقط
-    // تأكد من أن هذا الكود لا يعمل في الإنتاج أو في تطبيق الجوال
+    // CRITICAL: Check if we're in a native mobile app FIRST
+    const isNativeApp = Capacitor.isNativePlatform();
     const isDevMode = import.meta.env.DEV;
     const isLocalhost = window.location.hostname === 'localhost';
-    const isNativeApp = Capacitor.isNativePlatform();
+    const isMobilePath = window.location.pathname.startsWith('/mobile');
     
-    // تسجيل دخول تلقائي فقط في المتصفح المحلي، وليس في التطبيق المحمول
-    if (isDevMode && isLocalhost && !isNativeApp) {
-      console.log('🔓 [AUTH_CONTEXT] Development mode - auto login with khamis-1992@hotmail.com');
+    // MOBILE APP: Skip auto-login completely for native apps and mobile paths
+    if (isNativeApp || isMobilePath) {
+      console.log('📱 [AUTH_CONTEXT] Mobile app detected - skipping auto-login');
+      // Don't auto-login, just check existing session
+    } else if (isDevMode && isLocalhost) {
+      // DEVELOPMENT BYPASS: Auto-login only for desktop localhost
+      console.log('🔓 [AUTH_CONTEXT] Development mode (desktop) - auto login');
       
       try {
-        // محاولة تسجيل الدخول تلقائياً بحساب khamis
         const { data, error } = await supabase.auth.signInWithPassword({
           email: 'khamis-1992@hotmail.com',
           password: '123456789',
@@ -197,7 +200,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (error) {
           console.error('🔓 [AUTH_CONTEXT] Auto login failed:', error);
-          // إذا فشل، استخدم مستخدم وهمي
           const mockUser: AuthUser = {
             id: 'dev-user-id',
             email: 'khamis-1992@hotmail.com',
