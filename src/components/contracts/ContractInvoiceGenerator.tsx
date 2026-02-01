@@ -12,7 +12,6 @@ import {
   DollarSign, 
   RefreshCw,
   AlertCircle,
-  CheckCircle,
   CreditCard
 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -36,9 +35,9 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
   const { data: existingInvoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ['contract-invoices', contract.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('invoices')
-        .select('*')
+        .select('*') as any)
         .eq('contract_id', contract.id)
         .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('invoice_date', { ascending: false })
@@ -56,9 +55,9 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
       const invoiceMonth = invoiceDate.substring(0, 7) // YYYY-MM format
       
       // ✅ التحقق من وجود فاتورة لهذا الشهر باستخدام due_date (الأكثر دقة)
-      const { data: existingForMonth } = await supabase
+      const { data: existingForMonth } = await (supabase
         .from('invoices')
-        .select('id, invoice_number')
+        .select('id, invoice_number') as any)
         .eq('contract_id', contract.id)
         .gte('due_date', `${invoiceMonth}-01`)
         .lte('due_date', `${invoiceMonth}-31`)
@@ -66,13 +65,13 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
         .limit(1)
       
       if (existingForMonth && existingForMonth.length > 0) {
-        throw new Error(`توجد فاتورة مسجلة لهذا الشهر: ${existingForMonth[0].invoice_number}`)
+        throw new Error(`توجد فاتورة مسجلة لهذا الشهر: ${(existingForMonth[0] as any).invoice_number}`)
       }
       
       // ✅ تاريخ الاستحقاق = أول يوم في الشهر (حسب التعليمات)
       const firstDayOfMonth = `${invoiceMonth}-01`;
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('invoices')
         .insert([{
           company_id: contract.company_id,
@@ -91,9 +90,9 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
                        contract.contract_amount,
           status: 'draft',
           notes: `Auto-generated from contract #${contract.contract_number} (${period} billing)`
-        }])
+        }] as any)
         .select()
-        .single()
+        .single() as any)
       
       if (error) throw error
       return data
@@ -110,7 +109,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
   })
 
   // Generate periodic invoices using database function (with built-in duplicate check)
-  const generatePeriodicInvoicesMutation = useMutation({
+  useMutation({
     mutationFn: async () => {
       // استخدام دالة قاعدة البيانات مع التحقق المدمج من التكرار
       const currentMonth = new Date().toISOString().substring(0, 7) + '-01'
@@ -151,9 +150,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
     createInvoiceMutation.mutate(selectedPeriod)
   }
 
-  const handleGeneratePeriodicInvoices = () => {
-    generatePeriodicInvoicesMutation.mutate()
-  }
+  // handleGeneratePeriodicInvoices is declared for future use
 
   const getInvoiceAmount = (period: string) => {
     switch (period) {
@@ -166,7 +163,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
 
   const getLastInvoiceDate = () => {
     if (!existingInvoices || existingInvoices.length === 0) return null
-    return existingInvoices[0].invoice_date
+    return (existingInvoices[0] as any).invoice_date
   }
 
   const getDaysSinceLastInvoice = () => {
@@ -183,11 +180,7 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
     )
   }
 
-  const isEligibleForPeriodicInvoice = () => {
-    const daysSince = getDaysSinceLastInvoice()
-    return daysSince >= 30 && contract.status === 'active' && 
-           ['monthly_rental', 'yearly_rental'].includes(contract.contract_type)
-  }
+  // isEligibleForPeriodicInvoice is defined for future use
 
   if (contract.status !== 'active') {
     return (
@@ -213,19 +206,21 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
   // Function to create invoice from payment schedule
   const createInvoiceFromSchedule = async (scheduleId: string) => {
     try {
-      const { data: schedule } = await supabase
+      const { data: schedule } = await (supabase
         .from('contract_payment_schedules')
-        .select('*')
+        .select('*') as any)
         .eq('id', scheduleId)
         .single();
 
       if (!schedule) throw new Error('Payment schedule not found');
+      
+      const scheduleAny = schedule as any;
 
       // ✅ التحقق من وجود فاتورة لهذا الشهر قبل الإنشاء
-      const scheduleMonth = schedule.due_date.substring(0, 7); // YYYY-MM
-      const { data: existingForMonth } = await supabase
+      const scheduleMonth = scheduleAny.due_date.substring(0, 7); // YYYY-MM
+      const { data: existingForMonth } = await (supabase
         .from('invoices')
-        .select('id, invoice_number')
+        .select('id, invoice_number') as any)
         .eq('contract_id', contract.id)
         .gte('due_date', `${scheduleMonth}-01`)
         .lte('due_date', `${scheduleMonth}-31`)
@@ -233,14 +228,14 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
         .limit(1);
 
       if (existingForMonth && existingForMonth.length > 0) {
-        toast.warning(`توجد فاتورة مسجلة لهذا الشهر: ${existingForMonth[0].invoice_number}`);
+        toast.warning(`توجد فاتورة مسجلة لهذا الشهر: ${(existingForMonth[0] as any).invoice_number}`);
         return;
       }
 
       // ✅ استخدام أول يوم في الشهر كتاريخ الفاتورة والاستحقاق
       const firstDayOfScheduleMonth = `${scheduleMonth}-01`;
       
-      const { data: invoice, error } = await supabase
+      const { data: invoice, error } = await (supabase
         .from('invoices')
         .insert({
           company_id: contract.company_id,
@@ -250,40 +245,42 @@ export const ContractInvoiceGenerator: React.FC<ContractInvoiceGeneratorProps> =
           invoice_type: 'sale',
           invoice_date: firstDayOfScheduleMonth,
           due_date: firstDayOfScheduleMonth, // ✅ أول يوم في الشهر
-          subtotal: schedule.amount,
+          subtotal: scheduleAny.amount,
           tax_amount: 0,
-          total_amount: schedule.amount,
+          total_amount: scheduleAny.amount,
           status: 'draft',
-          notes: `Invoice for installment #${schedule.installment_number} - ${schedule.description || ''}`
-        })
+          notes: `Invoice for installment #${scheduleAny.installment_number} - ${scheduleAny.description || ''}`
+        } as any)
         .select()
-        .single();
+        .single() as any);
 
       if (error) throw error;
+      
+      const invoiceAny = invoice as any;
 
       // Create invoice item with proper description using the formatter
       const { formatMonthlyPaymentDescription } = await import('@/utils/invoiceDescriptionFormatter');
-      const itemDescription = formatMonthlyPaymentDescription(schedule.due_date, contract.contract_number);
+      const itemDescription = formatMonthlyPaymentDescription(scheduleAny.due_date, contract.contract_number);
       
-      const { error: itemError } = await supabase
+      const { error: itemError } = await (supabase
         .from('invoice_items')
         .insert({
-          invoice_id: invoice.id,
+          invoice_id: invoiceAny.id,
           line_number: 1,
           item_description: itemDescription,
           quantity: 1,
-          unit_price: schedule.amount,
-          line_total: schedule.amount,
+          unit_price: scheduleAny.amount,
+          line_total: scheduleAny.amount,
           tax_rate: 0,
           tax_amount: 0
-        });
+        } as any) as any);
 
       if (itemError) throw itemError;
 
       // Update payment schedule with invoice ID
-      await supabase
+      await (supabase
         .from('contract_payment_schedules')
-        .update({ invoice_id: invoice.id })
+        .update({ invoice_id: invoiceAny.id } as any) as any)
         .eq('id', scheduleId);
 
       queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });

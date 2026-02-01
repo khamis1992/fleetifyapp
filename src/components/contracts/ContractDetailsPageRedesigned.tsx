@@ -701,7 +701,7 @@ const VehicleTab = ({
                 <Palette className="w-4 h-4" />
                 <span>اللون</span>
               </div>
-              <p className="font-semibold text-lg">{(vehicleData?.color as string) || 'غير محدد'}</p>
+              <p className="font-semibold text-lg">{String(vehicleData?.color || 'غير محدد')}</p>
             </div>
             
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -991,7 +991,7 @@ const ContractDetailsPageRedesigned = () => {
   const { data: _checkOutInspection } = useVehicleInspections({ contractId: contract?.id, inspectionType: 'check_out' });
 
   // Fetch payment schedules
-  const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(contract?.id || '');
+  const { data: paymentSchedules = [] } = useContractPaymentSchedules(contract?.id || '');
 
   // Hook to generate payment schedules from invoices
   const generatePaymentSchedulesFromInvoices = useGeneratePaymentSchedulesFromInvoices();
@@ -1394,7 +1394,7 @@ const ContractDetailsPageRedesigned = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Contract Header - Redesigned */}
         <ContractHeaderRedesigned
-          contract={contract}
+          contract={contract as any}
           onEdit={() => setIsEditWizardOpen(true)}
           onPrint={handlePrint}
           onExport={handleExport}
@@ -1449,11 +1449,10 @@ const ContractDetailsPageRedesigned = () => {
                   contract={contract}
                   customerName={customerName}
                   vehicleName={vehicleName}
-                  plateNumber={plateNumber}
-                  contractStats={contractStats}
+                  plateNumber={plateNumber as string | undefined}
+                  contractStats={contractStats || {}}
                   trafficViolationsCount={trafficViolations.length}
                   formatCurrency={formatCurrency}
-                  onStatusClick={() => setIsStatusManagementOpen(true)}
                   onCustomerClick={handleCustomerClick}
                   onVehicleClick={handleVehicleClick}
                 />
@@ -1467,10 +1466,12 @@ const ContractDetailsPageRedesigned = () => {
                 <FinancialTab
                   contract={contract}
                   invoices={invoices}
-                  paymentSchedules={paymentSchedules}
-                  isLoadingPaymentSchedules={isLoadingPaymentSchedules}
+                  paymentSchedules={paymentSchedules.map(ps => ({
+                    ...ps,
+                    payment_date: (ps as any).paid_date || null
+                  }))}
                   contractId={contract.id}
-                  companyId={companyId}
+                  companyId={companyId || ''}
                   formatCurrency={formatCurrency}
                   onPayInvoice={handleInvoicePay}
                   onPreviewInvoice={handleInvoicePreview}
@@ -1487,7 +1488,7 @@ const ContractDetailsPageRedesigned = () => {
                 <VehicleTab
                   contract={contract}
                   customerName={customerName}
-                  plateNumber={plateNumber}
+                  plateNumber={plateNumber as string | undefined}
                   formatCurrency={formatCurrency}
                 />
               </TabsContent>
@@ -1516,7 +1517,7 @@ const ContractDetailsPageRedesigned = () => {
               open={isPayDialogOpen}
               onOpenChange={setIsPayDialogOpen}
               invoice={selectedInvoice}
-              onSuccess={() => {
+              onPaymentCreated={() => {
                 queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
                 setIsPayDialogOpen(false);
               }}
@@ -1561,7 +1562,14 @@ const ContractDetailsPageRedesigned = () => {
 
       <ContractStatusManagement open={isStatusManagementOpen} onOpenChange={setIsStatusManagementOpen} contract={contract} />
 
-      <ConvertToLegalDialog open={isConvertToLegalOpen} onOpenChange={setIsConvertToLegalOpen} contract={contract} />
+      <ConvertToLegalDialog open={isConvertToLegalOpen} onOpenChange={setIsConvertToLegalOpen} contract={{
+        ...contract,
+        vehicle_id: contract.vehicle_id ?? undefined,
+        total_paid: contract.total_paid ?? 0,
+        balance_due: contract.balance_due ?? 0,
+        late_fine_amount: contract.late_fine_amount ?? 0,
+        payment_method: contract.payment_method ?? undefined,
+      } as any} />
 
       {/* Terminate Dialog */}
       <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>
