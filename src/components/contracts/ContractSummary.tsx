@@ -42,26 +42,27 @@ export const ContractSummary = React.memo<ContractSummaryProps>(({
 
   // Calculate financial metrics
   const financialMetrics = React.useMemo(() => {
-    const totalInvoiced = invoices.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+    const totalInvoiced = invoices.reduce((sum, invoice) => sum + Number((invoice as any).total_amount || 0), 0);
     const totalPaid = invoices
-      .filter(inv => inv.status === 'paid')
-      .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+      .filter(inv => String(inv.status) === 'paid')
+      .reduce((sum, invoice) => sum + Number((invoice as any).total_amount || 0), 0);
     const totalPending = invoices
-      .filter(inv => inv.status === 'pending')
-      .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+      .filter(inv => String(inv.status) === 'pending' || String(inv.status) === 'sent' || String(inv.status) === 'draft')
+      .reduce((sum, invoice) => sum + Number((invoice as any).total_amount || 0), 0);
     const totalOverdue = invoices
-      .filter(inv => inv.status === 'pending' && new Date(inv.due_date) < new Date())
-      .reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0);
+      .filter(inv => (String(inv.status) === 'pending' || String(inv.status) === 'sent') && new Date(String(inv.due_date || '')) < new Date())
+      .reduce((sum, invoice) => sum + Number((invoice as any).total_amount || 0), 0);
 
+    const contractTotal = Number((contract as any).total_amount || contract.monthly_amount || 0);
     return {
       totalInvoiced,
       totalPaid,
       totalPending,
       totalOverdue,
-      remainingAmount: (contract.total_amount || 0) - totalInvoiced,
-      paymentProgress: contract.total_amount > 0 ? (totalPaid / contract.total_amount) * 100 : 0
+      remainingAmount: contractTotal - totalInvoiced,
+      paymentProgress: contractTotal > 0 ? (totalPaid / contractTotal) * 100 : 0
     };
-  }, [invoices, contract.total_amount]);
+  }, [invoices, contract]);
 
   // Get status color
   const getStatusColor = (status: string) => {
@@ -104,10 +105,10 @@ export const ContractSummary = React.memo<ContractSummaryProps>(({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {contract.status === 'active' ? 'نشط' :
-             contract.status === 'completed' ? 'مكتمل' :
-             contract.status === 'cancelled' ? 'ملغي' :
-             contract.status === 'expired' ? 'منتهي' : contract.status}
+            {String(contract.status) === 'active' ? 'نشط' :
+             String(contract.status) === 'completed' ? 'مكتمل' :
+             String(contract.status) === 'cancelled' ? 'ملغي' :
+             String(contract.status) === 'expired' ? 'منتهي' : contract.status}
           </div>
           <div className="mt-2">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -130,7 +131,7 @@ export const ContractSummary = React.memo<ContractSummaryProps>(({
             {financialMetrics.totalPaid.toLocaleString('ar-SA')} ريال
           </div>
           <p className="text-xs text-muted-foreground">
-            مدفوع من {contract.total_amount?.toLocaleString('ar-SA')} ريال
+            مدفوع من {Number((contract as any).total_amount || contract.monthly_amount || 0).toLocaleString('ar-SA')} ريال
           </p>
           <div className="mt-2 space-y-1">
             <div className="flex justify-between text-xs">
@@ -175,7 +176,7 @@ export const ContractSummary = React.memo<ContractSummaryProps>(({
                 <Clock className="inline h-3 w-3 mr-1" />
                 معلق
               </span>
-              <span>{invoices.filter(inv => inv.status === 'pending').length}</span>
+              <span>{invoices.filter(inv => String(inv.status) === 'pending' || String(inv.status) === 'sent' || String(inv.status) === 'draft').length}</span>
             </div>
           </div>
         </CardContent>

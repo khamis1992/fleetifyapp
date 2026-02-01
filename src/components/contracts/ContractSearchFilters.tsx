@@ -46,8 +46,8 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
       const { data } = await (supabase
         .from('customers')
         .select('id, first_name, last_name, company_name, customer_type')
-        .eq('company_id' as any, user.profile.company_id)
-        .eq('is_active' as any, true)
+        .eq('company_id', user.profile.company_id as any)
+        .eq('is_active', true as any)
         .order('created_at', { ascending: false }) as any);
       return (data as unknown as Array<{id: string; first_name: string; last_name: string; company_name: string; customer_type: string}>) || [];
     },
@@ -62,8 +62,8 @@ export const ContractSearchFilters: React.FC<ContractSearchFiltersProps> = ({
       const { data } = await (supabase
         .from('cost_centers')
         .select('id, center_name, center_code')
-        .eq('company_id' as any, user.profile.company_id)
-        .eq('is_active' as any, true)
+        .eq('company_id', user.profile.company_id as any)
+        .eq('is_active', true as any)
         .order('center_name') as any);
       return (data as unknown as Array<{id: string; center_name: string; center_code: string}>) || [];
     },
