@@ -28,7 +28,6 @@ import {
   MoreHorizontal,
   Search,
   Filter,
-  Download,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -271,8 +270,8 @@ export function AuditTrailTable({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getSeverityVariant(log.severity)}>
-                          {log.severity}
+                        <Badge variant={getSeverityVariant(log.severity || 'low')}>
+                          {log.severity || 'low'}
                         </Badge>
                       </TableCell>
                       <TableCell>

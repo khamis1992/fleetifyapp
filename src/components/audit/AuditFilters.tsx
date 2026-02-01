@@ -75,9 +75,10 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
     handleFilterChange(key, date?.toISOString());
   };
 
-  const handleMultiSelect = (key: keyof FinancialAuditFilters, values: string[]) => {
-    handleFilterChange(key, values.length > 0 ? values : undefined);
-  };
+  // Note: handleMultiSelect is unused but kept for future use
+  // const handleMultiSelect = (key: keyof FinancialAuditFilters, values: string[]) => {
+  //   handleFilterChange(key, values.length > 0 ? values : undefined);
+  // };
 
   const getActiveFilterCount = () => {
     let count = 0;
@@ -119,7 +120,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
         <div className="space-y-2">
           <Label>Entity Type</Label>
           <Select
-            value={localFilters.resource_type || ''}
+            value={typeof localFilters.resource_type === 'string' ? localFilters.resource_type : ''}
             onValueChange={(value) =>
               handleFilterChange('resource_type', value === 'all' ? undefined : value)
             }
@@ -142,7 +143,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
         <div className="space-y-2">
           <Label>Action</Label>
           <Select
-            value={localFilters.action || ''}
+            value={typeof localFilters.action === 'string' ? localFilters.action : ''}
             onValueChange={(value) =>
               handleFilterChange('action', value === 'all' ? undefined : value)
             }

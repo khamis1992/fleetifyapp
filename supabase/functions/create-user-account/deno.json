@@ -1,4 +1,5 @@
 {
-  "importMap": "../import_map.json"
+  "imports": {
+    "supabase": "npm:@supabase/supabase-js@2"
+  }
 }
-

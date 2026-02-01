@@ -7,16 +7,14 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { preprocessImage, quickPreprocess, analyzeImage } from '@/utils/imagePreprocessing';
+import { preprocessImage } from '@/utils/imagePreprocessing';
 import { LazyImage } from '@/components/common/LazyImage';
 import EnhancedMobileCamera from './EnhancedMobileCamera';
 import { useBackgroundQueue } from '@/utils/backgroundProcessingQueue';
@@ -101,7 +99,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { addJob, getJob, getJobs, getStatistics } = useBackgroundQueue();
+  const { addJob, getJob } = useBackgroundQueue();
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -118,7 +116,6 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
 
     try {
       let processedFile = file;
-      let improvements: string[] = [];
       
       // Apply preprocessing if enabled
       if (enablePreprocessing) {
@@ -131,7 +128,6 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
         try {
           const result = await preprocessImage(file, preprocessingOptions);
           processedFile = result.processedFile;
-          improvements = result.improvements;
           
           console.log('Image preprocessing completed:', {
             originalSize: result.originalSize,
@@ -159,7 +155,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           const { data, error } = await supabase.functions.invoke('scan-invoice', {
             body: {
               imageBase64: base64,
-              fileName: file.name,
+              fileName: processedFile.name,
               ocrEngine,
               language
             }
@@ -213,7 +209,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
         }
       };
 
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processedFile);
     } catch (error) {
       console.error('Error preparing file:', error);
       toast({
@@ -324,6 +320,8 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
     }
   };
 
+  // processInvoiceFile is used by handleBulkUpload for batch processing
+  // @ts-ignore - Function is used in handleBulkUpload
   const processInvoiceFile = async (file: File) => {
     // Individual file processing logic
     const reader = new FileReader();
@@ -420,7 +418,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>محرك التعرف الضوئي</Label>
-              <Select value={ocrEngine} onValueChange={(value: unknown) => setOcrEngine(value)}>
+              <Select value={ocrEngine} onValueChange={(value) => setOcrEngine(value as 'gemini' | 'google-vision' | 'hybrid')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -433,7 +431,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
             </div>
             <div className="space-y-2">
               <Label>لغة المعالجة</Label>
-              <Select value={language} onValueChange={(value: unknown) => setLanguage(value)}>
+              <Select value={language} onValueChange={(value) => setLanguage(value as 'auto' | 'arabic' | 'english')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

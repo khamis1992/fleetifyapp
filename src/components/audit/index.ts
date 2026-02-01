@@ -3,7 +3,6 @@
  * Exports all audit-related components
  */
 
-export { AuditDashboard } from '../pages/audit/AuditDashboard';
 export { AuditTrailTable } from './AuditTrailTable';
 export { AuditFilters } from './AuditFilters';
 export { AuditLogDetailsDialog } from './AuditLogDetailsDialog';
