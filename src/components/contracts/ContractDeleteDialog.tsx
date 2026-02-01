@@ -12,6 +12,7 @@ import {
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { useDeleteContract } from '@/hooks/useDeleteContract';
 import { NumberDisplay } from '@/components/ui/NumberDisplay';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 interface ContractDeleteDialogProps {
   open: boolean;
@@ -40,11 +41,7 @@ export const ContractDeleteDialog: React.FC<ContractDeleteDialogProps> = ({
     }
   };
 
-  const customerName = contract?.customers 
-    ? contract.customers.customer_type === 'individual'
-      ? `${contract.customers.first_name_ar || contract.customers.first_name} ${contract.customers.last_name_ar || contract.customers.last_name}`
-      : contract.customers.company_name_ar || contract.customers.company_name
-    : 'غير محدد';
+  const customerName = formatCustomerName(contract?.customers);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

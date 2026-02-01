@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { Gavel } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { useLawsuitPreparationContext } from '../../store';
 
 export function CaseSummary() {
@@ -16,9 +17,7 @@ export function CaseSummary() {
   
   if (!contract || !calculations) return null;
   
-  const customerName = customer 
-    ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-    : 'غير معروف';
+  const customerName = formatCustomerName(customer);
   
   return (
     <motion.div

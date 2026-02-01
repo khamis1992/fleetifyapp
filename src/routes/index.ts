@@ -36,6 +36,14 @@ const MobileCarDetail = lazy(() => import('@/pages/mobile/MobileCarDetail').then
 const MobileCustomerDetails = lazy(() => import('@/pages/mobile/MobileCustomerDetails'));
 const MobileCustomerForm = lazy(() => import('@/pages/mobile/MobileCustomerForm'));
 
+// Mobile Employee Workspace pages - NEW
+const MobileEmployeeHome = lazy(() => import('@/pages/mobile/employee/MobileEmployeeHome'));
+const MobileCollections = lazy(() => import('@/pages/mobile/employee/MobileCollections'));
+const MobileEmployeeContracts = lazy(() => import('@/pages/mobile/employee/MobileEmployeeContracts'));
+const MobileEmployeeTasks = lazy(() => import('@/pages/mobile/employee/MobileEmployeeTasks'));
+const MobileEmployeePerformance = lazy(() => import('@/pages/mobile/employee/MobileEmployeePerformance'));
+const MobileNotifications = lazy(() => import('@/pages/mobile/employee/MobileNotifications'));
+
 // Wrapper components for each tab
 const MobileAppCars: React.FC = () => React.createElement(MobileApp, { initialTab: 'cars' });
 const MobileAppContracts: React.FC = () => React.createElement(MobileApp, { initialTab: 'contracts' });
@@ -453,6 +461,74 @@ const routeConfigs: RouteConfig[] = [
     description: 'Mobile customer edit form',
     group: 'mobile',
     priority: 2,
+    protected: true,
+  },
+
+  // === Mobile Employee Workspace Routes - NEW ===
+  {
+    path: '/mobile/employee/home',
+    component: MobileEmployeeHome,
+    lazy: true,
+    exact: true,
+    title: 'Employee Home',
+    description: 'Mobile employee workspace home',
+    group: 'mobile-employee',
+    priority: 3,
+    protected: true,
+  },
+  {
+    path: '/mobile/employee/collections',
+    component: MobileCollections,
+    lazy: true,
+    exact: true,
+    title: 'Monthly Collections',
+    description: 'Mobile employee monthly collections',
+    group: 'mobile-employee',
+    priority: 4,
+    protected: true,
+  },
+  {
+    path: '/mobile/employee/contracts',
+    component: MobileEmployeeContracts,
+    lazy: true,
+    exact: true,
+    title: 'Employee Contracts',
+    description: 'Mobile employee contracts list',
+    group: 'mobile-employee',
+    priority: 5,
+    protected: true,
+  },
+  {
+    path: '/mobile/employee/tasks',
+    component: MobileEmployeeTasks,
+    lazy: true,
+    exact: true,
+    title: 'Employee Tasks',
+    description: 'Mobile employee tasks management',
+    group: 'mobile-employee',
+    priority: 6,
+    protected: true,
+  },
+  {
+    path: '/mobile/employee/performance',
+    component: MobileEmployeePerformance,
+    lazy: true,
+    exact: true,
+    title: 'Employee Performance',
+    description: 'Mobile employee performance metrics',
+    group: 'mobile-employee',
+    priority: 7,
+    protected: true,
+  },
+  {
+    path: '/mobile/employee/notifications',
+    component: MobileNotifications,
+    lazy: true,
+    exact: true,
+    title: 'Notifications',
+    description: 'Mobile employee notifications',
+    group: 'mobile-employee',
+    priority: 8,
     protected: true,
   },
 

@@ -6,6 +6,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { User, Car, FileText, FileWarning } from 'lucide-react';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { useLawsuitPreparationContext } from '../../store';
 
 export function QuickStats() {
@@ -14,9 +15,7 @@ export function QuickStats() {
   
   if (!calculations) return null;
   
-  const customerName = customer 
-    ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'غير معروف'
-    : 'غير معروف';
+  const customerName = formatCustomerName(customer);
   
   const vehicleInfo = vehicle
     ? `${vehicle.make || ''} ${vehicle.model || ''}`.trim()

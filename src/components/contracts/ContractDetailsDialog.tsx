@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { NumberDisplay } from '@/components/ui/NumberDisplay';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import {
   FileText,
   Calendar,
@@ -256,9 +257,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
     // Create contract export data
     const exportData = {
       contract_number: contract.contract_number,
-      customer_name: customer?.customer_type === 'individual' 
-        ? `${customer.first_name_ar?.trim() || customer.first_name?.trim() || ''} ${customer.last_name_ar?.trim() || customer.last_name?.trim() || ''}`.trim()
-        : customer?.company_name_ar?.trim() || customer?.company_name?.trim() || '',
+      customer_name: formatCustomerName(customer),
       contract_type: contract.contract_type,
       start_date: contract.start_date,
       end_date: contract.end_date,
@@ -610,10 +609,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                     <div className="flex items-center justify-between" dir="rtl">
                       <span className="text-sm text-muted-foreground">اسم العميل</span>
                       <span className="font-medium">
-                        {customer.customer_type === 'individual' 
-                          ? `${customer.first_name_ar?.trim() || customer.first_name?.trim() || ''} ${customer.last_name_ar?.trim() || customer.last_name?.trim() || ''}`.trim() || 'غير محدد'
-                          : customer.company_name_ar?.trim() || customer.company_name?.trim() || 'شركة'
-                        }
+                        {formatCustomerName(customer)}
                       </span>
                     </div>
                     
@@ -1159,7 +1155,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             open={isPreviewDialogOpen}
             onOpenChange={setIsPreviewDialogOpen}
             invoice={selectedInvoice}
-            customerName={customer?.full_name || customer?.company_name || `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim()}
+            customerName={formatCustomerName(customer)}
           />
         )}
       </DialogContent>

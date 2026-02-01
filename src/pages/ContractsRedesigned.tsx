@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { formatCustomerName } from "@/utils/formatCustomerName";
 import {
   RefreshCw,
   Search,
@@ -391,12 +392,7 @@ const ContractListItem = ({
   isReactivating: boolean;
 }) => {
   const getCustomerName = () => {
-    if (!contract.customers) return "غير محدد";
-    const c = contract.customers;
-    if (c.customer_type === 'corporate') {
-      return c.company_name_ar || c.company_name || 'شركة غير محددة';
-    }
-    return `${c.first_name_ar || c.first_name || ''} ${c.last_name_ar || c.last_name || ''}`.trim() || 'غير محدد';
+    return formatCustomerName(contract.customers);
   };
 
   const getVehicleInfo = () => {
@@ -706,8 +702,8 @@ function ContractsRedesigned() {
     if (sortBy === 'default') return safeFilteredContracts;
     return [...safeFilteredContracts].sort((a, b) => {
       if (sortBy === 'customer_name') {
-        const nameA = a.customers?.first_name_ar || a.customers?.first_name || '';
-        const nameB = b.customers?.first_name_ar || b.customers?.first_name || '';
+        const nameA = formatCustomerName(a.customers);
+        const nameB = formatCustomerName(b.customers);
         return nameA.localeCompare(nameB, 'ar');
       }
       if (sortBy === 'contract_date') {

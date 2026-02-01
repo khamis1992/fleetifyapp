@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { useLawsuitPreparationContext } from '../store';
 
 export function LegalOverview() {
@@ -43,9 +44,7 @@ export function LegalOverview() {
     );
   }
 
-  const customerName = customer
-    ? `${customer.first_name_ar || customer.first_name || ''} ${customer.last_name_ar || customer.last_name || ''}`.trim() || 'غير معروف'
-    : 'غير معروف';
+  const customerName = formatCustomerName(customer);
 
   const vehicleInfo = vehicle
     ? `${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.year || ''}`.trim()

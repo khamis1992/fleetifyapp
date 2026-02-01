@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { 
   MessageSquare, 
   Send, 
@@ -204,10 +205,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
       .map(c => ({
         ...c,
         customer_phone: getCustomerPhone(c) || '',
-        customer_name: c.customer_name || 
-          (c.customers?.customer_type === 'corporate'
-            ? (c.customers?.company_name_ar || c.customers?.company_name)
-            : `${c.customers?.first_name_ar || c.customers?.first_name || ''} ${c.customers?.last_name_ar || c.customers?.last_name || ''}`.trim()),
+        customer_name: c.customer_name || formatCustomerName(c.customers),
         monthly_rent: c.monthly_rent || c.monthly_amount,
       }));
 
@@ -752,11 +750,7 @@ const SendRemindersDialog: React.FC<SendRemindersDialogProps> = ({
                     <div className="flex-1">
                       <div className="font-medium text-slate-900">{contract.contract_number}</div>
                       <div className="text-sm text-slate-600">
-                        {contract.customer_name || 
-                         (contract.customers?.customer_type === 'corporate'
-                           ? (contract.customers?.company_name_ar || contract.customers?.company_name)
-                           : `${contract.customers?.first_name_ar || contract.customers?.first_name || ''} ${contract.customers?.last_name_ar || contract.customers?.last_name || ''}`.trim()) ||
-                         'غير محدد'}
+                        {contract.customer_name || formatCustomerName(contract.customers)}
                       </div>
                     </div>
                     <div className="text-left">

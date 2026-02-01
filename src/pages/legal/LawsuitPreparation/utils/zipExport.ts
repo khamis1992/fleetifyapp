@@ -5,6 +5,7 @@
 
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { toast } from 'sonner';
 import type { LawsuitPreparationState, DocumentsState } from '../store';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 
@@ -99,6 +100,80 @@ async function htmlToPdfBlob(html: string, filename: string): Promise<Blob | nul
 }
 
 /**
+ * Convert HTML to DOCX Blob using html-to-docx
+ * This function wraps the conversion in a try-catch to handle browser compatibility issues
+ */
+async function htmlToDocxBlob(html: string): Promise<Blob | null> {
+  try {
+    console.log('[htmlToDocxBlob] Starting conversion, HTML length:', html.length);
+    
+    // Try to import html-to-docx
+    const { default: HTMLtoDOCX } = await import('html-to-docx');
+    console.log('[htmlToDocxBlob] html-to-docx imported successfully');
+    
+    // Wrap HTML in complete document structure
+    const completeHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      direction: rtl;
+      text-align: right;
+    }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #000; padding: 8px; }
+  </style>
+</head>
+<body>
+  ${html}
+</body>
+</html>`;
+    
+    console.log('[htmlToDocxBlob] Calling HTMLtoDOCX...');
+    
+    // Convert HTML to DOCX
+    const fileBuffer = await HTMLtoDOCX(completeHtml, null, {
+      table: { row: { cantSplit: true } },
+      footer: true,
+      pageNumber: true,
+      font: 'Arial',
+      fontSize: 24,
+      orientation: 'portrait',
+      margins: {
+        top: 720,
+        right: 720,
+        bottom: 720,
+        left: 720
+      }
+    });
+    
+    console.log('[htmlToDocxBlob] Conversion successful, creating blob...');
+    
+    // Create blob from buffer
+    const blob = new Blob([fileBuffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+    });
+    
+    console.log('[htmlToDocxBlob] Blob created, size:', blob.size);
+    
+    return blob;
+  } catch (error) {
+    console.error('[htmlToDocxBlob] Error converting HTML to DOCX:', error);
+    console.error('[htmlToDocxBlob] This may be due to browser compatibility issues with html-to-docx');
+    console.error('[htmlToDocxBlob] Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    // Return null to skip DOCX in ZIP if conversion fails
+    return null;
+  }
+}
+
+/**
  * Fetch file as blob from URL
  */
 async function fetchFileAsBlob(url: string): Promise<Blob | null> {
@@ -131,18 +206,46 @@ export async function exportDocumentsAsZip(
   const zip = new JSZip();
   
   let fileIndex = 1;
+  let docxConversionFailed = false;
   
-  // 1. Add Explanatory Memo as PDF
+  // 1. Add Explanatory Memo as PDF and DOCX
   if (contentRefs.memoHtml) {
+    console.log('[ZIP Export] Starting memo conversion...');
+    console.log('[ZIP Export] Memo HTML length:', contentRefs.memoHtml.length);
+    
     try {
+      // Add PDF version
+      console.log('[ZIP Export] Converting to PDF...');
       const pdfBlob = await htmlToPdfBlob(contentRefs.memoHtml, 'المذكرة_الشارحة.pdf');
       if (pdfBlob) {
+        console.log('[ZIP Export] PDF created successfully, size:', pdfBlob.size);
         zip.file(`${folderName}/${String(fileIndex).padStart(2, '0')}_المذكرة_الشارحة.pdf`, pdfBlob);
         fileIndex++;
+      } else {
+        console.warn('[ZIP Export] PDF blob is null - PDF conversion failed');
       }
-    } catch (error) {
-      console.error('Error adding memo to ZIP:', error);
+    } catch (pdfError) {
+      console.error('[ZIP Export] Error creating PDF:', pdfError);
     }
+    
+    try {
+      // Add DOCX version
+      console.log('[ZIP Export] Converting to DOCX...');
+      const docxBlob = await htmlToDocxBlob(contentRefs.memoHtml);
+      if (docxBlob) {
+        console.log('[ZIP Export] DOCX created successfully, size:', docxBlob.size);
+        zip.file(`${folderName}/${String(fileIndex).padStart(2, '0')}_المذكرة_الشارحة.docx`, docxBlob);
+        fileIndex++;
+      } else {
+        console.warn('[ZIP Export] DOCX blob is null - DOCX conversion failed');
+        docxConversionFailed = true;
+      }
+    } catch (docxError) {
+      console.error('[ZIP Export] Error creating DOCX:', docxError);
+      docxConversionFailed = true;
+    }
+  } else {
+    console.warn('[ZIP Export] No memo HTML available - user must generate memo first');
   }
   
   // 2. Add Claims Statement as HTML
@@ -203,8 +306,17 @@ export async function exportDocumentsAsZip(
   }
   
   // Generate and download ZIP
+  console.log('[ZIP Export] Generating ZIP file...');
   const zipBlob = await zip.generateAsync({ type: 'blob' });
+  console.log('[ZIP Export] ZIP generated, size:', zipBlob.size);
+  
   saveAs(zipBlob, `${folderName}.zip`);
+  console.log('[ZIP Export] ZIP download initiated');
+  
+  // Show warning if DOCX conversion failed
+  if (docxConversionFailed) {
+    toast.warning('تم تحميل الملفات بنجاح، لكن فشل تحويل المذكرة إلى Word. يمكنك تحميل نسخة Word منفصلة من زر "Word" بجانب المذكرة الشارحة.');
+  }
 }
 
 /**

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 
 interface Contract {
   id: string;
@@ -65,12 +66,7 @@ export const ContractsNeedingAttention = ({ contracts }: ContractsNeedingAttenti
   }
 
   const getCustomerName = (contract: Contract) => {
-    if (!contract.customers) return 'غير محدد';
-    const c = contract.customers;
-    if (c.customer_type === 'corporate') {
-      return c.company_name_ar || c.company_name || 'شركة غير محددة';
-    }
-    return `${c.first_name_ar || c.first_name || ''} ${c.last_name_ar || c.last_name || ''}`.trim() || 'غير محدد';
+    return formatCustomerName(contract.customers);
   };
 
   const getIssueType = (contract: Contract) => {

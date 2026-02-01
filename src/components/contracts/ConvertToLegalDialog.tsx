@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { formatCustomerName } from '@/utils/formatCustomerName';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,7 +114,7 @@ export const ConvertToLegalDialog: React.FC<ConvertToLegalDialogProps> = ({
     if (c.customer_type === 'corporate') {
       return c.company_name_ar || c.company_name || 'شركة';
     }
-    return `${c.first_name_ar || c.first_name || ''} ${c.last_name_ar || c.last_name || ''}`.trim() || 'عميل';
+    return formatCustomerName(c);
   }, [contract]);
 
   // معلومات المركبة
