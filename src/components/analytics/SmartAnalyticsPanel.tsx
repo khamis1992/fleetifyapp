@@ -5,28 +5,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { 
   TrendingUp, 
   TrendingDown, 
   AlertTriangle, 
   Target, 
   Brain, 
-  BarChart3,
   Users,
-  DollarSign,
-  Zap,
   Shield,
-  Clock,
   RefreshCw,
   CheckCircle,
-  XCircle,
   Activity,
   Lightbulb
 } from 'lucide-react';
-import { useSmartAnalytics, SmartAnalysisResult, BehaviorAnalysis, RiskIndicator, PredictiveInsight } from '@/hooks/useSmartAnalytics';
+import { useSmartAnalytics, SmartAnalysisResult, BehaviorAnalysis } from '@/hooks/useSmartAnalytics';
 import { toast } from 'sonner';
-import { StatCardNumber, StatCardPercentage } from '@/components/ui/NumberDisplay';
+import { StatCardNumber } from '@/components/ui/NumberDisplay';
 
 const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
@@ -84,12 +79,8 @@ export const SmartAnalyticsPanel: React.FC = () => {
   const {
     performSmartAnalysis,
     analyzeBehaviorPatterns,
-    monitorRisks,
-    getBenchmarks,
-    forecastTrends,
     isAnalyzing,
-    error,
-    clearError
+    error
   } = useSmartAnalytics();
 
   useEffect(() => {

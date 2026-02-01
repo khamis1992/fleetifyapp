@@ -3,8 +3,8 @@
  * Displays compliance monitoring data and reports
  */
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -15,15 +15,11 @@ import {
   Shield,
   AlertTriangle,
   CheckCircle,
-  TrendingUp,
-  TrendingDown,
   Download,
-  Eye,
   Users,
   FileText
 } from 'lucide-react';
 import { ComplianceReport } from '@/types/auditLog';
-import { format } from 'date-fns';
 
 interface ComplianceMetricsProps {
   complianceReport: ComplianceReport | null;
@@ -52,13 +48,6 @@ export function ComplianceMetrics({
     });
   };
 
-  const getComplianceScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-yellow-600';
-    if (score >= 70) return 'text-orange-600';
-    return 'text-red-600';
-  };
-
   const getComplianceScoreVariant = (score: number) => {
     if (score >= 90) return 'default';
     if (score >= 80) return 'secondary';
@@ -72,7 +61,7 @@ export function ComplianceMetrics({
         <Card>
           <CardHeader>
             <CardTitle>Compliance Metrics</CardTitle>
-            <CardDescription>Loading compliance data...</CardDescription>
+            <p className="text-sm text-muted-foreground">Loading compliance data...</p>
           </CardHeader>
           <CardContent>
             <div className="animate-pulse space-y-4">
@@ -148,9 +137,9 @@ export function ComplianceMetrics({
                 variant={getComplianceScoreVariant(report?.compliance_score || 0)}
                 className="text-lg px-3 py-1"
               >
-                {report?.compliance_score >= 90 ? 'Excellent' :
-                 report?.compliance_score >= 80 ? 'Good' :
-                 report?.compliance_score >= 70 ? 'Needs Improvement' : 'Critical'}
+                {(report?.compliance_score ?? 0) >= 90 ? 'Excellent' :
+                 (report?.compliance_score ?? 0) >= 80 ? 'Good' :
+                 (report?.compliance_score ?? 0) >= 70 ? 'Needs Improvement' : 'Critical'}
               </Badge>
             </div>
             <Progress
@@ -192,8 +181,8 @@ export function ComplianceMetrics({
               {report?.high_risk_transactions?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {report?.total_transactions > 0
-                ? `${((report.high_risk_transactions / report.total_transactions) * 100).toFixed(1)}% of total`
+              {(report?.total_transactions ?? 0) > 0
+                ? `${(((report?.high_risk_transactions ?? 0) / (report?.total_transactions ?? 1)) * 100).toFixed(1)}% of total`
                 : '0% of total'
               }
             </p>
@@ -388,14 +377,14 @@ export function ComplianceMetrics({
               <CardTitle>Violation Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
-              {report?.compliance_violations.length === 0 ? (
+              {(report?.compliance_violations?.length ?? 0) === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
                   <p>No compliance violations detected in this period.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {report.compliance_violations.map((violation, index) => (
+                  {report?.compliance_violations.map((violation, index) => (
                     <div key={index} className="border-l-4 border-orange-500 pl-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">{violation.violation_type}</h4>
@@ -426,7 +415,7 @@ export function ComplianceMetrics({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {report?.compliance_score >= 90 ? (
+                {(report?.compliance_score ?? 0) >= 90 ? (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle>Excellent Compliance</AlertTitle>
@@ -434,7 +423,7 @@ export function ComplianceMetrics({
                       Your compliance score is excellent. Continue monitoring and maintaining current practices.
                     </AlertDescription>
                   </Alert>
-                ) : report?.compliance_score >= 80 ? (
+                ) : (report?.compliance_score ?? 0) >= 80 ? (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Good with Room for Improvement</AlertTitle>
