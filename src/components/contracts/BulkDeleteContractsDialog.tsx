@@ -58,7 +58,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
       const { data, error } = await supabase
         .from('contracts')
         .select('id, contract_number, customer_id')
-        .eq('company_id', actualCompanyId);
+        .eq('company_id' as any, actualCompanyId);
       
       console.log('🔍 [BULK_DELETE_CONTRACTS] Query result:', { 
         data: data?.length || 0, 
@@ -71,13 +71,15 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
         throw error;
       }
       
+      const contractsData = data as Array<{ id: string; contract_number: string; customer_id: string | null }> || [];
+      
       // Count unique customers
-      const uniqueCustomers = new Set(data?.map(c => c.customer_id) || []).size;
+      const uniqueCustomers = new Set(contractsData.map(c => c.customer_id).filter(Boolean)).size;
       
       const result = {
-        total: data?.length || 0,
+        total: contractsData.length,
         uniqueCustomers,
-        contracts: data || []
+        contracts: contractsData
       };
       
       console.log('🔍 [BULK_DELETE_CONTRACTS] Final result:', result);
@@ -104,7 +106,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
     
     setStep('processing');
     try {
-      await bulkDeleteContracts.mutateAsync(actualCompanyId);
+      await bulkDeleteContracts.mutateAsync(actualCompanyId ?? undefined);
       
       // Log audit trail
       await logAudit({
@@ -131,7 +133,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
         resource_type: 'contract',
         entity_name: `Failed bulk delete for ${companyName}`,
         status: 'failed',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
+        notes: error instanceof Error ? error.message : 'Unknown error',
         severity: 'high',
       });
     }

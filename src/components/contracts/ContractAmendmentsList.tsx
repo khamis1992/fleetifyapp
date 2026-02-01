@@ -24,7 +24,6 @@ import { useContractAmendments } from '@/hooks/useContractAmendments';
 import { 
   FileEdit, 
   Check, 
-  X, 
   Clock, 
   MoreVertical, 
   Eye, 
@@ -55,9 +54,9 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
     approveReject,
     isApprovingRejecting,
     applyAmendment,
-    isApplying,
+    isApplying: _isApplying,
     cancelAmendment,
-    isCancelling,
+    isCancelling: _isCancelling,
     fetchAmendmentWithChanges
   } = useContractAmendments(contractId);
 
@@ -360,7 +359,7 @@ export const ContractAmendmentsList: React.FC<ContractAmendmentsListProps> = ({
               <div>
                 <h4 className="font-medium mb-3">التغييرات المطبقة:</h4>
                 <div className="space-y-2">
-                  {selectedAmendment.change_logs?.map((log: any) => (
+                  {(Array.isArray(selectedAmendment.change_logs) ? selectedAmendment.change_logs : []).map((log: any) => (
                     <Card key={log.id}>
                       <CardContent className="pt-4">
                         <div className="grid grid-cols-3 gap-4">

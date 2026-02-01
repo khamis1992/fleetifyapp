@@ -12,7 +12,10 @@ import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 
 interface AlarafOfficialContractProps {
-  contract: Contract;
+  contract: Contract & {
+    customer?: any;
+    vehicle?: any;
+  };
 }
 
 /**
@@ -516,124 +519,67 @@ export const AlarafOfficialContract = ({ contract }: AlarafOfficialContractProps
           
           <div className="sub-article">
             <span className="sub-number">3-4</span> 
-            <strong>طريقة الدفع:</strong> يُدفع الإيجار مقدماً في بداية كل شهر ميلادي عن طريق التحويل البنكي إلى حساب الطرف الأول، ويكون الدفع منتظماً وبشكل شهري.
-          </div>
-          
-          <div className="sub-article">
-            <span className="sub-number">3-5</span> 
-            يُحظر على الطرف الثاني خصم أي مبلغ من القيمة الإيجارية لقاء أي رسوم أو ضرائب أو مصروفات أو غير ذلك.
+            <strong>طريقة السداد:</strong> يتم سداد الأجرة الشهرية بموجب شيكات مصرفية أو تحويل بنكي قبل بداية كل شهر.
           </div>
         </div>
       </div>
 
-      {/* Page Break */}
-      <div className="page-break"></div>
-
-      {/* Article 4-16 والباقي... سأضع نسخة مختصرة هنا */}
-      {/* يمكنني إكمال جميع المواد إذا أردت */}
+      {/* Payment Schedule Table */}
+      {paymentSchedule.length > 0 && (
+        <div className="article avoid-break">
+          <div className="article-title">جدول الدفعات الشهرية</div>
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: '15%' }}>رقم الدفعة</th>
+                <th style={{ width: '45%' }}>تاريخ الاستحقاق</th>
+                <th style={{ width: '40%' }}>المبلغ (ر.ق)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentSchedule.slice(0, 12).map((payment) => (
+                <tr key={payment.number}>
+                  <td style={{ textAlign: 'center' }}>{payment.number}</td>
+                  <td style={{ textAlign: 'center' }}>{payment.dueDate}</td>
+                  <td style={{ textAlign: 'center' }}>{payment.amount}</td>
+                </tr>
+              ))}
+              <tr className="total-row">
+                <td colSpan={2} style={{ textAlign: 'right' }}><strong>الإجمالي</strong></td>
+                <td style={{ textAlign: 'center' }}><strong>{contract.contract_amount?.toLocaleString('en-US')}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Signatures */}
       <div className="signatures avoid-break">
         <div className="signature-grid">
-          {/* First Party */}
           <div className="signature-box">
-            <div className="signature-title">الطرف الأول (المؤجــر)</div>
-            <div style={{ margin: '2rem 0' }}>
-              <strong>شركة العراف لتأجير السيارات ذ.م.م</strong>
-            </div>
-            <div className="signature-line">التوقيع</div>
-            <div style={{ marginTop: '0.5rem', fontSize: '12pt' }}>
-              <strong>الاسم:</strong> خميس هاشم الجابر<br />
-              <strong>الصفة:</strong> المدير العام المفوض بالتوقيع
-            </div>
+            <div className="signature-title">الطرف الأول (المؤجر)</div>
+            <div>شركة العراف لتأجير السيارات ذ.م.م</div>
             <div className="stamp-box">
               <img src="/receipts/stamp.png" alt="ختم الشركة" />
             </div>
+            <div className="signature-line">التوقيع والختم</div>
           </div>
-
-          {/* Second Party */}
+          
           <div className="signature-box">
-            <div className="signature-title">الطرف الثاني (المستأجــر)</div>
-            <div style={{ margin: '2rem 0' }}>
-              <strong>الاسم:</strong> {customerName}
-            </div>
+            <div className="signature-title">الطرف الثاني (المستأجر)</div>
+            <div>{customerName}</div>
+            <div style={{ height: '120px' }}></div>
             <div className="signature-line">التوقيع</div>
-            <div style={{ marginTop: '1rem', fontSize: '12pt' }}>
-              <strong>التاريخ:</strong> {todayGregorian}
-            </div>
-            <div className="stamp-placeholder">البصمة</div>
           </div>
-        </div>
-      </div>
-
-      {/* Page Break for Annex A */}
-      <div className="page-break"></div>
-
-      {/* ANNEX A: Payment Schedule */}
-      <div className="avoid-break">
-        <div className="header" style={{ marginBottom: '2rem' }}>
-          <div className="company-name">ملحق (أ)</div>
-          <div style={{ fontSize: '16pt', fontWeight: 700, marginTop: '1rem' }}>
-            جدول الدفعات الشهرية المستحقة
-          </div>
-          <div className="company-details" style={{ marginTop: '0.5rem' }}>
-            ملحق للعقد رقم: {contract.contract_number}
-          </div>
-        </div>
-
-        <p style={{ textAlign: 'justify', marginBottom: '1.5rem' }}>
-          يوضح هذا الجدول الدفعات الشهرية المستحقة على الطرف الثاني (المستأجر) بموجب عقد إيجار السيارة 
-          المؤرخ في {todayGregorian}:
-        </p>
-
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: '10%' }}>رقم الدفعة</th>
-              <th style={{ width: '25%' }}>تاريخ الاستحقاق</th>
-              <th style={{ width: '25%' }}>المبلغ المستحق (ر.ق)</th>
-              <th style={{ width: '20%' }}>حالة الدفع</th>
-              <th style={{ width: '20%' }}>تاريخ الدفع الفعلي</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paymentSchedule.map((payment) => (
-              <tr key={payment.number}>
-                <td className="text-center">{payment.number}</td>
-                <td>{payment.dueDate}</td>
-                <td>{payment.amount}</td>
-                <td></td>
-                <td></td>
-              </tr>
-            ))}
-            <tr className="total-row">
-              <td colSpan={2} className="text-center"><strong>الإجمالي</strong></td>
-              <td><strong>{contract.contract_amount?.toFixed(2)}</strong></td>
-              <td colSpan={2}></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style={{ marginTop: '2rem', lineHeight: '2.0' }}>
-          <p><strong>ملاحظات:</strong></p>
-          <ul>
-            <li>يُدفع كل قسط في تاريخ استحقاقه المحدد أعلاه أو قبله؛</li>
-            <li>التأخر عن الدفع يترتب عليه غرامات وفقاً للمادة (4) من العقد الأساسي؛</li>
-            <li>مبلغ التأمين (8,000 ريال قطري) يُدفع مقدماً عند التوقيع.</li>
-          </ul>
         </div>
       </div>
 
       {/* Footer */}
       <div className="footer">
-        حُرر هذا العقد باللغة العربية في مقر الطرف الأول بتاريخ {todayGregorian}<br />
-        ويخضع لأحكام القوانين النافذة في دولة قطر<br />
-        ──────────<br />
-        شركة العراف لتأجير السيارات ذ.م.م © {new Date().getFullYear()}
+        تم تحرير هذا العقد من نسختين أصليتين لكل طرف نسخة للعمل بموجبها<br />
+        شركة العراف لتأجير السيارات ذ.م.م - دولة قطر<br />
+        {todayGregorian}
       </div>
     </div>
   );
 };
-
-export default AlarafOfficialContract;
-
