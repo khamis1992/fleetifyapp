@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Permission } from '@/lib/permissions/roles';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -61,17 +62,17 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
     queryFn: async () => {
       if (!contract?.id) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('contract_approval_steps')
         .select(`
           *,
           approver:profiles!contract_approval_steps_approver_id_fkey(first_name, last_name, email)
-        `)
-        .eq('contract_id' as any, contract.id)
+        `) as any)
+        .eq('contract_id', contract.id)
         .order('step_order');
 
       if (error) throw error;
-      return (data || []) as any as ApprovalStep[];
+      return (data || []) as ApprovalStep[];
     },
     enabled: !!contract?.id
   });
@@ -84,13 +85,13 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       if (!contract?.id || !user?.id) return false;
       
       // Check if user has manager or admin role
-      const { data: userRoles } = await supabase
+      const { data: userRoles } = await (supabase
         .from('user_roles')
-        .select('role')
-        .eq('user_id' as any, user.id);
+        .select('role') as any)
+        .eq('user_id', user.id);
       
       const roles = userRoles as Array<{ role: string }> | null;
-      const hasApprovalRole = roles?.some(r => 
+      const hasApprovalRole = roles?.some(r =>
         r.role === 'company_admin' || r.role === 'manager'
       );
       
@@ -114,7 +115,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
       if (!pendingStep) throw new Error('No pending approval step found');
 
       // Update the current step
-      const { error: stepError } = await supabase
+      const { error: stepError } = await (supabase
         .from('contract_approval_steps')
         .update({
           status: action === 'approve' ? 'approved' : 'rejected',
@@ -122,8 +123,8 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
           approved_at: action === 'approve' ? new Date().toISOString() : null,
           rejected_at: action === 'reject' ? new Date().toISOString() : null,
           comments
-        } as any)
-        .eq('id' as any, pendingStep.id);
+        }) as any)
+        .eq('id', pendingStep.id);
 
       if (stepError) throw stepError;
 
@@ -134,10 +135,10 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
         newContractStatus = 'cancelled';
       } else {
         // Check if all steps are approved
-        const { data: allSteps } = await supabase
+        const { data: allSteps } = await (supabase
           .from('contract_approval_steps')
-          .select('status')
-          .eq('contract_id' as any, contract.id);
+          .select('status') as any)
+          .eq('contract_id', contract.id);
         
         const stepsData = allSteps as Array<{ status: string }> | null;
         const allApproved = stepsData?.every((step) => 
@@ -151,10 +152,10 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
 
       // Update contract status if changed
       if (newContractStatus !== contract.status) {
-        const { error: contractError } = await supabase
+        const { error: contractError } = await (supabase
           .from('contracts')
-          .update({ status: newContractStatus } as any)
-          .eq('id' as any, contract.id);
+          .update({ status: newContractStatus }) as any)
+          .eq('id', contract.id);
 
         if (contractError) throw contractError;
       }
@@ -292,7 +293,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
                 </div>
               ) : approvalSteps && approvalSteps.length > 0 ? (
                 <div className="space-y-4">
-                  {approvalSteps.map((step, index) => (
+                  {approvalSteps.map((step) => (
                     <div key={step.id} className="flex items-start gap-4 p-4 border rounded-lg">
                       <div className="flex-shrink-0">
                         {getStepIcon(step.status)}
@@ -391,7 +392,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
                 </div>
 
                 <div className="flex gap-3">
-                  <PermissionGuard permission="APPROVE_CONTRACT">
+                  <PermissionGuard permission={Permission.APPROVE_CONTRACT}>
                     <Button
                       onClick={() => handleApproval('approve')}
                       disabled={isSubmitting || !comment.trim()}
@@ -401,7 +402,7 @@ export const ContractApprovalWorkflow: React.FC<ContractApprovalWorkflowProps> =
                       موافقة
                     </Button>
                   </PermissionGuard>
-                  <PermissionGuard permission="APPROVE_CONTRACT">
+                  <PermissionGuard permission={Permission.APPROVE_CONTRACT}>
                     <Button
                       variant="destructive"
                       onClick={() => handleApproval('reject')}

@@ -17,7 +17,6 @@ import { AlertTriangle, XCircle, Loader2, Car, ChevronDown, ChevronUp } from 'lu
 import { useUpdateContractStatus } from '@/hooks/useContractRenewal';
 import { useCreateContractVehicleReturn } from '@/hooks/useContractVehicleReturn';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface ContractCancellationDialogProps {
   open: boolean;
@@ -101,7 +100,8 @@ export const ContractCancellationDialog: React.FC<ContractCancellationDialogProp
     }
   };
 
-  const getConditionLabel = (condition: string) => {
+  // Helper function - available for future use
+  void function getConditionLabel(condition: string) {
     switch (condition) {
       case 'excellent': return 'ممتازة';
       case 'good': return 'جيدة';

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, FileText, Calendar, DollarSign, Users, Settings, XCircle, Trash2, Car, FileEdit, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Permission } from '@/lib/permissions/roles';
 import { Card, CardContent } from '@/components/ui/card';
 import { NativeCard, NativeCardContent } from '@/components/ui/native';
 import { useContractHelpers } from '@/hooks/useContractHelpers';
@@ -265,7 +266,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               </Button>
             )}
             {showCancelButton && contract.status === 'active' && (
-              <PermissionGuard permission="CANCEL_CONTRACT">
+              <PermissionGuard permission={Permission.TERMINATE_CONTRACT}>
                 <Button 
                   variant="destructive" 
                   size="sm" 
@@ -277,7 +278,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               </PermissionGuard>
             )}
             {showDeleteButton && (
-              <PermissionGuard permission="DELETE_CONTRACT">
+              <PermissionGuard permission={Permission.DELETE_CONTRACT}>
                 <Button 
                   variant="destructive" 
                   size="sm" 

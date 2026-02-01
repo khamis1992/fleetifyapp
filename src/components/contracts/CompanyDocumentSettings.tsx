@@ -49,10 +49,10 @@ export function CompanyDocumentSettings({
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('companies')
-        .select('settings')
-        .eq('id' as any, companyId)
+        .select('settings') as any)
+        .eq('id', companyId)
         .single()
 
       if (error) {
@@ -60,7 +60,7 @@ export function CompanyDocumentSettings({
         throw error
       }
 
-      const settingsData = (data as any)?.settings as any
+      const settingsData = data?.settings as any
       
       // If no settings exist or document_saving is empty, use defaults
       if (!settingsData || !settingsData.document_saving) {
@@ -105,24 +105,24 @@ export function CompanyDocumentSettings({
 
     try {
       // Get current settings first
-      const { data: currentData, error: fetchError } = await supabase
+      const { data: currentData, error: fetchError } = await (supabase
         .from('companies')
-        .select('settings')
-        .eq('id' as any, companyId)
+        .select('settings') as any)
+        .eq('id', companyId)
         .single()
 
       if (fetchError) throw fetchError
 
-      const currentSettings = ((currentData as any)?.settings as any) || {}
+      const currentSettings = currentData?.settings || {}
       const updatedSettings = {
         ...currentSettings,
         document_saving: settings
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase
         .from('companies')
-        .update({ settings: updatedSettings } as any)
-        .eq('id' as any, companyId)
+        .update({ settings: updatedSettings }) as any)
+        .eq('id', companyId)
 
       if (error) throw error
 

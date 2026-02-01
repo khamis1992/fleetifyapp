@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useBulkDeleteContracts } from '@/hooks/useBulkDeleteContracts';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Permission } from '@/lib/permissions/roles';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,12 +56,12 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
       
       console.log('🔍 [BULK_DELETE_CONTRACTS] Querying contracts for company:', actualCompanyId);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('contracts')
-        .select('id, contract_number, customer_id')
-        .eq('company_id' as any, actualCompanyId);
+        .select('id, contract_number, customer_id') as any)
+        .eq('company_id', actualCompanyId);
       
-      console.log('🔍 [BULK_DELETE_CONTRACTS] Query result:', { 
+      console.log('🔍 [BULK_DELETE_CONTRACTS] Query result:', {
         data: data?.length || 0, 
         error: error?.message,
         actualCompanyId 
@@ -367,7 +368,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
               <Button variant="outline" onClick={handleClose}>
                 إلغاء
               </Button>
-              <PermissionGuard permission="DELETE_CONTRACT">
+              <PermissionGuard permission={Permission.DELETE_CONTRACT}>
                 <Button
                   variant="destructive"
                   onClick={handleConfirmDelete}
