@@ -128,7 +128,9 @@ export const useBiometricAuth = () => {
       }
 
       // If no active session, we need to sign in
-      // This is where you'd implement a passwordless/MFA flow
+      // TODO: Implement passwordless/MFA flow or secure password storage
+      // SECURITY NOTE: Storing passwords (even encrypted) is not recommended
+      // Consider using Supabase Magic Link or OAuth instead
       // For now, we'll return an error indicating the user needs to enter password
       return {
         success: false,

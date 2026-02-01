@@ -52,34 +52,29 @@ export const MobileLogin: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedEmail]);
 
-  // CRITICAL: Redirect when user is authenticated after login
+  // SIMPLIFIED: Single useEffect for all redirect logic
   useEffect(() => {
-    if (user && !authLoading && loginSuccess && !hasRedirectedRef.current) {
+    // Skip if already redirected or still loading
+    if (hasRedirectedRef.current || authLoading) return;
+    
+    // Case 1: User is authenticated (either already logged in or just logged in)
+    if (user) {
       hasRedirectedRef.current = true;
       setIsSubmitting(false);
-      console.log('✅ [MobileLogin] User authenticated, navigating to employee home');
       
-      // Check if biometric setup should be shown
-      if (biometricAvailable && !hasSavedCredentials && !showBiometricPrompt) {
+      // Show biometric setup prompt only after successful login (not for already logged in users)
+      if (loginSuccess && biometricAvailable && !hasSavedCredentials) {
+        console.log('✅ [MobileLogin] User authenticated, showing biometric setup');
         setShowBiometricPrompt(true);
-      } else if (!showBiometricPrompt) {
+      } else {
+        console.log('✅ [MobileLogin] User authenticated, navigating to employee home');
         navigate('/mobile/employee/home', { replace: true });
       }
+      return;
     }
-  }, [user, authLoading, loginSuccess, navigate, biometricAvailable, hasSavedCredentials, showBiometricPrompt]);
-
-  // Also redirect if user is already logged in when visiting login page
-  useEffect(() => {
-    if (user && !authLoading && !loginSuccess && !hasRedirectedRef.current) {
-      hasRedirectedRef.current = true;
-      console.log('✅ [MobileLogin] Already authenticated, redirecting to employee home');
-      navigate('/mobile/employee/home', { replace: true });
-    }
-  }, [user, authLoading, loginSuccess, navigate]);
-
-  // TIMEOUT: If AuthContext doesn't update within 5 seconds, navigate directly
-  useEffect(() => {
-    if (loginSuccess && !hasRedirectedRef.current) {
+    
+    // Case 2: Login was successful but AuthContext hasn't updated yet (with timeout)
+    if (loginSuccess) {
       const timeout = setTimeout(() => {
         if (!hasRedirectedRef.current) {
           console.warn('⚠️ [MobileLogin] AuthContext timeout - navigating directly');
@@ -91,7 +86,8 @@ export const MobileLogin: React.FC = () => {
       
       return () => clearTimeout(timeout);
     }
-  }, [loginSuccess, navigate]);
+  }, [user, authLoading, loginSuccess, biometricAvailable, hasSavedCredentials, navigate]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

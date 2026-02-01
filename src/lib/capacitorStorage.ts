@@ -61,6 +61,7 @@ class CapacitorStorageAdapter {
 
   /**
    * Set item - returns Promise but also updates localStorage cache synchronously
+   * FIXED: Now saves to Preferences first, then localStorage to ensure consistency
    */
   async setItem(key: string, value: string): Promise<void> {
     if (!this.isNative) {
@@ -69,18 +70,21 @@ class CapacitorStorageAdapter {
       return;
     }
     
-    // On native: update both localStorage cache (sync) and Preferences (async)
-    localStorage.setItem(CACHE_PREFIX + key, value);
-    
+    // On native: save to Preferences first, then update localStorage cache
     try {
       await Preferences.set({ key, value });
+      // Only update localStorage cache after successful Preferences save
+      localStorage.setItem(CACHE_PREFIX + key, value);
     } catch (error) {
       console.error('[CapacitorStorage] Error setting item in Preferences:', key, error);
+      // Don't update localStorage if Preferences save failed to avoid inconsistency
+      throw error;
     }
   }
 
   /**
    * Remove item - returns Promise but also updates localStorage cache synchronously
+   * FIXED: Now removes from Preferences first, then localStorage to ensure consistency
    */
   async removeItem(key: string): Promise<void> {
     if (!this.isNative) {
@@ -89,13 +93,15 @@ class CapacitorStorageAdapter {
       return;
     }
     
-    // On native: remove from both localStorage cache and Preferences
-    localStorage.removeItem(CACHE_PREFIX + key);
-    
+    // On native: remove from Preferences first, then localStorage cache
     try {
       await Preferences.remove({ key });
+      // Only remove from localStorage cache after successful Preferences removal
+      localStorage.removeItem(CACHE_PREFIX + key);
     } catch (error) {
       console.error('[CapacitorStorage] Error removing item from Preferences:', key, error);
+      // Don't remove from localStorage if Preferences removal failed
+      throw error;
     }
   }
 }

@@ -1,6 +1,7 @@
 // SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
 import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
 
@@ -177,8 +178,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const initializeAuth = async () => {
-    // DEVELOPMENT BYPASS: تسجيل دخول تلقائي في البيئة المحلية
-    if (import.meta.env.DEV && window.location.hostname === 'localhost') {
+    // DEVELOPMENT BYPASS: تسجيل دخول تلقائي في البيئة المحلية فقط
+    // تأكد من أن هذا الكود لا يعمل في الإنتاج أو في تطبيق الجوال
+    const isDevMode = import.meta.env.DEV;
+    const isLocalhost = window.location.hostname === 'localhost';
+    const isNativeApp = Capacitor.isNativePlatform();
+    
+    // تسجيل دخول تلقائي فقط في المتصفح المحلي، وليس في التطبيق المحمول
+    if (isDevMode && isLocalhost && !isNativeApp) {
       console.log('🔓 [AUTH_CONTEXT] Development mode - auto login with khamis-1992@hotmail.com');
       
       try {
