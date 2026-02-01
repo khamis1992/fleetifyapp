@@ -231,7 +231,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       }
       const { error } = await (supabase
         .from('contracts')
-        .update(editData) as any)
+        .update(editData as any) as any)
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
@@ -473,7 +473,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <Label>نوع العقد</Label>
                         <Input
                           value={editData.contract_type || contract.contract_type || ''}
-                          onChange={(e) => setEditData({...editData, contract_type: e.target.value})}
+                          onChange={(e) => setEditData({...editData, contract_type: e.target.value as Contract['contract_type']})}
                         />
                       </div>
                       <div>
@@ -499,8 +499,11 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <span className="text-sm text-muted-foreground">نوع العقد</span>
                         <span className="font-medium">
                           {contract.contract_type === 'rental' ? 'إيجار' :
-                           contract.contract_type === 'service' ? 'خدمة' :
-                           contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات'}
+                           contract.contract_type === 'daily_rental' ? 'إيجار يومي' :
+                           contract.contract_type === 'weekly_rental' ? 'إيجار أسبوعي' :
+                           contract.contract_type === 'monthly_rental' ? 'إيجار شهري' :
+                           contract.contract_type === 'yearly_rental' ? 'إيجار سنوي' :
+                           contract.contract_type === 'rent_to_own' ? 'إيجار منتهي بالتمليك' : contract.contract_type}
                         </span>
                       </div>
                       
@@ -726,7 +729,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.description !== undefined ? editData.description : (contract?.description || '')}
+                      value={editData.description !== undefined ? (editData.description || '') : (contract?.description || '')}
                       onChange={(e) => setEditData({...editData, description: e.target.value})}
                       rows={4}
                     />
@@ -745,7 +748,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.terms !== undefined ? editData.terms : (contract?.terms || '')}
+                      value={editData.terms !== undefined ? (editData.terms || '') : (contract?.terms || '')}
                       onChange={(e) => setEditData({...editData, terms: e.target.value})}
                       rows={4}
                     />
@@ -797,7 +800,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             {invoices && invoices.length > 0 ? (
               <div className="space-y-4">
                 {invoices.map((invoice) => {
-                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partially_paid';
+                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partial';
                   
                   const getPaymentStatusBadge = (paymentStatus: string) => {
                     const statusConfig = {
@@ -1010,10 +1013,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">مستوى الوقود</p>
-                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level}%</p>
-                      {checkInInspection && checkOutInspection.fuel_level < checkInInspection.fuel_level && (
+                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level ?? 0}%</p>
+                      {checkInInspection && checkOutInspection.fuel_level != null && checkInInspection.fuel_level != null && checkOutInspection.fuel_level < checkInInspection.fuel_level && (
                         <Badge variant="destructive" className="mt-1">
-                          نقص {checkInInspection.fuel_level - checkOutInspection.fuel_level}%
+                          نقص {(checkInInspection.fuel_level ?? 0) - (checkOutInspection.fuel_level ?? 0)}%
                         </Badge>
                       )}
                     </div>
@@ -1126,9 +1129,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
           {/* Official Contract Tab */}
           <TabsContent value="official-contract" className="space-y-4">
             <OfficialContractView
-              contract={contract}
-              customer={customer}
-              vehicle={vehicle}
+              contract={{ ...contract, customer, vehicle }}
             />
           </TabsContent>
         </Tabs>
