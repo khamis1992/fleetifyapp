@@ -6,7 +6,7 @@
  * Provides insights into system performance and optimization opportunities
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,7 @@ import {
   Database,
   Zap,
   TrendingUp,
-  TrendingDown,
   RefreshCw,
-  BarChart3,
   Cpu,
   HardDrive,
   Network
@@ -311,7 +309,7 @@ export function ApiPerformanceDashboard() {
 
         <TabsContent value="cache" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(cacheMetrics).map(([cacheType, metrics]: [string, any]) => (
+            {Object.entries(cacheMetrics).map(([cacheType, cacheData]: [string, any]) => (
               <Card key={cacheType}>
                 <CardHeader>
                   <CardTitle className="capitalize">{cacheType} Cache</CardTitle>
@@ -323,26 +321,26 @@ export function ApiPerformanceDashboard() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Hit Rate</span>
                     <span className="font-bold text-green-600">
-                      {(metrics.metrics.hitRate * 100).toFixed(1)}%
+                      {(cacheData.metrics.hitRate * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={metrics.metrics.hitRate * 100} className="h-2" />
+                  <Progress value={cacheData.metrics.hitRate * 100} className="h-2" />
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Size</span>
-                    <span className="font-bold">{metrics.size}/{metrics.maxSize}</span>
+                    <span className="font-bold">{cacheData.size}/{cacheData.maxSize}</span>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Memory</span>
                     <span className="font-bold">
-                      {(metrics.memoryUsage / 1024 / 1024).toFixed(1)} MB
+                      {(cacheData.memoryUsage / 1024 / 1024).toFixed(1)} MB
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Avg Hits</span>
-                    <span className="font-bold">{metrics.entries.averageHits.toFixed(1)}</span>
+                    <span className="font-bold">{cacheData.entries.averageHits.toFixed(1)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -437,61 +435,16 @@ export function ApiPerformanceDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2" />
-                Query Performance Analysis
+                <Database className="h-5 w-5 mr-2" />
+                Query Performance Analytics
               </CardTitle>
               <CardDescription>
-                Slowest and fastest performing queries
+                Database query performance and optimization metrics
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Slowest Queries */}
-                <div>
-                  <h4 className="font-medium text-red-600 mb-2">Slowest Queries</h4>
-                  <div className="space-y-2">
-                    {stats.slowestRequests.slice(0, 5).map((query: any, index: number) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-red-50 rounded">
-                        <span className="text-sm font-mono">{query.name}</span>
-                        <Badge variant="destructive">
-                          {(query.duration / 1000).toFixed(2)}s
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Fastest Queries */}
-                <div>
-                  <h4 className="font-medium text-green-600 mb-2">Fastest Queries</h4>
-                  <div className="space-y-2">
-                    {stats.fastestRequests.slice(0, 5).map((query: any, index: number) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded">
-                        <span className="text-sm font-mono">{query.name}</span>
-                        <Badge variant="default" className="bg-green-600">
-                          {(query.duration / 1000).toFixed(3)}s
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Recent Errors */}
-                {stats.recentErrors.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-red-600 mb-2">Recent Errors</h4>
-                    <div className="space-y-2">
-                      {stats.recentErrors.slice(0, 5).map((query: any, index: number) => (
-                        <div key={index} className="flex justify-between items-center p-2 bg-red-50 rounded">
-                          <span className="text-sm font-mono">{query.name}</span>
-                          <Badge variant="destructive">
-                            {query.statusCode || 'ERROR'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="text-center py-8 text-muted-foreground">
+                Query performance analytics coming soon...
               </div>
             </CardContent>
           </Card>

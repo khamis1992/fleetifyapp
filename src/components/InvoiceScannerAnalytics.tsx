@@ -15,7 +15,6 @@ import {
   TrendingUp, 
   Clock, 
   Target, 
-  Users, 
   FileText,
   Zap,
   CheckCircle,
@@ -53,7 +52,7 @@ interface AnalyticsData {
 const InvoiceScannerAnalytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [isLoading, setIsLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<AnalyticsData>({
+  const [analytics] = useState<AnalyticsData>({
     processingMetrics: {
       totalScans: 1247,
       avgProcessingTime: 4.2,
@@ -77,7 +76,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
     }
   });
 
-  const [dailyStats, setDailyStats] = useState([
+  const [dailyStats] = useState([
     { date: '2024-10-05', scans: 45, accuracy: 89.2, avgTime: 4.8 },
     { date: '2024-10-06', scans: 52, accuracy: 91.1, avgTime: 4.5 },
     { date: '2024-10-07', scans: 38, accuracy: 93.4, avgTime: 4.1 },
@@ -262,7 +261,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {dailyStats.map((day, index) => (
+                  {dailyStats.map((day) => (
                     <div key={day.date} className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
@@ -457,42 +456,18 @@ const InvoiceScannerAnalytics: React.FC = () => {
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-600">+{analytics.qualityTrends.accuracyImprovement}%</p>
                   <p className="font-medium">Accuracy Improvement</p>
-                  <p className="text-sm text-slate-500">Since system deployment</p>
+                  <p className="text-sm text-slate-500 mt-2">Since system deployment</p>
                 </div>
-                
                 <div className="text-center">
                   <p className="text-3xl font-bold text-blue-600">{analytics.qualityTrends.confidenceScore}%</p>
-                  <p className="font-medium">Avg Confidence Score</p>
-                  <p className="text-sm text-slate-500">Quality of matches</p>
+                  <p className="font-medium">Confidence Score</p>
+                  <p className="text-sm text-slate-500 mt-2">Average OCR confidence</p>
                 </div>
-                
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-orange-600">{analytics.qualityTrends.failureRate}%</p>
+                  <p className="text-3xl font-bold text-red-600">{analytics.qualityTrends.failureRate}%</p>
                   <p className="font-medium">Failure Rate</p>
-                  <p className="text-sm text-slate-500">Processing failures</p>
+                  <p className="text-sm text-slate-500 mt-2">Down from 12.3%</p>
                 </div>
-              </div>
-              
-              <div className="mt-8 p-4 bg-slate-50 rounded-lg">
-                <h4 className="font-medium mb-3">Key Insights & Recommendations</h4>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                    <span>System accuracy has improved by 23.5% through machine learning feedback</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                    <span>Processing time has decreased by 32% due to optimization improvements</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
-                    <span>Consider adding more Arabic handwriting training data to improve accuracy</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <TrendingUp className="h-4 w-4 text-blue-500 mt-0.5" />
-                    <span>ROI target of 300% has been exceeded - system is highly profitable</span>
-                  </li>
-                </ul>
               </div>
             </CardContent>
           </Card>

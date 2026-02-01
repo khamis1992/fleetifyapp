@@ -27,7 +27,6 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useInvoiceScanner } from '@/hooks/useInvoiceScanner';
-import { detectLanguage, extractKeyInformation } from '@/utils/fuzzyMatching';
 
 const InvoiceScannerDemo: React.FC = () => {
   const [activeTab, setActiveTab] = useState('demo');
@@ -38,7 +37,6 @@ const InvoiceScannerDemo: React.FC = () => {
     isScanning, 
     progress, 
     scanHistory, 
-    scanInvoice, 
     getStatistics,
     analyzeText 
   } = useInvoiceScanner({

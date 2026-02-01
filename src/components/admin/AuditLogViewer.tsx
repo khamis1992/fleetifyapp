@@ -6,14 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Search, 
-  Filter, 
   Eye, 
   User, 
   Calendar, 
@@ -23,14 +17,6 @@ import {
   Settings,
   FileText,
   AlertTriangle,
-  Users,
-  Car,
-  Building2,
-  CreditCard,
-  BarChart3,
-  Archive,
-  CheckCircle,
-  Info,
   XCircle
 } from 'lucide-react';
 import { StatCardNumber } from '@/components/ui/NumberDisplay';

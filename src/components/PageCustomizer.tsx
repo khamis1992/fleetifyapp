@@ -11,7 +11,7 @@
  * </PageCustomizer>
  */
 
-import React, { ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { CustomizableDashboard, DashboardWidget } from '@/components/dashboard/CustomizableDashboard'
 
 interface PageCustomizerProps {
@@ -26,7 +26,7 @@ interface PageCustomizerProps {
  * Get default widgets for a specific page
  * Customize this function to define widgets for each page
  */
-function getWidgetsForPage(pageId: string): DashboardWidget[] {
+function getWidgetsForPage(_pageId: string): DashboardWidget[] {
   // Default empty widgets - each page will define its own
   // This can be extended per page as needed
   return []
@@ -76,9 +76,7 @@ export function PageCustomizer({
         <CustomizableDashboard
           widgets={pageWidgets}
           dashboardId={pageId}
-        >
-          {children}
-        </CustomizableDashboard>
+        />
       ) : (
         // If no widgets defined, just render children without customization
         children
