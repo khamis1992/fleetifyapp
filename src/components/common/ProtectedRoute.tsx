@@ -80,8 +80,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       </div>
     );
   } else if (!user) {
-    // Not loading, no user - redirect to auth
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // Not loading, no user - redirect to appropriate auth page
+    // Mobile routes should redirect to mobile login page
+    const isMobileRoute = location.pathname.startsWith('/mobile');
+    const authPath = isMobileRoute ? '/mobile' : '/auth';
+    return <Navigate to={authPath} state={{ from: location }} replace />;
   }
 
   // If no company ID, redirect to dashboard (not onboarding)

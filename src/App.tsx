@@ -86,7 +86,7 @@ const MobileRedirect: React.FC = () => {
         // Check if user is authenticated before redirecting to home
         const token = localStorage.getItem('sb-alaraf-auth-token');
         if (token) {
-          navigate('/mobile/home', { replace: true });
+          navigate('/mobile/employee/home', { replace: true });
         } else {
           navigate('/mobile', { replace: true });
         }

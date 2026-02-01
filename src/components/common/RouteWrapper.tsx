@@ -31,7 +31,10 @@ export const ProtectedRouteWithErrorBoundary: React.FC<ProtectedRouteWithErrorBo
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    // Mobile routes should redirect to mobile login page
+    const isMobileRoute = window.location.pathname.startsWith('/mobile');
+    const authPath = isMobileRoute ? '/mobile' : '/auth';
+    return <Navigate to={authPath} replace />;
   }
 
   // Role check
