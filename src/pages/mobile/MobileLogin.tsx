@@ -56,6 +56,7 @@ export const MobileLogin: React.FC = () => {
   useEffect(() => {
     if (user && !authLoading && loginSuccess && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
+      setIsSubmitting(false);
       console.log('✅ [MobileLogin] User authenticated, navigating to employee home');
       
       // Check if biometric setup should be shown
@@ -75,6 +76,22 @@ export const MobileLogin: React.FC = () => {
       navigate('/mobile/employee/home', { replace: true });
     }
   }, [user, authLoading, loginSuccess, navigate]);
+
+  // TIMEOUT: If AuthContext doesn't update within 5 seconds, navigate directly
+  useEffect(() => {
+    if (loginSuccess && !hasRedirectedRef.current) {
+      const timeout = setTimeout(() => {
+        if (!hasRedirectedRef.current) {
+          console.warn('⚠️ [MobileLogin] AuthContext timeout - navigating directly');
+          hasRedirectedRef.current = true;
+          setIsSubmitting(false);
+          navigate('/mobile/employee/home', { replace: true });
+        }
+      }, 5000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [loginSuccess, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,8 +135,13 @@ export const MobileLogin: React.FC = () => {
       if (data.user) {
         console.log('✅ [MobileLogin] Login successful for user:', data.user.email);
 
-        // Save credentials for biometric login
-        await saveCredentials(email.trim());
+        // Save credentials for biometric login (don't block on this)
+        try {
+          await saveCredentials(email.trim());
+        } catch (saveErr) {
+          console.warn('⚠️ [MobileLogin] Failed to save credentials for biometric:', saveErr);
+          // Continue anyway - this is not critical
+        }
 
         // Set login success flag - the useEffect will handle navigation
         // once AuthContext updates the user state
