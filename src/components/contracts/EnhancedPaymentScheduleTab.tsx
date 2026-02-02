@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { PaymentFilters, type PaymentStatus } from './PaymentFilters';
 import { QuickPreviewModal } from './QuickPreviewModal';
-import { Eye, Printer, Download } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
