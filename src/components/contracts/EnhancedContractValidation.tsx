@@ -2,19 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   AlertTriangle, 
   CheckCircle, 
   XCircle, 
   RefreshCw, 
-  Clock, 
   Info,
-  TrendingUp,
   Shield
 } from 'lucide-react';
-import { useContractValidation, ValidationAlert, ContractFormData } from '@/hooks/useContractValidation';
+import { useContractValidation, ContractFormData } from '@/hooks/useContractValidation';
 import { cn } from '@/lib/utils';
 
 interface EnhancedContractValidationProps {
@@ -69,9 +66,9 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
     debouncedValidation 
   } = useContractValidation();
   
-  const [retryCount, setRetryCount] = useState(0);
+  const [_retryCount, setRetryCount] = useState(0);
   const [lastValidationData, setLastValidationData] = useState<ContractFormData | null>(null);
-  const [validationProgress, setValidationProgress] = useState(0);
+  void _retryCount; // Reserved for retry UI
   
 
   const isCurrentlyValidating = isValidating || externalValidating;
@@ -84,22 +81,7 @@ export const EnhancedContractValidation: React.FC<EnhancedContractValidationProp
     }
   }, [data, debouncedValidation, lastValidationData]);
 
-  // Progress simulation during validation
-  useEffect(() => {
-    if (isCurrentlyValidating) {
-      setValidationProgress(0);
-      const interval = setInterval(() => {
-        setValidationProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + Math.random() * 15;
-        });
-      }, 200);
-
-      return () => clearInterval(interval);
-    } else {
-      setValidationProgress(100);
-    }
-  }, [isCurrentlyValidating]);
+  // Validation is triggered automatically - progress display removed
 
 
   const retryValidation = async () => {

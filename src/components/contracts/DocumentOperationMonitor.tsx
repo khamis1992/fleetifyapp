@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useEnhancedContractDocuments, DocumentOperationLog } from '@/hooks/useEnhancedContractDocuments'
 import { supabase } from '@/integrations/supabase/client'
@@ -58,7 +57,6 @@ export function DocumentOperationMonitor({
     getOperationLogs, 
     retryOperation, 
     isRetrying,
-    cleanupOrphanedFiles,
     isCleaningUp 
   } = useEnhancedContractDocuments()
 
