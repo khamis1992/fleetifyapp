@@ -67,11 +67,15 @@ export const useMemoryMonitor = (intervalMs: number = 30000) => {
         // @ts-ignore - memory property exists in some browsers
         const memory = performance.memory;
         if (memory) {
-          console.log(`📊 [MEMORY] Used: ${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB, Total: ${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`);
+          const usedMB = (memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
+          const totalMB = (memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
+          const usagePercent = (memory.usedJSHeapSize / memory.totalJSHeapSize * 100).toFixed(1);
           
-          // Alert if memory usage is high
-          if (memory.usedJSHeapSize / memory.totalJSHeapSize > 0.8) {
-            console.warn('⚠️ [MEMORY] High memory usage detected');
+          console.log(`📊 [MEMORY] Used: ${usedMB}MB / ${totalMB}MB (${usagePercent}%)`);
+          
+          // Alert if memory usage is critically high (>90% instead of >80%)
+          if (memory.usedJSHeapSize / memory.totalJSHeapSize > 0.9) {
+            console.warn(`⚠️ [MEMORY] High memory usage detected: ${usagePercent}%`);
           }
         }
       };
@@ -90,29 +94,41 @@ export const useMemoryMonitor = (intervalMs: number = 30000) => {
 export const usePageLoadMonitor = () => {
   useEffect(() => {
     const measurePageLoad = () => {
-      const perfData = performance.getEntriesByType('navigation')[0];
-      if (perfData) {
+      const perfData = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (perfData && perfData.loadEventEnd > 0) {
         const loadTime = perfData.loadEventEnd - perfData.fetchStart;
-        console.log(`⏱️ [PAGE_LOAD] Page loaded in ${loadTime}ms`);
         
-        // Log detailed timing
-        console.log('📋 [TIMING]', {
-          dns: perfData.domainLookupEnd - perfData.domainLookupStart,
-          tcp: perfData.connectEnd - perfData.connectStart,
-          request: perfData.responseStart - perfData.requestStart,
-          response: perfData.responseEnd - perfData.responseStart,
-          dom: perfData.domContentLoadedEventEnd - perfData.fetchStart,
-          load: perfData.loadEventEnd - perfData.fetchStart
-        });
+        // Only log if load time is positive and reasonable
+        if (loadTime > 0 && loadTime < 60000) {
+          console.log(`⏱️ [PAGE_LOAD] Page loaded in ${loadTime.toFixed(2)}ms`);
+          
+          // Log detailed timing only in development
+          if (import.meta.env.DEV) {
+            console.log('📋 [TIMING]', {
+              dns: (perfData.domainLookupEnd - perfData.domainLookupStart).toFixed(2),
+              tcp: (perfData.connectEnd - perfData.connectStart).toFixed(2),
+              request: (perfData.responseStart - perfData.requestStart).toFixed(2),
+              response: (perfData.responseEnd - perfData.responseStart).toFixed(2),
+              dom: (perfData.domContentLoadedEventEnd - perfData.fetchStart).toFixed(2),
+              load: (perfData.loadEventEnd - perfData.fetchStart).toFixed(2)
+            });
+          }
+        }
       }
     };
     
-    // Wait for page to fully load
-    if (document.readyState === 'complete') {
-      measurePageLoad();
-    } else {
-      window.addEventListener('load', measurePageLoad);
-      return () => window.removeEventListener('load', measurePageLoad);
-    }
+    // Wait for page to fully load with a small delay to ensure metrics are ready
+    const timeoutId = setTimeout(() => {
+      if (document.readyState === 'complete') {
+        measurePageLoad();
+      } else {
+        window.addEventListener('load', measurePageLoad, { once: true });
+      }
+    }, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('load', measurePageLoad);
+    };
   }, []);
 };

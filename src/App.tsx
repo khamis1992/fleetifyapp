@@ -157,7 +157,9 @@ const App: React.FC = () => {
       id = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       sessionStorage.setItem('fleetify_tab_id', id);
     }
-    console.log(`🔍 [APP] Tab ID: ${id}`);
+    if (import.meta.env.DEV) {
+      console.log(`🔍 [APP] Tab ID: ${id}`);
+    }
     return id;
   }, []);
 
@@ -177,7 +179,9 @@ const App: React.FC = () => {
       },
     });
     
-    console.log(`🔍 [APP] Query client initialized with shared cache for tab: ${tabId}`);
+    if (import.meta.env.DEV) {
+      console.log(`🔍 [APP] Query client initialized with shared cache for tab: ${tabId}`);
+    }
     return client;
   }, [tabId]);
 
@@ -272,9 +276,11 @@ const App: React.FC = () => {
     });
   }, [queryClient, tabId]);
 
-  // Debug: Check routes
-  console.log('🔍 [App] routeConfigs length:', routeConfigs.length);
-  console.log('🔍 [App] Mobile routes:', routeConfigs.filter(r => r.path.startsWith('/mobile')).map(r => r.path));
+  // Debug: Check routes (only in dev)
+  if (import.meta.env.DEV) {
+    console.log('🔍 [App] routeConfigs length:', routeConfigs.length);
+    console.log('🔍 [App] Mobile routes:', routeConfigs.filter(r => r.path.startsWith('/mobile')).map(r => r.path));
+  }
 
   // Initialize PWA and performance monitoring
   React.useEffect(() => {
@@ -316,10 +322,12 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <QueryClientProvider client={queryClient}>
           {/* Temporarily disabled ThemeProvider for debugging */}
           {/* <ThemeProvider

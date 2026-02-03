@@ -185,53 +185,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const isNativeApp = Capacitor.isNativePlatform();
     
     // تسجيل دخول تلقائي فقط في المتصفح المحلي، وليس في التطبيق المحمول
-    if (isDevMode && isLocalhost && !isNativeApp) {
-      console.log('🔓 [AUTH_CONTEXT] Development mode - auto login with khamis-1992@hotmail.com');
+    // DISABLED: Auto-login causes timeout issues when network is slow/unavailable
+    if (false && isDevMode && isLocalhost && !isNativeApp) {
+      console.log('🔓 [AUTH_CONTEXT] Development mode - auto login disabled to prevent timeouts');
       
       try {
-        // محاولة تسجيل الدخول تلقائياً بحساب khamis
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // Add timeout to prevent hanging
+        const loginPromise = supabase.auth.signInWithPassword({
           email: 'khamis-1992@hotmail.com',
           password: '123456789',
         });
         
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auto-login timeout')), 5000)
+        );
+        
+        const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any;
+        
         if (error) {
           console.error('🔓 [AUTH_CONTEXT] Auto login failed:', error);
-          // إذا فشل، استخدم مستخدم وهمي
-          const mockUser: AuthUser = {
-            id: 'dev-user-id',
-            email: 'khamis-1992@hotmail.com',
-            user_metadata: {},
-            app_metadata: {},
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-          };
-          setUser(mockUser);
-        } else if (data.user) {
+          setLoading(false);
+          isInitialized.current = true;
+          return;
+        } else if (data?.user && data?.session) {
           console.log('✅ [AUTH_CONTEXT] Auto login successful');
-          const authUser = authService.mapSupabaseUser(data.user);
-          setUser(authUser);
-          setSession(data.session);
-          cacheUser(authUser);
+          // Fetch full user profile using getCurrentUser
+          const authUser = await authService.getCurrentUser();
+          if (authUser) {
+            setUser(authUser);
+            setSession(data.session);
+            cacheUser(authUser);
+          }
         }
         
         setLoading(false);
         isInitialized.current = true;
         return;
       } catch (err) {
-        console.error('🔓 [AUTH_CONTEXT] Auto login error:', err);
+        console.error('🔓 [AUTH_CONTEXT] Auto login error (skipping):', err);
+        // Continue with normal initialization
       }
     }
 
     // Prevent double initialization in development (HMR)
     if (isInitialized.current) {
-      console.log('📝 [AUTH_CONTEXT] Already initialized, skipping...');
+      if (import.meta.env.DEV) {
+        console.log('📝 [AUTH_CONTEXT] Already initialized, skipping...');
+      }
       return;
     }
 
     // Try to acquire initialization lock
     if (!acquireInitLock()) {
-      console.log('📝 [AUTH_CONTEXT] Another tab is initializing, waiting...');
+      if (import.meta.env.DEV) {
+        console.log('📝 [AUTH_CONTEXT] Another tab is initializing, waiting...');
+      }
       
       // Wait a bit then use cached data
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -239,13 +247,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (cachedUser) {
         setUser(cachedUser);
         setLoading(false);
-        console.log('📝 [AUTH_CONTEXT] Using cached user from another tab initialization');
+        if (import.meta.env.DEV) {
+          console.log('📝 [AUTH_CONTEXT] Using cached user from another tab initialization');
+        }
       }
       return;
     }
 
     const initStartTime = Date.now();
-    console.log('📝 [AUTH_CONTEXT] Starting initialization...');
+    if (import.meta.env.DEV) {
+      console.log('📝 [AUTH_CONTEXT] Starting initialization...');
+    }
     isInitialized.current = true;
 
     try {
@@ -260,7 +272,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       })();
       
       if (!hasToken && !window.location.hash.includes('access_token')) {
-        console.log('📝 [AUTH_CONTEXT] No token found in storage - skipping getSession');
+        if (import.meta.env.DEV) {
+          console.log('📝 [AUTH_CONTEXT] No token found in storage - skipping getSession');
+        }
         setLoading(false);
         return;
       }
@@ -496,7 +510,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   React.useEffect(() => {
     mountedRef.current = true;
 
-    console.log('📝 [AUTH_CONTEXT] Component mounted, initializing auth...');
+    if (import.meta.env.DEV) {
+      console.log('📝 [AUTH_CONTEXT] Component mounted, initializing auth...');
+    }
 
     // In development mode (HMR), reset initialization flag to allow re-initialization
     // This prevents issues where HMR reloads the component but isInitialized stays true
@@ -521,7 +537,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Now call initializeAuth which will clear the timeout in its finally block
       initializeAuth();
     } else {
-      console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
+      if (import.meta.env.DEV) {
+        console.log('📝 [AUTH_CONTEXT] Auth already initialized, skipping init');
+      }
       // CRITICAL FIX: Always clear loading if we're in a potentially stuck state
       const currentLoadingState = loadingRef.current;
       const checkStuckTimeout = setTimeout(() => {
@@ -544,7 +562,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       // CRITICAL FIX: Cancel background promise on cleanup to prevent memory leaks and stale state updates
-      if (profilePromiseRef.current) {
+      if (profilePromiseRef.current && import.meta.env.DEV) {
         // The promise is stored in a ref, we can't directly cancel it
         // But we can set mountedRef to false to prevent state updates
         console.log('📝 [AUTH_CONTEXT] Cleanup: Background profile promise will be ignored due to unmount');

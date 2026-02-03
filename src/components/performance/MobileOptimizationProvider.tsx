@@ -198,7 +198,9 @@ export const MobileOptimizationProvider: React.FC<MobileOptimizationProviderProp
           updateViaCache: 'none'
         });
 
-        console.log('🔧 Service Worker registered successfully');
+        if (import.meta.env.DEV) {
+          console.log('🔧 Service Worker registered successfully');
+        }
 
         // Listen for updates
         registration.addEventListener('updatefound', handleUpdateFound);

@@ -7,10 +7,13 @@ import { visualizer } from "rollup-plugin-visualizer";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "localhost",
     port: 8080,
-    // Fix HMR issues with React hooks
+    // Fix HMR issues with React hooks and WebSocket connection
     hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 8080,
       overlay: true,
     },
   },

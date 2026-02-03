@@ -44,34 +44,51 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
   // Add retry logic for better reliability
   global: {
     headers: { 'x-client-info': 'fleetify-web' },
-    fetch: async (url, options, retries = 2, delay = 1000) => {
+    fetch: async (url, options, retries = 1, delay = 500) => {
       // Add timeout to prevent hanging requests with retry logic
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-          const timeoutMs = 25000; // Increased to 25s for slow networks
-          const response = await Promise.race([
-            fetch(url, options),
-            new Promise((_, reject) =>
-              setTimeout(() => {
-                console.warn(`[SUPABASE] Attempt ${attempt + 1}: Request timed out after ${timeoutMs}ms:`, url);
-                reject(new Error('Request timeout'));
-              }, timeoutMs)
-            )
-          ]);
+          // Reduced timeout for faster failure detection
+          const timeoutMs = 10000; // 10s timeout (reduced from 25s)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
 
-          if (response.ok || attempt === retries - 1) {
+          // Return response if successful or if this is the last attempt
+          if (response.ok || attempt === retries) {
             return response;
           }
-        } catch (error) {
-          if (attempt === retries - 1) {
-            console.error(`[SUPABASE] All ${retries} attempts failed for:`, url);
+          
+          // If not successful and not last attempt, retry
+          throw new Error(`HTTP ${response.status}`);
+        } catch (error: any) {
+          // Log timeout warnings only in dev mode
+          if (import.meta.env.DEV && error?.name === 'AbortError') {
+            console.warn(`[SUPABASE] Attempt ${attempt + 1}: Request timed out after 10s:`, url);
+          }
+          
+          // If this is the last attempt, throw the error
+          if (attempt === retries) {
+            if (import.meta.env.DEV) {
+              console.error(`[SUPABASE] All ${retries + 1} attempts failed for:`, url);
+            }
             throw error;
           }
-          console.warn(`[SUPABASE] Attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error);
+          
+          // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2; // Exponential backoff
+          delay *= 1.5; // Moderate exponential backoff
         }
       }
+      
+      // This should never be reached, but TypeScript needs it
+      throw new Error('Unexpected fetch error');
     },
   },
   // Realtime configuration for better performance

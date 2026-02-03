@@ -55,11 +55,13 @@ export const CompanyContextProvider: React.FC<CompanyContextProviderProps> = ({ 
     
     // Only invalidate if we have a valid ID change
     if (currentId && prevId !== currentId) {
-      console.log('🔄 [COMPANY_CONTEXT] Company context changed, invalidating queries...', {
-        prevId,
-        newId: currentId,
-        reason: browsedCompany ? 'browsing' : 'user_company'
-      });
+      if (import.meta.env.DEV) {
+        console.log('🔄 [COMPANY_CONTEXT] Company context changed, invalidating queries...', {
+          prevId,
+          newId: currentId,
+          reason: browsedCompany ? 'browsing' : 'user_company'
+        });
+      }
       
       // Invalidate all queries to force refetch with the new companyId
       // Using a small delay to ensure state has propagated
@@ -101,13 +103,15 @@ export const CompanyContextProvider: React.FC<CompanyContextProviderProps> = ({ 
 
   const isBrowsingMode = browsedCompany !== null;
   
-  // Log current state changes
+  // Log current state changes (only in dev)
   useEffect(() => {
-    console.log('🏢 [COMPANY_CONTEXT] State changed:', {
-      isBrowsingMode,
-      browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
-      user: user?.id
-    });
+    if (import.meta.env.DEV) {
+      console.log('🏢 [COMPANY_CONTEXT] State changed:', {
+        isBrowsingMode,
+        browsedCompany: browsedCompany ? { id: browsedCompany.id, name: browsedCompany.name } : null,
+        user: user?.id
+      });
+    }
   }, [isBrowsingMode, browsedCompany, user]);
 
   const value: CompanyContextType = {
