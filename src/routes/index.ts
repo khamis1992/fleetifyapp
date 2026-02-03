@@ -22,6 +22,7 @@ import NotFound from '@/pages/NotFound';
 const AboutUs = lazy(() => import('@/pages/AboutUs'));
 const Careers = lazy(() => import('@/pages/Careers'));
 const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
+const DiagnosticsPage = lazy(() => import('@/pages/DiagnosticsPage'));
 
 // Demo pages - lazy loaded
 const HeroDemo = lazy(() => import('@/pages/HeroDemo'));
@@ -307,6 +308,17 @@ const routeConfigs: RouteConfig[] = [
     description: 'Help and support center',
     group: 'public',
     priority: 3,
+  },
+  {
+    path: '/diagnostics',
+    component: DiagnosticsPage,
+    lazy: true,
+    exact: true,
+    title: 'System Diagnostics',
+    description: 'System diagnostics and troubleshooting',
+    group: 'public',
+    priority: 3,
+    protected: false,
   },
 
   // === Demo Routes ===
