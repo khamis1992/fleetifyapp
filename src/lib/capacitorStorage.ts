@@ -12,25 +12,36 @@
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 
-// Cache prefix for native storage sync
-const CACHE_PREFIX = '__capacitor_cache_';
+// REMOVED: No longer using cache prefix - using exact key names for Supabase compatibility
+// const CACHE_PREFIX = '__capacitor_cache_';
 
 class CapacitorStorageAdapter {
   private isNative: boolean;
+  private syncPromise: Promise<void> | null = null;
   
   constructor() {
     this.isNative = Capacitor.isNativePlatform();
     
     // On native, sync cached values from Preferences to localStorage on init
     if (this.isNative) {
-      this.syncFromPreferences();
+      // Store the sync promise so we can wait for it if needed
+      this.syncPromise = this.syncFromPreferences();
+    }
+  }
+  
+  /**
+   * Wait for initial sync to complete (useful for ensuring auth data is loaded)
+   */
+  async waitForSync(): Promise<void> {
+    if (this.syncPromise) {
+      await this.syncPromise;
     }
   }
   
   /**
    * Sync values from Preferences to localStorage cache (for native platforms)
    * This runs once on startup to ensure synchronous access works
-   * FIXED: Now syncs ALL Preferences keys to localStorage for complete compatibility
+   * FIXED: Now syncs WITHOUT prefix for Supabase compatibility
    */
   private async syncFromPreferences(): Promise<void> {
     try {
@@ -40,16 +51,17 @@ class CapacitorStorageAdapter {
       const { keys } = await Preferences.keys();
       console.log('[CapacitorStorage] Found', keys.length, 'keys in Preferences');
       
-      // Sync all keys to localStorage cache
+      // Sync all keys to localStorage WITHOUT prefix
       for (const key of keys) {
         const { value } = await Preferences.get({ key });
         if (value) {
-          localStorage.setItem(CACHE_PREFIX + key, value);
+          // CRITICAL: Don't use prefix - use exact key names
+          localStorage.setItem(key, value);
           console.log('[CapacitorStorage] Synced key:', key);
         }
       }
       
-      console.log('[CapacitorStorage] Sync complete');
+      console.log('[CapacitorStorage] Sync complete - localStorage now has', keys.length, 'keys');
     } catch (error) {
       console.error('[CapacitorStorage] Error syncing from Preferences:', error);
     }
@@ -60,11 +72,8 @@ class CapacitorStorageAdapter {
    * Uses localStorage directly (or cached values from Preferences on native)
    */
   getItem(key: string): string | null {
-    // Always use localStorage for synchronous access
-    // On native, we sync Preferences to localStorage cache
-    if (this.isNative) {
-      return localStorage.getItem(CACHE_PREFIX + key);
-    }
+    // CRITICAL FIX: Don't use prefix for auth keys to maintain compatibility
+    // Supabase expects the exact key names (e.g., 'sb-alaraf-auth-token')
     return localStorage.getItem(key);
   }
 
@@ -80,10 +89,10 @@ class CapacitorStorageAdapter {
       return;
     }
     
-    // CRITICAL FIX: Update localStorage cache FIRST for immediate synchronous access
-    // This ensures getItem() can retrieve the value immediately after setItem()
-    localStorage.setItem(CACHE_PREFIX + key, value);
-    console.log('[CapacitorStorage] Set item in cache:', key);
+    // CRITICAL FIX: Update localStorage WITHOUT prefix for Supabase compatibility
+    // Supabase expects exact key names (e.g., 'sb-alaraf-auth-token')
+    localStorage.setItem(key, value);
+    console.log('[CapacitorStorage] Set item in localStorage:', key);
     
     // Then save to Preferences asynchronously (don't block)
     try {
@@ -106,9 +115,9 @@ class CapacitorStorageAdapter {
       return;
     }
     
-    // CRITICAL FIX: Remove from localStorage cache FIRST for immediate effect
-    localStorage.removeItem(CACHE_PREFIX + key);
-    console.log('[CapacitorStorage] Removed item from cache:', key);
+    // CRITICAL FIX: Remove from localStorage WITHOUT prefix for Supabase compatibility
+    localStorage.removeItem(key);
+    console.log('[CapacitorStorage] Removed item from localStorage:', key);
     
     // Then remove from Preferences asynchronously (don't block)
     try {

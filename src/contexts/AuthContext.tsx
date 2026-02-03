@@ -4,6 +4,7 @@ import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser, AuthContextType, authService } from '@/lib/auth';
+import { capacitorStorage } from '@/lib/capacitorStorage';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -261,14 +262,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isInitialized.current = true;
 
     try {
+      // CRITICAL: On native platforms, wait for Capacitor Storage to sync
+      // This ensures auth tokens are loaded from Preferences to localStorage
+      if (Capacitor.isNativePlatform()) {
+        console.log('📱 [AUTH_CONTEXT] Native platform detected - waiting for storage sync...');
+        await capacitorStorage.waitForSync();
+        console.log('✅ [AUTH_CONTEXT] Storage sync complete');
+      }
+      
       // 🚀 OPTIMIZATION: Check if we even have a token in localStorage before calling getSession
       // This avoids the 5-8s timeout if the user is definitely not logged in
       // Use the correct Supabase storage key pattern
       const hasToken = typeof window !== 'undefined' && (() => {
         // Check for any Supabase auth token (pattern: sb-*-auth-token)
         const keys = Object.keys(localStorage);
-        return keys.some(key => key.startsWith('sb-') && key.includes('-auth-token')) || 
+        const foundToken = keys.some(key => key.startsWith('sb-') && key.includes('-auth-token')) || 
                localStorage.getItem('fleetify_auth_cache');
+        
+        if (Capacitor.isNativePlatform()) {
+          console.log('📱 [AUTH_CONTEXT] Token check on native:', {
+            foundToken,
+            localStorageKeys: keys.filter(k => k.startsWith('sb-')),
+            hasCache: !!localStorage.getItem('fleetify_auth_cache')
+          });
+        }
+        
+        return foundToken;
       })();
       
       if (!hasToken && !window.location.hash.includes('access_token')) {
