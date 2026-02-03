@@ -1087,7 +1087,7 @@ const InvoicesTab = ({
                   <tr>
                     <td style="text-align: center;">${index + 1}</td>
                     <td>${invoice.invoice_number || 'INV-' + (invoice.id?.substring(0, 8) || '-')}</td>
-                    <td>${invoice.created_at ? format(new Date(invoice.created_at), 'dd/MM/yyyy') : '-'}</td>
+                    <td>${invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : '-'}</td>
                     <td>${invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}</td>
                     <td>${(invoice.total_amount || 0).toLocaleString()} ر.ق</td>
                     <td>${(invoice.paid_amount || 0).toLocaleString()} ر.ق</td>
@@ -1276,7 +1276,7 @@ const InvoicesTab = ({
                   <div>
                     <p className="font-bold text-slate-900">{invoice.invoice_number || `INV-${invoice.id.substring(0, 8)}`}</p>
                     <p className="text-xs text-slate-600">
-                      {invoice.created_at ? format(new Date(invoice.created_at), 'dd/MM/yyyy') : '-'}
+                      {invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}
                     </p>
                   </div>
                 </div>

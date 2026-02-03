@@ -1,5 +1,5 @@
 // SECURITY FIX: Removed @ts-nocheck and added proper TypeScript types
-import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, useMemo, ReactNode, useRef } from 'react';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from "@/integrations/supabase/client";
@@ -732,7 +732,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-    const value: AuthContextType = {
+  // OPTIMIZATION: Memoize context value to prevent unnecessary re-renders
+  const value = useMemo<AuthContextType>(() => ({
     user,
     session,
     loading: loading, // Use state value for render
@@ -745,7 +746,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     validateSession,
     refreshUser,
     forceRefreshUserData
-  };
+  }), [
+    user,
+    session,
+    loading,
+    sessionError,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
+    changePassword,
+    validateSession,
+    refreshUser,
+    forceRefreshUserData
+  ]);
 
   return (
     <AuthContext.Provider value={value}>

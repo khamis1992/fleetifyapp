@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { usePermissionCheck } from './usePermissionCheck';
-import { useFeatureAccess } from './useFeatureAccess';
+import { usePermissionsCheck, usePermissionCheck } from './usePermissionCheck';
+import { useFeaturesAccess, useFeatureAccess } from './useFeatureAccess';
 import { useUnifiedCompanyAccess } from './useUnifiedCompanyAccess';
 
 interface UsePermissionsOptions {
@@ -20,27 +20,21 @@ export const usePermissions = (options: UsePermissionsOptions = {}) => {
 
   const { hasCompanyAdminAccess, hasGlobalAccess } = useUnifiedCompanyAccess();
 
-  // Check permissions
-  const permissionQueries = permissions.map(permission => 
-    usePermissionCheck(permission)
-  );
+  // Check permissions using batch hook (avoids calling hooks in loops)
+  const { data: permissionResults, isLoading: permissionsLoading } = usePermissionsCheck(permissions);
 
-  // Check features
-  const featureQueries = features.map(feature => 
-    useFeatureAccess(feature)
-  );
+  // Check features using batch hook (avoids calling hooks in loops)
+  const { data: featureResults, isLoading: featuresLoading } = useFeaturesAccess(features);
 
   return useMemo(() => {
-    const isLoading = permissionQueries.some(q => q.isLoading) || 
-                     featureQueries.some(q => q.isLoading);
+    const isLoading = permissionsLoading || featuresLoading;
 
     // دالة hasPermission للتحقق من صلاحية معينة
-    // ملاحظة: هذه الدالة تُرجع true دائماً للتوافق مع الكود الحالي
-    // يمكن تحسينها لاحقاً لاستخدام نظام الصلاحيات الفعلي
-    const hasPermission = (_permission: string): boolean => {
-      // للتوافق مع الكود الحالي، نسمح بجميع الصلاحيات
-      // TODO: تفعيل التحقق الفعلي من الصلاحيات عند الحاجة
-      return true;
+    // FIXED: Now uses actual permission checking instead of always returning true
+    const hasPermission = (permission: string): boolean => {
+      if (!permissionResults) return false;
+      const result = permissionResults.find(p => p.permissionId === permission);
+      return result?.hasPermission ?? false;
     };
 
     if (isLoading) {
@@ -57,22 +51,22 @@ export const usePermissions = (options: UsePermissionsOptions = {}) => {
     }
 
     // Check all permissions
-    const hasAllPermissions = permissions.length === 0 || 
-      permissionQueries.every(query => query.data?.hasPermission);
+    const hasAllPermissions = permissions.length === 0 ||
+      permissionResults?.every(result => result.hasPermission);
 
     if (!hasAllPermissions) {
-      const failedPermission = permissionQueries.find(query => !query.data?.hasPermission);
-      return { 
-        hasAccess: false, 
-        isLoading: false, 
-        reason: failedPermission?.data?.reason || 'no_permission',
+      const failedPermission = permissionResults?.find(result => !result.hasPermission);
+      return {
+        hasAccess: false,
+        isLoading: false,
+        reason: failedPermission?.reason || 'no_permission',
         hasPermission
       };
     }
 
     // Check all features
-    const hasAllFeatures = features.length === 0 || 
-      featureQueries.every(query => query.data === true);
+    const hasAllFeatures = features.length === 0 ||
+      featureResults?.every(result => result.hasAccess);
 
     if (!hasAllFeatures) {
       return { hasAccess: false, isLoading: false, reason: 'feature_locked', hasPermission };
@@ -80,8 +74,10 @@ export const usePermissions = (options: UsePermissionsOptions = {}) => {
 
     return { hasAccess: true, isLoading: false, hasPermission };
   }, [
-    permissionQueries,
-    featureQueries,
+    permissionResults,
+    featureResults,
+    permissionsLoading,
+    featuresLoading,
     hasCompanyAdminAccess,
     hasGlobalAccess,
     requireCompanyAdmin,

@@ -104,18 +104,17 @@ const createQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Performance optimizations
-        refetchOnMount: 'always', // MULTI-TAB FIX: Force refetch to ensure fresh data
-        refetchOnWindowFocus: true, // MULTI-TAB FIX: Refetch when switching between tabs
+        // Performance optimizations - FIXED: Less aggressive refetching
+        refetchOnMount: true, // Changed from 'always' to true to reduce unnecessary refetches
+        refetchOnWindowFocus: false, // DISABLED: Prevents excessive refetching when switching tabs
         refetchOnReconnect: true,
 
-        // Cache configuration - optimized for multi-tab support
-        staleTime: 1 * 60 * 1000, // REDUCED: 1 minute stale time to reduce conflicts
-        gcTime: 5 * 60 * 1000, // REDUCED: 5 minutes garbage collection time
+        // Cache configuration - optimized for better performance
+        staleTime: 5 * 60 * 1000, // INCREASED: 5 minutes stale time to reduce API calls
+        gcTime: 10 * 60 * 1000, // INCREASED: 10 minutes garbage collection time
 
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
-        _default: true,
 
         // Retry configuration
         retry: (failureCount, error: any) => {

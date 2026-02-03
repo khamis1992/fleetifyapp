@@ -686,7 +686,7 @@ export function CustomerSidePanel({
                                 {invoice.invoice_number || '#' + invoice.id.substring(0, 8)}
                               </p>
                               <p className="text-xs text-slate-500">
-                                {format(new Date(invoice.created_at), 'dd/MM/yyyy')}
+                                {invoice.invoice_date ? format(new Date(invoice.invoice_date), 'dd/MM/yyyy') : invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : '-'}
                               </p>
                             </div>
                             <div className="text-left">

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 /**
  * Finance Context
@@ -14,6 +14,16 @@ export type FinanceWorkflow =
   | 'month_end_close'
   | null;
 
+// Context data type definition
+export type FinanceContextData = {
+  customerId?: string;
+  customerName?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  lastAmount?: number;
+  lastAccount?: string;
+};
+
 interface FinanceContextState {
   // User Role
   userRole: FinanceRole;
@@ -27,15 +37,9 @@ interface FinanceContextState {
   clearWorkflow: () => void;
 
   // Context (للحفاظ على السياق عند التنقل)
-  context: {
-    customerId?: string;
-    customerName?: string;
-    invoiceId?: string;
-    invoiceNumber?: string;
-    lastAmount?: number;
-    lastAccount?: string;
-  };
-  updateContext: (newContext: Partial<typeof context>) => void;
+  context: FinanceContextData;
+
+  updateContext: (newContext: Partial<FinanceContextData>) => void;
   clearContext: () => void;
 
   // Recent Activities
@@ -95,7 +99,8 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
   }, []);
 
-  const value: FinanceContextState = {
+  // OPTIMIZATION: Memoize context value to prevent unnecessary re-renders
+  const value = useMemo<FinanceContextState>(() => ({
     userRole,
     setUserRole,
     currentWorkflow,
@@ -110,7 +115,20 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     addActivity,
     frequentAccounts,
     updateFrequentAccounts,
-  };
+  }), [
+    userRole,
+    currentWorkflow,
+    workflowData,
+    context,
+    recentActivities,
+    frequentAccounts,
+    updateWorkflowData,
+    clearWorkflow,
+    updateContext,
+    clearContext,
+    addActivity,
+    updateFrequentAccounts,
+  ]);
 
   return (
     <FinanceContext.Provider value={value}>

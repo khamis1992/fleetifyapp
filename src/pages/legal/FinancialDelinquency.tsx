@@ -316,7 +316,7 @@ interface CustomerCardProps {
   verificationStatus?: { status: string; verifier_name?: string | null };
 }
 
-const CustomerCard: React.FC<CustomerCardProps> = ({
+const CustomerCard = React.forwardRef<HTMLDivElement, CustomerCardProps>(({
   customer,
   index,
   isSelected,
@@ -328,12 +328,13 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   onConvertToCase,
   isGenerated,
   verificationStatus,
-}) => {
+}, ref) => {
   const navigate = useNavigate();
   const riskColor = getRiskColor(customer.risk_level || 'LOW');
   
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 20, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -585,7 +586,9 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       </div>
     </motion.div>
   );
-};
+});
+
+CustomerCard.displayName = 'CustomerCard';
 
 /**
  * بطاقة عقد متأخر
@@ -596,13 +599,14 @@ interface ContractCardProps {
   onViewLawsuit: () => void;
 }
 
-const ContractCard: React.FC<ContractCardProps> = ({ contract, index, onViewLawsuit }) => {
+const ContractCard = React.forwardRef<HTMLDivElement, ContractCardProps>(({ contract, index, onViewLawsuit }, ref) => {
   const isCritical = (contract.days_overdue || 0) > 90;
   const isHigh = (contract.days_overdue || 0) > 60;
   const color = isCritical ? colors.destructive : isHigh ? colors.accentForeground : colors.primary;
   
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -692,7 +696,9 @@ const ContractCard: React.FC<ContractCardProps> = ({ contract, index, onViewLaws
       </div>
     </motion.div>
   );
-};
+});
+
+ContractCard.displayName = 'ContractCard';
 
 // ===== Main Page Component =====
 const FinancialDelinquencyPage: React.FC = () => {
@@ -1921,12 +1927,12 @@ const FinancialDelinquencyPage: React.FC = () => {
                       <AnimatePresence mode="popLayout">
                         {paginatedCustomers.map((customer, index) => (
                           <CustomerCard
-                            key={customer.customer_id}
+                            key={`${customer.customer_id}-${customer.contract_id}`}
                             customer={customer}
                             index={index}
                             isSelected={selectedIds.has(customer.customer_id)}
                             onSelect={(checked) => handleSelectCustomer(customer, checked)}
-                            onViewDetails={() => { toast.info(`عرض تفاصيل ${customer.customer_name}`); }}
+                            onViewDetails={() => navigate(`/customers/${customer.customer_id}`)}
                             onRecordPayment={() => navigate(`/finance/payments/quick?customerId=${customer.customer_id}`)}
                             onSendWarning={() => { toast.info(`إرسال إنذار لـ ${customer.customer_name}`); }}
                             onCreateCase={() => navigate(`/legal/lawsuit/prepare/${customer.contract_id}`)}
@@ -1961,7 +1967,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                         </TableHeader>
                         <TableBody>
                           {paginatedCustomers.map((customer) => (
-                            <TableRow key={customer.customer_id}>
+                            <TableRow key={`${customer.customer_id}-${customer.contract_id}`}>
                               <TableCell>
                                 <Checkbox
                                   checked={selectedIds.has(customer.customer_id)}
@@ -1995,7 +2001,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                               </TableCell>
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
-                                  <Button variant="ghost" size="icon" onClick={() => { toast.info(`عرض تفاصيل ${customer.customer_name}`); }}>
+                                  <Button variant="ghost" size="icon" onClick={() => navigate(`/customers/${customer.customer_id}`)}>
                                     <Eye className="w-4 h-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" onClick={() => navigate(`/finance/payments/quick?customerId=${customer.customer_id}`)}>
@@ -2032,11 +2038,11 @@ const FinancialDelinquencyPage: React.FC = () => {
                             <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto">
                               {groupCustomers.slice(0, 10).map((customer) => (
                                 <motion.div
-                                  key={customer.customer_id}
+                                  key={`${customer.customer_id}-${customer.contract_id}`}
                                   whileHover={{ scale: 1.02 }}
                                   className="p-3 rounded-xl border cursor-pointer"
                                   style={{ borderColor: `hsl(${levelColor} / 0.2)` }}
-                                  onClick={() => { toast.info(`عرض تفاصيل ${customer.customer_name}`); }}
+                                  onClick={() => navigate(`/customers/${customer.customer_id}`)}
                                 >
                                   <p className="font-semibold text-sm">{customer.customer_name}</p>
                                   <p className="text-xs text-muted-foreground">{customer.contract_number}</p>

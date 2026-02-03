@@ -121,14 +121,20 @@ export function createQueryClient() {
 }
 
 // Singleton query client instance
-let queryClient: QueryClient | null = null;
+let queryClientInstance: QueryClient | null = null;
 
 export function getQueryClient() {
-  if (!queryClient) {
-    queryClient = createQueryClient();
+  if (!queryClientInstance) {
+    queryClientInstance = createQueryClient();
   }
-  return queryClient;
+  return queryClientInstance;
 }
+
+// Export singleton instance for backward compatibility
+export const queryClient = getQueryClient();
+
+// Export type for query keys
+export type QueryKeysType = typeof queryKeys;
 
 // Prefetch utilities
 export async function prefetchDashboardData(companyId: string) {
