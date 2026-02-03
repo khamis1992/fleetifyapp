@@ -118,23 +118,23 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
       
-      let baseQuery = (supabase
+      let baseQuery = supabase
         .from('contracts')
         .select(`
           *,
           customer:customers(first_name, last_name, company_name, customer_type, phone, email),
           vehicle:vehicles(plate_number, make, model, year),
           cost_center:cost_centers(center_name, center_code)
-        `) as any)
+        `)
         .eq('company_id', user.profile.company_id);
 
       // Status Filter Logic (Multiple)
       if (selectedStatuses.length > 0) {
-        baseQuery = baseQuery.in('status', selectedStatuses as any);
+        baseQuery = baseQuery.in('status', selectedStatuses);
       }
       
       if (contractType !== 'all') {
-        baseQuery = baseQuery.eq('contract_type', contractType as any);
+        baseQuery = baseQuery.eq('contract_type', contractType);
       }
 
       if (dateRange === 'custom' && customStartDate && customEndDate) {

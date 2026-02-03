@@ -35,7 +35,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   showFallback = false
 }) => {
   const { user, loading } = useAuth();
-  const { isInitializing } = useCompanyIdWithInit();
+  const { companyId, isInitializing } = useCompanyIdWithInit();
   const location = useLocation();
   const [hasTimedOut, setHasTimedOut] = React.useState(false);
 

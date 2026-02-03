@@ -23,12 +23,12 @@ const Auth: React.FC = () => {
 
   // Prevent redirect loop in development
   useEffect(() => {
-    console.log('🔍 [AUTH_PAGE] useEffect triggered - user:', !!user, 'loading:', loading, 'hasRedirected:', hasRedirected);
-    if (user && !loading && !hasRedirected) {
+    console.log('🔍 [AUTH_PAGE] useEffect triggered - user:', !!user, 'hasRedirected:', hasRedirected);
+    if (user && !hasRedirected) {
       setHasRedirected(true);
-      console.log('✅ [AUTH] User authenticated, will redirect to dashboard via Navigate component');
+      console.log('✅ [AUTH] User authenticated, redirecting to dashboard');
     }
-  }, [user, loading, hasRedirected]);
+  }, [user, hasRedirected]);
 
   // Safety timeout for loading state - reduced to 3s for better UX
   useEffect(() => {
@@ -107,19 +107,12 @@ const Auth: React.FC = () => {
     );
   }
 
-  // CRITICAL: Redirect immediately when user is authenticated and not loading
-  if (user && !loading) {
+  if (user) {
     console.log('✅ [AUTH] Redirecting authenticated user to dashboard - user:', user.email);
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Show auth form only when not loading and no user
-  if (!loading && !user) {
-    return <AuthForm />;
-  }
-
-  // This should not be reached, but just in case
-  return null;
+  return <AuthForm />;
 };
 
 export default Auth;

@@ -255,7 +255,7 @@ export function useDeduplicatedFetch() {
 
         return response.json();
       });
-    },
+    }),
 
     invalidate: (keyOrPattern: string | RegExp) => {
       requestDeduplication.invalidate(keyOrPattern);

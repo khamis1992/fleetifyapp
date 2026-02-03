@@ -25,7 +25,8 @@ import {
   ChevronLeft,
   Copy,
   Building,
-  // FileText, TrendingUp - unused for now
+  FileText,
+  TrendingUp,
   Wallet,
   AlertCircle,
   CheckCircle2,

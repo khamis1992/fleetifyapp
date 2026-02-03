@@ -30,7 +30,7 @@ export const ContractsList: React.FC<ContractsListProps> = ({
   hasFilters,
   hasContracts
 }) => {
-  useSimpleBreakpoint(); // Hook kept for potential future responsive logic
+  const { isMobile } = useSimpleBreakpoint();
 
   // Ensure contracts is an array
   const safeContracts = Array.isArray(contracts) ? contracts : [];

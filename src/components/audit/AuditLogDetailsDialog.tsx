@@ -2,6 +2,8 @@
  * Audit Log Details Dialog
  * Shows comprehensive details for a single audit log entry
  */
+
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,11 +18,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   User,
+  Calendar,
+  Globe,
   Shield,
   AlertTriangle,
   Activity,
   FileText,
   DollarSign,
+  Hash,
   CheckCircle,
   XCircle,
   Clock,
@@ -28,6 +33,7 @@ import {
 } from 'lucide-react';
 import { FinancialAuditLog } from '@/types/auditLog';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface AuditLogDetailsDialogProps {
   log: FinancialAuditLog;
@@ -163,8 +169,8 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">Severity:</span>
-                        <Badge className={getSeverityColor(log.severity || 'low')}>
-                          {log.severity?.toUpperCase() || 'LOW'}
+                        <Badge className={getSeverityColor(log.severity)}>
+                          {log.severity?.toUpperCase()}
                         </Badge>
                       </div>
                     </CardContent>

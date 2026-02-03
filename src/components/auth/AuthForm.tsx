@@ -112,9 +112,6 @@ export const AuthForm: FC = () => {
           title: "مرحباً بك",
           description: "تم تسجيل الدخول بنجاح",
         });
-        // FIXED: Don't navigate here - let Auth.tsx handle navigation after user state updates
-        // This prevents the issue where navigation happens before AuthContext updates user state
-        console.log('✅ [AuthForm] Login successful, waiting for Auth.tsx to redirect...');
       }
     } catch (error) {
       toast({
@@ -159,7 +156,7 @@ export const AuthForm: FC = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as const }
+      transition: { duration: 0.5, ease: "easeOut" }
     }
   };
 
@@ -169,7 +166,7 @@ export const AuthForm: FC = () => {
     transition: {
       duration: 3,
       repeat: Infinity,
-      ease: [0.4, 0, 0.6, 1] as const
+      ease: "easeInOut"
     }
   };
 

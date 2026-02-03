@@ -4,12 +4,15 @@
  */
 
 import { useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertTriangle,
+  AlertCircle,
   Clock,
   CheckCircle2,
+  TrendingDown,
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -24,6 +27,7 @@ interface ContractAlertsProps {
 export const ContractAlerts = ({
   contract,
   trafficViolationsCount = 0,
+  formatCurrency,
 }: ContractAlertsProps) => {
   const alerts = useMemo(() => {
     const alertsList: Array<{
@@ -67,8 +71,8 @@ export const ContractAlerts = ({
       }
     }
 
-    // تنبيه: حالة قانونية (استخدام legal_status بدلاً من status)
-    if (contract.legal_status === 'under_legal_action' || contract.legal_status === 'legal_case_filed') {
+    // تنبيه: حالة قانونية
+    if (contract.status === 'under_legal_procedure') {
       alertsList.push({
         type: 'error',
         icon: <AlertTriangle className="w-4 h-4" />,
@@ -80,7 +84,7 @@ export const ContractAlerts = ({
 
     // نجاح: جميع الدفعات مكتملة
     const remaining = (contract.contract_amount || 0) - (contract.total_paid || 0);
-    if (remaining <= 0 && contract.status !== 'cancelled') {
+    if (remaining <= 0 && contract.status !== 'terminated' && contract.status !== 'cancelled') {
       alertsList.push({
         type: 'success',
         icon: <CheckCircle2 className="w-4 h-4" />,
@@ -92,7 +96,7 @@ export const ContractAlerts = ({
 
     // ترتيب التنبيهات حسب الأهمية
     return alertsList.sort((a, b) => b.severity - a.severity);
-  }, [contract, trafficViolationsCount]);
+  }, [contract, trafficViolationsCount, formatCurrency]);
 
   if (alerts.length === 0) {
     return null;

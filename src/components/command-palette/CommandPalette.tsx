@@ -12,6 +12,7 @@ import {
   Settings,
   BarChart3,
   Package,
+  TrendingUp,
   Calculator,
   Building,
   FileSpreadsheet,

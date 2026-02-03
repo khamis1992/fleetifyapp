@@ -88,7 +88,7 @@ export const ContractExpirationAlerts: React.FC<ContractExpirationAlertsProps> =
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {expiringContracts.map((contract: any) => {
+        {expiringContracts.map((contract) => {
           const daysUntilExpiry = getDaysUntilExpiry(contract.end_date);
           const customer = contract.customer as any;
           const customerName = Array.isArray(customer) || !customer ? 'غير محدد' :

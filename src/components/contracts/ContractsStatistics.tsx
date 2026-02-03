@@ -1,8 +1,9 @@
 import React from 'react';
-import { CheckCircle, Clock, DollarSign, AlertTriangle, Scale, FileText } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, DollarSign, Eye, AlertTriangle, Scale, ShieldAlert, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { StatCardNumber } from '@/components/ui/NumberDisplay';
+import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 interface ContractsStatisticsProps {
@@ -25,9 +26,8 @@ export const ContractsStatistics: React.FC<ContractsStatisticsProps> = ({
   totalRevenue,
   activeWithLegalCount = 0,
   legalTotalCount = 0,
-  cancelledWithLegalCount: _cancelledWithLegalCount = 0
+  cancelledWithLegalCount = 0
 }) => {
-  void _cancelledWithLegalCount; // Reserved for future use
   const { formatCurrency } = useCurrencyFormatter();
   const formattedRevenue = formatCurrency(totalRevenue);
 

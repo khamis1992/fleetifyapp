@@ -9,21 +9,32 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import FeedbackForm from './FeedbackForm';
 import { LazyImage } from '@/components/common/LazyImage';
 import {
   TestTube,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
+  TrendingUp,
   FileText,
+  Users,
   Target,
   Clock,
   BarChart3,
   Download,
   Upload,
+  Eye,
+  ThumbsUp,
+  ThumbsDown,
   Flag,
   MessageSquare
 } from 'lucide-react';
@@ -517,7 +528,7 @@ const RealWorldTestingInfrastructure: React.FC = () => {
                   )}
                 </Button>
 
-                <Select value={selectedDifficulty} onValueChange={(value) => setSelectedDifficulty(value as 'all' | 'easy' | 'medium' | 'hard')}>
+                <Select value={selectedDifficulty} onValueChange={(value: unknown) => setSelectedDifficulty(value)}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>

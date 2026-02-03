@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Camera, Upload, FileText, Loader2, CheckCircle, AlertCircle, Scan } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast-mock';
 import { useContractOCR } from '@/hooks/useContractOCR';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -37,10 +37,8 @@ export const ContractScannerDialog: React.FC<ContractScannerDialogProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'يرجى اختيار ملف صورة',
-          description: 'الصيغ المدعومة: JPG, PNG, HEIC',
-          variant: 'destructive'
+        toast.error('يرجى اختيار ملف صورة', {
+          description: 'الصيغ المدعومة: JPG, PNG, HEIC'
         });
         return;
       }
@@ -53,7 +51,7 @@ export const ContractScannerDialog: React.FC<ContractScannerDialogProps> = ({
 
   const handleScan = async () => {
     if (!selectedFile) {
-      toast({ title: 'يرجى اختيار صورة أولاً', variant: 'destructive' });
+      toast.error('يرجى اختيار صورة أولاً');
       return;
     }
 
@@ -61,8 +59,7 @@ export const ContractScannerDialog: React.FC<ContractScannerDialogProps> = ({
       const result = await extractContractData(selectedFile);
       
       if (result.success && result.data) {
-        toast({
-          title: 'تم استخراج البيانات بنجاح!',
+        toast.success('تم استخراج البيانات بنجاح!', {
           description: `معدل الثقة: ${result.confidence}%`
         });
         
@@ -75,15 +72,13 @@ export const ContractScannerDialog: React.FC<ContractScannerDialogProps> = ({
           reset();
         }, 1000);
       } else {
-        toast({
-          title: 'فشل في استخراج البيانات',
-          description: result.error || 'حاول مرة أخرى',
-          variant: 'destructive'
+        toast.error('فشل في استخراج البيانات', {
+          description: result.error || 'حاول مرة أخرى'
         });
       }
     } catch (err) {
       console.error('Scan error:', err);
-      toast({ title: 'حدث خطأ أثناء المسح', variant: 'destructive' });
+      toast.error('حدث خطأ أثناء المسح');
     }
   };
 

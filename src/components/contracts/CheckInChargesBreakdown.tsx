@@ -100,7 +100,7 @@ interface CheckInChargesBreakdownProps {
  * Part of K1 Fix #213 - Make check-in calculations transparent
  */
 export const CheckInChargesBreakdown: React.FC<CheckInChargesBreakdownProps> = ({
-  inspectionComparison: _inspectionComparison,
+  inspectionComparison,
   fuelCharge,
   mileageCharge,
   damageCharges = [],

@@ -39,22 +39,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create production .env file
-        run: |
-          cat > .env << EOF
-          VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_SUPABASE_PROJECT_ID=${{ secrets.VITE_SUPABASE_PROJECT_ID }}
-          VITE_API_URL=${{ secrets.VITE_API_URL }}
-          VITE_APP_VERSION=1.0.0
-          VITE_API_TIMEOUT=30000
-          VITE_ENABLE_ANALYTICS=true
-          VITE_API_PERFORMANCE_OPTIMIZATIONS=true
-          VITE_PERFORMANCE_MONITORING_ENABLED=true
-          VITE_MONITORING_ENABLED=true
-          VITE_ENCRYPTION_SECRET=${{ secrets.VITE_ENCRYPTION_SECRET }}
-          EOF
-
       - name: Build web app
         run: npm run build:ci
 

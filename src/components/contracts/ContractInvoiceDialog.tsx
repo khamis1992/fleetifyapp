@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, DollarSign, Calendar } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [paymentScheduleCreated, setPaymentScheduleCreated] = React.useState(false);
   
   const { formatCurrency, currency } = useCurrencyFormatter();
   
@@ -64,13 +65,13 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
   });
 
   // Get cost centers for the invoice
-  useQuery({
+  const { data: costCenters } = useQuery({
     queryKey: ['cost-centers', user?.profile?.company_id],
     queryFn: async () => {
       if (!user?.profile?.company_id) return [];
-      const { data } = await (supabase
+      const { data } = await supabase
         .from('cost_centers')
-        .select('*') as any)
+        .select('*')
         .eq('company_id', user.profile.company_id)
         .eq('is_active', true)
         .order('center_name');
@@ -87,7 +88,17 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     return `${prefix}-${timestamp}-${random}`;
   };
 
-  // calculateTotals is defined but not used directly in the component
+  const calculateTotals = () => {
+    const subtotal = invoiceData.items.reduce((sum, item) => sum + item.line_total, 0);
+    const totalTax = invoiceData.items.reduce((sum, item) => sum + item.tax_amount, 0);
+    const total = subtotal + totalTax - invoiceData.discount_amount;
+    
+    return {
+      subtotal,
+      tax_amount: totalTax,
+      total_amount: total
+    };
+  };
 
   const updateItem = (index: number, field: string, value: unknown) => {
     const newItems = [...invoiceData.items];
@@ -104,11 +115,11 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
     setInvoiceData(prev => {
       const updatedData = { ...prev, items: newItems };
       const totals = calculateTotalsFromItems(newItems, prev.discount_amount);
-      return { ...updatedData, subtotal: totals.subtotal, tax_amount: totals.tax_amount, total_amount: totals.total_amount };
+      return { ...updatedData, ...totals };
     });
   };
 
-  const calculateTotalsFromItems = (items: Array<{ line_total: number; tax_amount: number }>, discountAmount: number) => {
+  const calculateTotalsFromItems = (items: unknown[], discountAmount: number) => {
     const subtotal = items.reduce((sum, item) => sum + item.line_total, 0);
     const totalTax = items.reduce((sum, item) => sum + item.tax_amount, 0);
     const total = subtotal + totalTax - discountAmount;
@@ -142,7 +153,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
       setInvoiceData(prev => {
         const newItems = prev.items.filter((_, i) => i !== index);
         const totals = calculateTotalsFromItems(newItems, prev.discount_amount);
-        return { ...prev, items: newItems, subtotal: totals.subtotal, tax_amount: totals.tax_amount, total_amount: totals.total_amount };
+        return { ...prev, items: newItems, ...totals };
       });
     }
   };
@@ -176,10 +187,10 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
       };
 
       // Create the invoice
-      const { data: invoiceResponse, error: invoiceError } = await (supabase
+      const { data: invoiceResponse, error: invoiceError } = await supabase
         .from('invoices')
-        .insert([invoicePayload] as any)
-        .select() as any);
+        .insert([invoicePayload])
+        .select();
 
       if (invoiceError) {
         console.error('Invoice creation error:', invoiceError);
@@ -190,7 +201,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
         throw new Error('Failed to create invoice - no data returned');
       }
 
-      const invoice = invoiceResponse[0] as any;
+      const invoice = invoiceResponse[0];
 
       // Create invoice items
       const itemsToInsert = invoiceData.items.map((item, index) => ({
@@ -205,9 +216,9 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
         cost_center_id: contract.cost_center_id
       }));
 
-      const { error: itemsError } = await (supabase
+      const { error: itemsError } = await supabase
         .from('invoice_items')
-        .insert(itemsToInsert as any) as any);
+        .insert(itemsToInsert);
 
       if (itemsError) throw itemsError;
 
@@ -243,6 +254,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
           }
         ]
       });
+      setPaymentScheduleCreated(false);
 
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -318,6 +330,7 @@ export const ContractInvoiceDialog: React.FC<ContractInvoiceDialogProps> = ({
               totalAmount={invoiceData.total_amount}
               currency={currency}
               onScheduleCreated={() => {
+                setPaymentScheduleCreated(true);
                 toast.success('تم إنشاء جدول الدفع بنجاح');
                 // Invalidate payment schedules queries
                 queryClient.invalidateQueries({ queryKey: ['contract-payment-schedules', contract.id] });

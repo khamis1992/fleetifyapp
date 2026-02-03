@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,14 +9,17 @@ import {
   AlertTriangle, 
   FileText, 
   Trash2, 
+  Eye, 
   CheckCircle, 
   XCircle, 
   Clock,
+  Users,
   BarChart3,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Bug
 } from 'lucide-react';
-import { useDuplicateContracts, useDuplicateContractsSummary, type DuplicateContract } from '@/hooks/useDuplicateContracts';
+import { useDuplicateContracts, useDuplicateContractsSummary, type DuplicateContract, type DuplicateGroup } from '@/hooks/useDuplicateContracts';
 import { useBulkDeleteDuplicateContracts } from '@/hooks/useBulkDeleteDuplicateContracts';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,7 +28,7 @@ import DuplicateContractsDiagnostic from './DuplicateContractsDiagnostic';
 const DuplicateContractsManager = () => {
   const { data: duplicateGroups, isLoading, refetch } = useDuplicateContracts();
   const { data: summary } = useDuplicateContractsSummary();
-  const { bulkDeleteDuplicates, progress } = useBulkDeleteDuplicateContracts();
+  const { bulkDeleteDuplicates, progress, resetProgress } = useBulkDeleteDuplicateContracts();
   
   const [selectedContracts, setSelectedContracts] = useState<Set<string>>(new Set());
   const [filterAction, setFilterAction] = useState<'all' | 'delete_duplicates' | 'manual_review' | 'keep_all'>('all');

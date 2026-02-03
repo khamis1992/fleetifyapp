@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, Download } from 'lucide-react';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
-import { formatDateInGregorian } from '@/utils/dateFormatter';
+import { formatDateInGregorian, formatDateForDocument } from '@/utils/dateFormatter';
 import { ContractVehicleConditionReport } from './ContractVehicleConditionReport';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useSignatureSettings } from '@/hooks/useSignatureSettings';

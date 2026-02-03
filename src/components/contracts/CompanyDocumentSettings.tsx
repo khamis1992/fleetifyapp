@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Settings, Save } from 'lucide-react'
+import { Settings, Save, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess'
@@ -49,9 +49,9 @@ export function CompanyDocumentSettings({
     }
 
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from('companies')
-        .select('settings') as any)
+        .select('settings')
         .eq('id', companyId)
         .single()
 
@@ -105,22 +105,22 @@ export function CompanyDocumentSettings({
 
     try {
       // Get current settings first
-      const { data: currentData, error: fetchError } = await (supabase
+      const { data: currentData, error: fetchError } = await supabase
         .from('companies')
-        .select('settings') as any)
+        .select('settings')
         .eq('id', companyId)
         .single()
 
       if (fetchError) throw fetchError
 
-      const currentSettings = currentData?.settings || {}
+      const currentSettings = (currentData?.settings as any) || {}
       const updatedSettings = {
         ...currentSettings,
         document_saving: settings
       }
 
-      const { error } = await (supabase
-        .from('companies') as any)
+      const { error } = await supabase
+        .from('companies')
         .update({ settings: updatedSettings })
         .eq('id', companyId)
 

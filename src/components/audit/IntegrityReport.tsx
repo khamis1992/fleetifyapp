@@ -3,6 +3,7 @@
  * Displays audit trail integrity verification results
  */
 
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,13 @@ interface IntegrityReportProps {
 }
 
 export function IntegrityReport({ integrityReport, isLoading, onVerify }: IntegrityReportProps) {
+  const getIntegrityScoreColor = (score: number) => {
+    if (score >= 95) return 'text-green-600';
+    if (score >= 90) return 'text-yellow-600';
+    if (score >= 80) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
   const getIntegrityStatusVariant = (score: number) => {
     if (score >= 95) return 'default';
     if (score >= 90) return 'secondary';
@@ -100,9 +108,9 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
                 variant={getIntegrityStatusVariant(report?.integrity_score || 0)}
                 className="text-lg px-3 py-1"
               >
-                {(report?.integrity_score ?? 0) >= 95 ? 'Excellent' :
-                 (report?.integrity_score ?? 0) >= 90 ? 'Good' :
-                 (report?.integrity_score ?? 0) >= 80 ? 'Warning' : 'Critical'}
+                {report?.integrity_score >= 95 ? 'Excellent' :
+                 report?.integrity_score >= 90 ? 'Good' :
+                 report?.integrity_score >= 80 ? 'Warning' : 'Critical'}
               </Badge>
             </div>
             <Progress
@@ -144,8 +152,8 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
               {report?.verified_records?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {(report?.total_records ?? 0) > 0
-                ? `${(((report?.verified_records ?? 0) / (report?.total_records ?? 1)) * 100).toFixed(1)}%`
+              {report?.total_records > 0
+                ? `${((report.verified_records / report.total_records) * 100).toFixed(1)}%`
                 : '0%'} verified
             </p>
           </CardContent>
@@ -271,7 +279,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
                   All audit records have been verified successfully. No integrity issues detected.
                 </AlertDescription>
               </Alert>
-            ) : (report?.integrity_score ?? 0) >= 90 ? (
+            ) : report?.integrity_score >= 90 ? (
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertTitle>Good Integrity</AlertTitle>
@@ -279,7 +287,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
                   Most audit records have been verified successfully. Some minor issues may exist.
                 </AlertDescription>
               </Alert>
-            ) : (report?.integrity_score ?? 0) >= 80 ? (
+            ) : report?.integrity_score >= 80 ? (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Moderate Integrity Concerns</AlertTitle>
@@ -304,16 +312,16 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
                   <div className="flex justify-between">
                     <span>Success Rate:</span>
                     <span className="font-medium">
-                      {(report?.total_records ?? 0) > 0
-                        ? `${(((report?.verified_records ?? 0) / (report?.total_records ?? 1)) * 100).toFixed(1)}%`
+                      {report?.total_records > 0
+                        ? `${((report.verified_records / report.total_records) * 100).toFixed(1)}%`
                         : '0%'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Error Rate:</span>
                     <span className="font-medium text-red-600">
-                      {(report?.total_records ?? 0) > 0
-                        ? `${((((report?.tampered_records ?? 0) + (report?.suspicious_records ?? 0)) / (report?.total_records ?? 1)) * 100).toFixed(1)}%`
+                      {report?.total_records > 0
+                        ? `${(((report.tampered_records + report.suspicious_records) / report.total_records) * 100).toFixed(1)}%`
                         : '0%'}
                     </span>
                   </div>

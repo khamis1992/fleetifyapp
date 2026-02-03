@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -115,7 +115,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       onSuccess();
     } catch (error: unknown) {
       console.error('Error saving workflow:', error);
-      toast.error((error as Error)?.message || 'حدث خطأ في حفظ سير العمل');
+      toast.error(error?.message || 'حدث خطأ في حفظ سير العمل');
     }
   };
 

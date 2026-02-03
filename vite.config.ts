@@ -15,7 +15,10 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    react(),
+    react({
+      // Enable fast refresh with better stability
+      fastRefresh: true,
+    }),
     mode === 'development' && componentTagger(),
     mode === 'production' && visualizer({
       filename: 'dist/stats.html',

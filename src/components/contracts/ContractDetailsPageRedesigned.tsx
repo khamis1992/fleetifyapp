@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * صفحة تفاصيل العقد - UX Redesign V2
  * Professional SaaS design with improved information architecture
@@ -13,6 +12,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ArrowRight,
+  Printer,
+  FileText,
+  FileSignature,
   User,
   Car,
   RefreshCw,
@@ -30,6 +33,8 @@ import {
   CheckCircle,
   CheckCircle2,
   Trash2,
+  Plus,
+  Eye,
   Scale,
   Loader2,
   LayoutDashboard,
@@ -38,6 +43,8 @@ import {
   Phone,
   Mail,
   MapPin,
+  Building2,
+  Download,
   Palette,
   Gauge,
   Fuel,
@@ -56,17 +63,22 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { useVehicleInspections } from '@/hooks/useVehicleInspections';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { ContractDocuments } from './ContractDocuments';
 import { OfficialContractView } from './OfficialContractView';
+import { ContractStatusBadge } from './ContractStatusBadge';
 import { ContractStatusManagement } from './ContractStatusManagement';
 import { ConvertToLegalDialog } from './ConvertToLegalDialog';
+import { VehicleHandoverUnified } from '@/components/contracts/VehicleHandoverUnified';
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
@@ -76,8 +88,11 @@ import { ContractPrintDialog } from './ContractPrintDialog';
 import { FinancialDashboard } from './FinancialDashboard';
 import { ContractAlerts } from './ContractAlerts';
 import { TimelineView } from './TimelineView';
+import { QuickActionsButton } from './QuickActionsButton';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { useContractPaymentSchedules, useGeneratePaymentSchedulesFromInvoices } from '@/hooks/usePaymentSchedules';
+// Re-importing to ensure HMR update
+import { ContractPaymentsTab } from './ContractPaymentsTab';
 import { ContractPaymentsTabRedesigned } from './ContractPaymentsTabRedesigned';
 import { ContractInvoicesTabRedesigned } from './ContractInvoicesTabRedesigned';
 import { EnhancedPaymentScheduleTabRedesigned } from './EnhancedPaymentScheduleTabRedesigned';
@@ -97,7 +112,7 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
   }
 };
 
@@ -106,11 +121,18 @@ const scaleIn = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
   }
 };
 
-// Removed unused slideIn animation variant
+const slideIn = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
+  }
+};
 
 // ===== Stats Cards Component =====
 const ContractStatsGrid = ({
@@ -122,7 +144,6 @@ const ContractStatsGrid = ({
   trafficViolationsCount: number;
   formatCurrency: (amount: number) => string;
 }) => {
-  const daysRemaining = contractStats?.daysRemaining as number | undefined;
   const stats = [
     {
       label: 'إجمالي القيمة',
@@ -135,11 +156,7 @@ const ContractStatsGrid = ({
     {
       label: 'مدة العقد',
       value: `${contractStats?.totalMonths || 0} شهر`,
-      subtext: daysRemaining !== undefined && daysRemaining > 0 
-        ? `${daysRemaining} يوم متبقي` 
-        : daysRemaining === 0 
-          ? 'ينتهي اليوم' 
-          : 'منتهي',
+      subtext: `${contractStats?.daysRemaining > 0 ? `${contractStats.daysRemaining} يوم متبقي` : contractStats?.daysRemaining === 0 ? 'ينتهي اليوم' : 'منتهي'}`,
       icon: Calendar,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
@@ -225,22 +242,22 @@ const CustomerVehicleCards = ({
             <p className="text-xs text-neutral-500 mb-1">العميل</p>
             <h3 className="font-bold text-neutral-900 text-lg mb-2 truncate">{customerName}</h3>
             <div className="space-y-1">
-              {(contract.customer as any)?.phone && (
+              {contract.customer?.phone && (
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <Phone className="w-3.5 h-3.5" />
-                  <span className="font-mono" dir="ltr">{(contract.customer as any).phone as string}</span>
+                  <span className="font-mono" dir="ltr">{contract.customer.phone}</span>
                 </div>
               )}
-              {(contract.customer as any)?.email && (
+              {contract.customer?.email && (
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <Mail className="w-3.5 h-3.5" />
-                  <span className="truncate">{(contract.customer as any).email as string}</span>
+                  <span className="truncate">{contract.customer.email}</span>
                 </div>
               )}
-              {(contract.customer as any)?.national_id && (
+              {contract.customer?.national_id && (
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  <span>{(contract.customer as any).national_id as string}</span>
+                  <span>{contract.customer.national_id}</span>
                 </div>
               )}
             </div>
@@ -266,16 +283,16 @@ const CustomerVehicleCards = ({
                   <span className="font-mono font-bold">{plateNumber}</span>
                 </div>
               )}
-              {(contract.vehicle as any)?.year && (
+              {contract.vehicle?.year && (
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>{(contract.vehicle as any).year as string | number}</span>
+                  <span>{contract.vehicle.year}</span>
                 </div>
               )}
-              {(contract.vehicle as any)?.color && (
+              {contract.vehicle?.color && (
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <MapPin className="w-3.5 h-3.5" />
-                  <span>{(contract.vehicle as any).color as string}</span>
+                  <span>{contract.vehicle.color}</span>
                 </div>
               )}
             </div>
@@ -416,6 +433,7 @@ const ContractOverviewTab = ({
   contractStats,
   trafficViolationsCount,
   formatCurrency,
+  onStatusClick,
   onCustomerClick,
   onVehicleClick,
 }: {
@@ -426,6 +444,7 @@ const ContractOverviewTab = ({
   contractStats: Record<string, unknown>;
   trafficViolationsCount: number;
   formatCurrency: (amount: number) => string;
+  onStatusClick: () => void;
   onCustomerClick: () => void;
   onVehicleClick: () => void;
 }) => (
@@ -513,6 +532,7 @@ const FinancialTab = ({
   contract,
   invoices,
   paymentSchedules,
+  isLoadingPaymentSchedules,
   contractId,
   companyId,
   formatCurrency,
@@ -535,6 +555,7 @@ const FinancialTab = ({
     status: string;
     payment_date: string | null;
   }>;
+  isLoadingPaymentSchedules: boolean;
   contractId: string;
   companyId: string;
   formatCurrency: (amount: number) => string;
@@ -603,10 +624,10 @@ const FinancialTab = ({
         contractNumber={contract.contract_number}
         customerInfo={{
           name: customerName,
-          phone: (contract.customer as any)?.phone as string | undefined,
-          email: (contract.customer as any)?.email as string | undefined,
-          nationalId: (contract.customer as any)?.national_id as string | undefined,
-          customerType: (contract.customer as any)?.customer_type as string | undefined,
+          phone: contract.customer?.phone,
+          email: contract.customer?.email,
+          nationalId: contract.customer?.national_id,
+          customerType: contract.customer?.customer_type,
         }}
         trafficViolations={trafficViolations}
       />
@@ -621,8 +642,8 @@ const FinancialTab = ({
         contractNumber={contract.contract_number}
         customerInfo={{
           name: customerName,
-          phone: (contract.customer as any)?.phone as string | undefined,
-          nationalId: (contract.customer as any)?.national_id as string | undefined,
+          phone: contract.customer?.phone,
+          nationalId: contract.customer?.national_id,
         }}
       />
     </TabsContent>
@@ -653,7 +674,7 @@ const VehicleTab = ({
   formatCurrency: (amount: number) => string;
 }) => {
   const navigate = useNavigate();
-  const vehicleData = contract.vehicle as Record<string, unknown> | null;
+  const vehicle = contract.vehicle;
   
   return (
     <div className="space-y-6">
@@ -680,9 +701,9 @@ const VehicleTab = ({
               <div>
                 <p className="text-blue-200 text-sm mb-1">المركبة المؤجرة</p>
                 <h2 className="text-2xl font-bold">
-                  {String(vehicleData?.make || '')} {String(vehicleData?.model || '')}
+                  {vehicle?.make || ''} {vehicle?.model || ''}
                 </h2>
-                <p className="text-blue-200">{String(vehicleData?.year || '')}</p>
+                <p className="text-blue-200">{vehicle?.year || ''}</p>
               </div>
             </div>
             
@@ -702,7 +723,7 @@ const VehicleTab = ({
                 <Palette className="w-4 h-4" />
                 <span>اللون</span>
               </div>
-              <p className="font-semibold text-lg">{String(vehicleData?.color || 'غير محدد')}</p>
+              <p className="font-semibold text-lg">{vehicle?.color || 'غير محدد'}</p>
             </div>
             
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -711,7 +732,7 @@ const VehicleTab = ({
                 <span>رقم الهيكل</span>
               </div>
               <p className="font-semibold text-sm font-mono" dir="ltr">
-                {vehicleData?.vin ? `...${String(vehicleData.vin).slice(-8)}` : 'غير محدد'}
+                {vehicle?.vin ? `...${vehicle.vin.slice(-8)}` : 'غير محدد'}
               </p>
             </div>
             
@@ -721,7 +742,7 @@ const VehicleTab = ({
                 <span>العداد</span>
               </div>
               <p className="font-semibold text-lg">
-                {(vehicleData?.current_mileage as number)?.toLocaleString() || '0'} كم
+                {vehicle?.current_mileage?.toLocaleString() || '0'} كم
               </p>
             </div>
             
@@ -731,19 +752,19 @@ const VehicleTab = ({
                 <span>نوع الوقود</span>
               </div>
               <p className="font-semibold text-lg">
-                {vehicleData?.fuel_type === 'petrol' ? 'بنزين' : 
-                 vehicleData?.fuel_type === 'diesel' ? 'ديزل' : 
-                 vehicleData?.fuel_type === 'electric' ? 'كهربائي' : 
-                 vehicleData?.fuel_type === 'hybrid' ? 'هجين' : 'غير محدد'}
+                {vehicle?.fuel_type === 'petrol' ? 'بنزين' : 
+                 vehicle?.fuel_type === 'diesel' ? 'ديزل' : 
+                 vehicle?.fuel_type === 'electric' ? 'كهربائي' : 
+                 vehicle?.fuel_type === 'hybrid' ? 'هجين' : 'غير محدد'}
               </p>
             </div>
           </div>
           
           {/* Action Button */}
-          {vehicleData?.id && (
+          {vehicle?.id && (
             <div className="mt-6 flex justify-end">
               <Button
-                onClick={() => navigate(`/fleet/vehicles/${vehicleData.id}`)}
+                onClick={() => navigate(`/fleet/vehicles/${vehicle.id}`)}
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-xl gap-2"
               >
                 <ExternalLink className="w-4 h-4" />
@@ -760,11 +781,11 @@ const VehicleTab = ({
           id: contract.id,
           contract_number: contract.contract_number,
           customer_name: customerName,
-          customer_phone: ((contract.customer as any)?.phone as string) || '',
+          customer_phone: contract.customer?.phone || '',
           vehicle_plate: plateNumber || '',
-          vehicle_make: ((contract.vehicle as any)?.make as string) || '',
-          vehicle_model: ((contract.vehicle as any)?.model as string) || '',
-          vehicle_year: ((contract.vehicle as any)?.year as number) || new Date().getFullYear(),
+          vehicle_make: contract.vehicle?.make || '',
+          vehicle_model: contract.vehicle?.model || '',
+          vehicle_year: contract.vehicle?.year || new Date().getFullYear(),
           start_date: contract.start_date,
           end_date: contract.end_date,
         }}
@@ -780,12 +801,18 @@ const ViolationsTab = ({
   formatCurrency,
   contractNumber,
 }: {
-  trafficViolations: Array<Record<string, unknown>>;
+  trafficViolations: Array<{
+    id: string;
+    violation_date: string | null;
+    violation_type: string | null;
+    fine_amount: number | null;
+    status: string;
+  }>;
   formatCurrency: (amount: number) => string;
   contractNumber: string;
 }) => (
   <ContractViolationsTabRedesigned
-    violations={trafficViolations as any}
+    violations={trafficViolations}
     formatCurrency={formatCurrency}
     contractNumber={contractNumber}
   />
@@ -896,7 +923,7 @@ const ContractDetailsPageRedesigned = () => {
         throw new Error('رقم العقد أو الشركة مفقود');
       }
 
-      let query = (supabase
+      let query = supabase
         .from('contracts')
         .select(`
           *,
@@ -923,7 +950,7 @@ const ContractDetailsPageRedesigned = () => {
             color,
             status
           )
-        `) as any)
+        `)
         .eq('company_id', companyId);
 
       // Check if input is UUID
@@ -938,7 +965,7 @@ const ContractDetailsPageRedesigned = () => {
       const { data, error } = await query.single();
 
       if (error) throw error;
-      return data as unknown as Contract;
+      return data as Contract;
     },
     enabled: !!contractNumber && !!companyId,
     staleTime: 30000, // Cache for 30 seconds
@@ -951,16 +978,16 @@ const ContractDetailsPageRedesigned = () => {
     queryFn: async () => {
       if (!contract?.id) return [];
 
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from('invoices')
-        .select('*') as any)
+        .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
         .neq('status', 'cancelled')
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      return (data || []) as unknown as Invoice[];
+      return data as Invoice[];
     },
     enabled: !!contract?.id,
     staleTime: 30000, // Cache for 30 seconds
@@ -973,9 +1000,9 @@ const ContractDetailsPageRedesigned = () => {
     queryFn: async () => {
       if (!contract?.id) return [];
 
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from('traffic_violations')
-        .select('*') as any)
+        .select('*')
         .eq('contract_id', contract.id)
         .order('violation_date', { ascending: false });
 
@@ -988,11 +1015,11 @@ const ContractDetailsPageRedesigned = () => {
   });
 
   // Vehicle inspections
-  const { data: _checkInInspection } = useVehicleInspections({ contractId: contract?.id, inspectionType: 'check_in' });
-  const { data: _checkOutInspection } = useVehicleInspections({ contractId: contract?.id, inspectionType: 'check_out' });
+  const { data: checkInInspection } = useVehicleInspections(contract?.id, 'check_in');
+  const { data: checkOutInspection } = useVehicleInspections(contract?.id, 'check_out');
 
   // Fetch payment schedules
-  const { data: paymentSchedules = [] } = useContractPaymentSchedules(contract?.id || '');
+  const { data: paymentSchedules = [], isLoading: isLoadingPaymentSchedules } = useContractPaymentSchedules(contract?.id || '');
 
   // Hook to generate payment schedules from invoices
   const generatePaymentSchedulesFromInvoices = useGeneratePaymentSchedulesFromInvoices();
@@ -1016,7 +1043,7 @@ const ContractDetailsPageRedesigned = () => {
     const progressPercentage = Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100));
 
     const totalAmount = (contract.monthly_amount || 0) * totalMonths;
-    const paidAmount = (contract as any).paid_amount || contract.total_paid || 0;
+    const paidAmount = contract.paid_amount || 0;
 
     return {
       totalAmount,
@@ -1102,13 +1129,13 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsCancellingInvoice(true);
     try {
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('invoices')
         .update({
           status: 'cancelled',
           payment_status: 'cancelled',
           updated_at: new Date().toISOString()
-        } as any) as any)
+        })
         .eq('id', invoiceToCancel.id);
 
       if (error) throw error;
@@ -1161,9 +1188,9 @@ const ContractDetailsPageRedesigned = () => {
 
     try {
       const [invoicesRes, paymentsRes, violationsRes] = await Promise.all([
-        (supabase.from('invoices').select('id', { count: 'exact', head: true }) as any).eq('contract_id', contract.id),
-        (supabase.from('payments').select('id', { count: 'exact', head: true }) as any).eq('contract_id', contract.id),
-        (supabase.from('traffic_violations').select('id', { count: 'exact', head: true }) as any).eq('contract_id', contract.id),
+        supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
+        supabase.from('traffic_violations').select('id', { count: 'exact', head: true }).eq('contract_id', contract.id),
       ]);
 
       setRelatedDataCounts({
@@ -1184,12 +1211,12 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsTerminating(true);
     try {
-      const { error: contractError } = await (supabase
+      const { error: contractError } = await supabase
         .from('contracts')
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString(),
-        } as any) as any)
+        })
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
@@ -1222,12 +1249,12 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsReactivating(true);
     try {
-      const { error: contractError } = await (supabase
+      const { error: contractError } = await supabase
         .from('contracts')
         .update({
           status: 'active',
           updated_at: new Date().toISOString(),
-        } as any) as any)
+        })
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
@@ -1260,20 +1287,20 @@ const ContractDetailsPageRedesigned = () => {
 
     setIsRemovingLegal(true);
     try {
-      const { error: contractError } = await (supabase
+      const { error: contractError } = await supabase
         .from('contracts')
         .update({
           status: 'active',
           updated_at: new Date().toISOString()
-        } as any) as any)
+        })
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
       if (contractError) throw contractError;
 
-      await (supabase
+      await supabase
         .from('delinquent_customers')
-        .delete() as any)
+        .delete()
         .eq('contract_id', contract.id);
 
       queryClient.invalidateQueries({ queryKey: ['contract-details'] });
@@ -1304,28 +1331,28 @@ const ContractDetailsPageRedesigned = () => {
     setIsDeleting(true);
     try {
       // 1. Unlink traffic violations (keep them in system, just remove contract link)
-      await (supabase
+      await supabase
         .from('traffic_violations')
-        .update({ contract_id: null } as any) as any)
+        .update({ contract_id: null })
         .eq('contract_id', contract.id);
 
       // 2. Delete other related records that are specific to this contract
-      await (supabase.from('delinquent_customers').delete() as any).eq('contract_id', contract.id);
-      await (supabase.from('payments').delete() as any).eq('contract_id', contract.id);
-      await (supabase.from('invoices').delete() as any).eq('contract_id', contract.id);
-      await (supabase.from('contract_payment_schedules').delete() as any).eq('contract_id', contract.id);
-      await (supabase.from('lawsuit_preparations').delete() as any).eq('contract_id', contract.id);
+      await supabase.from('delinquent_customers').delete().eq('contract_id', contract.id);
+      await supabase.from('payments').delete().eq('contract_id', contract.id);
+      await supabase.from('invoices').delete().eq('contract_id', contract.id);
+      await supabase.from('contract_payment_schedules').delete().eq('contract_id', contract.id);
+      await supabase.from('lawsuit_preparations').delete().eq('contract_id', contract.id);
 
       if (contract.vehicle_id) {
-        await (supabase
+        await supabase
           .from('vehicles')
-          .update({ status: 'available' } as any) as any)
+          .update({ status: 'available' })
           .eq('id', contract.vehicle_id);
       }
 
-      const { error: deleteError } = await (supabase
+      const { error: deleteError } = await supabase
         .from('contracts')
-        .delete() as any)
+        .delete()
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
@@ -1395,7 +1422,7 @@ const ContractDetailsPageRedesigned = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Contract Header - Redesigned */}
         <ContractHeaderRedesigned
-          contract={contract as any}
+          contract={contract}
           onEdit={() => setIsEditWizardOpen(true)}
           onPrint={handlePrint}
           onExport={handleExport}
@@ -1450,10 +1477,11 @@ const ContractDetailsPageRedesigned = () => {
                   contract={contract}
                   customerName={customerName}
                   vehicleName={vehicleName}
-                  plateNumber={plateNumber as string | undefined}
-                  contractStats={contractStats || {}}
+                  plateNumber={plateNumber}
+                  contractStats={contractStats}
                   trafficViolationsCount={trafficViolations.length}
                   formatCurrency={formatCurrency}
+                  onStatusClick={() => setIsStatusManagementOpen(true)}
                   onCustomerClick={handleCustomerClick}
                   onVehicleClick={handleVehicleClick}
                 />
@@ -1467,12 +1495,10 @@ const ContractDetailsPageRedesigned = () => {
                 <FinancialTab
                   contract={contract}
                   invoices={invoices}
-                  paymentSchedules={paymentSchedules.map(ps => ({
-                    ...ps,
-                    payment_date: (ps as any).paid_date || null
-                  }))}
+                  paymentSchedules={paymentSchedules}
+                  isLoadingPaymentSchedules={isLoadingPaymentSchedules}
                   contractId={contract.id}
-                  companyId={companyId || ''}
+                  companyId={companyId}
                   formatCurrency={formatCurrency}
                   onPayInvoice={handleInvoicePay}
                   onPreviewInvoice={handleInvoicePreview}
@@ -1489,7 +1515,7 @@ const ContractDetailsPageRedesigned = () => {
                 <VehicleTab
                   contract={contract}
                   customerName={customerName}
-                  plateNumber={plateNumber as string | undefined}
+                  plateNumber={plateNumber}
                   formatCurrency={formatCurrency}
                 />
               </TabsContent>
@@ -1518,7 +1544,7 @@ const ContractDetailsPageRedesigned = () => {
               open={isPayDialogOpen}
               onOpenChange={setIsPayDialogOpen}
               invoice={selectedInvoice}
-              onPaymentCreated={() => {
+              onSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ['contract-invoices'] });
                 setIsPayDialogOpen(false);
               }}
@@ -1563,14 +1589,7 @@ const ContractDetailsPageRedesigned = () => {
 
       <ContractStatusManagement open={isStatusManagementOpen} onOpenChange={setIsStatusManagementOpen} contract={contract} />
 
-      <ConvertToLegalDialog open={isConvertToLegalOpen} onOpenChange={setIsConvertToLegalOpen} contract={{
-        ...contract,
-        vehicle_id: contract.vehicle_id ?? undefined,
-        total_paid: contract.total_paid ?? 0,
-        balance_due: contract.balance_due ?? 0,
-        late_fine_amount: contract.late_fine_amount ?? 0,
-        payment_method: contract.payment_method ?? undefined,
-      } as any} />
+      <ConvertToLegalDialog open={isConvertToLegalOpen} onOpenChange={setIsConvertToLegalOpen} contract={contract} />
 
       {/* Terminate Dialog */}
       <AlertDialog open={isTerminateDialogOpen} onOpenChange={setIsTerminateDialogOpen}>

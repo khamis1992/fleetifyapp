@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Enhanced Contract Dashboard Component
  *

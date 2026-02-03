@@ -3,7 +3,7 @@
  * Displays real-time audit alerts and notifications
  */
 
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import {
 import { useRealtimeAuditMonitoring } from '@/hooks/useFinancialAudit';
 import { FinancialAuditLog } from '@/types/auditLog';
 import { format } from 'date-fns';
+import { relativeTime } from '@/lib/utils';
 
 interface RealTimeAlertsProps {
   companyId: string;
@@ -166,18 +167,18 @@ export function RealTimeAlerts({
           {visibleAlerts.map((alert) => (
             <Alert
               key={alert.id}
-              className={`border-l-4 ${getAlertColor(alert.severity || 'low')}`}
+              className={`border-l-4 ${getAlertColor(alert.severity)}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
                   <div className="mt-0.5">
-                    {getAlertIcon(alert.severity || 'low')}
+                    {getAlertIcon(alert.severity)}
                   </div>
                   <div className="flex-1">
                     <AlertTitle className="flex items-center gap-2">
                       {getAlertTitle(alert)}
                       <Badge variant="outline" className="capitalize">
-                        {alert.severity || 'low'}
+                        {alert.severity}
                       </Badge>
                       <Badge variant="outline" className="capitalize">
                         {alert.action}
@@ -197,7 +198,7 @@ export function RealTimeAlerts({
                       </div>
                       <div className="flex items-center space-x-1">
                         <Activity className="h-3 w-3" />
-                        <span>{getRelativeTime(new Date(alert.created_at))}</span>
+                        <span>{relativeTime(new Date(alert.created_at))}</span>
                       </div>
                     </div>
                     {alert.financial_data?.amount && (
@@ -248,7 +249,7 @@ export function RealTimeAlerts({
 }
 
 // Helper utility function for relative time
-function getRelativeTime(date: Date): string {
+function relativeTime(date: Date): string {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 

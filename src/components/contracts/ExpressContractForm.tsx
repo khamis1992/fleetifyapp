@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Express Contract Form - Simplified Single-Page Contract Creation
  * 

@@ -10,6 +10,7 @@ import { Capacitor } from '@capacitor/core';
 // Context Providers
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CompanyContextProvider } from '@/contexts/CompanyContext';
 import { FABProvider } from '@/contexts/FABContext';
@@ -20,6 +21,7 @@ import { AIChatProvider } from '@/contexts/AIChatContext';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Routing System
 import { RouteProvider } from '@/components/router/RouteProvider';
@@ -36,13 +38,16 @@ import SuspenseBoundary from '@/components/common/SuspenseBoundary';
 // PWA and Security
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import SecurityHeaders from '@/components/SecurityHeaders';
+import { CommandPalette } from '@/components/ui/CommandPalette';
 
 // Performance Monitoring
+import { performanceMonitor } from '@/lib/performanceMonitor';
+import { performanceLogger } from '@/lib/performanceLogger';
 import { initializePWA } from '@/utils/pwaConfig';
 import PerformanceMonitor from '@/components/performance/PerformanceMonitor';
 
 // Preloading and Optimization
-import { preloadCriticalRoutes } from '@/utils/routePreloading';
+import { preloadCriticalRoutes, preloadRelatedRoutes } from '@/utils/routePreloading';
 
 // Mobile Optimization
 import { MobileOptimizationProvider } from '@/components/performance';
@@ -110,6 +115,7 @@ const createQueryClient = () => {
 
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
+        _default: true,
 
         // Retry configuration
         retry: (failureCount, error: any) => {
@@ -133,7 +139,7 @@ const createQueryClient = () => {
         onError: (error) => {
           console.error('Mutation error:', error);
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
           // Invalidate related queries on mutation success
           console.log('Mutation succeeded, data updated');
         }
@@ -287,7 +293,7 @@ const App: React.FC = () => {
         // Preload critical routes
         if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
           window.requestIdleCallback(() => {
-            preloadCriticalRoutes();
+            preloadCriticalRoutes(APP_CONFIG.CRITICAL_ROUTES);
           }, { timeout: 5000 });
         }
 

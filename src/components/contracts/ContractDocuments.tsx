@@ -1,10 +1,12 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw } from 'lucide-react';
-import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument } from '@/hooks/useContractDocuments';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw } from 'lucide-react';
+import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
 import { ContractPdfData } from '@/utils/contractPdfGenerator';
@@ -17,8 +19,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ContractDocumentsProps {
   contractId: string;
@@ -45,7 +48,7 @@ const scaleIn = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
   }
 };
 
@@ -54,7 +57,7 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
   }
 };
 
@@ -69,12 +72,14 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
   const { data: documents = [], isLoading } = useContractDocuments(contractId, customerId, vehicleId);
   const createDocument = useCreateContractDocument();
   const deleteDocument = useDeleteContractDocument();
+  const downloadDocument = useDownloadContractDocument();
   const { companyId } = useUnifiedCompanyAccess();
   
   // Enhanced document saving with progress tracking
   const { 
     savingSteps, 
     isProcessing: isSavingDocuments,
+    retryStep,
     documentSavingErrors,
     clearErrors 
   } = useContractDocumentSaving();
@@ -86,11 +91,11 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       if (!selectedReportId) return null;
       
       // أولاً، احصل على تقرير الحالة
-      const { data: reportData, error: reportError } = await (supabase
+      const { data: reportData, error: reportError } = await supabase
         .from('vehicle_condition_reports')
-        .select('*') as any)
+        .select('*')
         .eq('id', selectedReportId)
-        .eq('company_id', companyId || '')
+        .eq('company_id', companyId)
         .maybeSingle();
       
       if (reportError) throw reportError;
@@ -98,13 +103,12 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
 
       // ثم احصل على بيانات المركبة إذا كان هناك vehicle_id
       let vehicleData = null;
-      const reportDataAny = reportData as any;
-      if (reportDataAny.vehicle_id) {
-        const { data: vehicle, error: vehicleError } = await (supabase
+      if (reportData.vehicle_id) {
+        const { data: vehicle, error: vehicleError } = await supabase
           .from('vehicles')
-          .select('plate_number, make, model, year') as any)
-          .eq('id', reportDataAny.vehicle_id)
-          .eq('company_id', companyId || '')
+          .select('plate_number, make, model, year')
+          .eq('id', reportData.vehicle_id)
+          .eq('company_id', companyId)
           .maybeSingle();
         
         if (!vehicleError) {
@@ -113,7 +117,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       }
 
       return {
-        ...(reportData as any),
+        ...reportData,
         vehicles: vehicleData
       };
     },
@@ -217,7 +221,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
 
       // إذا كان المستند عقد موقع أو مسودة عقد (مُنشأ من النظام)، اجلب بيانات العقد لعرضه كـ HTML
       if (document.document_type === 'signed_contract' || document.document_type === 'draft_contract') {
-        const { data: contractData, error } = await (supabase
+        const { data: contractData, error } = await supabase
           .from('contracts')
           .select(`
             *,
@@ -227,9 +231,9 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
               last_name,
               company_name
             )
-          `) as any)
+          `)
           .eq('id', contractId)
-          .eq('company_id', companyId || '')
+          .eq('company_id', companyId)
           .single();
 
         if (error) {
@@ -238,20 +242,19 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
           return;
         }
 
-        const contractDataAny = contractData as any;
         // تحويل بيانات العقد لتنسيق ContractPdfData
-        const customerName = contractDataAny.customers?.customer_type === 'individual' 
-          ? `${contractDataAny.customers?.first_name} ${contractDataAny.customers?.last_name}`
-          : contractDataAny.customers?.company_name || '';
+        const customerName = contractData.customers?.customer_type === 'individual' 
+          ? `${contractData.customers?.first_name} ${contractData.customers?.last_name}`
+          : contractData.customers?.company_name || '';
 
         // جلب بيانات المركبة منفصلة إذا كان هناك vehicle_id
         let vehicleInfo = '';
-        if (contractDataAny.vehicle_id) {
-          const { data: vehicleData } = await (supabase
+        if (contractData.vehicle_id) {
+          const { data: vehicleData } = await supabase
             .from('vehicles')
-            .select('make, model, year, plate_number') as any)
-            .eq('id', contractDataAny.vehicle_id)
-            .eq('company_id', companyId || '')
+            .select('make, model, year, plate_number')
+            .eq('id', contractData.vehicle_id)
+            .eq('company_id', companyId)
             .maybeSingle();
           
           if (vehicleData) {
@@ -263,23 +266,23 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
         let conditionReportData = null;
         
         // البحث أولاً في مستندات العقد عن تقرير الحالة
-        const { data: conditionReportDocs } = await (supabase
+        const { data: conditionReportDocs } = await supabase
           .from('contract_documents')
-          .select('condition_report_id') as any)
+          .select('condition_report_id')
           .eq('contract_id', contractId)
-          .eq('company_id', companyId || '')
+          .eq('company_id', companyId)
           .eq('document_type', 'condition_report')
           .not('condition_report_id', 'is', null)
           .limit(1);
         
         if (conditionReportDocs && conditionReportDocs.length > 0) {
-          const reportId = (conditionReportDocs[0] as any).condition_report_id;
+          const reportId = conditionReportDocs[0].condition_report_id;
           if (reportId) {
-            const { data: reportData } = await (supabase
+            const { data: reportData } = await supabase
               .from('vehicle_condition_reports')
-              .select('*') as any)
+              .select('*')
               .eq('id', reportId)
-              .eq('company_id', companyId || '')
+              .eq('company_id', companyId)
               .maybeSingle();
             
             if (reportData) {
@@ -290,19 +293,19 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
         }
 
         const contractPdfData: ContractPdfData = {
-          contract_number: contractDataAny.contract_number,
-          contract_type: contractDataAny.contract_type,
+          contract_number: contractData.contract_number,
+          contract_type: contractData.contract_type,
           customer_name: customerName,
           vehicle_info: vehicleInfo,
-          start_date: contractDataAny.start_date,
-          end_date: contractDataAny.end_date,
-          contract_amount: contractDataAny.contract_amount,
-          monthly_amount: contractDataAny.monthly_amount,
-          terms: contractDataAny.terms || '',
+          start_date: contractData.start_date,
+          end_date: contractData.end_date,
+          contract_amount: contractData.contract_amount,
+          monthly_amount: contractData.monthly_amount,
+          terms: contractData.terms || '',
           customer_signature: '', // التوقيع سيتم جلبه من المستندات
           company_signature: '', // التوقيع سيتم جلبه من المستندات
           company_name: 'الشركة',
-          created_date: formatDateForContract(contractDataAny.created_at)
+          created_date: formatDateForContract(contractData.created_at)
         };
 
         setSelectedDocumentForPreview({

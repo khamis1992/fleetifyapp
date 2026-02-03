@@ -200,7 +200,7 @@ export const ApprovalRequestsList: React.FC<ApprovalRequestsListProps> = ({
                   <div>
                     <span className="text-sm text-muted-foreground">طالب الموافقة:</span>
                     <p className="font-medium">
-                      {(request.requester as Record<string, unknown>)?.full_name as string || 'غير محدد'}
+                      {request.requester?.full_name || 'غير محدد'}
                     </p>
                   </div>
                   
@@ -214,7 +214,7 @@ export const ApprovalRequestsList: React.FC<ApprovalRequestsListProps> = ({
                   <div>
                     <span className="text-sm text-muted-foreground">سير العمل:</span>
                     <p className="font-medium">
-                      {(request.workflow as Record<string, unknown>)?.workflow_name as string || 'غير محدد'}
+                      {request.workflow?.workflow_name || 'غير محدد'}
                     </p>
                   </div>
                 </div>

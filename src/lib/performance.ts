@@ -4,8 +4,6 @@
  * Collection of utilities to improve app performance
  */
 
-import React from 'react';
-
 /**
  * Debounce function - delays execution until after wait time has elapsed
  * Useful for: search inputs, resize handlers, scroll handlers
@@ -74,26 +72,24 @@ export function memoize<T extends (...args: any[]) => any>(
  * Lazy load component - delays component loading until needed
  * Useful for: large components, route-based code splitting
  */
-export function lazyLoad<T extends React.ComponentType<any>>(
+export const lazyLoad = <T extends React.ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>,
   fallback: React.ReactNode = null
-): React.FC<React.ComponentProps<T>> {
+) => {
   const LazyComponent = React.lazy(importFunc);
   
-  return function LazyLoadWrapper(props: React.ComponentProps<T>) {
-    return (
-      <React.Suspense fallback={fallback}>
-        <LazyComponent {...props} />
-      </React.Suspense>
-    );
-  };
-}
+  return (props: React.ComponentProps<T>) => (
+    <React.Suspense fallback={fallback}>
+      <LazyComponent {...props} />
+    </React.Suspense>
+  );
+};
 
 /**
  * Batch updates - groups multiple state updates into single render
  * Useful for: multiple setState calls, bulk data updates
  */
-export function batchUpdates<T extends () => void>(callback: T): void {
+export const batchUpdates = <T extends () => void>(callback: T): void => {
   // React 18+ automatically batches updates
   // This is a compatibility wrapper for older versions
   if (typeof React !== 'undefined' && 'startTransition' in React) {
@@ -101,29 +97,29 @@ export function batchUpdates<T extends () => void>(callback: T): void {
   } else {
     callback();
   }
-}
+};
 
 /**
  * Intersection Observer hook for lazy loading images/components
  */
-export function createIntersectionObserver(
+export const createIntersectionObserver = (
   callback: IntersectionObserverCallback,
   options?: IntersectionObserverInit
-): IntersectionObserver {
+): IntersectionObserver => {
   return new IntersectionObserver(callback, {
     root: null,
     rootMargin: '50px',
     threshold: 0.1,
     ...options,
   });
-}
+};
 
 /**
  * Request Animation Frame wrapper for smooth animations
  */
-export function rafThrottle<T extends (...args: any[]) => any>(
+export const rafThrottle = <T extends (...args: any[]) => any>(
   callback: T
-): (...args: Parameters<T>) => void {
+): ((...args: Parameters<T>) => void) => {
   let rafId: number | null = null;
 
   return (...args: Parameters<T>) => {
@@ -136,15 +132,15 @@ export function rafThrottle<T extends (...args: any[]) => any>(
       rafId = null;
     });
   };
-}
+};
 
 /**
  * Measure performance of a function
  */
-export async function measurePerformance<T>(
+export const measurePerformance = async <T>(
   name: string,
   func: () => T | Promise<T>
-): Promise<T> {
+): Promise<T> => {
   const start = performance.now();
   
   try {
@@ -167,4 +163,6 @@ export async function measurePerformance<T>(
     
     throw error;
   }
-}
+};
+
+import React from 'react';

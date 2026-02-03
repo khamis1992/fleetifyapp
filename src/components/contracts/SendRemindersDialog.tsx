@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Send Reminders Dialog Component
  * Allows manual sending of payment reminders to customers via WhatsApp

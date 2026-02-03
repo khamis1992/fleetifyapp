@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * تبويب الدفعات - تصميم محسّن V2
  * Professional SaaS design with improved visual hierarchy
@@ -24,17 +23,24 @@ import {
   Wallet,
   DollarSign,
   Calendar,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  Eye,
   Search,
+  Filter,
+  Building2,
   Landmark,
   Smartphone,
   Printer,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,18 +68,18 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }
   }
-} as const;
+};
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
   }
-} as const;
+};
 
 // ===== Types =====
 interface Payment {
@@ -577,7 +583,7 @@ export const ContractPaymentsTabRedesigned = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [sortOption, setSortOption] = useState('date-desc');
-  const [_viewMode, _setViewMode] = useState<'grid' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Fetch payments with caching for better performance
   const { data: payments = [], isLoading } = useQuery({
@@ -598,13 +604,13 @@ export const ContractPaymentsTabRedesigned = ({
           contract_id,
           invoice:invoices!invoice_id(invoice_number)
         `)
-        .eq('company_id' as any, companyId);
+        .eq('company_id', companyId);
 
       if (showAllPayments) {
-        query = (query as any).eq('contract_id', contractId);
+        query = query.eq('contract_id', contractId);
       } else {
         if (!invoiceIds.length) return [];
-        query = (query as any).in('invoice_id', invoiceIds);
+        query = query.in('invoice_id', invoiceIds);
       }
 
       query = query.order('payment_date', { ascending: false });
@@ -612,7 +618,7 @@ export const ContractPaymentsTabRedesigned = ({
       const { data, error } = await query;
 
       if (error) throw error;
-      return (data as unknown as Payment[]) || [];
+      return (data || []) as Payment[];
     },
     enabled: showAllPayments || invoiceIds.length > 0,
     staleTime: 30000, // Cache for 30 seconds
@@ -670,49 +676,48 @@ export const ContractPaymentsTabRedesigned = ({
       }
 
       if (selectedPayment.invoice_id) {
-        const { data: invoice, error: invoiceError } = await (supabase
+        const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
           .select('id, total_amount, paid_amount')
-          .eq('id' as any, selectedPayment.invoice_id)
-          .eq('company_id' as any, companyId) as any)
+          .eq('id', selectedPayment.invoice_id)
+          .eq('company_id', companyId)
           .single();
 
         if (invoiceError || !invoice) {
           throw new Error('تعذر جلب بيانات الفاتورة لتحديثها');
         }
 
-        const invoiceData = invoice as { id: string; total_amount: number; paid_amount: number };
         const { paidAmount, balanceDue, paymentStatus } = calculateInvoiceTotalsAfterPaymentReversal({
-          totalAmount: Number(invoiceData.total_amount) || 0,
-          currentPaidAmount: Number(invoiceData.paid_amount) || 0,
+          totalAmount: Number(invoice.total_amount) || 0,
+          currentPaidAmount: Number(invoice.paid_amount) || 0,
           reversedAmount: Number(selectedPayment.amount) || 0,
         });
 
-        const { error: updateInvoiceError } = await (supabase
+        const { error: updateInvoiceError } = await supabase
           .from('invoices')
           .update({
             paid_amount: paidAmount,
             balance_due: balanceDue,
             payment_status: paymentStatus,
             updated_at: new Date().toISOString(),
-          } as any)
-          .eq('id' as any, invoiceData.id)
-          .eq('company_id' as any, companyId) as any);
+          })
+          .eq('id', invoice.id)
+          .eq('company_id', companyId);
 
         if (updateInvoiceError) {
           throw new Error('فشل تحديث الفاتورة بعد إلغاء الدفعة');
         }
       }
 
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('payments')
         .update({
           payment_status: 'cancelled',
           notes: (selectedPayment?.notes ? selectedPayment.notes + ' | ' : '') +
                  `تم الإلغاء في ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}`
-        } as any)
-        .eq('id' as any, paymentId)
-        .eq('company_id' as any, companyId) as any);
+        })
+        .eq('id', paymentId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
     },
@@ -1277,7 +1282,7 @@ export const ContractPaymentsTabRedesigned = ({
                   <p className="text-neutral-500">جرب تغيير معايير البحث</p>
                 </CardContent>
               </Card>
-            ) : _viewMode === 'grid' ? (
+            ) : viewMode === 'grid' ? (
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"

@@ -81,7 +81,7 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
   // التاريخ الحالي
   const today = contract.contract_date ? new Date(contract.contract_date) : new Date();
   const todayHijri = toHijri(today); // تحويل فعلي للهجري
-  void toHijriWithMonthName(today); // مع اسم الشهر بالعربي - متاح للاستخدام المستقبلي
+  const todayHijriFormatted = toHijriWithMonthName(today); // مع اسم الشهر بالعربي
   const todayGregorian = format(today, 'yyyy/MM/dd');
   const todayDay = format(today, 'EEEE', { locale: ar });
 

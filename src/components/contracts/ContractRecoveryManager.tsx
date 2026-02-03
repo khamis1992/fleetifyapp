@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertTriangle, FileText, CheckCircle, Loader2 } from 'lucide-react'
 import { useContractRecovery } from '@/hooks/useContractRecovery'
+import { cn } from '@/lib/utils'
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('ar-KW', {

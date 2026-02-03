@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertTriangle, CheckCircle, FileText, Merge } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, FileText, Trash2, Merge } from 'lucide-react';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { UnifiedInvoiceService } from '@/services/UnifiedInvoiceService';
 import { toast } from 'sonner';
@@ -113,7 +113,7 @@ export const DuplicateInvoicesReport: React.FC = () => {
               </AlertDescription>
             </Alert>
 
-            {duplicates.map((group) => (
+            {duplicates.map((group, index) => (
               <Card key={`${group.contract_id}-${group.invoice_month}`} className="border-orange-200">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">

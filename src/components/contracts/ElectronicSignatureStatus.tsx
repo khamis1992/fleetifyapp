@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { FileSignature, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileSignature, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
 import { useSignatureSettings } from '@/hooks/useSignatureSettings';
 
 interface ElectronicSignatureStatusProps {

@@ -11,6 +11,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAIChat } from '@/contexts/AIChatContext';
 import {
+  MessageCircle,
+  X,
   Send,
   Loader2,
   Bot,
@@ -20,7 +22,10 @@ import {
   StopCircle,
   ChevronDown,
   Lightbulb,
+  HelpCircle,
+  ExternalLink,
   Play,
+  Navigation,
   MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -414,7 +419,7 @@ export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideF
   const statsPrompt = useMemo(() => generateStatsPrompt(systemStats), [systemStats]);
   
   // نظام الجولات التفاعلية
-  const { startTour } = useTourGuide();
+  const { startTour, navigateTo } = useTourGuide();
   
   const {
     messages,
@@ -680,7 +685,7 @@ export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideF
               {/* Quick Suggestions (when chat has messages) */}
               {messages.length > 0 && !isLoading && (
                 <div className="px-4 pb-2 flex-shrink-0">
-                  <ScrollArea className="w-full">
+                  <ScrollArea className="w-full" orientation="horizontal">
                     <div className="flex gap-2 pb-2">
                       {SUGGESTED_QUESTIONS.slice(0, 3).map((q, i) => (
                         <Button

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Contract Template Selector Component
  * 
@@ -18,7 +17,7 @@ import {
   DialogDescription 
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,10 +33,12 @@ import {
   FileText, 
   Plus, 
   Star, 
+  Clock, 
   Calendar, 
   Check,
   Save,
   X,
+  Edit,
   Trash
 } from 'lucide-react';
 import { 
@@ -69,6 +70,7 @@ export const ContractTemplateSelector: React.FC<ContractTemplateSelectorProps> =
   selectedVehicle
 }) => {
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
   
   const { data: templates, isLoading } = useContractTemplates();
   const createTemplate = useCreateContractTemplate();
@@ -90,10 +92,11 @@ export const ContractTemplateSelector: React.FC<ContractTemplateSelectorProps> =
     if (selectedVehicle && template.preset_config?.discountPercentage) {
       const baseAmount = calculateContractAmount(template, selectedVehicle);
       const discountedAmount = calculateTemplateDiscount(baseAmount, template);
-      (appliedData as any).contract_amount = discountedAmount;
+      appliedData.contract_amount = discountedAmount;
     }
     
     onApplyTemplate(appliedData);
+    setSelectedTemplate(template);
     toast.success(`تم تطبيق قالب "${template.template_name}" بنجاح`, {
       description: template.preset_config?.discountPercentage 
         ? `خصم ${template.preset_config.discountPercentage}% مطبق`
@@ -153,8 +156,8 @@ export const ContractTemplateSelector: React.FC<ContractTemplateSelectorProps> =
     }
   };
 
-  const presetTemplates = ((templates || []) as ContractTemplate[]).filter(t => t.template_type === 'preset');
-  const customTemplates = ((templates || []) as ContractTemplate[]).filter(t => t.template_type === 'custom');
+  const presetTemplates = templates?.filter(t => t.template_type === 'preset') || [];
+  const customTemplates = templates?.filter(t => t.template_type === 'custom') || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -279,7 +282,7 @@ export const ContractTemplateSelector: React.FC<ContractTemplateSelectorProps> =
                   قوالب جاهزة
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {presetTemplates.map((template: ContractTemplate) => (
+                  {presetTemplates.map((template) => (
                     <TemplateCard
                       key={template.id}
                       template={template}
@@ -302,7 +305,7 @@ export const ContractTemplateSelector: React.FC<ContractTemplateSelectorProps> =
                   قوالبي المخصصة
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {customTemplates.map((template: ContractTemplate) => (
+                  {customTemplates.map((template) => (
                     <TemplateCard
                       key={template.id}
                       template={template}

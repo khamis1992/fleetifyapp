@@ -12,11 +12,11 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AdminOnly } from '@/components/common/PermissionGuard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Plus, Edit, Trash2, Settings, HelpCircle, Info } from 'lucide-react'
-import { useContractTemplates, useCreateContractTemplate, useUpdateContractTemplate, useDeleteContractTemplate, ContractTemplate } from '@/hooks/useContractTemplates'
+import { Plus, Edit, Trash2, Copy, Settings, HelpCircle, Info } from 'lucide-react'
+import { useContractTemplates, ContractTemplate } from '@/hooks/useContractTemplates'
 import { useForm } from 'react-hook-form'
 import { useEntryAllowedAccounts } from '@/hooks/useEntryAllowedAccounts'
-// useCurrencyFormatter not used currently
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { CustomerAccountSelector } from '@/components/finance/CustomerAccountSelector'
 
 interface TemplateFormData {
@@ -46,13 +46,9 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
   const [showForm, setShowForm] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<ContractTemplate | null>(null)
   
-  const { data: templates = [], isLoading } = useContractTemplates()
-  const createTemplate = useCreateContractTemplate()
-  const updateTemplate = useUpdateContractTemplate()
-  const deleteMutation = useDeleteContractTemplate()
-  void deleteMutation; // suppress unused warning for now
+  const { templates, isLoading, createTemplate, updateTemplate, deleteTemplate } = useContractTemplates()
   const { data: accounts } = useEntryAllowedAccounts()
-  void accounts; // suppress unused warning for now
+  const { formatCurrency } = useCurrencyFormatter()
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<TemplateFormData>({
     defaultValues: {
@@ -66,16 +62,25 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
   const handleFormSubmit = (data: TemplateFormData) => {
     const templateData = {
       template_name: data.template_name,
-      contract_type: data.contract_type as 'rent_to_own' | 'daily_rental' | 'weekly_rental' | 'monthly_rental' | 'yearly_rental',
-      rental_days: data.default_duration_days,
-      description: data.default_terms,
-      terms: data.default_terms,
+      template_name_ar: data.template_name_ar,
+      contract_type: data.contract_type,
+      default_terms: data.default_terms,
+      default_duration_days: data.default_duration_days,
+      auto_calculate_pricing: data.auto_calculate_pricing,
+      requires_approval: data.requires_approval,
+      approval_threshold: data.approval_threshold,
+      account_id: data.account_id || undefined, // الحساب المحاسبي الرئيسي
+      account_mappings: {
+        revenue_account_id: data.revenue_account_id || undefined,
+        receivables_account_id: data.receivables_account_id || undefined,
+        cost_center_id: data.cost_center_id || undefined
+      }
     }
 
     if (editingTemplate) {
       updateTemplate.mutate({ 
-        templateId: editingTemplate.id, 
-        data: templateData 
+        id: editingTemplate.id, 
+        updates: templateData 
       })
     } else {
       createTemplate.mutate(templateData)
@@ -89,17 +94,17 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
   const handleEdit = (template: ContractTemplate) => {
     setEditingTemplate(template)
     setValue('template_name', template.template_name)
-    setValue('template_name_ar', '')
+    setValue('template_name_ar', template.template_name_ar || '')
     setValue('contract_type', template.contract_type)
-    setValue('default_terms', template.terms || template.description || '')
-    setValue('default_duration_days', template.rental_days || 30)
-    setValue('auto_calculate_pricing', true)
-    setValue('requires_approval', false)
-    setValue('approval_threshold', 5000)
-    setValue('account_id', '')
-    setValue('revenue_account_id', '')
-    setValue('receivables_account_id', '')
-    setValue('cost_center_id', '')
+    setValue('default_terms', template.default_terms)
+    setValue('default_duration_days', template.default_duration_days)
+    setValue('auto_calculate_pricing', template.auto_calculate_pricing)
+    setValue('requires_approval', template.requires_approval)
+    setValue('approval_threshold', template.approval_threshold)
+    setValue('account_id', template.account_id || '') // الحساب المحاسبي الرئيسي
+    setValue('revenue_account_id', template.account_mappings.revenue_account_id || '')
+    setValue('receivables_account_id', template.account_mappings.receivables_account_id || '')
+    setValue('cost_center_id', template.account_mappings.cost_center_id || '')
     setShowForm(true)
   }
 
@@ -359,20 +364,20 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
 
       {/* Templates Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {(templates as any[])?.map((template: any) => (
+        {templates?.map((template) => (
           <Card key={template.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-lg">
-                    {template.template_name}
+                    {template.template_name_ar || template.template_name}
                   </CardTitle>
                   <CardDescription className="text-sm">
                     {getContractTypeLabel(template.contract_type)}
                   </CardDescription>
                 </div>
                 <Badge variant="secondary">
-                  {template.rental_days || 30} يوم
+                  {template.default_duration_days} يوم
                 </Badge>
               </div>
             </CardHeader>
@@ -380,13 +385,19 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
             <CardContent className="space-y-3">
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">المدة:</span>
-                  <span>{template.rental_days || 30} يوم</span>
+                  <span className="text-muted-foreground">حساب تلقائي:</span>
+                  <span>{template.auto_calculate_pricing ? 'نعم' : 'لا'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">النوع:</span>
-                  <span>{template.template_type === 'preset' ? 'قالب جاهز' : 'مخصص'}</span>
+                  <span className="text-muted-foreground">يتطلب موافقة:</span>
+                  <span>{template.requires_approval ? 'نعم' : 'لا'}</span>
                 </div>
+                {template.requires_approval && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">حد الموافقة:</span>
+                    <span>{formatCurrency(template.approval_threshold ?? 0, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-2">
@@ -394,7 +405,7 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                   <Button 
                     size="sm" 
                     className="flex-1"
-                    onClick={() => onTemplateSelect?.(template as ContractTemplate)}
+                    onClick={() => onTemplateSelect?.(template)}
                   >
                     استخدام القالب
                   </Button>
@@ -403,14 +414,14 @@ export const ContractTemplateManager: React.FC<ContractTemplateManagerProps> = (
                      <Button 
                        size="sm" 
                        variant="outline"
-                       onClick={() => handleEdit(template as ContractTemplate)}
+                       onClick={() => handleEdit(template)}
                      >
                        <Edit className="h-4 w-4" />
                      </Button>
                      <Button 
                        size="sm" 
                        variant="outline"
-                       onClick={() => deleteMutation.mutate(template.id)}
+                       onClick={() => deleteTemplate.mutate(template.id)}
                      >
                        <Trash2 className="h-4 w-4" />
                      </Button>

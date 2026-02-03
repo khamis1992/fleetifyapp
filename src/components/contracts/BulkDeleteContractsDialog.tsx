@@ -18,7 +18,6 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useBulkDeleteContracts } from '@/hooks/useBulkDeleteContracts';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
-import { Permission } from '@/lib/permissions/roles';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,12 +55,12 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
       
       console.log('🔍 [BULK_DELETE_CONTRACTS] Querying contracts for company:', actualCompanyId);
       
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from('contracts')
-        .select('id, contract_number, customer_id') as any)
+        .select('id, contract_number, customer_id')
         .eq('company_id', actualCompanyId);
       
-      console.log('🔍 [BULK_DELETE_CONTRACTS] Query result:', {
+      console.log('🔍 [BULK_DELETE_CONTRACTS] Query result:', { 
         data: data?.length || 0, 
         error: error?.message,
         actualCompanyId 
@@ -72,15 +71,13 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
         throw error;
       }
       
-      const contractsData = data as Array<{ id: string; contract_number: string; customer_id: string | null }> || [];
-      
       // Count unique customers
-      const uniqueCustomers = new Set(contractsData.map(c => c.customer_id).filter(Boolean)).size;
+      const uniqueCustomers = new Set(data?.map(c => c.customer_id) || []).size;
       
       const result = {
-        total: contractsData.length,
+        total: data?.length || 0,
         uniqueCustomers,
-        contracts: contractsData
+        contracts: data || []
       };
       
       console.log('🔍 [BULK_DELETE_CONTRACTS] Final result:', result);
@@ -107,7 +104,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
     
     setStep('processing');
     try {
-      await bulkDeleteContracts.mutateAsync(actualCompanyId ?? undefined);
+      await bulkDeleteContracts.mutateAsync(actualCompanyId);
       
       // Log audit trail
       await logAudit({
@@ -134,7 +131,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
         resource_type: 'contract',
         entity_name: `Failed bulk delete for ${companyName}`,
         status: 'failed',
-        notes: error instanceof Error ? error.message : 'Unknown error',
+        error_message: error instanceof Error ? error.message : 'Unknown error',
         severity: 'high',
       });
     }
@@ -368,7 +365,7 @@ export const BulkDeleteContractsDialog: React.FC<BulkDeleteContractsDialogProps>
               <Button variant="outline" onClick={handleClose}>
                 إلغاء
               </Button>
-              <PermissionGuard permission={Permission.DELETE_CONTRACT}>
+              <PermissionGuard permission="DELETE_CONTRACT">
                 <Button
                   variant="destructive"
                   onClick={handleConfirmDelete}

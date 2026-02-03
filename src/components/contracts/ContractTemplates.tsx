@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Contract Templates Component
  * Quick templates for common contract settings (fines, guarantees, etc.)

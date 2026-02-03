@@ -27,13 +27,6 @@ export interface Contract {
   created_via?: string
   created_at: string
   updated_at: string
-  // Extended properties for joined data
-  customer?: Record<string, unknown> | null
-  vehicle?: Record<string, unknown> | null
-  insurance_amount?: number | null
-  payment_method?: string | null
-  allowed_km?: number | null
-  notes?: string | null
 }
 
 export type LegalStatus = 
@@ -61,8 +54,6 @@ export type ContractStatus =
   | 'suspended'
   | 'cancelled'
   | 'renewed'
-  | 'under_legal_procedure'
-  | 'terminated'
 
 export interface ContractWithCustomer extends Contract {
   customers: {

@@ -33,9 +33,12 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   loading
 }) => {
   const { 
+    hasCompanyAdminAccess, 
     hasGlobalAccess, 
     hasFullCompanyControl,
+    isBrowsingAsCompanyAdmin,
     user,
+    context 
   } = useUnifiedCompanyAccess();
 
   const { 

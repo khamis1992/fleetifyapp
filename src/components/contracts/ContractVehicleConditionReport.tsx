@@ -4,16 +4,15 @@ import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 
-// VehicleConditionItem interface - kept for future use
-// interface VehicleConditionItem {
-//   category: string;
-//   items: {
-//     [key: string]: {
-//       condition: 'good' | 'fair' | 'poor' | 'damaged';
-//       notes?: string;
-//     };
-//   };
-// }
+interface VehicleConditionItem {
+  category: string;
+  items: {
+    [key: string]: {
+      condition: 'good' | 'fair' | 'poor' | 'damaged';
+      notes?: string;
+    };
+  };
+}
 
 interface DamageItem {
   x: number;

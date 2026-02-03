@@ -22,7 +22,6 @@ import NotFound from '@/pages/NotFound';
 const AboutUs = lazy(() => import('@/pages/AboutUs'));
 const Careers = lazy(() => import('@/pages/Careers'));
 const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
-const DiagnosticsPage = lazy(() => import('@/pages/DiagnosticsPage'));
 
 // Demo pages - lazy loaded
 const HeroDemo = lazy(() => import('@/pages/HeroDemo'));
@@ -30,7 +29,6 @@ const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
 // Mobile app pages
 const MobileLogin = lazy(() => import('@/pages/mobile/MobileLogin'));
-const MobileDiagnostics = lazy(() => import('@/pages/mobile/MobileDiagnostics'));
 const MobileApp = lazy(() => import('@/pages/mobile/MobileApp').then(m => ({ default: m.MobileApp })));
 const MobileContractWizard = lazy(() => import('@/pages/mobile/MobileContractWizard'));
 const MobileContractDetails = lazy(() => import('@/pages/mobile/MobileContractDetails'));
@@ -309,17 +307,6 @@ const routeConfigs: RouteConfig[] = [
     group: 'public',
     priority: 3,
   },
-  {
-    path: '/diagnostics',
-    component: DiagnosticsPage,
-    lazy: true,
-    exact: true,
-    title: 'System Diagnostics',
-    description: 'System diagnostics and troubleshooting',
-    group: 'public',
-    priority: 3,
-    protected: false,
-  },
 
   // === Demo Routes ===
   {
@@ -353,17 +340,6 @@ const routeConfigs: RouteConfig[] = [
     description: 'Mobile app login screen',
     group: 'mobile',
     priority: 1,
-    protected: false,
-  },
-  {
-    path: '/mobile/diagnostics',
-    component: MobileDiagnostics,
-    lazy: true,
-    exact: true,
-    title: 'Mobile Diagnostics',
-    description: 'Mobile app diagnostics',
-    group: 'mobile',
-    priority: 2,
     protected: false,
   },
   {

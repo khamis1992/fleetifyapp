@@ -11,6 +11,7 @@ import { NumberDisplay } from '@/components/ui/NumberDisplay';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import {
   FileText,
+  Calendar,
   DollarSign,
   User,
   Car,
@@ -41,22 +42,23 @@ import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 
-// Extended contract type for dialog with vehicle data
-type ExtendedContract = Contract & {
-  vehicle?: Record<string, unknown>;
-  license_plate?: string;
-  make?: string;
-  model?: string;
-  year?: number;
-  vehicle_status?: string;
-  plate_number?: string;
-  account_id?: string;
-};
+// SECURITY FIX: Added proper types to replace 'any'
+interface VehicleConditionReportData {
+  [key: string]: unknown;
+}
 
 interface ContractDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contract: ExtendedContract;
+  contract: Contract & {
+    vehicle?: Record<string, unknown>;
+    license_plate?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    vehicle_status?: string;
+    plate_number?: string;
+  };
   onEdit?: (contract: Contract) => void;
   onCreateInvoice?: (contract: Contract) => void;
   onAmendContract?: (contract: Contract) => void;
@@ -87,9 +89,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   React.useEffect(() => {
     if (contract) {
       setEditData({
-        ...contract,
+        contract_type: contract.contract_type || '',
+        start_date: contract.start_date || '',
+        end_date: contract.end_date || '',
+        contract_amount: contract.contract_amount || 0,
+        monthly_amount: contract.monthly_amount || 0,
         description: contract.description || '',
         terms: contract.terms || '',
+        ...contract
       });
     }
   }, [contract]);
@@ -98,16 +105,16 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
   const { data: customer } = useQuery({
     queryKey: ['customer', contract?.customer_id],
     queryFn: async () => {
-      if (!contract?.customer_id || !companyId) return null;
-      const { data } = await (supabase
+      if (!contract?.customer_id) return null;
+      const { data } = await supabase
         .from('customers')
-        .select('*') as any)
+        .select('*')
         .eq('id', contract.customer_id)
         .eq('company_id', companyId)
         .single();
       return data;
     },
-    enabled: !!contract?.customer_id && !!companyId
+    enabled: !!contract?.customer_id
   });
 
   const { data: vehicle } = useQuery({
@@ -120,14 +127,14 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
         hasVehicleId: !!contract?.vehicle_id
       });
       
-      if (!contract?.vehicle_id || !companyId) {
+      if (!contract?.vehicle_id) {
         console.log('⚠️ [VEHICLE_FETCH] No vehicle_id found in contract');
         return null;
       }
       
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from('vehicles')
-        .select('*') as any)
+        .select('*')
         .eq('id', contract.vehicle_id)
         .eq('company_id', companyId)
         .single();
@@ -140,38 +147,38 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
       console.log('✅ [VEHICLE_FETCH] Successfully fetched vehicle:', data);
       return data;
     },
-    enabled: !!contract?.vehicle_id && !!companyId
+    enabled: !!contract?.vehicle_id
   });
 
   const { data: chartOfAccount } = useQuery({
     queryKey: ['chart-of-account', contract?.account_id],
     queryFn: async () => {
-      if (!contract?.account_id || !companyId) return null;
-      const { data } = await (supabase
+      if (!contract?.account_id) return null;
+      const { data } = await supabase
         .from('chart_of_accounts')
-        .select('*') as any)
+        .select('*')
         .eq('id', contract.account_id)
         .eq('company_id', companyId)
         .single();
       return data;
     },
-    enabled: !!contract?.account_id && !!companyId
+    enabled: !!contract?.account_id
   });
 
   const { data: invoices } = useQuery({
     queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
-      if (!contract?.id || !companyId) return [];
-      const { data } = await (supabase
+      if (!contract?.id) return [];
+      const { data } = await supabase
         .from('invoices')
-        .select('*') as any)
+        .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
-        .neq('status', 'cancelled')
+        .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
         .order('created_at', { ascending: false });
-      return (data || []) as Invoice[];
+      return data || [];
     },
-    enabled: !!contract?.id && !!companyId
+    enabled: !!contract?.id
   });
 
   // Fetch vehicle inspections
@@ -225,13 +232,9 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
   const handleSave = async () => {
     try {
-      if (!companyId) {
-        toast.error('معرف الشركة غير متوفر');
-        return;
-      }
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('contracts')
-        .update(editData as any) as any)
+        .update(editData)
         .eq('id', contract.id)
         .eq('company_id', companyId);
 
@@ -239,7 +242,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
 
       toast.success('تم تحديث العقد بنجاح');
       setIsEditing(false);
-      onEdit?.({ ...contract, ...editData });
+      onEdit?.(editData);
     } catch (error) {
       console.error('Error updating contract:', error);
       toast.error('حدث خطأ في تحديث العقد');
@@ -473,7 +476,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <Label>نوع العقد</Label>
                         <Input
                           value={editData.contract_type || contract.contract_type || ''}
-                          onChange={(e) => setEditData({...editData, contract_type: e.target.value as Contract['contract_type']})}
+                          onChange={(e) => setEditData({...editData, contract_type: e.target.value})}
                         />
                       </div>
                       <div>
@@ -499,11 +502,8 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                         <span className="text-sm text-muted-foreground">نوع العقد</span>
                         <span className="font-medium">
                           {contract.contract_type === 'rental' ? 'إيجار' :
-                           contract.contract_type === 'daily_rental' ? 'إيجار يومي' :
-                           contract.contract_type === 'weekly_rental' ? 'إيجار أسبوعي' :
-                           contract.contract_type === 'monthly_rental' ? 'إيجار شهري' :
-                           contract.contract_type === 'yearly_rental' ? 'إيجار سنوي' :
-                           contract.contract_type === 'rent_to_own' ? 'إيجار منتهي بالتمليك' : contract.contract_type}
+                           contract.contract_type === 'service' ? 'خدمة' :
+                           contract.contract_type === 'maintenance' ? 'صيانة' : 'مبيعات'}
                         </span>
                       </div>
                       
@@ -729,7 +729,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.description !== undefined ? (editData.description || '') : (contract?.description || '')}
+                      value={editData.description !== undefined ? editData.description : (contract?.description || '')}
                       onChange={(e) => setEditData({...editData, description: e.target.value})}
                       rows={4}
                     />
@@ -748,7 +748,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                 <CardContent>
                   {isEditing ? (
                     <Textarea
-                      value={editData.terms !== undefined ? (editData.terms || '') : (contract?.terms || '')}
+                      value={editData.terms !== undefined ? editData.terms : (contract?.terms || '')}
                       onChange={(e) => setEditData({...editData, terms: e.target.value})}
                       rows={4}
                     />
@@ -800,7 +800,7 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
             {invoices && invoices.length > 0 ? (
               <div className="space-y-4">
                 {invoices.map((invoice) => {
-                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partial';
+                  const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partially_paid';
                   
                   const getPaymentStatusBadge = (paymentStatus: string) => {
                     const statusConfig = {
@@ -1013,10 +1013,10 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">مستوى الوقود</p>
-                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level ?? 0}%</p>
-                      {checkInInspection && checkOutInspection.fuel_level != null && checkInInspection.fuel_level != null && checkOutInspection.fuel_level < checkInInspection.fuel_level && (
+                      <p className="text-2xl font-bold">{checkOutInspection.fuel_level}%</p>
+                      {checkInInspection && checkOutInspection.fuel_level < checkInInspection.fuel_level && (
                         <Badge variant="destructive" className="mt-1">
-                          نقص {(checkInInspection.fuel_level ?? 0) - (checkOutInspection.fuel_level ?? 0)}%
+                          نقص {checkInInspection.fuel_level - checkOutInspection.fuel_level}%
                         </Badge>
                       )}
                     </div>
@@ -1129,7 +1129,9 @@ export const ContractDetailsDialog: React.FC<ContractDetailsDialogProps> = ({
           {/* Official Contract Tab */}
           <TabsContent value="official-contract" className="space-y-4">
             <OfficialContractView
-              contract={{ ...contract, customer, vehicle }}
+              contract={contract}
+              customer={customer}
+              vehicle={vehicle}
             />
           </TabsContent>
         </Tabs>

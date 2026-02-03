@@ -3,7 +3,7 @@
  * Dialog for exporting audit data in various formats
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,13 +15,15 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Download,
   FileText,
   Database,
   Code,
-  Shield
+  Shield,
+  User,
+  Calendar
 } from 'lucide-react';
 
 interface ExportDialogProps {
@@ -136,7 +138,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                     id="integrity-data"
                     checked={exportOptions.includeIntegrityData}
                     onCheckedChange={(checked) =>
-                      setExportOptions(prev => ({ ...prev, includeIntegrityData: checked === true }))
+                      setExportOptions(prev => ({ ...prev, includeIntegrityData: checked }))
                     }
                   />
                   <Label htmlFor="integrity-data" className="text-sm font-medium cursor-pointer">
@@ -152,7 +154,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                     id="financial-data"
                     checked={exportOptions.includeFinancialData}
                     onCheckedChange={(checked) =>
-                      setExportOptions(prev => ({ ...prev, includeFinancialData: checked === true }))
+                      setExportOptions(prev => ({ ...prev, includeFinancialData: checked }))
                     }
                   />
                   <Label htmlFor="financial-data" className="text-sm font-medium cursor-pointer">
@@ -168,7 +170,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                     id="anonymize-data"
                     checked={exportOptions.anonymizeUserData}
                     onCheckedChange={(checked) =>
-                      setExportOptions(prev => ({ ...prev, anonymizeUserData: checked === true }))
+                      setExportOptions(prev => ({ ...prev, anonymizeUserData: checked }))
                     }
                   />
                   <Label htmlFor="anonymize-data" className="text-sm font-medium cursor-pointer">
@@ -188,7 +190,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                     id="compliance-mode"
                     checked={exportOptions.complianceMode}
                     onCheckedChange={(checked) =>
-                      setExportOptions(prev => ({ ...prev, complianceMode: checked === true }))
+                      setExportOptions(prev => ({ ...prev, complianceMode: checked }))
                     }
                   />
                   <Label htmlFor="compliance-mode" className="text-sm font-medium cursor-pointer">

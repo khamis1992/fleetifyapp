@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, CheckCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import { useEssentialAccountMappings } from '@/hooks/useEssentialAccountMappings'
 
 interface ContractJournalEntryStatusProps {
@@ -9,7 +9,7 @@ interface ContractJournalEntryStatusProps {
 }
 
 export const ContractJournalEntryStatus = ({ 
-  contractId: _contractId, 
+  contractId, 
   showAutoFix = true 
 }: ContractJournalEntryStatusProps) => {
   const { 

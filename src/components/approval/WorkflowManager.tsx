@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Settings, Edit } from 'lucide-react';
+import { Plus, Settings, Play, Pause, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,12 +36,13 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
   const queryClient = useQueryClient();
   const { companyId } = useUnifiedCompanyAccess();
 
+  // Toggle workflow status mutation
   const toggleWorkflowMutation = useMutation({
     mutationFn: async ({ workflowId, currentStatus }: { workflowId: string; currentStatus: boolean }) => {
       const { error } = await supabase
         .from('approval_workflows')
-        .update({ is_active: !currentStatus } as never)
-        .eq('id' as never, workflowId as never);
+        .update({ is_active: !currentStatus })
+        .eq('id', workflowId);
 
       if (error) throw error;
 
@@ -55,10 +56,9 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
       });
     },
     onError: (error: unknown) => {
-      const err = error as Error;
       toast({
         title: "خطأ في تحديث سير العمل",
-        description: err.message || "حدث خطأ أثناء تحديث حالة سير العمل",
+        description: error.message || "حدث خطأ أثناء تحديث حالة سير العمل",
         variant: "destructive",
       });
     }

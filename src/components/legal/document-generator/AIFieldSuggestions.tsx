@@ -145,7 +145,7 @@ export function AIFieldSuggestions({
               ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' 
               : 'bg-muted hover:bg-muted/80'
           }`}
-          title="اقتراح قيم ذكية"
+          title="اقتراح قيم ذكية"}
         >
           {isLoading ? (
             <Sparkles className="h-4 w-4 animate-pulse" />

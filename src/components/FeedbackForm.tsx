@@ -17,6 +17,7 @@ import {
   ThumbsDown,
   Edit3,
   Save,
+  AlertCircle,
   CheckCircle
 } from 'lucide-react';
 

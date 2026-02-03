@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * تبويب الدفعات - عرض جميع الدفعات مع خيار الإلغاء
  * Payments Tab - Display all payments with cancel option
@@ -97,14 +96,14 @@ export function ContractPaymentsTab({
           invoice_id,
           invoice:invoices!invoice_id(invoice_number)
         `)
-        .eq('company_id' as any, companyId);
+        .eq('company_id', companyId);
 
       // Filter either by contract_id (show all) or by invoice_ids (only linked to invoices)
       if (showAllPayments) {
-        query = (query as any).eq('contract_id', contractId);
+        query = query.eq('contract_id', contractId);
       } else {
         if (!invoiceIds.length) return [];
-        query = (query as any).in('invoice_id', invoiceIds);
+        query = query.in('invoice_id', invoiceIds);
       }
 
       query = query.order('payment_date', { ascending: false });
@@ -112,7 +111,7 @@ export function ContractPaymentsTab({
       const { data, error } = await query;
 
       if (error) throw error;
-      return (data as unknown as Payment[]) || [];
+      return (data || []) as Payment[];
     },
     enabled: showAllPayments || invoiceIds.length > 0,
   });
@@ -126,49 +125,48 @@ export function ContractPaymentsTab({
 
       // Reverse invoice totals first (so invoice reflects cancellation) - only if invoice_id exists
       if (selectedPayment.invoice_id) {
-        const { data: invoice, error: invoiceError } = await (supabase
+        const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
           .select('id, total_amount, paid_amount')
-          .eq('id' as any, selectedPayment.invoice_id)
-          .eq('company_id' as any, companyId) as any)
+          .eq('id', selectedPayment.invoice_id)
+          .eq('company_id', companyId)
           .single();
 
         if (invoiceError || !invoice) {
           throw new Error('تعذر جلب بيانات الفاتورة لتحديثها');
         }
 
-        const invoiceData = invoice as { id: string; total_amount: number; paid_amount: number };
         const { paidAmount, balanceDue, paymentStatus } = calculateInvoiceTotalsAfterPaymentReversal({
-          totalAmount: Number(invoiceData.total_amount) || 0,
-          currentPaidAmount: Number(invoiceData.paid_amount) || 0,
+          totalAmount: Number(invoice.total_amount) || 0,
+          currentPaidAmount: Number(invoice.paid_amount) || 0,
           reversedAmount: Number(selectedPayment.amount) || 0,
         });
 
-        const { error: updateInvoiceError } = await (supabase
+        const { error: updateInvoiceError } = await supabase
           .from('invoices')
           .update({
             paid_amount: paidAmount,
             balance_due: balanceDue,
             payment_status: paymentStatus,
             updated_at: new Date().toISOString(),
-          } as any)
-          .eq('id' as any, invoiceData.id)
-          .eq('company_id' as any, companyId) as any);
+          })
+          .eq('id', invoice.id)
+          .eq('company_id', companyId);
 
         if (updateInvoiceError) {
           throw new Error('فشل تحديث الفاتورة بعد إلغاء الدفعة');
         }
       }
 
-      const { error } = await (supabase
+      const { error } = await supabase
         .from('payments')
         .update({ 
           payment_status: 'cancelled',
           notes: (selectedPayment?.notes ? selectedPayment.notes + ' | ' : '') + 
                  `تم الإلغاء في ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}`
-        } as any)
-        .eq('id' as any, paymentId)
-        .eq('company_id' as any, companyId) as any);
+        })
+        .eq('id', paymentId)
+        .eq('company_id', companyId);
 
       if (error) throw error;
     },

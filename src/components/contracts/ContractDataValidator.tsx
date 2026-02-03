@@ -9,7 +9,7 @@ import {
   RefreshCw,
   Info 
 } from 'lucide-react'
-import type { ContractCreationData } from '@/types/contracts'
+import { ContractCreationData, ContractValidationResult } from '@/types/contracts'
 
 interface ContractDataValidatorProps {
   data: Partial<ContractCreationData>
@@ -109,9 +109,11 @@ export const ContractDataValidator: React.FC<ContractDataValidatorProps> = ({
         })
       }
 
-      // Calculate rental days (as informational) - auto calculated by system
+      // Calculate rental days (as informational)
       const diffTime = endDate.getTime() - startDate.getTime()
-      void Math.ceil(diffTime / (1000 * 60 * 60 * 24)) // Used for internal calculations
+      const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      // Note: rental_days is calculated automatically in the system
     }
 
     // Check contract number format

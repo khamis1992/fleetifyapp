@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Simple Contract Wizard - 3 Steps Version
  * Redesigned to match Dashboard color scheme (teal-500 theme)

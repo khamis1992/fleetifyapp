@@ -7,6 +7,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { 
   Camera, 
   RotateCcw, 
@@ -14,11 +15,12 @@ import {
   Focus, 
   Grid3X3,
   Smartphone,
+  Maximize2,
   CheckCircle,
   AlertTriangle,
+  Settings,
   Zap
 } from 'lucide-react';
-
 
 interface EnhancedMobileCameraProps {
   onImageCapture: (file: File) => void;
@@ -43,7 +45,7 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [autoFocusEnabled] = useState(true);
+  const [autoFocusEnabled, setAutoFocusEnabled] = useState(true);
   const [captureQuality, setCaptureQuality] = useState<'high' | 'medium' | 'low'>('high');
   const [deviceInfo, setDeviceInfo] = useState<{
     isMobile: boolean;
@@ -115,7 +117,7 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
       // Check for flash capability
       const videoTrack = stream.getVideoTracks()[0];
       const capabilities = videoTrack.getCapabilities();
-      setHasFlash(!!(capabilities as any).torch);
+      setHasFlash(!!capabilities.torch);
 
       setIsStreaming(true);
     } catch (error) {
@@ -140,8 +142,8 @@ const EnhancedMobileCamera: React.FC<EnhancedMobileCameraProps> = ({
     try {
       const videoTrack = streamRef.current.getVideoTracks()[0];
       await videoTrack.applyConstraints({
-        advanced: [{ torch: !flashEnabled } as any]
-      } as any);
+        advanced: [{ torch: !flashEnabled }]
+      } as MediaTrackConstraints);
       setFlashEnabled(!flashEnabled);
     } catch (error) {
       console.error('Error toggling flash:', error);

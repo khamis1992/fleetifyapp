@@ -11,6 +11,7 @@ import {
   Upload, 
   Trash2, 
   Filter,
+  Search,
   RefreshCw,
   TrendingUp,
   AlertTriangle,
@@ -46,7 +47,7 @@ export const ContractsEnhancedHeader: React.FC<ContractsEnhancedHeaderProps> = (
   pendingActions,
   isRefreshing = false
 }) => {
-  const { isMobile } = useSimpleBreakpoint();
+  const { isMobile, isTablet } = useSimpleBreakpoint();
 
   if (isMobile) {
     return (
