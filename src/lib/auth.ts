@@ -31,7 +31,7 @@ export interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, userData?: Record<string, unknown>) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null; data?: any }>;
   signOut: () => Promise<{ error: Error | null }>;
   updateProfile: (updates: Record<string, unknown>) => Promise<{ error: Error | null }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
@@ -42,6 +42,16 @@ export interface AuthContextType {
 }
 
 export const authService = {
+  // Helper function to map Supabase User to AuthUser
+  mapSupabaseUser(user: User): AuthUser {
+    return {
+      ...user,
+      profile: undefined,
+      company: undefined,
+      roles: []
+    };
+  },
+
   async signUp(email: string, password: string, userData?: Record<string, unknown>) {
     try {
       // Validate input with rate limiting
@@ -102,12 +112,14 @@ export const authService = {
       const validationResult = await validation;
       if (!validationResult.success) {
         const errorMessage = Object.values(validationResult.errors || {}).join(', ');
-        return { error: new Error(errorMessage) };
+        return { error: new Error(errorMessage), data: null };
       }
 
-      const { error } = await signInWithTimeout();
+      const result = await signInWithTimeout();
+      const { data, error } = result as any;
 
-      return { error };
+      // CRITICAL FIX: Return both data and error so AuthContext can update state immediately
+      return { error, data };
     } catch (error) {
       console.error('📝 [AUTH_SERVICE] Sign in error:', error);
       let errorMessage = 'حدث خطأ أثناء تسجيل الدخول';
@@ -122,7 +134,7 @@ export const authService = {
         }
       }
 
-      return { error: new Error(errorMessage) };
+      return { error: new Error(errorMessage), data: null };
     }
   },
 

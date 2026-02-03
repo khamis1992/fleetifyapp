@@ -1,7 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent, type FC, useEffect } from 'react';
 import { Eye, EyeOff, CheckCircle, Shield, Zap, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +26,6 @@ export const AuthForm: FC = () => {
 
   const { signIn } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   // Load saved credentials on component mount
   useEffect(() => {
@@ -114,9 +112,9 @@ export const AuthForm: FC = () => {
           title: "مرحباً بك",
           description: "تم تسجيل الدخول بنجاح",
         });
-        // CRITICAL: Navigate immediately after successful login
-        console.log('✅ [AuthForm] Login successful, navigating to dashboard');
-        navigate('/dashboard', { replace: true });
+        // FIXED: Don't navigate here - let Auth.tsx handle navigation after user state updates
+        // This prevents the issue where navigation happens before AuthContext updates user state
+        console.log('✅ [AuthForm] Login successful, waiting for Auth.tsx to redirect...');
       }
     } catch (error) {
       toast({

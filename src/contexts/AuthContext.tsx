@@ -591,8 +591,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const result = await authService.signIn(email, password);
     console.log('🔍 [AUTH_CONTEXT] authService.signIn completed with error:', result.error);
 
-    if (!result.error) {
-      console.log('🔍 [AUTH_CONTEXT] Login successful - setting up logging timeout');
+    if (!result.error && result.data?.user && result.data?.session) {
+      console.log('🔍 [AUTH_CONTEXT] Login successful - updating user state IMMEDIATELY');
+      
+      // CRITICAL FIX: Update user state IMMEDIATELY to trigger navigation
+      // Don't wait for onAuthStateChange event which may be delayed
+      const authUser = authService.mapSupabaseUser(result.data.user);
+      setUser(authUser);
+      setSession(result.data.session);
+      cacheUser(authUser);
+      setSessionError(null);
+      
+      console.log('✅ [AUTH_CONTEXT] User state updated immediately - navigation should trigger now');
+      
       // MEMORY LEAK FIX: Clear existing timeout before creating new one
       if (logTimeoutRef.current) {
         clearTimeout(logTimeoutRef.current);
