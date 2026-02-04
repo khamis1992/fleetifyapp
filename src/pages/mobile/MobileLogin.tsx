@@ -58,38 +58,61 @@ export const MobileLogin: React.FC = () => {
       hasRedirected: hasRedirectedRef.current,
       authLoading,
       user: !!user,
-      loginSuccess
+      userId: user?.id,
+      loginSuccess,
+      pathname: window.location.pathname
     });
     
-    // Skip if already redirected or still loading
-    if (hasRedirectedRef.current || authLoading) return;
+    // Skip if already redirected
+    if (hasRedirectedRef.current) {
+      console.log('⏭️ [MobileLogin] Already redirected, skipping');
+      return;
+    }
+    
+    // Skip if still loading
+    if (authLoading) {
+      console.log('⏳ [MobileLogin] Auth still loading, waiting...');
+      return;
+    }
     
     // Case 1: User is authenticated (either already logged in or just logged in)
     if (user) {
+      console.log('✅ [MobileLogin] User found, preparing redirect...', {
+        userId: user.id,
+        email: user.email,
+        loginSuccess
+      });
+      
       hasRedirectedRef.current = true;
       setIsSubmitting(false);
       
       // Show biometric setup prompt only after successful login (not for already logged in users)
       if (loginSuccess && biometricAvailable && !hasSavedCredentials) {
-        console.log('✅ [MobileLogin] User authenticated, showing biometric setup');
+        console.log('✅ [MobileLogin] Showing biometric setup');
         setShowBiometricPrompt(true);
       } else {
-        console.log('✅ [MobileLogin] User authenticated, navigating to employee home');
-        navigate('/mobile/employee/home', { replace: true });
+        console.log('✅ [MobileLogin] Navigating to employee home...');
+        // Use setTimeout to ensure state updates are complete
+        setTimeout(() => {
+          navigate('/mobile/employee/home', { replace: true });
+        }, 100);
       }
       return;
     }
     
     // Case 2: Login was successful but AuthContext hasn't updated yet (with timeout)
-    if (loginSuccess) {
+    if (loginSuccess && !user) {
+      console.log('⏳ [MobileLogin] Login successful, waiting for AuthContext to update user...');
       const timeout = setTimeout(() => {
-        if (!hasRedirectedRef.current) {
-          console.warn('⚠️ [MobileLogin] AuthContext timeout (2s) - navigating directly');
-          hasRedirectedRef.current = true;
+        if (!hasRedirectedRef.current && !user) {
+          console.warn('⚠️ [MobileLogin] AuthContext timeout (3s) - user still not set!');
+          console.warn('⚠️ [MobileLogin] This might indicate a session persistence issue');
+          // Reset to allow retry
+          setLoginSuccess(false);
           setIsSubmitting(false);
-          navigate('/mobile/employee/home', { replace: true });
+          setError('فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.');
         }
-      }, 2000); // Reduced from 5s to 2s for faster fallback
+      }, 3000); // Increased to 3s for slower devices
       
       return () => clearTimeout(timeout);
     }
@@ -143,11 +166,27 @@ export const MobileLogin: React.FC = () => {
           expires_at: data.session.expires_at
         });
 
-        // CRITICAL: Check if session is being saved to storage
+        // CRITICAL: Verify session is saved to storage
+        // Wait longer on native platforms for storage sync
+        const checkDelay = Capacitor.isNativePlatform() ? 2000 : 1000;
         setTimeout(async () => {
           const { data: { session: checkSession } } = await supabase.auth.getSession();
-          console.log('🔍 [MobileLogin] Session check after 1s:', checkSession ? 'Session found' : 'Session NOT found');
-        }, 1000);
+          console.log('🔍 [MobileLogin] Session check after ' + checkDelay + 'ms:', {
+            sessionFound: !!checkSession,
+            userId: checkSession?.user?.id,
+            expiresAt: checkSession?.expires_at
+          });
+          
+          // Check localStorage directly
+          const keys = Object.keys(localStorage);
+          const authKeys = keys.filter(k => k.startsWith('sb-'));
+          console.log('🔍 [MobileLogin] LocalStorage auth keys:', authKeys);
+          
+          if (!checkSession) {
+            console.error('🚨 [MobileLogin] CRITICAL: Session not found after login!');
+            console.error('🚨 [MobileLogin] This indicates a storage persistence issue');
+          }
+        }, checkDelay);
 
         // Save credentials for biometric login (don't block on this)
         try {
@@ -160,7 +199,7 @@ export const MobileLogin: React.FC = () => {
         // Set login success flag - the useEffect will handle navigation
         // once AuthContext updates the user state
         setLoginSuccess(true);
-        console.log('🔄 [MobileLogin] Waiting for AuthContext to update user state...');
+        console.log('🔄 [MobileLogin] Login success flag set, waiting for AuthContext...');
       } else {
         console.error('❌ [MobileLogin] Login response missing user or session:', { user: !!data.user, session: !!data.session });
         setError('فشل تسجيل الدخول - يرجى المحاولة مرة أخرى');
