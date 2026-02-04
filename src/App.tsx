@@ -104,17 +104,20 @@ const createQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Performance optimizations - FIXED: Less aggressive refetching
-        refetchOnMount: true, // Changed from 'always' to true to reduce unnecessary refetches
-        refetchOnWindowFocus: false, // DISABLED: Prevents excessive refetching when switching tabs
+        // Performance optimizations
+        refetchOnMount: true,
+        refetchOnWindowFocus: true, // ENABLED: Refetch when returning to tab to show fresh data
         refetchOnReconnect: true,
 
-        // Cache configuration - optimized for better performance
-        staleTime: 5 * 60 * 1000, // INCREASED: 5 minutes stale time to reduce API calls
-        gcTime: 10 * 60 * 1000, // INCREASED: 10 minutes garbage collection time
+        // Cache configuration - CRITICAL: Keep data in cache longer
+        staleTime: 2 * 60 * 1000, // 2 minutes - data considered fresh
+        gcTime: 30 * 60 * 1000, // INCREASED: 30 minutes - keep in cache longer to prevent disappearing data
 
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
+        
+        // CRITICAL: Keep previous data while refetching
+        placeholderData: (previousData: any) => previousData,
 
         // Retry configuration
         retry: (failureCount, error: any) => {
@@ -122,16 +125,12 @@ const createQueryClient = () => {
           if (error?.status >= 400 && error?.status < 500) {
             return false;
           }
-          return failureCount < 1; // REDUCED: 1 retry max
+          return failureCount < 1;
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 1.5 ** attemptIndex, 3000), // Reduced max delay
+        retryDelay: (attemptIndex) => Math.min(1000 * 1.5 ** attemptIndex, 3000),
 
-        // Network mode - MULTI-TAB FIX: Use 'online' to prevent conflicts
-        // This ensures queries only run when actually online
+        // Network mode
         networkMode: 'online',
-
-        // Performance monitoring - disabled to prevent errors
-        // onSuccess and onError callbacks removed for stability
       },
       mutations: {
         retry: 1,

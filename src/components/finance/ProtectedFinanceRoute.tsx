@@ -103,8 +103,8 @@ export const ProtectedFinanceRoute: React.FC<ProtectedFinanceRouteProps> = ({
     permissionCheck.error,
     hasCompanyAdminAccess,
     permission,
-    requireModule,
-    error
+    requireModule
+    // Removed 'error' from dependencies to prevent infinite loop
   ]);
 
   const handleRetry = () => {

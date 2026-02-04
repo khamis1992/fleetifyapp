@@ -1618,7 +1618,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                   </p>
                   <div className="space-y-2">
                     {todaysTasks.urgentCalls.map((c) => (
-                      <div key={c.customer_id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <div key={`${c.customer_id}-${c.contract_id}`} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                         <span className="text-sm">{c.customer_name}</span>
                         <Badge style={{ backgroundColor: `hsl(${colors.destructive})`, color: 'white' }}>
                           {c.days_overdue} يوم
@@ -1635,7 +1635,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                   </p>
                   <div className="space-y-2">
                     {todaysTasks.highRisk.map((customer) => (
-                      <div key={customer.customer_id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <div key={`${customer.customer_id}-${customer.contract_id}`} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                         <span className="text-sm">{customer.customer_name}</span>
                         <span className="text-xs text-muted-foreground">{customer.risk_score}%</span>
                       </div>

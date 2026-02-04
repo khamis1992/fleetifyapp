@@ -1,0 +1,229 @@
+{
+  "backup_info": {
+    "created_at": "2026-02-03T15:40:00Z",
+    "cutoff_date": "2026-02-01T00:26:10Z",
+    "total_payments": 9,
+    "total_amount": 15600.00,
+    "currency": "QAR",
+    "company_id": "24bc0b21-4e2d-4413-9842-31719a3669f4",
+    "company_name": "Al-Araf Car Rental"
+  },
+  "payments": [
+    {
+      "payment_number": 1,
+      "id": "59859a74-6f6b-4e68-9649-aec52e3b8727",
+      "payment_number_system": "PAY-1769938193638-1",
+      "payment_date": "2026-02-01",
+      "amount": 1600.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+        "name": "محمد فوأد شوشان",
+        "phone": "55146823"
+      },
+      "contract": {
+        "id": "f775fada-6251-4f7e-83ec-f8e003459e10",
+        "contract_number": "319"
+      },
+      "invoice": {
+        "id": "748c9afb-23b3-42e8-9985-48ebfee3f06c",
+        "invoice_number": "INV-C-ALF-0055-2024-09"
+      },
+      "notes": "دفعة لفاتورة INV-C-ALF-0055-2024-09",
+      "created_at": "2026-02-01T09:29:53.933177Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 2,
+      "id": "1ddfc24f-11b0-4f66-9333-96d1d04b9a14",
+      "payment_number_system": "PAY-1769938193638-2",
+      "payment_date": "2026-02-01",
+      "amount": 1600.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+        "name": "محمد فوأد شوشان",
+        "phone": "55146823"
+      },
+      "contract": {
+        "id": "f775fada-6251-4f7e-83ec-f8e003459e10",
+        "contract_number": "319"
+      },
+      "invoice": {
+        "id": "4f32967a-7156-4f3f-9baf-64c161d1a768",
+        "invoice_number": "INV-R-319-202503"
+      },
+      "notes": "دفعة لفاتورة INV-R-319-202503",
+      "created_at": "2026-02-01T09:29:56.274276Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 3,
+      "id": "8d0b3d60-3872-4554-ad8c-564df2050afe",
+      "payment_number_system": "PAY-1769938193638-3",
+      "payment_date": "2026-02-01",
+      "amount": 1600.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+        "name": "محمد فوأد شوشان",
+        "phone": "55146823"
+      },
+      "contract": {
+        "id": "f775fada-6251-4f7e-83ec-f8e003459e10",
+        "contract_number": "319"
+      },
+      "invoice": {
+        "id": "3231a65f-df48-458c-9c31-c6434b8ad782",
+        "invoice_number": "INV-C-ALF-0055-013"
+      },
+      "notes": "دفعة لفاتورة INV-C-ALF-0055-013",
+      "created_at": "2026-02-01T09:29:57.874211Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 4,
+      "id": "85a38d1d-66d9-4a29-ab6b-3487eee10928",
+      "payment_number_system": "PAY-1769938235554-1",
+      "payment_date": "2026-02-01",
+      "amount": 1600.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+        "name": "محمد فوأد شوشان",
+        "phone": "55146823"
+      },
+      "contract": {
+        "id": "f775fada-6251-4f7e-83ec-f8e003459e10",
+        "contract_number": "319"
+      },
+      "invoice": {
+        "id": "a2b283d3-447e-458c-8122-8126036a4999",
+        "invoice_number": "INV-C-ALF-0055-014"
+      },
+      "notes": "دفعة لفاتورة INV-C-ALF-0055-014",
+      "created_at": "2026-02-01T09:30:35.817346Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 5,
+      "id": "60d8d0d4-f7ea-4222-b30f-eba5da192ee6",
+      "payment_number_system": "PAY-1769938235554-2",
+      "payment_date": "2026-02-01",
+      "amount": 1600.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "274d83f7-6220-4fe0-bcd1-e986feabeaa0",
+        "name": "محمد فوأد شوشان",
+        "phone": "55146823"
+      },
+      "contract": {
+        "id": "f775fada-6251-4f7e-83ec-f8e003459e10",
+        "contract_number": "319"
+      },
+      "invoice": {
+        "id": "05da3547-fd4c-45f4-83e9-0f36e6819bd3",
+        "invoice_number": "INV-2026-000181"
+      },
+      "notes": "دفعة لفاتورة INV-2026-000181",
+      "created_at": "2026-02-01T09:30:37.375482Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 6,
+      "id": "24b090a4-aa98-42a6-b8b3-28d22e0ad583",
+      "payment_number_system": "PAY-1770017422608-1",
+      "payment_date": "2026-02-02",
+      "amount": 2100.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "d5f01bab-4846-4da2-869f-a111afbd9e11",
+        "name": "ياسين سرحان كمال بن عايد",
+        "phone": "71002048"
+      },
+      "contract": {
+        "id": "369ae770-8a45-4e2d-a7ff-bcb42aba5445",
+        "contract_number": "LTO202459"
+      },
+      "invoice": {
+        "id": "b0a5dd31-0892-46ca-9367-b1df7131f091",
+        "invoice_number": "INV-202602-00072"
+      },
+      "notes": "دفعة لفاتورة INV-202602-00072",
+      "created_at": "2026-02-02T07:30:22.830623Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 7,
+      "id": "6ba18275-9138-4caa-b92e-6383faa07c4a",
+      "payment_number_system": "PAY-1770019130378-1",
+      "payment_date": "2026-02-02",
+      "amount": 1600.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "bacc7a09-335d-47cf-8cde-96d08983941d",
+        "name": "محمد عماد النعماني",
+        "phone": "51230549"
+      },
+      "contract": {
+        "id": "6b4f33e5-05ff-4bcc-809a-45a184bd916b",
+        "contract_number": "C-ALF-0070"
+      },
+      "invoice": {
+        "id": "87613ff1-83bb-4f33-a3b0-521050629f1f",
+        "invoice_number": "INV-C-ALF-0070-2025-04"
+      },
+      "notes": "دفعة لفاتورة INV-C-ALF-0070-2025-04",
+      "created_at": "2026-02-02T07:58:50.476107Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 8,
+      "id": "c6a6351b-6c2d-4b07-a0ce-daee019f46a9",
+      "payment_number_system": "PAY-1770022626871-1",
+      "payment_date": "2026-02-02",
+      "amount": 1500.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "8d6ff2ab-2a6a-4d2a-bbfd-2ed2b5bba89f",
+        "name": "عبد المنعم حسن حمدي",
+        "phone": "70184904"
+      },
+      "contract": {
+        "id": "cef308de-167c-4387-8e42-b5e75707acf7",
+        "contract_number": "AGR-202504-400949"
+      },
+      "invoice": {
+        "id": "a6521b36-07ca-4b6f-b8ac-7c9d4d179c3d",
+        "invoice_number": "INV-2026-000253"
+      },
+      "notes": "دفعة لفاتورة INV-2026-000253",
+      "created_at": "2026-02-02T08:57:07.133189Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    },
+    {
+      "payment_number": 9,
+      "id": "ddabdfa3-08b5-4dfa-b529-112ef44d4354",
+      "payment_number_system": "PAY-1770033849304-1",
+      "payment_date": "2026-02-02",
+      "amount": 2100.00,
+      "payment_method": "cash",
+      "customer": {
+        "id": "85edef2e-ee24-42fe-8fd6-a598366ea13d",
+        "name": "مهدي حسني",
+        "phone": "30180684"
+      },
+      "contract": {
+        "id": "941d135d-fc1d-40ca-a0ca-5309fae2e91b",
+        "contract_number": "C-ALF-0104"
+      },
+      "invoice": {
+        "id": "69be0975-b068-4041-8488-7abc8800abeb",
+        "invoice_number": "INV-202602-00036"
+      },
+      "notes": "دفعة لفاتورة INV-202602-00036",
+      "created_at": "2026-02-02T12:04:09.971693Z",
+      "created_by": "05e2b94f-80a4-45ee-927f-60dafe81a1af"
+    }
+  ]
+}
