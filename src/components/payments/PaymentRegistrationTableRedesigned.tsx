@@ -145,6 +145,7 @@ export function PaymentRegistrationTableRedesigned({ searchTerm, showFilters }: 
           contracts!inner(contract_number)
         `)
         .eq('company_id', companyId)
+        .order('payment_date', { ascending: false })
         .order('created_at', { ascending: false });
 
       // Apply filters

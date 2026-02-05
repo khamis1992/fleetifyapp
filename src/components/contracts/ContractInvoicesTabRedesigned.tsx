@@ -728,9 +728,15 @@ export const ContractInvoicesTabRedesigned = ({
     filtered.sort((a, b) => {
       switch (sortOption) {
         case 'date-desc':
-          return new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime();
+          // ترتيب حسب تاريخ الاستحقاق (الأحدث أولاً)
+          const dueDateB = b.due_date ? new Date(b.due_date).getTime() : 0;
+          const dueDateA = a.due_date ? new Date(a.due_date).getTime() : 0;
+          return dueDateB - dueDateA;
         case 'date-asc':
-          return new Date(a.invoice_date).getTime() - new Date(b.invoice_date).getTime();
+          // ترتيب حسب تاريخ الاستحقاق (الأقدم أولاً)
+          const dueDateA2 = a.due_date ? new Date(a.due_date).getTime() : 0;
+          const dueDateB2 = b.due_date ? new Date(b.due_date).getTime() : 0;
+          return dueDateA2 - dueDateB2;
         case 'amount-desc':
           return (b.total_amount || 0) - (a.total_amount || 0);
         case 'amount-asc':

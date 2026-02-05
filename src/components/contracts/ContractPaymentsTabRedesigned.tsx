@@ -95,6 +95,7 @@ interface Payment {
   contract_id?: string;
   invoice?: {
     invoice_number: string;
+    due_date: string | null;
   };
 }
 
@@ -413,7 +414,7 @@ const PaymentTableRow = ({
         </div>
       </td>
 
-      {/* Date */}
+      {/* Payment Date */}
       <td className="py-4 px-4">
         <p className="text-sm text-neutral-900" dir="ltr">
           {payment.payment_date
@@ -423,6 +424,15 @@ const PaymentTableRow = ({
         {payment.reference_number && (
           <p className="text-xs text-neutral-500 font-mono">{payment.reference_number}</p>
         )}
+      </td>
+
+      {/* Due Date */}
+      <td className="py-4 px-4">
+        <p className="text-sm text-neutral-900" dir="ltr">
+          {payment.invoice?.due_date
+            ? format(new Date(payment.invoice.due_date), 'dd/MM/yyyy', { locale: ar })
+            : '-'}
+        </p>
       </td>
 
       {/* Amount */}
@@ -602,7 +612,7 @@ export const ContractPaymentsTabRedesigned = ({
           created_at,
           invoice_id,
           contract_id,
-          invoice:invoices!invoice_id(invoice_number)
+          invoice:invoices!invoice_id(invoice_number, due_date)
         `)
         .eq('company_id', companyId);
 
@@ -653,9 +663,15 @@ export const ContractPaymentsTabRedesigned = ({
     filtered.sort((a, b) => {
       switch (sortOption) {
         case 'date-desc':
-          return new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime();
+          // ترتيب حسب تاريخ الاستحقاق (الأحدث أولاً)، وإذا لم يوجد نستخدم تاريخ الدفع
+          const dueDateB = b.invoice?.due_date ? new Date(b.invoice.due_date).getTime() : new Date(b.payment_date).getTime();
+          const dueDateA = a.invoice?.due_date ? new Date(a.invoice.due_date).getTime() : new Date(a.payment_date).getTime();
+          return dueDateB - dueDateA;
         case 'date-asc':
-          return new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime();
+          // ترتيب حسب تاريخ الاستحقاق (الأقدم أولاً)، وإذا لم يوجد نستخدم تاريخ الدفع
+          const dueDateA2 = a.invoice?.due_date ? new Date(a.invoice.due_date).getTime() : new Date(a.payment_date).getTime();
+          const dueDateB2 = b.invoice?.due_date ? new Date(b.invoice.due_date).getTime() : new Date(b.payment_date).getTime();
+          return dueDateA2 - dueDateB2;
         case 'amount-desc':
           return (b.amount || 0) - (a.amount || 0);
         case 'amount-asc':
@@ -1146,6 +1162,7 @@ export const ContractPaymentsTabRedesigned = ({
                             <th style="width: 35px;">م</th>
                             <th>رقم الفاتورة</th>
                             <th>تاريخ الدفع</th>
+                            <th>تاريخ الاستحقاق</th>
                             <th>طريقة الدفع</th>
                             <th>رقم المرجع</th>
                             <th>المبلغ</th>
@@ -1161,10 +1178,12 @@ export const ContractPaymentsTabRedesigned = ({
                             };
                             const method = methodLabels[payment.payment_method] || { label: payment.payment_method || '-', cssClass: '' };
                             const paymentDate = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '-';
+                            const dueDate = payment.invoice?.due_date ? new Date(payment.invoice.due_date).toLocaleDateString('en-GB') : '-';
                             return '<tr>' +
                               '<td style="text-align: center;">' + (idx + 1) + '</td>' +
                               '<td>' + (payment.invoice?.invoice_number || '-') + '</td>' +
                               '<td>' + paymentDate + '</td>' +
+                              '<td>' + dueDate + '</td>' +
                               '<td style="text-align: center;"><span class="' + method.cssClass + '">' + method.label + '</span></td>' +
                               '<td>' + (payment.reference_number || '-') + '</td>' +
                               '<td class="amount-cell">' + formatCurrency(payment.amount || 0) + '</td>' +
@@ -1173,7 +1192,7 @@ export const ContractPaymentsTabRedesigned = ({
                         </tbody>
                         <tfoot>
                           <tr style="background: #1e3a5f; color: white;">
-                            <td colspan="5" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
+                            <td colspan="6" style="text-align: left; font-weight: bold; border-color: #1e3a5f;">الإجمالي</td>
                             <td style="font-weight: bold; border-color: #1e3a5f;">${formatCurrency(totalPaid)}</td>
                           </tr>
                         </tfoot>
@@ -1305,7 +1324,8 @@ export const ContractPaymentsTabRedesigned = ({
                     <thead>
                       <tr className="bg-neutral-50 border-b border-neutral-200">
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الفاتورة / الطريقة</th>
-                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">التاريخ</th>
+                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الدفع</th>
+                        <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">تاريخ الاستحقاق</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">المبلغ</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">الحالة</th>
                         <th className="py-3 px-4 text-right text-sm font-semibold text-neutral-700">ملاحظات</th>
