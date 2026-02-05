@@ -213,9 +213,12 @@ export const ContractHeaderRedesigned = React.memo<ContractHeaderRedesignedProps
     return Math.max(0, Math.min(100, (daysElapsed / totalDays) * 100));
   }, [contract.start_date, contract.end_date]);
 
-  const totalAmount = contract.total_amount || contract.contract_amount || 0;
-  const paidAmount = contract.paid_amount || contract.total_paid || 0;
-  const remainingAmount = totalAmount - paidAmount;
+  // استخدام contract_amount (قيمة العقد الأصلية) وليس total_amount
+  const totalAmount = contract.contract_amount || 0;
+  // استخدام balance_due لحساب المبلغ المدفوع بشكل صحيح
+  const balanceDue = contract.balance_due || 0;
+  const paidAmount = totalAmount - balanceDue;
+  const remainingAmount = balanceDue;
   const paymentProgress = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
 
   const statusConfig = getStatusConfig(contract.status);

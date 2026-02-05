@@ -30,51 +30,13 @@ let COMPANY_STAMP_BASE64: string | null = null;
 
 /**
  * تحويل HTML إلى ملف Word (DOCX)
+ * Uses the convertHtmlToDocxBlob utility from document-export
  */
 async function convertHtmlToDocx(htmlContent: string, title: string = 'Document'): Promise<Blob> {
   try {
-    const { default: HTMLtoDOCX } = await import('html-to-docx');
-    
-    // Wrap HTML in complete document structure
-    const completeHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      direction: rtl;
-      text-align: right;
-    }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #000; padding: 8px; }
-  </style>
-</head>
-<body>
-  ${htmlContent}
-</body>
-</html>`;
-    
-    // Convert HTML to DOCX
-    const fileBuffer = await HTMLtoDOCX(completeHtml, null, {
-      table: { row: { cantSplit: true } },
-      footer: true,
-      pageNumber: true,
-      font: 'Arial',
-      fontSize: 24,
-      orientation: 'portrait',
-      margins: {
-        top: 720,
-        right: 720,
-        bottom: 720,
-        left: 720
-      }
-    });
-    
-    // Create blob from buffer
-    return new Blob([fileBuffer], { 
-      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-    });
+    // Use the utility function from document-export
+    const { convertHtmlToDocxBlob } = await import('@/utils/document-export');
+    return await convertHtmlToDocxBlob(htmlContent);
   } catch (error) {
     console.error('Error converting HTML to DOCX:', error);
     throw new Error('فشل تحويل HTML إلى Word');
@@ -187,13 +149,13 @@ async function fetchContractDocuments(contractId: string, companyId: string): Pr
   try {
     // 1. جلب العقد من contract-documents bucket
     const { data: contractFiles } = await supabase.storage
-      .from('contract-documents')
+      .from('contract_documents')
       .list(`contracts/${companyId}/${contractId}`);
 
     if (contractFiles && contractFiles.length > 0) {
       for (const file of contractFiles) {
         const blob = await fetchFileFromStorage(
-          'contract-documents',
+          'contract_documents',
           `contracts/${companyId}/${contractId}/${file.name}`
         );
         if (blob) {
@@ -207,13 +169,13 @@ async function fetchContractDocuments(contractId: string, companyId: string): Pr
 
     // 2. جلب المستندات القانونية من legal-documents bucket
     const { data: legalFiles } = await supabase.storage
-      .from('legal-documents')
+      .from('documents')
       .list(`contracts/${companyId}/${contractId}`);
 
     if (legalFiles && legalFiles.length > 0) {
       for (const file of legalFiles) {
         const blob = await fetchFileFromStorage(
-          'legal-documents',
+          'documents',
           `contracts/${companyId}/${contractId}/${file.name}`
         );
         if (blob) {
@@ -566,44 +528,75 @@ async function generateCustomerDocuments(
     });
   }
 
-  // 3. كشف المستندات المرفوعة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
+  // 3. كشف المستندات المرفوعة - يحتوي على نسخ من جميع المستندات مدمجة
   if (options.documentsList) {
-    // بناء قائمة المستندات المولدة
-    const generatedDocuments: { name: string; status: 'مرفق' | 'غير مرفق' }[] = [];
+    // بناء قائمة المستندات مع المحتوى الفعلي
+    const generatedDocuments: { 
+      name: string; 
+      status: 'مرفق' | 'غير مرفق';
+      url?: string;
+      type?: string;
+      htmlContent?: string;
+    }[] = [];
     
-    // إضافة المستندات المولدة حسب الخيارات
-    if (options.explanatoryMemo) {
-      generatedDocuments.push({ name: 'المذكرة الشارحة', status: 'مرفق' });
-    }
-    
+    // 1. كشف المطالبات المالية (مع المحتوى)
     if (options.claimsStatement) {
-      generatedDocuments.push({ name: 'كشف المطالبات المالية', status: 'مرفق' });
+      const claimsHtml = generateClaimsStatementHtml(claimsData);
+      generatedDocuments.push({ 
+        name: 'كشف المطالبات المالية', 
+        status: 'مرفق',
+        type: 'html',
+        htmlContent: claimsHtml,
+      });
     }
     
-    // إضافة صورة العقد (دائماً موجودة)
-    generatedDocuments.push({ name: 'صورة من العقد', status: 'مرفق' });
-    
-    // ملاحظة: المخالفات مدمجة في كشف المطالبات، لا تُضاف كمستند منفصل
-    
-    if (options.criminalComplaint) {
-      generatedDocuments.push({ name: 'بلاغ سرقة المركبة', status: 'مرفق' });
+    // 2. البطاقة الشخصية للعميل (من مستندات الشركة)
+    const representativeIdDoc = companyDocuments.find(d => d.document_type === 'representative_id');
+    if (representativeIdDoc) {
+      generatedDocuments.push({ 
+        name: 'البطاقة الشخصية للممثل', 
+        status: 'مرفق',
+        type: 'pdf',
+        url: representativeIdDoc.file_url,
+      });
     }
     
-    if (options.violationsTransfer && violations.length > 0) {
-      generatedDocuments.push({ name: 'طلب تحويل المخالفات', status: 'مرفق' });
+    // 3. المذكرة الشارحة (مع المحتوى)
+    if (options.explanatoryMemo) {
+      generatedDocuments.push({ 
+        name: 'المذكرة الشارحة', 
+        status: 'مرفق',
+        type: 'html',
+        htmlContent: memoHtml,
+      });
     }
     
-    // إضافة المستندات الثابتة للشركة
-    generatedDocuments.push(
-      { name: 'السجل التجاري', status: 'مرفق' },
-      { name: 'شهادة IBAN', status: 'مرفق' },
-      { name: 'البطاقة الشخصية للممثل', status: 'مرفق' }
-    );
+    // 4. شهادة IBAN
+    const ibanDoc = companyDocuments.find(d => d.document_type === 'iban_certificate');
+    if (ibanDoc) {
+      generatedDocuments.push({ 
+        name: 'شهادة IBAN', 
+        status: 'مرفق',
+        type: 'pdf',
+        url: ibanDoc.file_url,
+      });
+    }
+    
+    // 5. السجل التجاري
+    const commercialRegisterDoc = companyDocuments.find(d => d.document_type === 'commercial_register');
+    if (commercialRegisterDoc) {
+      generatedDocuments.push({ 
+        name: 'السجل التجاري', 
+        status: 'مرفق',
+        type: 'pdf',
+        url: commercialRegisterDoc.file_url,
+      });
+    }
 
     const documentsListData: DocumentsListData = {
       caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
       customerName: customerFullName,
-      amount: claimAmount, // المبلغ المطالب به (بدون المخالفات)
+      amount: claimAmount,
       documents: generatedDocuments,
     };
 

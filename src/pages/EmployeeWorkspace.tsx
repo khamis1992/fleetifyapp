@@ -683,7 +683,7 @@ export const EmployeeWorkspace: React.FC = () => {
                                               {formatCurrency(invoice.amount - invoice.paid_amount)}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                              استحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                                              استحقاق: {new Date(invoice.due_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </p>
                                           </div>
                                           

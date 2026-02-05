@@ -248,7 +248,7 @@ export function LawsuitPreparationProvider({
       console.log('[Contract Document] Found document:', data.document_name, 'at path:', data.file_path);
       
       const { data: urlData } = supabase.storage
-        .from('contract-documents')
+        .from('contract_documents')
         .getPublicUrl(data.file_path);
       
       if (urlData?.publicUrl) {
@@ -524,7 +524,7 @@ export function LawsuitPreparationProvider({
     try {
       // Determine the correct bucket based on document type
       const isContractDocument = docId === 'contract';
-      const bucketName = isContractDocument ? 'contract-documents' : 'legal-documents';
+      const bucketName = isContractDocument ? 'contract_documents' : 'documents';
       
       const fileName = `contracts/${companyId}/${contractId}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
@@ -827,65 +827,15 @@ export function LawsuitPreparationProvider({
       
       toast.info('جاري تحويل المذكرة إلى Word...');
       
-      // Use html-to-docx (modern and reliable)
-      const { default: HTMLtoDOCX } = await import('html-to-docx');
+      // Use the downloadHtmlAsDocx utility function from document-export
+      const { downloadHtmlAsDocx } = await import('@/utils/document-export');
       
-      // Wrap HTML in complete document structure
-      const completeHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      direction: rtl;
-      text-align: right;
-    }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #000; padding: 8px; }
-  </style>
-</head>
-<body>
-  ${memoHtml}
-</body>
-</html>`;
-      
-      // Convert HTML to DOCX
-      const fileBuffer = await HTMLtoDOCX(completeHtml, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: true,
-        font: 'Arial',
-        fontSize: 24,
-        orientation: 'portrait',
-        margins: {
-          top: 720,
-          right: 720,
-          bottom: 720,
-          left: 720
-        }
-      });
-      
-      // Create blob from buffer
-      const docxBlob = new Blob([fileBuffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-      });
-      
-      // Download
+      // Prepare filename
       const customerName = formatCustomerName(state.customer) || 'عميل';
       const fileName = `المذكرة_الشارحة_${customerName}_${state.contract?.contract_number || ''}.docx`;
       
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(docxBlob);
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Cleanup URL
-      setTimeout(() => {
-        URL.revokeObjectURL(link.href);
-      }, 100);
+      // Download using the utility function
+      await downloadHtmlAsDocx(memoHtml, fileName);
       
       toast.success('تم تحميل المذكرة بصيغة Word');
     } catch (error) {

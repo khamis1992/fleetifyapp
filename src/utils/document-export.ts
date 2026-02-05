@@ -205,31 +205,18 @@ function parseHtmlToSections(html: string): ParsedSection[] {
 }
 
 /**
- * تحميل HTML كملف Word (DOCX) - نسخة مطابقة تماماً لـ PDF
- * تقوم بتحويل HTML مباشرة إلى DOCX مع الحفاظ على التنسيق
+ * دالة مشتركة لإنشاء مستند DOCX من HTML
+ * تُستخدم من قبل downloadHtmlAsDocx و convertHtmlToDocxBlob
  * @param htmlContent محتوى HTML
- * @param filename اسم الملف
+ * @returns Document object من مكتبة docx
  */
-export async function downloadHtmlAsDocx(
-  htmlContent: string,
-  filename: string = 'document.docx'
-): Promise<void> {
-  // استيراد المكتبات
-  let docxModule: any;
-  let fileSaverModule: any;
-  
-  try {
-    docxModule = await import('docx');
-    fileSaverModule = await import('file-saver');
-  } catch (importError) {
-    console.error('Failed to import docx or file-saver:', importError);
-    throw new Error('فشل تحميل مكتبات إنشاء الملفات. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
-  }
+async function createDocxDocumentFromHtml(htmlContent: string): Promise<any> {
+  // استيراد المكتبة
+  const docxModule = await import('docx');
   
   const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, 
           WidthType, BorderStyle, ShadingType, TextDirection, Header, Footer, PageNumber, 
           convertInchesToTwip, UnderlineType } = docxModule;
-  const { saveAs } = fileSaverModule;
 
   // إنشاء parser لتحليل HTML
   const parser = new DOMParser();
@@ -958,9 +945,34 @@ export async function downloadHtmlAsDocx(
     }],
   });
 
-  // تصدير الملف
-  const blob = await Packer.toBlob(finalDoc);
-  saveAs(blob, filename);
+  // إرجاع Document object
+  return { document: finalDoc, docxModule };
+}
+
+/**
+ * تحميل HTML كملف Word (DOCX) - يستخدم الدالة المشتركة
+ * @param htmlContent محتوى HTML
+ * @param filename اسم الملف
+ */
+export async function downloadHtmlAsDocx(
+  htmlContent: string,
+  filename: string = 'document.docx'
+): Promise<void> {
+  try {
+    // استخدام الدالة المشتركة
+    const { document: finalDoc, docxModule } = await createDocxDocumentFromHtml(htmlContent);
+    const { Packer } = docxModule;
+    
+    // استيراد file-saver
+    const { saveAs } = await import('file-saver');
+    
+    // تصدير الملف
+    const blob = await Packer.toBlob(finalDoc);
+    saveAs(blob, filename);
+  } catch (error) {
+    console.error('Error in downloadHtmlAsDocx:', error);
+    throw new Error('فشل في تحميل المذكرة بصيغة Word: ' + (error as Error).message);
+  }
 }
 
 /**
@@ -977,6 +989,26 @@ export async function downloadDocument(
     await downloadHtmlAsPdf(htmlContent, `${baseName}.pdf`);
   } else {
     await downloadHtmlAsDocx(htmlContent, `${baseName}.docx`);
+  }
+}
+
+/**
+ * تحويل HTML إلى DOCX وإرجاع Blob (بدون تحميل)
+ * مفيد للاستخدام في ملفات ZIP
+ * يستخدم نفس الدالة المشتركة مع downloadHtmlAsDocx لضمان التطابق الكامل
+ */
+export async function convertHtmlToDocxBlob(htmlContent: string): Promise<Blob> {
+  try {
+    // استخدام الدالة المشتركة
+    const { document: finalDoc, docxModule } = await createDocxDocumentFromHtml(htmlContent);
+    const { Packer } = docxModule;
+    
+    // إرجاع Blob بدلاً من التحميل
+    const blob = await Packer.toBlob(finalDoc);
+    return blob;
+  } catch (error) {
+    console.error('Error in convertHtmlToDocxBlob:', error);
+    throw new Error('فشل في تحويل HTML إلى DOCX: ' + (error as Error).message);
   }
 }
 

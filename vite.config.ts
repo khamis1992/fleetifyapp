@@ -110,6 +110,12 @@ export default defineConfig(({ mode }) => ({
             return 'date-utils';
           }
 
+          // Document generation libraries
+          if (id.includes('node_modules/docx/') ||
+              id.includes('node_modules/file-saver/')) {
+            return 'document-utils';
+          }
+
           // Radix UI - keep together for consistency
           if (id.includes('node_modules/@radix-ui/')) {
             return 'ui';
