@@ -248,7 +248,7 @@ export function LawsuitPreparationProvider({
       console.log('[Contract Document] Found document:', data.document_name, 'at path:', data.file_path);
       
       const { data: urlData } = supabase.storage
-        .from('contract_documents')
+        .from('documents')
         .getPublicUrl(data.file_path);
       
       if (urlData?.publicUrl) {
