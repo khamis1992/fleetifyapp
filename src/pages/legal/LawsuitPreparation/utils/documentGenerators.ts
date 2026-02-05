@@ -259,10 +259,10 @@ export async function generateDocumentsList(
   // Add contract if uploaded
   if (documents.contract.status === 'ready' && documents.contract.url) {
     docsList.push({
-      name: 'صورة من العقد',
+      name: 'صورة من عقد الإيجار الموقع',
       status: 'مرفق',
       url: documents.contract.url,
-      type: 'image',
+      type: 'pdf',
     });
   }
   
