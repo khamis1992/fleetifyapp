@@ -151,18 +151,32 @@ function LegalDocumentItem({
   const StatusIcon = status.icon;
 
   const handleDownload = () => {
-    if (document.url?.startsWith('blob:')) {
-      const a = window.document.createElement('a');
-      a.href = document.url ?? '';
-      a.download = `${document.name}.html`;
-      a.style.display = 'none';
-      window.document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        window.document.body.removeChild(a);
-      }, 100);
-    } else if (document.url) {
-      window.open(document.url, '_blank');
+    // التحقق من صحة الرابط
+    if (!document.url || document.url.trim() === '') {
+      console.error('Document URL is missing or invalid');
+      return;
+    }
+    
+    try {
+      if (document.url.startsWith('blob:')) {
+        const a = window.document.createElement('a');
+        a.href = document.url;
+        a.download = `${document.name}.html`;
+        a.style.display = 'none';
+        window.document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          window.document.body.removeChild(a);
+        }, 100);
+      } else {
+        // فتح الرابط في نافذة جديدة
+        const opened = window.open(document.url, '_blank');
+        if (!opened) {
+          console.error('Failed to open document URL');
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
     }
   };
 
@@ -240,7 +254,7 @@ function LegalDocumentItem({
         <div className="flex items-center gap-2 flex-shrink-0 mr-2">
           <AnimatePresence>
             {/* Preview Button */}
-            {document.status === 'ready' && document.url && (
+            {document.status === 'ready' && document.url && document.url.trim() !== '' && (
               <motion.div
                 key="preview"
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -250,7 +264,18 @@ function LegalDocumentItem({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => document.url && window.open(document.url, '_blank')}
+                  onClick={() => {
+                    if (document.url) {
+                      try {
+                        const opened = window.open(document.url, '_blank');
+                        if (!opened) {
+                          console.error('Failed to preview document');
+                        }
+                      } catch (error) {
+                        console.error('Error previewing document:', error);
+                      }
+                    }
+                  }}
                   className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 >
                   <Eye className="h-4 w-4" />
