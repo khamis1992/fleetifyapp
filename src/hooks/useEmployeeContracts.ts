@@ -81,6 +81,7 @@ export const useEmployeeContracts = (
             first_name_ar,
             last_name_ar,
             company_name_ar,
+            customer_type,
             phone,
             email
           )
@@ -127,8 +128,22 @@ export const useEmployeeContracts = (
       // Transform data
       const transformedData: EmployeeContract[] = (data || []).map((contract: any) => {
         const customer = contract.customers;
-        const customerName = customer?.first_name_ar || customer?.company_name_ar || 
-                            `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim();
+        
+        // Build customer name with priority: Arabic names > Company name > English names
+        let customerName = 'غير محدد';
+        if (customer) {
+          if (customer.company_name_ar) {
+            customerName = customer.company_name_ar;
+          } else if (customer.first_name_ar && customer.last_name_ar) {
+            customerName = `${customer.first_name_ar} ${customer.last_name_ar}`;
+          } else if (customer.first_name_ar) {
+            customerName = customer.first_name_ar;
+          } else if (customer.first_name && customer.last_name) {
+            customerName = `${customer.first_name} ${customer.last_name}`;
+          } else if (customer.first_name) {
+            customerName = customer.first_name;
+          }
+        }
 
         return {
           id: contract.id,

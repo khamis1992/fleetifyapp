@@ -25,8 +25,7 @@ export const EmployeeContractsList: React.FC<EmployeeContractsListProps> = ({
 
   const filteredContracts = contracts.filter(contract =>
     contract.contract_number?.toLowerCase().includes(search.toLowerCase()) ||
-    contract.customers?.first_name_ar?.toLowerCase().includes(search.toLowerCase()) ||
-    contract.customers?.last_name_ar?.toLowerCase().includes(search.toLowerCase())
+    contract.customer_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const statusColors: Record<string, string> = {
@@ -54,10 +53,6 @@ export const EmployeeContractsList: React.FC<EmployeeContractsListProps> = ({
       <CardContent>
         <div className="space-y-3">
           {filteredContracts.map((contract) => {
-            const customerName = contract.customers?.customer_type === 'corporate'
-              ? contract.customers?.company_name_ar
-              : `${contract.customers?.first_name_ar || ''} ${contract.customers?.last_name_ar || ''}`;
-
             return (
               <div key={contract.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
@@ -70,9 +65,9 @@ export const EmployeeContractsList: React.FC<EmployeeContractsListProps> = ({
                         {contract.status === 'suspended' && 'موقوف'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600">{customerName}</p>
-                    {contract.vehicles?.plate_number && (
-                      <p className="text-xs text-gray-500">🚗 {contract.vehicles.plate_number}</p>
+                    <p className="text-sm text-gray-600">{contract.customer_name || 'غير محدد'}</p>
+                    {contract.vehicle_plate && (
+                      <p className="text-xs text-gray-500">🚗 {contract.vehicle_plate}</p>
                     )}
                     <div className="flex gap-4 mt-2 text-sm">
                       <span>💰 {formatCurrency(contract.monthly_amount || 0)}/شهر</span>
