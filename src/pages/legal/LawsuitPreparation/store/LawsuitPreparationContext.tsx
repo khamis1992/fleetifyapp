@@ -522,9 +522,8 @@ export function LawsuitPreparationProvider({
     dispatch({ type: 'UPLOAD_DOCUMENT_START', payload: { docId } });
     
     try {
-      // Determine the correct bucket based on document type
-      const isContractDocument = docId === 'contract';
-      const bucketName = isContractDocument ? 'contract_documents' : 'documents';
+      // Use 'documents' bucket for all uploads (standard bucket name)
+      const bucketName = 'documents';
       
       const fileName = `contracts/${companyId}/${contractId}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
@@ -538,7 +537,7 @@ export function LawsuitPreparationProvider({
         .getPublicUrl(fileName);
       
       // If it's a contract document, save to contract_documents table
-      if (isContractDocument) {
+      if (docId === 'contract') {
         const { error: dbError } = await supabase
           .from('contract_documents')
           .insert({

@@ -238,10 +238,11 @@ function LegalDocumentItem({
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0 mr-2">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {/* Preview Button */}
             {document.status === 'ready' && document.url && (
               <motion.div
+                key="preview"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
@@ -262,6 +263,7 @@ function LegalDocumentItem({
               <>
                 {onDownloadPdf && (
                   <motion.div
+                    key="pdf"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
@@ -279,6 +281,7 @@ function LegalDocumentItem({
                 )}
                 {onDownloadDocx && (
                   <motion.div
+                    key="docx"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
@@ -300,6 +303,7 @@ function LegalDocumentItem({
             {/* Regular Download */}
             {document.status === 'ready' && document.url && document.id !== 'memo' && (
               <motion.div
+                key="download"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
@@ -318,6 +322,7 @@ function LegalDocumentItem({
             {/* Generate Button */}
             {onGenerate && isGenerated && (
               <motion.div
+                key="generate"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
@@ -351,6 +356,7 @@ function LegalDocumentItem({
             {/* Upload Button */}
             {onUpload && (
               <motion.div
+                key="upload"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
@@ -392,6 +398,7 @@ function LegalDocumentItem({
             {/* Missing Badge for company docs */}
             {document.status === 'missing' && isCompany && (
               <motion.div
+                key="missing"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
