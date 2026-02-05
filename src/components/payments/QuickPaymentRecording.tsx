@@ -289,25 +289,67 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
 
     setSearching(true);
     try {
-      let query = supabase
+      // البحث في جدول العملاء
+      let customerQuery = supabase
         .from('customers')
         .select('id, first_name, last_name, phone')
         .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
       
       // فلترة حسب الشركة الحالية
       if (companyId) {
-        query = query.eq('company_id', companyId);
+        customerQuery = customerQuery.eq('company_id', companyId);
       }
       
-      const { data, error } = await query.limit(10);
+      const { data: customerData, error: customerError } = await customerQuery.limit(10);
 
-      if (error) throw error;
+      if (customerError) throw customerError;
 
-      setCustomers(data || []);
-      if (data && data.length === 0) {
+      // البحث في جدول العقود (إذا كان البحث يبدو أنه رقم عقد)
+      let contractCustomers: Customer[] = [];
+      if (companyId) {
+        const { data: contractData, error: contractError } = await supabase
+          .from('contracts')
+          .select(`
+            customer_id,
+            contract_number,
+            customers:customer_id (
+              id,
+              first_name,
+              last_name,
+              phone
+            )
+          `)
+          .ilike('contract_number', `%${searchTerm}%`)
+          .eq('company_id', companyId)
+          .limit(10);
+
+        if (!contractError && contractData) {
+          // استخراج بيانات العملاء من نتائج العقود
+          contractCustomers = contractData
+            .filter(c => c.customers)
+            .map(c => {
+              const customer = c.customers as any;
+              return {
+                id: customer.id,
+                first_name: customer.first_name,
+                last_name: customer.last_name,
+                phone: customer.phone,
+              };
+            });
+        }
+      }
+
+      // دمج النتائج وإزالة التكرارات
+      const allCustomers = [...(customerData || []), ...contractCustomers];
+      const uniqueCustomers = Array.from(
+        new Map(allCustomers.map(c => [c.id, c])).values()
+      );
+
+      setCustomers(uniqueCustomers);
+      if (uniqueCustomers.length === 0) {
         toast({
           title: 'لم يتم العثور على عملاء',
-          description: 'جرب البحث باسم أو رقم هاتف مختلف',
+          description: 'جرب البحث باسم، رقم هاتف، أو رقم عقد مختلف',
           variant: 'destructive',
         });
       }
@@ -343,7 +385,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
           status,
           start_date,
           end_date,
-          vehicles:vehicle_id (
+          vehicle_id,
+          vehicles (
             plate_number
           )
         `)
@@ -352,7 +395,10 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         .in('status', ['active', 'under_legal_procedure'])
         .order('created_at', { ascending: false });
 
-      if (contractsError) throw contractsError;
+      if (contractsError) {
+        console.error('Error fetching contracts:', contractsError);
+        throw contractsError;
+      }
 
       const formattedContracts: Contract[] = (contracts || []).map(c => ({
         id: c.id,
