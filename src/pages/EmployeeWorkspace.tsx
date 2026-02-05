@@ -152,7 +152,7 @@ export const EmployeeWorkspace: React.FC = () => {
   const contractsForDialogs = contracts.map(contract => ({
     id: contract.id,
     contract_number: contract.contract_number || '',
-    customer_name: contract.customers?.first_name_ar || contract.customers?.company_name_ar || 'غير محدد',
+    customer_name: contract.customer_name || 'غير محدد',
     customer_id: contract.customer_id,
     balance_due: contract.balance_due || 0,
   }));
@@ -160,8 +160,7 @@ export const EmployeeWorkspace: React.FC = () => {
   // Filter contracts based on search
   const filteredContracts = contracts.filter(c => 
     c.contract_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.customers?.first_name_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.customers?.company_name_ar?.toLowerCase().includes(searchQuery.toLowerCase())
+    c.customer_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Group invoices by customer for monthly collections
@@ -769,13 +768,13 @@ export const EmployeeWorkspace: React.FC = () => {
                           >
                             <Avatar className="h-12 w-12 border-2 shadow-sm">
                               <AvatarFallback className={cn("font-bold text-lg", statusStyle.badge)}>
-                                {contract.customers?.first_name_ar?.[0] || 'C'}
+                                {contract.customer_name?.[0] || 'C'}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
-                                  {formatCustomerName(contract.customers)}
+                                  {contract.customer_name || 'غير محدد'}
                                 </h4>
                                 <Badge variant="outline" className={cn("text-xs font-bold border-2", statusStyle.badge)}>
                                   <StatusIcon className="w-3 h-3 ml-1" />
@@ -785,15 +784,15 @@ export const EmployeeWorkspace: React.FC = () => {
                               <p className="text-xs text-gray-600 flex items-center gap-2 flex-wrap">
                                 <span className="font-semibold">#{contract.contract_number}</span>
                                 <span className="text-gray-300">•</span>
-                                {contract.customers?.phone && (
+                                {contract.customer_phone && (
                                   <>
                                     <a 
-                                      href={`tel:${contract.customers.phone}`}
+                                      href={`tel:${contract.customer_phone}`}
                                       className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium hover:underline"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <Phone className="w-3 h-3" />
-                                      {contract.customers.phone}
+                                      {contract.customer_phone}
                                     </a>
                                     <span className="text-gray-300">•</span>
                                   </>
@@ -810,13 +809,13 @@ export const EmployeeWorkspace: React.FC = () => {
                           
                           <div className="flex items-center gap-2 self-end sm:self-auto">
                             {/* زر الاتصال - متاح لجميع العقود */}
-                            {contract.customers?.phone && (
+                            {contract.customer_phone && (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 p-0 text-teal-600 bg-teal-50 hover:bg-teal-100 hover:text-teal-700 rounded-full"
-                                onClick={() => window.location.href = `tel:${contract.customers.phone}`}
-                                title={`اتصال: ${contract.customers.phone}`}
+                                onClick={() => window.location.href = `tel:${contract.customer_phone}`}
+                                title={`اتصال: ${contract.customer_phone}`}
                               >
                                 <Phone className="w-4 h-4" />
                               </Button>
@@ -830,9 +829,9 @@ export const EmployeeWorkspace: React.FC = () => {
                                   variant="ghost"
                                   className="h-8 w-8 p-0 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 rounded-full"
                                   onClick={() => {
-                                     const customerName = contract.customers?.first_name_ar || contract.customers?.company_name_ar || '';
+                                     const customerName = contract.customer_name || '';
                                      const customerId = contract.customer_id;
-                                     const phone = contract.customers?.phone || '';
+                                     const phone = contract.customer_phone || '';
                                      navigate(`/finance/payments/quick?customerId=${customerId}&customerName=${encodeURIComponent(customerName)}&phone=${phone}`);
                                   }}
                                   title="تسجيل دفعة"

@@ -16,6 +16,7 @@ export interface MonthlyCollectionItem {
   status: 'paid' | 'unpaid' | 'partially_paid' | 'overdue';
   due_date: string;
   payment_date?: string;
+  is_paid?: boolean; // لتسهيل الفلترة
 }
 
 export interface MonthlyCollectionStats {
@@ -53,15 +54,11 @@ export const useMonthlyCollections = () => {
       if (!profile?.id) return [];
 
       const today = new Date();
-      const startDate = startOfMonth(today).toISOString();
-      const endDate = endOfMonth(today).toISOString();
+      const currentMonthStart = startOfMonth(today);
+      const currentMonthEnd = endOfMonth(today);
 
-      // 1. Get contracts assigned to this employee
-      // Fetch invoices where:
-      // - The related contract is assigned to the user
-      // - AND (Due date <= End of this month) [Includes overdue]
-      // - AND Status != 'cancelled'
-      
+      // جلب جميع الفواتير للعقود المخصصة للموظف فقط
+      // استخدام inner join للتأكد من جلب العقود المخصصة فقط
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -72,12 +69,13 @@ export const useMonthlyCollections = () => {
           status,
           payment_status,
           due_date,
+          invoice_date,
           contract_id,
           contracts!inner (
             id,
             contract_number,
             assigned_to_profile_id,
-            customers (
+            customers!inner (
               id,
               first_name,
               last_name,
@@ -91,59 +89,143 @@ export const useMonthlyCollections = () => {
         `)
         .eq('company_id', profile.company_id)
         .eq('contracts.assigned_to_profile_id', profile.id)
-        .lte('due_date', endDate) // Include all invoices due up to end of this month (overdue included)
         .neq('status', 'cancelled')
-        .neq('payment_status', 'paid') // استبعاد الفواتير المدفوعة من الاستعلام مباشرة
-        .order('due_date', { ascending: true }); // Oldest first (priority)
+        .order('due_date', { ascending: true });
 
       if (error) throw error;
+      
+      console.log('📊 Total invoices fetched for employee:', data?.length);
+      console.log('👤 Employee profile ID:', profile.id);
+      console.log('📅 Current month start:', format(currentMonthStart, 'yyyy-MM-dd'));
+      
+      // تحويل جميع البيانات أولاً
+      const allInvoices = (data || []).map(inv => {
+        const contract = inv.contracts as any;
+        const customer = contract.customers;
+        const customerName = formatCustomerName(customer);
 
-      // Transform data
-      return data
-        .map(inv => {
-          const contract = inv.contracts as any;
-          const customer = contract.customers;
-          const customerName = formatCustomerName(customer);
+        let status: MonthlyCollectionItem['status'] = 'unpaid';
+        const isPaid = inv.payment_status === 'paid';
+        
+        if (isPaid) status = 'paid';
+        else if (inv.paid_amount && inv.paid_amount > 0 && inv.paid_amount < inv.total_amount) status = 'partially_paid';
+        else if (new Date(inv.due_date || inv.invoice_date) < new Date() && !isPaid) status = 'overdue';
 
-          let status: MonthlyCollectionItem['status'] = 'unpaid';
-          if (inv.payment_status === 'paid') status = 'paid';
-          else if (inv.paid_amount && inv.paid_amount > 0 && inv.paid_amount < inv.total_amount) status = 'partially_paid';
-          else if (new Date(inv.due_date) < new Date() && inv.payment_status !== 'paid') status = 'overdue';
+        // تحديد شهر الفاتورة
+        const invoiceDate = new Date(inv.due_date || inv.invoice_date);
+        const invoiceMonthStart = startOfMonth(invoiceDate);
+        const isCurrentMonth = invoiceMonthStart.getTime() === currentMonthStart.getTime();
+        
+        console.log('🔍 Invoice check:', {
+          invoice_number: inv.invoice_number,
+          due_date: inv.due_date,
+          invoice_date: inv.invoice_date,
+          invoiceMonthStart: format(invoiceMonthStart, 'yyyy-MM-dd'),
+          currentMonthStart: format(currentMonthStart, 'yyyy-MM-dd'),
+          isCurrentMonth,
+          amount: inv.total_amount,
+          paid_amount: inv.paid_amount,
+          status: inv.payment_status
+        });
 
-          return {
-            contract_id: contract.id,
-            contract_number: contract.contract_number,
-            customer_name: customerName,
-            customer_id: customer.id,
-            invoice_id: inv.id,
-            invoice_number: inv.invoice_number,
-            amount: inv.total_amount,
-            paid_amount: inv.paid_amount || 0,
-            status,
-            due_date: inv.due_date,
-          } as MonthlyCollectionItem;
-        })
-        // لا حاجة للفلترة هنا - تم استبعاد الفواتير المدفوعة من الاستعلام
-        ;
+        return {
+          contract_id: contract.id,
+          contract_number: contract.contract_number,
+          customer_name: customerName,
+          customer_id: customer.id,
+          invoice_id: inv.id,
+          invoice_number: inv.invoice_number,
+          amount: inv.total_amount,
+          paid_amount: inv.paid_amount || 0,
+          status,
+          due_date: inv.due_date || inv.invoice_date,
+          is_paid: isPaid,
+          is_current_month: isCurrentMonth, // علامة لتحديد إذا كانت الفاتورة تخص الشهر الحالي
+        } as MonthlyCollectionItem & { is_current_month?: boolean };
+      });
+
+      const currentMonthInvoicesCount = allInvoices.filter((i: any) => i.is_current_month).length;
+      const totalForCurrentMonth = allInvoices.filter((i: any) => i.is_current_month).reduce((sum, inv) => sum + inv.amount, 0);
+      
+      console.log('📅 Total invoices:', allInvoices.length);
+      console.log('📅 Current month invoices:', currentMonthInvoicesCount);
+      console.log('💰 Total for current month:', totalForCurrentMonth);
+      
+      if (currentMonthInvoicesCount === 0 && allInvoices.length > 0) {
+        console.warn('⚠️ No invoices for current month! All invoices are for other months.');
+        
+        // تجميع الفواتير حسب الشهر
+        const invoicesByMonth = allInvoices.reduce((acc: any, inv: any) => {
+          const month = format(startOfMonth(new Date(inv.due_date)), 'yyyy-MM');
+          acc[month] = (acc[month] || 0) + 1;
+          return acc;
+        }, {});
+        
+        console.log('📋 Invoices by month:', invoicesByMonth);
+        console.log('📋 Sample invoices (first 5):', allInvoices.slice(0, 5).map((inv: any) => ({
+          invoice: inv.invoice_number,
+          due_date: inv.due_date,
+          month: format(startOfMonth(new Date(inv.due_date)), 'yyyy-MM'),
+          amount: inv.amount
+        })));
+      }
+
+      // إرجاع جميع الفواتير (سيتم الفلترة في الإحصائيات)
+      return allInvoices;
     },
     enabled: !!profile?.id
   });
 
+  // فلترة الفواتير غير المدفوعة للعرض في القائمة (جميع الفواتير غير المدفوعة)
+  const unpaidCollections = collections.filter(c => c.status !== 'paid');
+
+  // فلترة فواتير الشهر الحالي فقط للإحصائيات
+  const currentMonthInvoices = collections.filter((c: any) => c.is_current_month);
+
+  // إذا لم توجد فواتير للشهر الحالي، استخدم جميع الفواتير غير المدفوعة
+  // (هذا يعني أن الموظف يجب أن يحصل الفواتير المتأخرة)
+  const invoicesForStats = currentMonthInvoices.length > 0 
+    ? currentMonthInvoices 
+    : unpaidCollections;
+
+  console.log('📊 Using invoices for stats:', {
+    currentMonthCount: currentMonthInvoices.length,
+    unpaidCount: unpaidCollections.length,
+    usingCurrentMonth: currentMonthInvoices.length > 0
+  });
+
+  // حساب الإحصائيات
+  // إذا كان هناك فواتير للشهر الحالي: استخدمها
+  // إذا لم يكن: استخدم جميع الفواتير غير المدفوعة (المتأخرة)
   const stats: MonthlyCollectionStats = {
-    totalDue: collections.reduce((sum, item) => sum + item.amount, 0),
-    totalCollected: collections.reduce((sum, item) => sum + item.paid_amount, 0),
-    totalPending: collections.reduce((sum, item) => sum + (item.amount - item.paid_amount), 0),
+    totalDue: invoicesForStats.reduce((sum, item) => sum + item.amount, 0),
+    totalCollected: invoicesForStats.reduce((sum, item) => sum + item.paid_amount, 0),
+    totalPending: 0, // سيتم حسابه بعد قليل
     collectionRate: 0,
-    paidCount: collections.filter(c => c.status === 'paid').length,
-    pendingCount: collections.filter(c => c.status !== 'paid').length
+    paidCount: invoicesForStats.filter(c => c.status === 'paid').length,
+    pendingCount: invoicesForStats.filter(c => c.status !== 'paid').length
   };
 
+  // المتبقي = المستهدف - المحصل
+  stats.totalPending = stats.totalDue - stats.totalCollected;
+  
+  // نسبة التحصيل = (المحصل / المستهدف) × 100
   stats.collectionRate = stats.totalDue > 0 
     ? Math.round((stats.totalCollected / stats.totalDue) * 100) 
     : 0;
 
+  console.log('📊 Stats calculated:', {
+    totalDue: stats.totalDue,
+    totalCollected: stats.totalCollected,
+    totalPending: stats.totalPending,
+    collectionRate: stats.collectionRate,
+    invoicesUsedForStats: invoicesForStats.length,
+    unpaidCollectionsCount: unpaidCollections.length
+  });
+
   return {
-    collections,
+    collections: unpaidCollections, // الفواتير غير المدفوعة للعرض
+    allCollections: collections,    // جميع الفواتير (للإحصائيات)
     stats,
     isLoading,
     refetch
