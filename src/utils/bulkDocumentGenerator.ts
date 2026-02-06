@@ -552,6 +552,7 @@ async function generateCustomerDocuments(
     }[] = [];
     
     console.log('[كشف المستندات] عدد مستندات الشركة المتاحة:', companyDocuments?.length || 0);
+    console.log('[كشف المستندات] معرف العقد:', customer.contract_id);
     
     // 1. كشف المطالبات المالية (مع المحتوى) - دائماً مرفق
     const claimsHtml = generateClaimsStatementHtml(claimsData);
@@ -562,35 +563,58 @@ async function generateCustomerDocuments(
       htmlContent: claimsHtml,
     });
     
-    // 2. نسخة من عقد الإيجار - يجب التحقق من وجودها
-    // نحاول جلب العقد من contract_documents
+    // 2. نسخة من عقد الإيجار - تحميل العقد ودمجه
+    // دائماً نضيف العقد في القائمة (مرفق أو غير مرفق)
+    let contractAdded = false;
     try {
-      const { data: contractFiles } = await supabase.storage
+      const { data: contractFiles, error: listError } = await supabase.storage
         .from('contract_documents')
         .list(`contracts/${companyId}/${customer.contract_id}`);
       
-      if (contractFiles && contractFiles.length > 0) {
-        // إنشاء رابط عام للعقد
+      console.log('[كشف المستندات] ملفات العقد:', contractFiles?.length || 0, 'خطأ:', listError?.message);
+      
+      if (contractFiles && contractFiles.length > 0 && !listError) {
+        // تحميل ملف العقد كـ Blob
         const contractFile = contractFiles[0];
-        const { data: urlData } = supabase.storage
+        const { data: contractBlob, error: downloadError } = await supabase.storage
           .from('contract_documents')
-          .getPublicUrl(`contracts/${companyId}/${customer.contract_id}/${contractFile.name}`);
+          .download(`contracts/${companyId}/${customer.contract_id}/${contractFile.name}`);
         
-        generatedDocuments.push({ 
-          name: 'نسخة من عقد الإيجار', 
-          status: 'مرفق',
-          type: 'pdf',
-          url: urlData.publicUrl,
-        });
+        if (contractBlob && !downloadError) {
+          // تحويل Blob إلى Base64 URL لدمجه في HTML
+          try {
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(contractBlob);
+            });
+            
+            const contractBase64 = await base64Promise;
+            console.log('[كشف المستندات] تم تحميل العقد بنجاح، حجم:', contractBlob.size);
+            
+            generatedDocuments.push({ 
+              name: 'نسخة من عقد الإيجار', 
+              status: 'مرفق',
+              type: 'pdf',
+              url: contractBase64, // استخدام Base64 بدلاً من publicUrl
+            });
+            contractAdded = true;
+          } catch (base64Error) {
+            console.error('[كشف المستندات] فشل تحويل العقد إلى Base64:', base64Error);
+          }
+        } else {
+          console.error('[كشف المستندات] فشل تحميل العقد:', downloadError?.message);
+        }
       } else {
-        generatedDocuments.push({ 
-          name: 'نسخة من عقد الإيجار', 
-          status: 'غير مرفق',
-          type: 'pdf',
-        });
+        console.log('[كشف المستندات] لا توجد ملفات عقد في المسار:', `contracts/${companyId}/${customer.contract_id}`);
       }
     } catch (error) {
-      console.warn('فشل التحقق من وجود العقد:', error);
+      console.error('[كشف المستندات] خطأ في جلب العقد:', error);
+    }
+    
+    // إذا لم يتم إضافة العقد، نضيفه كـ "غير مرفق"
+    if (!contractAdded) {
       generatedDocuments.push({ 
         name: 'نسخة من عقد الإيجار', 
         status: 'غير مرفق',
@@ -645,6 +669,10 @@ async function generateCustomerDocuments(
     // ملاحظة: بلاغ السرقة وطلب تحويل المخالفات لا يتم تضمينهم في كشف المستندات
     // لأنهم اختياريان وليسوا من المستندات الأساسية
 
+    console.log('[كشف المستندات] إجمالي المستندات:', generatedDocuments.length);
+    console.log('[كشف المستندات] المستندات المرفقة:', generatedDocuments.filter(d => d.status === 'مرفق').length);
+    console.log('[كشف المستندات] المستندات مع محتوى:', generatedDocuments.filter(d => d.htmlContent || d.url).length);
+    
     const documentsListData: DocumentsListData = {
       caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
       customerName: customerFullName,
