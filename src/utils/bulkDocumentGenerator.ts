@@ -563,62 +563,30 @@ async function generateCustomerDocuments(
       htmlContent: claimsHtml,
     });
     
-    // 2. نسخة من عقد الإيجار - تحميل العقد ودمجه
-    // دائماً نضيف العقد في القائمة (مرفق أو غير مرفق)
-    let contractAdded = false;
-    try {
-      const { data: contractFiles, error: listError } = await supabase.storage
-        .from('contract_documents')
-        .list(`contracts/${companyId}/${customer.contract_id}`);
+    // 2. نسخة من عقد الإيجار - توليد HTML من بيانات العقد
+    {
+      const { generateContractHtml } = await import('@/utils/contractPdfGenerator');
+      const contractHtmlContent = generateContractHtml({
+        contract_number: contract.contract_number || customer.contract_number,
+        contract_type: contract.contract_type || 'إيجار مركبة',
+        customer_name: customerFullName,
+        vehicle_info: vehicleData 
+          ? `${vehicleData.make || ''} ${vehicleData.model || ''} ${vehicleData.year || ''} - ${vehicleData.plate_number || ''}`.trim()
+          : 'غير محدد',
+        start_date: contract.start_date || '',
+        end_date: contract.end_date || '',
+        contract_amount: Number(contract.total_amount) || 0,
+        monthly_amount: Number(contract.monthly_amount) || 0,
+        terms: contract.terms || '',
+        company_name: 'شركة العراف لتأجير السيارات',
+        created_date: contract.created_at || '',
+      });
       
-      console.log('[كشف المستندات] ملفات العقد:', contractFiles?.length || 0, 'خطأ:', listError?.message);
-      
-      if (contractFiles && contractFiles.length > 0 && !listError) {
-        // تحميل ملف العقد كـ Blob
-        const contractFile = contractFiles[0];
-        const { data: contractBlob, error: downloadError } = await supabase.storage
-          .from('contract_documents')
-          .download(`contracts/${companyId}/${customer.contract_id}/${contractFile.name}`);
-        
-        if (contractBlob && !downloadError) {
-          // تحويل Blob إلى Base64 URL لدمجه في HTML
-          try {
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve, reject) => {
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(contractBlob);
-            });
-            
-            const contractBase64 = await base64Promise;
-            console.log('[كشف المستندات] تم تحميل العقد بنجاح، حجم:', contractBlob.size);
-            
-            generatedDocuments.push({ 
-              name: 'نسخة من عقد الإيجار', 
-              status: 'مرفق',
-              type: 'pdf',
-              url: contractBase64, // استخدام Base64 بدلاً من publicUrl
-            });
-            contractAdded = true;
-          } catch (base64Error) {
-            console.error('[كشف المستندات] فشل تحويل العقد إلى Base64:', base64Error);
-          }
-        } else {
-          console.error('[كشف المستندات] فشل تحميل العقد:', downloadError?.message);
-        }
-      } else {
-        console.log('[كشف المستندات] لا توجد ملفات عقد في المسار:', `contracts/${companyId}/${customer.contract_id}`);
-      }
-    } catch (error) {
-      console.error('[كشف المستندات] خطأ في جلب العقد:', error);
-    }
-    
-    // إذا لم يتم إضافة العقد، نضيفه كـ "غير مرفق"
-    if (!contractAdded) {
       generatedDocuments.push({ 
         name: 'نسخة من عقد الإيجار', 
-        status: 'غير مرفق',
-        type: 'pdf',
+        status: 'مرفق',
+        type: 'html',
+        htmlContent: contractHtmlContent,
       });
     }
     

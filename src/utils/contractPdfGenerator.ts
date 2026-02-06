@@ -78,7 +78,7 @@ export const generateContractPdf = async (contractData: ContractPdfData): Promis
   }
 }
 
-const generateContractHtml = (data: ContractPdfData): string => {
+export const generateContractHtml = (data: ContractPdfData): string => {
   return `
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
