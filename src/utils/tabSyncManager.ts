@@ -59,9 +59,15 @@ class TabSyncManager {
 
   /**
    * Initialize BroadcastChannel with fallback
-   * CRITICAL FIX: Add localStorage fallback for unsupported browsers
+   * CRITICAL FIX: DISABLED - Tab sync causes performance issues and freezing
    */
   private initChannel(): void {
+    // DISABLED: Tab sync temporarily disabled to fix freezing issues
+    console.warn('🔄 [TAB_SYNC] Tab sync disabled (causes performance issues)');
+    this.isInitialized = false;
+    return;
+    
+    /* DISABLED CODE:
     try {
       // Check if BroadcastChannel is supported
       if (typeof BroadcastChannel === 'undefined') {
@@ -104,6 +110,7 @@ class TabSyncManager {
       // CRITICAL FIX: Fallback to localStorage on error
       this.setupLocalStorageFallback();
     }
+    */
   }
   
   /**

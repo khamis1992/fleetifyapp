@@ -34,10 +34,11 @@ export const initializePWA = (): void => {
     deferredPrompt = null;
   });
 
-  // Register service worker if supported
-  if ('serviceWorker' in navigator) {
-    registerServiceWorker();
-  }
+  // DISABLED: Service Worker temporarily disabled to fix tab freezing issues
+  // if ('serviceWorker' in navigator) {
+  //   registerServiceWorker();
+  // }
+  console.log('⚠️ PWA: Service Worker disabled (causes tab freezing on refresh)');
 
   // Check if running as installed PWA
   if (window.matchMedia('(display-mode: standalone)').matches) {

@@ -371,6 +371,7 @@ function convertAmountToWords(amount: number): string {
 async function generateCustomerDocuments(
   customer: BulkCustomerData,
   companyId: string,
+  companyDocuments: any[], // Add companyDocuments parameter
   options: DocumentOptions = {
     explanatoryMemo: true,
     claimsStatement: true,
@@ -425,54 +426,55 @@ async function generateCustomerDocuments(
   const documents: { name: string; content: string | Blob; type?: 'html' | 'docx' }[] = [];
 
   // 1. المذكرة الشارحة - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
+  // Prepare memo data outside if block so it's accessible in documentsList section
+  const daysOverdue = contract.start_date 
+    ? Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const documentData: LegalDocumentData = {
+    customer: {
+      customer_name: customerFullName,
+      customer_code: customerData?.id || customer.customer_id || '',
+      id_number: nationalId,
+      phone: phone,
+      email: customerData?.email || '',
+      contract_number: contract.contract_number || customer.contract_number,
+      contract_start_date: contract.start_date || '',
+      vehicle_plate: vehicleData?.plate_number || 'غير محدد',
+      monthly_rent: Number(contract.monthly_amount) || 0,
+      months_unpaid: unpaidInvoices.length,
+      overdue_amount: totalOverdue,
+      late_penalty: totalPenalties,
+      days_overdue: daysOverdue,
+      violations_count: violations.length,
+      violations_amount: violationsTotal,
+      total_debt: claimAmount, // المبلغ بدون المخالفات
+    } as any,
+    companyInfo: {
+      name_ar: 'شركة العراف لتأجير السيارات',
+      name_en: 'Al-Araf Car Rental',
+      address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+      cr_number: '146832',
+    },
+    vehicleInfo: {
+      plate: vehicleData?.plate_number || 'غير محدد',
+      make: vehicleData?.make || '',
+      model: vehicleData?.model || '',
+      year: vehicleData?.year || 0,
+    },
+    contractInfo: {
+      contract_number: contract.contract_number || customer.contract_number,
+      start_date: contract.start_date 
+        ? new Date(contract.start_date).toLocaleDateString('ar-QA')
+        : '',
+      monthly_rent: Number(contract.monthly_amount) || 0,
+    },
+    damages: damagesFee,
+  };
+
+  const memoHtml = generateLegalComplaintHTML(documentData);
+  
   if (options.explanatoryMemo) {
-    const daysOverdue = contract.start_date 
-      ? Math.floor((new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
-
-    const documentData: LegalDocumentData = {
-      customer: {
-        customer_name: customerFullName,
-        customer_code: customerData?.id || customer.customer_id || '',
-        id_number: nationalId,
-        phone: phone,
-        email: customerData?.email || '',
-        contract_number: contract.contract_number || customer.contract_number,
-        contract_start_date: contract.start_date || '',
-        vehicle_plate: vehicleData?.plate_number || 'غير محدد',
-        monthly_rent: Number(contract.monthly_amount) || 0,
-        months_unpaid: unpaidInvoices.length,
-        overdue_amount: totalOverdue,
-        late_penalty: totalPenalties,
-        days_overdue: daysOverdue,
-        violations_count: violations.length,
-        violations_amount: violationsTotal,
-        total_debt: claimAmount, // المبلغ بدون المخالفات
-      } as any,
-      companyInfo: {
-        name_ar: 'شركة العراف لتأجير السيارات',
-        name_en: 'Al-Araf Car Rental',
-        address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
-        cr_number: '146832',
-      },
-      vehicleInfo: {
-        plate: vehicleData?.plate_number || 'غير محدد',
-        make: vehicleData?.make || '',
-        model: vehicleData?.model || '',
-        year: vehicleData?.year || 0,
-      },
-      contractInfo: {
-        contract_number: contract.contract_number || customer.contract_number,
-        start_date: contract.start_date 
-          ? new Date(contract.start_date).toLocaleDateString('ar-QA')
-          : '',
-        monthly_rent: Number(contract.monthly_amount) || 0,
-      },
-      damages: damagesFee,
-    };
-
-    const memoHtml = generateLegalComplaintHTML(documentData);
-    
     // إضافة نسخة HTML
     documents.push({
       name: 'المذكرة_الشارحة.html',
@@ -494,8 +496,8 @@ async function generateCustomerDocuments(
   }
 
   // 2. كشف المطالبات - نفس التنسيق المستخدم في صفحة تجهيز الدعوى
-  if (options.claimsStatement) {
-    const claimsData: ClaimsStatementData = {
+  // Define claimsData outside the if block so it's accessible in documentsList section
+  const claimsData: ClaimsStatementData = {
     customerName: customerFullName,
     nationalId,
     phone,
@@ -522,6 +524,7 @@ async function generateCustomerDocuments(
     caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,
   };
 
+  if (options.claimsStatement) {
     documents.push({
       name: 'كشف_المطالبات.html',
       content: generateClaimsStatementHtml(claimsData),
@@ -735,7 +738,7 @@ export async function generateBulkDocumentsZip(
     // معالجة الدفعة الحالية بالتوازي
     const results = await Promise.allSettled(
       batch.map(async (customer) => {
-        const customerDocs = await generateCustomerDocuments(customer, companyId, options);
+        const customerDocs = await generateCustomerDocuments(customer, companyId, companyDocuments, options);
 
         // استخراج بيانات القضية للـ Excel
         const contractId = customer.contract_id || customer.id;

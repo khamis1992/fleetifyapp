@@ -105,19 +105,23 @@ export class BackgroundSync {
       this.emit('offline');
     });
 
-    // Page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && this.config.syncOnResume) {
-        this.triggerSync();
-      }
-    });
+    // DISABLED: Page visibility and focus listeners cause tab freezing
+    // These events trigger sync too frequently and cause performance issues
+    // The periodic sync (syncInterval) is sufficient for background sync
+    
+    // // Page visibility changes
+    // document.addEventListener('visibilitychange', () => {
+    //   if (!document.hidden && this.config.syncOnResume) {
+    //     this.triggerSync();
+    //   }
+    // });
 
-    // App focus/blur
-    window.addEventListener('focus', () => {
-      if (this.config.syncOnResume) {
-        this.triggerSync();
-      }
-    });
+    // // App focus/blur
+    // window.addEventListener('focus', () => {
+    //   if (this.config.syncOnResume) {
+    //     this.triggerSync();
+    //   }
+    // });
   }
 
   private async loadFromStorage(): Promise<void> {

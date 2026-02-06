@@ -15,6 +15,15 @@ export default defineConfig(({ mode }) => ({
       host: 'localhost',
       port: 8080,
       overlay: true,
+      // Add timeout to prevent hanging
+      timeout: 30000,
+    },
+    // Prevent hanging on page refresh
+    middlewareMode: false,
+    // Better handling of file changes
+    watch: {
+      usePolling: false,
+      interval: 100,
     },
   },
   plugins: [

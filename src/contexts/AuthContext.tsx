@@ -627,7 +627,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('🔍 [AUTH_CONTEXT] authService.signIn completed with error:', result.error);
 
     if (!result.error) {
-      console.log('🔍 [AUTH_CONTEXT] Login successful - setting up logging timeout');
+      console.log('🔍 [AUTH_CONTEXT] Login successful - fetching user session immediately');
+      
+      // CRITICAL FIX: Immediately fetch and set user session after successful login
+      // This ensures the UI updates instantly instead of waiting for onAuthStateChange
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (!sessionError && session?.user) {
+          console.log('✅ [AUTH_CONTEXT] Session fetched successfully, setting user:', session.user.email);
+          setSession(session);
+          setUser(session.user as AuthUser);
+          setSessionError(null);
+          
+          // Fetch full profile in background
+          authService.getCurrentUser().then(authUser => {
+            if (mountedRef.current && authUser) {
+              setUser(authUser);
+              cacheUser(authUser);
+              console.log('✅ [AUTH_CONTEXT] Full profile loaded:', authUser.email);
+            }
+          }).catch(error => {
+            console.warn('⚠️ [AUTH_CONTEXT] Failed to load full profile, using basic user:', error);
+          });
+        }
+      } catch (error) {
+        console.error('❌ [AUTH_CONTEXT] Error fetching session after login:', error);
+      }
+      
       // MEMORY LEAK FIX: Clear existing timeout before creating new one
       if (logTimeoutRef.current) {
         clearTimeout(logTimeoutRef.current);

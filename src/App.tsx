@@ -105,9 +105,9 @@ const createQueryClient = () => {
     defaultOptions: {
       queries: {
         // Performance optimizations
-        refetchOnMount: true,
-        refetchOnWindowFocus: true, // ENABLED: Refetch when returning to tab to show fresh data
-        refetchOnReconnect: true,
+        refetchOnMount: false, // DISABLED: Prevent refetch on mount to use cached data
+        refetchOnWindowFocus: false, // DISABLED: Prevent refetch when switching tabs (causes freezing)
+        refetchOnReconnect: true, // Keep enabled for network reconnection
 
         // Cache configuration - CRITICAL: Keep data in cache longer
         staleTime: 2 * 60 * 1000, // 2 minutes - data considered fresh
@@ -191,88 +191,13 @@ const App: React.FC = () => {
     });
   }, [queryClient]);
 
-  // Initialize advanced tab sync manager
-  React.useEffect(() => {
-    // CRITICAL FIX: Track recent invalidations to prevent loops
-    const recentInvalidations = new Map<string, number>();
-    const INVALIDATION_COOLDOWN = 3000; // 3 seconds
-    
-    const shouldInvalidate = (queryKey: any[]): boolean => {
-      const queryKeyStr = JSON.stringify(queryKey);
-      const lastInvalidation = recentInvalidations.get(queryKeyStr);
-      const now = Date.now();
-      
-      if (lastInvalidation && now - lastInvalidation < INVALIDATION_COOLDOWN) {
-        return false; // Skip duplicate invalidation
-      }
-      
-      recentInvalidations.set(queryKeyStr, now);
-      
-      // Clean up old entries
-      if (recentInvalidations.size > 100) {
-        recentInvalidations.forEach((timestamp, key) => {
-          if (now - timestamp > INVALIDATION_COOLDOWN) {
-            recentInvalidations.delete(key);
-          }
-        });
-      }
-      
-      return true;
-    };
-    
-    import('./utils/advancedTabSync').then(({ advancedTabSync }) => {
-      console.log('🔄 [APP] Advanced tab sync manager initializing...');
-      
-      // تهيئة النظام المتقدم
-      advancedTabSync.initialize(queryClient, tabId);
-      
-      // الاستماع لتحديثات البيانات من التبويبات الأخرى
-      // CRITICAL FIX: Added deduplication to prevent recursive loops
-      const unsubscribeDataSync = advancedTabSync.onDataUpdate((message) => {
-        if (message.type === 'DATA_UPDATE' && message.queryKey) {
-          // Check if we should invalidate (deduplication)
-          if (!shouldInvalidate(message.queryKey)) {
-            console.log(`⏭️ [APP] Skipping duplicate invalidation:`, message.queryKey);
-            return;
-          }
-          
-          console.log(`🔄 [APP] Invalidating query from tab ${message.tabId}:`, message.queryKey);
-          queryClient.invalidateQueries({ queryKey: message.queryKey });
-        }
-      });
-      
-      // الاستماع لإبطال الاستعلامات
-      // CRITICAL FIX: Added deduplication to prevent recursive loops
-      const unsubscribeInvalidate = advancedTabSync.onInvalidate((queryKey) => {
-        // Check if we should invalidate (deduplication)
-        if (!shouldInvalidate(queryKey)) {
-          console.log(`⏭️ [APP] Skipping duplicate invalidation:`, queryKey);
-          return;
-        }
-        
-        console.log(`🔄 [APP] Invalidating query from another tab:`, queryKey);
-        queryClient.invalidateQueries({ queryKey });
-      });
-      
-      // الاستماع لطلبات المزامنة من التبويبات الجديدة
-      // DISABLED: Sending full cache data causes performance issues and tab freezing
-      // Instead, let each tab fetch its own data with refetchOnWindowFocus
-      const unsubscribeSyncRequest = advancedTabSync.onSyncRequest(() => {
-        console.log('🔄 [APP] Sync request received (cache sync disabled for performance)');
-        // التبويبة الجديدة ستجلب البيانات تلقائياً عبر refetchOnWindowFocus
-      });
-      
-      console.log('✅ [APP] Advanced tab sync manager initialized successfully');
-      
-      // Cleanup on unmount
-      return () => {
-        unsubscribeDataSync();
-        unsubscribeInvalidate();
-        unsubscribeSyncRequest();
-        advancedTabSync.cleanup();
-      };
-    });
-  }, [queryClient, tabId]);
+  // DISABLED: Advanced tab sync causes performance issues and tab freezing
+  // Each tab will work independently with its own cache
+  // React.useEffect(() => {
+  //   import('./utils/advancedTabSync').then(({ advancedTabSync }) => {
+  //     console.log('🔄 [APP] Tab sync disabled for performance');
+  //   });
+  // }, [queryClient, tabId]);
 
   // Debug: Check routes (only in dev)
   if (import.meta.env.DEV) {

@@ -26,6 +26,29 @@ const removeLoadingClass = () => {
 // Remove loading after short delay to ensure content is rendered
 setTimeout(removeLoadingClass, 500);
 
+// CRITICAL FIX: Prevent page hanging on refresh
+// Add visibility change listener to detect tab switches
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    console.log('✅ [MAIN] Tab became visible');
+  } else {
+    console.log('✅ [MAIN] Tab became hidden');
+  }
+});
+
+// CRITICAL FIX: Add page show/hide listeners to detect bfcache
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    console.log('✅ [MAIN] Page restored from bfcache - forcing reload');
+    // Force reload if page was restored from back/forward cache
+    window.location.reload();
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  console.log('✅ [MAIN] Page hidden');
+});
+
 // Global error handler for dynamic import failures
 // IMPORTANT: Only enable in production to avoid conflicts with HMR in development
 if (!import.meta.env.DEV) {

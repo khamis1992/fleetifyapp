@@ -88,7 +88,7 @@ export const useDashboardStats = () => {
         .select('company_id')
         .eq('user_id', user.id)
         .abortSignal(signal!)
-        .single();
+        .maybeSingle(); // FIXED: Use maybeSingle() instead of single() to handle 0 or multiple rows
       
       MobileDebugger.log('DASHBOARD', 'Profiles query result', { 
         hasData: !!profileData, 
@@ -110,7 +110,7 @@ export const useDashboardStats = () => {
           .eq('user_id', user.id)
           .eq('is_active', true)
           .abortSignal(signal!)
-          .single();
+          .maybeSingle(); // FIXED: Use maybeSingle() instead of single() to handle 0 or multiple rows
         
         if (employeeError || !employeeData?.company_id) {
           MobileDebugger.error('DASHBOARD', 'No company_id found in employees either', { 
