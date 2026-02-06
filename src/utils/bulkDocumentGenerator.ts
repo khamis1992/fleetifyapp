@@ -199,10 +199,9 @@ async function fetchContractDocuments(contractId: string, companyId: string): Pr
 
 /**
  * جلب مستندات الشركة (السجل التجاري، شهادة IBAN، إلخ)
+ * ترجع البيانات الخام من قاعدة البيانات مع معلومات الملفات
  */
-async function fetchCompanyDocuments(companyId: string): Promise<{name: string, blob: Blob, type: string}[]> {
-  const documents: {name: string, blob: Blob, type: string}[] = [];
-
+async function fetchCompanyDocuments(companyId: string): Promise<any[]> {
   try {
     // جلب من جدول company_legal_documents
     const { data: companyDocs } = await supabase
@@ -211,40 +210,48 @@ async function fetchCompanyDocuments(companyId: string): Promise<{name: string, 
       .eq('company_id', companyId)
       .eq('is_active', true);
 
-    if (companyDocs && companyDocs.length > 0) {
-      for (const doc of companyDocs) {
-        if (doc.file_url) {
-          try {
-            const response = await fetch(doc.file_url);
-            if (response.ok) {
-              const blob = await response.blob();
-              let docName = 'مستند_الشركة.pdf';
-
-              switch (doc.document_type) {
-                case 'commercial_register':
-                  docName = 'السجل_التجاري.pdf';
-                  break;
-                case 'iban_certificate':
-                  docName = 'شهادة_IBAN.pdf';
-                  break;
-                case 'representative_id':
-                  docName = 'هوية_الممثل.pdf';
-                  break;
-                case 'authorization_letter':
-                  docName = 'خطاب_التفويض.pdf';
-                  break;
-              }
-
-              documents.push({ name: docName, blob, type: doc.document_type });
-            }
-          } catch (error) {
-            console.warn(`Failed to fetch company document ${doc.document_type}:`, error);
-          }
-        }
-      }
-    }
+    return companyDocs || [];
   } catch (error) {
     console.error('Error fetching company documents:', error);
+    return [];
+  }
+}
+
+/**
+ * تحميل ملفات مستندات الشركة كـ Blobs
+ */
+async function downloadCompanyDocumentBlobs(companyDocs: any[]): Promise<{name: string, blob: Blob, type: string}[]> {
+  const documents: {name: string, blob: Blob, type: string}[] = [];
+
+  for (const doc of companyDocs) {
+    if (doc.file_url) {
+      try {
+        const response = await fetch(doc.file_url);
+        if (response.ok) {
+          const blob = await response.blob();
+          let docName = 'مستند_الشركة.pdf';
+
+          switch (doc.document_type) {
+            case 'commercial_register':
+              docName = 'السجل_التجاري.pdf';
+              break;
+            case 'iban_certificate':
+              docName = 'شهادة_IBAN.pdf';
+              break;
+            case 'representative_id':
+              docName = 'هوية_الممثل.pdf';
+              break;
+            case 'authorization_letter':
+              docName = 'خطاب_التفويض.pdf';
+              break;
+          }
+
+          documents.push({ name: docName, blob, type: doc.document_type });
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch company document ${doc.document_type}:`, error);
+      }
+    }
   }
 
   return documents;
@@ -544,6 +551,8 @@ async function generateCustomerDocuments(
       htmlContent?: string;
     }[] = [];
     
+    console.log('[كشف المستندات] عدد مستندات الشركة المتاحة:', companyDocuments?.length || 0);
+    
     // 1. كشف المطالبات المالية (مع المحتوى) - دائماً مرفق
     const claimsHtml = generateClaimsStatementHtml(claimsData);
     generatedDocuments.push({ 
@@ -553,16 +562,14 @@ async function generateCustomerDocuments(
       htmlContent: claimsHtml,
     });
     
-    // 2. البطاقة الشخصية للممثل (من مستندات الشركة) - دائماً مرفق
-    const representativeIdDoc = companyDocuments.find(d => d.document_type === 'representative_id');
-    if (representativeIdDoc) {
-      generatedDocuments.push({ 
-        name: 'البطاقة الشخصية للممثل', 
-        status: 'مرفق',
-        type: 'pdf',
-        url: representativeIdDoc.file_url,
-      });
-    }
+    // 2. البطاقة الشخصية للممثل (من مستندات الشركة)
+    const representativeIdDoc = companyDocuments?.find(d => d.document_type === 'representative_id');
+    generatedDocuments.push({ 
+      name: 'البطاقة الشخصية للممثل', 
+      status: representativeIdDoc ? 'مرفق' : 'غير مرفق',
+      type: 'pdf',
+      url: representativeIdDoc?.file_url,
+    });
     
     // 3. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
     generatedDocuments.push({ 
@@ -572,27 +579,32 @@ async function generateCustomerDocuments(
       htmlContent: memoHtml,
     });
     
-    // 4. شهادة IBAN - دائماً مرفق
-    const ibanDoc = companyDocuments.find(d => d.document_type === 'iban_certificate');
-    if (ibanDoc) {
-      generatedDocuments.push({ 
-        name: 'شهادة IBAN', 
-        status: 'مرفق',
-        type: 'pdf',
-        url: ibanDoc.file_url,
-      });
-    }
+    // 4. شهادة IBAN
+    const ibanDoc = companyDocuments?.find(d => d.document_type === 'iban_certificate');
+    generatedDocuments.push({ 
+      name: 'شهادة IBAN', 
+      status: ibanDoc ? 'مرفق' : 'غير مرفق',
+      type: 'pdf',
+      url: ibanDoc?.file_url,
+    });
     
-    // 5. السجل التجاري - دائماً مرفق
-    const commercialRegisterDoc = companyDocuments.find(d => d.document_type === 'commercial_register');
-    if (commercialRegisterDoc) {
-      generatedDocuments.push({ 
-        name: 'السجل التجاري', 
-        status: 'مرفق',
-        type: 'pdf',
-        url: commercialRegisterDoc.file_url,
-      });
-    }
+    // 5. السجل التجاري
+    const commercialRegisterDoc = companyDocuments?.find(d => d.document_type === 'commercial_register');
+    generatedDocuments.push({ 
+      name: 'السجل التجاري', 
+      status: commercialRegisterDoc ? 'مرفق' : 'غير مرفق',
+      type: 'pdf',
+      url: commercialRegisterDoc?.file_url,
+    });
+    
+    // 6. خطاب التفويض
+    const authorizationDoc = companyDocuments?.find(d => d.document_type === 'authorization_letter');
+    generatedDocuments.push({ 
+      name: 'خطاب التفويض', 
+      status: authorizationDoc ? 'مرفق' : 'غير مرفق',
+      type: 'pdf',
+      url: authorizationDoc?.file_url,
+    });
     
     // ملاحظة: بلاغ السرقة وطلب تحويل المخالفات لا يتم تضمينهم في كشف المستندات
     // لأنهم اختياريان وليسوا من المستندات الأساسية
