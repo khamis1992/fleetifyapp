@@ -767,19 +767,67 @@ async function generateCustomerDocuments(
 
   // جلب الملفات الفعلية المرفوعة للعميل
   try {
-    // 1. جلب مستندات العقد (العقد + المستندات القانونية المرفوعة)
+    // 1. جلب عقد الإيجار بشكل منفصل وإضافته كملف PDF مستقل
+    console.log('[إضافة العقد] محاولة جلب عقد الإيجار للعميل:', customer.customer_name);
+    console.log('[إضافة العقد] معرف العقد:', customer.contract_id);
+    console.log('[إضافة العقد] معرف الشركة:', companyId);
+    
+    try {
+      const { data: contractFiles, error: listError } = await supabase.storage
+        .from('contract_documents')
+        .list(`contracts/${companyId}/${customer.contract_id}`);
+      
+      console.log('[إضافة العقد] عدد ملفات العقد المتاحة:', contractFiles?.length || 0);
+      if (listError) console.error('[إضافة العقد] خطأ في قائمة الملفات:', listError);
+      
+      if (contractFiles && contractFiles.length > 0 && !listError) {
+        const contractFile = contractFiles[0];
+        console.log('[إضافة العقد] اسم ملف العقد:', contractFile.name);
+        
+        const { data: contractBlob, error: downloadError } = await supabase.storage
+          .from('contract_documents')
+          .download(`contracts/${companyId}/${customer.contract_id}/${contractFile.name}`);
+        
+        if (contractBlob && !downloadError) {
+          console.log('[إضافة العقد] ✅ تم تحميل العقد بنجاح - الحجم:', contractBlob.size, 'بايت');
+          
+          // إضافة العقد كملف PDF منفصل في مجلد العميل
+          const fileExtension = contractFile.name.split('.').pop() || 'pdf';
+          documentsWithImages.push({
+            name: `عقد_الإيجار.${fileExtension}`,
+            content: contractBlob,
+            type: 'pdf' as any,
+          });
+          
+          console.log('[إضافة العقد] ✅ تمت إضافة العقد إلى قائمة المستندات');
+        } else {
+          console.error('[إضافة العقد] ❌ فشل تحميل العقد:', downloadError);
+        }
+      } else {
+        console.warn('[إضافة العقد] ⚠️ لا توجد ملفات عقد متاحة في المسار');
+      }
+    } catch (contractError) {
+      console.error('[إضافة العقد] ❌ خطأ في جلب عقد الإيجار:', contractError);
+    }
+    
+    // 2. جلب المستندات القانونية الأخرى المرفوعة
     const contractDocs = await fetchContractDocuments(customer.contract_id, companyId);
+    console.log('[المستندات الأخرى] عدد المستندات المرفوعة:', contractDocs.length);
+    
     for (const doc of contractDocs) {
-      documentsWithImages.push({
-        name: doc.name,
-        content: doc.blob,
-      });
+      // تجنب تكرار العقد إذا كان موجوداً بالفعل
+      if (!doc.name.includes('عقد_الإيجار')) {
+        documentsWithImages.push({
+          name: doc.name,
+          content: doc.blob,
+        });
+      }
     }
 
-    // 2. جلب مستندات الشركة (مرة واحدة فقط - ستكون مكررة لكل عميل لكنها ضرورية)
+    // 3. جلب مستندات الشركة (مرة واحدة فقط - ستكون مكررة لكل عميل لكنها ضرورية)
     // نجلبها في generateBulkDocumentsZip مرة واحدة ونوزعها على جميع العملاء
   } catch (error) {
-    console.warn('فشل جلب الملفات المرفوعة:', error);
+    console.error('[جلب الملفات] ❌ فشل جلب الملفات المرفوعة:', error);
   }
 
   return {
