@@ -979,8 +979,8 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
   
-  // تصفية المستندات المرفقة التي لها روابط
-  const attachedDocs = data.documents.filter(d => d.status === 'مرفق' && d.url);
+  // تصفية المستندات المرفقة التي لها روابط أو محتوى HTML
+  const attachedDocs = data.documents.filter(d => d.status === 'مرفق' && (d.url || d.htmlContent));
 
   return `
 <!DOCTYPE html>
