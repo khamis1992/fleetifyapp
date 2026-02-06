@@ -562,7 +562,29 @@ async function generateCustomerDocuments(
       htmlContent: claimsHtml,
     });
     
-    // 2. البطاقة الشخصية للممثل (من مستندات الشركة)
+    // 2. نسخة من عقد الإيجار - يجب التحقق من وجودها
+    // نحاول جلب العقد من contract_documents
+    try {
+      const { data: contractFiles } = await supabase.storage
+        .from('contract_documents')
+        .list(`contracts/${companyId}/${customer.contract_id}`);
+      
+      const hasContract = contractFiles && contractFiles.length > 0;
+      generatedDocuments.push({ 
+        name: 'نسخة من عقد الإيجار', 
+        status: hasContract ? 'مرفق' : 'غير مرفق',
+        type: 'pdf',
+      });
+    } catch (error) {
+      console.warn('فشل التحقق من وجود العقد:', error);
+      generatedDocuments.push({ 
+        name: 'نسخة من عقد الإيجار', 
+        status: 'غير مرفق',
+        type: 'pdf',
+      });
+    }
+    
+    // 3. البطاقة الشخصية للممثل (من مستندات الشركة)
     const representativeIdDoc = companyDocuments?.find(d => d.document_type === 'representative_id');
     generatedDocuments.push({ 
       name: 'البطاقة الشخصية للممثل', 
@@ -571,7 +593,7 @@ async function generateCustomerDocuments(
       url: representativeIdDoc?.file_url,
     });
     
-    // 3. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
+    // 4. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
     generatedDocuments.push({ 
       name: 'المذكرة الشارحة', 
       status: 'مرفق',
@@ -579,7 +601,7 @@ async function generateCustomerDocuments(
       htmlContent: memoHtml,
     });
     
-    // 4. شهادة IBAN
+    // 5. شهادة IBAN
     const ibanDoc = companyDocuments?.find(d => d.document_type === 'iban_certificate');
     generatedDocuments.push({ 
       name: 'شهادة IBAN', 
@@ -588,7 +610,7 @@ async function generateCustomerDocuments(
       url: ibanDoc?.file_url,
     });
     
-    // 5. السجل التجاري
+    // 6. السجل التجاري
     const commercialRegisterDoc = companyDocuments?.find(d => d.document_type === 'commercial_register');
     generatedDocuments.push({ 
       name: 'السجل التجاري', 
@@ -597,7 +619,7 @@ async function generateCustomerDocuments(
       url: commercialRegisterDoc?.file_url,
     });
     
-    // 6. خطاب التفويض
+    // 7. خطاب التفويض
     const authorizationDoc = companyDocuments?.find(d => d.document_type === 'authorization_letter');
     generatedDocuments.push({ 
       name: 'خطاب التفويض', 
