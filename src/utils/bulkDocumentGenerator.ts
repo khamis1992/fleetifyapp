@@ -569,12 +569,26 @@ async function generateCustomerDocuments(
         .from('contract_documents')
         .list(`contracts/${companyId}/${customer.contract_id}`);
       
-      const hasContract = contractFiles && contractFiles.length > 0;
-      generatedDocuments.push({ 
-        name: 'نسخة من عقد الإيجار', 
-        status: hasContract ? 'مرفق' : 'غير مرفق',
-        type: 'pdf',
-      });
+      if (contractFiles && contractFiles.length > 0) {
+        // إنشاء رابط عام للعقد
+        const contractFile = contractFiles[0];
+        const { data: urlData } = supabase.storage
+          .from('contract_documents')
+          .getPublicUrl(`contracts/${companyId}/${customer.contract_id}/${contractFile.name}`);
+        
+        generatedDocuments.push({ 
+          name: 'نسخة من عقد الإيجار', 
+          status: 'مرفق',
+          type: 'pdf',
+          url: urlData.publicUrl,
+        });
+      } else {
+        generatedDocuments.push({ 
+          name: 'نسخة من عقد الإيجار', 
+          status: 'غير مرفق',
+          type: 'pdf',
+        });
+      }
     } catch (error) {
       console.warn('فشل التحقق من وجود العقد:', error);
       generatedDocuments.push({ 
