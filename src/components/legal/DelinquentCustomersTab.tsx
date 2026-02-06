@@ -660,8 +660,8 @@ export const DelinquentCustomersTab: React.FC = () => {
         claimsStatement: true,
         documentsList: true,
         violationsList: false,  // المخالفات مدمجة في كشف المطالبات
-        criminalComplaint: true,
-        violationsTransfer: true,
+        criminalComplaint: false, // بلاغ السرقة اختياري - لا يتم تحميله تلقائياً
+        violationsTransfer: false, // طلب تحويل المخالفات اختياري - لا يتم تحميله تلقائياً
       };
 
       // إنشاء ملف ZIP مع جميع المستندات

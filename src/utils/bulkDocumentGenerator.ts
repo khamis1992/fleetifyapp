@@ -377,8 +377,8 @@ async function generateCustomerDocuments(
     claimsStatement: true,
     documentsList: true,
     violationsList: true,
-    criminalComplaint: true,
-    violationsTransfer: true
+    criminalComplaint: false, // بلاغ السرقة اختياري - لا يتم تحميله تلقائياً
+    violationsTransfer: false // طلب تحويل المخالفات اختياري - لا يتم تحميله تلقائياً
   }
 ): Promise<CustomerDocuments> {
   const { contract, invoices, violations, companyInfo } = await fetchCustomerFullData(customer.contract_id);
@@ -531,9 +531,11 @@ async function generateCustomerDocuments(
     });
   }
 
-  // 3. كشف المستندات المرفوعة - يحتوي على نسخ من جميع المستندات مدمجة
+  // 3. كشف المستندات المرفوعة - يحتوي على نسخ من جميع المستندات الأساسية مدمجة
   if (options.documentsList) {
     // بناء قائمة المستندات مع المحتوى الفعلي
+    // ملاحظة: يتم تضمين جميع المستندات الأساسية دائماً (بغض النظر عن options)
+    // باستثناء بلاغ السرقة وطلب تحويل المخالفات (اختياريان)
     const generatedDocuments: { 
       name: string; 
       status: 'مرفق' | 'غير مرفق';
@@ -542,18 +544,16 @@ async function generateCustomerDocuments(
       htmlContent?: string;
     }[] = [];
     
-    // 1. كشف المطالبات المالية (مع المحتوى)
-    if (options.claimsStatement) {
-      const claimsHtml = generateClaimsStatementHtml(claimsData);
-      generatedDocuments.push({ 
-        name: 'كشف المطالبات المالية', 
-        status: 'مرفق',
-        type: 'html',
-        htmlContent: claimsHtml,
-      });
-    }
+    // 1. كشف المطالبات المالية (مع المحتوى) - دائماً مرفق
+    const claimsHtml = generateClaimsStatementHtml(claimsData);
+    generatedDocuments.push({ 
+      name: 'كشف المطالبات المالية', 
+      status: 'مرفق',
+      type: 'html',
+      htmlContent: claimsHtml,
+    });
     
-    // 2. البطاقة الشخصية للعميل (من مستندات الشركة)
+    // 2. البطاقة الشخصية للممثل (من مستندات الشركة) - دائماً مرفق
     const representativeIdDoc = companyDocuments.find(d => d.document_type === 'representative_id');
     if (representativeIdDoc) {
       generatedDocuments.push({ 
@@ -564,17 +564,15 @@ async function generateCustomerDocuments(
       });
     }
     
-    // 3. المذكرة الشارحة (مع المحتوى)
-    if (options.explanatoryMemo) {
-      generatedDocuments.push({ 
-        name: 'المذكرة الشارحة', 
-        status: 'مرفق',
-        type: 'html',
-        htmlContent: memoHtml,
-      });
-    }
+    // 3. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
+    generatedDocuments.push({ 
+      name: 'المذكرة الشارحة', 
+      status: 'مرفق',
+      type: 'html',
+      htmlContent: memoHtml,
+    });
     
-    // 4. شهادة IBAN
+    // 4. شهادة IBAN - دائماً مرفق
     const ibanDoc = companyDocuments.find(d => d.document_type === 'iban_certificate');
     if (ibanDoc) {
       generatedDocuments.push({ 
@@ -585,7 +583,7 @@ async function generateCustomerDocuments(
       });
     }
     
-    // 5. السجل التجاري
+    // 5. السجل التجاري - دائماً مرفق
     const commercialRegisterDoc = companyDocuments.find(d => d.document_type === 'commercial_register');
     if (commercialRegisterDoc) {
       generatedDocuments.push({ 
@@ -595,6 +593,9 @@ async function generateCustomerDocuments(
         url: commercialRegisterDoc.file_url,
       });
     }
+    
+    // ملاحظة: بلاغ السرقة وطلب تحويل المخالفات لا يتم تضمينهم في كشف المستندات
+    // لأنهم اختياريان وليسوا من المستندات الأساسية
 
     const documentsListData: DocumentsListData = {
       caseTitle: `قضية تحصيل مستحقات - ${customerFullName}`,

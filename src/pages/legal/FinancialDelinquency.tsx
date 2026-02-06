@@ -1330,7 +1330,7 @@ const FinancialDelinquencyPage: React.FC = () => {
 
       const allDocumentsOptions = {
         explanatoryMemo: true, claimsStatement: true, documentsList: true,
-        violationsList: true, criminalComplaint: true, violationsTransfer: true,
+        violationsList: true, criminalComplaint: false, violationsTransfer: false, // بلاغ السرقة وتحويل المخالفات اختياريان
       };
 
       const zipBlob = await generateBulkDocumentsZip(customersData, companyId, (progress) => {
