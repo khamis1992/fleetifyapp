@@ -563,43 +563,38 @@ async function generateCustomerDocuments(
       htmlContent: claimsHtml,
     });
     
-    // 2. نسخة من عقد الإيجار - توليد HTML من بيانات العقد
+    // 2. صورة من عقد الإيجار الموقع - جلب من مستندات العقد (نفس منطق صفحة تجهيز الدعوى)
     {
-      const { generateContractHtml } = await import('@/utils/contractPdfGenerator');
-      const contractHtmlContent = generateContractHtml({
-        contract_number: contract.contract_number || customer.contract_number,
-        contract_type: contract.contract_type || 'إيجار مركبة',
-        customer_name: customerFullName,
-        vehicle_info: vehicleData 
-          ? `${vehicleData.make || ''} ${vehicleData.model || ''} ${vehicleData.year || ''} - ${vehicleData.plate_number || ''}`.trim()
-          : 'غير محدد',
-        start_date: contract.start_date || '',
-        end_date: contract.end_date || '',
-        contract_amount: Number(contract.total_amount) || 0,
-        monthly_amount: Number(contract.monthly_amount) || 0,
-        terms: contract.terms || '',
-        company_name: 'شركة العراف لتأجير السيارات',
-        created_date: contract.created_at || '',
-      });
+      const { data: signedContract } = await supabase
+        .from('contract_documents')
+        .select('id, file_path, document_name')
+        .eq('contract_id', customer.contract_id)
+        .eq('company_id', companyId)
+        .eq('document_type', 'signed_contract')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
-      generatedDocuments.push({ 
-        name: 'نسخة من عقد الإيجار', 
-        status: 'مرفق',
-        type: 'html',
-        htmlContent: contractHtmlContent,
-      });
+      if (signedContract?.file_path) {
+        const { data: urlData } = supabase.storage
+          .from('contract-documents')
+          .getPublicUrl(signedContract.file_path);
+        
+        generatedDocuments.push({ 
+          name: 'صورة من عقد الإيجار الموقع', 
+          status: 'مرفق',
+          type: 'pdf',
+          url: urlData?.publicUrl,
+        });
+      } else {
+        generatedDocuments.push({ 
+          name: 'صورة من عقد الإيجار الموقع', 
+          status: 'غير مرفق',
+        });
+      }
     }
     
-    // 3. البطاقة الشخصية للممثل (من مستندات الشركة)
-    const representativeIdDoc = companyDocuments?.find(d => d.document_type === 'representative_id');
-    generatedDocuments.push({ 
-      name: 'البطاقة الشخصية للممثل', 
-      status: representativeIdDoc ? 'مرفق' : 'غير مرفق',
-      type: 'pdf',
-      url: representativeIdDoc?.file_url,
-    });
-    
-    // 4. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
+    // 3. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
     generatedDocuments.push({ 
       name: 'المذكرة الشارحة', 
       status: 'مرفق',
@@ -607,32 +602,24 @@ async function generateCustomerDocuments(
       htmlContent: memoHtml,
     });
     
-    // 5. شهادة IBAN
-    const ibanDoc = companyDocuments?.find(d => d.document_type === 'iban_certificate');
-    generatedDocuments.push({ 
-      name: 'شهادة IBAN', 
-      status: ibanDoc ? 'مرفق' : 'غير مرفق',
-      type: 'pdf',
-      url: ibanDoc?.file_url,
-    });
+    // 4-8. مستندات الشركة - نفس الترتيب المستخدم في صفحة تجهيز الدعوى
+    const companyDocTypes = [
+      { type: 'commercial_register', name: 'السجل التجاري' },
+      { type: 'establishment_record', name: 'قيد المنشأة' },
+      { type: 'iban_certificate', name: 'شهادة IBAN' },
+      { type: 'representative_id', name: 'البطاقة الشخصية للممثل' },
+      { type: 'authorization_letter', name: 'خطاب التفويض' },
+    ] as const;
     
-    // 6. السجل التجاري
-    const commercialRegisterDoc = companyDocuments?.find(d => d.document_type === 'commercial_register');
-    generatedDocuments.push({ 
-      name: 'السجل التجاري', 
-      status: commercialRegisterDoc ? 'مرفق' : 'غير مرفق',
-      type: 'pdf',
-      url: commercialRegisterDoc?.file_url,
-    });
-    
-    // 7. خطاب التفويض
-    const authorizationDoc = companyDocuments?.find(d => d.document_type === 'authorization_letter');
-    generatedDocuments.push({ 
-      name: 'خطاب التفويض', 
-      status: authorizationDoc ? 'مرفق' : 'غير مرفق',
-      type: 'pdf',
-      url: authorizationDoc?.file_url,
-    });
+    for (const docType of companyDocTypes) {
+      const doc = companyDocuments?.find(d => d.document_type === docType.type);
+      generatedDocuments.push({ 
+        name: docType.name, 
+        status: doc ? 'مرفق' : 'غير مرفق',
+        type: 'pdf',
+        url: doc?.file_url,
+      });
+    }
     
     // ملاحظة: بلاغ السرقة وطلب تحويل المخالفات لا يتم تضمينهم في كشف المستندات
     // لأنهم اختياريان وليسوا من المستندات الأساسية

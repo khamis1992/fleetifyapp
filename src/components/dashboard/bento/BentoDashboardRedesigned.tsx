@@ -326,12 +326,18 @@ const BentoDashboardRedesigned: React.FC = () => {
 
   // Get company_id from either profile or company object (with fallback)
   const companyId = user?.profile?.company_id || user?.company?.id;
+  
+  // CRITICAL FIX: Only enable queries when company_id is available
+  const isReady = !!companyId;
 
   // Fleet Status Query
   const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
     queryKey: ['fleet-status-redesign', companyId],
     queryFn: async () => {
-      if (!companyId) return null;
+      if (!companyId) {
+        console.warn('[BentoDashboard] Fleet query called without company_id');
+        return null;
+      }
       const { data } = await supabase
         .from('vehicles')
         .select('status')
@@ -347,14 +353,18 @@ const BentoDashboardRedesigned: React.FC = () => {
       });
       return counts;
     },
-    enabled: !!companyId,
+    enabled: isReady,
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
   // Maintenance Query
   const { data: maintenanceData } = useQuery({
     queryKey: ['maintenance-redesign', companyId],
     queryFn: async () => {
-      if (!companyId) return [];
+      if (!companyId) {
+        console.warn('[BentoDashboard] Maintenance query called without company_id');
+        return [];
+      }
       const { data } = await supabase
         .from('vehicle_maintenance')
         .select('id, maintenance_type, scheduled_date, status, vehicles(plate_number)')
@@ -364,14 +374,18 @@ const BentoDashboardRedesigned: React.FC = () => {
         .limit(5);
       return data || [];
     },
-    enabled: !!companyId,
+    enabled: isReady,
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
   });
 
   // Revenue Chart Data
   const { data: revenueData } = useQuery({
     queryKey: ['revenue-chart-redesign', companyId],
     queryFn: async () => {
-      if (!companyId) return [];
+      if (!companyId) {
+        console.warn('[BentoDashboard] Revenue query called without company_id');
+        return [];
+      }
       const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
       const currentMonth = new Date().getMonth();
 
@@ -393,7 +407,8 @@ const BentoDashboardRedesigned: React.FC = () => {
       }
       return results;
     },
-    enabled: !!companyId,
+    enabled: isReady,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes (revenue data changes less frequently)
   });
 
   const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) +

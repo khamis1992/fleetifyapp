@@ -42,13 +42,26 @@ async function checkBackendAvailability(): Promise<boolean> {
 }
 
 export const useDashboardStats = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { moduleContext } = useModuleConfig();
 
+  // Get company_id from either profile or company object
+  const companyId = user?.profile?.company_id || user?.company?.id;
+  
+  // CRITICAL FIX: Only enable query when we have both user AND company_id
+  // This prevents the query from running with undefined company_id
+  const isReady = !authLoading && !!user?.id && !!companyId;
+
   return useQuery({
-    queryKey: ['dashboard-stats', user?.id, moduleContext?.activeModules],
+    queryKey: ['dashboard-stats', user?.id, companyId, moduleContext?.activeModules],
     queryFn: async ({ signal }: { signal?: AbortSignal }): Promise<DashboardStats> => {
-      if (!user?.id) {
+      if (!user?.id || !companyId) {
+        console.warn('[useDashboardStats] Missing user or company_id:', { 
+          userId: user?.id, 
+          companyId,
+          hasProfile: !!user?.profile,
+          hasCompany: !!user?.company
+        });
         return {
           totalCustomers: 0,
           monthlyRevenue: 0,
@@ -76,66 +89,10 @@ export const useDashboardStats = () => {
       }
 
       // 📊 Direct Supabase queries
-      // console.debug('[useDashboardStats] Using Supabase direct queries');
-
-      // جلب company_id من جدول profiles
-      let company_id: string;
+      // Use company_id from user context (already loaded by AuthContext)
+      const company_id = companyId;
       
-      MobileDebugger.log('DASHBOARD', 'Fetching company_id for user', { user_id: user.id });
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .abortSignal(signal!)
-        .maybeSingle(); // FIXED: Use maybeSingle() instead of single() to handle 0 or multiple rows
-      
-      MobileDebugger.log('DASHBOARD', 'Profiles query result', { 
-        hasData: !!profileData, 
-        company_id: profileData?.company_id,
-        error: profileError?.message 
-      });
-
-      if (profileError || !profileData?.company_id) {
-        MobileDebugger.log('DASHBOARD', 'No company_id in profiles, trying employees table', { 
-          profileError: profileError?.message, 
-          user_id: user.id 
-        });
-        console.warn('[useDashboardStats] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
-        
-        // Try fallback to employees table
-        const { data: employeeData, error: employeeError } = await supabase
-          .from('employees')
-          .select('company_id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .abortSignal(signal!)
-          .maybeSingle(); // FIXED: Use maybeSingle() instead of single() to handle 0 or multiple rows
-        
-        if (employeeError || !employeeData?.company_id) {
-          MobileDebugger.error('DASHBOARD', 'No company_id found in employees either', { 
-            employeeError: employeeError?.message, 
-            user_id: user.id 
-          });
-          console.error('[useDashboardStats] No company_id found in employees either', { employeeError, user_id: user.id });
-          
-          // Return empty stats instead of throwing error
-          return {
-            totalCustomers: 0,
-            monthlyRevenue: 0,
-            customersChange: '+0',
-            revenueChange: '+0%'
-          };
-        }
-        
-        company_id = employeeData.company_id;
-        MobileDebugger.log('DASHBOARD', 'Found company_id from employees table', { company_id });
-        console.log('[useDashboardStats] Found company_id from employees table:', company_id);
-      } else {
-        company_id = profileData.company_id;
-        MobileDebugger.log('DASHBOARD', 'Found company_id from profiles table', { company_id });
-        console.log('[useDashboardStats] Found company_id from profiles table:', company_id);
-      }
+      console.log('[useDashboardStats] Using company_id from user context:', company_id);
 
       // إصلاح: جلب البيانات حتى لو لم يتوفر moduleContext بعد
       const isVehiclesEnabled = moduleContext?.activeModules?.includes('vehicles') ?? true;
@@ -413,7 +370,7 @@ export const useDashboardStats = () => {
 
       return stats;
     },
-    enabled: !!user?.id,
+    enabled: isReady, // CRITICAL: Only run when we have user, company_id, and auth is loaded
     staleTime: 5 * 60 * 1000, // 5 minutes - cache stats
     gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
     retry: 1,
