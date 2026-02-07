@@ -60,6 +60,8 @@ import {
   FileUp,
   X,
   Globe,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
 
@@ -90,6 +92,10 @@ export default function CustomerVerificationPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [paymentNote, setPaymentNote] = useState('');
+  
+  // حالة حذف العقد
+  const [showDeleteContractDialog, setShowDeleteContractDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // جلب بيانات المهمة
   const { data: task, isLoading: taskLoading } = useQuery({
@@ -177,6 +183,24 @@ export default function CustomerVerificationPage() {
 
       if (error) throw error;
       return data;
+    },
+    enabled: !!task?.contract_id,
+  });
+
+  // جلب المخالفات المرورية للعقد
+  const { data: trafficViolations = [] } = useQuery({
+    queryKey: ['contract-violations', task?.contract_id],
+    queryFn: async () => {
+      if (!task?.contract_id) return [];
+
+      const { data, error } = await supabase
+        .from('traffic_violations')
+        .select('id, violation_number, violation_type, fine_amount, status')
+        .eq('contract_id', task.contract_id)
+        .eq('status', 'pending'); // فقط المخالفات المعلقة
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!task?.contract_id,
   });
@@ -341,6 +365,49 @@ export default function CustomerVerificationPage() {
   });
 
   // إلغاء المهمة
+  // حذف العقد نهائياً
+  const deleteContractMutation = useMutation({
+    mutationFn: async () => {
+      if (!task?.contract_id || !companyId) {
+        throw new Error('بيانات العقد غير مكتملة');
+      }
+
+      const contractId = task.contract_id;
+
+      // 1. حذف البيانات المرتبطة
+      await supabase.from('delinquent_customers').delete().eq('contract_id', contractId);
+      await supabase.from('payments').delete().eq('contract_id', contractId);
+      await supabase.from('invoices').delete().eq('contract_id', contractId);
+      await supabase.from('contract_payment_schedules').delete().eq('contract_id', contractId);
+      await supabase.from('traffic_violations').update({ contract_id: null }).eq('contract_id', contractId);
+      await supabase.from('contract_documents').delete().eq('contract_id', contractId);
+
+      // 2. حذف العقد
+      const { error: deleteError } = await supabase
+        .from('contracts')
+        .delete()
+        .eq('id', contractId);
+
+      if (deleteError) throw deleteError;
+
+      // 3. حذف مهمة التدقيق
+      await supabase
+        .from('customer_verification_tasks')
+        .delete()
+        .eq('id', taskId);
+    },
+    onSuccess: () => {
+      toast.success('تم حذف العقد نهائياً من النظام');
+      queryClient.invalidateQueries({ queryKey: ['verification-task'] });
+      queryClient.invalidateQueries({ queryKey: ['delinquent-customers'] });
+      navigate('/legal/delinquency');
+    },
+    onError: (error: any) => {
+      console.error('Error deleting contract:', error);
+      toast.error('فشل حذف العقد: ' + (error.message || 'خطأ غير معروف'));
+    },
+  });
+
   const cancelTaskMutation = useMutation({
     mutationFn: async () => {
       if (!taskId) throw new Error('معرف المهمة غير موجود');
@@ -1045,6 +1112,37 @@ export default function CustomerVerificationPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* زر حذف العقد نهائياً */}
+          <Card className="border border-slate-300 bg-slate-50/50 dark:bg-slate-950/10">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-200 rounded-lg">
+                    <Trash2 className="h-5 w-5 text-slate-700" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-slate-800 dark:text-slate-200">
+                      حذف العقد نهائياً
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      حذف العقد والبيانات المرتبطة من النظام بشكل نهائي
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowDeleteContractDialog(true)}
+                  disabled={isDeleting}
+                  className="gap-2 border-slate-400 text-slate-700 hover:bg-slate-200"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  حذف العقد
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
 
@@ -1129,6 +1227,82 @@ export default function CustomerVerificationPage() {
                 <CreditCard className="h-4 w-4" />
               )}
               تسجيل الدفعة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog تأكيد حذف العقد */}
+      <Dialog open={showDeleteContractDialog} onOpenChange={setShowDeleteContractDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              تأكيد حذف العقد نهائياً
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* تحذير المخالفات المرورية */}
+            {trafficViolations.length > 0 && (
+              <Alert className="border-amber-300 bg-amber-50">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>تنبيه:</strong> يوجد {trafficViolations.length} مخالفة مرورية معلقة على هذا العقد.
+                  سيتم فك ارتباط المخالفات بالعقد (ستبقى في النظام مرتبطة بالمركبة فقط).
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Alert className="border-red-300 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <strong>تحذير:</strong> هذا الإجراء لا يمكن التراجع عنه!
+                <br />
+                سيتم حذف:
+                <ul className="list-disc list-inside mt-2 text-sm">
+                  <li>العقد رقم: <strong>{task?.contract?.contract_number}</strong></li>
+                  <li>جميع الفواتير المرتبطة ({invoices.length})</li>
+                  <li>جميع الدفعات المسجلة</li>
+                  <li>مهمة التدقيق الحالية</li>
+                  <li>المستندات المرفقة</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+
+            <p className="text-sm text-slate-600">
+              استخدم هذا الخيار فقط للعقود التي تم تسويتها بالكامل وليس عليها أي مطالبات.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteContractDialog(false)}
+              disabled={isDeleting}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setIsDeleting(true);
+                deleteContractMutation.mutate();
+              }}
+              disabled={isDeleting}
+              className="gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <LoadingSpinner className="h-4 w-4" />
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  تأكيد الحذف النهائي
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

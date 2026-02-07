@@ -103,6 +103,8 @@ import {
   Upload,
   File,
   Image,
+  MessageSquare,
+  Send,
   X,
   FileIcon,
 } from 'lucide-react';
@@ -352,6 +354,69 @@ export const LegalCasesTracking: React.FC = () => {
   const handleDeleteCase = useCallback((legalCase: LegalCase) => {
     setCaseToDelete(legalCase);
     setShowDeleteDialog(true);
+  }, []);
+
+  const handleSendCaseNotification = useCallback(async (legalCase: LegalCase) => {
+    try {
+      // Get customer phone from contract
+      const { data: contract } = await supabase
+        .from('contracts')
+        .select('customers(phone, first_name, last_name, first_name_ar, last_name_ar)')
+        .eq('id', legalCase.contract_id)
+        .single();
+
+      const customerPhone = contract?.customers?.phone;
+      if (!customerPhone) {
+        toast.error('رقم هاتف العميل غير متوفر');
+        return;
+      }
+
+      const customerName = contract?.customers?.first_name_ar && contract?.customers?.last_name_ar
+        ? `${contract.customers.first_name_ar} ${contract.customers.last_name_ar}`
+        : `${contract.customers?.first_name || ''} ${contract.customers?.last_name || ''}`.trim();
+
+      // Generate message
+      const message = `
+━━━━━━━━━━━━━━━━━━━
+⚖️ *إشعار قانوني مهم*
+━━━━━━━━━━━━━━━━━━━
+
+السيد/السيدة *${customerName}* المحترم/ة،
+
+نود إعلامكم بأنه تم فتح قضية مدنية ضدكم لدى محكمة الاستثمار:
+
+📋 *رقم القضية:* ${legalCase.case_number}
+💰 *قيمة المطالبات:* ${(legalCase.case_value || 0).toLocaleString('en-US')} ر.ق
+📅 *تاريخ الرفع:* ${legalCase.filing_date ? new Date(legalCase.filing_date).toLocaleDateString('ar-QA') : 'قيد التحديد'}
+
+⚠️ *مهم جداً:*
+يرجى مراجعة مكتب الشركة في أقرب وقت ممكن قبل اعتماد القضية وتحديد موعد الجلسة من قبل المحكمة.
+
+🔴 *تنبيه:*
+عند تحديد موعد الجلسة ودفع رسوم المحكمة، لن يتم التنازل عن القضية.
+
+📞 *للتواصل:*
+يرجى الاتصال بنا فوراً لتسوية الأمر ودياً.
+
+━━━━━━━━━━━━━━━━━━━
+🏢 *شركة العراف لتأجير السيارات*
+      `.trim();
+
+      // Send WhatsApp message
+      const { default: whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
+      
+      if (!whatsAppService.isInitialized()) {
+        toast.error('خدمة واتساب غير مُفعلة. يرجى تفعيلها من الإعدادات');
+        return;
+      }
+
+      await whatsAppService.sendTextMessage(customerPhone, message);
+      
+      toast.success('تم إرسال الإشعار للعميل عبر واتساب');
+    } catch (error) {
+      console.error('Error sending case notification:', error);
+      toast.error('فشل إرسال الإشعار. يرجى المحاولة مرة أخرى');
+    }
   }, []);
 
   const confirmDelete = useCallback(() => {
@@ -1075,6 +1140,13 @@ export const LegalCasesTracking: React.FC = () => {
                         >
                           <Edit size={14} />
                           تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 cursor-pointer text-blue-600"
+                          onClick={() => handleSendCaseNotification(item as LegalCase)}
+                        >
+                          <MessageSquare size={14} />
+                          إشعار العميل
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="gap-2 cursor-pointer text-emerald-600"
