@@ -1,20 +1,80 @@
-# Fix: Hide customers with open legal cases from delinquency page
+# إصلاح مشكلة فقدان البيانات عند تحديث الصفحة
 
-## Problem
-When clicking "فتح قضية" (open case) on the delinquency page, the customer's contract status is updated to `under_legal_procedure`, but the customer still appears in the delinquency list.
+## المشكلة
+عند تحديث الصفحة (F5)، النظام يفقد الـ session وتظهر جميع البيانات 0، ويحتاج المستخدم لعمل Hard Refresh (Ctrl+F5) حتى تظهر البيانات مرة أخرى.
 
-## Fix Plan
+## السبب الجذري
+1. **React Query Cache** يتم مسحه عند تحديث الصفحة
+2. إعداد `refetchOnMount: false` يمنع إعادة تحميل البيانات عند mount
+3. إعداد `placeholderData` يحاول استخدام بيانات سابقة غير موجودة بعد التحديث
+4. الـ session موجود في localStorage لكن البيانات لا يتم تحميلها تلقائياً
 
-- [ ] **1. Dynamic calculation path** — Remove `'under_legal_procedure'` from the contract status filter in `useDelinquentCustomers.ts` (line 305)
-- [ ] **2. Cached data path** — Filter out rows with `contract_status = 'under_legal_procedure'` in the cached data processing
+## خطة الإصلاح
 
-## Review
+### ✅ المهام
 
-### Changes Made (1 file: `src/hooks/useDelinquentCustomers.ts`)
+- [x] 1. تعديل إعدادات React Query في App.tsx
+  - تفعيل `refetchOnMount: 'always'` لضمان تحميل البيانات بعد page refresh
+  - إزالة `placeholderData` الذي يسبب مشاكل
+  - الحفاظ على `refetchOnWindowFocus: false` لتجنب التجميد
 
-1. **Dynamic calculation path (line 305)** — Removed `'under_legal_procedure'` from the `.in('status', ...)` filter. Contracts with open legal cases are no longer fetched.
+- [x] 2. إضافة استراتيجية إعادة تحميل ذكية
+  - تحميل البيانات تلقائياً عند mount
+  - إزالة placeholderData الذي يعيد undefined
+  - الحفاظ على الأداء
 
-2. **Cached data path (after line 190)** — Added filter to exclude rows where `contract_status = 'under_legal_procedure'`. Cached data that includes old legal procedure entries is now filtered out.
+- [x] 3. إصلاح useDashboardStats
+  - استبدال `placeholderData` بـ `keepPreviousData`
+  - تقليل `staleTime` إلى 30 ثانية
+  - الحفاظ على `gcTime` عند 30 دقيقة
 
-### How it works
-When "فتح قضية رسمية" is clicked, `convertToOfficialCase()` updates the contract status to `'under_legal_procedure'`. Now, both the cached and dynamic paths in `useDelinquentCustomers` exclude contracts with this status, so the customer disappears from the delinquency list.
+- [ ] 4. اختبار الإصلاح
+  - تسجيل دخول
+  - تحديث الصفحة (F5)
+  - التأكد من ظهور البيانات فوراً
+  - التأكد من عدم حدوث تجميد
+
+## الملفات المتأثرة
+- `src/App.tsx` - إعدادات Query Client
+
+## ملاحظات
+- يجب الحفاظ على الأداء وعدم التسبب في تحميل زائد
+- الحل يجب أن يكون بسيط وواضح
+- التأكد من عدم التأثير على التبويبات الأخرى
+
+---
+
+## ملخص التغييرات المنفذة
+
+### 1. App.tsx - إعدادات Query Client
+**التغييرات:**
+- ✅ `refetchOnMount: true` (بدلاً من `'always'`) - يعيد التحميل فقط إذا كانت البيانات stale
+- ✅ `staleTime: 30 seconds` (بدلاً من 2 دقيقة) - يضمن تحديث البيانات بعد page refresh
+- ✅ `keepPreviousData: true` (بدلاً من `placeholderData`) - يحافظ على البيانات السابقة أثناء التحميل
+- ✅ إزالة `placeholderData` الذي كان يرجع `undefined`
+
+**النتيجة:**
+- البيانات تظل مرئية أثناء إعادة التحميل
+- لن تظهر أصفار أو قيم فارغة
+- التحميل يحدث فقط عند الحاجة (عندما تكون البيانات قديمة)
+
+### 2. useDashboardStats.ts - إعدادات Dashboard Query
+**التغييرات:**
+- ✅ `keepPreviousData: true` (بدلاً من `placeholderData`)
+- ✅ `staleTime: 30 seconds` (بدلاً من 5 دقائق)
+- ✅ `gcTime: 30 minutes` (زيادة من 10 دقائق)
+
+**النتيجة:**
+- إحصائيات Dashboard تبقى مرئية أثناء التحديث
+- التحديث يحدث بشكل أسرع بعد page refresh
+- البيانات تبقى في الذاكرة لمدة أطول
+
+### الفرق بين `placeholderData` و `keepPreviousData`:
+- **placeholderData**: يرجع `undefined` عند عدم وجود بيانات سابقة ❌
+- **keepPreviousData**: يحافظ على البيانات السابقة حتى تصل البيانات الجديدة ✅
+
+### السلوك المتوقع بعد الإصلاح:
+1. ✅ عند تحديث الصفحة (F5)، البيانات تظهر فوراً من الـ cache
+2. ✅ بعد 30 ثانية، يتم تحديث البيانات تلقائياً في الخلفية
+3. ✅ أثناء التحديث، البيانات القديمة تبقى مرئية (لا تظهر أصفار)
+4. ✅ عند وصول البيانات الجديدة، تحل محل القديمة بسلاسة

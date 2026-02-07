@@ -377,11 +377,11 @@ export const useDashboardStats = () => {
       return stats;
     },
     enabled: isReady, // CRITICAL: Only run when we have user, company_id, and auth is loaded
-    staleTime: 5 * 60 * 1000, // 5 minutes - cache stats
-    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
+    staleTime: 30 * 1000, // 30 seconds - shorter cache to ensure fresh data after page refresh
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer
     retry: 1,
     refetchOnWindowFocus: false, // Don't refetch on window focus for dashboard stats
-    refetchOnMount: true, // Refetch on mount to ensure fresh data on navigation
-    placeholderData: (previousData: any) => previousData, // Keep previous data visible during refetch
+    refetchOnMount: true, // Refetch on mount if data is stale
+    keepPreviousData: true, // FIXED: Keep previous data visible during refetch (prevents showing 0s)
   });
 };

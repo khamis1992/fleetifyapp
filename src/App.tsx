@@ -105,19 +105,22 @@ const createQueryClient = () => {
     defaultOptions: {
       queries: {
         // Performance optimizations
-        refetchOnMount: false, // DISABLED: Prevent refetch on mount to use cached data
+        // FIXED: Use true to refetch only if data is stale (respects staleTime)
+        // This ensures fresh data after page refresh while using cache when available
+        refetchOnMount: true,
         refetchOnWindowFocus: false, // DISABLED: Prevent refetch when switching tabs (causes freezing)
         refetchOnReconnect: true, // Keep enabled for network reconnection
 
         // Cache configuration - CRITICAL: Keep data in cache longer
-        staleTime: 2 * 60 * 1000, // 2 minutes - data considered fresh
-        gcTime: 30 * 60 * 1000, // INCREASED: 30 minutes - keep in cache longer to prevent disappearing data
+        // REDUCED staleTime to ensure data refreshes more frequently after page reload
+        staleTime: 30 * 1000, // 30 seconds - data considered fresh (reduced from 2 minutes)
+        gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer to prevent disappearing data
 
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
         
-        // CRITICAL: Keep previous data while refetching
-        placeholderData: (previousData: any) => previousData,
+        // CRITICAL: Keep previous data visible while refetching to prevent 0s
+        keepPreviousData: true,
 
         // Retry configuration
         retry: (failureCount, error: any) => {
