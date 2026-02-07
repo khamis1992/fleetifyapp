@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useModuleConfig } from '@/modules/core/hooks';
@@ -77,15 +77,22 @@ const DashboardLanding: React.FC = () => {
     console.log('Email after transform:', user?.email?.toLowerCase().trim());
   }, [user]);
 
+  // CRITICAL FIX: Stabilize companyId with a ref to prevent data loss during auth transitions
+  const rawCompanyId = user?.profile?.company_id || user?.company?.id;
+  const stableCompanyIdRef = useRef<string | null>(null);
+  if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
+  const companyId = rawCompanyId || stableCompanyIdRef.current;
+  const isReady = !!companyId;
+
   // Fleet Status Query
   const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
-    queryKey: ['fleet-status-landing', user?.profile?.company_id],
+    queryKey: ['fleet-status-landing', companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return null;
+      if (!companyId) return null;
       const { data } = await supabase
         .from('vehicles')
         .select('status')
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .eq('is_active', true);
 
       const counts = { available: 0, rented: 0, maintenance: 0, reserved: 0 };
@@ -97,31 +104,33 @@ const DashboardLanding: React.FC = () => {
       });
       return counts;
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: isReady,
+    placeholderData: (prev: any) => prev,
   });
 
   // Maintenance Query
   const { data: maintenanceData } = useQuery({
-    queryKey: ['maintenance-landing', user?.profile?.company_id],
+    queryKey: ['maintenance-landing', companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) return [];
       const { data } = await supabase
         .from('vehicle_maintenance')
         .select('id, maintenance_type, scheduled_date, status, vehicles(plate_number)')
-        .eq('company_id', user.profile.company_id)
+        .eq('company_id', companyId)
         .in('status', ['pending', 'in_progress'])
         .order('scheduled_date', { ascending: true })
         .limit(5);
       return data || [];
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: isReady,
+    placeholderData: (prev: any) => prev,
   });
 
   // Revenue Chart Data
   const { data: revenueData } = useQuery({
-    queryKey: ['revenue-chart-landing', user?.profile?.company_id],
+    queryKey: ['revenue-chart-landing', companyId],
     queryFn: async () => {
-      if (!user?.profile?.company_id) return [];
+      if (!companyId) return [];
       const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
       const currentMonth = new Date().getMonth();
 
@@ -134,7 +143,7 @@ const DashboardLanding: React.FC = () => {
         const { data } = await supabase
           .from('contracts')
           .select('monthly_amount')
-          .eq('company_id', user?.profile?.company_id)
+          .eq('company_id', companyId)
           .eq('status', 'active')
           .lte('start_date', monthEnd.toISOString().split('T')[0]);
 
@@ -143,7 +152,8 @@ const DashboardLanding: React.FC = () => {
       }
       return results;
     },
-    enabled: !!user?.profile?.company_id,
+    enabled: isReady,
+    placeholderData: (prev: any) => prev,
   });
 
   const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) +

@@ -21,16 +21,24 @@ Auth session briefly becomes null during page transitions (refresh, minimize/res
 
 ## Review
 
-### Changes Made (4 files, ~5 lines changed total)
+### Changes Made (6 files total)
 
-1. **`src/contexts/CompanyContext.tsx`** — Changed `prevCompanyIdRef.current = currentId` to only update when `currentId` is truthy. Previously, when auth flickered and `currentId` became null, the ref was reset to null. When auth recovered, the null→companyId transition was falsely detected as a "company change", causing ALL queries to be invalidated.
+**Round 1 — Company ID stability fixes:**
 
-2. **`src/hooks/useDashboardStats.ts`** — Removed `if (!user) stableCompanyIdRef.current = null`. The ref now keeps the last known company ID during brief auth transitions. Also added `placeholderData: (previousData) => previousData` to keep showing previous data while refetching.
+1. **`src/contexts/CompanyContext.tsx`** — Changed `prevCompanyIdRef.current = currentId` to only update when `currentId` is truthy. Prevents false "company changed" detection during auth flickers.
 
-3. **`src/hooks/company/useCompanyAccess.ts`** — Same fix: removed `if (!user) stableCompanyIdRef.current = null` to prevent losing the stable company ID during auth flickers.
+2. **`src/hooks/useDashboardStats.ts`** — Removed `if (!user) stableCompanyIdRef.current = null`. Added `placeholderData` to keep previous data during refetch.
 
-4. **`src/hooks/useUnifiedCompanyAccess.ts`** — Same fix: removed `if (!user) stableCompanyIdRef.current = null`.
+3. **`src/hooks/company/useCompanyAccess.ts`** — Same fix: removed null reset on auth flicker.
+
+4. **`src/hooks/useUnifiedCompanyAccess.ts`** — Same fix: removed null reset on auth flicker.
+
+**Round 2 — Dashboard inline queries (the main culprits):**
+
+5. **`src/components/dashboard/bento/BentoDashboardRedesigned.tsx`** — Added `useRef` stabilization for `companyId` used by 3 inline queries (fleet status, maintenance, revenue chart). These queries were using `user?.profile?.company_id` directly — when user flickered to null, all 3 queries lost their data. Added `placeholderData` to all 3 queries.
+
+6. **`src/pages/dashboard/DashboardLanding.tsx`** — Same fix as above for the landing dashboard variant. 3 inline queries now use stabilized `companyId` with `placeholderData`.
 
 ### Why this fixes the problem
-- **Before**: Minimize/refresh → auth flicker → company ID refs reset to null → CompanyContext detects false "company change" → invalidates all queries → data shows 0
-- **After**: Minimize/refresh → auth flicker → company ID refs keep last known value → no false invalidation → data stays visible
+- **Before**: Auth flicker → `user` becomes null → `companyId` undefined → query keys change → cached data lost → queries disabled → components show 0
+- **After**: Auth flicker → `stableCompanyIdRef` keeps last known value → query keys stable → cached data preserved → `placeholderData` shows previous data while refetching

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { SkeletonMetrics } from '@/components/loaders';
@@ -325,9 +325,15 @@ const BentoDashboardRedesigned: React.FC = () => {
   const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
 
   // Get company_id from either profile or company object (with fallback)
-  const companyId = user?.profile?.company_id || user?.company?.id;
+  const rawCompanyId = user?.profile?.company_id || user?.company?.id;
   
-  // CRITICAL FIX: Only enable queries when company_id is available
+  // CRITICAL FIX: Stabilize companyId with a ref to prevent data loss during auth transitions
+  // (tab minimize/restore, token refresh). Don't reset when user is briefly null.
+  const stableCompanyIdRef = useRef<string | null>(null);
+  if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
+  const companyId = rawCompanyId || stableCompanyIdRef.current;
+  
+  // Only enable queries when company_id is available
   const isReady = !!companyId;
 
   // Fleet Status Query
@@ -355,6 +361,7 @@ const BentoDashboardRedesigned: React.FC = () => {
     },
     enabled: isReady,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    placeholderData: (prev: any) => prev, // Keep previous data during refetch
   });
 
   // Maintenance Query
@@ -376,6 +383,7 @@ const BentoDashboardRedesigned: React.FC = () => {
     },
     enabled: isReady,
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    placeholderData: (prev: any) => prev, // Keep previous data during refetch
   });
 
   // Revenue Chart Data
@@ -409,6 +417,7 @@ const BentoDashboardRedesigned: React.FC = () => {
     },
     enabled: isReady,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes (revenue data changes less frequently)
+    placeholderData: (prev: any) => prev, // Keep previous data during refetch
   });
 
   const totalVehicles = (fleetStatus?.available || 0) + (fleetStatus?.rented || 0) +
