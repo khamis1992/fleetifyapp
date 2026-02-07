@@ -104,6 +104,7 @@ interface ContractViolationsTabRedesignedProps {
   violations: TrafficViolation[];
   formatCurrency: (amount: number) => string;
   contractNumber?: string;
+  onAddViolation?: (violation: Partial<TrafficViolation>) => Promise<void>;
 }
 
 // ===== Helper Functions =====
@@ -933,11 +934,183 @@ const ViolationPaymentDialog = ({
   );
 };
 
+// ===== Add Violation Dialog Component =====
+interface AddViolationDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onAdd: (violation: Partial<TrafficViolation>) => void;
+}
+
+const AddViolationDialog = ({ open, onClose, onAdd }: AddViolationDialogProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    violation_number: '',
+    violation_type: 'speeding',
+    violation_date: new Date().toISOString().split('T')[0],
+    fine_amount: '',
+    location: '',
+    description: '',
+  });
+
+  const handleSubmit = async () => {
+    if (!formData.fine_amount || parseFloat(formData.fine_amount) <= 0) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onAdd({
+        violation_number: formData.violation_number || undefined,
+        violation_type: formData.violation_type,
+        violation_date: formData.violation_date,
+        fine_amount: parseFloat(formData.fine_amount),
+        location: formData.location || undefined,
+        description: formData.description || undefined,
+        status: 'pending',
+      });
+      
+      // Reset form
+      setFormData({
+        violation_number: '',
+        violation_type: 'speeding',
+        violation_date: new Date().toISOString().split('T')[0],
+        fine_amount: '',
+        location: '',
+        description: '',
+      });
+      
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <Plus className="h-5 w-5 text-teal-600" />
+            إضافة مخالفة مرورية
+          </DialogTitle>
+          <DialogDescription>
+            إضافة مخالفة مرورية جديدة للعقد
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Violation Number */}
+          <div className="space-y-2">
+            <Label>رقم المخالفة (اختياري)</Label>
+            <Input
+              placeholder="مثال: TR-2024-12345"
+              value={formData.violation_number}
+              onChange={(e) => setFormData({ ...formData, violation_number: e.target.value })}
+              className="rounded-xl"
+            />
+          </div>
+
+          {/* Violation Type */}
+          <div className="space-y-2">
+            <Label>نوع المخالفة</Label>
+            <Select value={formData.violation_type} onValueChange={(value) => setFormData({ ...formData, violation_type: value })}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="speeding">تجاوز السرعة</SelectItem>
+                <SelectItem value="parking">مخالفة وقوف</SelectItem>
+                <SelectItem value="red_light">تجاوز إشارة</SelectItem>
+                <SelectItem value="seatbelt">عدم ربط حزام الأمان</SelectItem>
+                <SelectItem value="phone">استخدام الهاتف</SelectItem>
+                <SelectItem value="documents">مخالفة مستندات</SelectItem>
+                <SelectItem value="insurance">تأمين منتهي</SelectItem>
+                <SelectItem value="other">أخرى</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date and Amount */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>تاريخ المخالفة</Label>
+              <Input
+                type="date"
+                value={formData.violation_date}
+                onChange={(e) => setFormData({ ...formData, violation_date: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>قيمة الغرامة (ر.ق) *</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={formData.fine_amount}
+                onChange={(e) => setFormData({ ...formData, fine_amount: e.target.value })}
+                className="rounded-xl"
+                min="0"
+                step="0.01"
+              />
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <Label>الموقع (اختياري)</Label>
+            <Input
+              placeholder="مثال: شارع الكورنيش، الدوحة"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="rounded-xl"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label>ملاحظات (اختياري)</Label>
+            <Input
+              placeholder="أي ملاحظات إضافية..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="rounded-xl"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            إلغاء
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !formData.fine_amount || parseFloat(formData.fine_amount) <= 0}
+            className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                جاري الإضافة...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                إضافة المخالفة
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ===== Main Component =====
 export const ContractViolationsTabRedesigned = ({
   violations,
   formatCurrency,
   contractNumber,
+  onAddViolation,
 }: ContractViolationsTabRedesignedProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -948,6 +1121,7 @@ export const ContractViolationsTabRedesigned = ({
   const [selectedViolation, setSelectedViolation] = useState<TrafficViolation | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isAddViolationDialogOpen, setIsAddViolationDialogOpen] = useState(false);
 
   const { toast } = useToast();
 
@@ -1031,6 +1205,32 @@ export const ContractViolationsTabRedesigned = ({
     setIsPaymentDialogOpen(true);
   };
 
+  const handleAddViolation = async (violation: Partial<TrafficViolation>) => {
+    if (!onAddViolation) {
+      toast({
+        title: 'خطأ',
+        description: 'وظيفة إضافة المخالفة غير متاحة',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await onAddViolation(violation);
+      toast({
+        title: 'تمت الإضافة بنجاح',
+        description: 'تم إضافة المخالفة المرورية بنجاح',
+      });
+    } catch (error) {
+      toast({
+        title: 'خطأ في الإضافة',
+        description: 'حدث خطأ أثناء إضافة المخالفة. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Metrics Overview */}
@@ -1046,6 +1246,7 @@ export const ContractViolationsTabRedesigned = ({
           </p>
         </div>
         <Button
+          onClick={() => setIsAddViolationDialogOpen(true)}
           className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
         >
           <Plus className="w-4 h-4" />
@@ -1177,6 +1378,12 @@ export const ContractViolationsTabRedesigned = ({
         onClose={handleClosePaymentDialog}
         formatCurrency={formatCurrency}
         onPaymentComplete={handlePaymentComplete}
+      />
+
+      <AddViolationDialog
+        open={isAddViolationDialogOpen}
+        onClose={() => setIsAddViolationDialogOpen(false)}
+        onAdd={handleAddViolation}
       />
     </div>
   );

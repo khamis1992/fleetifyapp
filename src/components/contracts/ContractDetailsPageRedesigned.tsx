@@ -800,6 +800,7 @@ const ViolationsTab = ({
   trafficViolations,
   formatCurrency,
   contractNumber,
+  onAddViolation,
 }: {
   trafficViolations: Array<{
     id: string;
@@ -810,11 +811,13 @@ const ViolationsTab = ({
   }>;
   formatCurrency: (amount: number) => string;
   contractNumber: string;
+  onAddViolation?: (violation: Partial<any>) => Promise<void>;
 }) => (
   <ContractViolationsTabRedesigned
     violations={trafficViolations}
     formatCurrency={formatCurrency}
     contractNumber={contractNumber}
+    onAddViolation={onAddViolation}
   />
 );
 
@@ -1183,6 +1186,66 @@ const ContractDetailsPageRedesigned = () => {
     generatePaymentSchedulesFromInvoices.mutate(contract.id);
   }, [contract?.id, generatePaymentSchedulesFromInvoices]);
 
+  // Handle add violation
+  const handleAddViolation = useCallback(async (violation: Partial<any>) => {
+    if (!contract?.id || !contract?.vehicle_id || !companyId) {
+      throw new Error('بيانات العقد غير مكتملة');
+    }
+
+    const { error } = await supabase
+      .from('traffic_violations')
+      .insert({
+        company_id: companyId,
+        contract_id: contract.id,
+        vehicle_id: contract.vehicle_id,
+        violation_number: violation.violation_number || null,
+        violation_type: violation.violation_type,
+        violation_date: violation.violation_date,
+        fine_amount: violation.fine_amount,
+        location: violation.location || null,
+        description: violation.description || null,
+        status: 'pending',
+      });
+
+    if (error) throw error;
+
+    // Send WhatsApp notification to customer
+    try {
+      const customerPhone = contract.customer?.phone;
+      if (customerPhone) {
+        const { generateViolationNotification } = await import('@/services/whatsapp/MessageTemplates');
+        const { default: whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
+        
+        const message = generateViolationNotification({
+          customerName: formatCustomerName(contract.customer),
+          contractNumber: contract.contract_number,
+          vehiclePlate: contract.vehicle?.plate_number || contract.license_plate || 'غير محدد',
+          violationType: violation.violation_type,
+          violationNumber: violation.violation_number,
+          violationDate: violation.violation_date,
+          fineAmount: violation.fine_amount,
+          location: violation.location,
+        });
+
+        // Try to send message (don't fail if WhatsApp is not configured)
+        if (whatsAppService.isInitialized()) {
+          await whatsAppService.sendTextMessage(customerPhone, message);
+          toast({
+            title: 'تم الإرسال',
+            description: 'تم إرسال إشعار واتساب للعميل',
+          });
+        }
+      }
+    } catch (whatsappError) {
+      console.warn('Failed to send WhatsApp notification:', whatsappError);
+      // Don't fail the whole operation if WhatsApp fails
+    }
+
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['contract-violations', contract.id] });
+    queryClient.invalidateQueries({ queryKey: ['contract-details', contractNumber, companyId] });
+  }, [contract, companyId, contractNumber, queryClient, toast]);
+
   const handleOpenDeletePermanent = useCallback(async () => {
     if (!contract?.id) return;
 
@@ -1525,6 +1588,7 @@ const ContractDetailsPageRedesigned = () => {
                   trafficViolations={trafficViolations}
                   formatCurrency={formatCurrency}
                   contractNumber={contract.contract_number}
+                  onAddViolation={handleAddViolation}
                 />
               </TabsContent>
 

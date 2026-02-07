@@ -338,6 +338,66 @@ export const generateUnsubscribeMessage = (): string => `
 🚀 *Fleetify*
 `.trim();
 
+/**
+ * قالب رسالة إشعار بمخالفة مرورية جديدة
+ */
+export const generateViolationNotification = (data: {
+  customerName: string;
+  contractNumber: string;
+  vehiclePlate: string;
+  violationType: string;
+  violationNumber?: string;
+  violationDate: string;
+  fineAmount: number;
+  location?: string;
+}): string => {
+  const violationTypeMap: Record<string, string> = {
+    'speeding': 'تجاوز السرعة',
+    'parking': 'مخالفة وقوف',
+    'red_light': 'تجاوز إشارة حمراء',
+    'seatbelt': 'عدم ربط حزام الأمان',
+    'phone': 'استخدام الهاتف أثناء القيادة',
+    'documents': 'مخالفة مستندات',
+    'insurance': 'تأمين منتهي',
+    'other': 'مخالفة أخرى',
+  };
+
+  const violationLabel = violationTypeMap[data.violationType] || data.violationType;
+  const formattedDate = new Date(data.violationDate).toLocaleDateString('ar-QA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  return `
+━━━━━━━━━━━━━━━━━━━
+🚨 *إشعار مخالفة مرورية*
+━━━━━━━━━━━━━━━━━━━
+
+عزيزي/عزيزتي *${data.customerName}*،
+
+تم تسجيل مخالفة مرورية على المركبة المؤجرة:
+
+🚗 *المركبة:* ${data.vehiclePlate}
+📋 *العقد:* ${data.contractNumber}
+${data.violationNumber ? `🔢 *رقم المخالفة:* ${data.violationNumber}\n` : ''}
+📝 *نوع المخالفة:* ${violationLabel}
+📅 *التاريخ:* ${formattedDate}
+${data.location ? `📍 *الموقع:* ${data.location}\n` : ''}
+💰 *قيمة الغرامة:* ${formatCurrency(data.fineAmount)}
+
+⚠️ *مهم:*
+يرجى سداد الغرامة في أقرب وقت لتجنب أي رسوم إضافية.
+
+يمكنك مراجعة تفاصيل المخالفة من خلال:
+🔗 تطبيق Fleetify > تفاصيل العقد > المخالفات
+
+━━━━━━━━━━━━━━━━━━━
+🚀 *شركة العراف لتأجير السيارات*
+📞 للاستفسار: تواصل معنا
+  `.trim();
+};
+
 export default {
   generateDailyReport,
   generateWeeklyReport,
@@ -345,5 +405,6 @@ export default {
   generateAlert,
   generateWelcomeMessage,
   generateUnsubscribeMessage,
+  generateViolationNotification,
 };
 
