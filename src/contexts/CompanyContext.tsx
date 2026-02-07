@@ -70,7 +70,12 @@ export const CompanyContextProvider: React.FC<CompanyContextProviderProps> = ({ 
       }, 50);
     }
     
-    prevCompanyIdRef.current = currentId;
+    // CRITICAL FIX: Only update prevCompanyIdRef when we have a valid ID.
+    // Don't reset to null during auth transitions — this prevents
+    // false "company changed" detection (null → sameId) on tab restore/refresh.
+    if (currentId) {
+      prevCompanyIdRef.current = currentId;
+    }
   }, [userCompanyId, browsedCompany?.id, loading, queryClient]);
 
   const setBrowsedCompany = (company: Company | null) => {

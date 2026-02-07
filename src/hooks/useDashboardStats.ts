@@ -50,9 +50,10 @@ export const useDashboardStats = () => {
   const rawCompanyId = user?.profile?.company_id || user?.company?.id;
   
   // Stabilize companyId with a ref (this hook uses useAuth directly, not useUnifiedCompanyAccess)
+  // CRITICAL FIX: Don't reset to null when user is briefly null during auth transitions
+  // (e.g., tab minimize/restore, token refresh). Only clear on explicit sign-out (no session at all).
   const stableCompanyIdRef = useRef<string | null>(null);
   if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
-  if (!user) stableCompanyIdRef.current = null;
   const companyId = rawCompanyId || stableCompanyIdRef.current;
   
   const isReady = !authLoading && !!user?.id && !!companyId;
@@ -381,5 +382,6 @@ export const useDashboardStats = () => {
     retry: 1,
     refetchOnWindowFocus: false, // Don't refetch on window focus for dashboard stats
     refetchOnMount: true, // Refetch on mount to ensure fresh data on navigation
+    placeholderData: (previousData: any) => previousData, // Keep previous data visible during refetch
   });
 };

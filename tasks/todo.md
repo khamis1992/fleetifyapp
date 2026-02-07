@@ -1,96 +1,36 @@
-# TODO: إصلاحات المستندات - الملخص النهائي
+# Fix: Data shows 0 on refresh/minimize
 
-## ✅ جميع الإصلاحات المكتملة
+## Problem
+When the user refreshes or minimizes the browser, all dashboard data shows 0. A hard refresh is needed to see real values.
 
-### 1. إصلاح Word Generation
-- [x] حذف `html-docx-js` القديمة
-- [x] استخدام `html-to-docx` فقط
+## Root Cause
+Auth session briefly becomes null during page transitions (refresh, minimize/restore). This causes a chain of events:
+1. `user` becomes null temporarily → `stableCompanyIdRef` gets reset to null
+2. `CompanyContext` forgets the previous company ID (`prevCompanyIdRef` set to null)
+3. When auth recovers, CompanyContext sees the transition as a "company change" (null → companyId)
+4. CompanyContext invalidates ALL queries
+5. During the refetch window, data is undefined → components show 0 via `|| 0` fallbacks
 
-### 2. توحيد قاعدة البيانات
-- [x] تغيير من `penalties` إلى `traffic_violations`
-- [x] تصحيح أسماء الحقول (violation_number, violation_date, total_amount)
+## Fix Plan
 
-### 3. توحيد حساب المبالغ
-- [x] غرامات التأخير: 120 ريال/يوم (حد أقصى 3000)
-- [x] رسوم الأضرار: 10,000 ريال ثابتة
+- [ ] **1. Fix CompanyContext.tsx** — Don't update `prevCompanyIdRef` when `currentId` is null. Only track valid company IDs, so null→sameId transitions don't trigger invalidation.
 
-### 4. توحيد المستندات
-- [x] حذف مستند "كشف المخالفات" المنفصل
-- [x] المخالفات مدمجة في كشف المطالبات
+- [ ] **2. Fix useDashboardStats.ts** — Don't reset `stableCompanyIdRef` when user is briefly null. Keep the last known company ID to maintain query key stability during auth transitions.
 
-### 5. إصلاح التواريخ
-- [x] تاريخ الاستحقاق (dueDate)
-- [x] تاريخ المخالفة (violationDate)
-- [x] تاريخ بداية العقد (contractStartDate)
-- [x] تاريخ نهاية العقد (contractEndDate)
+- [ ] **3. Add `placeholderData` to useDashboardStats** — Add `placeholderData: (prev) => prev` as a safety net so previous data is shown while refetching.
 
-### 6. إضافة الختم والتوقيع
-- [x] إضافة متغيرات للتوقيع والختم
-- [x] إنشاء دالة `loadImageAsBase64` عامة
-- [x] إنشاء دالة `loadCompanySignature`
-- [x] إنشاء دالة `loadCompanyStamp`
-- [x] تحديث `embedLogoInHtml` لتصبح `embedImagesInHtml`
-- [x] تضمين اللوقو + التوقيع + الختم في جميع المستندات
+## Review
 
-### 7. إصلاح ملف ZIP
-- [x] إضافة `mimeType: 'application/zip'`
-- [x] تحسين دالة `downloadZipFile`
+### Changes Made (4 files, ~5 lines changed total)
 
----
+1. **`src/contexts/CompanyContext.tsx`** — Changed `prevCompanyIdRef.current = currentId` to only update when `currentId` is truthy. Previously, when auth flickered and `currentId` became null, the ref was reset to null. When auth recovered, the null→companyId transition was falsely detected as a "company change", causing ALL queries to be invalidated.
 
-## 📋 المستندات النهائية (متطابقة 100%)
+2. **`src/hooks/useDashboardStats.ts`** — Removed `if (!user) stableCompanyIdRef.current = null`. The ref now keeps the last known company ID during brief auth transitions. Also added `placeholderData: (previousData) => previousData` to keep showing previous data while refetching.
 
-1. ✅ المذكرة الشارحة (مع اللوقو + التوقيع + الختم)
-2. ✅ كشف المطالبات المالية (مع التواريخ الصحيحة + اللوقو + التوقيع + الختم)
-3. ✅ كشف المستندات المرفوعة (مع اللوقو + التوقيع + الختم)
-4. ✅ بلاغ سرقة المركبة (مع اللوقو + التوقيع + الختم)
-5. ✅ طلب تحويل المخالفات (مع اللوقو + التوقيع + الختم)
-6. ✅ مستندات الشركة
-7. ✅ صورة العقد
+3. **`src/hooks/company/useCompanyAccess.ts`** — Same fix: removed `if (!user) stableCompanyIdRef.current = null` to prevent losing the stable company ID during auth flickers.
 
----
+4. **`src/hooks/useUnifiedCompanyAccess.ts`** — Same fix: removed `if (!user) stableCompanyIdRef.current = null`.
 
-## 🚀 الخطوة التالية
-
-```bash
-npm install
-```
-
-ثم اختبار تحميل المستندات من الصفحتين للتأكد من التطابق الكامل.
-
----
-
-## 8. تسجيل دخول تلقائي في البيئة المحلية
-
-### الملفات المعدلة:
-
-#### `src/contexts/AuthContext.tsx`
-```typescript
-// في بداية دالة initializeAuth
-if (import.meta.env.DEV && window.location.hostname === 'localhost') {
-  console.log('🔓 Development mode - auto login');
-  
-  // تسجيل دخول تلقائي بحساب khamis
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'khamis-1992@hotmail.com',
-    password: '123456789',
-  });
-  
-  if (data.user) {
-    const authUser = authService.mapSupabaseUser(data.user);
-    setUser(authUser);
-    setSession(data.session);
-    cacheUser(authUser);
-  }
-  
-  setLoading(false);
-  return;
-}
-```
-
-### النتيجة:
-✅ عند فتح `http://localhost:*` سيتم تسجيل دخول تلقائي
-✅ يستخدم حساب **khamis-1992@hotmail.com** الحقيقي
-✅ بيانات **شركة العراف** ستظهر بشكل طبيعي
-✅ يعمل **فقط** في البيئة المحلية (localhost)
-✅ في Production سيعمل نظام المصادقة بشكل طبيعي
+### Why this fixes the problem
+- **Before**: Minimize/refresh → auth flicker → company ID refs reset to null → CompanyContext detects false "company change" → invalidates all queries → data shows 0
+- **After**: Minimize/refresh → auth flicker → company ID refs keep last known value → no false invalidation → data stays visible

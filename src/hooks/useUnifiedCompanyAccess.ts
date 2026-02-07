@@ -31,9 +31,9 @@ export const useUnifiedCompanyAccess = () => {
   // When auth state briefly flickers (e.g. token refresh, tab restore), userCompanyId may
   // temporarily become null. Using the last known valid value prevents all downstream hooks
   // from losing their companyId and showing 0 data.
+  // Don't reset to null when user is briefly null — keeps data stable during transitions.
   const stableCompanyIdRef = useRef<string | null>(null);
   if (userCompanyId) stableCompanyIdRef.current = userCompanyId;
-  if (!user) stableCompanyIdRef.current = null;
   const stableUserCompanyId = userCompanyId || stableCompanyIdRef.current;
   
   // CRITICAL FIX: The side-effect for query invalidation has been moved to CompanyContext.tsx

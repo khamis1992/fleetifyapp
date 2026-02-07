@@ -45,9 +45,9 @@ export function useCompanyAccess(): CompanyAccessResult {
     : userCompanyId;
 
   // CRITICAL FIX: Stabilize companyId with a ref to prevent flickering during auth transitions
+  // Don't reset to null when user is briefly null (tab minimize/restore, token refresh)
   const stableCompanyIdRef = useRef<string | null>(null);
   if (effectiveCompanyId) stableCompanyIdRef.current = effectiveCompanyId;
-  if (!user) stableCompanyIdRef.current = null;
   const stableCompanyId = effectiveCompanyId || stableCompanyIdRef.current;
 
   // Fetch company data with React Query
