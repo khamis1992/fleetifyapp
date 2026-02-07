@@ -34,8 +34,9 @@ let COMPANY_STAMP_BASE64: string | null = null;
  */
 async function convertHtmlToDocx(htmlContent: string, title: string = 'Document'): Promise<Blob> {
   try {
-    // Use the utility function from document-export
-    const { convertHtmlToDocxBlob } = await import('@/utils/document-export');
+    // Use the utility function from document-export (with retry for chunk loading errors)
+    const { dynamicImportWithRetry } = await import('@/utils/lazyWithRetry');
+    const { convertHtmlToDocxBlob } = await dynamicImportWithRetry(() => import('@/utils/document-export'));
     return await convertHtmlToDocxBlob(htmlContent);
   } catch (error) {
     console.error('Error converting HTML to DOCX:', error);

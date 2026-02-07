@@ -107,8 +107,9 @@ async function htmlToDocxBlob(html: string): Promise<Blob | null> {
   try {
     console.log('[htmlToDocxBlob] Starting conversion, HTML length:', html.length);
     
-    // Use the utility function from document-export
-    const { convertHtmlToDocxBlob } = await import('@/utils/document-export');
+    // Use the utility function from document-export (with retry for chunk loading errors)
+    const { dynamicImportWithRetry } = await import('@/utils/lazyWithRetry');
+    const { convertHtmlToDocxBlob } = await dynamicImportWithRetry(() => import('@/utils/document-export'));
     console.log('[htmlToDocxBlob] convertHtmlToDocxBlob imported successfully');
     
     console.log('[htmlToDocxBlob] Calling convertHtmlToDocxBlob...');

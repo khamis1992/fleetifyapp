@@ -8,6 +8,36 @@ import { generateOfficialHeader, generateSignatureSection } from './templates';
 import type { DocumentsListData } from './types';
 
 /**
+ * ضغط محتوى HTML المضمّن لتقليل حجم الملف
+ * - إزالة كتل <style> المكررة (الأنماط موجودة في المستند الرئيسي)
+ * - إزالة صور base64 الزخرفية (الشعار في الهيدر) مع الاحتفاظ بالتوقيع والختم
+ */
+function compressHtmlForEmbedding(html: string): string {
+  let content = extractHtmlBody(html);
+  
+  // 1. إزالة جميع كتل <style> (الأنماط موروثة من المستند الرئيسي)
+  content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  
+  // 2. إزالة كتل <script> غير الضرورية
+  content = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  
+  // 3. تقليص صور base64 الكبيرة (أكثر من 5KB) في الهيدر فقط
+  // نحتفظ بصور التوقيع والختم في قسم التوقيع
+  content = content.replace(
+    /(<(?:div|td|th)[^>]*class="[^"]*(?:header|company|logo)[^"]*"[^>]*>[\s\S]*?)(<img[^>]*src="data:image\/[^"]{5000,}"[^>]*>)/gi,
+    '$1<img src="" alt="شعار الشركة" style="width:60px;height:60px;border:1px solid #ddd;" />'
+  );
+  
+  // 4. ضغط أي صورة base64 أكبر من 50KB (حوالي 67,000 حرف في base64)
+  content = content.replace(
+    /src="(data:image\/[^"]{67000,})"/gi,
+    'src="" alt="صورة مضغوطة" style="width:100px;height:auto;border:1px solid #ddd;"'
+  );
+  
+  return content;
+}
+
+/**
  * توليد كشف المستندات المرفوعة مع دمج صور المستندات
  */
 export function generateDocumentsListHtml(data: DocumentsListData): string {
@@ -402,81 +432,52 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
         <div id="pdf-container-${index}" style="width: 100%;"></div>
         <script>
           (function() {
-            // تحميل pdf.js من CDN
             if (!window.pdfjsLib) {
               var script = document.createElement('script');
               script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
               script.onload = function() {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                renderAllPages${index}();
+                renderPages${index}();
               };
               document.head.appendChild(script);
             } else {
-              renderAllPages${index}();
+              renderPages${index}();
             }
-            
-            function renderAllPages${index}() {
+            function renderPages${index}() {
               var container = document.getElementById('pdf-container-${index}');
               pdfjsLib.getDocument('${doc.url}').promise.then(function(pdf) {
                 var totalPages = pdf.numPages;
-                
-                // إذا كان المستند صفحتين أو أقل، نعرضهم في صفحة واحدة (مثل البطاقة الشخصية)
                 var keepTogether = totalPages <= 2;
-                
-                // عرض جميع الصفحات
-                for (var pageNum = 1; pageNum <= totalPages; pageNum++) {
-                  (function(pageNumber) {
-                    pdf.getPage(pageNumber).then(function(page) {
-                      var scale = keepTogether ? 1.5 : 2;
-                      var viewport = page.getViewport({ scale: scale });
-                      
-                      // إنشاء div لكل صفحة
-                      var pageDiv = document.createElement('div');
-                      pageDiv.style.marginBottom = '15px';
-                      // فقط إضافة page-break إذا كان أكثر من صفحتين
-                      if (!keepTogether && pageNumber < totalPages) {
-                        pageDiv.style.pageBreakAfter = 'always';
-                      }
-                      
-                      // إنشاء canvas لكل صفحة
-                      var canvas = document.createElement('canvas');
-                      canvas.style.width = keepTogether ? '90%' : '100%';
-                      canvas.style.display = 'block';
-                      canvas.style.margin = '0 auto';
-                      canvas.style.border = '1px solid #ddd';
-                      canvas.height = viewport.height;
-                      canvas.width = viewport.width;
-                      
-                      var context = canvas.getContext('2d');
-                      page.render({ canvasContext: context, viewport: viewport });
-                      
-                      pageDiv.appendChild(canvas);
-                      
-                      // إضافة رقم الصفحة فقط إذا كان أكثر من صفحتين
-                      if (!keepTogether) {
-                        var pageLabel = document.createElement('p');
-                        pageLabel.style.textAlign = 'center';
-                        pageLabel.style.color = '#666';
-                        pageLabel.style.fontSize = '11px';
-                        pageLabel.style.margin = '5px 0';
-                        pageLabel.textContent = 'صفحة ' + pageNumber + ' من ' + totalPages;
-                        pageDiv.appendChild(pageLabel);
-                      }
-                      
-                      container.appendChild(pageDiv);
+                for (var p = 1; p <= totalPages; p++) {
+                  (function(pn) {
+                    pdf.getPage(pn).then(function(page) {
+                      var scale = keepTogether ? 1.0 : 1.2;
+                      var vp = page.getViewport({ scale: scale });
+                      var div = document.createElement('div');
+                      div.style.marginBottom = '10px';
+                      if (!keepTogether && pn < totalPages) div.style.pageBreakAfter = 'always';
+                      var c = document.createElement('canvas');
+                      c.style.width = '100%';
+                      c.style.display = 'block';
+                      c.style.margin = '0 auto';
+                      c.style.border = '1px solid #ddd';
+                      c.height = vp.height;
+                      c.width = vp.width;
+                      page.render({ canvasContext: c.getContext('2d'), viewport: vp });
+                      div.appendChild(c);
+                      container.appendChild(div);
                     });
-                  })(pageNum);
+                  })(p);
                 }
-              }).catch(function(error) {
-                console.error('Error loading PDF:', error);
-                container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">تعذر تحميل ملف PDF</p>';
+              }).catch(function(err) {
+                container.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">تعذر تحميل ملف PDF</p>';
               });
             }
           })();
         </script>
       ` : doc.type === 'html' && doc.htmlContent ? `
         <div class="html-document-content" style="width: 100%; border: 1px solid #ddd; padding: 15px; background: #fff;">
-          ${extractHtmlBody(doc.htmlContent)}
+          ${compressHtmlForEmbedding(doc.htmlContent)}
         </div>
       ` : doc.type === 'html' ? `
         <div style="text-align: center; padding: 40px; color: #666;">
@@ -496,7 +497,9 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
       <div class="document-title">
         كشف المطالبات المالية
       </div>
-      ${data.claimsStatementHtml}
+      <div class="html-document-content" style="width: 100%; border: 1px solid #ddd; padding: 15px; background: #fff;">
+        ${compressHtmlForEmbedding(data.claimsStatementHtml)}
+      </div>
     </div>
   ` : ''}
 

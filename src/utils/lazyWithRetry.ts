@@ -161,3 +161,37 @@ export function clearFailedChunks(): void {
 export function hasChunkFailed(chunkName: string): boolean {
   return failedChunks.has(chunkName);
 }
+
+/**
+ * Dynamic import with retry and reload fallback.
+ * Use this for non-component dynamic imports (e.g., utility modules).
+ * Handles "Failed to fetch dynamically imported module" errors that occur
+ * after deployments when old chunk hashes no longer exist on the server.
+ */
+export async function dynamicImportWithRetry<T>(
+  importFn: () => Promise<T>,
+  retries = 2
+): Promise<T> {
+  try {
+    return await importFn();
+  } catch (error) {
+    if (retries > 0 && error instanceof Error && error.message.includes('Failed to fetch')) {
+      // Wait and retry
+      await new Promise(r => setTimeout(r, 1000));
+      return dynamicImportWithRetry(importFn, retries - 1);
+    }
+
+    // All retries failed — prompt page reload to get new chunk references
+    if (import.meta.env.PROD && error instanceof Error && error.message.includes('Failed to fetch')) {
+      const shouldReload = window.confirm(
+        'تم تحديث التطبيق. يرجى إعادة تحميل الصفحة.\n\nThe app has been updated. Please reload the page.'
+      );
+      if (shouldReload) {
+        sessionStorage.removeItem('chunkLoadErrors');
+        window.location.reload();
+      }
+    }
+
+    throw error;
+  }
+}

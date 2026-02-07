@@ -827,7 +827,8 @@ export function LawsuitPreparationProvider({
       toast.info('جاري تحويل المذكرة إلى Word...');
       
       // Use the downloadHtmlAsDocx utility function from document-export
-      const { downloadHtmlAsDocx } = await import('@/utils/document-export');
+      const { dynamicImportWithRetry } = await import('@/utils/lazyWithRetry');
+      const { downloadHtmlAsDocx } = await dynamicImportWithRetry(() => import('@/utils/document-export'));
       
       // Prepare filename
       const customerName = formatCustomerName(state.customer) || 'عميل';
