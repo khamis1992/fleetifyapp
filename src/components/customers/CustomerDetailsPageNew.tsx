@@ -38,7 +38,6 @@ import {
   MessageSquare,
   Activity,
   Star,
-  ChevronLeft,
   Upload,
   Folder,
   FileImage,
@@ -48,6 +47,7 @@ import {
   Database,
   RefreshCw,
   Bell,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -391,301 +391,263 @@ const CustomerDetailsPageNew = () => {
 
   if (customerError || !customer) {
     return (
-      <div className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full border border-neutral-200 shadow-lg text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl p-10 max-w-md w-full border border-slate-200 shadow-xl text-center"
+        >
+          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <AlertTriangle className="w-8 h-8 text-rose-500" />
           </div>
-          <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
-          <p className="text-neutral-500 mb-4">لم يتم العثور على هذا العميل</p>
-          <Button onClick={handleBack} className="bg-rose-500 hover:bg-coral-600">
+          <h3 className="text-xl font-bold text-slate-900 mb-2">خطأ في تحميل البيانات</h3>
+          <p className="text-slate-500 mb-6 text-sm">لم يتم العثور على هذا العميل أو حدث خطأ أثناء التحميل</p>
+          <Button onClick={handleBack} className="bg-slate-900 hover:bg-slate-800 text-white px-6">
+            <ArrowRight className="w-4 h-4 ml-2" />
             العودة للعملاء
           </Button>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header Bar */}
-      <TooltipProvider>
-        <header className="bg-white/80 backdrop-blur-md border-b border-teal-100 sticky top-0 z-40 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBack}
-                  className="gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  العودة للقائمة
-                </Button>
-              </div>
+  const overdueFollowups = scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length;
 
-              <div className="flex items-center gap-2">
+  return (
+    <TooltipProvider>
+    <div className="min-h-screen bg-slate-50">
+      {/* ─── Slim Header ─── */}
+        <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-14">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="gap-2 text-slate-500 hover:text-slate-900 -mr-2"
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span className="text-sm font-medium">العملاء</span>
+              </Button>
+
+              <div className="flex items-center gap-1.5">
                 {customer?.phone && (
                   <>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             if (!customer?.phone) {
-                              toast({
-                                  title: 'رقم الهاتف غير متوفر',
-                                  description: 'لا يوجد رقم هاتف مسجل لهذا العميل',
-                                  variant: 'destructive'
-                                });
+                              toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
                               return;
                             }
                             window.open(`tel:${customer.phone}`, '_self');
                           }}
-                          className="gap-1.5 text-teal-600 border-teal-200 hover:bg-teal-50 hover:border-teal-300"
+                          className="w-9 h-9 p-0 text-sky-600 hover:bg-sky-50 hover:text-sky-700 rounded-xl"
                         >
                           <Phone className="w-4 h-4" />
-                          اتصال
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>اتصال بالعميل مباشرة</p>
-                      </TooltipContent>
+                      <TooltipContent><p>اتصال بالعميل</p></TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             if (!customer?.phone) {
-                              toast({
-                                  title: 'رقم الهاتف غير متوفر',
-                                  description: 'لا يوجد رقم هاتف مسجل لهذا العميل',
-                                  variant: 'destructive'
-                                });
+                              toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
                               return;
                             }
                             const whatsappNumber = customer.whatsapp || customer.phone;
                             const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
                             if (!cleanedNumber || cleanedNumber.length < 7) {
-                              toast({
-                                  title: 'رقم الهاتف غير صالح',
-                                  description: 'رقم الهاتف لا يمكن استخدامه مع واتساب',
-                                  variant: 'destructive'
-                                });
+                              toast({ title: 'رقم الهاتف غير صالح', description: 'رقم الهاتف لا يمكن استخدامه مع واتساب', variant: 'destructive' });
                               return;
                             }
                             window.open(`https://wa.me/${cleanedNumber}`, '_blank');
                           }}
-                          className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                          className="w-9 h-9 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl"
                         >
                           <MessageSquare className="w-4 h-4" />
-                          واتساب
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <p>مراسلة عبر واتساب</p>
-                      </TooltipContent>
+                      <TooltipContent><p>مراسلة واتساب</p></TooltipContent>
                     </Tooltip>
                   </>
                 )}
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (!customerId) {
-                                  toast({
-                                        title: 'خطأ',
-                                        description: 'معرف العميل غير متوفر',
-                                        variant: 'destructive'
-                                      });
-                                  return;
-                                }
-                                navigate(`/customers/crm?customer=${customerId}`);
-                              }}
-                              className="gap-1.5 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:border-cyan-300"
-                        >
-                          <Activity className="w-4 h-4" />
-                          CRM
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>إدارة علاقات العميل</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (!customerId) {
-                                  toast({
-                                        title: 'خطأ',
-                                        description: 'معرف العميل غير متوفر',
-                                        variant: 'destructive'
-                                      });
-                                  return;
-                                }
-                                navigate(`/contracts?customer=${customerId}`);
-                              }}
-                              className="gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300"
-                        >
-                          <Plus className="w-4 h-4" />
-                          عقد جديد
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>إنشاء عقد جديد لهذا العميل</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (!customerId) { toast({ title: 'خطأ', description: 'معرف العميل غير متوفر', variant: 'destructive' }); return; }
+                        navigate(`/customers/crm?customer=${customerId}`);
+                      }}
+                      className="w-9 h-9 p-0 text-violet-600 hover:bg-violet-50 hover:text-violet-700 rounded-xl"
+                    >
+                      <Activity className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>إدارة علاقات العميل</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (!customerId) { toast({ title: 'خطأ', description: 'معرف العميل غير متوفر', variant: 'destructive' }); return; }
+                        navigate(`/contracts?customer=${customerId}`);
+                      }}
+                      className="w-9 h-9 p-0 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>إنشاء عقد جديد</p></TooltipContent>
+                </Tooltip>
 
-              <span className="text-sm text-slate-300 mr-2">|</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 border-slate-200">
-                    خيارات
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleEdit} className="gap-2">
-                    <Edit3 className="w-4 h-4" />
-                    تعديل البيانات
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handlePrint} className="gap-2">
-                    <Printer className="w-4 h-4" />
-                    طباعة
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2">
-                    <Share2 className="w-4 h-4" />
-                    مشاركة
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="gap-2 text-teal-700 focus:text-teal-700 focus:bg-teal-50"
-                    onClick={() => {
-                      const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
-                      if (activeContract) {
-                        navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
-                      } else {
-                        toast({
-                          title: 'لا يوجد عقد نشط',
-                          description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية',
-                          variant: 'destructive'
-                        });
-                      }
-                    }}
-                  >
-                    <Gavel className="w-4 h-4" />
-                    إنشاء قضية قانونية
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="gap-2 text-blue-700 focus:text-blue-700 focus:bg-blue-50"
-                    onClick={() => navigate('/legal/lawsuit-data')}
-                  >
-                    <Database className="w-4 h-4" />
-                    عرض بيانات التقاضي
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    حذف العميل
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                onClick={handleEdit}
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-teal-500/20"
-              >
-                <Edit3 className="w-4 h-4" />
-                تعديل
-              </Button>
-              
-              <Button
-                onClick={() => setIsDeleteDialogOpen(true)}
-                variant="outline"
-                className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-                حذف العميل نهائياً
-              </Button>
+                <div className="w-px h-6 bg-slate-200 mx-1" />
+
+                <Button
+                  size="sm"
+                  onClick={handleEdit}
+                  className="h-8 gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  تعديل
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-9 h-9 p-0 text-slate-500 hover:text-slate-900 rounded-xl">
+                      <MoreHorizontal className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={handleEdit} className="gap-2">
+                      <Edit3 className="w-4 h-4" />
+                      تعديل البيانات
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handlePrint} className="gap-2">
+                      <Printer className="w-4 h-4" />
+                      طباعة
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="gap-2">
+                      <Share2 className="w-4 h-4" />
+                      مشاركة
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="gap-2 text-indigo-700 focus:text-indigo-700 focus:bg-indigo-50"
+                      onClick={() => {
+                        const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
+                        if (activeContract) {
+                          navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
+                        } else {
+                          toast({ title: 'لا يوجد عقد نشط', description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية', variant: 'destructive' });
+                        }
+                      }}
+                    >
+                      <Gavel className="w-4 h-4" />
+                      إنشاء قضية قانونية
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2 text-blue-700 focus:text-blue-700 focus:bg-blue-50"
+                      onClick={() => navigate('/legal/lawsuit-data')}
+                    >
+                      <Database className="w-4 h-4" />
+                      عرض بيانات التقاضي
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="gap-2 text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      حذف العميل
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
-      </TooltipProvider>
+        </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Profile Card */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+        {/* ─── Hero Profile Card ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
         >
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex items-center gap-5">
-              <div className="relative">
-                <Avatar className="w-24 h-24 rounded-full border-4 border-teal-100 shadow-lg shadow-teal-500/10">
-                  <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white text-2xl font-bold">
-                    {getInitials(customerName)}
-                  </AvatarFallback>
-                </Avatar>
-                {customer.is_active && (
-                  <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-slate-900">{customerName}</h1>
-                  {customer.is_vip && (
-                    <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 border border-amber-200 gap-1 px-3 py-1 rounded-md font-medium">
-                      <Star className="w-3 h-3 fill-current" />
-                      VIP
-                    </Badge>
+          <div className="p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+              {/* Avatar & Identity */}
+              <div className="flex items-center gap-5 min-w-0">
+                <div className="relative flex-shrink-0">
+                  <div className="w-[76px] h-[76px] rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 p-[3px] shadow-lg shadow-indigo-500/20">
+                    <Avatar className="w-full h-full rounded-[13px] border-2 border-white">
+                      <AvatarFallback className="bg-slate-900 text-white text-xl font-bold rounded-[13px]">
+                        {getInitials(customerName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  {customer.is_active && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-emerald-500 rounded-full border-[3px] border-white shadow-sm" />
                   )}
                 </div>
-                <p className="text-slate-500 text-sm">{customer.job_title || 'عميل'}</p>
-              </div>
-            </div>
 
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 lg:pr-6 lg:border-r border-teal-100">
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl border border-rose-100">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-sm">
-                  <Cake className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-rose-600/70">تاريخ الميلاد</p>
-                  <p className="text-sm font-semibold text-slate-900">{customer.date_of_birth || '-'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-sm">
-                  <Phone className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-teal-600/70">رقم الهاتف</p>
-                  <p className="text-sm font-semibold text-slate-900 font-mono" dir="ltr">{customer.phone || '-'}</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{customerName}</h1>
+                    {customer.is_vip && (
+                      <Badge className="bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        VIP
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-500">{customer.job_title || 'عميل'}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
-                  <Mail className="w-5 h-5 text-white" />
+              {/* Info Pills */}
+              <div className="flex-1 flex flex-wrap items-center gap-3 lg:justify-end">
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-rose-50/70 rounded-xl border border-rose-100">
+                  <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                    <Cake className="w-[18px] h-[18px] text-rose-500" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-rose-500/80">تاريخ الميلاد</p>
+                    <p className="text-sm font-semibold text-slate-900">{customer.date_of_birth || '-'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-blue-600/70">البريد الإلكتروني</p>
-                  <p className="text-sm font-semibold text-slate-900 truncate max-w-[180px]">{customer.email || '-'}</p>
+
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-sky-50/70 rounded-xl border border-sky-100">
+                  <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-[18px] h-[18px] text-sky-500" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-sky-500/80">رقم الهاتف</p>
+                    <p className="text-sm font-semibold text-slate-900 font-mono" dir="ltr">{customer.phone || '-'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-violet-50/70 rounded-xl border border-violet-100">
+                  <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-[18px] h-[18px] text-violet-500" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-violet-500/80">البريد الإلكتروني</p>
+                    <p className="text-sm font-semibold text-slate-900 truncate max-w-[180px]">{customer.email || '-'}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -694,229 +656,228 @@ const CustomerDetailsPageNew = () => {
 
         <MissingDataWarnings customer={customer} />
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* ─── Stats Strip ─── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Active Contracts */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-lg hover:shadow-teal-500/10 transition-all overflow-hidden group"
+            transition={{ delay: 0.08 }}
+            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-teal-500 to-teal-600 rounded-full" />
-            <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-teal-100">
-                <FileText className="w-7 h-7 text-teal-600" />
+            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-sky-500" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-5 h-5 text-sky-600" />
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-4xl font-black text-teal-600 mb-2">{stats.activeContracts}</p>
-              <p className="text-sm font-medium text-slate-600">العقود النشطة</p>
-            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.activeContracts}</p>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">العقود النشطة</p>
           </motion.div>
 
+          {/* Outstanding Amount */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.14 }}
+            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
+          >
+            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-amber-500" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Wallet className="w-5 h-5 text-amber-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">
+              {stats.outstandingAmount.toLocaleString()}
+              <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
+            </p>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">المبلغ المستحق</p>
+          </motion.div>
+
+          {/* Late Amounts */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-amber-100 shadow-sm hover:shadow-lg hover:shadow-amber-500/10 transition-all overflow-hidden group"
+            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full" />
-            <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-amber-100">
-                <Wallet className="w-7 h-7 text-amber-600" />
+            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-rose-500" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-4xl font-black text-amber-600 mb-2">
-                {stats.outstandingAmount.toLocaleString()}
-                <span className="text-xl font-bold mr-1">ر.ق</span>
-              </p>
-              <p className="text-sm font-medium text-slate-600">المبلغ المستحق</p>
-            </div>
+            <p className="text-2xl font-bold text-slate-900">
+              {stats.totalLateAmount.toLocaleString()}
+              <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
+            </p>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">المبالغ المتأخرة</p>
+            {(stats.overdueInvoicesAmount > 0 || stats.unpaidViolationsAmount > 0) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {stats.overdueInvoicesAmount > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+                    فواتير: {stats.overdueInvoicesAmount.toLocaleString()}
+                  </span>
+                )}
+                {stats.unpaidViolationsAmount > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+                    مخالفات: {stats.unpaidViolationsAmount.toLocaleString()}
+                  </span>
+                )}
+              </div>
+            )}
+            {stats.totalLateAmount > 0 && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
+                  if (activeContract) {
+                    navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
+                  } else {
+                    toast({ title: 'لا يوجد عقد نشط', description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية', variant: 'destructive' });
+                  }
+                }}
+                className="mt-3 w-full h-8 text-xs bg-rose-500 hover:bg-rose-600 text-white gap-1.5 rounded-lg"
+              >
+                <Gavel className="w-3.5 h-3.5" />
+                إنشاء قضية
+              </Button>
+            )}
           </motion.div>
 
+          {/* Total Payments */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-lg hover:shadow-red-500/10 transition-all overflow-hidden group"
+            transition={{ delay: 0.26 }}
+            className="relative bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all group overflow-hidden"
           >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-red-500 to-red-600 rounded-full" />
-            <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-50 to-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-red-100">
-                <AlertTriangle className="w-7 h-7 text-red-600" />
+            <div className="absolute right-0 top-3 bottom-3 w-1 rounded-full bg-indigo-500" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CreditCard className="w-5 h-5 text-indigo-600" />
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-4xl font-black text-red-600 mb-2">
-                {stats.totalLateAmount.toLocaleString()}
-                <span className="text-xl font-bold mr-1">ر.ق</span>
-              </p>
-              <p className="text-sm font-medium text-slate-600">المبالغ المتأخرة</p>
-              <div className="mt-2 text-xs text-slate-500 flex flex-col gap-1">
-                <span>فواتير: {stats.overdueInvoicesAmount.toLocaleString()} ر.ق</span>
-                <span>مخالفات: {stats.unpaidViolationsAmount.toLocaleString()} ر.ق</span>
-              </div>
-              
-              {stats.totalLateAmount > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
-                    if (activeContract) {
-                      navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
-                    } else {
-                      toast({
-                        title: 'لا يوجد عقد نشط',
-                        description: 'يجب أن يكون للعميل عقد نشط لإنشاء قضية',
-                        variant: 'destructive'
-                      });
-                    }
-                  }}
-                  className="mt-3 w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white gap-2"
-                >
-                  <Gavel className="w-4 h-4" />
-                  إنشاء قضية
-                </Button>
-              )}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100 shadow-sm hover:shadow-lg hover:shadow-indigo-500/10 transition-all overflow-hidden group"
-          >
-            <div className="absolute left-0 top-4 bottom-4 w-1.5 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full" />
-            <div className="flex justify-end mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-indigo-100">
-                <CreditCard className="w-7 h-7 text-indigo-600" />
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-4xl font-black text-indigo-600 mb-2">
-                {stats.totalPayments.toLocaleString()}
-                <span className="text-xl font-bold mr-1">ر.ق</span>
-              </p>
-              <p className="text-sm font-medium text-slate-600">إجمالي المدفوعات</p>
-            </div>
+            <p className="text-2xl font-bold text-slate-900">
+              {stats.totalPayments.toLocaleString()}
+              <span className="text-sm font-semibold text-slate-400 mr-1">ر.ق</span>
+            </p>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">إجمالي المدفوعات</p>
           </motion.div>
         </div>
 
-        {/* CRM Summary Row */}
+        {/* ─── CRM Quick Bar ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="mb-6 bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-xl px-5 py-3.5 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-sm shadow-teal-500/20">
-                <MessageSquare className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-teal-900">مركز إدارة علاقات العملاء</h3>
-                <p className="text-xs text-teal-600/70">
-                  {crmActivitiesMain.length} ملاحظة • {scheduledFollowups.length} متابعة قادمة
-                  {scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length > 0 && (
-                    <span className="text-red-500 font-medium mr-2">
-                      • {scheduledFollowups.filter(f => new Date(f.scheduled_date) <= new Date()).length} متأخرة
-                    </span>
-                  )}
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-500/20 flex-shrink-0">
+              <MessageSquare className="w-[18px] h-[18px] text-white" />
             </div>
-            <div className="flex items-center gap-2">
-              {customer?.phone && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
-                    onClick={() => window.open(`tel:${customer.phone}`)}
-                  >
-                    <Phone className="w-4 h-4" />
-                    اتصال
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300"
-                    onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}`)}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    واتساب
-                  </Button>
-                </>
-              )}
-              <Button
-                size="sm"
-                className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/20"
-                onClick={() => setActiveTab('notes')}
-              >
-                <Plus className="w-4 h-4" />
-                إضافة ملاحظة
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300"
-                onClick={() => setActiveTab('notes')}
-              >
-                <Bell className="w-4 h-4" />
-                المتابعة
-              </Button>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">مركز إدارة العلاقات</p>
+              <p className="text-xs text-slate-500">
+                {crmActivitiesMain.length} ملاحظة • {scheduledFollowups.length} متابعة قادمة
+                {overdueFollowups > 0 && (
+                  <span className="text-rose-500 font-semibold mr-1.5">• {overdueFollowups} متأخرة</span>
+                )}
+              </p>
             </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {customer?.phone && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 rounded-lg"
+                  onClick={() => window.open(`tel:${customer.phone}`)}
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  اتصال
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 rounded-lg"
+                  onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/[^0-9]/g, '')}`)}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  واتساب
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
+              onClick={() => setActiveTab('notes')}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              إضافة ملاحظة
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 rounded-lg"
+              onClick={() => setActiveTab('notes')}
+            >
+              <Bell className="w-3.5 h-3.5" />
+              المتابعة
+            </Button>
           </div>
         </motion.div>
 
-        {/* Tabs Section */}
+        {/* ─── Tabs Section ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-teal-100 overflow-hidden shadow-sm"
+          transition={{ delay: 0.25 }}
+          className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200 rounded-none h-auto p-0 gap-0 overflow-x-auto">
-              {[
-                { value: 'info', label: 'معلومات العميل', icon: User },
-                { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
-                { value: 'contracts', label: 'العقود', icon: FileText },
-                { value: 'vehicles', label: 'المركبات', icon: Car },
-                { value: 'invoices', label: 'الفواتير', icon: Wallet },
-                { value: 'payments', label: 'المدفوعات', icon: CreditCard },
-                { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
-                { value: 'notes', label: 'المتابعة', icon: MessageSquare },
-                { value: 'activity', label: 'سجل النشاط', icon: Activity },
-              ].map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className={cn(
-                    "px-5 py-3.5 text-sm font-medium rounded-none border-b-2 transition-all gap-2 data-[state=active]:bg-white whitespace-nowrap",
-                    "data-[state=active]:border-teal-500 data-[state=active]:text-teal-700",
-                    "data-[state=inactive]:border-transparent data-[state=inactive]:text-teal-600/70 hover:text-teal-900 hover:bg-white/50"
-                  )}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                  {'badge' in tab && tab.badge && (
-                    <Badge className="mr-1 text-xs h-5 min-w-[20px] px-1.5 bg-red-100 text-red-700 border border-red-200 rounded-md font-medium">
-                      {tab.badge}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="px-4 pt-4 pb-0">
+              <TabsList className="w-full justify-start bg-slate-100/80 border border-slate-200/50 rounded-xl h-auto p-1 gap-0.5 overflow-x-auto flex-nowrap">
+                {[
+                  { value: 'info', label: 'معلومات العميل', icon: User },
+                  { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
+                  { value: 'contracts', label: 'العقود', icon: FileText },
+                  { value: 'vehicles', label: 'المركبات', icon: Car },
+                  { value: 'invoices', label: 'الفواتير', icon: Wallet },
+                  { value: 'payments', label: 'المدفوعات', icon: CreditCard },
+                  { value: 'violations', label: 'المخالفات', icon: AlertTriangle, badge: trafficViolations.length > 0 ? trafficViolations.length : null },
+                  { value: 'notes', label: 'المتابعة', icon: MessageSquare },
+                  { value: 'activity', label: 'سجل النشاط', icon: Activity },
+                ].map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className={cn(
+                      "px-3.5 py-2 text-xs font-medium rounded-lg transition-all gap-1.5 whitespace-nowrap",
+                      "data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/50",
+                      "data-[state=inactive]:text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    <tab.icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                    {'badge' in tab && tab.badge && (
+                      <Badge className="mr-0.5 text-[10px] h-4 min-w-[16px] px-1 bg-rose-100 text-rose-700 border-0 rounded-full font-semibold">
+                        {tab.badge}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             <div className="p-6">
               <TabsContent value="info" className="mt-0">
                 {loadingCustomer ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <PersonalInfoTab customer={customer} />
@@ -925,7 +886,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="phones" className="mt-0">
                 {loadingCustomer ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <PhoneNumbersTab customer={customer} />
@@ -934,7 +895,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="contracts" className="mt-0">
                 {loadingContracts ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <ContractsTab contracts={contracts} navigate={navigate} customerId={customerId || ''} />
@@ -943,7 +904,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="vehicles" className="mt-0">
                 {loadingContracts ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <VehiclesTab contracts={contracts} navigate={navigate} />
@@ -952,7 +913,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="invoices" className="mt-0">
                 {loadingInvoices ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <InvoicesTab
@@ -971,7 +932,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="payments" className="mt-0">
                 {loadingPayments ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <PaymentsTab 
@@ -987,7 +948,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="violations" className="mt-0">
                 {loadingViolations ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <ViolationsTab violations={trafficViolations} navigate={navigate} isLoading={loadingViolations} />
@@ -1005,7 +966,7 @@ const CustomerDetailsPageNew = () => {
               <TabsContent value="notes" className="mt-0">
                 {loadingCustomer ? (
                   <div className="flex items-center justify-center h-32">
-                    <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                   </div>
                 ) : (
                   <NotesTab 
@@ -1019,35 +980,38 @@ const CustomerDetailsPageNew = () => {
           </Tabs>
         </motion.div>
 
-        {/* Attachments Section */}
+        {/* ─── Attachments Section ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-6 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm"
         >
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-                <Folder className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <Folder className="w-5 h-5 text-slate-600" />
               </div>
-              <h3 className="text-lg font-bold text-teal-900">المرفقات</h3>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">المرفقات</h3>
+                <p className="text-xs text-slate-500">{documents.length} مستند</p>
+              </div>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300"
+              className="gap-2 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 rounded-lg h-8 text-xs"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
               {isUploading ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                   جاري الرفع...
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4" />
+                  <Upload className="w-3.5 h-3.5" />
                   رفع مستند
                 </>
               )}
@@ -1068,14 +1032,14 @@ const CustomerDetailsPageNew = () => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {['صورة العميل', 'رخصة القيادة', 'الهوية الوطنية', 'عقد الإيجار'].map((placeholder, index) => (
                 <div
                   key={index}
-                  className="aspect-[4/3] bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl border-2 border-dashed border-teal-200 flex flex-col items-center justify-center text-teal-400 hover:border-teal-400 hover:text-teal-600 transition-all cursor-pointer hover:shadow-sm hover:shadow-teal-500/10"
+                  className="aspect-[4/3] bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all cursor-pointer group"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <FileImage className="w-8 h-8 mb-2" />
+                  <FileImage className="w-7 h-7 mb-2 group-hover:scale-110 transition-transform" />
                   <p className="text-xs font-medium">{placeholder}</p>
                 </div>
               ))}
@@ -1084,13 +1048,13 @@ const CustomerDetailsPageNew = () => {
         </motion.div>
       </main>
 
-      {/* Edit Dialog */}
+      {/* ─── Edit Dialog ─── */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-teal-100">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-slate-200">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-teal-900">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-                <Edit3 className="w-4 h-4 text-white" />
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                <Edit3 className="w-4 h-4 text-indigo-600" />
               </div>
               تعديل بيانات العميل
             </DialogTitle>
@@ -1113,7 +1077,7 @@ const CustomerDetailsPageNew = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
+      {/* ─── Payment Dialog ─── */}
       <UnifiedPaymentForm
         open={isPaymentDialogOpen}
         onOpenChange={setIsPaymentDialogOpen}
@@ -1126,7 +1090,7 @@ const CustomerDetailsPageNew = () => {
         }}
       />
 
-      {/* Invoice Preview Dialog */}
+      {/* ─── Invoice Preview Dialog ─── */}
       <InvoicePreviewDialog
         open={isInvoiceDialogOpen}
         onOpenChange={setIsInvoiceDialogOpen}
@@ -1134,32 +1098,32 @@ const CustomerDetailsPageNew = () => {
         customerName={customerName}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* ─── Delete Confirmation Dialog ─── */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="max-w-md border-slate-200">
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-rose-500" />
               </div>
-              <AlertDialogTitle className="text-xl font-bold text-red-600">
+              <AlertDialogTitle className="text-xl font-bold text-slate-900">
                 حذف العميل نهائياً
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-700 font-medium mb-2">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <p className="text-sm text-slate-600 font-medium mb-2">
                     هل أنت متأكد من حذف العميل:
                   </p>
-                  <p className="text-base font-bold text-gray-900">{customerName}</p>
-                  <p className="text-xs text-gray-500 mt-1">رقم الهوية: {customer?.national_id || 'غير محدد'}</p>
+                  <p className="text-base font-bold text-slate-900">{customerName}</p>
+                  <p className="text-xs text-slate-500 mt-1">رقم الهوية: {customer?.national_id || 'غير محدد'}</p>
                 </div>
                 
-                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-red-700">
+                    <AlertTriangle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-rose-700">
                       <p className="font-bold mb-2">⚠️ تحذير مهم:</p>
                       <ul className="space-y-1 text-xs">
                         <li>• سيتم حذف جميع بيانات العميل نهائياً</li>
@@ -1171,7 +1135,7 @@ const CustomerDetailsPageNew = () => {
                 </div>
 
                 {(stats.activeContracts > 0 || stats.totalLateAmount > 0) && (
-                  <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                     <p className="font-bold text-amber-800 mb-2 text-sm">⚠️ ملاحظات:</p>
                     <ul className="space-y-1 text-xs text-amber-700">
                       {stats.activeContracts > 0 && (
@@ -1187,12 +1151,12 @@ const CustomerDetailsPageNew = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="flex-1">
+            <AlertDialogCancel className="flex-1 rounded-xl">
               إلغاء
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteCustomer}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              className="flex-1 bg-rose-500 hover:bg-rose-600 text-white rounded-xl"
             >
               <Trash2 className="w-4 h-4 ml-2" />
               حذف نهائياً
@@ -1201,6 +1165,7 @@ const CustomerDetailsPageNew = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   );
 };
 
