@@ -116,6 +116,7 @@ import {
   type RiskLevel,
   type TabValue,
 } from './financial-delinquency';
+import { SendVerificationTaskDialog } from '@/components/legal/SendVerificationTaskDialog';
 
 // ===== Main Page Component =====
 const FinancialDelinquencyPage: React.FC = () => {
@@ -154,6 +155,7 @@ const FinancialDelinquencyPage: React.FC = () => {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkGenerationDialogOpen, setBulkGenerationDialogOpen] = useState(false);
   const [bulkGenerationProgress, setBulkGenerationProgress] = useState<BulkGenerationProgress | null>(null);
+  const [verificationTaskDialogOpen, setVerificationTaskDialogOpen] = useState(false);
 
   // Fetch Customers
   const filters = useMemo(() => ({
@@ -1284,7 +1286,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                         size="sm"
                         variant="outline"
                         className="gap-2 rounded-xl"
-                        onClick={() => toast.info('سيتم فتح نافذة إرسال للتدقيق')}
+                        onClick={() => setVerificationTaskDialogOpen(true)}
                       >
                         <UserCheck className="h-4 w-4" />
                         إرسال للتدقيق
@@ -1596,6 +1598,17 @@ const FinancialDelinquencyPage: React.FC = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Send Verification Task Dialog */}
+        <SendVerificationTaskDialog
+          open={verificationTaskDialogOpen}
+          onOpenChange={setVerificationTaskDialogOpen}
+          selectedCustomers={selectedCustomers}
+          onSuccess={() => {
+            setSelectedCustomers([]);
+            setSelectedIds(new Set());
+          }}
+        />
       </div>
     </div>
   );

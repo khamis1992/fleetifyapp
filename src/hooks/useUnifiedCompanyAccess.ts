@@ -27,6 +27,15 @@ export const useUnifiedCompanyAccess = () => {
   // Extract company_id early for dependency tracking
   const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
   
+  // CRITICAL FIX: Stabilize companyId with a ref to prevent flickering during auth transitions
+  // When auth state briefly flickers (e.g. token refresh, tab restore), userCompanyId may
+  // temporarily become null. Using the last known valid value prevents all downstream hooks
+  // from losing their companyId and showing 0 data.
+  const stableCompanyIdRef = useRef<string | null>(null);
+  if (userCompanyId) stableCompanyIdRef.current = userCompanyId;
+  if (!user) stableCompanyIdRef.current = null;
+  const stableUserCompanyId = userCompanyId || stableCompanyIdRef.current;
+  
   // CRITICAL FIX: The side-effect for query invalidation has been moved to CompanyContext.tsx
   // This prevents excessive invalidations when this hook is used in multiple components
   
@@ -86,6 +95,12 @@ export const useUnifiedCompanyAccess = () => {
     // If in browsing mode, override context with browsed company
     let context = getCompanyScopeContext(user);
     
+    // CRITICAL FIX: If context.companyId is null but we have a stable value from before
+    // the auth flicker, use the stable value to prevent all queries from breaking
+    if (!context.companyId && stableUserCompanyId) {
+      context = { ...context, companyId: stableUserCompanyId };
+    }
+    
     // Store original user roles before modifying context
     const originalUserRoles = rolesNormalized;
     
@@ -94,7 +109,7 @@ export const useUnifiedCompanyAccess = () => {
     const effectiveBrowsingMode = isBrowsingMode && canBrowse;
     
     // Special handling: super_admin browsing their own company should maintain system level access
-    const isBrowsingOwnCompany = effectiveBrowsingMode && browsedCompany && browsedCompany.id === userCompanyId;
+    const isBrowsingOwnCompany = effectiveBrowsingMode && browsedCompany && browsedCompany.id === stableUserCompanyId;
     
     if (effectiveBrowsingMode && browsedCompany && !isBrowsingOwnCompany) {
       context = {
@@ -165,14 +180,14 @@ export const useUnifiedCompanyAccess = () => {
       // Browse mode information
       isBrowsingMode: effectiveBrowsingMode,
       browsedCompany: effectiveBrowsingMode ? browsedCompany : null,
-      actualUserCompanyId: user?.company?.id || null,
+      actualUserCompanyId: stableUserCompanyId || user?.company?.id || null,
 
       // Authentication state
       isAuthenticating: false,
       isInitializing: false,
       authError: null
     };
-  }, [user?.id, user?.company?.id, (user as any)?.company_id, loading, isBrowsingMode, browsedCompany?.id, session?.access_token]);
+  }, [user?.id, stableUserCompanyId, loading, isBrowsingMode, browsedCompany?.id, session?.access_token]);
 
   return result;
 };

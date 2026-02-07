@@ -42,15 +42,21 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // CRITICAL: Force single React instance to prevent "useState is null" errors
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
+    dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
     exclude: ['playwright', 'playwright-core', 'chromium-bidi'],
-    // Only include essential packages that need pre-bundling
     include: [
       'react',
       'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
       'react-router-dom',
+      '@tanstack/react-query',
     ],
   },
   build: {

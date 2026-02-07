@@ -5,6 +5,7 @@
  * Replaces: core company_id logic from useUnifiedCompanyAccess
  */
 
+import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompanyContext } from '@/contexts/CompanyContext';
@@ -43,33 +44,39 @@ export function useCompanyAccess(): CompanyAccessResult {
     ? browsedCompany.id 
     : userCompanyId;
 
+  // CRITICAL FIX: Stabilize companyId with a ref to prevent flickering during auth transitions
+  const stableCompanyIdRef = useRef<string | null>(null);
+  if (effectiveCompanyId) stableCompanyIdRef.current = effectiveCompanyId;
+  if (!user) stableCompanyIdRef.current = null;
+  const stableCompanyId = effectiveCompanyId || stableCompanyIdRef.current;
+
   // Fetch company data with React Query
   const {
     data: company,
     isLoading: companyLoading,
     error
   } = useQuery({
-    queryKey: ['company', effectiveCompanyId],
+    queryKey: ['company', stableCompanyId],
     queryFn: async () => {
-      if (!effectiveCompanyId) return null;
+      if (!stableCompanyId) return null;
 
       const { data, error } = await supabase
         .from('companies')
         .select('*')
-        .eq('id', effectiveCompanyId)
+        .eq('id', stableCompanyId)
         .single();
 
       if (error) throw error;
       return data;
     },
-    enabled: !!effectiveCompanyId && !!user,
+    enabled: !!stableCompanyId && !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
   });
 
   return {
     company,
-    companyId: effectiveCompanyId,
+    companyId: stableCompanyId,
     companyName: company?.name || company?.name_ar || null,
     currency: company?.currency || 'QAR',
     isLoading: authLoading || companyLoading,

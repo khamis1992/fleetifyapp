@@ -261,8 +261,8 @@ const App: React.FC = () => {
           {/* Global TooltipProvider temporarily disabled due to @radix-ui/react-tooltip useRef error */}
           {/* <TooltipProvider delayDuration={200}> */}
             <AuthProvider>
+              <CompanyContextProvider>
                 <AIChatProvider>
-                  <CompanyContextProvider>
                   <FABProvider>
                     <FinanceProvider>
                       <MobileOptimizationProvider>
@@ -306,8 +306,8 @@ const App: React.FC = () => {
                       </MobileOptimizationProvider>
                     </FinanceProvider>
                   </FABProvider>
-              </CompanyContextProvider>
                 </AIChatProvider>
+              </CompanyContextProvider>
             </AuthProvider>
             {/* </TooltipProvider> */}
           {/* </ThemeProvider> */}

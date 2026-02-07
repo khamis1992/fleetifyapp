@@ -25,7 +25,7 @@ interface AuthProviderProps {
 // ============================================================================
 const AUTH_CACHE_KEY = 'fleetify_auth_cache';
 const CACHE_VERSION = '1.0';
-const CACHE_TTL = 1000 * 60 * 5; // 5 minutes cache
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours - cache is for instant initial state; actual auth is validated via Supabase session
 
 interface AuthCache {
   user: AuthUser;
@@ -133,6 +133,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const profilePromiseRef = useRef<Promise<any> | null>(null);
   const isInitialized = useRef(false);
   const mountedRef = useRef(true);
+  const lastKnownUserRef = useRef<AuthUser | null>(null);
+  const lastRecoveryAttemptRef = useRef<number>(0);
+  const isSigningOutRef = useRef(false);
 
   // CRITICAL FIX: Lock mechanism with proper exception handling
   const acquireInitLock = (): boolean => {
@@ -407,9 +410,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
 
             if (event === 'SIGNED_OUT') {
+              // User-initiated signout - clear immediately
+              if (isSigningOutRef.current) {
+                setUser(null);
+                setSession(null);
+                clearCachedUser();
+                lastKnownUserRef.current = null;
+                isSigningOutRef.current = false;
+                setIsSigningOut(false);
+                return;
+              }
+              
+              // Unexpected signout (e.g. token refresh failure on tab restore) - try to recover
+              console.log('⚠️ [AUTH_CONTEXT] Unexpected SIGNED_OUT - attempting recovery...');
+              try {
+                // Try refreshSession first (more likely to work than getSession after Supabase cleared it)
+                const { data: refreshData } = await supabase.auth.refreshSession();
+                if (refreshData?.session?.user && mountedRef.current) {
+                  console.log('✅ [AUTH_CONTEXT] Session recovered via refreshSession after unexpected SIGNED_OUT');
+                  setSession(refreshData.session);
+                  const authUser = await authService.getCurrentUser();
+                  if (mountedRef.current && authUser) {
+                    setUser(authUser);
+                    cacheUser(authUser);
+                  } else if (mountedRef.current && lastKnownUserRef.current) {
+                    setUser(lastKnownUserRef.current);
+                  }
+                  return;
+                }
+                // Fallback: try getSession in case session is still in storage
+                const { data: { session: recoveredSession } } = await supabase.auth.getSession();
+                if (recoveredSession?.user && mountedRef.current) {
+                  console.log('✅ [AUTH_CONTEXT] Session recovered via getSession after unexpected SIGNED_OUT');
+                  setSession(recoveredSession);
+                  const authUser = await authService.getCurrentUser();
+                  if (mountedRef.current && authUser) {
+                    setUser(authUser);
+                    cacheUser(authUser);
+                  } else if (mountedRef.current && lastKnownUserRef.current) {
+                    setUser(lastKnownUserRef.current);
+                  }
+                  return;
+                }
+              } catch (error) {
+                console.warn('⚠️ [AUTH_CONTEXT] Session recovery failed:', error);
+              }
+              
+              // Recovery failed - clear state and stop future recovery attempts
+              lastKnownUserRef.current = null;
               setUser(null);
               setSession(null);
-              clearCachedUser(); // 🚀 Clear cache
+              clearCachedUser();
               setIsSigningOut(false);
               return;
             }
@@ -452,6 +503,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (event === 'TOKEN_REFRESHED' && session) {
               if (mountedRef.current) {
                 setSession(session);
+                // If user is missing company data, refresh profile in background
+                const currentUser = lastKnownUserRef.current;
+                if (currentUser && !currentUser.company?.id) {
+                  authService.getCurrentUser().then(authUser => {
+                    if (mountedRef.current && authUser) {
+                      setUser(authUser);
+                      cacheUser(authUser);
+                    }
+                  }).catch(() => {});
+                }
               }
             }
           }
@@ -480,6 +541,82 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }
   };
+
+  // Track last known user for session recovery after unexpected signout
+  React.useEffect(() => {
+    if (user) {
+      lastKnownUserRef.current = user;
+    }
+  }, [user]);
+
+  // CRITICAL FIX: Recover session when tab becomes visible after minimize/restore
+  React.useEffect(() => {
+    const attemptRecovery = async () => {
+      if (!mountedRef.current) return;
+      if (!lastKnownUserRef.current) return;
+      
+      const now = Date.now();
+      if (now - lastRecoveryAttemptRef.current < 5000) return;
+      lastRecoveryAttemptRef.current = now;
+      
+      console.log('🔄 [AUTH_CONTEXT] Attempting session recovery...');
+      
+      try {
+        // Try refreshSession first, then fallback to getSession
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        const recoveredSession = refreshData?.session;
+        
+        if (!recoveredSession) {
+          const { data: { session: storedSession } } = await supabase.auth.getSession();
+          if (storedSession?.user && mountedRef.current) {
+            setSession(storedSession);
+            const authUser = await authService.getCurrentUser();
+            if (mountedRef.current && authUser) {
+              setUser(authUser);
+              cacheUser(authUser);
+              setSessionError(null);
+              console.log('✅ [AUTH_CONTEXT] Session recovered via getSession');
+            }
+            return;
+          }
+          console.log('⚠️ [AUTH_CONTEXT] No session found during recovery');
+          return;
+        }
+        
+        if (recoveredSession.user && mountedRef.current) {
+          console.log('✅ [AUTH_CONTEXT] Session recovered via refreshSession');
+          setSession(recoveredSession);
+          
+          const authUser = await authService.getCurrentUser();
+          if (mountedRef.current && authUser) {
+            setUser(authUser);
+            cacheUser(authUser);
+            setSessionError(null);
+          } else if (mountedRef.current && lastKnownUserRef.current) {
+            setUser(lastKnownUserRef.current);
+            setSessionError(null);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [AUTH_CONTEXT] Session recovery failed:', error);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (user) return;
+      attemptRecovery();
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also attempt recovery immediately if user just became null while tab is visible
+    if (!user && lastKnownUserRef.current && document.visibilityState === 'visible') {
+      attemptRecovery();
+    }
+    
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
 
   // Storage event listener for cross-tab sync
   React.useEffect(() => {
@@ -674,10 +811,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
+    isSigningOutRef.current = true;
     setIsSigningOut(true);
     const email = user?.email;
-    clearCachedUser(); // 🚀 Clear cache
-    const result = await authService.signOut();
+    clearCachedUser();
+    let result: { error: Error | null };
+    try {
+      result = await authService.signOut();
+    } catch (error) {
+      isSigningOutRef.current = false;
+      setIsSigningOut(false);
+      return { error: error instanceof Error ? error : new Error('Sign out failed') };
+    }
 
     if (!result.error && email) {
       // MEMORY LEAK FIX: Clear existing timeout before creating new one

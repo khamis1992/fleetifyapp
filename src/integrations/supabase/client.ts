@@ -38,9 +38,8 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    // DISABLED: Cross-tab sync causes performance issues and freezing
-    // Use unique storage key per tab to prevent BroadcastChannel usage
-    storageKey: `sb-${supabaseConfig.url.split('//')[1].split('.')[0]}-auth-token-${Date.now()}`,
+    // Use standard stable storage key so sessions persist across page refreshes
+    storageKey: `sb-${supabaseConfig.url.split('//')[1].split('.')[0]}-auth-token`,
   },
   // Add retry logic for better reliability
   global: {
@@ -99,6 +98,17 @@ export const supabase = createClient<Database>(supabaseConfig.url, supabaseConfi
     },
   },
 });
+
+// Clean up orphaned per-tab auth keys from previous implementation that used Date.now()
+try {
+  const projectRef = supabaseConfig.url.split('//')[1].split('.')[0];
+  const orphanedKeyPattern = new RegExp(`^sb-${projectRef}-auth-token-\\d+$`);
+  Object.keys(localStorage)
+    .filter(key => orphanedKeyPattern.test(key))
+    .forEach(key => localStorage.removeItem(key));
+} catch (e) {
+  // Ignore cleanup errors
+}
 
 // Export configuration for secure access if needed
 export { supabaseConfig };

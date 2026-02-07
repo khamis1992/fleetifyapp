@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,10 +47,14 @@ export const useDashboardStats = () => {
   const { moduleContext } = useModuleConfig();
 
   // Get company_id from either profile or company object
-  const companyId = user?.profile?.company_id || user?.company?.id;
+  const rawCompanyId = user?.profile?.company_id || user?.company?.id;
   
-  // CRITICAL FIX: Only enable query when we have both user AND company_id
-  // This prevents the query from running with undefined company_id
+  // Stabilize companyId with a ref (this hook uses useAuth directly, not useUnifiedCompanyAccess)
+  const stableCompanyIdRef = useRef<string | null>(null);
+  if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
+  if (!user) stableCompanyIdRef.current = null;
+  const companyId = rawCompanyId || stableCompanyIdRef.current;
+  
   const isReady = !authLoading && !!user?.id && !!companyId;
 
   return useQuery({
