@@ -39,11 +39,12 @@ serve(async (req) => {
     const dueDate = new Date(now);
     dueDate.setDate(dueDate.getDate() + 15);
 
-    // Get all active contracts
+    // Get all active contracts (excluding cancelled ones)
     const { data: contracts, error: contractsError } = await supabaseClient
       .from("contracts")
       .select("*")
       .eq("status", "active")
+      .neq("status", "cancelled") // استثناء العقود الملغاة بشكل صريح
       .gte("end_date", now.toISOString().split("T")[0]);
 
     if (contractsError) {
@@ -61,6 +62,13 @@ serve(async (req) => {
 
     for (const contract of contracts || []) {
       try {
+        // فحص إضافي: تخطي العقود الملغاة
+        if (contract.status === 'cancelled') {
+          console.log(`Skipping cancelled contract ${contract.contract_number}`);
+          results.skipped++;
+          continue;
+        }
+        
         // ✅ استخدام الدالة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
         const invoiceMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
         

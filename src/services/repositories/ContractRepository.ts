@@ -130,25 +130,35 @@ export class ContractRepository extends BaseRepository<Contract> {
 
   /**
    * Update contract status
-   * When cancelling a contract, automatically delete unpaid invoices
+   * When cancelling a contract, automatically cancel all future unpaid invoices
    */
   async updateStatus(id: string, status: Contract['status']): Promise<Contract> {
-    // If cancelling the contract, delete all unpaid invoices
+    // If cancelling the contract, cancel all future unpaid invoices
     if (status === 'cancelled') {
       try {
-        const { error: deleteError } = await supabase
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Cancel all future invoices that are not paid
+        const { error: cancelError } = await supabase
           .from('invoices')
-          .delete()
+          .update({ 
+            status: 'cancelled',
+            payment_status: 'cancelled',
+            notes: 'تم إلغاء الفاتورة بسبب إلغاء العقد'
+          })
           .eq('contract_id', id)
-          .eq('payment_status', 'unpaid');
+          .gte('due_date', today) // الفواتير المستقبلية فقط
+          .in('payment_status', ['unpaid', 'pending', 'sent']); // غير المدفوعة فقط
 
-        if (deleteError) {
-          console.error('Error deleting unpaid invoices:', deleteError);
-          // Continue with status update even if invoice deletion fails
+        if (cancelError) {
+          console.error('Error cancelling future invoices:', cancelError);
+          // Continue with status update even if invoice cancellation fails
+        } else {
+          console.log(`Cancelled future invoices for contract ${id}`);
         }
       } catch (error) {
         console.error('Error in invoice cleanup:', error);
-        // Continue with status update even if invoice deletion fails
+        // Continue with status update even if invoice cleanup fails
       }
     }
 
