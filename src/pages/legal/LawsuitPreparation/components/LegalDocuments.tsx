@@ -442,7 +442,7 @@ function LegalDocumentItem({
 // Main Component
 export function LegalDocuments() {
   const { state, actions } = useLawsuitPreparationContext();
-  const { documents, ui, trafficViolations } = state;
+  const { documents, ui, trafficViolations, overdueInvoices } = state;
 
   // Filter mandatory documents
   const mandatoryDocs = [
@@ -547,18 +547,56 @@ export function LegalDocuments() {
         </div>
       </motion.div>
 
-      {/* ZIP Download Button - Full Width */}
+      {/* Download Buttons - Full Width */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
         transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
+        {/* تحميل جميع الفواتير */}
+        <Button
+          onClick={actions.downloadInvoicesAsZip}
+          disabled={overdueInvoices.length === 0 || ui.isDownloadingInvoices}
+          className={`
+            py-6 text-lg font-semibold
+            ${overdueInvoices.length > 0
+              ? 'bg-gradient-to-r from-purple-600/20 to-purple-700/20 text-purple-700 border border-purple-600/40 hover:from-purple-600/30 hover:to-purple-700/30'
+              : 'bg-slate-100 text-slate-500 cursor-not-allowed'
+            }
+            transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.1)]
+            hover:shadow-[0_0_30px_rgba(147,51,234,0.2)]
+          `}
+          variant="outline"
+        >
+          {ui.isDownloadingInvoices ? (
+            <>
+              <LoadingSpinner className="h-5 w-5 ml-3" />
+              <span>جاري تجهيز الفواتير...</span>
+            </>
+          ) : (
+            <>
+              <Package className="h-5 w-5 ml-3" />
+              <span>تحميل جميع الفواتير (PDF)</span>
+              {overdueInvoices.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="mr-3 bg-purple-600/20 text-purple-700 border border-purple-600/40"
+                >
+                  {overdueInvoices.length} فاتورة
+                </Badge>
+              )}
+            </>
+          )}
+        </Button>
+        
+        {/* تحميل جميع المستندات */}
         <Button
           onClick={actions.downloadAllAsZip}
           disabled={!hasContentForZip || ui.isDownloadingZip}
           className={`
-            w-full py-6 text-lg font-semibold
+            py-6 text-lg font-semibold
             ${hasContentForZip
               ? 'bg-gradient-to-r from-teal-600/20 to-teal-700/20 text-teal-700 border border-teal-600/40 hover:from-teal-600/30 hover:to-teal-700/30'
               : 'bg-slate-100 text-slate-500 cursor-not-allowed'

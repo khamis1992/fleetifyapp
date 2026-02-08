@@ -129,6 +129,7 @@ export function createInitialState(contractId: string | null = null): LawsuitPre
       isGeneratingAll: false,
       isRegistering: false,
       isDownloadingZip: false,
+      isDownloadingInvoices: false,
       isSendingToLawsuitData: false,
       isTaqadiAutomating: false,
       isMarkingCaseOpened: false,
@@ -449,6 +450,16 @@ export function lawsuitPreparationReducer(
         ui: {
           ...state.ui,
           isDownloadingZip: false,
+        },
+      };
+    }
+    
+    case 'SET_DOWNLOADING_INVOICES': {
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          isDownloadingInvoices: action.payload,
         },
       };
     }

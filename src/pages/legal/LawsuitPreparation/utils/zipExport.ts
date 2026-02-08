@@ -135,6 +135,176 @@ async function htmlToDocxBlob(html: string): Promise<Blob | null> {
 }
 
 /**
+ * Generate Invoice HTML
+ */
+async function generateInvoiceHtml(invoice: any, customer: any, contract: any): Promise<string> {
+  const totalAmount = Number(invoice.total_amount) || 0;
+  const paidAmount = Number(invoice.paid_amount) || 0;
+  const remainingAmount = totalAmount - paidAmount;
+  
+  const customerName = customer 
+    ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
+    : 'غير محدد';
+  
+  const formattedDate = invoice.invoice_date 
+    ? new Date(invoice.invoice_date).toLocaleDateString('ar-QA')
+    : new Date().toLocaleDateString('ar-QA');
+  
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>فاتورة ${invoice.invoice_number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Arial', 'Tahoma', sans-serif;
+      background: #fff;
+      padding: 20px;
+      direction: rtl;
+    }
+    .invoice-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      background: #fff;
+      border: 2px solid #1a5490;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a5490 0%, #2196F3 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #1a5490;
+    }
+    .amount-box {
+      background: #f5f5f5;
+      border: 2px solid #1a5490;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .amount-box .label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .amount-box .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #1a5490;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .status-unpaid {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      border-top: 2px solid #1a5490;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <div class="header">
+      <h1>فاتورة مستحقة</h1>
+      <p>شركة العراف لتأجير السيارات</p>
+      <p>Al-Araf Car Rental Company</p>
+    </div>
+    
+    <div class="content">
+      <div class="info-row">
+        <span class="info-label">رقم الفاتورة:</span>
+        <span>${invoice.invoice_number || '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">تاريخ الفاتورة:</span>
+        <span>${formattedDate}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">اسم العميل:</span>
+        <span>${customerName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم العقد:</span>
+        <span>${contract?.contract_number || '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">الوصف:</span>
+        <span>${invoice.description || 'فاتورة إيجار شهري'}</span>
+      </div>
+      
+      <div class="amount-box">
+        <div class="label">المبلغ الإجمالي</div>
+        <div class="value">${totalAmount.toLocaleString('en-US')} ر.ق</div>
+      </div>
+      
+      ${paidAmount > 0 ? `
+      <div class="info-row">
+        <span class="info-label">المبلغ المدفوع:</span>
+        <span style="color: #4caf50; font-weight: bold;">${paidAmount.toLocaleString('en-US')} ر.ق</span>
+      </div>
+      ` : ''}
+      
+      ${remainingAmount > 0 ? `
+      <div class="info-row">
+        <span class="info-label">المبلغ المتبقي:</span>
+        <span style="color: #c62828; font-weight: bold;">${remainingAmount.toLocaleString('en-US')} ر.ق</span>
+      </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <span class="status-badge status-unpaid">مستحقة الدفع</span>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p style="color: #666; font-size: 12px;">
+        أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)
+      </p>
+      <p style="color: #666; font-size: 12px; margin-top: 5px;">
+        هاتف: +974 4444 4444 | البريد الإلكتروني: info@alaraf.qa
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
  * Fetch file as blob from URL
  */
 async function fetchFileAsBlob(url: string): Promise<Blob | null> {
@@ -213,6 +383,36 @@ export async function exportDocumentsAsZip(
   if (contentRefs.claimsHtml) {
     zip.file(`${folderName}/${String(fileIndex).padStart(2, '0')}_كشف_المطالبات_المالية.html`, contentRefs.claimsHtml);
     fileIndex++;
+  }
+  
+  // 2.5. Add Invoices as PDFs
+  if (state.overdueInvoices && state.overdueInvoices.length > 0) {
+    console.log('[ZIP Export] Adding invoices to ZIP...');
+    const invoicesFolder = zip.folder(`${folderName}/الفواتير`);
+    
+    if (invoicesFolder) {
+      for (let i = 0; i < state.overdueInvoices.length; i++) {
+        const invoice = state.overdueInvoices[i];
+        
+        try {
+          // توليد HTML للفاتورة
+          const invoiceHtml = await generateInvoiceHtml(invoice, state.customer, state.contract);
+          
+          // تحويل إلى PDF
+          const pdfBlob = await htmlToPdfBlob(invoiceHtml, `فاتورة_${invoice.invoice_number}.pdf`);
+          
+          if (pdfBlob) {
+            const fileName = `فاتورة_${invoice.invoice_number || i + 1}.pdf`;
+            invoicesFolder.file(fileName, pdfBlob);
+            console.log(`[ZIP Export] Added invoice: ${fileName}`);
+          }
+        } catch (error) {
+          console.error(`[ZIP Export] Error adding invoice ${invoice.invoice_number}:`, error);
+        }
+      }
+      
+      console.log(`[ZIP Export] Added ${state.overdueInvoices.length} invoices`);
+    }
   }
   
   // 3. Add Criminal Complaint if available

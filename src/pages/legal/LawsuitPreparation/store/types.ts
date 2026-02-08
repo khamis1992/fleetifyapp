@@ -199,6 +199,7 @@ export interface UIState {
   isGeneratingAll: boolean;
   isRegistering: boolean;
   isDownloadingZip: boolean;
+  isDownloadingInvoices: boolean;
   isSendingToLawsuitData: boolean;
   isTaqadiAutomating: boolean;
   isMarkingCaseOpened: boolean;
@@ -272,6 +273,7 @@ export type LawsuitPreparationAction =
   | { type: 'REGISTER_CASE_ERROR'; payload: Error }
   | { type: 'DOWNLOAD_ZIP_START' }
   | { type: 'DOWNLOAD_ZIP_COMPLETE' }
+  | { type: 'SET_DOWNLOADING_INVOICES'; payload: boolean }
   | { type: 'SEND_TO_LAWSUIT_DATA_START' }
   | { type: 'SEND_TO_LAWSUIT_DATA_COMPLETE' }
   
@@ -320,6 +322,7 @@ export interface LawsuitPreparationContextValue {
     // Document Downloads
     downloadMemoPdf: () => Promise<void>;
     downloadMemoDocx: () => Promise<void>;
+    downloadInvoicesAsZip: () => Promise<void>;
     
     // Utilities
     copyToClipboard: (text: string, field: string) => Promise<void>;

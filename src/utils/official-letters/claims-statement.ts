@@ -31,6 +31,33 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
       <strong>كشف المطالبات المالية</strong>
     </div>
     
+    <!-- كشف الحساب - ملخص المديونية -->
+    <div style="background: linear-gradient(135deg, #1a5490 0%, #2196F3 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <h3 style="margin: 0 0 15px 0; font-size: 18px; text-align: center; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px;">
+        كشف حساب المديونية المترصدة
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
+        <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; border-right: 3px solid #FFD700;">
+          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">إجمالي المديونية</div>
+          <div style="font-size: 22px; font-weight: bold; direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.totalOverdue)} ر.ق</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; border-right: 3px solid #FFD700;">
+          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">عدد الفواتير المستحقة</div>
+          <div style="font-size: 22px; font-weight: bold;">${data.invoices.length} فاتورة</div>
+        </div>
+        ${data.violations && data.violations.length > 0 ? `
+        <div style="background: rgba(211, 47, 47, 0.3); padding: 12px; border-radius: 6px; border-right: 3px solid #d32f2f;">
+          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">عدد المخالفات المرورية</div>
+          <div style="font-size: 22px; font-weight: bold;">${data.violations.length} مخالفة</div>
+        </div>
+        <div style="background: rgba(211, 47, 47, 0.3); padding: 12px; border-radius: 6px; border-right: 3px solid #d32f2f;">
+          <div style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">إجمالي غرامات المخالفات</div>
+          <div style="font-size: 22px; font-weight: bold; direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.violations.reduce((s, v) => s + v.fineAmount, 0))} ر.ق</div>
+        </div>
+        ` : ''}
+      </div>
+    </div>
+    
     <!-- معلومات المدعى عليه -->
     <div class="info-box">
       <div class="info-row">
@@ -57,10 +84,23 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
       </div>
     </div>
     
+    <!-- ملاحظة هامة -->
+    <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 6px; padding: 15px; margin: 20px 0;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="background: #ffc107; color: #000; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">!</div>
+        <div>
+          <strong style="color: #856404; display: block; margin-bottom: 5px;">ملاحظة هامة:</strong>
+          <span style="color: #856404; font-size: 11px;">
+            يُرفق مع هذا الكشف جميع الفواتير المفصلة الواردة أدناه بصيغة PDF، والثابت بها مبالغ المديونية المستحقة.
+          </span>
+        </div>
+      </div>
+    </div>
+    
     <!-- جدول الفواتير -->
     ${data.invoices.length > 0 ? `
     <div class="section">
-      <div class="section-title">تفصيل الفواتير المستحقة</div>
+      <div class="section-title">تفصيل الفواتير المستحقة (مرفق نسخة PDF لكل فاتورة)</div>
       <table>
         <thead>
           <tr>
@@ -72,6 +112,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
             <th>المدفوع</th>
             <th>المتبقي</th>
             <th>الإجمالي</th>
+            <th style="text-align: center;">حالة الإرفاق</th>
           </tr>
         </thead>
         <tbody>
@@ -89,6 +130,9 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(inv.paidAmount)}</td>
                 <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(remaining)}</td>
                 <td class="amount" style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(total)}</td>
+                <td style="text-align: center;">
+                  <span style="background: #4caf50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight: bold;">✓ مرفق</span>
+                </td>
               </tr>
             `;
           }).join('')}
@@ -99,6 +143,7 @@ export function generateClaimsStatementHtml(data: ClaimsStatementData): string {
             <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + i.paidAmount, 0))}</td>
             <td style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount), 0))}</td>
             <td class="amount" style="direction: ltr; unicode-bidi: embed;">${formatNumberEn(data.invoices.reduce((s, i) => s + (i.totalAmount - i.paidAmount) + (i.penalty || 0), 0))} ر.ق</td>
+            <td style="text-align: center; background: #4caf50; color: white; font-weight: bold;">${data.invoices.length} فاتورة</td>
           </tr>
         </tbody>
       </table>

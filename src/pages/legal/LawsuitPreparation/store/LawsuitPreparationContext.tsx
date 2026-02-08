@@ -591,6 +591,293 @@ export function LawsuitPreparationProvider({
     }
   }, [state, user, navigate]);
   
+  /**
+   * توليد HTML للفاتورة
+   */
+  const generateInvoiceHtml = async (invoice: any, customer: any, contract: any): Promise<string> => {
+    const totalAmount = Number(invoice.total_amount) || 0;
+    const paidAmount = Number(invoice.paid_amount) || 0;
+    const remainingAmount = totalAmount - paidAmount;
+    
+    const customerName = customer 
+      ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() 
+      : 'غير محدد';
+    
+    const formattedDate = invoice.invoice_date 
+      ? new Date(invoice.invoice_date).toLocaleDateString('ar-QA')
+      : new Date().toLocaleDateString('ar-QA');
+    
+    return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>فاتورة ${invoice.invoice_number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Arial', 'Tahoma', sans-serif;
+      background: #fff;
+      padding: 20px;
+      direction: rtl;
+    }
+    .invoice-container {
+      max-width: 210mm;
+      margin: 0 auto;
+      background: #fff;
+      border: 2px solid #1a5490;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a5490 0%, #2196F3 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #1a5490;
+    }
+    .amount-box {
+      background: #f5f5f5;
+      border: 2px solid #1a5490;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .amount-box .label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .amount-box .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #1a5490;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .status-unpaid {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      border-top: 2px solid #1a5490;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <div class="header">
+      <h1>فاتورة مستحقة</h1>
+      <p>شركة العراف لتأجير السيارات</p>
+      <p>Al-Araf Car Rental Company</p>
+    </div>
+    
+    <div class="content">
+      <div class="info-row">
+        <span class="info-label">رقم الفاتورة:</span>
+        <span>${invoice.invoice_number || '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">تاريخ الفاتورة:</span>
+        <span>${formattedDate}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">اسم العميل:</span>
+        <span>${customerName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">رقم العقد:</span>
+        <span>${contract?.contract_number || '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">الوصف:</span>
+        <span>${invoice.description || 'فاتورة إيجار شهري'}</span>
+      </div>
+      
+      <div class="amount-box">
+        <div class="label">المبلغ الإجمالي</div>
+        <div class="value">${totalAmount.toLocaleString('en-US')} ر.ق</div>
+      </div>
+      
+      ${paidAmount > 0 ? `
+      <div class="info-row">
+        <span class="info-label">المبلغ المدفوع:</span>
+        <span style="color: #4caf50; font-weight: bold;">${paidAmount.toLocaleString('en-US')} ر.ق</span>
+      </div>
+      ` : ''}
+      
+      ${remainingAmount > 0 ? `
+      <div class="info-row">
+        <span class="info-label">المبلغ المتبقي:</span>
+        <span style="color: #c62828; font-weight: bold;">${remainingAmount.toLocaleString('en-US')} ر.ق</span>
+      </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <span class="status-badge status-unpaid">مستحقة الدفع</span>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p style="color: #666; font-size: 12px;">
+        أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)
+      </p>
+      <p style="color: #666; font-size: 12px; margin-top: 5px;">
+        هاتف: +974 4444 4444 | البريد الإلكتروني: info@alaraf.qa
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+  };
+  
+  /**
+   * تحميل جميع الفواتير المستحقة كملف ZIP
+   */
+  const downloadInvoicesAsZip = useCallback(async () => {
+    try {
+      if (state.overdueInvoices.length === 0) {
+        toast.error('لا توجد فواتير مستحقة');
+        return;
+      }
+      
+      dispatch({ type: 'SET_DOWNLOADING_INVOICES', payload: true });
+      toast.info('جاري تجهيز الفواتير...');
+      
+      // Dynamic import for heavy libraries
+      const [{ default: JSZip }, { default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('jszip'),
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      
+      const zip = new JSZip();
+      const invoicesFolder = zip.folder('invoices');
+      
+      if (!invoicesFolder) {
+        throw new Error('فشل في إنشاء مجلد الفواتير');
+      }
+      
+      // توليد PDF لكل فاتورة
+      for (let i = 0; i < state.overdueInvoices.length; i++) {
+        const invoice = state.overdueInvoices[i];
+        
+        toast.info(`جاري معالجة الفاتورة ${i + 1} من ${state.overdueInvoices.length}...`);
+        
+        // توليد HTML للفاتورة
+        const invoiceHtml = await generateInvoiceHtml(invoice, state.customer, state.contract);
+        
+        // Create iframe for rendering
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.left = '-9999px';
+        iframe.style.width = '794px';
+        document.body.appendChild(iframe);
+        
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          document.body.removeChild(iframe);
+          continue;
+        }
+        
+        // Write HTML to iframe
+        iframeDoc.open();
+        iframeDoc.write(invoiceHtml);
+        iframeDoc.close();
+        
+        // Wait for rendering
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Capture canvas
+        const canvas = await html2canvas(iframeDoc.body, {
+          scale: 1.5,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: 794,
+        });
+        
+        // Create PDF
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          compress: true,
+        });
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = pdfWidth / imgWidth;
+        const contentHeight = imgHeight * ratio;
+        
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, contentHeight, undefined, 'FAST');
+        
+        // Add to ZIP
+        const pdfBlob = pdf.output('blob');
+        const fileName = `فاتورة_${invoice.invoice_number || i + 1}.pdf`;
+        invoicesFolder.file(fileName, pdfBlob);
+        
+        // Cleanup
+        document.body.removeChild(iframe);
+      }
+      
+      // Generate ZIP
+      toast.info('جاري ضغط الفواتير...');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      
+      // Download
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `فواتير_${state.contract?.contract_number || 'العقد'}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`تم تحميل ${state.overdueInvoices.length} فاتورة بنجاح`);
+    } catch (error: any) {
+      console.error('Error downloading invoices:', error);
+      toast.error(`خطأ في تحميل الفواتير: ${error.message}`);
+    } finally {
+      dispatch({ type: 'SET_DOWNLOADING_INVOICES', payload: false });
+    }
+  }, [state.overdueInvoices, state.customer, state.contract]);
+  
   const downloadAllAsZip = useCallback(async () => {
     dispatch({ type: 'DOWNLOAD_ZIP_START' });
     
@@ -928,6 +1215,7 @@ export function LawsuitPreparationProvider({
       uploadDocument,
       registerCase,
       downloadAllAsZip,
+      downloadInvoicesAsZip,
       sendToLawsuitData,
       startTaqadiAutomation,
       stopTaqadiAutomation,
