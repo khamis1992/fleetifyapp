@@ -52,6 +52,7 @@ const documentTypes = [
   { value: 'identity', label: 'هوية' },
   { value: 'license', label: 'رخصة' },
   { value: 'receipt', label: 'إيصال' },
+  { value: 'violations_proof', label: 'إثبات مخالفات مرورية' },
   { value: 'other', label: 'أخرى' }
 ];
 

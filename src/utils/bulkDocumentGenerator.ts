@@ -595,6 +595,35 @@ async function generateCustomerDocuments(
       }
     }
     
+    // إثبات المخالفات المرورية - جلب من مستندات العقد
+    {
+      const { data: violationsProofDocs } = await supabase
+        .from('contract_documents')
+        .select('id, file_path, document_name')
+        .eq('contract_id', customer.contract_id)
+        .eq('company_id', companyId)
+        .eq('document_type', 'violations_proof')
+        .order('created_at', { ascending: false });
+      
+      if (violationsProofDocs && violationsProofDocs.length > 0) {
+        for (const vDoc of violationsProofDocs) {
+          if (vDoc.file_path) {
+            const { data: urlData } = supabase.storage
+              .from('contract-documents')
+              .getPublicUrl(vDoc.file_path);
+            
+            const isImage = vDoc.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+            generatedDocuments.push({
+              name: vDoc.document_name || 'إثبات المخالفات المرورية',
+              status: 'مرفق',
+              url: urlData?.publicUrl,
+              type: isImage ? 'image' : 'pdf',
+            });
+          }
+        }
+      }
+    }
+    
     // مستندات الشركة - نفس الترتيب المستخدم في صفحة تجهيز الدعوى
     const companyDocTypes = [
       { type: 'authorization_letter', name: 'خطاب التفويض' },

@@ -56,10 +56,14 @@ export const useDashboardStats = () => {
   if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
   const companyId = rawCompanyId || stableCompanyIdRef.current;
   
+  // إعادة المحاولة عندما يتوفر company_id (قد يتأخر عن authLoading)
   const isReady = !authLoading && !!user?.id && !!companyId;
+  
+  // تتبع حالة تحميل الملف الشخصي - company_id قد يتأخر عن authLoading
+  const profileLoaded = !!user?.profile?.company_id || !!user?.company?.id;
 
   return useQuery({
-    queryKey: ['dashboard-stats', user?.id, companyId, moduleContext?.activeModules],
+    queryKey: ['dashboard-stats', user?.id, companyId, profileLoaded, moduleContext?.activeModules],
     queryFn: async ({ signal }: { signal?: AbortSignal }): Promise<DashboardStats> => {
       if (!user?.id || !companyId) {
         console.warn('[useDashboardStats] Missing user or company_id:', { 
@@ -379,7 +383,8 @@ export const useDashboardStats = () => {
     enabled: isReady, // CRITICAL: Only run when we have user, company_id, and auth is loaded
     staleTime: 30 * 1000, // 30 seconds - shorter cache to ensure fresh data after page refresh
     gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
     refetchOnWindowFocus: false, // Don't refetch on window focus for dashboard stats
     refetchOnMount: true, // Refetch on mount if data is stale
     keepPreviousData: true, // FIXED: Keep previous data visible during refetch (prevents showing 0s)

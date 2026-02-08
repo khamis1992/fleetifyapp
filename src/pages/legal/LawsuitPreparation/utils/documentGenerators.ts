@@ -292,6 +292,34 @@ export async function generateDocumentsList(
     });
   }
   
+  // Add violations proof document if exists
+  if (contract.id) {
+    const { data: violationsProofDocs } = await supabase
+      .from('contract_documents')
+      .select('id, file_path, document_name')
+      .eq('contract_id', contract.id)
+      .eq('document_type', 'violations_proof')
+      .order('created_at', { ascending: false });
+    
+    if (violationsProofDocs && violationsProofDocs.length > 0) {
+      for (const vDoc of violationsProofDocs) {
+        if (vDoc.file_path) {
+          const { data: urlData } = supabase.storage
+            .from('contract-documents')
+            .getPublicUrl(vDoc.file_path);
+          
+          const isImage = vDoc.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+          docsList.push({
+            name: vDoc.document_name || 'إثبات المخالفات المرورية',
+            status: 'مرفق',
+            url: urlData?.publicUrl,
+            type: isImage ? 'image' : 'pdf',
+          });
+        }
+      }
+    }
+  }
+  
   // Add company documents
   const fixedDocTypes = [
     { type: 'authorization_letter', name: 'خطاب التفويض' },

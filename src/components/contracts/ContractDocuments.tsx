@@ -5,7 +5,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw } from 'lucide-react';
+import { Plus, Download, Trash2, FileText, Upload, Eye, Car, CheckCircle, AlertCircle, AlertTriangle, FileImage, RefreshCw, Pencil } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContractDocuments, useCreateContractDocument, useDeleteContractDocument, useDownloadContractDocument } from '@/hooks/useContractDocuments';
 import { DocumentUploadDialog, DocumentUploadData } from './DocumentUploadDialog';
 import { ContractHtmlViewer } from './ContractHtmlViewer';
@@ -15,7 +16,7 @@ import { DocumentSavingProgress } from './DocumentSavingProgress';
 import { useContractDocumentSaving } from '@/hooks/useContractDocumentSaving';
 import { VehicleConditionDiagram } from '@/components/fleet/VehicleConditionDiagram';
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LazyImage } from '@/components/common/LazyImage';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
@@ -40,6 +41,7 @@ const documentTypes = [
   { value: 'identity', label: 'هوية' },
   { value: 'license', label: 'رخصة' },
   { value: 'receipt', label: 'إيصال' },
+  { value: 'violations_proof', label: 'إثبات مخالفات مرورية' },
   { value: 'other', label: 'أخرى' }
 ];
 
@@ -329,6 +331,25 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
     return documentTypes.find(dt => dt.value === type)?.label || type;
   };
 
+  const queryClient = useQueryClient();
+
+  const handleChangeDocumentType = async (documentId: string, newType: string) => {
+    try {
+      const { error } = await supabase
+        .from('contract_documents')
+        .update({ document_type: newType })
+        .eq('id', documentId);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['contract-documents'] });
+      toast.success('تم تغيير نوع المستند');
+    } catch (error) {
+      console.error('Error updating document type:', error);
+      toast.error('حدث خطأ في تغيير نوع المستند');
+    }
+  };
+
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '';
     const mb = bytes / (1024 * 1024);
@@ -493,9 +514,26 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
                       {document.document_name}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-[10px] mb-2 truncate max-w-full">
-                    {getDocumentTypeLabel(document.document_type)}
-                  </Badge>
+                  <Select
+                    value={document.document_type}
+                    onValueChange={(value) => {
+                      handleChangeDocumentType(document.id, value);
+                    }}
+                  >
+                    <SelectTrigger 
+                      className="h-6 text-[10px] mb-2 max-w-full px-2 border-neutral-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {documentTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value} className="text-xs">
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-[10px] text-neutral-500 mb-3">
                     {format(new Date(document.uploaded_at), 'dd/MM/yyyy')}
                   </p>
