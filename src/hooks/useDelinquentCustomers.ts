@@ -365,7 +365,6 @@ async function calculateDelinquentCustomersDynamically(
           .in('contract_id', batch)
           .lt('due_date', todayStr)
           .neq('status', 'cancelled')  // استبعاد الفواتير الملغاة
-          .in('payment_status', ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid'])
           .order('due_date', { ascending: true });
         
         if (error) {
@@ -382,16 +381,11 @@ async function calculateDelinquentCustomersDynamically(
     console.log(`📊 [DELINQUENT] Fetched ${allInvoicesData.length} overdue invoices for ${contractIds.length} contracts (today: ${todayStr})`);
     
     if (allInvoicesData.length > 0) {
-      // Filter to only include invoices that are actually unpaid or partially paid
+      // فلترة الفواتير التي لديها رصيد متبقي فعلي (غير مسددة بالكامل)
       overdueInvoices = allInvoicesData.filter(inv => {
         const totalAmount = Number(inv.total_amount) || 0;
         const paidAmount = Number(inv.paid_amount) || 0;
-        const hasRemainingBalance = paidAmount < totalAmount;
-        
-        // Consider overdue if payment_status indicates unpaid OR there's remaining balance
-        const isUnpaidStatus = ['pending', 'partial', 'partially_paid', 'overdue', 'unpaid'].includes(inv.payment_status);
-        
-        return isUnpaidStatus || hasRemainingBalance;
+        return paidAmount < totalAmount; // أي فاتورة لم تسدد بالكامل
       });
       
       console.log(`📊 [DELINQUENT] After filtering: ${overdueInvoices.length} unpaid overdue invoices`);

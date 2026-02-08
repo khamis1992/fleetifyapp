@@ -8,31 +8,30 @@ import { generateOfficialHeader, generateSignatureSection } from './templates';
 import type { DocumentsListData } from './types';
 
 /**
- * ضغط محتوى HTML المضمّن لتقليل حجم الملف
- * - إزالة كتل <style> المكررة (الأنماط موجودة في المستند الرئيسي)
- * - إزالة صور base64 الزخرفية (الشعار في الهيدر) مع الاحتفاظ بالتوقيع والختم
+ * تحضير محتوى HTML المضمّن - استخراج الأنماط والمحتوى معاً للحفاظ على التنسيق الأصلي
  */
-function compressHtmlForEmbedding(html: string): string {
+function prepareHtmlForEmbedding(html: string): string {
+  if (!html) return '';
+  
+  // 1. استخراج كتل <style> من <head> للحفاظ على التنسيقات
+  const styleBlocks: string[] = [];
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  let styleMatch;
+  while ((styleMatch = styleRegex.exec(html)) !== null) {
+    styleBlocks.push(styleMatch[1]);
+  }
+  
+  // 2. استخراج محتوى body
   let content = extractHtmlBody(html);
   
-  // 1. إزالة جميع كتل <style> (الأنماط موروثة من المستند الرئيسي)
-  content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  
-  // 2. إزالة كتل <script> غير الضرورية
+  // 3. إزالة كتل <script> غير الضرورية
   content = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   
-  // 3. تقليص صور base64 الكبيرة (أكثر من 5KB) في الهيدر فقط
-  // نحتفظ بصور التوقيع والختم في قسم التوقيع
-  content = content.replace(
-    /(<(?:div|td|th)[^>]*class="[^"]*(?:header|company|logo)[^"]*"[^>]*>[\s\S]*?)(<img[^>]*src="data:image\/[^"]{5000,}"[^>]*>)/gi,
-    '$1<img src="" alt="شعار الشركة" style="width:60px;height:60px;border:1px solid #ddd;" />'
-  );
-  
-  // 4. ضغط أي صورة base64 أكبر من 50KB (حوالي 67,000 حرف في base64)
-  content = content.replace(
-    /src="(data:image\/[^"]{67000,})"/gi,
-    'src="" alt="صورة مضغوطة" style="width:100px;height:auto;border:1px solid #ddd;"'
-  );
+  // 4. إعادة إدراج الأنماط مع المحتوى (داخل scoped style)
+  if (styleBlocks.length > 0) {
+    const combinedStyles = styleBlocks.join('\n');
+    return `<style>${combinedStyles}</style>\n${content}`;
+  }
   
   return content;
 }
@@ -477,7 +476,7 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
         </script>
       ` : doc.type === 'html' && doc.htmlContent ? `
         <div class="html-document-content" style="width: 100%; border: 1px solid #ddd; padding: 15px; background: #fff;">
-          ${compressHtmlForEmbedding(doc.htmlContent)}
+          ${prepareHtmlForEmbedding(doc.htmlContent)}
         </div>
       ` : doc.type === 'html' ? `
         <div style="text-align: center; padding: 40px; color: #666;">
@@ -498,7 +497,7 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
         كشف المطالبات المالية
       </div>
       <div class="html-document-content" style="width: 100%; border: 1px solid #ddd; padding: 15px; background: #fff;">
-        ${compressHtmlForEmbedding(data.claimsStatementHtml)}
+        ${prepareHtmlForEmbedding(data.claimsStatementHtml)}
       </div>
     </div>
   ` : ''}

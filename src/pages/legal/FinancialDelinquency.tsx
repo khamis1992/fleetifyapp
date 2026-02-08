@@ -164,6 +164,7 @@ const FinancialDelinquencyPage: React.FC = () => {
     overduePeriod: overduePeriodFilter !== 'all' ? overduePeriodFilter as any : undefined,
     amountRange: amountRangeFilter !== 'all' ? amountRangeFilter as any : undefined,
     hasViolations: violationsFilter !== 'all' ? violationsFilter === 'yes' : undefined,
+    useCachedData: false, // استخدام البيانات الحية لضمان ظهور جميع العملاء المتعثرين
   }), [searchTerm, riskLevelFilter, overduePeriodFilter, amountRangeFilter, violationsFilter]);
 
   const { data: rawCustomers, isLoading: customersLoading } = useDelinquentCustomers(filters);

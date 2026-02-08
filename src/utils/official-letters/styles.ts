@@ -84,7 +84,7 @@ export function getOfficialLetterStyles(): string {
     }
     
     body {
-      font-family: 'Traditional Arabic', 'Times New Roman', 'Arial', serif;
+      font-family: 'Times New Roman (Headings CS)', 'Times New Roman', serif;
       font-size: 12pt;
       line-height: 1.8;
       color: #000;

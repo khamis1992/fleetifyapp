@@ -234,25 +234,51 @@ export async function generateDocumentsList(
     htmlContent?: string;
   }[] = [];
   
-  // Add memo if ready
-  if (documents.memo.status === 'ready' && documents.memo.url) {
-    docsList.push({
-      name: 'المذكرة الشارحة',
-      status: 'مرفق',
-      url: documents.memo.url,
-      type: 'html',
-      htmlContent: documents.memo.htmlContent || undefined,
+  // Add claims statement if ready - نعيد توليده لضمان تطابقه مع الأصلي
+  if (documents.claims.status === 'ready') {
+    // إعادة توليد كشف المطالبات من البيانات الأصلية لضمان التطابق
+    const claimsInvoicesData = state.overdueInvoices.map((inv) => {
+      const daysLate = Math.floor(
+        (new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const remaining = (inv.total_amount || 0) - (inv.paid_amount || 0);
+      const penalty = remaining > 0 ? Math.min(daysLate * 120, 3000) : 0;
+      return {
+        invoiceNumber: inv.invoice_number || '-',
+        dueDate: inv.due_date,
+        totalAmount: inv.total_amount || 0,
+        paidAmount: inv.paid_amount || 0,
+        daysLate,
+        penalty,
+      };
     });
-  }
-  
-  // Add claims statement if ready
-  if (documents.claims.status === 'ready' && documents.claims.url) {
+    const claimsViolationsData = state.trafficViolations.map((v) => ({
+      violationNumber: v.violation_number || '-',
+      violationDate: v.violation_date || '',
+      violationType: v.violation_type || 'غير محدد',
+      location: v.location || '-',
+      fineAmount: Number(v.total_amount) || Number(v.fine_amount) || 0,
+    }));
+    const totalPenalties = claimsInvoicesData.reduce((sum, inv) => sum + (inv.penalty || 0), 0);
+    const { generateClaimsStatementHtml } = await import('@/utils/official-letter-generator');
+    const freshClaimsHtml = generateClaimsStatementHtml({
+      customerName: formatCustomerName(customer),
+      nationalId: customer?.national_id || '-',
+      phone: customer?.phone || '',
+      contractNumber: contract.contract_number,
+      contractStartDate: contract.start_date || '',
+      contractEndDate: contract.end_date || '',
+      invoices: claimsInvoicesData,
+      violations: claimsViolationsData,
+      totalOverdue: (state.calculations?.overdueRent || 0) + (state.calculations?.violationsFines || 0) + totalPenalties,
+      amountInWords: state.calculations?.amountInWords || '',
+      caseTitle: state.taqadiData?.caseTitle,
+    });
     docsList.push({
       name: 'كشف المطالبات المالية',
       status: 'مرفق',
-      url: documents.claims.url,
       type: 'html',
-      htmlContent: documents.claims.htmlContent || undefined,
+      htmlContent: freshClaimsHtml,
     });
   }
   
@@ -268,10 +294,6 @@ export async function generateDocumentsList(
   
   // Add company documents
   const fixedDocTypes = [
-    { type: 'commercial_register', name: 'السجل التجاري' },
-    { type: 'establishment_record', name: 'قيد المنشأة' },
-    { type: 'iban_certificate', name: 'شهادة IBAN' },
-    { type: 'representative_id', name: 'البطاقة الشخصية للممثل' },
     { type: 'authorization_letter', name: 'خطاب التفويض' },
   ] as const;
   

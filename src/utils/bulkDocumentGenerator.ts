@@ -595,20 +595,8 @@ async function generateCustomerDocuments(
       }
     }
     
-    // 3. المذكرة الشارحة (مع المحتوى) - دائماً مرفق
-    generatedDocuments.push({ 
-      name: 'المذكرة الشارحة', 
-      status: 'مرفق',
-      type: 'html',
-      htmlContent: memoHtml,
-    });
-    
-    // 4-8. مستندات الشركة - نفس الترتيب المستخدم في صفحة تجهيز الدعوى
+    // مستندات الشركة - نفس الترتيب المستخدم في صفحة تجهيز الدعوى
     const companyDocTypes = [
-      { type: 'commercial_register', name: 'السجل التجاري' },
-      { type: 'establishment_record', name: 'قيد المنشأة' },
-      { type: 'iban_certificate', name: 'شهادة IBAN' },
-      { type: 'representative_id', name: 'البطاقة الشخصية للممثل' },
       { type: 'authorization_letter', name: 'خطاب التفويض' },
     ] as const;
     
