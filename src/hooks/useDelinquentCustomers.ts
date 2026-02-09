@@ -189,13 +189,8 @@ export const useDelinquentCustomers = (filters?: UseDelinquentCustomersFilters) 
               !contractsWithPendingVerification.has(row.contract_id)
             );
 
-            // فلترة العقود التي تم فتح قضية لها (under_legal_procedure)
-            const dataWithoutLegalCases = dataWithoutPendingVerification.filter((row: any) =>
-              row.contract_status !== 'under_legal_procedure'
-            );
-
             // Convert to DelinquentCustomer format
-            return dataWithoutLegalCases.map((row: any) => ({
+            return dataWithoutPendingVerification.map((row: any) => ({
               customer_id: row.customer_id,
               customer_name: row.customer_name,
               customer_code: row.customer_code || '',
@@ -276,11 +271,13 @@ async function calculateDelinquentCustomersDynamically(
       id,
       contract_number,
       start_date,
+      end_date,
       status,
       monthly_amount,
       balance_due,
       days_overdue,
       payment_status,
+      total_paid,
       vehicle_id,
       customer_id,
       license_plate,
@@ -307,7 +304,7 @@ async function calculateDelinquentCustomersDynamically(
       )
     `)
     .eq('company_id', companyId)
-    .in('status', ['active', 'cancelled', 'closed'])  // Exclude under_legal_procedure (case already opened)
+    .in('status', ['active', 'cancelled', 'closed', 'expired', 'under_legal_procedure'])
     .order('balance_due', { ascending: false });
 
   const { data: contracts, error: contractsError } = await contractsQuery;

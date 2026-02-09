@@ -80,8 +80,8 @@ export interface UpdateTrafficViolationData extends Partial<CreateTrafficViolati
 }
 
 // Hook لجلب جميع المخالفات المرورية مع التحسين
-export function useTrafficViolations(options?: { limit?: number; offset?: number }) {
-  const { limit = 100, offset = 0 } = options || {};
+export function useTrafficViolations(options?: { limit?: number; offset?: number; enabled?: boolean }) {
+  const { limit = 100, offset = 0, enabled = true } = options || {};
   
   return useQuery({
     queryKey: ['traffic-violations', limit, offset],
@@ -164,6 +164,7 @@ export function useTrafficViolations(options?: { limit?: number; offset?: number
         throw error;
       }
     },
+    enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes cache
     gcTime: 5 * 60 * 1000, // 5 minutes in memory
   });

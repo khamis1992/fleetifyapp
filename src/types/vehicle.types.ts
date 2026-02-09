@@ -247,7 +247,7 @@ export interface TrafficViolation {
   currency: string;
   issuing_authority?: string;
   officer_name?: string;
-  status: 'pending' | 'paid' | 'appealed' | 'cancelled' | 'overdue';
+  status: 'pending' | 'paid' | 'appealed' | 'cancelled' | 'overdue' | 'duplicate';
   due_date?: string;
   paid_date?: string;
   payment_method?: string;

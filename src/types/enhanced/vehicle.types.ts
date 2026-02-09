@@ -530,7 +530,7 @@ export interface TrafficViolation extends BaseEntity {
   driver_relationship?: 'owner' | 'employee' | 'renter' | 'authorized_driver' | 'unauthorized';
 
   // Status and processing
-  status: 'pending' | 'paid' | 'appealed' | 'cancelled' | 'overdue' | 'in_court' | 'dismissed';
+  status: 'pending' | 'paid' | 'appealed' | 'cancelled' | 'overdue' | 'in_court' | 'dismissed' | 'duplicate';
   payment_status: 'unpaid' | 'partial' | 'paid' | 'refunded';
   processing_status: 'new' | 'under_review' | 'ready_for_payment' | 'processing_payment' | 'completed';
 

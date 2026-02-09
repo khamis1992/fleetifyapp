@@ -39,12 +39,35 @@ function createPlateVariations(plate: string): string[] {
     variations.push(withoutZeros);
   }
 
-  // Add leading zeros (pad to 6-7 digits)
-  if (normalized.length < 7 && /^\d+$/.test(normalized)) {
-    const padded = normalized.padStart(7, '0');
-    if (padded !== normalized) {
-      variations.push(padded);
+  // Add leading zeros (pad to 6, 7, and 8 digits)
+  if (normalized.length < 8 && /^\d+$/.test(normalized)) {
+    // Pad to 6 digits
+    if (normalized.length < 6) {
+      const padded6 = normalized.padStart(6, '0');
+      if (!variations.includes(padded6)) {
+        variations.push(padded6);
+      }
     }
+    
+    // Pad to 7 digits
+    if (normalized.length < 7) {
+      const padded7 = normalized.padStart(7, '0');
+      if (!variations.includes(padded7)) {
+        variations.push(padded7);
+      }
+    }
+    
+    // Pad to 8 digits
+    const padded8 = normalized.padStart(8, '0');
+    if (!variations.includes(padded8)) {
+      variations.push(padded8);
+    }
+  }
+
+  // Add original plate with spaces removed (in case it was stored with spaces)
+  const noSpaces = plate.replace(/\s+/g, '');
+  if (noSpaces !== normalized && !variations.includes(noSpaces)) {
+    variations.push(noSpaces);
   }
 
   return variations;
@@ -99,11 +122,54 @@ export async function matchToVehicle(
       }
     }
 
+    // Try partial/fuzzy match using ilike (plate number may contain the number)
+    const numericOnly = normalizePlateNumber(plateNumber).replace(/\D/g, '');
+    if (numericOnly.length >= 3) {
+      // Try exact numeric match first
+      const { data: exactNumericMatch, error: exactNumericError } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, make, model, is_active')
+        .eq('company_id', companyId)
+        .or(`plate_number.eq.${numericOnly},plate_number.eq.0${numericOnly},plate_number.eq.00${numericOnly}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!exactNumericError && exactNumericMatch) {
+        return {
+          vehicle_id: exactNumericMatch.id,
+          plate_number: exactNumericMatch.plate_number,
+          confidence: 'high',
+          reason: `مطابقة رقمية للوحة ${exactNumericMatch.plate_number}`
+        };
+      }
+
+      // Try partial match as last resort
+      const { data: partialMatch, error: partialError } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, make, model, is_active')
+        .eq('company_id', companyId)
+        .ilike('plate_number', `%${numericOnly}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!partialError && partialMatch) {
+        return {
+          vehicle_id: partialMatch.id,
+          plate_number: partialMatch.plate_number,
+          confidence: 'low',
+          reason: `مطابقة جزئية للرقم ${numericOnly} مع اللوحة ${partialMatch.plate_number}`
+        };
+      }
+    }
+
+    // Log the failed search for debugging
+    console.warn(`⚠️ Failed to find vehicle with plate: "${plateNumber}". Tried variations:`, variations);
+
     return {
       vehicle_id: null,
       plate_number: plateNumber,
       confidence: 'none',
-      reason: 'لم يتم العثور على مركبة بهذا الرقم'
+      reason: `لم يتم العثور على مركبة بهذا الرقم (${plateNumber})`
     };
   } catch (error) {
     console.error('Error matching vehicle:', error);
@@ -120,11 +186,11 @@ export async function matchToVehicle(
  * Fetch multiple vehicles at once for batch matching
  */
 export async function fetchVehiclesForMatching(companyId: string): Promise<Map<string, string>> {
+  // جلب جميع المركبات (نشطة وغير نشطة) لضمان مطابقة المخالفات
   const { data: vehicles, error } = await supabase
     .from('vehicles')
     .select('id, plate_number')
-    .eq('company_id', companyId)
-    .eq('is_active', true);
+    .eq('company_id', companyId);
 
   if (error || !vehicles) {
     return new Map();
@@ -138,6 +204,11 @@ export async function fetchVehiclesForMatching(companyId: string): Promise<Map<s
       variations.forEach(plate => {
         plateToVehicleId.set(plate, vehicle.id);
       });
+      // إضافة الأرقام فقط كمفتاح إضافي للبحث الجزئي
+      const numericOnly = vehicle.plate_number.replace(/\D/g, '');
+      if (numericOnly.length >= 3) {
+        plateToVehicleId.set(numericOnly, vehicle.id);
+      }
     }
   });
 
@@ -435,6 +506,20 @@ async function matchToVehicleFromCache(
         plate_number: plate,
         confidence: 'high',
         reason: `مطابقة للوحة ${plate}`
+      };
+    }
+  }
+
+  // بحث بالأرقام فقط (إزالة الأحرف)
+  const numericOnly = normalizePlateNumber(plateNumber).replace(/\D/g, '');
+  if (numericOnly.length >= 3) {
+    const vehicleId = vehicleCache.get(numericOnly);
+    if (vehicleId) {
+      return {
+        vehicle_id: vehicleId,
+        plate_number: numericOnly,
+        confidence: 'medium',
+        reason: `مطابقة بالرقم ${numericOnly}`
       };
     }
   }

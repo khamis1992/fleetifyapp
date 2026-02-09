@@ -64,6 +64,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
+import { ContractDocuments } from '@/components/contracts/ContractDocuments';
 
 export default function CustomerVerificationPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -539,10 +540,10 @@ export default function CustomerVerificationPage() {
     },
     onSuccess: () => {
       toast.success('تم تأكيد جاهزية العميل لرفع الدعوى', {
-        description: '✅ تم إنشاء قضية تلقائياً في بيانات التقاضي',
+        description: '✅ تم تحديث حالة العميل وسيظهر ضمن المتعثرين',
         action: {
-          label: 'عرض القضية',
-          onClick: () => navigate('/legal/lawsuit-data')
+          label: 'فتح صفحة المتعثرات',
+          onClick: () => navigate('/legal/delinquency')
         }
       });
       queryClient.invalidateQueries({ queryKey: ['verification-task', taskId] });
@@ -551,10 +552,10 @@ export default function CustomerVerificationPage() {
       queryClient.invalidateQueries({ queryKey: ['my-verification-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['lawsuit_templates'] });
       
-      // الانتقال إلى صفحة بيانات التقاضي بدلاً من القضايا
+      // بعد إنهاء التدقيق انتقل مباشرة لصفحة المتعثرات
       setTimeout(() => {
-        navigate('/legal/lawsuit-data');
-      }, 2000);
+        navigate('/legal/delinquency');
+      }, 300);
     },
     onError: (error: any) => {
       toast.error('فشل التأكيد: ' + error.message);
@@ -588,6 +589,14 @@ export default function CustomerVerificationPage() {
   const contract = task.contract as any;
   const vehicle = contract?.vehicle as any;
   const isVerified = task.status === 'verified';
+  const formatDateOrDash = (date?: string | null) => {
+    if (!date) return '-';
+    try {
+      return format(new Date(date), 'dd/MM/yyyy', { locale: ar });
+    } catch {
+      return '-';
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 max-w-4xl" dir="rtl">
@@ -773,7 +782,7 @@ export default function CustomerVerificationPage() {
             <Separator className="my-4" />
 
             {/* بيانات العقد والمركبة */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div
                 className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/80 transition-colors"
                 onClick={() => contract?.contract_number && navigate(`/contracts/${contract.contract_number}`)}
@@ -784,6 +793,20 @@ export default function CustomerVerificationPage() {
                   <p className="font-semibold text-teal-600 hover:text-teal-700 hover:underline">
                     {contract?.contract_number || '-'}
                   </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Calendar className="h-5 w-5 text-teal-600" />
+                <div>
+                  <p className="text-xs text-muted-foreground">بداية العقد</p>
+                  <p className="font-semibold" dir="ltr">{formatDateOrDash(contract?.start_date)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Calendar className="h-5 w-5 text-teal-600" />
+                <div>
+                  <p className="text-xs text-muted-foreground">نهاية العقد</p>
+                  <p className="font-semibold" dir="ltr">{formatDateOrDash(contract?.end_date)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
@@ -936,6 +959,22 @@ export default function CustomerVerificationPage() {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+      )}
+
+      {/* مستندات العقد */}
+      {task?.contract_id && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="mb-6"
+        >
+          <ContractDocuments
+            contractId={task.contract_id}
+            customerId={task.customer_id}
+            vehicleId={task?.contract?.vehicle?.id}
+          />
         </motion.div>
       )}
 

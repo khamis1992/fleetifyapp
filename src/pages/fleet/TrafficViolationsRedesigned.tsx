@@ -1,4 +1,4 @@
-import React, { useState, useMemo, lazy, Suspense, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, lazy, Suspense, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -83,11 +83,149 @@ export default function TrafficViolationsRedesigned() {
   // Data Fetching - Reduced limit for better performance (was 10000!)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+
+  const isServerFilteringActive =
+    searchTerm.trim().length > 0 ||
+    filterStatus !== 'all' ||
+    filterPaymentStatus !== 'all' ||
+    filterCar !== 'all' ||
+    filterCustomer !== 'all';
+
+  // When switching filters/search, reset pagination to the first page
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterPaymentStatus, filterCar, filterCustomer]);
+
   const { data: violations = [], isLoading, refetch } = useTrafficViolations({
     limit: itemsPerPage,
-    offset: (currentPage - 1) * itemsPerPage
+    offset: (currentPage - 1) * itemsPerPage,
+    enabled: !isServerFilteringActive
   });
   const { data: vehicles = [] } = useVehicles({ limit: 500 });
+
+  // When search/filters are active, fetch matching violations server-side
+  const { data: serverFilteredViolations = [], isLoading: isLoadingServerFiltered } = useQuery({
+    queryKey: [
+      'traffic-violations-server-filtered',
+      searchTerm,
+      filterStatus,
+      filterPaymentStatus,
+      filterCar,
+      filterCustomer,
+    ],
+    enabled: isServerFilteringActive,
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return [];
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (!profile?.company_id) return [];
+
+      const rawTerm = searchTerm.trim();
+      const termNoHash = rawTerm.replace(/^#/, '');
+      const termDigits = rawTerm.replace(/\D/g, '');
+      const safeTerm = termNoHash.replace(/[(),]/g, ' ').trim();
+      const safeDigits = termDigits.replace(/[(),]/g, ' ').trim();
+
+      let query = supabase
+        .from('penalties')
+        .select(
+          `
+            id,
+            penalty_number,
+            violation_type,
+            penalty_date,
+            amount,
+            location,
+            vehicle_plate,
+            vehicle_id,
+            reason,
+            notes,
+            status,
+            payment_status,
+            customer_id,
+            contract_id,
+            created_at,
+            updated_at,
+            vehicles (
+              id,
+              plate_number,
+              make,
+              model,
+              year,
+              registration_expiry
+            ),
+            customers (
+              id,
+              first_name,
+              last_name,
+              company_name,
+              phone
+            ),
+            contracts (
+              id,
+              contract_number,
+              status,
+              start_date,
+              end_date,
+              customer_id,
+              customers (
+                id,
+                first_name,
+                last_name,
+                company_name,
+                phone
+              )
+            )
+          `
+        )
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+      if (filterPaymentStatus !== 'all') {
+        query = query.eq('payment_status', filterPaymentStatus);
+      }
+      if (filterCustomer !== 'all') {
+        query = query.eq('customer_id', filterCustomer);
+      }
+      if (filterCar !== 'all') {
+        // allow both vehicle_id and raw plate number selection
+        const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(filterCar);
+        query = looksLikeUuid
+          ? query.or(`vehicle_id.eq.${filterCar},vehicle_plate.eq.${filterCar}`)
+          : query.eq('vehicle_plate', filterCar);
+      }
+
+      if (safeTerm.length > 0 || safeDigits.length > 0) {
+        const orParts: string[] = [];
+        const addTerm = (t: string) => {
+          if (!t) return;
+          orParts.push(`penalty_number.ilike.%${t}%`);
+          orParts.push(`vehicle_plate.ilike.%${t}%`);
+          orParts.push(`violation_type.ilike.%${t}%`);
+          orParts.push(`reason.ilike.%${t}%`);
+          orParts.push(`location.ilike.%${t}%`);
+        };
+        addTerm(safeTerm);
+        if (safeDigits && safeDigits !== safeTerm) addTerm(safeDigits);
+        query = query.or(orParts.join(','));
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    staleTime: 60 * 1000,
+  });
 
   // Fetch total count for pagination
   const { data: totalCount = 0 } = useQuery({
@@ -137,6 +275,8 @@ export default function TrafficViolationsRedesigned() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const isAnyLoading = isLoading || (isServerFilteringActive && isLoadingServerFiltered);
+
   // Helper Functions
   const getCarName = useCallback((violation: TrafficViolation) => {
     if (violation.vehicles) {
@@ -160,10 +300,11 @@ export default function TrafficViolationsRedesigned() {
     return 'غير محدد';
   }, []);
 
-  // Filtering Logic - Now works on paginated data
-  // For full filtering, we'd need to move this to server-side with query params
+  const sourceViolations = isServerFilteringActive ? serverFilteredViolations : violations;
+
+  // Filtering Logic
   const filteredViolations = useMemo(() => {
-    return violations.filter(v => {
+    return sourceViolations.filter(v => {
       const matchesSearch = 
         v.penalty_number?.toLowerCase().includes(searchTerm.toLowerCase()) || 
         getCarName(v).toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,7 +320,7 @@ export default function TrafficViolationsRedesigned() {
 
       return matchesSearch && matchesStatus && matchesPaymentStatus && matchesCar && matchesCustomer;
     });
-  }, [violations, searchTerm, filterStatus, filterPaymentStatus, filterCar, filterCustomer, getCarName, getCustomerName]);
+  }, [sourceViolations, searchTerm, filterStatus, filterPaymentStatus, filterCar, filterCustomer, getCarName, getCustomerName]);
 
   // Handlers
   const handleOpenModal = useCallback((violation: TrafficViolation | null = null) => {
@@ -281,7 +422,7 @@ export default function TrafficViolationsRedesigned() {
     setIsReminderDialogOpen(true);
   }, []);
 
-  if (isLoading) {
+  if (isAnyLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -844,13 +985,18 @@ export default function TrafficViolationsRedesigned() {
               {/* Results Count */}
               {filteredViolations.length > 0 && (
                 <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 text-sm text-neutral-500 print:hidden">
-                  عرض {filteredViolations.length.toLocaleString('en-US')} من {violations.length.toLocaleString('en-US')} مخالفة
-                  (الصفحة {currentPage} من {totalPages} - الإجمالي: {totalCount.toLocaleString('en-US')} مخالفة)
+                  عرض {filteredViolations.length.toLocaleString('en-US')} من {sourceViolations.length.toLocaleString('en-US')} مخالفة
+                  {!isServerFilteringActive && (
+                    <> (الصفحة {currentPage} من {totalPages} - الإجمالي: {totalCount.toLocaleString('en-US')} مخالفة)</>
+                  )}
+                  {isServerFilteringActive && (
+                    <> (بحث مباشر)</>
+                  )}
                 </div>
               )}
 
               {/* Pagination Controls */}
-              {totalPages > 1 && (
+              {!isServerFilteringActive && totalPages > 1 && (
                 <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex items-center justify-between gap-4 print:hidden">
                   <div className="text-sm text-neutral-600">
                     <span className="font-medium">{Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)}</span>

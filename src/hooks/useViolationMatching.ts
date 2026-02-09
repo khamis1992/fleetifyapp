@@ -306,33 +306,38 @@ export function useViolationSave() {
     const savedViolations: Array<MatchedViolation & { savedId?: string }> = [];
 
     for (const violation of violations) {
-      // Skip errors and duplicates
-      if (violation.status === 'error' || violation.is_duplicate) {
+      // Skip only errors (not duplicates - we want to save duplicates with 'duplicate' status)
+      if (violation.status === 'error') {
         failed++;
         continue;
       }
 
       try {
+        // Determine status: 'duplicate' if is_duplicate, otherwise 'pending'
+        const violationStatus = violation.is_duplicate ? 'duplicate' : 'pending';
+        
+        // Add note for duplicates
+        const notes = violation.is_duplicate && violation.existing_violation_id
+          ? `مخالفة مكررة - المخالفة الأصلية: ${violation.existing_violation_id}`
+          : null;
+
         const { data: insertedData, error: insertError } = await supabase
-          .from('traffic_violations')
+          .from('penalties')
           .insert({
             company_id: companyId,
             vehicle_id: violation.vehicle_id,
             contract_id: violation.contract_id,
-            violation_number: violation.violation_number,
-            reference_number: violation.reference_number || null,
-            violation_date: violation.date,
-            violation_time: violation.time || null,
+            customer_id: violation.customer_id || null,
+            penalty_number: violation.violation_number,
             violation_type: violation.violation_type,
-            violation_description: violation.violation_description || null,
+            penalty_date: violation.date,
             location: violation.location || null,
-            fine_amount: violation.fine_amount,
-            total_amount: violation.total_amount || violation.fine_amount,
-            issuing_authority: violation.issuing_authority || null,
-            status: 'pending',
-            match_confidence: violation.match_confidence,
-            import_source: importSource,
-            file_number: fileNumber || null
+            amount: violation.fine_amount,
+            vehicle_plate: violation.plate_number || null,
+            reason: violation.violation_description || violation.violation_type,
+            status: violationStatus === 'duplicate' ? 'cancelled' : 'pending', // penalties table only supports 'pending', 'confirmed', 'cancelled'
+            payment_status: 'unpaid',
+            notes: notes
           })
           .select('id')
           .single();

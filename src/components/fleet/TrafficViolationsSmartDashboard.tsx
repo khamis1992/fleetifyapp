@@ -303,6 +303,10 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
 
     const paidAmount = paidViolations.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
     const unpaidAmount = unpaidViolations.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+    const partiallyPaidAmount = partiallyPaidViolations.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+
+    // حساب المبلغ المستحق (غير المسدد + المسدد جزئياً)
+    const totalOutstandingAmount = unpaidAmount + partiallyPaidAmount;
 
     const collectionRate = totalAmount > 0
       ? Math.round((paidAmount / totalAmount) * 100)
@@ -351,15 +355,19 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
     // High value violations (above 500 QAR)
     const highValueViolations = violationsData.filter(v => Number(v.amount) > 500).length;
 
-    // Violations without customers
+    // Violations without customers - حساب المبلغ المستحق فقط (غير المسدد)
     const violationsWithoutCustomers = violationsData.filter(v => !v.customer_id);
     const violationsWithoutCustomersCount = violationsWithoutCustomers.length;
-    const violationsWithoutCustomersAmount = violationsWithoutCustomers.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+    const violationsWithoutCustomersAmount = violationsWithoutCustomers
+      .filter(v => v.payment_status !== 'paid')
+      .reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
 
-    // Violations with customers (linked to customers)
+    // Violations with customers (linked to customers) - حساب المبلغ المستحق فقط (غير المسدد)
     const violationsWithCustomers = violationsData.filter(v => v.customer_id);
     const violationsWithCustomersCount = violationsWithCustomers.length;
-    const violationsWithCustomersAmount = violationsWithCustomers.reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+    const violationsWithCustomersAmount = violationsWithCustomers
+      .filter(v => v.payment_status !== 'paid')
+      .reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
 
     // Monthly data
     const today = new Date();
@@ -379,6 +387,7 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
     return {
       totalViolations,
       totalAmount,
+      totalOutstandingAmount, // المبلغ المستحق (غير المسدد)
       unpaidAmount,
       unpaidCount: unpaidViolations.length,
       paidAmount,
@@ -444,10 +453,10 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
     <div className="space-y-4">
       {/* Main Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Total Violations Amount */}
+        {/* Total Outstanding Violations Amount */}
         <SmartStatCard
           title="إجمالي المخالفات"
-          value={formatCurrency(stats.totalAmount)}
+          value={formatCurrency(stats.totalOutstandingAmount)}
           subValue={`${stats.totalViolations.toLocaleString('en-US')} مخالفة`}
           icon={FileWarning}
           iconBg="bg-rose-50"
@@ -459,7 +468,7 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
           } : undefined}
         />
 
-        {/* Violations With Customers */}
+        {/* Violations With Customers - Outstanding Only */}
         <SmartStatCard
           title="مخالفات مربوطة بعملاء"
           value={formatCurrency(stats.violationsWithCustomersAmount)}
@@ -479,7 +488,7 @@ export const TrafficViolationsSmartDashboard: React.FC<TrafficViolationsSmartDas
           iconColor="text-green-600"
         />
 
-        {/* Violations Without Customers */}
+        {/* Violations Without Customers - Outstanding Only */}
         <SmartStatCard
           title="مخالفات بدون عملاء"
           value={formatCurrency(stats.violationsWithoutCustomersAmount)}

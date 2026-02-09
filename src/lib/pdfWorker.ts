@@ -16,9 +16,9 @@ export const loadPDFWorker = async () => {
     // Dynamically import pdfjs-dist
     const pdfjs = await import('pdfjs-dist');
 
-    // Set worker to load from CDN (not bundled)
-    pdfjs.GlobalWorkerOptions.workerSrc =
-      `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+    // Use local worker via URL import (Vite handles this correctly)
+    const workerUrl = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url);
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl.href;
 
     pdfjsInstance = pdfjs;
     return pdfjs;

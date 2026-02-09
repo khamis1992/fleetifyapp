@@ -72,16 +72,41 @@ export function useRelinkViolations() {
 
       const companyId = profile.company_id;
 
-      // جلب جميع المخالفات غير المربوطة بعملاء
-      const { data: unlinkedViolations, error: violationsError } = await supabase
+      // جلب المخالفات غير المربوطة من جدول traffic_violations
+      const { data: tvUnlinked, error: tvError } = await supabase
+        .from('traffic_violations')
+        .select('id, violation_number, violation_date, vehicle_id, contract_id')
+        .eq('company_id', companyId)
+        .is('contract_id', null);
+
+      // جلب المخالفات غير المربوطة من جدول penalties
+      const { data: penaltiesUnlinked, error: penaltiesError } = await supabase
         .from('penalties')
         .select('id, penalty_number, penalty_date, vehicle_id, vehicle_plate, customer_id')
         .eq('company_id', companyId)
         .is('customer_id', null);
 
-      if (violationsError) throw violationsError;
+      if (tvError && penaltiesError) throw tvError || penaltiesError;
 
-      if (!unlinkedViolations || unlinkedViolations.length === 0) {
+      // تحويل traffic_violations لنفس الصيغة
+      const tvMapped = (tvUnlinked || []).map(v => ({
+        id: v.id,
+        penalty_number: v.violation_number,
+        penalty_date: v.violation_date,
+        vehicle_id: v.vehicle_id,
+        vehicle_plate: null as string | null,
+        customer_id: null as string | null,
+        _source: 'traffic_violations' as const,
+      }));
+      
+      const penaltiesMapped = (penaltiesUnlinked || []).map(v => ({
+        ...v,
+        _source: 'penalties' as const,
+      }));
+
+      const unlinkedViolations = [...tvMapped, ...penaltiesMapped];
+
+      if (unlinkedViolations.length === 0) {
         toast.info('لا توجد مخالفات غير مربوطة بعملاء');
         setIsProcessing(false);
         return { totalUnlinked: 0, processed: 0, linked: 0, failed: 0, noContractFound: 0, details: [] };
@@ -129,14 +154,16 @@ export function useRelinkViolations() {
         .eq('company_id', companyId);
 
       const plateToVehicleId = new Map<string, string>();
+      const vehicleIdToPlate = new Map<string, string>();
       (vehicles || []).forEach(v => {
         if (v.plate_number) {
-          // إضافة اللوحة الأصلية
           plateToVehicleId.set(v.plate_number, v.id);
-          // إضافة اللوحة بدون مسافات
           plateToVehicleId.set(v.plate_number.replace(/\s+/g, ''), v.id);
-          // إضافة اللوحة بأحرف كبيرة
           plateToVehicleId.set(v.plate_number.toUpperCase(), v.id);
+          // إضافة الأرقام فقط
+          const numericOnly = v.plate_number.replace(/\D/g, '');
+          if (numericOnly.length >= 3) plateToVehicleId.set(numericOnly, v.id);
+          vehicleIdToPlate.set(v.id, v.plate_number);
         }
       });
 
@@ -153,6 +180,7 @@ export function useRelinkViolations() {
         try {
           // تحديد vehicle_id
           let vehicleId = violation.vehicle_id;
+          let vehiclePlate = violation.vehicle_plate || (vehicleId ? vehicleIdToPlate.get(vehicleId) : null) || 'غير محدد';
           if (!vehicleId && violation.vehicle_plate) {
             vehicleId = plateToVehicleId.get(violation.vehicle_plate) ||
                         plateToVehicleId.get(violation.vehicle_plate.replace(/\s+/g, '')) ||
@@ -164,7 +192,7 @@ export function useRelinkViolations() {
             details.push({
               violationId: violation.id,
               penaltyNumber: violation.penalty_number || 'بدون رقم',
-              vehiclePlate: violation.vehicle_plate || 'غير محدد',
+              vehiclePlate: vehiclePlate,
               status: 'no_vehicle',
               reason: 'لم يتم العثور على المركبة في النظام'
             });
@@ -178,7 +206,7 @@ export function useRelinkViolations() {
             details.push({
               violationId: violation.id,
               penaltyNumber: violation.penalty_number || 'بدون رقم',
-              vehiclePlate: violation.vehicle_plate || 'غير محدد',
+              vehiclePlate: vehiclePlate,
               status: 'no_contract',
               reason: 'لا يوجد عقود لهذه المركبة'
             });
@@ -193,7 +221,7 @@ export function useRelinkViolations() {
             details.push({
               violationId: violation.id,
               penaltyNumber: violation.penalty_number || 'بدون رقم',
-              vehiclePlate: violation.vehicle_plate || 'غير محدد',
+              vehiclePlate: vehiclePlate,
               status: 'no_contract',
               reason: 'لم يتم العثور على عقد مناسب'
             });
@@ -201,14 +229,17 @@ export function useRelinkViolations() {
             continue;
           }
 
-          // تحديث المخالفة
+          // تحديث المخالفة حسب الجدول المصدر
+          const isTrafficViolation = (violation as any)._source === 'traffic_violations';
+          
+          const updateData = isTrafficViolation
+            ? { contract_id: matchResult.contract.id, vehicle_id: vehicleId }
+            : { customer_id: matchResult.contract.customer_id, contract_id: matchResult.contract.id, vehicle_id: vehicleId };
+          
+          const tableName = isTrafficViolation ? 'traffic_violations' : 'penalties';
           const { error: updateError } = await supabase
-            .from('penalties')
-            .update({
-              customer_id: matchResult.contract.customer_id,
-              contract_id: matchResult.contract.id,
-              vehicle_id: vehicleId
-            })
+            .from(tableName)
+            .update(updateData)
             .eq('id', violation.id);
 
           if (updateError) throw updateError;
@@ -218,7 +249,7 @@ export function useRelinkViolations() {
           details.push({
             violationId: violation.id,
             penaltyNumber: violation.penalty_number || 'بدون رقم',
-            vehiclePlate: violation.vehicle_plate || 'غير محدد',
+            vehiclePlate: vehiclePlate,
             status: 'linked',
             customerName,
             contractNumber: matchResult.contract.contract_number,
@@ -231,7 +262,7 @@ export function useRelinkViolations() {
           details.push({
             violationId: violation.id,
             penaltyNumber: violation.penalty_number || 'بدون رقم',
-            vehiclePlate: violation.vehicle_plate || 'غير محدد',
+            vehiclePlate: violation.vehicle_plate || (violation.vehicle_id ? vehicleIdToPlate.get(violation.vehicle_id) : null) || 'غير محدد',
             status: 'error',
             reason: err.message || 'خطأ غير معروف'
           });
