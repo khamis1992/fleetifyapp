@@ -82,6 +82,7 @@ export async function matchToVehicle(
 ): Promise<VehicleMatchResult> {
   try {
     const variations = createPlateVariations(plateNumber);
+    const normalizedVariations = variations.map(v => normalizePlateNumber(v));
 
     // Try each variation
     for (const plate of variations) {
@@ -120,6 +121,25 @@ export async function matchToVehicle(
           reason: `مطابقة للوحة ${plate} (المركبة غير نشطة)`
         };
       }
+    }
+
+    // Try matching via plate history (old plates linked to the same vehicle)
+    const { data: historyMatch, error: historyError } = await supabase
+      .from('vehicle_plate_history')
+      .select('vehicle_id, old_plate_number, new_plate_number, changed_at')
+      .eq('company_id', companyId)
+      .in('old_plate_normalized', normalizedVariations)
+      .order('changed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!historyError && historyMatch?.vehicle_id) {
+      return {
+        vehicle_id: historyMatch.vehicle_id,
+        plate_number: historyMatch.new_plate_number || plateNumber,
+        confidence: 'medium',
+        reason: `مطابقة عبر سجل اللوحات (اللوحة القديمة: ${historyMatch.old_plate_number})`
+      };
     }
 
     // Try partial/fuzzy match using ilike (plate number may contain the number)

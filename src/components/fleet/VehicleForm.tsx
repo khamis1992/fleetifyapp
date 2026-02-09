@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { NumberInput } from "@/components/ui/NumberInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Vehicle, useCreateVehicle, useUpdateVehicle } from "@/hooks/useVehicles"
+import { Vehicle, useCreateVehicle, useUpdateVehicle, useChangeVehiclePlateFromTrafficAuthority, useVehiclePlateHistory } from "@/hooks/useVehicles"
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts"
 import { useCostCenters } from "@/hooks/useCostCenters"
 import { AccountLevelBadge } from "@/components/finance/AccountLevelBadge"
@@ -37,9 +38,15 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
   const createVehicle = useCreateVehicle()
   const updateVehicle = useUpdateVehicle()
+  const changePlateFromTrafficAuthority = useChangeVehiclePlateFromTrafficAuthority()
+  const { data: plateHistory = [] } = useVehiclePlateHistory(vehicle?.id)
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [assetCodeInput, setAssetCodeInput] = useState("")
+
+  const [plateChangeDialogOpen, setPlateChangeDialogOpen] = useState(false)
+  const [newPlateNumber, setNewPlateNumber] = useState("")
+  const [plateChangeNotes, setPlateChangeNotes] = useState("")
   
   // Log when component receives props
   useEffect(() => {
@@ -188,6 +195,14 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
       })
     }
   }, [vehicle, form])
+
+  useEffect(() => {
+    if (!open) {
+      setPlateChangeDialogOpen(false)
+      setNewPlateNumber("")
+      setPlateChangeNotes("")
+    }
+  }, [open])
 
   // Reset form when dialog closes and reopens for new vehicle
   useEffect(() => {
@@ -526,6 +541,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="text-right">
@@ -731,6 +747,36 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               <FormControl>
                                 <Input {...field} placeholder="أدخل رقم اللوحة" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
+                              {vehicle && (
+                                <div className="mt-2 space-y-2">
+                                  <p className="text-xs text-slate-500">
+                                    للتصحيح عند وجود خطأ: عدّل الحقل ثم اضغط حفظ. للتغيير الرسمي من المرور استخدم الزر التالي لحفظ اللوحة القديمة وربطها بالمركبة.
+                                  </p>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="rounded-lg border-slate-200/60 bg-white hover:bg-slate-50 text-slate-700"
+                                      onClick={() => {
+                                        setNewPlateNumber("")
+                                        setPlateChangeNotes("")
+                                        setPlateChangeDialogOpen(true)
+                                      }}
+                                    >
+                                      تغيير رقم اللوحة من الإدارة العامة للمرور
+                                    </Button>
+                                    {plateHistory.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 justify-end">
+                                        {plateHistory.slice(0, 3).map((h: any) => (
+                                          <Badge key={h.id} variant="secondary" className="font-mono">
+                                            {h.old_plate_number}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                               <FormMessage className="text-right" />
                             </FormItem>
                           )}
@@ -1734,5 +1780,69 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
         </Form>
       </DialogContent>
     </Dialog>
+
+      {/* Dialog: Official plate change (traffic authority) */}
+      <Dialog open={plateChangeDialogOpen} onOpenChange={setPlateChangeDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-right">تغيير رقم اللوحة من الإدارة العامة للمرور</DialogTitle>
+            <DialogDescription className="text-right">
+              هذا الخيار لا يعدّل فقط رقم اللوحة، بل يحفظ اللوحة القديمة ويربطها بنفس المركبة لتجنب مشاكل العقود والمخالفات السابقة.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-right text-slate-700 font-medium">رقم اللوحة الحالي</Label>
+              <Input value={vehicle?.plate_number || ""} disabled className="text-right bg-slate-50" dir="rtl" />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right text-slate-700 font-medium">رقم اللوحة الجديد</Label>
+              <Input
+                value={newPlateNumber}
+                onChange={(e) => setNewPlateNumber(e.target.value)}
+                placeholder="أدخل رقم اللوحة الجديد"
+                className="text-right"
+                dir="rtl"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-right text-slate-700 font-medium">ملاحظة (اختياري)</Label>
+              <Textarea
+                value={plateChangeNotes}
+                onChange={(e) => setPlateChangeNotes(e.target.value)}
+                placeholder="مثال: تغيير رسمي من المرور بتاريخ ..."
+                className="text-right"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setPlateChangeDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              disabled={!vehicle?.id || changePlateFromTrafficAuthority.isPending}
+              onClick={async () => {
+                if (!vehicle?.id) return
+                const res = await changePlateFromTrafficAuthority.mutateAsync({
+                  vehicleId: vehicle.id,
+                  newPlateNumber,
+                  notes: plateChangeNotes || null,
+                })
+                // Update form field to the new plate for consistency
+                form.setValue('plate_number', res.newPlate)
+                setPlateChangeDialogOpen(false)
+              }}
+            >
+              {changePlateFromTrafficAuthority.isPending ? <LoadingSpinner /> : "تأكيد التغيير"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

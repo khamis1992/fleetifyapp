@@ -83,6 +83,23 @@ export const useVehicles = (options?: { limit?: number; status?: string }) => {
           normalizedPlateToVehicleId.set(normalized, v.id)
         }
       })
+
+      // إضافة اللوحات القديمة من سجل اللوحات (لتجنب كسر العقود/المخالفات القديمة)
+      try {
+        const { data: plateHistory } = await supabase
+          .from('vehicle_plate_history')
+          .select('vehicle_id, old_plate_normalized')
+          .eq('company_id', companyId)
+          .in('vehicle_id', vehicleIds)
+
+        ;(plateHistory || []).forEach(h => {
+          if (h.old_plate_normalized && h.vehicle_id) {
+            normalizedPlateToVehicleId.set(h.old_plate_normalized, h.vehicle_id)
+          }
+        })
+      } catch (e) {
+        console.warn('⚠️ [useVehicles] Failed to load vehicle plate history:', e)
+      }
       
       // جلب جميع العقود المرتبطة بهذه المركبات (باستخدام vehicle_id)
       const { data: contractsByVehicleId, error: contractsError1 } = await supabase
@@ -514,6 +531,135 @@ export const useUpdateVehicle = () => {
     }
   })
 }
+
+// -----------------------------------------------------------------------------
+// Vehicle Plate History & Official Plate Change
+// -----------------------------------------------------------------------------
+
+function normalizePlateNumberForHistory(plate: string): string {
+  return (plate || '').trim().replace(/\s+/g, '').toUpperCase();
+}
+
+export type VehiclePlateChangeType = 'correction' | 'traffic_authority_change';
+
+export const useVehiclePlateHistory = (vehicleId?: string) => {
+  const { companyId, isInitializing } = useCompanyIdWithInit();
+
+  return useQuery({
+    queryKey: ['vehicle-plate-history', companyId, vehicleId],
+    enabled: !!companyId && !!vehicleId && !isInitializing,
+    queryFn: async () => {
+      if (!companyId || !vehicleId) return [];
+      const { data, error } = await supabase
+        .from('vehicle_plate_history')
+        .select('id, old_plate_number, new_plate_number, change_type, changed_at, notes')
+        .eq('company_id', companyId)
+        .eq('vehicle_id', vehicleId)
+        .order('changed_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * Change plate number officially (traffic authority change).
+ * This records history (old->new) then updates vehicles.plate_number.
+ * Old plate remains searchable/matchable to prevent breaking historical data.
+ */
+export const useChangeVehiclePlateFromTrafficAuthority = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { companyId, isInitializing } = useCompanyIdWithInit();
+
+  return useMutation({
+    mutationFn: async (params: { vehicleId: string; newPlateNumber: string; notes?: string | null }) => {
+      if (isInitializing) throw new Error('Initializing company context');
+      if (!companyId) throw new Error('Company ID not found');
+
+      const newPlate = (params.newPlateNumber || '').trim();
+      if (!newPlate) throw new Error('رقم اللوحة الجديد مطلوب');
+
+      const { data: currentVehicle, error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('id, plate_number, company_id')
+        .eq('id', params.vehicleId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (vehicleError) throw vehicleError;
+
+      const oldPlate = (currentVehicle?.plate_number || '').trim();
+      if (!oldPlate) throw new Error('لا يوجد رقم لوحة حالي للمركبة');
+      if (normalizePlateNumberForHistory(oldPlate) === normalizePlateNumberForHistory(newPlate)) {
+        throw new Error('رقم اللوحة الجديد مطابق للحالي');
+      }
+
+      // Record history first
+      const { error: historyError } = await supabase
+        .from('vehicle_plate_history')
+        .insert({
+          company_id: companyId,
+          vehicle_id: params.vehicleId,
+          old_plate_number: oldPlate,
+          old_plate_normalized: normalizePlateNumberForHistory(oldPlate),
+          new_plate_number: newPlate,
+          new_plate_normalized: normalizePlateNumberForHistory(newPlate),
+          change_type: 'traffic_authority_change' as VehiclePlateChangeType,
+          changed_by: user?.id ?? null,
+          notes: params.notes ?? null,
+        });
+
+      if (historyError) throw historyError;
+
+      // Update vehicle plate
+      const { error: updateError } = await supabase
+        .from('vehicles')
+        .update({ plate_number: newPlate })
+        .eq('id', params.vehicleId)
+        .eq('company_id', companyId);
+
+      if (updateError) throw updateError;
+
+      return { vehicleId: params.vehicleId, oldPlate, newPlate };
+    },
+    onSuccess: async (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all });
+      queryClient.invalidateQueries({ queryKey: ['vehicle-plate-history'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+
+      await createAuditLog(
+        'UPDATE',
+        'vehicle_plate_change',
+        result.vehicleId,
+        result.newPlate,
+        {
+          old_values: { plate_number: result.oldPlate },
+          new_values: { plate_number: result.newPlate },
+          changes_summary: `Official plate change (traffic authority): ${result.oldPlate} -> ${result.newPlate}`,
+          severity: 'high',
+        }
+      );
+
+      toast({
+        title: 'تم تغيير رقم اللوحة',
+        description: `تم ربط اللوحة القديمة (${result.oldPlate}) بالمركبة لضمان سلامة البيانات القديمة.`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error changing vehicle plate:', error);
+      toast({
+        title: 'تعذر تغيير رقم اللوحة',
+        description: error?.message || 'حدث خطأ غير معروف',
+        variant: 'destructive',
+      });
+    },
+  });
+};
 
 export const useDeleteVehicle = () => {
   const queryClient = useQueryClient()

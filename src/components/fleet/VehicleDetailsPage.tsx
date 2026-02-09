@@ -259,6 +259,8 @@ const VehicleDetailsPage = () => {
       accident: 'bg-red-100 text-red-800',
       stolen: 'bg-slate-100 text-slate-800',
       police_station: 'bg-amber-100 text-amber-800',
+      municipality: 'bg-green-100 text-green-800',
+      street_52: 'bg-purple-100 text-purple-800',
     };
     return colors[status] || 'bg-slate-100 text-slate-800';
   };
@@ -274,6 +276,8 @@ const VehicleDetailsPage = () => {
       accident: 'حادث',
       stolen: 'مسروقة',
       police_station: 'في مركز الشرطة',
+      municipality: 'البلدية',
+      street_52: 'الشارع 52',
     };
     return texts[status] || status;
   };
