@@ -282,15 +282,7 @@ export async function generateDocumentsList(
     });
   }
   
-  // Add contract if uploaded
-  if (documents.contract.status === 'ready' && documents.contract.url) {
-    docsList.push({
-      name: 'صورة من عقد الإيجار الموقع',
-      status: 'مرفق',
-      url: documents.contract.url,
-      type: 'pdf',
-    });
-  }
+  // Note: نسخة العقد تم حذفها من القائمة بناءً على طلب المستخدم
   
   // Add violations proof document if exists
   if (contract.id) {
