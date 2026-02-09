@@ -857,16 +857,13 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           </div>
           ` : ''}
           <div class="request-item">
-            تعويض عن الحرمان من الانتفاع بالمركبة وفق أجر المثل.
+            تعويض عن الحرمان من الانتفاع بالمركبة وفق أجر المثل وقدره <strong>(10,000 ريال قطري)</strong>.
           </div>
           ${securityDeposit > 0 ? `
           <div class="request-item">
             تثبيت حق الشركة في المقاصة بين وديعة الضمان البالغة <strong>(${securityDeposit.toLocaleString('en-US')} ريال قطري)</strong> والمبالغ المستحقة.
           </div>
           ` : ''}
-          <div class="request-item">
-            تعويض عن التأخير حتى السداد التام.
-          </div>
           <div class="request-item">
             تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.
           </div>

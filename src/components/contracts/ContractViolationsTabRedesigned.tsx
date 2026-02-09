@@ -31,6 +31,7 @@ import {
   Gavel,
   X,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,8 @@ import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ===== Animation Variants =====
 const fadeInUp = {
@@ -275,12 +278,14 @@ const ViolationCard = ({
   onView,
   onPay,
   onDownload,
+  onCancel,
 }: {
   violation: TrafficViolation;
   formatCurrency: (amount: number) => string;
   onView: () => void;
   onPay?: () => void;
   onDownload?: () => void;
+  onCancel?: () => void;
 }) => {
   const statusInfo = getViolationStatusInfo(violation.status);
   const StatusIcon = statusInfo.icon;
@@ -345,6 +350,15 @@ const ViolationCard = ({
                 <DropdownMenuItem onClick={onPay} className="gap-2 text-teal-600 focus:text-teal-600">
                   <CreditCard className="w-4 h-4" />
                   <span>دفع الغرامة</span>
+                </DropdownMenuItem>
+              </>
+            )}
+            {violation.status === 'pending' && onCancel && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onCancel} className="gap-2 text-red-600 focus:text-red-600">
+                  <XCircle className="w-4 h-4" />
+                  <span>إلغاء المخالفة</span>
                 </DropdownMenuItem>
               </>
             )}
@@ -432,11 +446,13 @@ const ViolationTableRow = ({
   formatCurrency,
   onView,
   onPay,
+  onCancel,
 }: {
   violation: TrafficViolation;
   formatCurrency: (amount: number) => string;
   onView: () => void;
   onPay?: () => void;
+  onCancel?: () => void;
 }) => {
   const statusInfo = getViolationStatusInfo(violation.status);
   const StatusIcon = statusInfo.icon;
@@ -516,6 +532,16 @@ const ViolationTableRow = ({
             >
               <CreditCard className="w-4 h-4 ml-1" />
               دفع
+            </Button>
+          )}
+          {violation.status === 'pending' && onCancel && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCancel}
+              className="h-8 px-3 rounded-lg border-red-200 text-red-600 hover:bg-red-50"
+            >
+              <XCircle className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -1122,8 +1148,11 @@ export const ContractViolationsTabRedesigned = ({
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isAddViolationDialogOpen, setIsAddViolationDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Filter and sort violations
   const filteredAndSortedViolations = useMemo(() => {
@@ -1231,6 +1260,50 @@ export const ContractViolationsTabRedesigned = ({
     }
   };
 
+  const handleCancelViolation = (violation: TrafficViolation) => {
+    setSelectedViolation(violation);
+    setIsCancelDialogOpen(true);
+  };
+
+  const confirmCancelViolation = async () => {
+    if (!selectedViolation) return;
+
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('traffic_violations')
+        .update({ 
+          status: 'cancelled',
+          notes: selectedViolation.notes 
+            ? `${selectedViolation.notes}\n\n[ملغاة بتاريخ ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}]`
+            : `[ملغاة بتاريخ ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}]`
+        })
+        .eq('id', selectedViolation.id);
+
+      if (error) throw error;
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['contract-violations'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+
+      toast({
+        title: 'تم الإلغاء',
+        description: 'تم إلغاء المخالفة بنجاح',
+      });
+
+      setIsCancelDialogOpen(false);
+      setSelectedViolation(null);
+    } catch (error: any) {
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل إلغاء المخالفة',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Metrics Overview */}
@@ -1328,6 +1401,7 @@ export const ContractViolationsTabRedesigned = ({
                   onView={() => handleViewViolation(violation)}
                   onPay={() => handlePayViolation(violation)}
                   onDownload={handleDownloadPDF}
+                  onCancel={() => handleCancelViolation(violation)}
                 />
               ))}
             </motion.div>
@@ -1353,6 +1427,7 @@ export const ContractViolationsTabRedesigned = ({
                         formatCurrency={formatCurrency}
                         onView={() => handleViewViolation(violation)}
                         onPay={() => handlePayViolation(violation)}
+                        onCancel={() => handleCancelViolation(violation)}
                       />
                     ))}
                   </tbody>
@@ -1385,6 +1460,71 @@ export const ContractViolationsTabRedesigned = ({
         onClose={() => setIsAddViolationDialogOpen(false)}
         onAdd={handleAddViolation}
       />
+
+      {/* Cancel Violation Confirmation Dialog */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="h-5 w-5" />
+              إلغاء المخالفة
+            </DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من إلغاء هذه المخالفة؟
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedViolation && (
+            <div className="space-y-3 py-4">
+              <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                <span className="text-sm text-neutral-600">رقم المخالفة</span>
+                <span className="font-semibold">{selectedViolation.violation_number || '-'}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                <span className="text-sm text-neutral-600">المبلغ</span>
+                <span className="font-semibold text-red-600">{formatCurrency(selectedViolation.fine_amount || 0)}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                <span className="text-sm text-neutral-600">النوع</span>
+                <span className="font-medium">{getViolationTypeLabel(selectedViolation.violation_type || '')}</span>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsCancelDialogOpen(false);
+                setSelectedViolation(null);
+              }}
+              disabled={isCancelling}
+            >
+              رجوع
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmCancelViolation}
+              disabled={isCancelling}
+              className="gap-2"
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جاري الإلغاء...
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4" />
+                  تأكيد الإلغاء
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
