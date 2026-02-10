@@ -621,6 +621,16 @@ async function calculateDelinquentCustomersDynamically(
       const hasPreviousLegalCases = customerLegalCases.length > 0;
       const previousLegalCasesCount = customerLegalCases.length;
 
+      // استبعاد العملاء الذين لديهم قضايا مفتوحة (غير مغلقة)
+      const hasOpenLegalCase = customerLegalCases.some(lc => 
+        lc.case_status && !['closed', 'settled', 'withdrawn', 'dismissed'].includes(lc.case_status)
+      );
+      
+      if (hasOpenLegalCase) {
+        console.log(`⚠️ [DELINQUENT] Customer ${customer.first_name} ${customer.last_name} excluded - has open legal case`);
+        continue;
+      }
+
       // Calculate risk score
       const riskScore = calculateRiskScore({
         daysOverdue,

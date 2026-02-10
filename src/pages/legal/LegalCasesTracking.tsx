@@ -73,6 +73,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { sendWhatsAppMessage } from '@/utils/whatsappWebSender';
 import { 
   Scale, 
   Search, 
@@ -402,15 +403,12 @@ export const LegalCasesTracking: React.FC = () => {
 🏢 *شركة العراف لتأجير السيارات*
       `.trim();
 
-      // Send WhatsApp message
-      const { default: whatsAppService } = await import('@/services/whatsapp/WhatsAppService');
-      
-      if (!whatsAppService.isInitialized()) {
-        toast.error('خدمة واتساب غير مُفعلة. يرجى تفعيلها من الإعدادات');
-        return;
-      }
-
-      await whatsAppService.sendTextMessage(customerPhone, message);
+      // Send WhatsApp message using the same method as verification page
+      await sendWhatsAppMessage({
+        phone: customerPhone,
+        message,
+        customerName,
+      });
       
       toast.success('تم إرسال الإشعار للعميل عبر واتساب');
     } catch (error) {
