@@ -542,6 +542,8 @@ const FinancialTab = ({
   onCancelInvoice,
   isCancellingInvoice,
   onGeneratePaymentSchedules,
+  onGenerateMissingInvoices,
+  isGeneratingMissingInvoices,
   customerName,
   trafficViolations,
 }: {
@@ -565,6 +567,8 @@ const FinancialTab = ({
   onCancelInvoice: (invoice: Invoice) => void;
   isCancellingInvoice: boolean;
   onGeneratePaymentSchedules: () => void;
+  onGenerateMissingInvoices?: () => void;
+  isGeneratingMissingInvoices?: boolean;
   customerName: string;
   trafficViolations: Array<{
     id: string;
@@ -621,6 +625,8 @@ const FinancialTab = ({
         onCreateInvoice={onCreateInvoice}
         onCancelInvoice={onCancelInvoice}
         isCancellingInvoice={isCancellingInvoice}
+        onGenerateMissingInvoices={onGenerateMissingInvoices}
+        isGeneratingMissingInvoices={isGeneratingMissingInvoices}
         contractNumber={contract.contract_number}
         customerInfo={{
           name: customerName,
@@ -975,7 +981,7 @@ const ContractDetailsPageRedesigned = () => {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  // Fetch invoices with caching
+  // Fetch invoices with caching (including cancelled to show full history)
   const { data: invoices = [] } = useQuery({
     queryKey: ['contract-invoices', contract?.id],
     queryFn: async () => {
@@ -986,7 +992,7 @@ const ContractDetailsPageRedesigned = () => {
         .select('*')
         .eq('contract_id', contract.id)
         .eq('company_id', companyId)
-        .neq('status', 'cancelled')
+        // Include all invoices including cancelled ones
         .order('due_date', { ascending: true });
 
       if (error) throw error;
@@ -1185,6 +1191,61 @@ const ContractDetailsPageRedesigned = () => {
     if (!contract?.id) return;
     generatePaymentSchedulesFromInvoices.mutate(contract.id);
   }, [contract?.id, generatePaymentSchedulesFromInvoices]);
+
+  const [isGeneratingMissingInvoices, setIsGeneratingMissingInvoices] = useState(false);
+  const handleGenerateMissingInvoices = useCallback(async () => {
+    if (!contract?.id) return;
+    setIsGeneratingMissingInvoices(true);
+    try {
+      console.log('🔄 Generating payment schedules for contract:', contract.id);
+      const { data: scheduleData, error: scheduleError } = await supabase.rpc('generate_payment_schedules_for_contract', {
+        p_contract_id: contract.id,
+        p_dry_run: false,
+      });
+      
+      if (scheduleError) {
+        console.error('❌ Schedule generation error:', scheduleError);
+        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleError.message || scheduleError.code || 'خطأ غير معروف'}`);
+      }
+      
+      console.log('✅ Payment schedules created:', scheduleData);
+      console.log('🔄 Generating invoices from payment schedule...');
+      
+      const { data: invoiceCount, error: invoiceError } = await supabase.rpc('generate_invoices_from_payment_schedule', {
+        p_contract_id: contract.id,
+      });
+      
+      if (invoiceError) {
+        console.error('❌ Invoice generation error:', invoiceError);
+        throw new Error(`فشل إنشاء الفواتير: ${invoiceError.message || invoiceError.code || 'خطأ غير معروف'}`);
+      }
+      
+      console.log('✅ Invoices created:', invoiceCount);
+      
+      queryClient.invalidateQueries({ queryKey: ['contract-invoices', contract.id] });
+      queryClient.invalidateQueries({ queryKey: ['payment-schedules'] });
+      
+      toast({
+        title: 'تم إنشاء الفواتير بنجاح',
+        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'تم إنشاء الفواتير',
+      });
+    } catch (error) {
+      console.error('❌ Error generating invoices:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as any).message)
+        : 'حدث خطأ أثناء إنشاء الفواتير';
+      
+      toast({
+        title: 'خطأ في إنشاء الفواتير',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingMissingInvoices(false);
+    }
+  }, [contract?.id, queryClient, toast]);
 
   // Handle add violation
   const handleAddViolation = useCallback(async (violation: Partial<any>) => {
@@ -1569,6 +1630,8 @@ const ContractDetailsPageRedesigned = () => {
                   onCancelInvoice={handleCancelInvoice}
                   isCancellingInvoice={isCancellingInvoice}
                   onGeneratePaymentSchedules={handleGeneratePaymentSchedules}
+                  onGenerateMissingInvoices={handleGenerateMissingInvoices}
+                  isGeneratingMissingInvoices={isGeneratingMissingInvoices}
                   customerName={customerName}
                   trafficViolations={trafficViolations}
                 />

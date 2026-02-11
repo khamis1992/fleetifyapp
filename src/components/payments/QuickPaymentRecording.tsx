@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Search, Check, X, Loader2, MessageCircle, CheckCircle, FileText, Download, AlertTriangle, ChevronDown, RefreshCw } from 'lucide-react';
 import { startOfMonth, endOfMonth, addMonths, isBefore, isWithinInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,6 +125,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
   const [showReceipt, setShowReceipt] = useState(false);
   const [readyToPay, setReadyToPay] = useState(false);
   const [showAllInvoices, setShowAllInvoices] = useState(false);
+  const [isGeneratingMissingInvoices, setIsGeneratingMissingInvoices] = useState(false);
   
   // Filter states
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -499,6 +500,71 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         return newSelection;
       }
     });
+  };
+
+  // Generate missing invoices for selected contract
+  const handleGenerateMissingInvoices = async () => {
+    const contractToUse = selectedContract || customerContracts[0];
+    if (!contractToUse) {
+      toast({
+        title: 'لا يوجد عقد',
+        description: 'يجب اختيار عقد أولاً',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsGeneratingMissingInvoices(true);
+    try {
+      console.log('🔄 Generating payment schedules for contract:', contractToUse.id);
+      const { data: scheduleData, error: scheduleError } = await supabase.rpc('generate_payment_schedules_for_contract', {
+        p_contract_id: contractToUse.id,
+        p_dry_run: false,
+      });
+      
+      if (scheduleError) {
+        console.error('❌ Schedule generation error:', scheduleError);
+        throw new Error(`فشل إنشاء جدول الدفعات: ${scheduleError.message || scheduleError.code || 'خطأ غير معروف'}`);
+      }
+      
+      console.log('✅ Payment schedules created:', scheduleData);
+      console.log('🔄 Generating invoices from payment schedule...');
+      
+      const { data: invoiceCount, error: invoiceError } = await supabase.rpc('generate_invoices_from_payment_schedule', {
+        p_contract_id: contractToUse.id,
+      });
+      
+      if (invoiceError) {
+        console.error('❌ Invoice generation error:', invoiceError);
+        throw new Error(`فشل إنشاء الفواتير: ${invoiceError.message || invoiceError.code || 'خطأ غير معروف'}`);
+      }
+      
+      console.log('✅ Invoices created:', invoiceCount);
+      
+      toast({
+        title: 'تم إنشاء الفواتير بنجاح',
+        description: invoiceCount ? `تم إنشاء ${invoiceCount} فاتورة` : 'تم إنشاء الفواتير',
+      });
+
+      // Reload invoices for the selected contract
+      await selectContract(contractToUse, selectedCustomer?.id);
+      
+    } catch (error) {
+      console.error('❌ Error generating invoices:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as any).message)
+        : 'حدث خطأ أثناء إنشاء الفواتير';
+      
+      toast({
+        title: 'خطأ في إنشاء الفواتير',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingMissingInvoices(false);
+    }
   };
 
   const selectAllInvoices = () => {
@@ -1255,16 +1321,44 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                     <div className="text-muted-foreground">
                       لا توجد فواتير غير مدفوعة لهذا العميل
                     </div>
-                    <Button
-                      variant="default"
-                      className="bg-emerald-600 hover:bg-emerald-700"
-                      onClick={async () => {
-                        if (!selectedCustomer || !companyId) return;
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button
+                        variant="default"
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                        onClick={handleGenerateMissingInvoices}
+                        disabled={isGeneratingMissingInvoices}
+                      >
+                        {isGeneratingMissingInvoices ? (
+                          <>
+                            <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                            جاري الإنشاء...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4 ml-2" />
+                            إنشاء الفواتير الناقصة
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={async () => {
+                        console.log('🔘 Manual invoice creation clicked');
+                        console.log('Selected customer:', selectedCustomer);
+                        console.log('Company ID:', companyId);
+                        console.log('Selected contract:', selectedContract);
+                        console.log('Customer contracts:', customerContracts);
+                        
+                        if (!selectedCustomer || !companyId) {
+                          console.error('❌ Missing customer or company ID');
+                          return;
+                        }
                         
                         // استخدام العقد المحدد أو العقد الوحيد
                         const contractToUse = selectedContract || customerContracts[0];
                         
                         if (!contractToUse) {
+                          console.error('❌ No contract available');
                           toast({
                             title: 'لا يوجد عقد نشط',
                             description: 'يجب أن يكون للعميل عقد نشط لإنشاء فاتورة',
@@ -1274,9 +1368,11 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                         }
                         
                         try {
+                          console.log('✅ Using contract:', contractToUse);
                           const activeContract = contractToUse;
                           const today = new Date().toISOString().split('T')[0];
                           
+                          console.log('🔄 Calling UnifiedInvoiceService...');
                           // ✅ استخدام الخدمة الموحدة للبحث عن فاتورة موجودة أو إنشاء واحدة جديدة
                           const { UnifiedInvoiceService } = await import('@/services/UnifiedInvoiceService');
                           const invoiceResult = await UnifiedInvoiceService.findOrCreateInvoice({
@@ -1287,6 +1383,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                             monthlyAmount: activeContract.monthly_amount || 0,
                             paymentDate: today
                           });
+
+                          console.log('📋 Invoice result:', invoiceResult);
 
                           if (!invoiceResult.success || !invoiceResult.invoice) {
                             throw new Error(invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة');
@@ -1308,6 +1406,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                             .eq('id', invoiceResult.invoice.id)
                             .single();
 
+                          console.log('✅ Full invoice fetched:', fullInvoice);
+
                           const wasExisting = invoiceResult.reason?.includes('العثور');
                           toast({
                             title: wasExisting ? 'تم العثور على فاتورة' : 'تم إنشاء الفاتورة',
@@ -1321,7 +1421,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                             setInvoices([fullInvoice as any]);
                           }
                         } catch (error: any) {
-                          console.error('Error creating invoice:', error);
+                          console.error('❌ Error creating invoice:', error);
                           toast({
                             title: 'خطأ في إنشاء الفاتورة',
                             description: error.message || 'حدث خطأ أثناء إنشاء الفاتورة',
@@ -1330,11 +1430,12 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
                         }
                       }}
                     >
-                      <FileText className="h-4 w-4 ml-2" />
-                      إنشاء فاتورة جديدة
-                    </Button>
+                        <FileText className="h-4 w-4 ml-2" />
+                        إنشاء فاتورة يدوياً
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      سيتم إنشاء فاتورة بناءً على العقد النشط للعميل
+                      استخدم "إنشاء الفواتير الناقصة" لإنشاء جميع الفواتير تلقائياً، أو "إنشاء فاتورة يدوياً" لإنشاء فاتورة واحدة
                     </p>
                   </div>
                 ) : (

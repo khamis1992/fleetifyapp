@@ -178,8 +178,9 @@ ${customer.violations_count > 0 ? `
 1. إلزام المدعى عليه بسداد المبلغ الإجمالي وقدره (${totalClaim.toLocaleString('en-US')} ريال قطري).
 ${customer.violations_count > 0 ? `
 2. إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه ${customer.id_number || '(رقم البطاقة الشخصية)'}.
-` : ''}
-3. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.
+3. بيان إجمالي قيمة المخالفات المرورية المسجلة على المركبة وقدرها (${customer.violations_amount.toLocaleString('en-US')} ريال قطري).
+4. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.
+` : `3. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.`}
 
 ${additionalNotes ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -850,7 +851,7 @@ export function generateLegalComplaintHTML(data: LegalDocumentData): string {
           </div>
           ${customer.violations_count > 0 ? `
           <div class="request-item">
-            <strong>طلب أصلي:</strong> إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong>.
+            <strong>طلب أصلي:</strong> إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه <strong>${customer.id_number || '(رقم البطاقة الشخصية)'}</strong>، مع بيان إجمالي قيمة المخالفات وقدرها <strong>(${customer.violations_amount.toLocaleString('en-US')} ريال قطري)</strong>.
           </div>
           <div class="request-item">
             <strong>طلب احتياطي:</strong> في حال تعذر تحويل المخالفات، إلزام المدعى عليه بسداد قيمتها كاملة وقدرها <strong>(${customer.violations_amount.toLocaleString('en-US')} ريال قطري)</strong>.

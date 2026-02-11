@@ -31,6 +31,8 @@ import {
   Building2,
   CreditCard,
   ChevronDown,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,6 +104,8 @@ interface ContractInvoicesTabRedesignedProps {
   onCreateInvoice: () => void;
   onCancelInvoice: (invoice: Invoice) => void;
   isCancellingInvoice?: boolean;
+  onGenerateMissingInvoices?: () => void;
+  isGeneratingMissingInvoices?: boolean;
   contractNumber?: string;
   customerInfo?: CustomerInfo;
   trafficViolations?: TrafficViolation[];
@@ -660,7 +664,15 @@ const InvoiceFilters = ({
 );
 
 // ===== Empty State Component =====
-const InvoicesEmptyState = ({ onCreateInvoice }: { onCreateInvoice: () => void }) => (
+const InvoicesEmptyState = ({
+  onCreateInvoice,
+  onGenerateMissingInvoices,
+  isGeneratingMissingInvoices,
+}: {
+  onCreateInvoice: () => void;
+  onGenerateMissingInvoices?: () => void;
+  isGeneratingMissingInvoices?: boolean;
+}) => (
   <div className="text-center py-16">
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
@@ -674,13 +686,38 @@ const InvoicesEmptyState = ({ onCreateInvoice }: { onCreateInvoice: () => void }
     <p className="text-neutral-500 mb-6 max-w-md mx-auto">
       لم يتم إنشاء أي فواتير لهذا العقد بعد. ابدأ بإنشاء فاتورة جديدة لمتابعة المدفوعات.
     </p>
-    <Button
-      onClick={onCreateInvoice}
-      className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
-    >
-      <Receipt className="w-4 h-4" />
-      إنشاء أول فاتورة
-    </Button>
+    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      {onGenerateMissingInvoices && (
+        <Button
+          onClick={onGenerateMissingInvoices}
+          disabled={isGeneratingMissingInvoices}
+          className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200 rounded-xl"
+        >
+          {isGeneratingMissingInvoices ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              جاري الإنشاء...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4" />
+              إنشاء الفواتير الناقصة
+            </>
+          )}
+        </Button>
+      )}
+      <Button
+        onClick={onCreateInvoice}
+        variant={onGenerateMissingInvoices ? 'outline' : 'default'}
+        className={cn(
+          'gap-2 rounded-xl',
+          !onGenerateMissingInvoices && 'bg-gradient-to-r from-teal-500 to-teal-600 hover:shadow-lg shadow-teal-200'
+        )}
+      >
+        <Receipt className="w-4 h-4" />
+        إنشاء فاتورة يدوياً
+      </Button>
+    </div>
   </div>
 );
 
@@ -693,6 +730,8 @@ export const ContractInvoicesTabRedesigned = ({
   onCreateInvoice,
   onCancelInvoice,
   isCancellingInvoice,
+  onGenerateMissingInvoices,
+  isGeneratingMissingInvoices,
   contractNumber,
   customerInfo,
   trafficViolations = [],
@@ -764,6 +803,26 @@ export const ContractInvoicesTabRedesigned = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {onGenerateMissingInvoices && (
+            <Button
+              variant="outline"
+              onClick={onGenerateMissingInvoices}
+              disabled={isGeneratingMissingInvoices}
+              className="gap-2 rounded-xl"
+            >
+              {isGeneratingMissingInvoices ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري الإنشاء...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  إنشاء الفواتير الناقصة
+                </>
+              )}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => {
@@ -1355,7 +1414,11 @@ export const ContractInvoicesTabRedesigned = ({
       {invoices.length === 0 ? (
         <Card className="border-neutral-200">
           <CardContent className="p-6">
-            <InvoicesEmptyState onCreateInvoice={onCreateInvoice} />
+            <InvoicesEmptyState
+              onCreateInvoice={onCreateInvoice}
+              onGenerateMissingInvoices={onGenerateMissingInvoices}
+              isGeneratingMissingInvoices={isGeneratingMissingInvoices}
+            />
           </CardContent>
         </Card>
       ) : (

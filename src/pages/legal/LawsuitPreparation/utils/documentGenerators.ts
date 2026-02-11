@@ -225,7 +225,7 @@ export async function generateDocumentsList(
   
   const customerName = formatCustomerName(customer);
   
-  // Build documents list dynamically
+  // Build documents list in the required order
   const docsList: { 
     name: string; 
     status: 'مرفق' | 'غير مرفق'; 
@@ -234,8 +234,9 @@ export async function generateDocumentsList(
     htmlContent?: string;
   }[] = [];
   
-  // Add claims statement if ready - نعيد توليده لضمان تطابقه مع الأصلي
-  if (documents.claims.status === 'ready') {
+  // Prepare claims statement (generate fresh when possible)
+  let freshClaimsHtml: string | undefined;
+  if (state.calculations) {
     // إعادة توليد كشف المطالبات من البيانات الأصلية لضمان التطابق
     const claimsInvoicesData = state.overdueInvoices.map((inv) => {
       const daysLate = Math.floor(
@@ -261,7 +262,7 @@ export async function generateDocumentsList(
     }));
     const totalPenalties = claimsInvoicesData.reduce((sum, inv) => sum + (inv.penalty || 0), 0);
     const { generateClaimsStatementHtml } = await import('@/utils/official-letter-generator');
-    const freshClaimsHtml = generateClaimsStatementHtml({
+    freshClaimsHtml = generateClaimsStatementHtml({
       customerName: formatCustomerName(customer),
       nationalId: customer?.national_id || '-',
       phone: customer?.phone || '',
@@ -274,65 +275,167 @@ export async function generateDocumentsList(
       amountInWords: state.calculations?.amountInWords || '',
       caseTitle: state.taqadiData?.caseTitle,
     });
-    docsList.push({
-      name: 'كشف المطالبات المالية',
-      status: 'مرفق',
-      type: 'html',
-      htmlContent: freshClaimsHtml,
+  }
+
+  // Prepare explanatory memo (generate fresh when possible)
+  let freshMemoHtml: string | undefined;
+  if (state.calculations) {
+    const customerNameForMemo = formatCustomerName(customer);
+    const damagesAmount = Math.round(state.calculations.total * 0.3);
+    freshMemoHtml = generateLegalComplaintHTML({
+      customer: {
+        customer_name: customerNameForMemo,
+        customer_code: customer?.id || '',
+        id_number: customer?.national_id || '',
+        phone: customer?.phone || '',
+        email: customer?.email || '',
+        contract_number: contract.contract_number,
+        contract_start_date: contract.start_date,
+        vehicle_plate: state.vehicle?.plate_number || (contract as any).license_plate || '',
+        monthly_rent: Number(contract.monthly_amount) || 0,
+        months_unpaid: state.overdueInvoices.length,
+        overdue_amount: state.calculations.overdueRent,
+        late_penalty: state.calculations.lateFees,
+        days_overdue: Math.floor(
+          (new Date().getTime() - new Date(contract.start_date).getTime()) / (1000 * 60 * 60 * 24)
+        ),
+        violations_count: state.calculations.violationsCount,
+        violations_amount: state.calculations.violationsFines,
+        total_debt: state.calculations.total - state.calculations.violationsFines,
+      } as any,
+      companyInfo: {
+        name_ar: 'شركة العراف لتأجير السيارات',
+        name_en: 'Al-Araf Car Rental',
+        address: 'أم صلال محمد – الشارع التجاري – مبنى (79) – الطابق الأول – مكتب (2)',
+        cr_number: '146832',
+      },
+      vehicleInfo: {
+        plate: state.vehicle?.plate_number || (contract as any).license_plate || 'غير محدد',
+        make: state.vehicle?.make || '',
+        model: state.vehicle?.model || '',
+        year: state.vehicle?.year || 0,
+      },
+      contractInfo: {
+        contract_number: contract.contract_number,
+        start_date: contract.start_date
+          ? new Date(contract.start_date).toLocaleDateString('ar-QA')
+          : '',
+        monthly_rent: Number(contract.monthly_amount) || 0,
+      },
+      damages: damagesAmount,
     });
   }
   
-  // Note: نسخة العقد تم حذفها من القائمة بناءً على طلب المستخدم
-  
-  // Add violations proof document if exists
-  if (contract.id) {
-    const { data: violationsProofDocs } = await supabase
-      .from('contract_documents')
-      .select('id, file_path, document_name')
-      .eq('contract_id', contract.id)
-      .eq('document_type', 'violations_proof')
-      .order('created_at', { ascending: false });
-    
-    if (violationsProofDocs && violationsProofDocs.length > 0) {
-      for (const vDoc of violationsProofDocs) {
-        if (vDoc.file_path) {
-          const { data: urlData } = supabase.storage
-            .from('contract-documents')
-            .getPublicUrl(vDoc.file_path);
-          
-          const isImage = vDoc.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-          docsList.push({
-            name: vDoc.document_name || 'إثبات المخالفات المرورية',
-            status: 'مرفق',
-            url: urlData?.publicUrl,
-            type: isImage ? 'image' : 'pdf',
-          });
+  // 1) البطاقة الشخصية للمخول بالتوقيع
+  const representativeIdDoc = companyDocuments.find(d => d.document_type === 'representative_id');
+  docsList.push(
+    representativeIdDoc
+      ? {
+          name: 'البطاقة الشخصية للمخول بالتوقيع',
+          status: 'مرفق',
+          url: representativeIdDoc.file_url,
+          type: 'pdf',
         }
-      }
-    }
-  }
-  
-  // Add company documents
-  const fixedDocTypes = [
-    { type: 'authorization_letter', name: 'خطاب التفويض' },
-  ] as const;
-  
-  for (const docType of fixedDocTypes) {
-    const doc = companyDocuments.find(d => d.document_type === docType.type);
-    if (doc) {
-      docsList.push({
-        name: docType.name,
-        status: 'مرفق',
-        url: doc.file_url,
-        type: 'pdf',
-      });
-    } else {
-      docsList.push({
-        name: docType.name,
-        status: 'غير مرفق',
-      });
-    }
-  }
+      : {
+          name: 'البطاقة الشخصية للمخول بالتوقيع',
+          status: 'غير مرفق',
+        }
+  );
+
+  // 2) كشف المطالبات المالية
+  docsList.push(
+    freshClaimsHtml || documents.claims.htmlContent || documents.claims.url
+      ? {
+          name: 'كشف المطالبات المالية',
+          status: 'مرفق',
+          type: documents.claims.url && !freshClaimsHtml && !documents.claims.htmlContent ? 'pdf' : 'html',
+          url: documents.claims.url || undefined,
+          htmlContent: freshClaimsHtml || documents.claims.htmlContent || undefined,
+        }
+      : {
+          name: 'كشف المطالبات المالية',
+          status: 'غير مرفق',
+        }
+  );
+
+  // 3) نسخة من عقد الايجار
+  docsList.push(
+    documents.contract.status === 'ready' && documents.contract.url
+      ? {
+          name: 'نسخة من عقد الايجار',
+          status: 'مرفق',
+          url: documents.contract.url,
+          type: 'pdf',
+        }
+      : {
+          name: 'نسخة من عقد الايجار',
+          status: 'غير مرفق',
+        }
+  );
+
+  // 4) مذكرة شارحة
+  docsList.push(
+    freshMemoHtml || documents.memo.htmlContent || documents.memo.url
+      ? {
+          name: 'مذكرة شارحة',
+          status: 'مرفق',
+          url: documents.memo.url || undefined,
+          type: documents.memo.url && !freshMemoHtml && !documents.memo.htmlContent ? 'pdf' : 'html',
+          htmlContent: freshMemoHtml || documents.memo.htmlContent || undefined,
+        }
+      : {
+          name: 'مذكرة شارحة',
+          status: 'غير مرفق',
+        }
+  );
+
+  // 5) نسخة من السجل التجاري
+  const commercialRegisterDoc = companyDocuments.find(d => d.document_type === 'commercial_register');
+  docsList.push(
+    commercialRegisterDoc
+      ? {
+          name: 'نسخة من السجل التجاري',
+          status: 'مرفق',
+          url: commercialRegisterDoc.file_url,
+          type: 'pdf',
+        }
+      : {
+          name: 'نسخة من السجل التجاري',
+          status: 'غير مرفق',
+        }
+  );
+
+  // 6) صورة من قيد المنشاءه
+  const establishmentRecordDoc = companyDocuments.find(d => d.document_type === 'establishment_record');
+  docsList.push(
+    establishmentRecordDoc
+      ? {
+          name: 'صورة من قيد المنشاءه',
+          status: 'مرفق',
+          url: establishmentRecordDoc.file_url,
+          type: 'pdf',
+        }
+      : {
+          name: 'صورة من قيد المنشاءه',
+          status: 'غير مرفق',
+        }
+  );
+
+  // 7) شهادة IBAN
+  const ibanCertificateDoc = companyDocuments.find(d => d.document_type === 'iban_certificate');
+  docsList.push(
+    ibanCertificateDoc
+      ? {
+          name: 'شهادة IBAN',
+          status: 'مرفق',
+          url: ibanCertificateDoc.file_url,
+          type: 'pdf',
+        }
+      : {
+          name: 'شهادة IBAN',
+          status: 'غير مرفق',
+        }
+  );
   
   const html = generateDocumentsListHtml({
     caseTitle: taqadiData.caseTitle,

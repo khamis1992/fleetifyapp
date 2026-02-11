@@ -473,6 +473,18 @@ export const useContractCreation = () => {
         let invoicesCreated = 0
         try {
           console.log('📋 [CONTRACT_CREATION] إنشاء الفواتير تلقائياً للعقد...')
+
+          // Ensure schedules exist before trying to generate invoices from them.
+          // This keeps behavior non-fatal and aligned with existing error handling.
+          const { error: scheduleError } = await supabase
+            .rpc('generate_payment_schedules_for_contract', {
+              p_contract_id: contractId,
+              p_dry_run: false
+            })
+
+          if (scheduleError) {
+            console.warn('⚠️ [CONTRACT_CREATION] فشل في إنشاء جدول الدفعات قبل الفواتير:', scheduleError)
+          }
           
           const { data: invoiceResult, error: invoiceError } = await supabase
             .rpc('generate_invoices_from_payment_schedule', {

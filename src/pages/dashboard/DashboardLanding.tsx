@@ -5,6 +5,7 @@ import { useModuleConfig } from '@/modules/core/hooks';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIChat } from '@/contexts/AIChatContext';
@@ -77,11 +78,12 @@ const DashboardLanding: React.FC = () => {
     console.log('Email after transform:', user?.email?.toLowerCase().trim());
   }, [user]);
 
-  // CRITICAL FIX: Stabilize companyId with a ref to prevent data loss during auth transitions
+  // CRITICAL FIX: Use stable company ID from CompanyContext (persists across navigation)
   const rawCompanyId = user?.profile?.company_id || user?.company?.id;
+  const contextStableId = useStableCompanyId();
   const stableCompanyIdRef = useRef<string | null>(null);
   if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
-  const companyId = rawCompanyId || stableCompanyIdRef.current;
+  const companyId = rawCompanyId || contextStableId || stableCompanyIdRef.current;
   const isReady = !!companyId;
 
   // Fleet Status Query

@@ -40,7 +40,7 @@ export function generateExplanatoryMemoHtml(data: ExplanatoryMemoData): string {
   let requestsText = `1. إلزام المدعى عليه بسداد المبلغ الإجمالي وقدره (${(totalClaim > 0 ? totalClaim : data.amount).toLocaleString('ar-QA')} ريال قطري).`;
   
   if (hasViolations) {
-    requestsText += `\r\n2. إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه${data.defendantIdNumber ? ` (${data.defendantIdNumber})` : ''}.\r\n3. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.`;
+    requestsText += `\r\n2. إصدار أمر بتحويل جميع المخالفات المرورية المسجلة على المركبة خلال فترة الإيجار إلى الرقم الشخصي للمدعى عليه${data.defendantIdNumber ? ` (${data.defendantIdNumber})` : ''}.\r\n3. بيان إجمالي قيمة المخالفات المرورية المسجلة على المركبة وقدرها (${violationsAmount.toLocaleString('ar-QA')} ريال قطري).\r\n4. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.`;
   } else {
     requestsText += `\r\n2. تحميل المدعى عليه رسوم الدعوى والمصاريف وأتعاب المحاماة.`;
   }

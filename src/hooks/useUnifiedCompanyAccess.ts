@@ -18,7 +18,7 @@ import {
  */
 export const useUnifiedCompanyAccess = () => {
   const { user, session, loading } = useAuth();
-  const { browsedCompany, isBrowsingMode } = useCompanyContext();
+  const { browsedCompany, isBrowsingMode, stableCompanyId: contextStableCompanyId } = useCompanyContext();
   const queryClient = useQueryClient();
   
   // Track previous companyId to detect changes
@@ -27,14 +27,13 @@ export const useUnifiedCompanyAccess = () => {
   // Extract company_id early for dependency tracking
   const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
   
-  // CRITICAL FIX: Stabilize companyId with a ref to prevent flickering during auth transitions
-  // When auth state briefly flickers (e.g. token refresh, tab restore), userCompanyId may
-  // temporarily become null. Using the last known valid value prevents all downstream hooks
-  // from losing their companyId and showing 0 data.
-  // Don't reset to null when user is briefly null — keeps data stable during transitions.
-  const stableCompanyIdRef = useRef<string | null>(null);
-  if (userCompanyId) stableCompanyIdRef.current = userCompanyId;
-  const stableUserCompanyId = userCompanyId || stableCompanyIdRef.current;
+  // CRITICAL FIX: Use the stable company ID from CompanyContext (which lives above all
+  // route components and persists across navigation). Fall back to a local ref only as
+  // a last resort. This eliminates the per-component ref problem where each new page
+  // starts with null before auth data propagates.
+  const localStableRef = useRef<string | null>(null);
+  if (userCompanyId) localStableRef.current = userCompanyId;
+  const stableUserCompanyId = userCompanyId || contextStableCompanyId || localStableRef.current;
   
   // CRITICAL FIX: The side-effect for query invalidation has been moved to CompanyContext.tsx
   // This prevents excessive invalidations when this hook is used in multiple components

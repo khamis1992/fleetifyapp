@@ -4,7 +4,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { RouteConfig } from '@/routes/types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { LazyLoadErrorBoundary } from '@/components/common/LazyLoadErrorBoundary';
@@ -38,7 +38,6 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   if (import.meta.env.DEV) {
     console.log('🔍 [RouteRenderer] Component rendered, routes:', routes.length);
   }
-  const location = useLocation();
 
   const renderRoute = React.useCallback((route: RouteConfig) => {
     const Component = route.component;
@@ -138,8 +137,12 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 
   return (
     <ErrorBoundaryComponent>
-      {/* CRITICAL FIX: Use location.key to help React Router track navigation changes */}
-      <Routes key={location.key}>
+      {/* REMOVED key={location.key}: Using location.key caused a FULL unmount/remount
+          of the entire Routes tree on every navigation. This destroyed all component
+          state, refs (including stableCompanyIdRef), and query observers — leading to
+          a brief period where companyId was null and queries returned 0.
+          React Router already handles route transitions correctly without this key. */}
+      <Routes>
         {sortedRoutes.map((route) => (
             <Route
               key={route.path}

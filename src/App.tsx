@@ -119,8 +119,12 @@ const createQueryClient = () => {
         // Better cache configuration to prevent data flickering
         structuralSharing: true,
         
-        // CRITICAL: Keep previous data visible while refetching to prevent 0s
-        keepPreviousData: true,
+        // CRITICAL: Keep previous data visible while refetching to prevent 0s.
+        // In TanStack Query v5, keepPreviousData is replaced by placeholderData.
+        // Using `keepPreviousData` identity function preserves the last successful
+        // result as placeholder while new data is being fetched, preventing the UI
+        // from flashing 0 values during navigation or refetch.
+        placeholderData: (previousData: unknown) => previousData,
 
         // Retry configuration
         retry: (failureCount, error: any) => {

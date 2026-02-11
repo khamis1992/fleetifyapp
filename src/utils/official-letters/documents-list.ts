@@ -43,8 +43,15 @@ export function generateDocumentsListHtml(data: DocumentsListData): string {
   const refNumber = generateRefNumber();
   const currentDate = formatDateAr();
   
-  // تصفية المستندات المرفقة التي لها روابط أو محتوى HTML
-  const attachedDocs = data.documents.filter(d => d.status === 'مرفق' && (d.url || d.htmlContent));
+  // دمج مستندات محددة فقط لتقليل حجم الملف النهائي
+  const embeddableDocNames = new Set<string>();
+  const attachedDocs = data.documents.filter(
+    (d) =>
+      d.status === 'مرفق' &&
+      embeddableDocNames.has(d.name) &&
+      d.type === 'html' &&
+      Boolean(d.htmlContent)
+  );
 
   return `
 <!DOCTYPE html>

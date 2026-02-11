@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useModuleConfig } from '@/modules/core/hooks';
 import { apiClient } from '@/lib/api/client';
 import { MobileDebugger } from '@/lib/mobileDebug';
@@ -49,12 +50,12 @@ export const useDashboardStats = () => {
   // Get company_id from either profile or company object
   const rawCompanyId = user?.profile?.company_id || user?.company?.id;
   
-  // Stabilize companyId with a ref (this hook uses useAuth directly, not useUnifiedCompanyAccess)
-  // CRITICAL FIX: Don't reset to null when user is briefly null during auth transitions
-  // (e.g., tab minimize/restore, token refresh). Only clear on explicit sign-out (no session at all).
+  // CRITICAL FIX: Use stable company ID from CompanyContext (persists across navigation)
+  // as primary fallback, then local ref as last resort.
+  const contextStableId = useStableCompanyId();
   const stableCompanyIdRef = useRef<string | null>(null);
   if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
-  const companyId = rawCompanyId || stableCompanyIdRef.current;
+  const companyId = rawCompanyId || contextStableId || stableCompanyIdRef.current;
   
   // إعادة المحاولة عندما يتوفر company_id (قد يتأخر عن authLoading)
   const isReady = !authLoading && !!user?.id && !!companyId;

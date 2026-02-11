@@ -9,6 +9,8 @@ interface CompanyContextType {
   setBrowsedCompany: (company: Company | null) => void;
   isBrowsingMode: boolean;
   exitBrowseMode: () => void;
+  /** Stable company ID that persists across navigation and auth transitions */
+  stableCompanyId: string | null;
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
@@ -19,6 +21,15 @@ export const useCompanyContext = () => {
     throw new Error('useCompanyContext must be used within a CompanyContextProvider');
   }
   return context;
+};
+
+/**
+ * Quick hook to get the stable company ID from context.
+ * This ID persists across page navigations and brief auth transitions.
+ */
+export const useStableCompanyId = (): string | null => {
+  const { stableCompanyId } = useCompanyContext();
+  return stableCompanyId;
 };
 
 interface CompanyContextProviderProps {
@@ -35,6 +46,15 @@ export const CompanyContextProvider: React.FC<CompanyContextProviderProps> = ({ 
   
   // Extract company_id early for dependency tracking
   const userCompanyId = user?.company?.id || (user as any)?.company_id || null;
+
+  // CRITICAL FIX: Stable companyId that survives navigation and auth transitions.
+  // This ref lives in the provider (above all pages), so it is never destroyed
+  // when the user navigates between routes. Pages read this via context instead
+  // of creating their own per-component ref.
+  const stableCompanyIdRef = useRef<string | null>(null);
+  const effectiveCompanyId = browsedCompany?.id || userCompanyId;
+  if (effectiveCompanyId) stableCompanyIdRef.current = effectiveCompanyId;
+  const stableCompanyId = effectiveCompanyId || stableCompanyIdRef.current;
 
   // Reset browsed company when user changes or is null
   useEffect(() => {
@@ -124,6 +144,7 @@ export const CompanyContextProvider: React.FC<CompanyContextProviderProps> = ({ 
     setBrowsedCompany,
     isBrowsingMode,
     exitBrowseMode,
+    stableCompanyId,
   };
 
   return (

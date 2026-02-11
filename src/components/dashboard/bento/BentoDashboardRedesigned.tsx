@@ -4,6 +4,7 @@ import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { SkeletonMetrics } from '@/components/loaders';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -327,11 +328,12 @@ const BentoDashboardRedesigned: React.FC = () => {
   // Get company_id from either profile or company object (with fallback)
   const rawCompanyId = user?.profile?.company_id || user?.company?.id;
   
-  // CRITICAL FIX: Stabilize companyId with a ref to prevent data loss during auth transitions
-  // (tab minimize/restore, token refresh). Don't reset when user is briefly null.
+  // CRITICAL FIX: Use stable company ID from CompanyContext (persists across navigation)
+  // plus local ref as fallback for brief auth flickers.
+  const contextStableId = useStableCompanyId();
   const stableCompanyIdRef = useRef<string | null>(null);
   if (rawCompanyId) stableCompanyIdRef.current = rawCompanyId;
-  const companyId = rawCompanyId || stableCompanyIdRef.current;
+  const companyId = rawCompanyId || contextStableId || stableCompanyIdRef.current;
   
   // Only enable queries when company_id is available
   const isReady = !!companyId;

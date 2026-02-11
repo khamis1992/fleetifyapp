@@ -137,6 +137,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const lastRecoveryAttemptRef = useRef<number>(0);
   const isSigningOutRef = useRef(false);
 
+  // CRITICAL FIX: When user object exists but is missing company/profile data
+  // (happens when session.user is set as a "basic" user during token refresh or
+  // navigation), merge the full profile from the localStorage cache to ensure
+  // companyId is always available. This prevents queries from seeing null companyId
+  // and showing 0 values across pages.
+  React.useEffect(() => {
+    if (
+      user?.id &&
+      !user?.company?.id &&
+      !(user as any)?.profile?.company_id &&
+      !isSigningOutRef.current
+    ) {
+      const cached = getCachedUser();
+      if (cached?.id === user.id && (cached.company?.id || cached.profile?.company_id)) {
+        if (import.meta.env.DEV) {
+          console.log('📝 [AUTH_CONTEXT] Restoring full user from cache (basic user detected without company)');
+        }
+        setUser(cached);
+      }
+    }
+  }, [user?.id, user?.company?.id, (user as any)?.profile?.company_id]);
+
   // CRITICAL FIX: Lock mechanism with proper exception handling
   const acquireInitLock = (): boolean => {
     try {
