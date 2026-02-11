@@ -61,6 +61,7 @@ interface ReportFilters {
   minAmount: string;
   maxAmount: string;
   vehicleType: 'all' | 'limousine' | 'private';
+  vehicleStatus: 'all' | 'available' | 'rented' | 'maintenance' | 'out_of_service';
 }
 
 interface VehicleGroup {
@@ -107,6 +108,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
     includeAdvancedStats: true,
     includeUnlinkedSection: true,
     vehicleType: 'all',
+    vehicleStatus: 'all',
     minAmount: '',
     maxAmount: '',
   });
@@ -151,6 +153,7 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
             make,
             model,
             year,
+            status,
             registration_expiry
           ),
           customers (
@@ -227,6 +230,14 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
         const plateNumber = v.vehicles?.plate_number || v.penalty_number || '';
         const vehicleType = getVehicleType(plateNumber);
         if (vehicleType !== filters.vehicleType) {
+          return false;
+        }
+      }
+
+      // فلتر حالة المركبة
+      if (filters.vehicleStatus !== 'all') {
+        const vehicleStatus = v.vehicles?.status;
+        if (vehicleStatus !== filters.vehicleStatus) {
           return false;
         }
       }
@@ -1578,6 +1589,29 @@ export const TrafficViolationReportDialog: React.FC<TrafficViolationReportDialog
                 <SelectItem value="all">جميع المركبات</SelectItem>
                 <SelectItem value="limousine">ليموزين (4 أرقام)</SelectItem>
                 <SelectItem value="private">خصوصي (أكثر من 4 أرقام)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* فلتر حالة المركبة */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-neutral-500" />
+              حالة المركبة
+            </Label>
+            <Select
+              value={filters.vehicleStatus}
+              onValueChange={(value) => setFilters(prev => ({ ...prev, vehicleStatus: value as any }))}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="اختر حالة المركبة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="available">متاحة</SelectItem>
+                <SelectItem value="rented">مؤجرة</SelectItem>
+                <SelectItem value="maintenance">صيانة</SelectItem>
+                <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
               </SelectContent>
             </Select>
           </div>

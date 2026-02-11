@@ -36,9 +36,17 @@ Fix the invoice generation flow with the smallest possible code change so contra
 - Added detailed error logging in handlers.
 - SQL script ready to apply in Supabase Dashboard.
 
+### Additional Changes
+6. **`src/components/fleet/TrafficViolationReportDialog.tsx`**:
+   - Added `vehicleStatus` filter to ReportFilters interface
+   - Added vehicle status filtering logic in filteredViolations
+   - Added "حالة المركبة" Select dropdown in report customization UI
+   - Options: جميع الحالات / متاحة / مؤجرة / صيانة / خارج الخدمة
+
 ### Next Steps
 1. Apply `INVOICE_FIX_SQL.sql` in Supabase Dashboard SQL Editor
 2. Test "إنشاء الفواتير الناقصة" button in both pages
+3. Test vehicle status filter in traffic violations report
 
 ### Additional completed task (Lawsuit documents list)
 - Updated `src/pages/legal/LawsuitPreparation/utils/documentGenerators.ts`.
