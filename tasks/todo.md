@@ -43,6 +43,11 @@ Fix the invoice generation flow with the smallest possible code change so contra
    - Added "حالة المركبة" Select dropdown in report customization UI
    - Options: جميع الحالات / متاحة / مؤجرة / صيانة / خارج الخدمة
 
+7. **`src/pages/legal/LegalCasesTracking.tsx`**:
+   - Added "صفحة تجهيز الدعوى" menu item in case actions dropdown
+   - Navigates to `/legal/lawsuit/prepare/{contract_id}` when clicked
+   - Shows error if case has no linked contract
+
 ### Next Steps
 1. Apply `INVOICE_FIX_SQL.sql` in Supabase Dashboard SQL Editor
 2. Test "إنشاء الفواتير الناقصة" button in both pages

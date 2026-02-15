@@ -1140,6 +1140,21 @@ export const LegalCasesTracking: React.FC = () => {
                           تعديل
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          className="gap-2 cursor-pointer text-purple-600"
+                          onClick={() => {
+                            const caseItem = item as LegalCase;
+                            if (caseItem.contract_id) {
+                              navigate(`/legal/lawsuit/prepare/${caseItem.contract_id}`);
+                            } else {
+                              toast.error('لا يوجد عقد مرتبط بهذه القضية');
+                            }
+                          }}
+                        >
+                          <FileText size={14} />
+                          صفحة تجهيز الدعوى
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
                           className="gap-2 cursor-pointer text-blue-600"
                           onClick={() => handleSendCaseNotification(item as LegalCase)}
                         >
