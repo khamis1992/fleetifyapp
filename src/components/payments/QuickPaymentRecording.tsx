@@ -693,29 +693,40 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
             paymentDate
           });
 
-          if (!invoiceResult.success || !invoiceResult.invoice) {
+          let invoiceToUseId: string | null = null;
+
+          if (invoiceResult.success && invoiceResult.invoice) {
+            invoiceToUseId = invoiceResult.invoice.id;
+            console.log('✅ تم العثور على/إنشاء فاتورة:', invoiceResult.invoice.invoice_number, invoiceResult.reason || 'جديدة');
+          } else if (invoiceResult.skipped && invoiceResult.existingInvoiceId) {
+            invoiceToUseId = invoiceResult.existingInvoiceId;
+            console.log('💡 الفاتورة موجودة مسبقاً، سيتم استخدامها:', invoiceResult.reason);
+          } else {
             throw new Error(invoiceResult.error || 'فشل في البحث عن/إنشاء الفاتورة');
           }
 
-          // جلب بيانات الفاتورة الكاملة مع العقد
-          const { data: fullInvoice } = await supabase
-            .from('invoices')
-            .select(`
-              *,
-              contracts:contract_id (
-                contract_number,
-                vehicle_number,
-                vehicles:vehicle_id (
-                  plate_number
+          if (invoiceToUseId) {
+            // جلب بيانات الفاتورة الكاملة مع العقد
+            const { data: fullInvoice } = await supabase
+              .from('invoices')
+              .select(`
+                *,
+                contracts:contract_id (
+                  contract_number,
+                  vehicle_id,
+                  vehicles:vehicle_id (
+                    plate_number
+                  )
                 )
-              )
-            `)
-            .eq('id', invoiceResult.invoice.id)
-            .single();
+              `)
+              .eq('id', invoiceToUseId)
+              .single();
 
-          if (fullInvoice) {
-            selectedInvoices.push(fullInvoice as any);
-            console.log('✅ تم العثور على/إنشاء فاتورة:', invoiceResult.invoice.invoice_number, invoiceResult.reason || 'جديدة');
+            if (fullInvoice) {
+              selectedInvoices.push(fullInvoice as any);
+            } else {
+                throw new Error(`لم يتم العثور على الفاتورة بالمعرف: ${invoiceToUseId}`);
+            }
           }
         }
       }
