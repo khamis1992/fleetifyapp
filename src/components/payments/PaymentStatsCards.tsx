@@ -65,19 +65,23 @@ export function PaymentStatsCards() {
         .gte('payment_date', startOfMonthStr)
         .eq('payment_status', 'completed');
 
-      // Active customers with unpaid invoices
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      // Active customers with unpaid invoices (due today or earlier)
       const { data: customersData } = await supabase
         .from('invoices')
         .select('customer_id')
         .eq('company_id', companyId)
-        .in('payment_status', ['unpaid', 'partial']);
+        .in('payment_status', ['unpaid', 'partial'])
+        .lte('due_date', todayDate);  // ✅ فواتير مستحقة حتى اليوم فقط
 
-      // Pending invoices count
+      // Pending invoices count (due today or earlier)
       const { data: pendingInvoicesData } = await supabase
         .from('invoices')
         .select('id')
         .eq('company_id', companyId)
-        .in('payment_status', ['unpaid', 'partial']);
+        .in('payment_status', ['unpaid', 'partial'])
+        .lte('due_date', todayDate);  // ✅ فواتير مستحقة حتى اليوم فقط
 
       setStats({
         todayPayments: todayPaymentsData?.reduce((sum, p) => sum + p.amount, 0) || 0,

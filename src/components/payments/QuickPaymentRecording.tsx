@@ -444,6 +444,9 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     if (!customerIdToUse) return;
 
     try {
+      // تحديد تاريخ اليوم لفلترة الفواتير المستحقة فقط
+      const today = new Date().toISOString().split('T')[0];
+
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -468,6 +471,7 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         .eq('contract_id', contract.id)  // فلترة حسب العقد المختار
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
         .neq('status', 'cancelled')
+        .lte('due_date', today)  // ✅ عرض الفواتير المستحقة حتى اليوم فقط (لا فواتير مستقبلية)
         .order('due_date', { ascending: true });
 
       if (error) throw error;

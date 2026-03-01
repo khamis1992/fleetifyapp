@@ -129,6 +129,7 @@ export function QuickPaymentDialog({
         `)
         .eq('customer_id', customerId)
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
+        .lte('due_date', new Date().toISOString().split('T')[0])  // ✅ فواتير مستحقة حتى اليوم فقط
         .order('due_date', { ascending: true });
 
       if (error) throw error;
