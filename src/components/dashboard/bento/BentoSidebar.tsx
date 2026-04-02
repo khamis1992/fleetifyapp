@@ -35,6 +35,7 @@ import {
   Gavel,
   FolderOpen,
   FileWarning,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -106,8 +107,20 @@ const navigation: NavItem[] = [
     id: 'finance',
     label: 'المالية',
     icon: Banknote,
-    href: '/finance/hub',
     category: 'management',
+    children: [
+      { id: 'finance-overview', label: 'لوحة التحكم', href: '/finance/overview', icon: LayoutDashboard },
+      { id: 'finance-billing', label: 'الفواتير والمدفوعات', href: '/finance/billing', icon: Receipt },
+      { id: 'finance-treasury', label: 'الخزينة والبنوك', href: '/finance/treasury', icon: Building2 },
+      { id: 'finance-ledger', label: 'دفتر الأستاذ', href: '/finance/general-ledger', icon: BookOpen },
+      { id: 'finance-chart-of-accounts', label: 'دليل الحسابات', href: '/finance/chart-of-accounts', icon: Scale },
+      { id: 'finance-reports', label: 'التقارير المالية', href: '/finance/reports', icon: BarChart3 },
+      { id: 'finance-budgets', label: 'الموازنات', href: '/finance/budgets', icon: Target },
+      { id: 'finance-cost-centers', label: 'مراكز التكلفة', href: '/finance/cost-centers', icon: Clock },
+      { id: 'finance-vendors', label: 'الموردين', href: '/finance/vendors', icon: Truck },
+      { id: 'finance-assets', label: 'الأصول الثابتة', href: '/finance/assets', icon: Building2 },
+      { id: 'finance-settings', label: 'إعدادات المالية', href: '/finance/settings', icon: Settings },
+    ],
   },
   {
     id: 'hr',
@@ -212,7 +225,9 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
     navigate('/auth');
   };
 
-  const userName = user?.profile?.full_name || user?.email?.split('@')[0] || 'مستخدم';
+  const userName = (user?.profile?.first_name && user?.profile?.last_name 
+    ? `${user.profile.first_name} ${user.profile.last_name}` 
+    : user?.email?.split('@')[0]) || 'مستخدم';
   const userInitials = userName.slice(0, 2).toUpperCase();
 
   // === Render Navigation Item ===
