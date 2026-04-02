@@ -1,23 +1,14 @@
 /**
  * Payments Dashboard Component
  * Unified view of all payment statuses with quick actions
- *
- * Features:
- * - Summary cards for key payment metrics
- * - Quick actions for common payment operations
- * - Overdue payments table with inline actions
- * - Auto-refresh every 60 seconds
- * - Loading states with skeleton loaders
- * - Error handling with user-friendly messages
  */
 
-import { useState } from "react";
 import { usePaymentsSummary } from "@/hooks/usePaymentsSummary";
-import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -41,7 +32,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import {
   CreditCard,
   Plus,
@@ -50,7 +40,6 @@ import {
   MoreHorizontal,
   AlertCircle,
   DollarSign,
-  TrendingUp,
   Clock,
   CheckCircle,
 } from "lucide-react";
@@ -59,37 +48,12 @@ import { ar } from "date-fns/locale";
 
 const PaymentsDashboard = () => {
   const { data: summary, isLoading, error, refetch } = usePaymentsSummary();
-  const { companyId } = useUnifiedCompanyAccess();
   const { formatCurrency } = useCurrencyFormatter();
 
-  // Placeholder functions for quick actions
   const openRecordPaymentDialog = () => {
-    // فتح صفحة تسجيل الدفعات الجديدة
     window.open('/payment-registration', '_blank');
   };
 
-  const sendPaymentReminders = () => {
-    toast.info("ميزة إرسال التذكيرات قيد التطوير");
-  };
-
-  const generatePaymentReport = () => {
-    toast.info("ميزة تقرير المدفوعات قيد التطوير");
-  };
-
-  const recordPayment = (payment: any) => {
-    // فتح صفحة تسجيل الدفعات الجديدة
-    window.open('/payment-registration', '_blank');
-  };
-
-  const sendReminder = (payment: any) => {
-    toast.info(`إرسال تذكير للعقد ${payment.contract_number}`);
-  };
-
-  const viewContract = (payment: any) => {
-    toast.info(`عرض تفاصيل العقد ${payment.contract_number}`);
-  };
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -141,7 +105,6 @@ const PaymentsDashboard = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -268,18 +231,39 @@ const PaymentsDashboard = () => {
           <CardTitle>إجراءات سريعة</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button onClick={openRecordPaymentDialog}>
+          <Button
+            onClick={openRecordPaymentDialog}
+            className="h-11"
+          >
             <Plus className="mr-2 h-4 w-4" />
             تسجيل دفعة
           </Button>
-          <Button variant="outline" onClick={sendPaymentReminders}>
-            <Mail className="mr-2 h-4 w-4" />
-            إرسال تذكيرات
-          </Button>
-          <Button variant="outline" onClick={generatePaymentReport}>
-            <FileText className="mr-2 h-4 w-4" />
-            تقرير المدفوعات
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" disabled className="h-11">
+                  <Mail className="mr-2 h-4 w-4" />
+                  إرسال تذكيرات
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>ستتوفر قريباً</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" disabled className="h-11">
+                  <FileText className="mr-2 h-4 w-4" />
+                  تقرير المدفوعات
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>ستتوفر قريباً</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardContent>
       </Card>
 
@@ -327,22 +311,18 @@ const PaymentsDashboard = () => {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="h-9">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => recordPayment(payment)}>
+                            <DropdownMenuItem onClick={openRecordPaymentDialog}>
                               <Plus className="mr-2 h-4 w-4" />
                               تسجيل دفعة
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => sendReminder(payment)}>
+                            <DropdownMenuItem disabled>
                               <Mail className="mr-2 h-4 w-4" />
-                              إرسال تذكير
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => viewContract(payment)}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              عرض العقد
+                              إرسال تذكير (ستتوفر قريباً)
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
