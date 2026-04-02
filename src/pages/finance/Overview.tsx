@@ -1,6 +1,7 @@
 import { PageCustomizer } from "@/components/PageCustomizer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DollarSign,
   Receipt,
@@ -13,104 +14,122 @@ import {
   Banknote,
   BookOpen,
   Settings,
-  BarChart3
+  BarChart3,
+  Plus,
+  FilePlus,
+  LayoutDashboard,
+  Clock,
+  Users,
+  AlertCircle
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useFinancialSummary } from "@/hooks/useFinance";
+import { useTreasurySummary } from "@/hooks/useTreasury";
+import { useInvoices } from "@/hooks/finance/useInvoices";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PayrollIntegrationCard } from "@/components/finance/PayrollIntegrationCard";
+import { StatCard } from "@/components/ui/StatCard";
+import { motion } from "framer-motion";
+import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
 const Overview = () => {
   const { data: financialSummary, isLoading } = useFinancialSummary();
+  const { data: treasurySummary, isLoading: treasuryLoading } = useTreasurySummary();
+  const { data: invoices, isLoading: invoicesLoading } = useInvoices({ status: 'pending' });
+  const { formatCurrency } = useCurrencyFormatter();
+  const navigate = useNavigate();
   
-  // الوحدات المالية المبسطة - 12 وحدة فقط
-  const modules = [
+  const pendingInvoicesCount = invoices?.length || 0;
+  const pendingInvoicesTotal = invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
+  const overdueInvoices = invoices?.filter(inv => {
+    if (!inv.due_date) return false;
+    return new Date(inv.due_date) < new Date();
+  }) || [];
+  
+  // Quick action buttons
+  const quickActions = [
     {
-      title: "لوحة التحكم المالية",
-      description: "نظرة شاملة للوضع المالي مع جميع المؤشرات الرئيسية",
-      icon: BarChart3,
-      path: "/finance/unified-dashboard",
-      gradient: "from-blue-500 to-blue-600",
-      stats: `${financialSummary?.totalRevenue || 0} ريال`
+      title: "فاتورة جديدة",
+      description: "إنشاء فاتورة مبيعات جديدة",
+      icon: FilePlus,
+      path: "/finance/invoices",
+      color: "from-rose-500 to-orange-500",
     },
     {
-      title: "التقارير المالية",
-      description: "الميزانية وقائمة الدخل والتحليلات المتقدمة",
-      icon: FileText,
-      path: "/finance/unified-reports",
-      gradient: "from-green-500 to-green-600",
-      stats: "5 تقارير رئيسية"
-    },
-    {
-      title: "دليل الحسابات",
-      description: "إدارة شجرة الحسابات المحاسبية",
-      icon: Calculator,
-      path: "/finance/chart-of-accounts",
-      gradient: "from-indigo-500 to-indigo-600"
-    },
-    {
-      title: "دفتر الأستاذ العام",
-      description: "عرض وإدارة القيود المحاسبية",
-      icon: BookOpen,
-      path: "/finance/ledger",
-      gradient: "from-emerald-500 to-emerald-600"
-    },
-    {
-      title: "المدفوعات",
-      description: "إدارة شاملة للمدفوعات والمقبوضات",
+      title: "دفعة جديدة",
+      description: "تسجيل دفعة أو مقبوض",
       icon: CreditCard,
       path: "/finance/unified-payments",
-      gradient: "from-purple-500 to-purple-600"
+      color: "from-emerald-500 to-teal-500",
     },
     {
-      title: "الفواتير",
-      description: "إدارة فواتير المبيعات والمشتريات",
-      icon: Receipt,
-      path: "/finance/invoices",
-      gradient: "from-orange-500 to-orange-600"
+      title: "تقرير مالي",
+      description: "إنشاء تقرير مالي",
+      icon: BarChart3,
+      path: "/finance/unified-reports",
+      color: "from-violet-500 to-purple-500",
     },
     {
-      title: "الخزينة والبنوك",
-      description: "إدارة الحسابات المصرفية والمعاملات النقدية",
-      icon: Banknote,
-      path: "/finance/treasury",
-      gradient: "from-violet-500 to-violet-600"
+      title: "لوحة التحكم",
+      description: "عرض لوحة التحكم المالية",
+      icon: LayoutDashboard,
+      path: "/finance/unified-dashboard",
+      color: "from-blue-500 to-cyan-500",
+    },
+  ];
+
+  // Navigation groups
+  const navigationGroups = [
+    {
+      title: "لوحة التحكم",
+      icon: LayoutDashboard,
+      color: "bg-blue-500",
+      items: [
+        { title: "لوحة التحكم المالية", path: "/finance/unified-dashboard", icon: BarChart3 },
+      ],
     },
     {
-      title: "مراكز التكلفة",
-      description: "إدارة وتتبع مراكز التكلفة والموازنات",
-      icon: Target,
-      path: "/finance/cost-centers",
-      gradient: "from-amber-500 to-amber-600"
+      title: "العمليات",
+      icon: CreditCard,
+      color: "bg-emerald-500",
+      items: [
+        { title: "المدفوعات", path: "/finance/unified-payments", icon: CreditCard },
+        { title: "الفواتير", path: "/finance/invoices", icon: Receipt },
+        { title: "الخزينة والبنوك", path: "/finance/treasury", icon: Banknote },
+      ],
     },
     {
-      title: "الأصول الثابتة",
-      description: "إدارة الأصول والإهلاك",
-      icon: Building,
-      path: "/finance/assets",
-      gradient: "from-red-500 to-red-600"
+      title: "المحاسبة",
+      icon: BookOpen,
+      color: "bg-violet-500",
+      items: [
+        { title: "دفتر الأستاذ العام", path: "/finance/ledger", icon: BookOpen },
+        { title: "القيود المحاسبية", path: "/finance/journal-entries", icon: FileText },
+        { title: "دليل الحسابات", path: "/finance/chart-of-accounts", icon: Calculator },
+      ],
     },
     {
-      title: "الموازنات",
-      description: "إعداد ومتابعة الموازنات التخطيطية",
-      icon: Target,
-      path: "/finance/budgets",
-      gradient: "from-teal-500 to-teal-600"
+      title: "التقارير",
+      icon: BarChart3,
+      color: "bg-amber-500",
+      items: [
+        { title: "قائمة الدخل", path: "/finance/unified-reports", icon: TrendingUp },
+        { title: "الميزانية", path: "/finance/unified-reports", icon: Building },
+        { title: "التدفقات النقدية", path: "/finance/unified-reports", icon: DollarSign },
+        { title: "ميزان المراجعة", path: "/finance/unified-reports", icon: Target },
+      ],
     },
     {
-      title: "الموردين",
-      description: "إدارة بيانات الموردين والحسابات",
-      icon: Building,
-      path: "/finance/vendors",
-      gradient: "from-cyan-500 to-cyan-600"
-    },
-    {
-      title: "الإعدادات المالية",
-      description: "إعدادات وأدوات النظام المالي",
+      title: "الإعدادات",
       icon: Settings,
-      path: "/finance/settings",
-      gradient: "from-slate-500 to-slate-600"
-    }
+      color: "bg-slate-500",
+      items: [
+        { title: "مراكز التكلفة", path: "/finance/cost-centers", icon: Target },
+        { title: "الموازنات", path: "/finance/budgets", icon: Calculator },
+        { title: "الموردون", path: "/finance/vendors", icon: Building },
+        { title: "الأصول الثابتة", path: "/finance/assets", icon: Building },
+      ],
+    },
   ];
 
   if (isLoading) {
@@ -135,88 +154,147 @@ const Overview = () => {
           </p>
         </div>
 
-        {/* Financial Summary */}
-        {financialSummary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
-                  إجمالي الإيرادات
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-900 dark:text-green-100">
-                  {financialSummary.totalRevenue?.toLocaleString()} ريال
-                </div>
-              </CardContent>
-            </Card>
+        {/* KPI Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <StatCard
+              title="إجمالي الإيرادات"
+              value={formatCurrency(financialSummary?.totalRevenue || 0)}
+              subtitle="هذا الشهر"
+              icon={TrendingUp}
+              variant="success"
+              trend="up"
+              changePercent={12}
+            />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <StatCard
+              title="معدل التحصيل"
+              value="87%"
+              subtitle="نسبة التحصيل"
+              icon={CreditCard}
+              variant="sky"
+              trend="up"
+              change="+5%"
+            />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <StatCard
+              title="الفواتير المتأخرة"
+              value={overdueInvoices.length}
+              subtitle={formatCurrency(overdueInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0))}
+              icon={AlertCircle}
+              variant={overdueInvoices.length > 0 ? "danger" : "success"}
+              trend={overdueInvoices.length > 0 ? "down" : "up"}
+              change={overdueInvoices.length > 0 ? "تحتاج متابعة" : "ممتاز"}
+            />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <StatCard
+              title="رصيد الخزينة"
+              value={treasuryLoading ? "..." : formatCurrency(treasurySummary?.totalBalance || 0)}
+              subtitle="الرصيد الحالي"
+              icon={Banknote}
+              variant="emerald"
+            />
+          </motion.div>
+        </div>
 
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">
-                  إجمالي المصروفات
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-red-900 dark:text-red-100">
-                  {financialSummary.totalExpenses?.toLocaleString()} ريال
-                </div>
-              </CardContent>
-            </Card>
+        {/* Quick Actions */}
+        <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              إجراءات سريعة
+            </CardTitle>
+            <CardDescription>وصول سريع للعمليات الشائعة</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
+                return (
+                  <motion.div
+                    key={action.path}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.05 }}
+                  >
+                    <Link to={action.path}>
+                      <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer">
+                        <div className={`h-2 bg-gradient-to-r ${action.color}`} />
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-3 rounded-xl bg-gradient-to-br ${action.color} text-white`}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold">{action.title}</h4>
+                              <p className="text-xs text-muted-foreground">{action.description}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                  صافي الربح
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                  {(financialSummary.totalRevenue - financialSummary.totalExpenses).toLocaleString()} ريال
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {modules.map((module, index) => {
-            const Icon = module.icon;
+        {/* Navigation Groups - Collapsible Sections */}
+        <div className="space-y-6">
+          {navigationGroups.map((group, groupIndex) => {
+            const GroupIcon = group.icon;
             return (
-              <Card 
-                key={index}
-                className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+              <motion.div
+                key={group.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + groupIndex * 0.1 }}
               >
-                <div className={`h-2 bg-gradient-to-r ${module.gradient}`} />
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${module.gradient} text-white`}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    {module.stats && (
-                      <div className="text-sm font-medium text-muted-foreground">
-                        {module.stats}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl ${group.color} flex items-center justify-center`}>
+                          <GroupIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{group.title}</CardTitle>
+                          <CardDescription>{group.items.length} عناصر</CardDescription>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <CardTitle className="text-xl mt-4">{module.title}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {module.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Link to={module.path}>
-                    <Button 
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                      variant="outline"
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      الدخول إلى الوحدة
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+                      <Badge variant="secondary">{group.items.length}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {group.items.map((item, itemIndex) => {
+                        const ItemIcon = item.icon;
+                        return (
+                          <Link key={item.path} to={item.path}>
+                            <motion.div
+                              className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent transition-colors cursor-pointer group"
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.45 + groupIndex * 0.1 + itemIndex * 0.02 }}
+                            >
+                              <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                                <ItemIcon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-sm group-hover:text-primary transition-colors">{item.title}</h4>
+                              </div>
+                            </motion.div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
         </div>

@@ -50,57 +50,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AuthChecker } from "@/components/auth/AuthChecker";
 import { SessionValidator } from "@/components/auth/SessionValidator";
 import { cn } from "@/lib/utils";
-
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  trend?: 'up' | 'down' | 'neutral';
-  change?: string;
-  delay?: number;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  change,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {change && (
-        <div className={cn(
-          "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
-          trend === 'up' ? 'bg-green-100 text-green-600' :
-          trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-slate-100 text-slate-600'
-        )}>
-          {trend === 'up' && <TrendingUp className="w-3 h-3" />}
-          {trend === 'down' && <TrendingDown className="w-3 h-3" />}
-          {change}
-        </div>
-      )}
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
+import { StatCard } from "@/components/ui/StatCard";
 
 // Tab Configuration
 const TABS = [
@@ -298,7 +248,7 @@ export default function GeneralLedger() {
               value={stats.totalEntries}
               subtitle="All Entries"
               icon={FileText}
-              iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
+              variant="coral"
               delay={0.1}
             />
             <StatCard
@@ -306,7 +256,7 @@ export default function GeneralLedger() {
               value={stats.postedEntries}
               subtitle="Posted Entries"
               icon={CheckCircle}
-              iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
+              variant="success"
               trend="up"
               change={`${stats.totalEntries > 0 ? ((stats.postedEntries / stats.totalEntries) * 100).toFixed(0) : 0}%`}
               delay={0.15}
@@ -316,7 +266,7 @@ export default function GeneralLedger() {
               value={stats.draftEntries}
               subtitle="Draft Entries"
               icon={Clock}
-              iconBg="bg-gradient-to-br from-amber-500 to-yellow-500"
+              variant="warning"
               delay={0.2}
             />
             <StatCard
@@ -324,7 +274,7 @@ export default function GeneralLedger() {
               value={stats.totalAccounts}
               subtitle={`${stats.totalCostCenters} مركز تكلفة`}
               icon={Layers}
-              iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
+              variant="violet"
               delay={0.25}
             />
           </div>

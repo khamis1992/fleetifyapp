@@ -38,41 +38,7 @@ import { CashFlowStatementReport } from "@/components/finance/CashFlowStatementR
 import { useBalanceSheet, useIncomeStatement } from "@/hooks/useFinancialAnalysis";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { cn } from "@/lib/utils";
-
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  delay?: number;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
+import { StatCard } from "@/components/ui/StatCard";
 
 // Tab Configuration
 const TABS = [
@@ -181,7 +147,7 @@ const Reports = () => {
           value={TABS.length}
           subtitle="نوع تقرير"
           icon={FileBarChart}
-          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
+          variant="coral"
           delay={0.1}
         />
         <StatCard
@@ -189,7 +155,7 @@ const Reports = () => {
           value="اليوم"
           subtitle={new Date().toLocaleDateString('en-US')}
           icon={Calendar}
-          iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
+          variant="sky"
           delay={0.15}
         />
         <StatCard
@@ -197,7 +163,7 @@ const Reports = () => {
           value={formatCurrency(stats.totalAssets)}
           subtitle="Total Assets"
           icon={BarChart3}
-          iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
+          variant="success"
           delay={0.2}
         />
         <StatCard
@@ -205,7 +171,7 @@ const Reports = () => {
           value={formatCurrency(stats.netIncome)}
           subtitle="Net Income"
           icon={DollarSign}
-          iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
+          variant="violet"
           delay={0.25}
         />
       </div>
