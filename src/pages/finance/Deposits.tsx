@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Eye, Edit, Trash2, Download, Search, Filter } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Plus, Eye, Edit, Trash2, Download, Search, Filter, Wallet, CheckCircle, Clock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,13 +18,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import StatCard from '@/components/ui/StatCard';
 import { useDeposits } from '@/hooks/useDeposits';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatCurrency } from '@/lib/utils';
 import { DepositDialog } from '@/components/finance/DepositDialog';
 import { DepositDetailsDialog } from '@/components/finance/DepositDetailsDialog';
-import { useToast } from '@/hooks/use-toast';
-import { HelpIcon } from '@/components/help/HelpIcon';
 
 const Deposits = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false);
@@ -34,32 +33,31 @@ const Deposits = () => {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const { data: deposits, isLoading } = useDeposits();
-  const { toast } = useToast();
 
   const handleAddDeposit = () => {
     setEditingDeposit(null);
     setShowDepositDialog(true);
   };
 
-  const handleEditDeposit = (deposit) => {
+  const handleEditDeposit = (deposit: any) => {
     setEditingDeposit(deposit);
     setShowDepositDialog(true);
   };
 
-  const handleViewDeposit = (deposit) => {
+  const handleViewDeposit = (deposit: any) => {
     setSelectedDeposit(deposit);
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      active: { label: 'نشط', variant: 'default' },
-      returned: { label: 'مُسترد', variant: 'secondary' },
-      partial: { label: 'مُسترد جزئياً', variant: 'outline' },
-      pending: { label: 'معلق', variant: 'destructive' }
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { label: string; className: string }> = {
+      active: { label: 'نشط', className: 'bg-emerald-100 text-emerald-700' },
+      returned: { label: 'مُسترد', className: 'bg-slate-100 text-slate-700' },
+      partial: { label: 'مُسترد جزئياً', className: 'bg-amber-100 text-amber-700' },
+      pending: { label: 'معلق', className: 'bg-red-100 text-red-700' }
     };
     
     const config = statusConfig[status] || statusConfig.active;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const filteredDeposits = deposits?.filter(deposit => {
@@ -81,87 +79,53 @@ const Deposits = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Header */}
+    <div className="space-y-6 p-6" dir="rtl">
       <div className="flex justify-between items-center">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">إدارة الودائع</h1>
-            <HelpIcon topic="debitCredit" />
-          </div>
-          <p className="text-muted-foreground">
-            إدارة ودائع العملاء وضمانات التأجير
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900">إدارة الودائع</h1>
+          <p className="text-sm text-slate-500 mt-1">إدارة ودائع العملاء وضمانات التأجير</p>
         </div>
-        <Button onClick={handleAddDeposit} className="gap-2">
-          <Plus className="h-4 w-4" />
+        <Button onClick={handleAddDeposit} className="bg-slate-900 hover:bg-slate-800">
+          <Plus className="h-4 w-4 ml-2" />
           إضافة وديعة جديدة
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي الودائع
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalDeposits)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              جميع الودائع المسجلة
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              الودائع النشطة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {activeDeposits}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              ودائع غير مُستردة
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              متوسط الوديعة
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(deposits?.length ? totalDeposits / deposits.length : 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              للعقد الواحد
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="إجمالي الودائع"
+          value={deposits?.length || 0}
+          subtitle="وديعة مسجلة"
+          icon={Wallet}
+          variant="coral"
+        />
+        <StatCard
+          title="الودائع النشطة"
+          value={activeDeposits}
+          subtitle="ودائع غير مُستردة"
+          icon={CheckCircle}
+          variant="emerald"
+        />
+        <StatCard
+          title="إجمالي المبالغ"
+          value={formatCurrency(totalDeposits)}
+          subtitle="جميع الودائع"
+          icon={Clock}
+          variant="sky"
+        />
       </div>
 
-      {/* Filters and Search */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
             <div className="flex-1 max-w-md">
               <div className="relative">
-                <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute right-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="البحث بالعميل أو رقم الوديعة..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-9"
+                  className="pr-9 bg-slate-50 border-slate-200"
                 />
               </div>
             </div>
@@ -169,7 +133,7 @@ const Deposits = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
+                    <Filter className="h-4 w-4 ml-2" />
                     تصفية الحالة
                   </Button>
                 </DropdownMenuTrigger>
@@ -192,93 +156,93 @@ const Deposits = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 ml-2" />
                 تصدير
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>رقم الوديعة</TableHead>
-                <TableHead>العميل</TableHead>
-                <TableHead>نوع الوديعة</TableHead>
-                <TableHead>المبلغ</TableHead>
-                <TableHead>تاريخ الاستلام</TableHead>
-                <TableHead>تاريخ الاستحقاق</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDeposits.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    <div className="text-muted-foreground">
-                      {searchTerm || statusFilter !== 'all' 
-                        ? 'لا توجد ودائع تطابق معايير البحث'
-                        : 'لا توجد ودائع مسجلة بعد'
-                      }
-                    </div>
-                  </TableCell>
+
+          <div className="rounded-lg border border-slate-200">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="text-right">رقم الوديعة</TableHead>
+                  <TableHead className="text-right">العميل</TableHead>
+                  <TableHead className="text-right">نوع الوديعة</TableHead>
+                  <TableHead className="text-right">المبلغ</TableHead>
+                  <TableHead className="text-right">تاريخ الاستلام</TableHead>
+                  <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">الإجراءات</TableHead>
                 </TableRow>
-              ) : (
-                filteredDeposits.map((deposit) => (
-                  <TableRow key={deposit.id}>
-                    <TableCell className="font-medium">
-                      {deposit.deposit_number}
-                    </TableCell>
-                    <TableCell>{deposit.customer_name}</TableCell>
-                    <TableCell>{deposit.deposit_type_name}</TableCell>
-                    <TableCell className="font-mono">
-                      {formatCurrency(deposit.amount)}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(deposit.received_date).toLocaleDateString('ar-KW')}
-                    </TableCell>
-                    <TableCell>
-                      {deposit.due_date 
-                        ? new Date(deposit.due_date).toLocaleDateString('ar-KW')
-                        : 'غير محدد'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(deposit.status)}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            الإجراءات
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewDeposit(deposit)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            عرض التفاصيل
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditDeposit(deposit)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            تعديل
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            حذف
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {filteredDeposits.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="text-slate-500">
+                        {searchTerm || statusFilter !== 'all' 
+                          ? 'لا توجد ودائع تطابق معايير البحث'
+                          : 'لا توجد ودائع مسجلة بعد'
+                        }
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredDeposits.map((deposit) => (
+                    <TableRow key={deposit.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <TableCell className="font-medium">
+                        {deposit.deposit_number}
+                      </TableCell>
+                      <TableCell>{deposit.customer_name}</TableCell>
+                      <TableCell>{deposit.deposit_type_name}</TableCell>
+                      <TableCell className="font-mono">
+                        {formatCurrency(deposit.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(deposit.received_date).toLocaleDateString('ar-KW')}
+                      </TableCell>
+                      <TableCell>
+                        {deposit.due_date 
+                          ? new Date(deposit.due_date).toLocaleDateString('ar-KW')
+                          : 'غير محدد'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(deposit.status)}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              الإجراءات
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewDeposit(deposit)}>
+                              <Eye className="h-4 w-4 ml-2" />
+                              عرض التفاصيل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditDeposit(deposit)}>
+                              <Edit className="h-4 w-4 ml-2" />
+                              تعديل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                              <Trash2 className="h-4 w-4 ml-2" />
+                              حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Dialogs */}
       <DepositDialog
         open={showDepositDialog}
         onOpenChange={setShowDepositDialog}

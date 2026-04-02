@@ -13,10 +13,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useVendors, useDeleteVendor, useVendorCategories, type Vendor } from "@/hooks/useFinance";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { VendorForm } from "@/components/finance/VendorForm";
 import { VendorDetailsDialog } from "@/components/finance/VendorDetailsDialog";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { StatCard } from "@/components/ui/StatCard";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { cn } from "@/lib/utils";
 import { 
   Building, 
   Plus, 
@@ -24,70 +26,17 @@ import {
   Eye, 
   Edit, 
   Trash2, 
-  Phone, 
-  Mail, 
-  Star, 
-  TrendingUp,
-  ArrowLeft,
   RefreshCw,
   Users,
   DollarSign,
   CheckCircle,
   XCircle,
-  Filter,
+  ArrowLeft,
+  Phone,
+  Mail,
   Layers,
+  Filter,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  trend?: 'up' | 'down' | 'neutral';
-  change?: string;
-  delay?: number;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  change,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {change && (
-        <div className={cn(
-          "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
-          trend === 'up' ? 'bg-green-100 text-green-600' :
-          trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-slate-100 text-slate-600'
-        )}>
-          {trend === 'up' && <TrendingUp className="w-3 h-3" />}
-          {change}
-        </div>
-      )}
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
 
 const Vendors = () => {
   const navigate = useNavigate();
@@ -181,28 +130,19 @@ const Vendors = () => {
 
   return (
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
-      {/* Hero Header */}
-      <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Building className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">الموردين</h1>
-              <p className="text-white/80 text-sm mt-1">
-                إدارة بيانات الموردين والحسابات المالية
-              </p>
-            </div>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">الموردين</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              إدارة بيانات الموردين والحسابات المالية
+            </p>
           </div>
           <div className="flex gap-2">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-white text-coral-600 hover:bg-white/90">
+                <Button className="bg-slate-900 hover:bg-slate-800">
                   <Plus className="h-4 w-4 ml-2" />
                   مورد جديد
                 </Button>
@@ -222,18 +162,16 @@ const Vendors = () => {
             </Dialog>
             <Button
               onClick={() => refetch()}
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
             >
               <RefreshCw className="h-4 w-4 ml-2" />
               تحديث
             </Button>
             <Button
               onClick={() => navigate('/finance/hub')}
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
             >
               <ArrowLeft className="h-4 w-4 ml-2" />
               العودة
@@ -241,85 +179,58 @@ const Vendors = () => {
           </div>
         </div>
 
-        {/* Quick Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">إجمالي الموردين</p>
-            <p className="text-2xl font-bold mt-1">{stats.totalVendors}</p>
-            <p className="text-xs text-white/60">{stats.activeVendors} نشط</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">التصنيفات</p>
-            <p className="text-2xl font-bold mt-1">{stats.totalCategories}</p>
-            <p className="text-xs text-white/60">فئة تصنيف</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">المبالغ المستحقة</p>
-            <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalBalance)}</p>
-            <p className="text-xs text-white/60">{stats.vendorsWithBalance} مورد</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">نسبة النشطين</p>
-            <p className="text-2xl font-bold mt-1">
-              {stats.totalVendors > 0 ? ((stats.activeVendors / stats.totalVendors) * 100).toFixed(0) : 0}%
-            </p>
-            <p className="text-xs text-white/60">{stats.inactiveVendors} غير نشط</p>
-          </div>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="إجمالي الموردين"
+            value={stats.totalVendors}
+            subtitle="جميع الموردين"
+            icon={Building}
+            variant="coral"
+            delay={0.1}
+          />
+          <StatCard
+            title="الموردين النشطين"
+            value={stats.activeVendors}
+            subtitle="Active Vendors"
+            icon={CheckCircle}
+            variant="emerald"
+            trend="up"
+            change={`${stats.totalVendors > 0 ? ((stats.activeVendors / stats.totalVendors) * 100).toFixed(0) : 0}%`}
+            delay={0.15}
+          />
+          <StatCard
+            title="التصنيفات"
+            value={stats.totalCategories}
+            subtitle="Categories"
+            icon={Layers}
+            variant="violet"
+            delay={0.2}
+          />
+          <StatCard
+            title="إجمالي المستحقات"
+            value={formatCurrency(stats.totalBalance)}
+            subtitle="Total Balance"
+            icon={DollarSign}
+            variant="sky"
+            delay={0.25}
+          />
         </div>
-      </motion.div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          title="إجمالي الموردين"
-          value={stats.totalVendors}
-          subtitle="جميع الموردين"
-          icon={Building}
-          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
-          delay={0.1}
-        />
-        <StatCard
-          title="الموردين النشطين"
-          value={stats.activeVendors}
-          subtitle="Active Vendors"
-          icon={CheckCircle}
-          iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
-          trend="up"
-          change={`${stats.totalVendors > 0 ? ((stats.activeVendors / stats.totalVendors) * 100).toFixed(0) : 0}%`}
-          delay={0.15}
-        />
-        <StatCard
-          title="التصنيفات"
-          value={stats.totalCategories}
-          subtitle="Categories"
-          icon={Layers}
-          iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
-          delay={0.2}
-        />
-        <StatCard
-          title="إجمالي المستحقات"
-          value={formatCurrency(stats.totalBalance)}
-          subtitle="Total Balance"
-          icon={DollarSign}
-          iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-          delay={0.25}
-        />
-      </div>
 
       {/* Search & Filter Card */}
       <motion.div
-        className="bg-white rounded-2xl shadow-sm p-4 mb-6"
-        initial={{ opacity: 0, y: 20 }}
+        className="bg-white rounded-xl border border-slate-200 shadow-sm p-4"
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.15 }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-rose-500" />
-          <h3 className="font-semibold text-neutral-900">البحث والتصفية</h3>
+          <Filter className="h-5 w-5 text-slate-500" />
+          <h3 className="font-semibold text-slate-900">البحث والتصفية</h3>
         </div>
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[250px] relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
             <Input
               placeholder="البحث بالاسم أو جهة الاتصال أو البريد الإلكتروني..."
               value={searchTerm}
@@ -345,24 +256,24 @@ const Vendors = () => {
 
       {/* Vendors Table */}
       <motion.div
-        className="bg-white rounded-2xl shadow-sm overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
+        className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.2 }}
       >
         <div className="p-6 border-b border-slate-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-neutral-900">قائمة الموردين</h3>
-                <p className="text-sm text-neutral-500">إجمالي {filteredVendors.length} مورد</p>
+                <h3 className="font-semibold text-slate-900">قائمة الموردين</h3>
+                <p className="text-sm text-slate-500">إجمالي {filteredVendors.length} مورد</p>
               </div>
             </div>
             {filteredVendors.length !== stats.totalVendors && (
-              <Badge variant="secondary" className="bg-rose-100 text-coral-700">
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                 تم تصفية {stats.totalVendors - filteredVendors.length} مورد
               </Badge>
             )}
@@ -372,7 +283,7 @@ const Vendors = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <RefreshCw className="w-10 h-10 animate-spin text-rose-500 mb-4" />
-            <p className="text-neutral-500">جاري تحميل الموردين...</p>
+            <p className="text-slate-500">جاري تحميل الموردين...</p>
           </div>
         ) : error ? (
           <div className="text-center py-16">
@@ -579,6 +490,7 @@ const Vendors = () => {
         open={isDetailsDialogOpen}
         onOpenChange={setIsDetailsDialogOpen}
       />
+      </div>
     </div>
   );
 };

@@ -148,7 +148,7 @@ const Budgets = () => {
         actions={
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/20">
+              <Button className="bg-slate-900 hover:bg-slate-800 shadow-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 موازنة جديدة
               </Button>

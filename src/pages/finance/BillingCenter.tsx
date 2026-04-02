@@ -74,54 +74,7 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
 
-// ===== Stat Card Component =====
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  trend?: 'up' | 'down' | 'neutral';
-  change?: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  change,
-}) => (
-  <motion.div 
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3 }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', iconBg)}>
-        <Icon className="w-5 h-5" />
-      </div>
-      {change && (
-        <span className={cn(
-          'px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1',
-          trend === 'up' ? 'bg-green-100 text-green-600' : 
-          trend === 'down' ? 'bg-red-100 text-red-600' : 
-          'bg-neutral-100 text-neutral-600'
-        )}>
-          {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : 
-           trend === 'down' ? <TrendingDown className="w-3 h-3" /> : null}
-          {change}
-        </span>
-      )}
-    </div>
-    <p className="text-xs text-neutral-500 font-medium mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
+import { StatCard } from "@/components/ui/StatCard";
 
 // ===== Main Component =====
 const BillingCenter = () => {
@@ -406,26 +359,16 @@ const BillingCenter = () => {
 
   return (
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
-      {/* Header */}
-      <motion.div 
-        className="mb-8"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
-              <Receipt className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900">مركز الفواتير والمدفوعات</h1>
-              <p className="text-neutral-500">إدارة الفواتير والمدفوعات في مكان واحد</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">مركز الفواتير والمدفوعات</h1>
+            <p className="text-sm text-slate-500">إدارة الفواتير والمدفوعات في مكان واحد</p>
           </div>
           <div className="flex gap-3">
             <Button 
               onClick={() => setIsCreateInvoiceOpen(true)}
-              className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white gap-2"
+              className="bg-slate-900 hover:bg-slate-800"
             >
               <Plus className="w-4 h-4" />
               فاتورة جديدة
@@ -433,52 +376,26 @@ const BillingCenter = () => {
             <Button 
               onClick={() => setIsCreatePaymentOpen(true)}
               variant="outline"
-              className="gap-2"
             >
               <CreditCard className="w-4 h-4" />
               تسجيل دفعة
             </Button>
           </div>
         </div>
-      </motion.div>
 
-      {/* Monthly Summary - New Section */}
-      <motion.div 
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-lg font-semibold opacity-90 mb-1">ملخص الشهر الحالي</h2>
-            <p className="text-3xl font-bold">{formatCurrency(stats.currentMonthPayments)}</p>
-            <p className="text-sm opacity-80 mt-1">
-              {stats.currentMonthPaymentsCount} دفعة تم استلامها هذا الشهر
-            </p>
-          </div>
-          <div className="text-center">
-              <p className="text-sm opacity-80">فواتير الشهر</p>
-              <p className="text-xl font-bold">{formatCurrency(stats.currentMonthInvoices)}</p>
-              <p className="text-xs opacity-70">{stats.currentMonthInvoicesCount} فاتورة</p>
-            </div>
-        </div>
-      </motion.div>
-
-      {/* Statistics Cards - تظهر فقط في تبويبة الفواتير */}
-      {activeTab === "invoices" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="إجمالي الفواتير"
             value={formatCurrency(stats.totalInvoices)}
             subtitle={`${stats.invoiceCount} فاتورة`}
             icon={Receipt}
-            iconBg="bg-blue-100 text-blue-600"
+            variant="sky"
           />
           <StatCard
             title="المدفوع"
             value={formatCurrency(stats.paidInvoices)}
             icon={CheckCircle}
-            iconBg="bg-green-100 text-green-600"
+            variant="emerald"
             trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
             change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
           />
@@ -486,19 +403,19 @@ const BillingCenter = () => {
             title="المستحق"
             value={formatCurrency(stats.pendingInvoices)}
             icon={Clock}
-            iconBg="bg-yellow-100 text-yellow-600"
+            variant="amber"
           />
           <StatCard
             title="مدفوعات هذا الشهر"
             value={formatCurrency(stats.currentMonthPayments)}
             subtitle={`${stats.currentMonthPaymentsCount} دفعة`}
             icon={CreditCard}
-            iconBg="bg-purple-100 text-purple-600"
+            variant="violet"
             trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
             change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
           />
         </div>
-      )}
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

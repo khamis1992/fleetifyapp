@@ -1,8 +1,3 @@
-/**
- * Payments Dashboard Component
- * Unified view of all payment statuses with quick actions
- */
-
 import { usePaymentsSummary } from "@/hooks/usePaymentsSummary";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,8 +27,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
+import StatCard from "@/components/ui/StatCard";
 import {
-  CreditCard,
   Plus,
   Mail,
   FileText,
@@ -69,35 +64,25 @@ const PaymentsDashboard = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl text-primary-foreground">
-            <CreditCard className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">لوحة المدفوعات</h1>
-            <p className="text-muted-foreground text-sm">عرض موحد لجميع حالات المدفوعات</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">لوحة المدفوعات</h1>
+          <p className="text-sm text-slate-500 mt-1">عرض موحد لجميع حالات المدفوعات</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-10 w-24 mb-2" />
+            <Card key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <Skeleton className="h-4 w-32 mb-4" />
+                <Skeleton className="h-8 w-24 mb-2" />
                 <Skeleton className="h-3 w-20" />
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent>
+        <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <CardContent className="p-6">
             <Skeleton className="h-32 w-full" />
           </CardContent>
         </Card>
@@ -120,16 +105,16 @@ const PaymentsDashboard = () => {
           </BreadcrumbList>
         </Breadcrumb>
 
-        <Card className="border-destructive">
+        <Card className="bg-white rounded-xl border border-red-200 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
+            <CardTitle className="flex items-center gap-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
               خطأ في تحميل بيانات المدفوعات
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">{error.message}</p>
-            <Button onClick={() => refetch()}>إعادة المحاولة</Button>
+            <p className="text-slate-500 mb-4">{error.message}</p>
+            <Button onClick={() => refetch()} className="bg-slate-900 hover:bg-slate-800">إعادة المحاولة</Button>
           </CardContent>
         </Card>
       </div>
@@ -138,7 +123,6 @@ const PaymentsDashboard = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -151,98 +135,59 @@ const PaymentsDashboard = () => {
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Page Header */}
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl text-primary-foreground">
-          <CreditCard className="h-6 w-6" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold">لوحة المدفوعات</h1>
-          <p className="text-muted-foreground text-sm">عرض موحد لجميع حالات المدفوعات</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">لوحة المدفوعات</h1>
+        <p className="text-sm text-slate-500 mt-1">عرض موحد لجميع حالات المدفوعات</p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Outstanding */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المبلغ الإجمالي المستحق</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summary?.total_outstanding || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">إجمالي المبالغ المستحقة</p>
-          </CardContent>
-        </Card>
-
-        {/* Overdue */}
-        <Card className="border-destructive bg-destructive/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-destructive">متأخر</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {formatCurrency(summary?.overdue_amount || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {summary?.overdue_count || 0} عقد متأخر
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Due This Week */}
-        <Card className="border-warning bg-warning/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-warning">مستحق هذا الأسبوع</CardTitle>
-            <Clock className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {formatCurrency(summary?.due_this_week || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">خلال 7 أيام</p>
-          </CardContent>
-        </Card>
-
-        {/* Paid This Month */}
-        <Card className="border-success bg-success/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-success">مدفوع هذا الشهر</CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              {formatCurrency(summary?.paid_this_month || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {format(new Date(), "MMMM yyyy", { locale: ar })}
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="المبلغ الإجمالي المستحق"
+          value={formatCurrency(summary?.total_outstanding || 0)}
+          subtitle="إجمالي المبالغ المستحقة"
+          icon={DollarSign}
+          variant="coral"
+        />
+        <StatCard
+          title="متأخر"
+          value={formatCurrency(summary?.overdue_amount || 0)}
+          subtitle={`${summary?.overdue_count || 0} عقد متأخر`}
+          icon={AlertCircle}
+          variant="danger"
+        />
+        <StatCard
+          title="مستحق هذا الأسبوع"
+          value={formatCurrency(summary?.due_this_week || 0)}
+          subtitle="خلال 7 أيام"
+          icon={Clock}
+          variant="amber"
+        />
+        <StatCard
+          title="مدفوع هذا الشهر"
+          value={formatCurrency(summary?.paid_this_month || 0)}
+          subtitle={format(new Date(), "MMMM yyyy", { locale: ar })}
+          icon={CheckCircle}
+          variant="emerald"
+        />
       </div>
 
-      {/* Quick Actions */}
-      <Card>
+      <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle>إجراءات سريعة</CardTitle>
+          <CardTitle className="text-slate-900">إجراءات سريعة</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button
             onClick={openRecordPaymentDialog}
-            className="h-11"
+            className="h-11 bg-slate-900 hover:bg-slate-800"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="ml-2 h-4 w-4" />
             تسجيل دفعة
           </Button>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" disabled className="h-11">
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Mail className="ml-2 h-4 w-4" />
                   إرسال تذكيرات
                 </Button>
               </TooltipTrigger>
@@ -255,7 +200,7 @@ const PaymentsDashboard = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" disabled className="h-11">
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="ml-2 h-4 w-4" />
                   تقرير المدفوعات
                 </Button>
               </TooltipTrigger>
@@ -267,36 +212,35 @@ const PaymentsDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Overdue Payments Table */}
-      <Card>
+      <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle>المدفوعات المتأخرة</CardTitle>
-          <p className="text-sm text-muted-foreground">
+          <CardTitle className="text-slate-900">المدفوعات المتأخرة</CardTitle>
+          <p className="text-sm text-slate-500">
             {summary?.overdue_payments?.length || 0} عقد متأخر
           </p>
         </CardHeader>
         <CardContent>
           {!summary?.overdue_payments || summary.overdue_payments.length === 0 ? (
             <div className="text-center py-8">
-              <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
-              <p className="text-muted-foreground">لا توجد مدفوعات متأخرة</p>
+              <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+              <p className="text-slate-500">لا توجد مدفوعات متأخرة</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-lg border border-slate-200">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>رقم العقد</TableHead>
-                    <TableHead>اسم العميل</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>تاريخ الاستحقاق</TableHead>
-                    <TableHead>الأيام المتأخرة</TableHead>
-                    <TableHead>إجراءات</TableHead>
+                  <TableRow className="bg-slate-50">
+                    <TableHead className="text-right">رقم العقد</TableHead>
+                    <TableHead className="text-right">اسم العميل</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">تاريخ الاستحقاق</TableHead>
+                    <TableHead className="text-right">الأيام المتأخرة</TableHead>
+                    <TableHead className="text-right">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {summary.overdue_payments.map((payment) => (
-                    <TableRow key={payment.id}>
+                    <TableRow key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <TableCell className="font-medium">{payment.contract_number}</TableCell>
                       <TableCell>{payment.customer_name}</TableCell>
                       <TableCell className="font-mono">
@@ -306,7 +250,7 @@ const PaymentsDashboard = () => {
                         {format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ar })}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="destructive">{payment.days_overdue} يوم</Badge>
+                        <Badge className="bg-red-100 text-red-700">{payment.days_overdue} يوم</Badge>
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -317,11 +261,11 @@ const PaymentsDashboard = () => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={openRecordPaymentDialog}>
-                              <Plus className="mr-2 h-4 w-4" />
+                              <Plus className="ml-2 h-4 w-4" />
                               تسجيل دفعة
                             </DropdownMenuItem>
                             <DropdownMenuItem disabled>
-                              <Mail className="mr-2 h-4 w-4" />
+                              <Mail className="ml-2 h-4 w-4" />
                               إرسال تذكير (ستتوفر قريباً)
                             </DropdownMenuItem>
                           </DropdownMenuContent>
