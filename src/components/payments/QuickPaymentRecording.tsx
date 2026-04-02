@@ -446,6 +446,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
     try {
       // تحديد تاريخ اليوم لفلترة الفواتير المستحقة فقط
       const today = new Date().toISOString().split('T')[0];
+      const monthStart = startOfMonth(new Date()).toISOString().split('T')[0];
+      const monthEnd = endOfMonth(new Date()).toISOString().split('T')[0];
 
       const { data, error } = await supabase
         .from('invoices')
@@ -471,7 +473,8 @@ export function QuickPaymentRecording({ onStepChange }: QuickPaymentRecordingPro
         .eq('contract_id', contract.id)  // فلترة حسب العقد المختار
         .in('payment_status', ['unpaid', 'partial', 'overdue', 'pending'])
         .neq('status', 'cancelled')
-        .lte('due_date', today)  // ✅ عرض الفواتير المستحقة حتى اليوم فقط (لا فواتير مستقبلية)
+        .gte('invoice_date', monthStart)  // ✅ عرض فواتير الشهر الحالي فصاعداً
+        .lte('due_date', monthEnd)        // ✅ مستحقة حتى نهاية الشهر الحالي
         .order('due_date', { ascending: true });
 
       if (error) throw error;
