@@ -14,6 +14,7 @@ const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
 import { useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useTreasurySummary } from "@/hooks/useTreasury";
 import { InvoiceForm } from "@/components/finance/InvoiceForm";
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
 import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog";
@@ -113,6 +114,7 @@ const BillingCenter = () => {
   // Data fetching
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoices({ pageSize: 100 });
   const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
+  const { data: treasurySummary } = useTreasurySummary();
 
   // Extract data
   const invoices = useMemo(() => {
@@ -414,6 +416,15 @@ const BillingCenter = () => {
             trend={stats.monthlyChange >= 0 ? 'up' : 'down'}
             change={`${stats.monthlyChange >= 0 ? '+' : ''}${stats.monthlyChange}%`}
           />
+          {treasurySummary && (
+            <StatCard
+              title="رصيد الخزينة"
+              value={formatCurrency(treasurySummary.totalBalance)}
+              subtitle={`${treasurySummary.totalBanks} بنك`}
+              icon={Wallet}
+              variant="emerald"
+            />
+          )}
         </div>
       </div>
 

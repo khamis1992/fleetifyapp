@@ -1,10 +1,11 @@
 import React from 'react';
-import { DollarSign, Eye, Edit, Trash2 } from 'lucide-react';
+import { DollarSign, Eye, Edit, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateInGregorian } from '@/utils/dateFormatter';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface InvoiceCardProps {
   invoice: any;
@@ -12,6 +13,7 @@ interface InvoiceCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onPay?: () => void;
+  onJournalEntryClick?: () => void;
 }
 
 export const InvoiceCard: React.FC<InvoiceCardProps> = ({
@@ -19,7 +21,8 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   onPreview,
   onEdit,
   onDelete,
-  onPay
+  onPay,
+  onJournalEntryClick
 }) => {
   const getPaymentStatusBadge = (paymentStatus: string) => {
     const statusConfig = {
@@ -40,6 +43,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
   };
 
   const canPay = invoice.payment_status === 'unpaid' || invoice.payment_status === 'partially_paid';
+  const hasJournalEntry = !!invoice.journal_entry_id;
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -47,6 +51,27 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
         <div className="flex items-center justify-between">
           {/* Left side - Actions */}
           <div className="flex items-center gap-2">
+            {/* Journal Entry indicator */}
+            {hasJournalEntry && onJournalEntryClick && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onJournalEntryClick}
+                    className="gap-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                    title="عرض القيد المحاسبي"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    قيود
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>هذه الفاتورة لها قيد محاسبي مرتبط</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            
             {/* Pay button - only show for unpaid/partial invoices */}
             {canPay && onPay && (
               <Button

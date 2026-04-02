@@ -6,52 +6,33 @@ import { SuperAdminRoute } from "@/components/common/ProtectedRoute"
 import { ProtectedFinanceRoute as ProtectedFinanceRouteComponent } from "@/components/finance/ProtectedFinanceRoute"
 
 // Lazy load all finance sub-modules with retry for better reliability
-const FinanceHub = lazyWithRetry(() => import("./finance/FinanceHub"), "FinanceHub");
+// CORE PAGES (kept as real routes)
 const ReceivePaymentWorkflow = lazyWithRetry(() => import("./finance/operations/ReceivePaymentWorkflow"), "ReceivePaymentWorkflow");
 const Overview = lazyWithRetry(() => import("./finance/Overview"), "Overview");
 const AlertsPage = lazyWithRetry(() => import("./finance/AlertsPage"), "AlertsPage");
 const JournalPermissions = lazyWithRetry(() => import("./finance/JournalPermissions"), "JournalPermissions");
-const FinancialRatios = lazyWithRetry(() => import("./finance/FinancialRatios"), "FinancialRatios");
 const InvoiceJournalReport = lazyWithRetry(() => import("./finance/InvoiceJournalReport"), "InvoiceJournalReport");
 const AuditTrailPage = lazyWithRetry(() => import("./finance/AuditTrailPage"), "AuditTrailPage");
 const ChartOfAccounts = lazyWithRetry(() => import("./finance/ChartOfAccounts"), "ChartOfAccounts");
 const GeneralLedger = lazyWithRetry(() => import("./finance/GeneralLedger"), "GeneralLedger");
-const Ledger = lazyWithRetry(() => import("./finance/Ledger"), "Ledger");
 const Treasury = lazyWithRetry(() => import("./finance/Treasury"), "Treasury");
 const CostCenters = lazyWithRetry(() => import("./finance/CostCenters"), "CostCenters");
-// ⭐ مركز الفواتير والمدفوعات الموحد (بديل Invoices + PaymentsUnified)
 const BillingCenter = lazyWithRetry(() => import("./finance/BillingCenter"), "BillingCenter");
-const InvoiceScannerDashboard = lazyWithRetry(() => import("@/components/invoices/InvoiceScannerDashboard").then(m => ({ default: m.InvoiceScannerDashboard })), "InvoiceScannerDashboard");
 const Reports = lazyWithRetry(() => import("./finance/Reports"), "Reports");
 const FixedAssets = lazyWithRetry(() => import("./finance/FixedAssets"), "FixedAssets");
 const Budgets = lazyWithRetry(() => import("./finance/Budgets"), "Budgets");
 const Vendors = lazyWithRetry(() => import("./finance/Vendors"), "Vendors");
 const VendorCategories = lazyWithRetry(() => import("./finance/VendorCategories"), "VendorCategories");
-const FinancialAnalysis = lazyWithRetry(() => import("./finance/FinancialAnalysis"), "FinancialAnalysis");
 const AccountMappings = lazyWithRetry(() => import("./finance/AccountMappings"), "AccountMappings");
 const NewEntry = lazyWithRetry(() => import("./finance/NewEntry"), "NewEntry");
+const AccountingWizard = lazyWithRetry(() => import("./finance/AccountingWizard"), "AccountingWizard");
+const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
+const FinanceSettings = lazyWithRetry(() => import("./finance/FinanceSettings"), "FinanceSettings");
 const JournalEntriesSettings = lazyWithRetry(() => import("./finance/settings/JournalEntriesSettings"), "JournalEntriesSettings");
 const AccountsSettings = lazyWithRetry(() => import("./finance/settings/AccountsSettings"), "AccountsSettings");
 const CostCentersSettings = lazyWithRetry(() => import("./finance/settings/CostCentersSettings"), "CostCentersSettings");
 const AutomaticAccountsSettings = lazyWithRetry(() => import("./finance/settings/AutomaticAccountsSettings"), "AutomaticAccountsSettings");
 const FinancialSystemAnalysis = lazyWithRetry(() => import("./finance/settings/FinancialSystemAnalysis"), "FinancialSystemAnalysis");
-const AccountingWizard = lazyWithRetry(() => import("./finance/AccountingWizard"), "AccountingWizard");
-const FinancialCalculator = lazyWithRetry(() => import("./finance/Calculator"), "FinancialCalculator");
-const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
-const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), "CashReceiptDemo");
-const ProfessionalInvoiceDemo = lazyWithRetry(() => import("../pages/ProfessionalInvoiceDemo"), "ProfessionalInvoiceDemo");
-const JournalEntriesDemo = lazyWithRetry(() => import("../pages/finance/JournalEntriesDemo"), "JournalEntriesDemo");
-const MonthlyRentTracking = lazyWithRetry(() => import("./finance/MonthlyRentTracking"), "MonthlyRentTracking");
-const UnifiedReports = lazyWithRetry(() => import("./finance/UnifiedReports"), "UnifiedReports");
-const UnifiedPayments = lazyWithRetry(() => import("./finance/UnifiedPayments"), "UnifiedPayments");
-const FinanceSettings = lazyWithRetry(() => import("./finance/FinanceSettings"), "FinanceSettings");
-const UnifiedFinance = lazyWithRetry(() => import("./finance/UnifiedFinance"), "UnifiedFinance");
-
-// ⭐ الصفحات المدمجة الجديدة
-const GeneralAccounting = lazyWithRetry(() => import("./finance/GeneralAccounting"), "GeneralAccounting");
-const ReportsAndAnalysis = lazyWithRetry(() => import("./finance/ReportsAndAnalysis"), "ReportsAndAnalysis");
-const BudgetsAndCostCenters = lazyWithRetry(() => import("./finance/BudgetsAndCostCenters"), "BudgetsAndCostCenters");
-const AuditAndSettings = lazyWithRetry(() => import("./finance/AuditAndSettings"), "AuditAndSettings");
 
 // استخدام النظام الجديد للحماية
 const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
@@ -62,70 +43,46 @@ const Finance = () => {
       {/* Redirect from /finance to Finance Overview */}
       <Route index element={<Navigate to="/finance/overview" replace />} />
       
-      {/* Redirect from old hub to overview */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+         PHASE A: REDIRECTS - All duplicate/dead routes redirect to canonical pages
+         ═══════════════════════════════════════════════════════════════════════ */}
+      
+      {/* Duplicate unified pages → canonical pages */}
+      <Route path="unified" element={<Navigate to="/finance/overview" replace />} />
+      <Route path="unified-payments" element={<Navigate to="/finance/billing" replace />} />
+      <Route path="unified-reports" element={<Navigate to="/finance/reports" replace />} />
+      
+      {/* Old routes → canonical pages */}
       <Route path="hub" element={<Navigate to="/finance/overview" replace />} />
+      <Route path="payments" element={<Navigate to="/finance/billing" replace />} />
+      <Route path="payments-dashboard" element={<Navigate to="/finance/billing" replace />} />
+      <Route path="invoices" element={<Navigate to="/finance/billing" replace />} />
       
-      {/* Finance Hub - Unified Interface */}
-      <Route 
-        path="hub" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinanceHub />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-
-      {/* ⭐ الصفحات المدمجة الجديدة */}
+      {/* Accounting redirects → general-ledger */}
+      <Route path="ledger" element={<Navigate to="/finance/general-ledger" replace />} />
+      <Route path="journal-entries" element={<Navigate to="/finance/general-ledger" replace />} />
       
-      {/* المحاسبة العامة - دليل الحسابات + دفتر الأستاذ + القيود */}
-      <Route 
-        path="accounting" 
-        element={
-          <ProtectedFinanceRoute permission="finance.accounts.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <GeneralAccounting />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-
-      {/* التقارير والتحليل - التقارير + التحليل + النسب المالية */}
-      <Route 
-        path="reports-analysis" 
-        element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <ReportsAndAnalysis />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-
-      {/* الموازنات ومراكز التكلفة */}
-      <Route 
-        path="budgets-centers" 
-        element={
-          <ProtectedFinanceRoute permission="finance.budgets.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <BudgetsAndCostCenters />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-
-      {/* التدقيق والإعدادات */}
-      <Route 
-        path="audit-settings" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <AuditAndSettings />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      {/* Analysis/reports redirects */}
+      <Route path="analysis" element={<Navigate to="/finance/reports" replace />} />
+      <Route path="financial-ratios" element={<Navigate to="/finance/reports" replace />} />
+      
+      {/* Demo/dead pages */}
+      <Route path="calculator" element={<Navigate to="/finance/overview" replace />} />
+      <Route path="cash-receipt" element={<Navigate to="/finance/billing" replace />} />
+      <Route path="professional-invoice" element={<Navigate to="/finance/billing" replace />} />
+      <Route path="journal-entries-demo" element={<Navigate to="/finance/general-ledger" replace />} />
+      <Route path="monthly-rent-tracking" element={<Navigate to="/finance/billing" replace />} />
+      
+      {/* Merged pages */}
+      <Route path="reports-analysis" element={<Navigate to="/finance/reports" replace />} />
+      <Route path="budgets-centers" element={<Navigate to="/finance/budgets" replace />} />
+      <Route path="audit-settings" element={<Navigate to="/finance/settings" replace />} />
+      <Route path="accounting" element={<Navigate to="/finance/general-ledger" replace />} />
+      <Route path="accountant-dashboard" element={<Navigate to="/finance/overview" replace />} />
+      
+      {/* ═══════════════════════════════════════════════════════════════════════
+         CORE PAGES - Real rendered routes
+         ═══════════════════════════════════════════════════════════════════════ */}
       
       {/* Workflows */}
       <Route 
@@ -149,17 +106,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="unified" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedFinance />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route path="accountant-dashboard" element={<Navigate to="/finance/hub" replace />} />
+      
       <Route 
         path="alerts" 
         element={
@@ -170,6 +117,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="journal-permissions" 
         element={
@@ -180,16 +128,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="financial-ratios" 
-        element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinancialRatios />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      
       <Route 
         path="invoice-journal-report" 
         element={
@@ -200,6 +139,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="audit-trail" 
         element={
@@ -210,6 +150,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="chart-of-accounts" 
         element={
@@ -220,6 +161,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="general-ledger" 
         element={
@@ -230,18 +172,10 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      <Route 
-        path="ledger" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <GeneralLedger />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      
       {/* Redirect cash-bank to treasury */}
       <Route path="cash-bank" element={<Navigate to="/finance/treasury" replace />} />
+      
       <Route 
         path="treasury" 
         element={
@@ -252,6 +186,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="cost-centers" 
         element={
@@ -262,7 +197,8 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      {/* ⭐ مركز الفواتير والمدفوعات الموحد */}
+      
+      {/* Billing Center - unified invoices and payments */}
       <Route 
         path="billing" 
         element={
@@ -273,43 +209,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      {/* Redirects from old routes */}
-      <Route path="invoices" element={<Navigate to="/finance/billing" replace />} />
-      <Route path="payments" element={<Navigate to="/finance/billing" replace />} />
-      <Route path="payments-dashboard" element={<Navigate to="/finance/billing" replace />} />
       
-      {/* ⭐ توجيهات الصفحات المدمجة الجديدة */}
-      {/* توجيهات المحاسبة العامة */}
-      <Route path="chart-of-accounts-redirect" element={<Navigate to="/finance/accounting?tab=chart" replace />} />
-      <Route path="general-ledger-redirect" element={<Navigate to="/finance/accounting?tab=ledger" replace />} />
-      <Route path="ledger-redirect" element={<Navigate to="/finance/accounting?tab=ledger" replace />} />
-      <Route path="journal-entries-redirect" element={<Navigate to="/finance/accounting?tab=entries" replace />} />
-      
-      {/* توجيهات الفوترة والمدفوعات */}
-      <Route path="deposits-redirect" element={<Navigate to="/finance/billing?tab=deposits" replace />} />
-      <Route path="monthly-rent-redirect" element={<Navigate to="/finance/billing?tab=rent" replace />} />
-      
-      {/* توجيهات التقارير والتحليل */}
-      <Route path="analysis-redirect" element={<Navigate to="/finance/reports-analysis?tab=analysis" replace />} />
-      <Route path="financial-ratios-redirect" element={<Navigate to="/finance/reports-analysis?tab=ratios" replace />} />
-      <Route path="calculator-redirect" element={<Navigate to="/finance/reports-analysis?tab=calculator" replace />} />
-      
-      {/* توجيهات الموازنات ومراكز التكلفة */}
-      <Route path="cost-centers-redirect" element={<Navigate to="/finance/budgets-centers?tab=cost-centers" replace />} />
-      
-      {/* توجيهات التدقيق والإعدادات */}
-      <Route path="audit-trail-redirect" element={<Navigate to="/finance/audit-settings?tab=audit" replace />} />
-      <Route path="settings-redirect" element={<Navigate to="/finance/audit-settings?tab=settings" replace />} />
-      <Route
-        path="journal-entries" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <Ledger />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
       <Route 
         path="reports" 
         element={
@@ -320,6 +220,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="assets" 
         element={
@@ -330,6 +231,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="budgets" 
         element={
@@ -340,6 +242,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route
         path="vendors"
         element={
@@ -350,6 +253,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         }
       />
+      
       <Route
         path="vendor-categories"
         element={
@@ -360,16 +264,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         }
       />
-      <Route
-        path="analysis" 
-        element={
-          <ProtectedFinanceRoute permission="finance.analysis.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinancialAnalysis />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      
       <Route 
         path="account-mappings" 
         element={
@@ -380,6 +275,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="accounting-wizard" 
         element={
@@ -390,6 +286,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
+      
       <Route 
         path="new-entry" 
         element={
@@ -401,73 +298,12 @@ const Finance = () => {
         } 
       />
       
-      {/* الحاسبة المالية */}
-      <Route 
-        path="calculator" 
-        element={
-          <ProtectedFinanceRoute permission="finance.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <FinancialCalculator />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      
-      {/* إدارة الودائع */}
       <Route 
         path="deposits" 
         element={
           <ProtectedFinanceRoute permission="finance.deposits.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Deposits />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      
-      {/* نموذج سند القبض */}
-      <Route 
-        path="cash-receipt" 
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <CashReceiptDemo />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      
-      {/* نموذج الفاتورة الاحترافية */}
-      <Route 
-        path="professional-invoice" 
-        element={
-          <ProtectedFinanceRoute permission="finance.invoices.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <ProfessionalInvoiceDemo />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      
-      {/* نموذج القيود المحاسبية المُعاد تصميمها */}
-      <Route 
-        path="journal-entries-demo" 
-        element={
-          <ProtectedFinanceRoute permission="finance.ledger.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <JournalEntriesDemo />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      
-      {/* متابعة الإيجارات الشهرية */}
-      <Route 
-        path="monthly-rent-tracking" 
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <MonthlyRentTracking />
             </Suspense>
           </ProtectedFinanceRoute>
         } 
@@ -484,6 +320,7 @@ const Finance = () => {
           </SuperAdminRoute>
         } 
       />
+      
       <Route 
         path="settings/accounts" 
         element={
@@ -494,6 +331,7 @@ const Finance = () => {
           </SuperAdminRoute>
         } 
       />
+      
       <Route 
         path="settings/cost-centers" 
         element={
@@ -504,6 +342,7 @@ const Finance = () => {
           </SuperAdminRoute>
         } 
       />
+      
       <Route 
         path="settings/automatic-accounts" 
         element={
@@ -514,6 +353,7 @@ const Finance = () => {
           </SuperAdminRoute>
         } 
       />
+      
       <Route 
         path="settings/financial-system-analysis" 
         element={
@@ -524,27 +364,7 @@ const Finance = () => {
           </ProtectedFinanceRoute>
         } 
       />
-      {/* Unified Finance Modules */}
-      <Route 
-        path="unified-reports" 
-        element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedReports />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
-      <Route 
-        path="unified-payments" 
-        element={
-          <ProtectedFinanceRoute permission="finance.payments.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <UnifiedPayments />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
+      
       <Route 
         path="settings" 
         element={
