@@ -3,12 +3,13 @@
  * متوافق مع الداشبورد الرئيسي
  */
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { StatCard } from "@/components/ui/StatCard";
 import {
   PieChart,
   TrendingUp,
@@ -38,57 +39,6 @@ import { CostCenterReports } from "@/components/finance/CostCenterReports";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
-
-// ===== Stat Card Component =====
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  trend?: 'up' | 'down' | 'neutral';
-  change?: string;
-  delay?: number;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  change,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {change && (
-        <div className={cn(
-          "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
-          trend === 'up' ? 'bg-green-100 text-green-600' :
-          trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-slate-100 text-slate-600'
-        )}>
-          {trend === 'up' && <TrendingUp className="w-3 h-3" />}
-          {trend === 'down' && <TrendingDown className="w-3 h-3" />}
-          {change}
-        </div>
-      )}
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
 
 // ===== Analysis Card Component =====
 interface AnalysisCardProps {
@@ -168,7 +118,6 @@ const FinancialAnalysis = () => {
     {
       category: "نسب السيولة",
       icon: Wallet,
-      color: "from-blue-500 to-cyan-500",
       ratios: analysisData?.ratios.filter(r => 
         r.name === "نسبة التداول" || r.name === "النسبة السريعة"
       ) || []
@@ -176,7 +125,6 @@ const FinancialAnalysis = () => {
     {
       category: "نسب الربحية",
       icon: TrendingUp,
-      color: "from-green-500 to-emerald-500",
       ratios: analysisData?.ratios.filter(r => 
         r.name.includes("الربح") || r.name.includes("العائد")
       ) || []
@@ -184,7 +132,6 @@ const FinancialAnalysis = () => {
     {
       category: "نسب المديونية",
       icon: Building2,
-      color: "from-orange-500 to-amber-500",
       ratios: analysisData?.ratios.filter(r => 
         r.name.includes("الدين")
       ) || []
@@ -200,10 +147,10 @@ const FinancialAnalysis = () => {
   };
 
   const getHealthScoreColor = (score: number) => {
-    if (score >= 80) return 'from-green-500 to-emerald-500';
-    if (score >= 60) return 'from-blue-500 to-cyan-500';
-    if (score >= 40) return 'from-amber-500 to-orange-500';
-    return 'from-red-500 to-rose-500';
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-sky-600';
+    if (score >= 40) return 'text-amber-600';
+    return 'text-red-600';
   };
 
   const getHealthScoreLabel = (score: number) => {
@@ -218,18 +165,18 @@ const FinancialAnalysis = () => {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-white rounded-xl p-6 mb-6 border border-slate-200 shadow-sm"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <PieChart className="w-7 h-7 text-white" />
+            <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center">
+              <PieChart className="w-7 h-7 text-rose-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">التحليل المالي</h1>
-              <p className="text-white/80 text-sm mt-1">
+              <p className="text-neutral-500 text-sm mt-1">
                 تحليل شامل للأداء المالي والمؤشرات والنسب
               </p>
             </div>
@@ -237,18 +184,16 @@ const FinancialAnalysis = () => {
           <div className="flex gap-2">
             <Button
               onClick={() => navigate('/finance/hub')}
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
             >
               <ArrowLeft className="h-4 w-4 ml-2" />
               العودة
             </Button>
             <Button
               onClick={() => refetch()}
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/20"
             >
               <RefreshCw className="h-4 w-4 ml-2" />
               تحديث
@@ -258,25 +203,25 @@ const FinancialAnalysis = () => {
 
         {/* Quick Financial Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">الإيرادات</p>
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-neutral-500 text-sm">الإيرادات</p>
             <p className="text-2xl font-bold mt-1">{formatCurrency(analysisData?.incomeStatement.revenue || 0)}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">المصروفات</p>
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-neutral-500 text-sm">المصروفات</p>
             <p className="text-2xl font-bold mt-1">{formatCurrency(analysisData?.incomeStatement.expenses || 0)}</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">صافي الربح</p>
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-neutral-500 text-sm">صافي الربح</p>
             <p className={cn(
               "text-2xl font-bold mt-1",
-              (analysisData?.incomeStatement.netIncome || 0) >= 0 ? 'text-green-200' : 'text-red-200'
+              (analysisData?.incomeStatement.netIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'
             )}>
               {formatCurrency(analysisData?.incomeStatement.netIncome || 0)}
             </p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-            <p className="text-white/70 text-sm">هامش الربح</p>
+          <div className="bg-slate-50 rounded-xl p-4">
+            <p className="text-neutral-500 text-sm">هامش الربح</p>
             <p className="text-2xl font-bold mt-1">
               {analysisData?.ratios.find(r => r.name === "هامش الربح الصافي")?.value.toFixed(1) || '0'}%
             </p>
@@ -351,10 +296,10 @@ const FinancialAnalysis = () => {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-rose-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900">اتجاهات الأداء المالي</h3>
@@ -410,10 +355,10 @@ const FinancialAnalysis = () => {
             className="grid grid-cols-1 lg:grid-cols-2 gap-6"
           >
             {/* Financial Performance */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900">الأداء المالي</h3>
@@ -430,7 +375,7 @@ const FinancialAnalysis = () => {
                   <span className="text-neutral-600">إجمالي المصروفات</span>
                   <span className="font-bold text-red-600">{formatCurrency(analysisData?.incomeStatement.expenses || 0)}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-rose-50 to-orange-50 rounded-xl border border-rose-200">
+                <div className="flex justify-between items-center p-4 bg-slate-100 rounded-xl border border-slate-200">
                   <span className="font-medium text-neutral-700">صافي الربح</span>
                   <span className={cn(
                     "text-xl font-bold",
@@ -443,10 +388,10 @@ const FinancialAnalysis = () => {
             </div>
 
             {/* Key Indicators */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900">المؤشرات الرئيسية</h3>
@@ -502,10 +447,10 @@ const FinancialAnalysis = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900">مقارنة الميزانية مع الأداء الفعلي</h3>
@@ -516,7 +461,7 @@ const FinancialAnalysis = () => {
               {analysisData?.budgetComparison ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Revenue Comparison */}
-                  <div className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                  <div className="p-5 bg-green-50 rounded-xl border border-green-200">
                     <div className="flex items-center gap-2 mb-4">
                       <DollarSign className="w-5 h-5 text-green-600" />
                       <h4 className="font-semibold text-green-800">الإيرادات</h4>
@@ -552,7 +497,7 @@ const FinancialAnalysis = () => {
                   </div>
 
                   {/* Expenses Comparison */}
-                  <div className="p-5 bg-gradient-to-br from-red-50 to-rose-50 rounded-xl border border-red-200">
+                  <div className="p-5 bg-red-50 rounded-xl border border-red-200">
                     <div className="flex items-center gap-2 mb-4">
                       <BarChart3 className="w-5 h-5 text-red-600" />
                       <h4 className="font-semibold text-red-800">المصروفات</h4>
@@ -602,205 +547,6 @@ const FinancialAnalysis = () => {
           </motion.div>
         </TabsContent>
 
-        {/* Advanced Analytics Tab */}
-        <TabsContent value="analytics">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-6"
-          >
-            {advancedLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
-              </div>
-            ) : (
-              <>
-                {/* Financial Health Score */}
-                {advancedAnalytics?.financialHealthScore && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
-                        <Activity className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-neutral-900">نقاط الصحة المالية</h3>
-                        <p className="text-sm text-neutral-500">تقييم شامل للوضع المالي</p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Score Display */}
-                      <div className="text-center">
-                        <div className={cn(
-                          "w-32 h-32 rounded-full mx-auto flex items-center justify-center bg-gradient-to-br",
-                          getHealthScoreColor(advancedAnalytics.financialHealthScore.score)
-                        )}>
-                          <span className="text-4xl font-bold text-white">
-                            {advancedAnalytics.financialHealthScore.score.toFixed(0)}
-                          </span>
-                        </div>
-                        <Badge 
-                          className={cn(
-                            "mt-4 text-lg px-4 py-2",
-                            advancedAnalytics.financialHealthScore.score >= 80 ? 'bg-green-100 text-green-700' :
-                            advancedAnalytics.financialHealthScore.score >= 60 ? 'bg-blue-100 text-blue-700' :
-                            advancedAnalytics.financialHealthScore.score >= 40 ? 'bg-amber-100 text-amber-700' :
-                            'bg-red-100 text-red-700'
-                          )}
-                        >
-                          {getHealthScoreLabel(advancedAnalytics.financialHealthScore.score)}
-                        </Badge>
-                      </div>
-                      
-                      {/* Score Factors */}
-                      <div className="space-y-4">
-                        <div className="p-3 bg-slate-50 rounded-xl">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-neutral-600">السيولة</span>
-                            <span className="font-bold text-blue-600">{advancedAnalytics.financialHealthScore.factors.liquidityScore.toFixed(0)}</span>
-                          </div>
-                          <Progress value={advancedAnalytics.financialHealthScore.factors.liquidityScore} className="h-2" />
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-xl">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-neutral-600">الربحية</span>
-                            <span className="font-bold text-green-600">{advancedAnalytics.financialHealthScore.factors.profitabilityScore.toFixed(0)}</span>
-                          </div>
-                          <Progress value={advancedAnalytics.financialHealthScore.factors.profitabilityScore} className="h-2" />
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-xl">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-neutral-600">الكفاءة</span>
-                            <span className="font-bold text-purple-600">{advancedAnalytics.financialHealthScore.factors.efficiencyScore.toFixed(0)}</span>
-                          </div>
-                          <Progress value={advancedAnalytics.financialHealthScore.factors.efficiencyScore} className="h-2" />
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-xl">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-neutral-600">الملاءة المالية</span>
-                            <span className="font-bold text-amber-600">{advancedAnalytics.financialHealthScore.factors.solvencyScore.toFixed(0)}</span>
-                          </div>
-                          <Progress value={advancedAnalytics.financialHealthScore.factors.solvencyScore} className="h-2" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cash Flow Analysis */}
-                {advancedAnalytics?.cashFlowAnalysis && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                        <Wallet className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-neutral-900">تحليل التدفق النقدي</h3>
-                        <p className="text-sm text-neutral-500">مصادر واستخدامات النقد</p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 text-center">
-                        <p className="text-sm text-neutral-600 mb-2">التدفق التشغيلي</p>
-                        <p className={cn(
-                          "text-xl font-bold",
-                          advancedAnalytics.cashFlowAnalysis.operatingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {formatCurrency(advancedAnalytics.cashFlowAnalysis.operatingCashFlow)}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200 text-center">
-                        <p className="text-sm text-neutral-600 mb-2">التدفق الاستثماري</p>
-                        <p className={cn(
-                          "text-xl font-bold",
-                          advancedAnalytics.cashFlowAnalysis.investingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {formatCurrency(advancedAnalytics.cashFlowAnalysis.investingCashFlow)}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200 text-center">
-                        <p className="text-sm text-neutral-600 mb-2">التدفق التمويلي</p>
-                        <p className={cn(
-                          "text-xl font-bold",
-                          advancedAnalytics.cashFlowAnalysis.financingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {formatCurrency(advancedAnalytics.cashFlowAnalysis.financingCashFlow)}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-gradient-to-br from-rose-50 to-orange-50 rounded-xl border border-rose-200 text-center">
-                        <p className="text-sm text-neutral-600 mb-2">صافي التدفق النقدي</p>
-                        <p className={cn(
-                          "text-xl font-bold",
-                          advancedAnalytics.cashFlowAnalysis.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {formatCurrency(advancedAnalytics.cashFlowAnalysis.netCashFlow)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cost Center Performance */}
-                {advancedAnalytics?.costCenterPerformance && advancedAnalytics.costCenterPerformance.length > 0 && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                        <Target className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-neutral-900">أداء مراكز التكلفة</h3>
-                        <p className="text-sm text-neutral-500">تحليل الأداء والكفاءة</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {advancedAnalytics.costCenterPerformance.map((center, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-semibold text-neutral-800">{center.centerName}</h4>
-                            <Badge variant={center.variancePercentage <= 10 ? "default" : center.variancePercentage <= 20 ? "secondary" : "destructive"}>
-                              {center.variancePercentage.toFixed(1)}% انحراف
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-4 text-sm mb-3">
-                            <div>
-                              <p className="text-neutral-500">الميزانية</p>
-                              <p className="font-bold">{formatCurrency(center.budgetAmount)}</p>
-                            </div>
-                            <div>
-                              <p className="text-neutral-500">الفعلي</p>
-                              <p className="font-bold">{formatCurrency(center.actualAmount)}</p>
-                            </div>
-                            <div>
-                              <p className="text-neutral-500">الانحراف</p>
-                              <p className={cn("font-bold", center.variance <= 0 ? 'text-green-600' : 'text-red-600')}>
-                                {formatCurrency(center.variance)}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <Progress 
-                            value={Math.min(100, (center.actualAmount / center.budgetAmount) * 100)} 
-                            className="h-2"
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </motion.div>
-        </TabsContent>
-
         {/* Cost Centers Tab */}
         <TabsContent value="cost-centers">
           <motion.div
@@ -819,10 +565,10 @@ const FinancialAnalysis = () => {
             className="space-y-6"
           >
             {/* Forecasts */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900">التنبؤات المالية</h3>
@@ -838,7 +584,7 @@ const FinancialAnalysis = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="p-5 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200"
+                      className="p-5 bg-indigo-50 rounded-xl border border-indigo-200"
                     >
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-indigo-800">{forecast.period}</h4>
@@ -892,10 +638,10 @@ const FinancialAnalysis = () => {
 
             {/* Historical Comparison */}
             {analysisData?.historicalComparison && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
-                    <LineChart className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <LineChart className="w-5 h-5 text-teal-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-neutral-900">المقارنة التاريخية</h3>
@@ -954,13 +700,10 @@ const FinancialAnalysis = () => {
             className="space-y-6"
           >
             {ratioCategories.map((category, catIndex) => (
-              <div key={catIndex} className="bg-white rounded-2xl p-6 shadow-sm">
+              <div key={catIndex} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className={cn(
-                    "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center",
-                    category.color
-                  )}>
-                    <category.icon className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <category.icon className="w-5 h-5 text-neutral-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-neutral-900">{category.category}</h3>

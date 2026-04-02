@@ -216,7 +216,7 @@ export default function Treasury() {
       >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-xl bg-rose-500 flex items-center justify-center shadow-lg">
               <Landmark className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -228,7 +228,7 @@ export default function Treasury() {
             <Button variant="outline" onClick={() => navigate('/finance/hub')}>
               العودة للوحة التحكم
             </Button>
-            <Button className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-lg" onClick={() => setIsCreateBankDialogOpen(true)}>
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg" onClick={() => setIsCreateBankDialogOpen(true)}>
               <Plus className="w-4 h-4 ml-2" />
               حساب جديد
             </Button>
@@ -308,7 +308,7 @@ export default function Treasury() {
                 onClick={() => setActiveTab('banks')}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+                  <div className="w-12 h-12 rounded-xl bg-sky-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
                   {bank.is_primary && (
@@ -377,7 +377,7 @@ export default function Treasury() {
         <div className="p-6 border-b border-slate-100">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <div className="w-10 h-10 rounded-xl bg-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
                 <ArrowRightLeft className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -395,7 +395,7 @@ export default function Treasury() {
                   className="pr-10 w-64"
                 />
               </div>
-              <Button className="bg-gradient-to-r from-rose-500 to-orange-500" onClick={() => setIsCreateTransactionDialogOpen(true)}>
+              <Button className="bg-slate-900 hover:bg-slate-800" onClick={() => setIsCreateTransactionDialogOpen(true)}>
                 <Plus className="w-4 h-4 ml-2" />
                 معاملة جديدة
               </Button>
@@ -582,7 +582,7 @@ export default function Treasury() {
             </div>
             <Button
               onClick={handleCreateBank}
-              className="w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600"
+              className="w-full bg-slate-900 hover:bg-slate-800"
               disabled={createBank.isPending}
             >
               {createBank.isPending ? "جاري الإنشاء..." : "إنشاء الحساب"}
@@ -678,7 +678,7 @@ export default function Treasury() {
             </div>
             <Button
               onClick={handleCreateTransaction}
-              className="w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600"
+              className="w-full bg-slate-900 hover:bg-slate-800"
               disabled={createTransaction.isPending}
             >
               {createTransaction.isPending ? "جاري الإنشاء..." : "إنشاء المعاملة"}

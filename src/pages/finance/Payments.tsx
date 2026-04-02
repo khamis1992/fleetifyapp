@@ -196,7 +196,7 @@ const Payments = () => {
       title="خطأ في المدفوعات"
       context="صفحة المدفوعات"
     >
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
+      <div className="min-h-screen bg-slate-50" dir="rtl">
         <div className="p-5 space-y-5">
           
           {/* Header */}
@@ -218,7 +218,7 @@ const Payments = () => {
               </motion.button>
 
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+                <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
                   <CreditCard className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -235,7 +235,7 @@ const Payments = () => {
             <div className="flex items-center gap-2">
               <motion.button
                 onClick={() => setIsCreateDialogOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-full font-semibold text-sm hover:from-teal-600 hover:to-teal-700 transition-all shadow-lg shadow-teal-500/20"
+                className="flex items-center gap-2 px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-full font-semibold text-sm transition-all shadow-lg shadow-teal-500/20"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -245,35 +245,7 @@ const Payments = () => {
             </div>
           </motion.div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              title="إجمالي المدفوعات"
-              value={filteredPayments.length}
-              icon={CreditCard}
-              iconBg="bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20"
-            />
-            <StatCard
-              title="المبلغ الإجمالي"
-              value={formatCurrency(totalAmount)}
-              icon={Banknote}
-              iconBg="bg-green-100 text-green-600"
-              change="+12%"
-              trend="up"
-            />
-            <StatCard
-              title="مكتملة"
-              value={completedPayments}
-              icon={CheckCircle2}
-              iconBg="bg-blue-100 text-blue-600"
-            />
-            <StatCard
-              title="سندات القبض"
-              value={receiptsCount}
-              icon={ArrowLeftRight}
-              iconBg="bg-amber-100 text-amber-600"
-            />
-          </div>
+          // Stats cards moved to shared StatCard component
             
           {/* Tabs */}
           <Tabs defaultValue="list" className="w-full">
@@ -285,14 +257,14 @@ const Payments = () => {
               <TabsList className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl p-1 shadow-sm">
                 <TabsTrigger
                   value="list"
-                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white"
+                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white"
                 >
                   <CreditCard className="h-4 w-4" />
                   قائمة المدفوعات
                 </TabsTrigger>
                 <TabsTrigger
                   value="analytics"
-                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white"
+                  className="flex items-center gap-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white"
                 >
                   <BarChart3 className="h-4 w-4" />
                   التحليلات والتقارير
@@ -429,7 +401,7 @@ const Payments = () => {
                         <div className="flex justify-center gap-2">
                           <motion.button
                             onClick={() => refetch()}
-                            className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg text-sm font-medium"
+                            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm font-medium"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -445,14 +417,14 @@ const Payments = () => {
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ type: "spring" }}
                       >
-                        <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-teal-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
                           <CreditCard className="w-8 h-8 text-teal-600" />
                         </div>
                         <p className="text-neutral-600 font-medium mb-2">لا توجد مدفوعات</p>
                         <p className="text-xs text-neutral-400 mb-4">ابدأ بإنشاء أول سند قبض أو صرف</p>
                         <motion.button
                           onClick={() => setIsCreateDialogOpen(true)}
-                          className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-full text-sm font-semibold inline-flex items-center gap-2"
+                          className="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-full text-sm font-semibold inline-flex items-center gap-2"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >

@@ -31,6 +31,7 @@ import {
   LineChart,
   LayoutGrid,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
 import { cn } from "@/lib/utils";
 import { useFinancialAnalysis } from "@/hooks/useFinancialAnalysis";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -78,44 +79,7 @@ interface StatCardProps {
   delay?: number;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  change,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {change && (
-        <div className={cn(
-          "flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg",
-          trend === 'up' ? 'bg-green-100 text-green-600' :
-          trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-slate-100 text-slate-600'
-        )}>
-          {trend === 'up' && <TrendingUp className="w-3 h-3" />}
-          {trend === 'down' && <TrendingDown className="w-3 h-3" />}
-          {change}
-        </div>
-      )}
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
+
 
 const ReportsAndAnalysis = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -160,21 +124,27 @@ const ReportsAndAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">التقارير والتحليل المالي</h1>
+        <p className="text-sm text-slate-500 mt-1">تقارير شاملة وتحليلات مالية متقدمة ونسب الأداء</p>
+      </div>
+
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="mb-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-rose-500 flex items-center justify-center shadow-lg">
               <BarChart3 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">التقارير والتحليل المالي</h1>
-              <p className="text-white/80 text-sm mt-1">
-                تقارير شاملة وتحليلات مالية متقدمة ونسب الأداء
+              <h2 className="text-lg font-semibold text-slate-800">لوحة التقارير والتحليل</h2>
+              <p className="text-slate-500 text-sm">
+                مراجعة شاملة للأداء المالي
               </p>
             </div>
           </div>
@@ -249,7 +219,7 @@ const ReportsAndAnalysis = () => {
           value={formatCurrency(stats.revenue)}
           subtitle="إجمالي الدخل"
           icon={DollarSign}
-          iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
+          variant="success"
           trend={stats.revenue > 0 ? 'up' : 'neutral'}
           delay={0.1}
         />
@@ -258,7 +228,7 @@ const ReportsAndAnalysis = () => {
           value={formatCurrency(stats.expenses)}
           subtitle="إجمالي النفقات"
           icon={TrendingDown}
-          iconBg="bg-gradient-to-br from-red-500 to-rose-500"
+          variant="danger"
           delay={0.2}
         />
         <StatCard
@@ -266,7 +236,7 @@ const ReportsAndAnalysis = () => {
           value={formatCurrency(stats.netIncome)}
           subtitle="الإيرادات - المصروفات"
           icon={Target}
-          iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
+          variant="coral"
           trend={stats.netIncome >= 0 ? 'up' : 'down'}
           change={stats.netIncome >= 0 ? 'ربح' : 'خسارة'}
           delay={0.3}
@@ -276,7 +246,7 @@ const ReportsAndAnalysis = () => {
           value={`${stats.profitMargin.toFixed(1)}%`}
           subtitle="نسبة الربحية"
           icon={Percent}
-          iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
+          variant="violet"
           trend={stats.profitMargin >= 10 ? 'up' : stats.profitMargin > 0 ? 'neutral' : 'down'}
           change={stats.profitMargin >= 10 ? 'جيد' : stats.profitMargin > 0 ? 'مقبول' : 'ضعيف'}
           delay={0.4}
@@ -304,8 +274,10 @@ const ReportsAndAnalysis = () => {
             <CardContent className="p-5">
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                  tab.gradient
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  tab.id === 'reports' && "bg-blue-500",
+                  tab.id === 'analysis' && "bg-green-500",
+                  tab.id === 'ratios' && "bg-purple-500"
                 )}>
                   <tab.icon className="w-6 h-6 text-white" />
                 </div>

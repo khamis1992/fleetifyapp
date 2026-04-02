@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { StatCard } from "@/components/ui/StatCard";
 import {
   Activity,
   TrendingUp,
@@ -32,57 +33,6 @@ import { useFinancialAnalysis } from "@/hooks/useFinancialAnalysis";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { cn } from "@/lib/utils";
 
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  trend?: 'up' | 'down' | 'neutral';
-  status?: 'good' | 'warning' | 'danger';
-  delay?: number;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  trend = 'neutral',
-  status = 'good',
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      {status && (
-        <div className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center",
-          status === 'good' ? 'bg-green-100' :
-          status === 'warning' ? 'bg-amber-100' :
-          'bg-red-100'
-        )}>
-          {status === 'good' && <CheckCircle className="w-4 h-4 text-green-600" />}
-          {status === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-600" />}
-          {status === 'danger' && <AlertTriangle className="w-4 h-4 text-red-600" />}
-        </div>
-      )}
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
-
 // Ratio Categories
 const RATIO_CATEGORIES = [
   {
@@ -90,7 +40,6 @@ const RATIO_CATEGORIES = [
     name: "نسب السيولة",
     description: "قياس قدرة الشركة على الوفاء بالتزاماتها قصيرة الأجل",
     icon: Wallet,
-    gradient: "from-blue-500 to-cyan-500",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
   },
@@ -99,7 +48,6 @@ const RATIO_CATEGORIES = [
     name: "نسب الربحية",
     description: "قياس كفاءة الشركة في تحقيق الأرباح",
     icon: TrendingUp,
-    gradient: "from-green-500 to-emerald-500",
     bgColor: "bg-green-50",
     borderColor: "border-green-200",
   },
@@ -108,7 +56,6 @@ const RATIO_CATEGORIES = [
     name: "نسب المديونية",
     description: "قياس مدى اعتماد الشركة على التمويل بالديون",
     icon: Building2,
-    gradient: "from-amber-500 to-orange-500",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
   },
@@ -117,7 +64,6 @@ const RATIO_CATEGORIES = [
     name: "نسب الكفاءة",
     description: "قياس كفاءة استخدام الموارد والأصول",
     icon: Activity,
-    gradient: "from-purple-500 to-indigo-500",
     bgColor: "bg-purple-50",
     borderColor: "border-purple-200",
   },
@@ -188,21 +134,27 @@ export default function FinancialRatios() {
 
   return (
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">النسب المالية</h1>
+        <p className="text-sm text-slate-500 mt-1">تحليل شامل للنسب والمؤشرات المالية الرئيسية</p>
+      </div>
+
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="mb-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-rose-500 flex items-center justify-center shadow-lg">
               <Percent className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">النسب المالية</h1>
-              <p className="text-white/80 text-sm mt-1">
-                تحليل شامل للنسب والمؤشرات المالية الرئيسية
+              <h2 className="text-lg font-semibold text-slate-800">لوحة النسب المالية</h2>
+              <p className="text-slate-500 text-sm">
+                مراجعة شاملة للأداء المالي
               </p>
             </div>
           </div>
@@ -295,36 +247,28 @@ export default function FinancialRatios() {
             value={keyRatios.currentRatio.toFixed(2)}
             subtitle="Current Ratio"
             icon={Scale}
-            iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-            status={getRatioStatus(keyRatios.currentRatio, 'currentRatio')}
-            delay={0.1}
+            variant="sky"
           />
           <StatCard
             title="النسبة السريعة"
             value={keyRatios.quickRatio.toFixed(2)}
             subtitle="Quick Ratio"
             icon={Gauge}
-            iconBg="bg-gradient-to-br from-purple-500 to-indigo-500"
-            status={getRatioStatus(keyRatios.quickRatio, 'quickRatio')}
-            delay={0.15}
+            variant="violet"
           />
           <StatCard
             title="هامش الربح الصافي"
             value={`${keyRatios.profitMargin.toFixed(1)}%`}
             subtitle="Net Profit Margin"
             icon={TrendingUp}
-            iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
-            status={getRatioStatus(keyRatios.profitMargin, 'profitMargin')}
-            delay={0.2}
+            variant="success"
           />
           <StatCard
             title="نسبة الدين للأصول"
             value={`${keyRatios.debtRatio.toFixed(1)}%`}
             subtitle="Debt to Assets"
             icon={Building2}
-            iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
-            status={getRatioStatus(keyRatios.debtRatio, 'debtRatio')}
-            delay={0.25}
+            variant="amber"
           />
         </div>
       )}
@@ -348,10 +292,10 @@ export default function FinancialRatios() {
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                  category.gradient
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  category.bgColor
                 )}>
-                  <category.icon className="w-6 h-6 text-white" />
+                  <category.icon className="w-6 h-6 text-neutral-700" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-neutral-900">{category.name}</p>
@@ -365,14 +309,14 @@ export default function FinancialRatios() {
 
       {/* Detailed Ratios Component */}
       <motion.div
-        className="bg-white rounded-2xl shadow-sm overflow-hidden"
+        className="bg-white rounded-xl shadow-sm overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
         <div className="p-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>

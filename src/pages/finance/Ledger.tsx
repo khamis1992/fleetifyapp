@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useEnhancedJournalEntries } from '@/hooks/useGeneralLedger';
 import { useChartOfAccounts } from '@/hooks/useChartOfAccounts';
+import { StatCard } from '@/components/ui/StatCard';
 import { 
   FileText, 
   Plus, 
@@ -46,30 +47,7 @@ interface StatCardProps {
   delay?: number;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconBg,
-  delay = 0,
-}) => (
-  <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay }}
-  >
-    <div className="flex items-center justify-between mb-3">
-      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBg)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-    </div>
-    <p className="text-sm text-neutral-500 mb-1">{title}</p>
-    <p className="text-2xl font-bold text-neutral-900">{value}</p>
-    {subtitle && <p className="text-xs text-neutral-400 mt-1">{subtitle}</p>}
-  </motion.div>
-);
+
 
 const Ledger = () => {
   const navigate = useNavigate();
@@ -163,21 +141,27 @@ const Ledger = () => {
       context="صفحة القيود اليومية"
     >
       <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">القيود اليومية</h1>
+          <p className="text-sm text-slate-500 mt-1">إنشاء وإدارة القيود المحاسبية والحركات المالية</p>
+        </div>
+
         {/* Hero Header */}
         <motion.div
-          className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+          className="mb-6"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="w-14 h-14 rounded-xl bg-rose-500 flex items-center justify-center shadow-lg">
                 <FileText className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">القيود اليومية</h1>
-                <p className="text-white/80 text-sm mt-1">
-                  إنشاء وإدارة القيود المحاسبية والحركات المالية
+                <h2 className="text-lg font-semibold text-slate-800">لوحة القيود اليومية</h2>
+                <p className="text-slate-500 text-sm">
+                  متابعة القيود المحاسبية
                 </p>
               </div>
             </div>
@@ -240,7 +224,7 @@ const Ledger = () => {
             value={stats.totalEntries}
             subtitle="جميع القيود"
             icon={FileText}
-            iconBg="bg-gradient-to-br from-rose-500 to-orange-500"
+            variant="coral"
             delay={0.1}
           />
           <StatCard
@@ -248,7 +232,7 @@ const Ledger = () => {
             value={stats.postedEntries}
             subtitle="Posted Entries"
             icon={CheckCircle}
-            iconBg="bg-gradient-to-br from-green-500 to-emerald-500"
+            variant="success"
             delay={0.15}
           />
           <StatCard
@@ -256,7 +240,7 @@ const Ledger = () => {
             value={stats.draftEntries}
             subtitle="Draft Entries"
             icon={Clock}
-            iconBg="bg-gradient-to-br from-amber-500 to-yellow-500"
+            variant="amber"
             delay={0.2}
           />
           <StatCard
@@ -264,14 +248,14 @@ const Ledger = () => {
             value={stats.cancelledEntries}
             subtitle="Cancelled/Reversed"
             icon={XCircle}
-            iconBg="bg-gradient-to-br from-red-500 to-rose-500"
+            variant="danger"
             delay={0.25}
           />
         </div>
 
         {/* Filters Card */}
         <motion.div
-          className="bg-white rounded-2xl shadow-sm p-4 mb-6"
+          className="bg-white rounded-xl shadow-sm p-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -343,13 +327,13 @@ const Ledger = () => {
           transition={{ delay: 0.3 }}
         >
           {isLoadingEntries ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
               <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-rose-500" />
               <p className="text-neutral-500">جاري تحميل القيود المحاسبية...</p>
             </div>
           ) : !journalEntries || journalEntries.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+              <div className="w-16 h-16 rounded-xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
                 <Receipt className="h-8 w-8 text-rose-500" />
               </div>
               <h3 className="text-lg font-semibold mb-2 text-neutral-900">لا توجد قيود محاسبية</h3>
@@ -372,7 +356,7 @@ const Ledger = () => {
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm">
-                    <CardHeader className="bg-gradient-to-l from-slate-50 to-white border-b py-4">
+                    <CardHeader className="bg-slate-50 border-b py-4">
                       <div className="flex justify-between items-center">
                         <div className="space-y-1">
                           <div className="flex items-center gap-3">
@@ -472,7 +456,7 @@ const Ledger = () => {
                       </Table>
                     
                       {/* Totals */}
-                      <div className="bg-gradient-to-l from-slate-100 to-slate-50 border-t">
+                      <div className="bg-slate-100 border-t">
                         <Table>
                           <TableBody>
                             <TableRow className="border-0">

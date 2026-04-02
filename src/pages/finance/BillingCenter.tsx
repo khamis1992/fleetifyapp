@@ -480,7 +480,7 @@ const BillingCenter = () => {
         {/* Invoices Tab */}
         <TabsContent value="invoices">
           <motion.div 
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
@@ -569,7 +569,7 @@ const BillingCenter = () => {
         {/* Payments Tab */}
         <TabsContent value="payments">
           <motion.div 
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >

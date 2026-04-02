@@ -2,7 +2,7 @@
  * صفحة الموازنات ومراكز التكلفة الموحدة
  * تجمع: الموازنات + مراكز التكلفة
  */
-import { useState, Suspense, lazy } from "react";
+import { Suspense, lazy } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 import {
-  Wallet,
   Target,
   ArrowLeft,
   PiggyBank,
@@ -61,8 +60,8 @@ const BudgetsAndCostCenters = () => {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-              <Target className="w-7 h-7 text-white" />
+            <div className="w-14 h-14 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Target className="w-7 h-7 text-amber-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-neutral-900">
