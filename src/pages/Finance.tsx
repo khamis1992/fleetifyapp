@@ -59,8 +59,11 @@ const ProtectedFinanceRoute = ProtectedFinanceRouteComponent;
 const Finance = () => {
   return (
     <Routes>
-      {/* Redirect from /finance to Finance Hub */}
-      <Route index element={<Navigate to="/finance/hub" replace />} />
+      {/* Redirect from /finance to Finance Overview */}
+      <Route index element={<Navigate to="/finance/overview" replace />} />
+      
+      {/* Redirect from old hub to overview */}
+      <Route path="hub" element={<Navigate to="/finance/overview" replace />} />
       
       {/* Finance Hub - Unified Interface */}
       <Route 

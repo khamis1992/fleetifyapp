@@ -48,14 +48,14 @@ import { toast } from "sonner";
 
 // Tab Configuration
 const TABS = [
-  { id: "trial-balance", label: "ميزان المراجعة", icon: Scale, gradient: "from-blue-500 to-cyan-500" },
-  { id: "income-statement", label: "قائمة الدخل", icon: TrendingUp, gradient: "from-green-500 to-emerald-500" },
-  { id: "balance-sheet", label: "المركز المالي", icon: BarChart3, gradient: "from-purple-500 to-indigo-500" },
-  { id: "cash-flow", label: "التدفقات النقدية", icon: Wallet, gradient: "from-rose-500 to-orange-500" },
-  { id: "payroll", label: "الرواتب", icon: Users, gradient: "from-pink-500 to-rose-500" },
-  { id: "cost-centers", label: "مراكز التكلفة", icon: Building2, gradient: "from-amber-500 to-yellow-500" },
-  { id: "receivables", label: "الذمم المدينة", icon: Receipt, gradient: "from-teal-500 to-cyan-500" },
-  { id: "payables", label: "الذمم الدائنة", icon: FileText, gradient: "from-red-500 to-rose-500" },
+  { id: "trial-balance", label: "ميزان المراجعة", icon: Scale },
+  { id: "income-statement", label: "قائمة الدخل", icon: TrendingUp },
+  { id: "balance-sheet", label: "المركز المالي", icon: BarChart3 },
+  { id: "cash-flow", label: "التدفقات النقدية", icon: Wallet },
+  { id: "payroll", label: "الرواتب", icon: Users },
+  { id: "cost-centers", label: "مراكز التكلفة", icon: Building2 },
+  { id: "receivables", label: "الذمم المدينة", icon: Receipt },
+  { id: "payables", label: "الذمم الدائنة", icon: FileText },
 ];
 
 // Export helpers
@@ -236,9 +236,9 @@ const Reports = () => {
         {/* Tab Content Cards */}
         <motion.div
           className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.05 }}
         >
           {TABS.map((tab) => (
             <Card
@@ -246,7 +246,7 @@ const Reports = () => {
               className={cn(
                 "cursor-pointer transition-all hover:shadow-lg border-2",
                 activeTab === tab.id 
-                  ? "border-rose-500 bg-rose-50/50 shadow-md" 
+                  ? "border-slate-900 bg-slate-50 shadow-md" 
                   : "border-transparent hover:border-slate-200"
               )}
               onClick={() => setActiveTab(tab.id)}
@@ -254,15 +254,20 @@ const Reports = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                    tab.gradient
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    activeTab === tab.id 
+                      ? "bg-slate-900" 
+                      : "bg-slate-100"
                   )}>
-                    <tab.icon className="w-5 h-5 text-white" />
+                    <tab.icon className={cn(
+                      "w-5 h-5",
+                      activeTab === tab.id ? "text-white" : "text-slate-600"
+                    )} />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-sm text-neutral-900">{tab.label}</p>
+                    <p className="font-medium text-sm text-slate-900">{tab.label}</p>
                     {activeTab === tab.id && (
-                      <Badge className="bg-rose-500 text-white text-xs mt-1">نشط</Badge>
+                      <Badge className="bg-slate-900 text-white text-xs mt-1">نشط</Badge>
                     )}
                   </div>
                 </div>

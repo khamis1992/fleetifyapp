@@ -16,6 +16,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { StatCard } from "@/components/ui/StatCard";
+import { motion } from "framer-motion";
 
 export default function CostCenters() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,13 +31,6 @@ export default function CostCenters() {
   const updateCostCenter = useUpdateCostCenter();
   const deleteCostCenter = useDeleteCostCenter();
   const { formatCurrency } = useCurrencyFormatter();
-
-  console.log('📝 [COST_CENTERS_PAGE] Component state:', {
-    costCenters,
-    costCentersCount: costCenters?.length,
-    isLoading,
-    error
-  });
 
   const [newCostCenter, setNewCostCenter] = useState<Partial<CostCenter>>({
     center_code: '',
@@ -110,6 +105,7 @@ export default function CostCenters() {
   const totalBudget = costCenters?.reduce((sum, center) => sum + (center.budget_amount || 0), 0) || 0;
   const totalActual = costCenters?.reduce((sum, center) => sum + (center.actual_amount || 0), 0) || 0;
   const budgetUtilization = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
+  const activeCenters = costCenters?.filter(c => c.is_active !== false).length || 0;
 
   if (isLoading) {
     return (
@@ -128,7 +124,7 @@ export default function CostCenters() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[#f0efed] p-6 space-y-6" dir="rtl">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -145,14 +141,14 @@ export default function CostCenters() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">مراكز التكلفة</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold text-slate-900">مراكز التكلفة</h1>
+          <p className="text-sm text-slate-500 mt-1">
             إدارة وتتبع مراكز التكلفة والموازنات
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-slate-900 hover:bg-slate-800">
               <Plus className="h-4 w-4 mr-2" />
               مركز تكلفة جديد
             </Button>
@@ -220,71 +216,54 @@ export default function CostCenters() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المراكز</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{costCenters?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              مركز تكلفة نشط
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الموازنة</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalBudget)}</div>
-            <p className="text-xs text-muted-foreground">
-              الموازنة المخصصة
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المصروف الفعلي</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalActual)}</div>
-            <p className="text-xs text-muted-foreground">
-              المبلغ المصروف
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">نسبة الاستغلال</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${budgetUtilization > 100 ? 'text-red-600' : budgetUtilization > 80 ? 'text-yellow-600' : 'text-green-600'}`}>
-              {budgetUtilization.toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              من إجمالي الموازنة
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <StatCard
+            title="إجمالي المراكز"
+            value={costCenters?.length || 0}
+            subtitle={`${activeCenters} مركز نشط`}
+            icon={Building}
+            variant="coral"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <StatCard
+            title="إجمالي الموازنة"
+            value={formatCurrency(totalBudget)}
+            subtitle="الموازنة المخصصة"
+            icon={Target}
+            variant="sky"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <StatCard
+            title="المصروف الفعلي"
+            value={formatCurrency(totalActual)}
+            subtitle="المبلغ المصروف"
+            icon={DollarSign}
+            variant="emerald"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <StatCard
+            title="نسبة الاستغلال"
+            value={`${budgetUtilization.toFixed(1)}%`}
+            subtitle="من إجمالي الموازنة"
+            icon={TrendingUp}
+            variant={budgetUtilization > 100 ? 'danger' : budgetUtilization > 80 ? 'amber' : 'emerald'}
+          />
+        </motion.div>
       </div>
 
       {/* Main Content */}
-      <Card>
+      <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                  <CardTitle>مراكز التكلفة</CardTitle>
-                  <HelpIcon topic="accountTypes" />
-                </div>
+                <CardTitle>مراكز التكلفة</CardTitle>
+                <HelpIcon topic="accountTypes" />
+              </div>
               <CardDescription>قائمة جميع مراكز التكلفة المسجلة</CardDescription>
             </div>
             <div className="flex items-center space-x-2">
@@ -301,7 +280,7 @@ export default function CostCenters() {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
                 <TableHead>رمز المركز</TableHead>
                 <TableHead>اسم المركز</TableHead>
                 <TableHead>الموازنة المخصصة</TableHead>
@@ -320,7 +299,7 @@ export default function CostCenters() {
                 const utilization = budgetAmount > 0 ? (actualAmount / budgetAmount) * 100 : 0;
                 
                 return (
-                  <TableRow key={center.id}>
+                  <TableRow key={center.id} className="hover:bg-slate-50 border-b border-slate-100">
                     <TableCell className="font-medium">{center.center_code}</TableCell>
                     <TableCell>
                       <div>
@@ -332,12 +311,12 @@ export default function CostCenters() {
                     </TableCell>
                     <TableCell>{formatCurrency(center.budget_amount || 0)}</TableCell>
                     <TableCell>{formatCurrency(center.actual_amount || 0)}</TableCell>
-                    <TableCell className={remaining < 0 ? 'text-red-600' : 'text-green-600'}>
+                    <TableCell className={remaining < 0 ? 'text-red-600' : 'text-emerald-600'}>
                       {formatCurrency(remaining)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <span className={utilization > 100 ? 'text-red-600' : utilization > 80 ? 'text-yellow-600' : 'text-green-600'}>
+                        <span className={utilization > 100 ? 'text-red-600' : utilization > 80 ? 'text-amber-600' : 'text-emerald-600'}>
                           {utilization.toFixed(1)}%
                         </span>
                         {utilization > 100 && (
