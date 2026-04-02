@@ -52,6 +52,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CommandPaletteHint } from '@/components/ui/CommandPalette';
 
 // ===== Enhanced Stat Card Component =====
 interface StatCardProps {
@@ -469,6 +470,7 @@ const FinanceHubRedesigned: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3">
+                <CommandPaletteHint className="text-white/70 hidden md:flex" />
                 <Button
                   variant="secondary"
                   size="sm"

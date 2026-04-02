@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Progress } from "@/components/ui/progress"
 import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye, Edit } from "lucide-react"
 import { useBudgets, useCreateBudget, useUpdateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { HelpIcon } from '@/components/help/HelpIcon';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
+import { StatCard } from "@/components/ui/StatCard"
+import { FinancePageHeader } from "@/components/ui/FinancePageHeader"
+import { motion } from "framer-motion"
 
 const Budgets = () => {
   const [searchTerm, setSearchTerm] = useState("")
@@ -138,163 +139,177 @@ const Budgets = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/finance">النظام المالي</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>الموازنات</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">الموازنات</h1>
-            <HelpIcon topic="accountTypes" />
-          </div>
-          <p className="text-muted-foreground">إدارة الموازنات والتخطيط المالي</p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/20">
-              <Plus className="h-4 w-4 mr-2" />
-              موازنة جديدة
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>إنشاء موازنة جديدة</DialogTitle>
-              <DialogDescription>أدخل تفاصيل الموازنة الجديدة</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="budgetName">اسم الموازنة *</Label>
-                <Input
-                  id="budgetName"
-                  value={newBudget.budget_name}
-                  onChange={(e) => setNewBudget({ ...newBudget, budget_name: e.target.value })}
-                  placeholder="موازنة 2024"
-                />
-              </div>
-              <div>
-                <Label htmlFor="budgetYear">السنة المالية *</Label>
-                <Input
-                  id="budgetYear"
-                  type="number"
-                  value={newBudget.budget_year}
-                  onChange={(e) => setNewBudget({ ...newBudget, budget_year: Number(e.target.value) })}
-                  placeholder="2024"
-                />
-              </div>
-              <div>
-                <Label htmlFor="totalRevenue">إجمالي الإيرادات المتوقعة</Label>
-                <Input
-                  id="totalRevenue"
-                  type="number"
-                  value={newBudget.total_revenue}
-                  onChange={(e) => setNewBudget({ ...newBudget, total_revenue: Number(e.target.value) })}
-                  placeholder="0.000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="totalExpenses">إجمالي المصروفات المتوقعة</Label>
-                <Input
-                  id="totalExpenses"
-                  type="number"
-                  value={newBudget.total_expenses}
-                  onChange={(e) => setNewBudget({ ...newBudget, total_expenses: Number(e.target.value) })}
-                  placeholder="0.000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes">ملاحظات</Label>
-                <Textarea
-                  id="notes"
-                  value={newBudget.notes}
-                  onChange={(e) => setNewBudget({ ...newBudget, notes: e.target.value })}
-                  placeholder="ملاحظات إضافية"
-                />
-              </div>
-              <Button onClick={handleCreateBudget} className="w-full" disabled={createBudget.isPending}>
-                {createBudget.isPending ? "جاري الإنشاء..." : "إنشاء الموازنة"}
+    <div className="min-h-screen bg-[#f0efed] space-y-6 p-6" dir="rtl">
+      <FinancePageHeader
+        title="الموازنات"
+        description="إدارة الموازنات والتخطيط المالي"
+        icon={Calculator}
+        breadcrumbs={[{ label: "النظام المالي" }, { label: "الموازنات" }]}
+        actions={
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-lg shadow-teal-500/20">
+                <Plus className="h-4 w-4 mr-2" />
+                موازنة جديدة
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>إنشاء موازنة جديدة</DialogTitle>
+                <DialogDescription>أدخل تفاصيل الموازنة الجديدة</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="budgetName">اسم الموازنة *</Label>
+                  <Input
+                    id="budgetName"
+                    value={newBudget.budget_name}
+                    onChange={(e) => setNewBudget({ ...newBudget, budget_name: e.target.value })}
+                    placeholder="موازنة 2024"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="budgetYear">السنة المالية *</Label>
+                  <Input
+                    id="budgetYear"
+                    type="number"
+                    value={newBudget.budget_year}
+                    onChange={(e) => setNewBudget({ ...newBudget, budget_year: Number(e.target.value) })}
+                    placeholder="2024"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="totalRevenue">إجمالي الإيرادات المتوقعة</Label>
+                  <Input
+                    id="totalRevenue"
+                    type="number"
+                    value={newBudget.total_revenue}
+                    onChange={(e) => setNewBudget({ ...newBudget, total_revenue: Number(e.target.value) })}
+                    placeholder="0.000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="totalExpenses">إجمالي المصروفات المتوقعة</Label>
+                  <Input
+                    id="totalExpenses"
+                    type="number"
+                    value={newBudget.total_expenses}
+                    onChange={(e) => setNewBudget({ ...newBudget, total_expenses: Number(e.target.value) })}
+                    placeholder="0.000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="notes">ملاحظات</Label>
+                  <Textarea
+                    id="notes"
+                    value={newBudget.notes}
+                    onChange={(e) => setNewBudget({ ...newBudget, notes: e.target.value })}
+                    placeholder="ملاحظات إضافية"
+                  />
+                </div>
+                <Button onClick={handleCreateBudget} className="w-full" disabled={createBudget.isPending}>
+                  {createBudget.isPending ? "جاري الإنشاء..." : "إنشاء الموازنة"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الموازنات</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalBudgetsCount}</div>
-            <p className="text-xs text-muted-foreground">موازنة مسجلة</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الإيرادات المتوقعة</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalBudgetedRevenue)}</div>
-            <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المصروفات المتوقعة</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatCurrency(totalBudgetedExpenses)}</div>
-            <p className="text-xs text-muted-foreground">إجمالي المصروفات</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">صافي الدخل المتوقع</CardTitle>
-            <Calculator className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${totalNetIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(totalNetIncome)}
-            </div>
-            <p className="text-xs text-muted-foreground">الربح المتوقع</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <StatCard
+            title="إجمالي الموازنات"
+            value={totalBudgetsCount}
+            subtitle="موازنة مسجلة"
+            icon={Target}
+            variant="coral"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <StatCard
+            title="الإيرادات المتوقعة"
+            value={formatCurrency(totalBudgetedRevenue)}
+            subtitle="إجمالي الإيرادات"
+            icon={TrendingUp}
+            variant="success"
+            trend="up"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <StatCard
+            title="المصروفات المتوقعة"
+            value={formatCurrency(totalBudgetedExpenses)}
+            subtitle="إجمالي المصروفات"
+            icon={TrendingDown}
+            variant="danger"
+            trend="down"
+          />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <StatCard
+            title="صافي الدخل المتوقع"
+            value={formatCurrency(totalNetIncome)}
+            subtitle="الربح المتوقع"
+            icon={Calculator}
+            variant={totalNetIncome >= 0 ? 'success' : 'danger'}
+          />
+        </motion.div>
       </div>
 
+      {/* Budget Execution Overview */}
+      <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50">
+        <CardHeader>
+          <CardTitle>نظرة عامة على تنفيذ الموازنة</CardTitle>
+          <CardDescription>مقارنة المخطط بالفعلي</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium">الإيرادات</span>
+                <span className="text-sm text-muted-foreground">65% من المخطط</span>
+              </div>
+              <Progress value={65} className="h-3" />
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-muted-foreground">{formatCurrency(totalBudgetedRevenue * 0.65)} فعلي</span>
+                <span className="text-xs text-muted-foreground">{formatCurrency(totalBudgetedRevenue)} مخطط</span>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium">المصروفات</span>
+                <span className="text-sm text-muted-foreground">45% من المخطط</span>
+              </div>
+              <Progress value={45} className="h-3" />
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-muted-foreground">{formatCurrency(totalBudgetedExpenses * 0.45)} فعلي</span>
+                <span className="text-xs text-muted-foreground">{formatCurrency(totalBudgetedExpenses)} مخطط</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Content */}
-      <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all">
+      <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>قائمة الموازنات</CardTitle>
               <CardDescription>جميع الموازنات المسجلة في النظام</CardDescription>
             </div>
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="البحث في الموازنات..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="البحث في الموازنات..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64 pr-9"
+                />
+              </div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="جميع الحالات" />
@@ -311,68 +326,71 @@ const Budgets = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>اسم الموازنة</TableHead>
-                <TableHead>السنة المالية</TableHead>
-                <TableHead>الإيرادات المتوقعة</TableHead>
-                <TableHead>المصروفات المتوقعة</TableHead>
-                <TableHead>صافي الدخل</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>تاريخ الإنشاء</TableHead>
-                <TableHead>الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBudgets?.map((budget) => {
-                const netIncome = (budget.total_revenue || 0) - (budget.total_expenses || 0)
-                return (
-                  <TableRow key={budget.id}>
-                    <TableCell className="font-medium">{budget.budget_name}</TableCell>
-                    <TableCell>{budget.budget_year}</TableCell>
-                    <TableCell className="text-green-600">
-                      {formatCurrency(budget.total_revenue || 0)}
-                    </TableCell>
-                    <TableCell className="text-red-600">
-                      {formatCurrency(budget.total_expenses || 0)}
-                    </TableCell>
-                    <TableCell className={netIncome >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {formatCurrency(netIncome)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusColor(budget.status)}>
-                        {getStatusLabel(budget.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(budget.created_at).toLocaleDateString('en-GB')}
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => {
-                          console.log('View budget:', budget.id)
-                          setSelectedBudget(budget)
-                          setIsViewDialogOpen(true)
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEditBudget(budget)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>اسم الموازنة</TableHead>
+                  <TableHead>السنة المالية</TableHead>
+                  <TableHead>الإيرادات المتوقعة</TableHead>
+                  <TableHead>المصروفات المتوقعة</TableHead>
+                  <TableHead>صافي الدخل</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>تاريخ الإنشاء</TableHead>
+                  <TableHead>الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBudgets?.map((budget) => {
+                  const netIncome = (budget.total_revenue || 0) - (budget.total_expenses || 0)
+                  return (
+                    <TableRow key={budget.id}>
+                      <TableCell className="font-medium">{budget.budget_name}</TableCell>
+                      <TableCell>{budget.budget_year}</TableCell>
+                      <TableCell className="text-green-600">
+                        {formatCurrency(budget.total_revenue || 0)}
+                      </TableCell>
+                      <TableCell className="text-red-600">
+                        {formatCurrency(budget.total_expenses || 0)}
+                      </TableCell>
+                      <TableCell className={netIncome >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {formatCurrency(netIncome)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(budget.status)}>
+                          {getStatusLabel(budget.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(budget.created_at).toLocaleDateString('en-GB')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedBudget(budget)
+                              setIsViewDialogOpen(true)
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEditBudget(budget)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
           {filteredBudgets?.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               لا توجد موازنات
@@ -520,7 +538,7 @@ const Budgets = () => {
                 placeholder="ملاحظات إضافية"
               />
             </div>
-            <Button onClick={handleUpdateBudget} className="w-full" disabled={updateBudget.isPending}>
+            <Button onClick={handleUpdateBudget} className="w-full h-11" disabled={updateBudget.isPending}>
               {updateBudget.isPending ? "جاري التحديث..." : "تحديث الموازنة"}
             </Button>
           </div>

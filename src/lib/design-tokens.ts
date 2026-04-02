@@ -137,6 +137,13 @@ export const animations = {
     slower: '500ms',
   },
   
+  // Duration in milliseconds for framer-motion
+  durationMs: {
+    fast: 150,
+    normal: 300,
+    slow: 500,
+  },
+  
   easing: {
     DEFAULT: 'cubic-bezier(0.4, 0, 0.2, 1)',
     linear: 'linear',
@@ -144,6 +151,52 @@ export const animations = {
     easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
     easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
     bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  },
+} as const;
+
+// ========== Variant Colors for Cards/Components ==========
+export const variantColors = {
+  default: {
+    bg: 'bg-white',
+    border: 'border-slate-200',
+    text: 'text-slate-900',
+    iconBg: 'bg-slate-100',
+    iconText: 'text-slate-600',
+  },
+  primary: {
+    bg: 'bg-primary/5',
+    border: 'border-primary/20',
+    text: 'text-primary',
+    iconBg: 'bg-primary/10',
+    iconText: 'text-primary',
+  },
+  success: {
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    text: 'text-green-700',
+    iconBg: 'bg-green-100',
+    iconText: 'text-green-600',
+  },
+  warning: {
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    text: 'text-amber-700',
+    iconBg: 'bg-amber-100',
+    iconText: 'text-amber-600',
+  },
+  danger: {
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    text: 'text-red-700',
+    iconBg: 'bg-red-100',
+    iconText: 'text-red-600',
+  },
+  info: {
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    text: 'text-blue-700',
+    iconBg: 'bg-blue-100',
+    iconText: 'text-blue-600',
   },
 } as const;
 
