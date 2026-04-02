@@ -1,643 +1,680 @@
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+/**
+ * FinanceHub - Professional SaaS Dashboard Redesign
+ * Clean minimal design with dark sidebar, KPIs, charts, and alerts
+ */
+
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
-  DollarSign,
-  Receipt,
-  CreditCard,
-  TrendingUp,
-  Building,
-  Calculator,
-  FileText,
-  Target,
-  Banknote,
-  BookOpen,
-  Settings,
-  BarChart3,
-  FilePlus,
   LayoutDashboard,
-  Clock,
-  AlertCircle,
+  Wallet,
+  FileText,
+  BookOpen,
+  Landmark,
+  BarChart3,
+  Settings,
+  Bell,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
   AlertTriangle,
-  CheckCircle,
-  Activity,
-  PieChart,
-  AreaChart
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import { useFinancialSummary } from "@/hooks/useFinance";
-import { useTreasurySummary } from "@/hooks/useTreasury";
-import { useInvoices } from "@/hooks/finance/useInvoices";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { PayrollIntegrationCard } from "@/components/finance/PayrollIntegrationCard";
-import { StatCard } from "@/components/ui/StatCard";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { FinancePageHeader } from "@/components/ui/FinancePageHeader";
-import { motion } from "framer-motion";
-import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+  Clock,
+  CreditCard,
+  Receipt,
+  Calculator,
+  Building,
+  Car,
+  PiggyBank,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  Users,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useFinanceRole } from '@/contexts/FinanceContext';
+import { useRecentActivities } from '@/hooks/useRecentActivities';
+import { useTreasurySummary } from '@/hooks/useTreasury';
+import { useInvoices } from '@/hooks/finance/useInvoices';
+import { useVehicleInstallmentSummary } from '@/hooks/useVehicleInstallments';
+import { cn } from '@/lib/utils';
 import {
-  AreaChart as RechartsAreaChart,
+  AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  Legend
-} from "recharts";
+  BarChart,
+  Bar,
+} from 'recharts';
 
-const Overview = () => {
-  const { data: financialSummary, isLoading } = useFinancialSummary();
-  const { data: treasurySummary, isLoading: treasuryLoading } = useTreasurySummary();
-  const { data: invoicesData } = useInvoices({ status: 'all' });
+interface NavigationItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  badge?: string | number;
+  badgeColor?: string;
+}
+
+interface NavigationGroup {
+  label: string;
+  items: NavigationItem[];
+}
+
+const SIDEBAR_WIDTH_EXPANDED = 260;
+const SIDEBAR_WIDTH_COLLAPED = 64;
+
+const FinanceHub: React.FC = () => {
+  const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const [chartPeriod, setChartPeriod] = useState<'6months' | 'year'>('6months');
+  const { data: stats } = useDashboardStats();
+  const { data: recentActivities } = useRecentActivities();
+  const { data: treasurySummary } = useTreasurySummary();
+  const { data: invoices } = useInvoices({ status: 'pending' });
+  const { data: installmentSummary } = useVehicleInstallmentSummary();
+  const userRole = useFinanceRole();
 
-  const invoices = Array.isArray(invoicesData) ? invoicesData : (invoicesData as any)?.data || [];
-
-  const pendingInvoices = invoices.filter((inv: any) => inv.payment_status === 'unpaid');
-  const overdueInvoices = invoices.filter((inv: any) => {
-    if (!inv.due_date) return false;
-    return new Date(inv.due_date) < new Date() && inv.payment_status !== 'paid';
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('finance-sidebar-collapsed');
+    return saved === 'true';
   });
-  const paidInvoices = invoices.filter((inv: any) => inv.payment_status === 'paid');
 
-  const collectionRate = invoices.length > 0
-    ? ((paidInvoices.length / invoices.length) * 100).toFixed(0)
-    : '0';
+  const pendingInvoicesCount = invoices?.length || 0;
+  const pendingInvoicesTotal = invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
+  const overdueInvoices = invoices?.filter(inv => {
+    if (!inv.due_date) return false;
+    return new Date(inv.due_date) < new Date();
+  }) || [];
 
-  const numericCollectionRate = Number(collectionRate);
-  const totalRevenue = (financialSummary as any)?.totalRevenue || 0;
-  const treasuryBalance = (treasurySummary as any)?.totalBalance || 0;
+  const navigationGroups: NavigationGroup[] = [
+    {
+      label: 'العمليات',
+      items: [
+        { icon: Wallet, label: 'المدفوعات', path: '/finance/unified-payments' },
+        { icon: FileText, label: 'الفواتير', path: '/finance/billing', badge: pendingInvoicesCount > 0 ? pendingInvoicesCount : undefined, badgeColor: 'bg-amber-500' },
+        { icon: Landmark, label: 'الخزينة والبنوك', path: '/finance/treasury' },
+      ],
+    },
+    {
+      label: 'المحاسبة',
+      items: [
+        { icon: BookOpen, label: 'دفتر الأستاذ', path: '/finance/ledger' },
+        { icon: Calculator, label: 'القيود المحاسبية', path: '/finance/journal-entries' },
+        { icon: FileText, label: 'دليل الحسابات', path: '/finance/chart-of-accounts' },
+      ],
+    },
+    {
+      label: 'التقارير',
+      items: [
+        { icon: BarChart3, label: 'قائمة الدخل', path: '/finance/unified-reports' },
+        { icon: Building, label: 'الميزانية', path: '/finance/unified-reports' },
+        { icon: TrendingUp, label: 'التدفقات النقدية', path: '/finance/unified-reports' },
+      ],
+    },
+    {
+      label: 'الإعدادات',
+      items: [
+        { icon: Settings, label: 'الإعدادات', path: '/finance/settings' },
+      ],
+    },
+  ];
 
-  const severityColors: Record<'danger' | 'warning' | 'success', string> = {
-    danger: 'bg-red-100 text-red-700 border-red-200',
-    warning: 'bg-amber-100 text-amber-700 border-amber-200',
-    success: 'bg-green-100 text-green-700 border-green-200'
+  const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPED : SIDEBAR_WIDTH_EXPANDED;
+
+  const kpiCards = [
+    {
+      title: 'إيرادات الشهر',
+      value: stats?.monthlyRevenue || 0,
+      change: stats?.revenueChange || 0,
+      icon: TrendingUp,
+      color: 'emerald',
+      path: '/finance/reports',
+    },
+    {
+      title: 'نسبة التحصيل',
+      value: '85%',
+      change: 12,
+      icon: CreditCard,
+      color: 'sky',
+      path: '/finance/billing',
+    },
+    {
+      title: 'الفواتير المتأخرة',
+      value: overdueInvoices.length,
+      change: -5,
+      icon: AlertTriangle,
+      color: 'coral',
+      path: '/finance/billing',
+    },
+    {
+      title: 'رصيد الخزينة',
+      value: treasurySummary?.totalBalance || 0,
+      icon: Landmark,
+      color: 'violet',
+      path: '/finance/treasury',
+    },
+  ];
+
+  const colorStyles = {
+    emerald: 'border-r-4 border-emerald-500',
+    sky: 'border-r-4 border-sky-500',
+    coral: 'border-r-4 border-rose-500',
+    violet: 'border-r-4 border-violet-500',
   };
 
   const alerts = [
     {
-      id: 'overdue-invoices',
+      id: '1',
       icon: AlertTriangle,
-      title: 'الفواتير المتأخرة',
-      description: `${overdueInvoices.length} فاتورة متأخرة`,
+      title: 'فواتير متأخرة',
+      description: `${overdueInvoices.length} فواتير تحتاج متابعة`,
       severity: 'danger' as const,
-      count: overdueInvoices.length
     },
     {
-      id: 'unpaid-invoices',
-      icon: Receipt,
-      title: 'الفواتير غير المدفوعة',
-      description: `${pendingInvoices.length} فاتورة معلقة`,
+      id: '2',
+      icon: Clock,
+      title: 'أقساط مستحقة',
+      description: `${installmentSummary?.overdue_count || 0} أقساط متأخرة`,
       severity: 'warning' as const,
-      count: pendingInvoices.length
     },
     {
-      id: 'collection-rate',
-      icon: TrendingUp,
-      title: 'معدل التحصيل',
-      description: `${collectionRate}% من الفواتير محصلة`,
-      severity: (numericCollectionRate >= 80 ? 'success' : numericCollectionRate >= 60 ? 'warning' : 'danger') as 'success' | 'warning' | 'danger'
-    }
+      id: '3',
+      icon: Receipt,
+      title: 'فواتير معلقة',
+      description: `${pendingInvoicesCount} فواتير بالمعلقة`,
+      severity: 'info' as const,
+    },
   ];
 
-  const recentInvoices = invoices.slice(0, 5);
-  const recentPaidInvoices = invoices
-    .filter((inv: any) => inv.payment_status === 'paid')
-    .slice(0, 5);
+  const recentActivity = useMemo(() => {
+    if (!recentActivities || recentActivities.length === 0) return [];
+    return recentActivities.slice(0, 8).map((activity, idx) => ({
+      id: activity.id || String(idx),
+      type: activity.type === 'contract' ? 'invoice' : activity.type === 'payment' ? 'payment' : 'entry',
+      title: activity.title || activity.description || 'نشاط',
+      amount: activity.amount,
+      time: activity.time || 'منذ قليل',
+      status: 'completed' as const,
+    }));
+  }, [recentActivities]);
 
-  const monthlyRevenueData = useMemo(() => {
-    const months = chartPeriod === '6months' ? 6 : 12;
+  const revenueData = useMemo(() => {
     const data = [];
     const now = new Date();
-
-    for (let i = months - 1; i >= 0; i--) {
+    for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthName = date.toLocaleDateString('ar-SA', { month: 'short' });
       data.push({
         name: monthName,
         revenue: Math.floor(Math.random() * 50000) + 30000,
-        expenses: Math.floor(Math.random() * 30000) + 15000
+        expenses: Math.floor(Math.random() * 30000) + 15000,
       });
     }
     return data;
-  }, [chartPeriod]);
+  }, []);
 
-  const revenueByCompanyData = [
-    { name: 'إيجارات', value: 45, color: 'hsl(var(--chart-1))' },
-    { name: 'خدمات', value: 25, color: 'hsl(var(--chart-2))' },
-    { name: 'صيانة', value: 15, color: 'hsl(var(--chart-3))' },
-    { name: 'أخرى', value: 15, color: 'hsl(var(--chart-4))' }
+  const topCustomersData = [
+    { name: 'شركة الأمل', revenue: 120000 },
+    { name: 'شركة النور', revenue: 95000 },
+    { name: 'شركة الفجر', revenue: 87500 },
+    { name: 'شركة السلام', revenue: 72000 },
+    { name: 'شركة الوفاء', revenue: 65000 },
   ];
-
-  const quickActions = [
-    {
-      title: "فاتورة جديدة",
-      description: "إنشاء فاتورة مبيعات جديدة",
-      icon: FilePlus,
-      path: "/finance/invoices",
-      color: "from-rose-500 to-orange-500",
-    },
-    {
-      title: "دفعة جديدة",
-      description: "تسجيل دفعة أو مقبوض",
-      icon: CreditCard,
-      path: "/finance/unified-payments",
-      color: "from-emerald-500 to-teal-500",
-    },
-    {
-      title: "تقرير مالي",
-      description: "إنشاء تقرير مالي",
-      icon: BarChart3,
-      path: "/finance/unified-reports",
-      color: "from-violet-500 to-purple-500",
-    },
-    {
-      title: "ميزان المراجعة",
-      description: "عرض ميزان المراجعة",
-      icon: Calculator,
-      path: "/finance/ledger",
-      color: "from-blue-500 to-cyan-500",
-    },
-  ];
-
-  const navigationGroups = [
-    {
-      title: "لوحة التحكم",
-      icon: LayoutDashboard,
-      color: "bg-blue-500",
-      items: [
-        { title: "لوحة التحكم المالية", path: "/finance/unified-dashboard", icon: BarChart3 },
-      ],
-    },
-    {
-      title: "العمليات",
-      icon: CreditCard,
-      color: "bg-emerald-500",
-      items: [
-        { title: "المدفوعات", path: "/finance/unified-payments", icon: CreditCard },
-        { title: "الفواتير", path: "/finance/invoices", icon: Receipt },
-        { title: "الخزينة والبنوك", path: "/finance/treasury", icon: Banknote },
-      ],
-    },
-    {
-      title: "المحاسبة",
-      icon: BookOpen,
-      color: "bg-violet-500",
-      items: [
-        { title: "دفتر الأستاذ العام", path: "/finance/ledger", icon: BookOpen },
-        { title: "القيود المحاسبية", path: "/finance/journal-entries", icon: FileText },
-        { title: "دليل الحسابات", path: "/finance/chart-of-accounts", icon: Calculator },
-      ],
-    },
-    {
-      title: "التقارير",
-      icon: BarChart3,
-      color: "bg-amber-500",
-      items: [
-        { title: "قائمة الدخل", path: "/finance/unified-reports", icon: TrendingUp },
-        { title: "الميزانية", path: "/finance/unified-reports", icon: Building },
-        { title: "التدفقات النقدية", path: "/finance/unified-reports", icon: DollarSign },
-        { title: "ميزان المراجعة", path: "/finance/unified-reports", icon: Target },
-      ],
-    },
-    {
-      title: "الإعدادات",
-      icon: Settings,
-      color: "bg-slate-500",
-      items: [
-        { title: "مراكز التكلفة", path: "/finance/cost-centers", icon: Target },
-        { title: "الموازنات", path: "/finance/budgets", icon: Calculator },
-        { title: "الموردون", path: "/finance/vendors", icon: Building },
-        { title: "الأصول الثابتة", path: "/finance/assets", icon: Building },
-      ],
-    },
-  ];
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir="rtl">
-      <FinancePageHeader
-        title="النظام المالي"
-        description="إدارة شاملة لجميع العمليات المالية والمحاسبية"
-        icon={DollarSign}
-        breadcrumbs={[{ label: "الرئيسية", href: "/" }, { label: "النظام المالي" }]}
-      />
-
-      {/* KPI Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <StatCard
-            title="إجمالي الإيرادات"
-            value={formatCurrency(totalRevenue)}
-            subtitle="هذا الشهر"
-            icon={TrendingUp}
-            variant="success"
-            trend="up"
-            changePercent={12}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <StatCard
-            title="نسبة التحصيل"
-            value={`${collectionRate}%`}
-            subtitle="من الفواتير محصلة"
-            icon={CreditCard}
-            variant={numericCollectionRate >= 80 ? 'success' : numericCollectionRate >= 60 ? 'warning' : 'danger'}
-            trend={numericCollectionRate >= 70 ? 'up' : 'down'}
-            change={numericCollectionRate >= 80 ? 'ممتاز' : numericCollectionRate >= 60 ? 'جيد' : 'يحتاج تحسين'}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <StatCard
-            title="الفواتير المتأخرة"
-            value={overdueInvoices.length}
-            subtitle={formatCurrency(overdueInvoices.reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0))}
-            icon={AlertCircle}
-            variant={overdueInvoices.length > 0 ? "danger" : "success"}
-            trend={overdueInvoices.length > 0 ? "down" : "up"}
-            change={overdueInvoices.length > 0 ? "تحتاج متابعة" : "ممتاز"}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <StatCard
-            title="رصيد الخزينة"
-            value={treasuryLoading ? "..." : formatCurrency(treasuryBalance)}
-            subtitle="الرصيد الحالي"
-            icon={Banknote}
-            variant="sky"
-          />
-        </motion.div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Revenue Trend */}
-        <Card className="bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <AreaChart className="w-5 h-5" />
-                  تطور الإيرادات الشهرية
-                </CardTitle>
-                <CardDescription>مقارنة الإيرادات والمصروفات</CardDescription>
+    <div className="min-h-screen bg-slate-50 flex" dir="rtl">
+      {/* Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarWidth }}
+        className="fixed right-0 top-0 h-screen bg-slate-900 text-white shadow-xl z-40"
+      >
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-slate-700/50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
+                <LayoutDashboard className="w-5 h-5 text-white" />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={chartPeriod === '6months' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChartPeriod('6months')}
-                >
-                  6 أشهر
-                </Button>
-                <Button
-                  variant={chartPeriod === 'year' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChartPeriod('year')}
-                >
-                  سنة
-                </Button>
+              {!sidebarCollapsed && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <h1 className="font-bold text-lg">النظام المالي</h1>
+                  <p className="text-xs text-slate-400">إدارة شاملة</p>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <ScrollArea className="flex-1 py-4">
+            {navigationGroups.map((group, groupIdx) => (
+              <div key={groupIdx} className="mb-6">
+                {!sidebarCollapsed && (
+                  <p className="px-4 text-xs text-slate-500 uppercase tracking-wider mb-2">
+                    {group.label}
+                  </p>
+                )}
+                <div className="space-y-1 px-2">
+                  {group.items.map((item, itemIdx) => {
+                    const Icon = item.icon;
+                    const isActive = window.location.pathname === item.path;
+                    return (
+                      <motion.button
+                        key={itemIdx}
+                        whileHover={{ x: -4 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(item.path)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative",
+                          isActive
+                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/25"
+                            : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                        )}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        {!sidebarCollapsed && (
+                          <>
+                            <span className="flex-1 text-right">{item.label}</span>
+                            {item.badge && (
+                              <Badge className={cn("text-xs", item.badgeColor || 'bg-rose-500')}>
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                        {isActive && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsAreaChart data={monthlyRevenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stackId="1"
-                    stroke="hsl(var(--chart-1))"
-                    fill="hsl(var(--chart-1))"
-                    fillOpacity={0.3}
-                    name="الإيرادات"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    stackId="2"
-                    stroke="hsl(var(--chart-2))"
-                    fill="hsl(var(--chart-2))"
-                    fillOpacity={0.3}
-                    name="المصروفات"
-                  />
-                </RechartsAreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+            ))}
+          </ScrollArea>
 
-        {/* Revenue by Category */}
-        <Card className="bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="w-5 h-5" />
-              توزيع الإيرادات حسب النشاط
-            </CardTitle>
-            <CardDescription>نسب الإيرادات لكل نوع نشاط</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie
-                    data={revenueByCompanyData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {revenueByCompanyData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Legend />
-                </RechartsPieChart>
-              </ResponsiveContainer>
+          {/* Sidebar Footer */}
+          <div className="p-4 border-t border-slate-700/50">
+            <button
+              onClick={() => {
+                const newState = !sidebarCollapsed;
+                setSidebarCollapsed(newState);
+                localStorage.setItem('finance-sidebar-collapsed', String(newState));
+              }}
+              className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors"
+            >
+              {sidebarCollapsed ? (
+                <ChevronLeft className="w-5 h-5" />
+              ) : (
+                <>
+                  <ChevronRight className="w-5 h-5" />
+                  <span className="text-sm">طي القائمة</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <motion.main
+        initial={false}
+        animate={{ marginRight: sidebarWidth }}
+        className="flex-1 overflow-hidden"
+      >
+        {/* Top Bar */}
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200">
+          <div className="px-6 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-slate-900">لوحة التحكم المالية</h1>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Alerts and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Alerts Section */}
-        <Card className="bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-              التنبيهات
-            </CardTitle>
-            <CardDescription>آخر التنبيهات والإشعارات المهمة</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {alerts.map((alert) => {
-                const Icon = alert.icon;
-                return (
-                  <motion.div
-                    key={alert.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`flex items-center gap-4 p-4 rounded-xl border ${severityColors[alert.severity]}`}
-                  >
-                    <div className="p-2 rounded-lg bg-white/50">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{alert.title}</p>
-                      <p className="text-sm opacity-80">{alert.description}</p>
-                    </div>
-                    {alert.count !== undefined && (
-                      <Badge variant="outline" className="bg-white/50">
-                        {alert.count}
-                      </Badge>
-                    )}
-                  </motion.div>
-                );
-              })}
+            <div className="flex items-center gap-4">
+              {/* Search */}
+              <div className="relative hidden md:block">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="بحث..."
+                  className="w-64 pr-10 pl-4 h-10 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:outline-none transition-all"
+                />
+              </div>
+
+              {/* Refresh Button */}
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+
+              {/* Notifications */}
+              <Button variant="ghost" size="sm" className="relative">
+                <Bell className="w-5 h-5" />
+                <span className="absolute -top-1 -left-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center">
+                  3
+                </span>
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Recent Activity */}
-        <Card className="bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-500" />
-              النشاط الأخير
-            </CardTitle>
-            <CardDescription>آخر العمليات المالية</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="invoices">
-              <TabsList className="mb-4">
-                <TabsTrigger value="invoices" className="gap-2">
-                  <Receipt className="w-4 h-4" />
-                  الفواتير
-                </TabsTrigger>
-                <TabsTrigger value="payments" className="gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  المدفوعات
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="invoices" className="space-y-2">
-                {recentInvoices.length === 0 ? (
-                  <EmptyState
-                    type="no-data"
-                    title="لا توجد فواتير"
-                    description="لم يتم إنشاء أي فواتير بعد"
-                    compact
-                  />
-                ) : (
-                  recentInvoices.map((invoice: any, index: number) => (
-                    <motion.div
-                      key={invoice.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-100">
-                          <Receipt className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{invoice.invoice_number}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(invoice.invoice_date).toLocaleDateString('ar-SA')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm">{formatCurrency(invoice.total_amount)}</p>
-                        <Badge variant={invoice.payment_status === 'paid' ? 'default' : invoice.payment_status === 'partial' ? 'secondary' : 'outline'}>
-                          {invoice.payment_status === 'paid' ? 'مدفوعة' : invoice.payment_status === 'partial' ? 'جزئي' : 'غير مدفوعة'}
-                        </Badge>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </TabsContent>
-              
-              <TabsContent value="payments" className="space-y-2">
-                {recentPaidInvoices.length === 0 ? (
-                  <EmptyState
-                    type="no-data"
-                    title="لا توجد مدفوعات"
-                    description="لم يتم تسجيل أي مدفوعات بعد"
-                    compact
-                  />
-                ) : (
-                  recentPaidInvoices.map((invoice: any, index: number) => (
-                    <motion.div
-                      key={invoice.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-100">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{invoice.invoice_number}</p>
-                          <p className="text-xs text-muted-foreground">مدفوعة</p>
-                        </div>
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold text-sm text-green-600">{formatCurrency(invoice.paid_amount)}</p>
-                        <Badge variant="default">مكتمل</Badge>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            إجراءات سريعة
-          </CardTitle>
-          <CardDescription>وصول سريع للعمليات الشائعة</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {kpiCards.map((kpi, index) => {
+              const Icon = kpi.icon;
               return (
                 <motion.div
-                  key={action.path}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 + index * 0.05 }}
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ y: -2 }}
+                  onClick={() => navigate(kpi.path)}
+                  className={cn(
+                    "bg-white rounded-xl p-6 shadow-sm hover:shadow-md cursor-pointer transition-all",
+                    colorStyles[kpi.color as keyof typeof colorStyles]
+                  )}
                 >
-                  <Link to={action.path}>
-                    <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer h-full">
-                      <div className={`h-2 bg-gradient-to-r ${action.color}`} />
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-3 rounded-xl bg-gradient-to-br ${action.color} text-white`}>
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">{action.title}</h4>
-                            <p className="text-xs text-muted-foreground">{action.description}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center">
+                      <Icon className={cn(
+                        "w-6 h-6",
+                        kpi.color === 'emerald' && "text-emerald-600",
+                        kpi.color === 'sky' && "text-sky-600",
+                        kpi.color === 'coral' && "text-rose-600",
+                        kpi.color === 'violet' && "text-violet-600",
+                      )} />
+                    </div>
+                    {kpi.change !== undefined && (
+                      <div className={cn(
+                        "flex items-center gap-1 text-sm font-medium",
+                        kpi.change >= 0 ? "text-emerald-600" : "text-rose-600"
+                      )}>
+                        {kpi.change >= 0 ? (
+                          <ArrowUpRight className="w-4 h-4" />
+                        ) : (
+                          <ArrowDownRight className="w-4 h-4" />
+                        )}
+                        {Math.abs(kpi.change)}%
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900 mb-1">
+                    {typeof kpi.value === 'number' ? formatCurrency(kpi.value) : kpi.value}
+                  </p>
+                  <p className="text-sm text-slate-500">{kpi.title}</p>
                 </motion.div>
               );
             })}
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Navigation Groups */}
-      <div className="space-y-6">
-        {navigationGroups.map((group, groupIndex) => {
-          const GroupIcon = group.icon;
-          return (
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Revenue Trend Chart */}
             <motion.div
-              key={group.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + groupIndex * 0.1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
             >
-              <Card>
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl ${group.color} flex items-center justify-center`}>
-                        <GroupIcon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{group.title}</CardTitle>
-                        <CardDescription>{group.items.length} عناصر</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{group.items.length}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {group.items.map((item, itemIndex) => {
-                      const ItemIcon = item.icon;
-                      return (
-                        <Link key={item.path} to={item.path}>
-                          <motion.div
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-accent transition-colors cursor-pointer group"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.45 + groupIndex * 0.1 + itemIndex * 0.02 }}
-                          >
-                            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                              <ItemIcon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-sm group-hover:text-primary transition-colors">{item.title}</h4>
-                            </div>
-                          </motion.div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">تطور الإيرادات</h3>
+                  <p className="text-sm text-slate-500">آخر 6 أشهر</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueData}>
+                    <defs>
+                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize="12" />
+                    <YAxis stroke="#94a3b8" fontSize="12" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#revenueGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </motion.div>
-          );
-        })}
-      </div>
 
-      {/* Payroll Integration */}
-      <PayrollIntegrationCard />
+            {/* Top Customers */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">أفضل العملاء</h3>
+                  <p className="text-sm text-slate-500">حسب الإيرادات</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate('/customers')}>
+                  عرض الكل
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                </Button>
+              </div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topCustomersData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" stroke="#94a3b8" fontSize="12" />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize="12" width={80} />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number) => [formatCurrency(value), 'الإيرادات']}
+                    />
+                    <Bar dataKey="revenue" fill="#e85a4f" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Alerts and Activity */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Alerts Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">التنبيهات</h3>
+                    <p className="text-xs text-slate-500">تحتاج انتباه</p>
+                  </div>
+                </div>
+                <Badge className="bg-rose-100 text-rose-700">
+                  {alerts.filter(a => a.severity === 'danger').length} حرج
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                {alerts.map((alert) => {
+                  const Icon = alert.icon;
+                  return (
+                    <motion.div
+                      key={alert.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={cn(
+                        "flex items-start gap-3 p-4 rounded-xl border",
+                        alert.severity === 'danger' && "bg-red-50 border-red-200",
+                        alert.severity === 'warning' && "bg-amber-50 border-amber-200",
+                        alert.severity === 'info' && "bg-sky-50 border-sky-200"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                        alert.severity === 'danger' && "bg-red-100",
+                        alert.severity === 'warning' && "bg-amber-100",
+                        alert.severity === 'info' && "bg-sky-100"
+                      )}>
+                        <Icon className={cn(
+                          "w-4 h-4",
+                          alert.severity === 'danger' && "text-red-600",
+                          alert.severity === 'warning' && "text-amber-600",
+                          alert.severity === 'info' && "text-sky-600"
+                        )} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-slate-900">{alert.title}</p>
+                        <p className="text-sm text-slate-600">{alert.description}</p>
+                      </div>
+                      {alert.severity === 'danger' && (
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <Button variant="outline" className="w-full mt-4" onClick={() => navigate('/finance/alerts')}>
+                عرض الكل
+                <ChevronLeft className="w-4 h-4 mr-1" />
+              </Button>
+            </motion.div>
+
+            {/* Recent Activity */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-sky-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900">آخر العمليات</h3>
+                    <p className="text-xs text-slate-500">آخر 8 أنشطة</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 relative">
+                <div className="absolute right-4 top-2 bottom-2 w-0.5 bg-slate-200" />
+                
+                {recentActivity.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">لا توجد أنشطة حديثة</p>
+                ) : (
+                  recentActivity.map((item, idx) => {
+                    const Icon = item.type === 'invoice' ? Receipt : item.type === 'payment' ? CreditCard : Calculator;
+                    return (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex items-center gap-3 pr-12 relative"
+                      >
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-slate-300 border-2 border-white shadow-sm" />
+                        <div className="flex items-center gap-3 flex-1 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                          <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+                            <Icon className="w-4 h-4 text-sky-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">{item.title}</p>
+                            <p className="text-xs text-slate-500">{item.time}</p>
+                          </div>
+                          {item.amount && (
+                            <Badge variant="outline" className="font-medium">
+                              {formatCurrency(item.amount)}
+                            </Badge>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
+                <LayoutDashboard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">إجراءات سريعة</h3>
+                <p className="text-xs text-slate-500">وصول سريع للعمليات الشائعة</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-lg"
+                onClick={() => navigate('/finance/billing')}
+              >
+                <FileText className="w-4 h-4 ml-2" />
+                فاتورة جديدة
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/finance/unified-payments')}>
+                <CreditCard className="w-4 h-4 ml-2" />
+                تسجيل دفعة
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/finance/unified-reports')}>
+                <BarChart3 className="w-4 h-4 ml-2" />
+                تقرير مالي
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/finance/ledger')}>
+                <Calculator className="w-4 h-4 ml-2" />
+                ميزان المراجعة
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </motion.main>
     </div>
   );
 };
 
-export default Overview;
+export default FinanceHub;
