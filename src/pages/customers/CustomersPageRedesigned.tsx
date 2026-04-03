@@ -198,7 +198,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 truncate group-hover:text-coral-600 transition-colors">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
             {getCustomerName()}
           </h3>
           <div className="flex items-center gap-2 mt-1">
@@ -242,7 +242,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
               e.stopPropagation();
               onQuickRent();
             }}
-            className="text-xs font-medium text-coral-600 hover:text-coral-700 transition-colors flex items-center gap-1"
+            className="text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors flex items-center gap-1 min-h-[44px] px-3"
           >
             <Plus className="w-3 h-3" />
             إنشاء عقد
@@ -808,14 +808,14 @@ const CustomersPageRedesigned: React.FC = () => {
             {/* Actions */}
             <div className="flex items-center gap-2">
               {/* View Toggle */}
-              <div className="flex items-center bg-slate-100/80 backdrop-blur rounded-xl p-1 border border-slate-200">
+              <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur rounded-xl p-1 border border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                    "px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px]",
                     viewMode === 'grid'
-                      ? 'bg-white shadow-sm text-slate-900'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   )}
                 >
                   <LayoutGrid className="w-4 h-4 ml-1" />
@@ -824,10 +824,10 @@ const CustomersPageRedesigned: React.FC = () => {
                 <button
                   onClick={() => setViewMode('split')}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                    "px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px]",
                     viewMode === 'split'
-                      ? 'bg-white shadow-sm text-slate-900'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   )}
                 >
                   <Columns className="w-4 h-4 ml-1" />
@@ -837,9 +837,9 @@ const CustomersPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => setShowCSVUpload(true)}
-                className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
+                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
               >
                 <Upload className="w-4 h-4" />
                 استيراد
@@ -847,10 +847,10 @@ const CustomersPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => setShowExportDialog(true)}
                 disabled={isLoading}
-                className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
+                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
               >
                 <Download className="w-4 h-4" />
                 تصدير
@@ -858,19 +858,19 @@ const CustomersPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => setShowDocumentDistribution(true)}
                 disabled={isLoading}
-                className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
+                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
               >
                 <IdCard className="w-4 h-4" />
                 توزيع البطاقات
               </Button>
 
               <Button
-                size="sm"
+                size="default"
                 onClick={() => setShowCreateDialog(true)}
-                className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm"
+                className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm min-h-[44px]"
               >
                 <UserPlus className="w-4 h-4" />
                 إضافة عميل
@@ -915,13 +915,13 @@ const CustomersPageRedesigned: React.FC = () => {
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="بحث بالاسم، الهاتف، أو البريد..."
+                  placeholder="بحث بالاسم، الهاتف، أو البريد..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 pr-10 text-sm bg-white/50 border-slate-200 focus:border-teal-500/50"
+                className="h-11 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500"
               />
               {searchTerm && (
                 <button
@@ -935,7 +935,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Type Filter */}
             <Select value={customerType} onValueChange={(v: any) => { setCustomerType(v); setCurrentPage(1); }}>
-              <SelectTrigger className="h-10 w-full lg:w-40">
+              <SelectTrigger className="h-11 w-full lg:w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SelectValue placeholder="النوع" />
               </SelectTrigger>
               <SelectContent>
@@ -947,7 +947,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Status Filter */}
             <Select value={includeInactive ? "all" : "active"} onValueChange={(v) => { setIncludeInactive(v === "all"); setCurrentPage(1); }}>
-              <SelectTrigger className="h-10 w-full lg:w-40">
+              <SelectTrigger className="h-11 w-full lg:w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -1004,7 +1004,7 @@ const CustomersPageRedesigned: React.FC = () => {
             </p>
             <Button
               onClick={() => setShowCreateDialog(true)}
-              className="bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
+              className="bg-teal-500 hover:bg-teal-600 text-white shadow-sm min-h-[44px]"
             >
               <UserPlus className="w-4 h-4 ml-2" />
               إضافة عميل
@@ -1050,10 +1050,10 @@ const CustomersPageRedesigned: React.FC = () => {
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="h-9 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
+                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -1062,13 +1062,13 @@ const CustomersPageRedesigned: React.FC = () => {
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
-                      size="sm"
+                      size="default"
                       onClick={() => setCurrentPage(page)}
                       className={cn(
-                        "h-9 w-9",
+                        "min-h-[44px] min-w-[44px]",
                         currentPage === page
                           ? "bg-teal-500 text-white hover:bg-teal-600"
-                          : "hover:bg-slate-100"
+                          : "hover:bg-slate-100 dark:hover:bg-slate-800"
                       )}
                     >
                       {page}
@@ -1095,10 +1095,10 @@ const CustomersPageRedesigned: React.FC = () => {
 
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="h-9 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
+                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>

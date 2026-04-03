@@ -1091,8 +1091,8 @@ const FleetPageRedesigned: React.FC = () => {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                    size="default"
+                    className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                   >
                     <Download className="w-4 h-4" />
                     تصدير
@@ -1118,9 +1118,9 @@ const FleetPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => setShowGroupManagement(true)}
-                className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <Layers3 className="w-4 h-4" />
                 المجموعات
@@ -1128,10 +1128,10 @@ const FleetPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={handleSyncVehicleStatus}
                 disabled={isSyncing}
-                className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <RotateCcw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
                 {isSyncing ? 'مزامنة...' : 'مزامنة'}
@@ -1139,9 +1139,9 @@ const FleetPageRedesigned: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => setShowDocumentDistribution(true)}
-                className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                 title="توزيع المستندات"
               >
                 <FileText className="w-4 h-4" />
@@ -1151,18 +1151,18 @@ const FleetPageRedesigned: React.FC = () => {
               {user?.roles?.includes('super_admin') && (
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => setShowCSVUpload(true)}
-                  className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                  className="gap-2 min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                 >
                   <Upload className="w-4 h-4" />
                 </Button>
               )}
 
                 <Button
-                  size="sm"
+                  size="default"
                   onClick={() => setShowVehicleForm(true)}
-                  className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm"
+                  className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm min-h-[44px]"
                 >
                   <Plus className="w-4 h-4" />
                   إضافة مركبة
@@ -1255,15 +1255,15 @@ const FleetPageRedesigned: React.FC = () => {
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-slate-500" />
-              <Input
-                placeholder="بحث باللوحة، الموديل، VIN..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-10 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500 dark:focus:border-teal-500"
-              />
+                <Input
+                  placeholder="بحث باللوحة، الموديل، VIN..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="h-11 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500 dark:focus:border-teal-500"
+                />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
@@ -1276,7 +1276,7 @@ const FleetPageRedesigned: React.FC = () => {
 
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="h-10 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SlidersHorizontal className="w-4 h-4 ml-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -1293,7 +1293,7 @@ const FleetPageRedesigned: React.FC = () => {
               value={filters.status || "all"}
               onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v)}
             >
-              <SelectTrigger className="h-10 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -1315,9 +1315,9 @@ const FleetPageRedesigned: React.FC = () => {
             {(activeFiltersCount > 0 || searchQuery) && (
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={handleResetFilters}
-                className="h-10 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <RotateCcw className="w-4 h-4 ml-1" />
               </Button>
@@ -1345,10 +1345,10 @@ const FleetPageRedesigned: React.FC = () => {
                   <span className="font-semibold">{selectedVehicles.size}</span> مركبة محددة
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="h-9 border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
+                  <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
                     تصدير
                   </Button>
-                  <Button size="sm" variant="outline" className="h-9 border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500" onClick={() => setSelectedVehicles(new Set())}>
+                  <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500" onClick={() => setSelectedVehicles(new Set())}>
                     إلغاء التحديد
                   </Button>
                 </div>
@@ -1393,10 +1393,10 @@ const FleetPageRedesigned: React.FC = () => {
                 <div className="flex items-center gap-1">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="h-9 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -1405,10 +1405,10 @@ const FleetPageRedesigned: React.FC = () => {
                     <Button
                       key={page}
                       variant={currentPage === page ? "default" : "ghost"}
-                      size="sm"
+                      size="default"
                       onClick={() => setCurrentPage(page)}
                       className={cn(
-                        "h-9 w-9",
+                        "min-h-[44px] min-w-[44px]",
                         currentPage === page && "bg-teal-500 text-white hover:bg-teal-600"
                       )}
                     >
@@ -1421,10 +1421,10 @@ const FleetPageRedesigned: React.FC = () => {
                       <span className="px-2 text-neutral-400 dark:text-slate-500">...</span>
                       <Button
                         variant={currentPage === totalPages ? "default" : "ghost"}
-                        size="sm"
+                        size="default"
                         onClick={() => setCurrentPage(totalPages)}
                         className={cn(
-                          "h-9 w-9",
+                          "min-h-[44px] min-w-[44px]",
                           currentPage === totalPages && "bg-teal-500 text-white hover:bg-teal-600"
                         )}
                       >
@@ -1435,10 +1435,10 @@ const FleetPageRedesigned: React.FC = () => {
 
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="h-9 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -1455,7 +1455,7 @@ const FleetPageRedesigned: React.FC = () => {
                 ? 'لم يتم العثور على مركبات تطابق البحث'
                 : 'ابدأ بإضافة أول مركبة للأسطول'}
             </p>
-            <Button onClick={() => setShowVehicleForm(true)} className="bg-teal-500 hover:bg-teal-600 text-white">
+            <Button onClick={() => setShowVehicleForm(true)} className="bg-teal-500 hover:bg-teal-600 text-white min-h-[44px]">
               <Plus className="w-4 h-4 ml-2" />
               إضافة مركبة
             </Button>

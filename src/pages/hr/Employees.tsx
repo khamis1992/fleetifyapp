@@ -513,7 +513,7 @@ const { user } = useAuth();
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
@@ -524,7 +524,7 @@ const { user } = useAuth();
             <p className="text-sm text-slate-600 dark:text-slate-400">إدارة بيانات الموظفين والمناصب</p>
           </div>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white shadow-sm">
+        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white shadow-sm">
           <Plus className="h-4 w-4 ml-2" />
           إضافة موظف جديد
         </Button>
@@ -607,7 +607,7 @@ const { user } = useAuth();
                       </div>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <Badge variant={employee.is_active ? "default" : "secondary"} className={employee.is_active ? "bg-teal-500 text-white" : ""}>
+                      <Badge variant={employee.is_active ? "default" : "secondary"} className={employee.is_active ? "bg-teal-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"}>
                         {employee.is_active ? "نشط" : "غير نشط"}
                       </Badge>
                       <div className="flex gap-2 mr-auto sm:mr-0">

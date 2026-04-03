@@ -146,10 +146,10 @@ const deletePayrollMutation = useDeletePayroll();
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-teal-500 rounded-xl dark:bg-slate-800 shadow-sm">
+          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
             <DollarSign className="h-6 w-6 text-white" />
           </div>
           <div>

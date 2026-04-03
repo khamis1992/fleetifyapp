@@ -812,7 +812,7 @@ export const LegalCasesTracking: React.FC = () => {
 
   if (isLoadingCompany) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
         <LoadingSpinner />
       </div>
     );
@@ -1352,7 +1352,7 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="space-y-6">
           {/* Next Hearing Card */}
           {nextHearing ? (
-            <div className="bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-xl p-6 shadow-lg shadow-rose-200">
+            <div className="bg-rose-600 text-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
                 <CalendarDays className="w-5 h-5" />
                 <h3 className="font-bold text-lg">الجلسة القادمة</h3>
@@ -1500,7 +1500,7 @@ export const LegalCasesTracking: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="absolute inset-0 bg-teal-600 rounded-xl blur-xl opacity-20" />
-              <div className="relative bg-teal-600 p-3 rounded-xl shadow-lg">
+              <div className="relative bg-teal-600 p-3 rounded-xl shadow-sm">
                 <Gavel className="text-white" size={24} />
               </div>
             </div>

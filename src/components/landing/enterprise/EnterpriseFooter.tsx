@@ -44,35 +44,35 @@ export function EnterpriseFooter() {
         <div className="grid md:grid-cols-2 lg:grid-cols-6 gap-12">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-3 mb-4 cursor-pointer"
-              onClick={() => navigate('/')}
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-                <span className="text-white font-bold text-xl">F</span>
-              </div>
-              <span className="text-2xl font-bold text-white">Fleetify</span>
-            </motion.div>
+           <motion.div
+             whileHover={{ scale: 1.05 }}
+             className="flex items-center gap-3 mb-4 cursor-pointer"
+             onClick={() => navigate('/')}
+           >
+             <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center">
+               <span className="text-white font-bold text-xl">F</span>
+             </div>
+             <span className="text-2xl font-bold text-white">Fleetify</span>
+           </motion.div>
             <p className="text-slate-400 leading-relaxed mb-6 max-w-md">
               نظام إدارة الأساطيل الأول في قطر. نساعد شركات تأجير السيارات وإدارة الأساطيل على تحسين كفاءتها وزيادة أرباحها.
             </p>
 
             {/* Social Links */}
-            <div className="flex items-center gap-3">
-              {socialLinks.map((social) => (
-                <motion.a
-                  key={social.name}
-                  href={social.href}
-                  whileHover={{ scale: 1.1, y: -3 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors"
-                  aria-label={social.name}
-                >
-                  <social.icon className="w-5 h-5" />
-                </motion.a>
-              ))}
-            </div>
+             <div className="flex items-center gap-3">
+               {socialLinks.map((social) => (
+                 <motion.a
+                   key={social.name}
+                   href={social.href}
+                   whileHover={{ scale: 1.1, y: -3 }}
+                   whileTap={{ scale: 0.9 }}
+                   className="w-10 h-10 min-h-[44px] min-w-[44px] bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-colors"
+                   aria-label={social.name}
+                 >
+                   <social.icon className="w-5 h-5" />
+                 </motion.a>
+               ))}
+             </div>
           </div>
 
           {/* Footer Links */}

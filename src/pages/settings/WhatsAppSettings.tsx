@@ -382,7 +382,7 @@ const WhatsAppSettings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="container mx-auto px-4 py-6 max-w-5xl">
         {/* Header - بنفس تصميم الداشبورد */}
         <motion.header

@@ -24,11 +24,12 @@ export function EnterpriseHero() {
             transition={{ duration: 0.8 }}
           >
             {/* Badge */}
+            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500/10 backdrop-blur-sm rounded-full border border-teal-500/20 text-white text-sm font-semibold mb-8"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500/10 rounded-full border border-teal-500/20 text-white text-sm font-semibold mb-8"
             >
               <CheckCircle className="w-4 h-4 text-teal-400" />
               <span>حل متكامل لإدارة الأسطول</span>
@@ -49,11 +50,12 @@ export function EnterpriseHero() {
             </motion.h1>
 
             {/* Subheadline */}
+            
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-xl text-slate-400 mb-10 leading-relaxed max-w-xl"
+              className="text-xl text-slate-400 dark:text-slate-400 mb-10 leading-relaxed max-w-xl"
             >
               منصة متكاملة لإدارة الأسطول مع تحليلات فورية،
               تقارير مفصلة، ودعم على مدار الساعة
@@ -68,7 +70,7 @@ export function EnterpriseHero() {
             className="relative"
           >
             {/* Main Dashboard Card */}
-            <div className="relative bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
+             <div className="relative bg-white dark:bg-slate-900 rounded-xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
               {/* Dashboard Header */}
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
                 <div>
@@ -84,26 +86,26 @@ export function EnterpriseHero() {
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-400 text-xs mb-1">المركبات النشطة</p>
-                  <p className="text-white text-2xl font-bold">248</p>
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">المركبات النشطة</p>
+                  <p className="text-slate-900 dark:text-white text-2xl font-bold">248</p>
                 </div>
-                <div className="bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-400 text-xs mb-1">العقود</p>
-                  <p className="text-white text-2xl font-bold">1,247</p>
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">العقود</p>
+                  <p className="text-slate-900 dark:text-white text-2xl font-bold">1,247</p>
                 </div>
-                <div className="bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-400 text-xs mb-1">الإيرادات</p>
-                  <p className="text-white text-2xl font-bold">45K</p>
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">الإيرادات</p>
+                  <p className="text-slate-900 dark:text-white text-2xl font-bold">45K</p>
                 </div>
-                <div className="bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-400 text-xs mb-1">العملاء</p>
-                  <p className="text-white text-2xl font-bold">89</p>
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">العملاء</p>
+                  <p className="text-slate-900 dark:text-white text-2xl font-bold">89</p>
                 </div>
               </div>
 
               {/* Activity Chart */}
-              <div className="bg-slate-950 rounded-xl p-4 mb-4">
+              <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 mb-4">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-slate-400 text-sm font-semibold">النشاط الأسبوعي</p>
                   <span className="text-teal-400 text-xs">+12%</span>
@@ -142,20 +144,20 @@ export function EnterpriseHero() {
             </div>
 
             {/* Floating badges */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="absolute -right-4 top-20 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-bold"
-            >
-              ✓ 99.9% مدة تشغيل
-            </motion.div>
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute -left-4 bottom-20 bg-slate-800 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-bold border border-teal-500/30"
-            >
-              أسرع 10 مرات
-            </motion.div>
+             <motion.div
+               animate={{ y: [0, -10, 0] }}
+               transition={{ duration: 3, repeat: Infinity }}
+               className="absolute -right-4 top-20 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-sm text-sm font-bold"
+             >
+               ✓ 99.9% مدة تشغيل
+             </motion.div>
+             <motion.div
+               animate={{ y: [0, 10, 0] }}
+               transition={{ duration: 4, repeat: Infinity }}
+               className="absolute -left-4 bottom-20 bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm text-sm font-bold border border-teal-500/30"
+             >
+               أسرع 10 مرات
+             </motion.div>
           </motion.div>
         </div>
       </div>

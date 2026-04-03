@@ -208,7 +208,7 @@ export default function TasksPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

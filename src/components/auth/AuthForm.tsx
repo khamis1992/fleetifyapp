@@ -156,25 +156,18 @@ export const AuthForm: FC = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: "easeOut" }
+      transition: { duration: 0.5, ease: "easeOut" as const }
     }
   };
 
-  const pulseAnimation = {
-    scale: [1, 1.05, 1],
-    opacity: [0.5, 0.8, 0.5],
-    transition: {
-      duration: 3,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  };
+
 
   return (
     <div className="min-h-screen flex bg-slate-950 overflow-hidden" dir="rtl">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Gradient Orbs */}
+        {/* Gradient Orbs - Removed per design rules */}
+        {/* 
         <motion.div 
           animate={pulseAnimation}
           className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[120px]" 
@@ -187,6 +180,7 @@ export const AuthForm: FC = () => {
           animate={{ ...pulseAnimation, transition: { ...pulseAnimation.transition, delay: 0.8 } }}
           className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-teal-400/5 rounded-full blur-[80px]" 
         />
+        */}
         
         {/* Floating Particles */}
         {[...Array(6)].map((_, i) => (
@@ -238,13 +232,13 @@ export const AuthForm: FC = () => {
             <motion.div 
               whileHover={{ scale: 1.1, rotate: 5 }}
               whileTap={{ scale: 0.95 }}
-              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-xl shadow-teal-500/30 cursor-pointer"
+              className="w-16 h-16 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg cursor-pointer"
             >
               <span className="text-white font-bold text-3xl">F</span>
             </motion.div>
             <div>
-              <span className="text-3xl font-bold text-white block">Fleetify</span>
-              <span className="text-teal-400 text-sm">نظام إدارة الأساطيل</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white block">Fleetify</span>
+              <span className="text-teal-600 dark:text-teal-400 text-sm">نظام إدارة الأساطيل</span>
             </div>
           </motion.div>
 
@@ -290,11 +284,11 @@ export const AuthForm: FC = () => {
               >
                 <motion.div 
                   whileHover={{ scale: 1.1, rotate: 10 }}
-                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center border border-teal-500/20 group-hover:border-teal-400/50 transition-colors"
+                  className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-500/20 flex items-center justify-center border border-teal-200 dark:border-teal-500/20 group-hover:border-teal-400/50 transition-colors"
                 >
-                  <feature.icon className="w-5 h-5 text-teal-400" />
+                  <feature.icon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 </motion.div>
-                <span className="group-hover:text-teal-300 transition-colors">{feature.text}</span>
+                <span className="text-slate-700 dark:text-slate-300 group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">{feature.text}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -317,10 +311,10 @@ export const AuthForm: FC = () => {
                 whileHover={{ scale: 1.05 }}
                 className="cursor-default"
               >
-                <p className="text-4xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+                <p className="text-4xl font-bold text-teal-600 dark:text-teal-400">
                   {stat.value}
                 </p>
-                <p className="text-slate-500 text-sm mt-1">{stat.label}</p>
+                <p className="text-slate-600 dark:text-slate-500 text-sm mt-1">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -346,12 +340,12 @@ export const AuthForm: FC = () => {
               whileHover={{ scale: 1.05 }}
               className="inline-flex items-center gap-3 mb-4"
             >
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
+              <div className="w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-2xl">F</span>
               </div>
-              <span className="text-2xl font-bold text-white">Fleetify</span>
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">Fleetify</span>
             </motion.div>
-            <p className="text-slate-400">نظام إدارة تأجير السيارات المتكامل</p>
+            <p className="text-slate-600 dark:text-slate-400">نظام إدارة تأجير السيارات المتكامل</p>
           </motion.div>
 
           {/* Form Card with glassmorphism */}
@@ -364,7 +358,7 @@ export const AuthForm: FC = () => {
             {/* Card glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-teal-500/20 via-cyan-500/20 to-teal-500/20 rounded-[28px] blur-xl opacity-50" />
             
-            <div className="relative bg-slate-900/90 backdrop-blur-2xl rounded-3xl p-8 border border-slate-800/80 shadow-2xl">
+            <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-8">
               {/* Header with icon */}
               <motion.div 
                 initial={{ opacity: 0 }}
@@ -375,12 +369,12 @@ export const AuthForm: FC = () => {
                 <motion.div
                   animate={{ rotate: [0, 5, -5, 0] }}
                   transition={{ duration: 4, repeat: Infinity }}
-                  className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/30 mb-4"
+                  className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-teal-50 dark:bg-teal-500/20 border border-teal-200 dark:border-teal-500/30 mb-4"
                 >
-                  <Sparkles className="w-7 h-7 text-teal-400" />
+                  <Sparkles className="w-7 h-7 text-teal-600 dark:text-teal-400" />
                 </motion.div>
-                <h2 className="text-2xl font-bold text-white mb-2">مرحباً بك</h2>
-                <p className="text-slate-400">قم بتسجيل الدخول للمتابعة</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">مرحباً بك</h2>
+                <p className="text-slate-500 dark:text-slate-400">قم بتسجيل الدخول للمتابعة</p>
               </motion.div>
 
               <form onSubmit={handleSignIn} className="space-y-5">
@@ -390,24 +384,23 @@ export const AuthForm: FC = () => {
                   transition={{ delay: 0.4 }}
                   className="space-y-2"
                 >
-                  <Label htmlFor="email" className="text-slate-300 font-medium">
-                    البريد الإلكتروني
-                  </Label>
-                  <div className="relative group">
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="example@domain.com"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      disabled={isLoading}
-                      className="h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl text-left transition-all group-hover:border-slate-600"
-                      dir="ltr"
-                    />
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-500/0 via-teal-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                  </div>
+                   <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-medium">
+                     البريد الإلكتروني
+                   </Label>
+                   <div className="relative group">
+                     <Input
+                       id="email"
+                       name="email"
+                       type="email"
+                       placeholder="example@domain.com"
+                       value={formData.email}
+                       onChange={handleInputChange}
+                       required
+                       disabled={isLoading}
+                       className="h-12 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl text-left transition-all"
+                       dir="ltr"
+                     />
+                   </div>
                 </motion.div>
                 
                 <motion.div 
@@ -416,33 +409,33 @@ export const AuthForm: FC = () => {
                   transition={{ delay: 0.5 }}
                   className="space-y-2"
                 >
-                  <Label htmlFor="password" className="text-slate-300 font-medium">
-                    كلمة المرور
-                  </Label>
-                  <div className="relative group">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                      disabled={isLoading}
-                      className="h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl pl-12 text-left transition-all group-hover:border-slate-600"
-                      dir="ltr"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 text-slate-400 hover:text-teal-400 hover:bg-teal-500/10 transition-colors"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-500/0 via-teal-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                  </div>
+                   <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 font-medium">
+                     كلمة المرور
+                   </Label>
+                   <div className="relative group">
+                     <Input
+                       id="password"
+                       name="password"
+                       type={showPassword ? "text" : "password"}
+                       placeholder="••••••••"
+                       value={formData.password}
+                       onChange={handleInputChange}
+                       required
+                       disabled={isLoading}
+                       className="h-12 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl pr-4 pl-12 text-left transition-all"
+                       dir="ltr"
+                     />
+                     <Button
+                       type="button"
+                       variant="ghost"
+                       size="icon"
+                       aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                       className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 min-h-[44px] min-w-[44px] text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 rounded-xl transition-colors"
+                       onClick={() => setShowPassword(!showPassword)}
+                     >
+                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                     </Button>
+                   </div>
                 </motion.div>
 
                 <motion.div
@@ -450,21 +443,21 @@ export const AuthForm: FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.55 }}
                 >
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Checkbox
-                      id="remember"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      disabled={isLoading}
-                      className="border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
-                    />
-                    <label
-                      htmlFor="remember"
-                      className="text-sm text-slate-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      تذكر بياناتي
-                    </label>
-                  </div>
+                   <div className="flex items-center space-x-2 space-x-reverse">
+                     <Checkbox
+                       id="remember"
+                       checked={rememberMe}
+                       onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                       disabled={isLoading}
+                       className="border-slate-300 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                     />
+                     <label
+                       htmlFor="remember"
+                       className="text-sm text-slate-700 dark:text-slate-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                     >
+                       تذكر بياناتي
+                     </label>
+                   </div>
                 </motion.div>
 
                 <motion.div
@@ -473,15 +466,15 @@ export const AuthForm: FC = () => {
                   transition={{ delay: 0.6 }}
                   className="flex justify-end"
                 >
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="px-0 text-teal-400 hover:text-teal-300 transition-colors"
-                    onClick={handleResetPassword}
-                    disabled={isLoading || !formData.email}
-                  >
-                    هل نسيت كلمة المرور؟
-                  </Button>
+                   <Button
+                     type="button"
+                     variant="link"
+                     className="px-0 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors min-h-[44px]"
+                     onClick={handleResetPassword}
+                     disabled={isLoading || !formData.email}
+                   >
+                     هل نسيت كلمة المرور؟
+                   </Button>
                 </motion.div>
 
                 <motion.div
@@ -489,26 +482,20 @@ export const AuthForm: FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 }}
                 >
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all group overflow-hidden relative"
-                    disabled={isLoading}
-                  >
-                    {/* Button shine effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full"
-                      animate={{ x: ['0%', '200%'] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    />
-                    {isLoading ? (
-                      <LoadingSpinner size="sm" />
-                    ) : (
-                      <span className="flex items-center gap-2 relative z-10">
-                        تسجيل الدخول
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                      </span>
-                    )}
-                  </Button>
+                 <Button 
+                   type="submit" 
+                   className="w-full h-12 min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl shadow-sm transition-all"
+                   disabled={isLoading}
+                 >
+                   {isLoading ? (
+                     <LoadingSpinner size="sm" />
+                   ) : (
+                     <span className="flex items-center gap-2 relative z-10">
+                       تسجيل الدخول
+                       <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                     </span>
+                   )}
+                 </Button>
                 </motion.div>
               </form>
             </div>
@@ -518,7 +505,7 @@ export const AuthForm: FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="text-center mt-8 text-sm text-slate-500"
+            className="text-center mt-8 text-sm text-slate-600 dark:text-slate-500"
           >
             © 2025 Fleetify - جميع الحقوق محفوظة
           </motion.p>

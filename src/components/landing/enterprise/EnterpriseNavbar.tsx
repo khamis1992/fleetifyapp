@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,7 +34,7 @@ export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate('/')}
           >
-            <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-sm">
               <span className="text-white font-bold text-xl">F</span>
             </div>
             <span className={`text-2xl font-bold ${scrolled ? 'text-white' : 'text-white'}`}>
@@ -72,7 +72,7 @@ export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
             </button>
             <button
               onClick={() => navigate('/onboarding')}
-              className="px-6 py-2.5 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-all shadow-lg hover:shadow-xl"
+              className="px-6 py-2.5 min-h-[44px] bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors shadow-sm"
             >
               ابدأ الآن
             </button>
@@ -128,7 +128,7 @@ export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
                     navigate('/onboarding');
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full py-2.5 bg-teal-500 text-white rounded-xl font-semibold"
+                  className="w-full py-2.5 min-h-[44px] bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors"
                 >
                   ابدأ الآن
                 </button>
