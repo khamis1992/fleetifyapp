@@ -284,8 +284,8 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
+                      <div className="overflow-x-auto -mx-4 md:mx-0">
+                        <Table className="min-w-[600px]">
                           <TableHeader>
                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
                               <TableHead className="text-right">رمز الحساب</TableHead>
@@ -364,8 +364,8 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
+                      <div className="overflow-x-auto -mx-4 md:mx-0">
+                        <Table className="min-w-[600px]">
                           <TableHeader>
                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
                               <TableHead className="text-right">رمز الحساب</TableHead>
@@ -441,8 +441,8 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
+                      <div className="overflow-x-auto -mx-4 md:mx-0">
+                        <Table className="min-w-[600px]">
                           <TableHeader>
                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
                               <TableHead className="text-right">رمز المركز</TableHead>

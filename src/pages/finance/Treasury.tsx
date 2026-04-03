@@ -395,8 +395,8 @@ export default function Treasury() {
             <RefreshCw className="w-10 h-10 animate-spin text-rose-500" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-slate-50 border-b border-slate-100">
                   <TableHead className="text-right font-semibold">رقم المعاملة</TableHead>

@@ -280,19 +280,20 @@ export default function CostCenters() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                <TableHead>رمز المركز</TableHead>
-                <TableHead>اسم المركز</TableHead>
-                <TableHead>الموازنة المخصصة</TableHead>
-                <TableHead>المصروف الفعلي</TableHead>
-                <TableHead>المتبقي</TableHead>
-                <TableHead>نسبة الاستغلال</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <Table className="min-w-[600px]">
+              <TableHeader>
+                <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                  <TableHead>رمز المركز</TableHead>
+                  <TableHead>اسم المركز</TableHead>
+                  <TableHead>الموازنة المخصصة</TableHead>
+                  <TableHead>المصروف الفعلي</TableHead>
+                  <TableHead>المتبقي</TableHead>
+                  <TableHead>نسبة الاستغلال</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {filteredCostCenters?.map((center) => {
                 const budgetAmount = center.budget_amount ?? 0;
@@ -410,6 +411,7 @@ export default function CostCenters() {
               })}
             </TableBody>
             </Table>
+            </div>
             {filteredCostCenters?.length === 0 && (
               <div className="p-6">
                 <EmptyState
