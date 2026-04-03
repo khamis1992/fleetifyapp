@@ -147,7 +147,7 @@ export default function GeneralLedger() {
   return (
     <SessionValidator>
       <AuthChecker>
-        <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+        <div className="p-6" dir="rtl">
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>

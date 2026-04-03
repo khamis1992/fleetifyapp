@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
-import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye, Edit } from "lucide-react"
+import { Calculator, Plus, TrendingUp, TrendingDown, Target, Search, Eye, Edit, DollarSign } from "lucide-react"
 import { useBudgets, useCreateBudget, useUpdateBudget, Budget } from "@/hooks/useFinance"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter'
 import { StatCard } from "@/components/ui/StatCard"
 import { FinancePageHeader } from "@/components/ui/FinancePageHeader"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { motion } from "framer-motion"
 
 const Budgets = () => {
@@ -139,7 +140,7 @@ const Budgets = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0efed] space-y-6 p-6" dir="rtl">
+    <div className="space-y-6 p-6" dir="rtl">
       <FinancePageHeader
         title="الموازنات"
         description="إدارة الموازنات والتخطيط المالي"
@@ -392,8 +393,14 @@ const Budgets = () => {
             </Table>
           </div>
           {filteredBudgets?.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد موازنات
+            <div className="p-6">
+              <EmptyState
+                icon={DollarSign}
+                title="لا توجد موازنات"
+                description="لم يتم إنشاء أي موازنات بعد. ابدأ بإنشاء موازنة جديدة للتخطيط المالي"
+                onAction={() => setIsCreateDialogOpen(true)}
+                actionLabel="موازنة جديدة"
+              />
             </div>
           )}
         </CardContent>

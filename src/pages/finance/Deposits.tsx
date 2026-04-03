@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Eye, Edit, Trash2, Download, Search, Filter, Wallet, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Download, Search, Filter, Wallet, CheckCircle, Clock, Landmark } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import StatCard from '@/components/ui/StatCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useDeposits } from '@/hooks/useDeposits';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatCurrency } from '@/lib/utils';
@@ -179,13 +180,18 @@ const Deposits = () => {
               <TableBody>
                 {filteredDeposits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <div className="text-slate-500">
-                        {searchTerm || statusFilter !== 'all' 
-                          ? 'لا توجد ودائع تطابق معايير البحث'
-                          : 'لا توجد ودائع مسجلة بعد'
+                    <TableCell colSpan={8} className="p-6">
+                      <EmptyState
+                        icon={Landmark}
+                        title={searchTerm || statusFilter !== 'all' ? "لا توجد نتائج" : "لا توجد ودائع"}
+                        description={
+                          searchTerm || statusFilter !== 'all'
+                            ? "لا توجد ودائع تطابق معايير البحث الحالية"
+                            : "لم يتم تسجيل أي ودائع بعد. ابدأ بإضافة وديعة جديدة"
                         }
-                      </div>
+                        onAction={handleAddDeposit}
+                        actionLabel="إضافة وديعة"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

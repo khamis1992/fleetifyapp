@@ -6,39 +6,26 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {
-  Landmark,
-  Building2,
-  ArrowDownRight,
-  ArrowUpRight,
-  ArrowRightLeft,
-  Plus,
-  Search,
-  RefreshCw,
-  TrendingUp,
-  Wallet,
-  Activity,
-} from "lucide-react";
+import { Landmark, Building2, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Plus, Search, RefreshCw, Wallet, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { useBanks, useCreateBank, useBankTransactions, useTreasurySummary, useCreateBankTransaction, useDeleteBankTransaction, Bank, BankTransaction } from "@/hooks/useTreasury";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
-import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/ui/StatCard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function Treasury() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -207,7 +194,7 @@ export default function Treasury() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6" dir="rtl">
+    <div className="p-6" dir="rtl">
       {/* Header */}
       <motion.div
         className="mb-6"
@@ -505,12 +492,14 @@ export default function Treasury() {
         )}
 
         {transactions?.length === 0 && !transactionsLoading && (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <ArrowRightLeft className="w-8 h-8 text-slate-400" />
-            </div>
-            <p className="text-slate-600 font-medium">لا توجد معاملات</p>
-            <p className="text-sm text-slate-400 mt-1">أضف معاملة جديدة للبدء</p>
+          <div className="p-6">
+            <EmptyState
+              icon={ArrowRightLeft}
+              title="لا توجد معاملات"
+              description="لم يتم تسجيل أي معاملات بنكية بعد. ابدأ بإضافة معاملة جديدة"
+              onAction={() => setIsCreateTransactionDialogOpen(true)}
+              actionLabel="معاملة جديدة"
+            />
           </div>
         )}
       </motion.div>
