@@ -163,8 +163,8 @@ const Deposits = () => {
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200">
-            <Table>
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead className="text-right">رقم الوديعة</TableHead>

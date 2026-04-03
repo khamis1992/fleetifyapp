@@ -3,9 +3,9 @@
  * تصميم بسيط ومتوافق مع الداشبورد
  * يشمل: الفواتير + المدفوعات + الودائع + الإيجارات
  */
-import { useState, useMemo, Suspense, lazy, useEffect } from "react";
+import { useState, useMemo, Suspense, lazy } from "react";
 import { motion } from "framer-motion";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
 import { Loader2 } from "lucide-react";
 
@@ -16,7 +16,7 @@ import { useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useTreasurySummary } from "@/hooks/useTreasury";
-import { InvoiceForm } from "@/components/finance/InvoiceForm";
+import { InvoiceFormWizard } from "@/components/finance/InvoiceFormWizard";
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
 import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog";
 import { PayInvoiceDialog } from "@/components/finance/PayInvoiceDialog";
@@ -33,6 +33,8 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
+import { 
   Receipt, 
   CreditCard,
   Plus, 
@@ -62,7 +64,6 @@ import {
   CalendarDays,
   XCircle,
   Landmark,
-  Loader2,
   Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -107,6 +108,66 @@ const BillingCenter = () => {
   const [isCancelPaymentDialogOpen, setIsCancelPaymentDialogOpen] = useState(false);
   const [paymentToCancel, setPaymentToCancel] = useState<any>(null);
   const [cancelReason, setCancelReason] = useState<string>("");
+  
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+
+  const handleExportCSV = () => {
+    const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "التاريخ"];
+    const rows = filteredInvoices.map(inv => [
+      inv.invoice_number,
+      inv.customers?.company_name || `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`,
+      inv.total_amount?.toString() || '0',
+      inv.payment_status || '',
+      inv.invoice_date || ''
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoices_export.csv";
+    a.click();
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedInvoiceIds.length === filteredInvoices.length) {
+      setSelectedInvoiceIds([]);
+    } else {
+      setSelectedInvoiceIds(filteredInvoices.map(inv => inv.id));
+    }
+  };
+
+  const toggleSelectInvoice = (invoiceId: string) => {
+    if (selectedInvoiceIds.includes(invoiceId)) {
+      setSelectedInvoiceIds(selectedInvoiceIds.filter(id => id !== invoiceId));
+    } else {
+      setSelectedInvoiceIds([...selectedInvoiceIds, invoiceId]);
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selectedInvoices = invoices.filter(inv => selectedInvoiceIds.includes(inv.id));
+    const headers = ["رقم الفاتورة", "العميل", "المبلغ", "الحالة", "التاريخ"];
+    const rows = selectedInvoices.map(inv => [
+      inv.invoice_number,
+      inv.customers?.company_name || `${inv.customers?.first_name || ''} ${inv.customers?.last_name || ''}`,
+      inv.total_amount?.toString() || '0',
+      inv.payment_status || '',
+      inv.invoice_date || ''
+    ]);
+    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "selected_invoices.csv";
+    a.click();
+    setSelectedInvoiceIds([]);
+  };
 
   const { cancelPayment } = usePaymentOperations();
 
@@ -454,6 +515,7 @@ const BillingCenter = () => {
 
           {/* Search & Filter */}
           <div className="flex gap-3">
+            <ExportButton onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <Input
@@ -500,20 +562,33 @@ const BillingCenter = () => {
                 />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-neutral-50">
-                    <TableHead className="text-right">رقم الفاتورة</TableHead>
-                    <TableHead className="text-right">العميل</TableHead>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-center">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow className="bg-neutral-50">
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead className="text-right">رقم الفاتورة</TableHead>
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">التاريخ</TableHead>
+                      <TableHead className="text-right">المبلغ</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-center">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {filteredInvoices.slice(0, 20).map((invoice) => (
                     <TableRow key={invoice.id} className="hover:bg-neutral-50">
+                      <TableCell className="w-12">
+                        <Checkbox
+                          checked={selectedInvoiceIds.includes(invoice.id)}
+                          onCheckedChange={() => toggleSelectInvoice(invoice.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>
                         {invoice.customers?.company_name || 
@@ -562,6 +637,7 @@ const BillingCenter = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </motion.div>
         </TabsContent>
@@ -603,18 +679,19 @@ const BillingCenter = () => {
                 />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-neutral-50">
-                    <TableHead className="text-right">رقم الدفعة</TableHead>
-                    <TableHead className="text-right">العميل</TableHead>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">طريقة الدفع</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-center">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow className="bg-neutral-50">
+                      <TableHead className="text-right">رقم الدفعة</TableHead>
+                      <TableHead className="text-right">العميل</TableHead>
+                      <TableHead className="text-right">التاريخ</TableHead>
+                      <TableHead className="text-right">المبلغ</TableHead>
+                      <TableHead className="text-right">طريقة الدفع</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-center">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {filteredPayments.slice(0, 20).map((payment) => (
                     <TableRow key={payment.id} className="hover:bg-neutral-50">
@@ -673,6 +750,7 @@ const BillingCenter = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </motion.div>
         </TabsContent>
@@ -711,7 +789,10 @@ const BillingCenter = () => {
           <DialogHeader>
             <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
           </DialogHeader>
-          <InvoiceForm 
+          <InvoiceFormWizard
+            open={isCreateInvoiceOpen}
+            onOpenChange={setIsCreateInvoiceOpen}
+            type="sales"
             onSuccess={() => {
               setIsCreateInvoiceOpen(false);
               queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -720,6 +801,15 @@ const BillingCenter = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Actions Bar */}
+      {selectedInvoiceIds.length > 0 && (
+        <div className="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-30">
+          <span className="text-sm font-medium">{selectedInvoiceIds.length} محدد</span>
+          <button onClick={handleBulkExport} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">تصدير</button>
+          <button onClick={() => setSelectedInvoiceIds([])} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg">إلغاء التحديد</button>
+        </div>
+      )}
 
       {/* Create Payment Dialog */}
       <UnifiedPaymentForm

@@ -26,7 +26,6 @@ import {
   Mail,
   ChevronRight,
   ChevronLeft,
-  Star,
   FileText,
   Upload,
   UserPlus,
@@ -42,11 +41,13 @@ import {
   Download,
   IdCard,
   Gavel,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
