@@ -414,7 +414,7 @@ export default function PurchaseOrders() {
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           {/* Controls Bar */}
           <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
             {/* Tabs */}

@@ -186,7 +186,7 @@ export default function HelpHub() {
       {/* Header */}
       <div className="text-center space-y-4 mb-8">
         <div className="flex items-center justify-center gap-3">
-          <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
+          <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
             <HelpCircle className="h-10 w-10 text-white" />
           </div>
         </div>

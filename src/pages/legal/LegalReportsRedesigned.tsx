@@ -462,7 +462,7 @@ export const LegalReportsRedesigned: React.FC = () => {
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-[1600px] mx-auto px-6 py-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
+            <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-200">
               <Scale className="w-7 h-7 text-white" />
             </div>
             <div className="flex-1">
@@ -490,7 +490,7 @@ export const LegalReportsRedesigned: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all"
+            className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all"
           >
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-200">
@@ -509,7 +509,7 @@ export const LegalReportsRedesigned: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all"
+            className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all"
           >
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200">
@@ -528,7 +528,7 @@ export const LegalReportsRedesigned: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl p-6 hover:shadow-xl transition-all shadow-lg shadow-rose-200"
+            className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl p-6 hover:shadow-xl transition-all shadow-lg shadow-rose-200"
           >
             <div className="flex items-start justify-between">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -573,7 +573,7 @@ export const LegalReportsRedesigned: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
+                    className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
                   >
                     {/* Report Header */}
                     <div className="p-6">
@@ -725,7 +725,7 @@ export const LegalReportsRedesigned: React.FC = () => {
               <FileText className="h-4 w-4 text-slate-400" />
               <AlertDescription className="text-slate-600">
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                     <Scale className="w-8 h-8 text-slate-400" />
                   </div>
                   <p className="text-lg font-semibold text-slate-900 mb-2">لا توجد بلاغات جاهزة حالياً</p>

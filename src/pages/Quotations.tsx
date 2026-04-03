@@ -411,10 +411,10 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <Clock className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -424,10 +424,10 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">مقبولة</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <CheckCircle className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -437,7 +437,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">مرفوضة</CardTitle>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
@@ -450,10 +450,10 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">محولة لعقود</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <FileText className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -463,10 +463,10 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">القيمة الإجمالية</CardTitle>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <DollarSign className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -480,7 +480,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
       {/* Quotations List */}
       <div className="grid gap-4">
         {quotations?.map((quotation) => (
-          <Card key={quotation.id} className="bg-white/80 backdrop-blur-xl border-slate-200/50 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+          <Card key={quotation.id} className="bg-white border-slate-200 hover:shadow-sm transition-all">
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
@@ -545,11 +545,11 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
+                  <Button variant="outline" size="sm" className="rounded-xl hover:shadow-sm">
                     <Eye className="h-4 w-4 mr-1" />
                     عرض
                   </Button>
-                  <Button variant="outline" size="sm" className="rounded-3xl hover:shadow-xl hover:shadow-teal-500/10">
+                  <Button variant="outline" size="sm" className="rounded-xl hover:shadow-sm">
                     <FileDown className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
@@ -557,7 +557,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     variant="outline"
                     size="sm"
                     onClick={() => shareViaWhatsApp(quotation)}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-3xl hover:shadow-xl hover:shadow-teal-500/10"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl hover:shadow-sm"
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
                     ارسال
@@ -567,7 +567,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                       size="sm"
                       onClick={() => convertToContractMutation.mutate(quotation.id)}
                       disabled={convertToContractMutation.isPending}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-3xl shadow-lg shadow-teal-500/20"
+                      className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
                     >
                       تحويل لعقد
                     </Button>
@@ -579,16 +579,16 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
         ))}
 
         {quotations?.length === 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50">
+          <Card className="bg-white border-slate-200">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mb-4">
                 <FileText className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عروض أسعار بعد</h3>
               <p className="text-slate-500 text-center mb-4">
                 ابدأ في إنشاء عروض أسعار جديدة للعملاء
               </p>
-              <Button onClick={() => setShowQuotationForm(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-3xl shadow-lg shadow-teal-500/20">
+              <Button onClick={() => setShowQuotationForm(true)} className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm">
                 <Plus className="h-4 w-4 mr-2" />
                 إنشاء عرض سعر جديد
               </Button>
@@ -606,13 +606,13 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* معلومات أساسية */}
-            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/50">
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
               <h3 className="text-lg font-semibold mb-4 text-slate-900">المعلومات الأساسية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">العميل *</Label>
                   <Select onValueChange={(value) => setValue('customer_id', value)}>
-                    <SelectTrigger id="customer" className="rounded-2xl">
+                    <SelectTrigger id="customer" className="rounded-xl">
                       <SelectValue placeholder="اختر العميل" />
                     </SelectTrigger>
                     <SelectContent>
@@ -630,7 +630,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 <div className="space-y-2">
                   <Label htmlFor="vehicle">المركبة</Label>
                   <Select onValueChange={(value) => setValue('vehicle_id', value)}>
-                    <SelectTrigger id="vehicle" className="rounded-2xl">
+                    <SelectTrigger id="vehicle" className="rounded-xl">
                       <SelectValue placeholder="اختر المركبة (اختياري)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -646,7 +646,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
 
             {/* تفاصيل السعر */}
-            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/50">
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
               <h3 className="text-lg font-semibold mb-4 text-slate-900">تفاصيل السعر</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
@@ -655,7 +655,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     value={quotationType}
                     onValueChange={(value) => setValue('quotation_type', value as 'daily' | 'weekly' | 'monthly')}
                   >
-                    <SelectTrigger id="quotation_type" className="rounded-2xl">
+                    <SelectTrigger id="quotation_type" className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -673,7 +673,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     type="number"
                     min="1"
                     placeholder="عدد الأيام/الأسابيع/الشهور"
-                    className="rounded-2xl"
+                    className="rounded-xl"
                     {...register('duration', { required: true, valueAsNumber: true })}
                   />
                 </div>
@@ -686,7 +686,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    className="rounded-2xl"
+                    className="rounded-xl"
                     {...register('rate_per_unit', { required: true, valueAsNumber: true })}
                   />
                 </div>
@@ -699,7 +699,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    className="font-semibold text-slate-900 rounded-2xl"
+                    className="font-semibold text-slate-900 rounded-xl"
                     {...register('total_amount', { required: true, valueAsNumber: true })}
                   />
                   <p className="text-xs text-slate-500">
@@ -710,7 +710,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
 
             {/* تفاصيل إضافية */}
-            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/50">
+            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
               <h3 className="text-lg font-semibold mb-4 text-slate-900">التفاصيل الإضافية</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -718,7 +718,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                   <Input
                     id="valid_until"
                     type="date"
-                    className="rounded-2xl"
+                    className="rounded-xl"
                     {...register('valid_until', { required: true })}
                   />
                 </div>
@@ -728,7 +728,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                   <Textarea
                     id="description"
                     placeholder="وصف موجز لعرض السعر..."
-                    className="rounded-2xl"
+                    className="rounded-xl"
                     {...register('description')}
                     rows={2}
                   />
@@ -739,7 +739,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                   <Textarea
                     id="terms"
                     placeholder="الشروط والأحكام الخاصة بعرض السعر..."
-                    className="rounded-2xl"
+                    className="rounded-xl"
                     {...register('terms')}
                     rows={3}
                   />
@@ -747,7 +747,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/50">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
               <Button
                 type="button"
                 variant="outline"
@@ -755,14 +755,14 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                   setShowQuotationForm(false)
                   reset()
                 }}
-                className="px-6 rounded-3xl"
+                className="px-6 rounded-xl"
               >
                 إلغاء
               </Button>
               <Button
                 type="submit"
                 disabled={createQuotationMutation.isPending}
-                className="px-6 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-3xl shadow-lg shadow-teal-500/20"
+                className="px-6 bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
               >
                 {createQuotationMutation.isPending ? 'جاري الحفظ...' : 'حفظ عرض السعر'}
               </Button>

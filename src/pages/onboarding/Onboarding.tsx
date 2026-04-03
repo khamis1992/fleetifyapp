@@ -236,7 +236,7 @@ export default function Onboarding() {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                    className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-teal-500/30"
+                    className="w-24 h-24 mx-auto mb-8 rounded-xl bg-teal-500 flex items-center justify-center shadow-2xl shadow-teal-500/30"
                   >
                     <Rocket className="w-12 h-12 text-white" />
                   </motion.div>
@@ -286,7 +286,7 @@ export default function Onboarding() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                     onClick={nextStep}
-                    className="group px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-teal-500/30 transition-all flex items-center gap-3 mx-auto"
+                    className="group px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-teal-500/30 transition-all flex items-center gap-3 mx-auto"
                   >
                     ابدأ الإعداد
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -296,13 +296,13 @@ export default function Onboarding() {
 
               {/* Step 2: Company Info */}
               {currentStep === 2 && (
-                <div className="bg-slate-900/50 backdrop-blur-sm rounded-3xl border border-slate-800 p-8 lg:p-12">
+                <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8 lg:p-12">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-10"
                   >
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-teal-500 flex items-center justify-center">
                       <Building2 className="w-8 h-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-bold text-white mb-2">معلومات الشركة</h2>
@@ -359,7 +359,7 @@ export default function Onboarding() {
                     </button>
                     <button
                       onClick={nextStep}
-                      className="flex-1 px-6 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-semibold hover:from-teal-600 hover:to-teal-700 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-4 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-all flex items-center justify-center gap-2"
                     >
                       <span>التالي</span>
                       <ArrowLeft className="w-5 h-5" />
@@ -370,13 +370,13 @@ export default function Onboarding() {
 
               {/* Step 3: Fleet Details */}
               {currentStep === 3 && (
-                <div className="bg-slate-900/50 backdrop-blur-sm rounded-3xl border border-slate-800 p-8 lg:p-12">
+                <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8 lg:p-12">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-10"
                   >
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-teal-500 flex items-center justify-center">
                       <Truck className="w-8 h-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-bold text-white mb-2">تفاصيل الأسطول</h2>
@@ -392,7 +392,7 @@ export default function Onboarding() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => saveData({ fleetSize: size.id })}
-                          className={`relative p-6 rounded-2xl border-2 transition-all ${
+                          className={`relative p-6 rounded-xl border-2 transition-all ${
                             onboardingData.fleetSize === size.id
                               ? 'bg-teal-500/10 border-teal-500'
                               : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
@@ -428,7 +428,7 @@ export default function Onboarding() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => toggleVehicleType(type.id)}
-                            className={`relative p-5 rounded-2xl border-2 transition-all ${
+                            className={`relative p-5 rounded-xl border-2 transition-all ${
                               onboardingData.vehicleTypes.includes(type.id)
                                 ? 'bg-teal-500/10 border-teal-500'
                                 : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
@@ -463,7 +463,7 @@ export default function Onboarding() {
                     </button>
                     <button
                       onClick={nextStep}
-                      className="flex-1 px-6 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-semibold hover:from-teal-600 hover:to-teal-700 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-4 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-all flex items-center justify-center gap-2"
                     >
                       <span>التالي</span>
                       <ArrowLeft className="w-5 h-5" />
@@ -474,13 +474,13 @@ export default function Onboarding() {
 
               {/* Step 4: Features */}
               {currentStep === 4 && (
-                <div className="bg-slate-900/50 backdrop-blur-sm rounded-3xl border border-slate-800 p-8 lg:p-12">
+                <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8 lg:p-12">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-10"
                   >
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-teal-500 flex items-center justify-center">
                       <Sparkles className="w-8 h-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-bold text-white mb-2">المميزات المفضلة</h2>
@@ -497,9 +497,9 @@ export default function Onboarding() {
                           whileHover={{ scale: 1.02, y: -2 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => toggleFeature(feature.id)}
-                          className={`relative p-5 rounded-2xl border-2 text-right transition-all ${
+                          className={`relative p-5 rounded-xl border-2 text-right transition-all ${
                             isSelected
-                              ? 'bg-teal-500/10 border-teal-500 shadow-lg shadow-teal-500/20'
+                              ? 'bg-teal-500/10 border-teal-500 shadow-sm'
                               : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
                           }`}
                         >
@@ -538,7 +538,7 @@ export default function Onboarding() {
                     </button>
                     <button
                       onClick={nextStep}
-                      className="flex-1 px-6 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-semibold hover:from-teal-600 hover:to-teal-700 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-4 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-all flex items-center justify-center gap-2"
                     >
                       <span>إكمال</span>
                       <ChevronRight className="w-5 h-5" />
@@ -554,7 +554,7 @@ export default function Onboarding() {
                     initial={{ scale: 0, rotate: -180 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                    className="w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-teal-500/30"
+                    className="w-32 h-32 mx-auto mb-8 rounded-full bg-teal-500 flex items-center justify-center shadow-2xl shadow-teal-500/30"
                   >
                     <Check className="w-16 h-16 text-white" />
                   </motion.div>
@@ -583,7 +583,7 @@ export default function Onboarding() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8 max-w-lg mx-auto mb-8"
+                    className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8 max-w-lg mx-auto mb-8"
                   >
                     <div className="flex items-center justify-center gap-3 mb-6">
                       <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
@@ -630,7 +630,7 @@ export default function Onboarding() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                     onClick={() => navigate('/enterprise')}
-                    className="group px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-teal-500/30 transition-all flex items-center gap-3 mx-auto"
+                    className="group px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-teal-500/30 transition-all flex items-center gap-3 mx-auto"
                   >
                     العودة للصفحة الرئيسية
                     <ArrowLeft className="w-5 h-5" />

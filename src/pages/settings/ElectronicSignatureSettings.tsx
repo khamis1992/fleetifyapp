@@ -8,7 +8,7 @@ const ElectronicSignatureSettings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+        <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
           <FileSignature className="h-8 w-8 text-white" />
         </div>
         <div>

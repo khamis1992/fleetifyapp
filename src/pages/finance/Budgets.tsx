@@ -148,12 +148,12 @@ const Budgets = () => {
         breadcrumbs={[{ label: "النظام المالي" }, { label: "الموازنات" }]}
         actions={
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-slate-900 hover:bg-slate-800 shadow-lg">
-                <Plus className="h-4 w-4 mr-2" />
-                موازنة جديدة
-              </Button>
-            </DialogTrigger>
+             <DialogTrigger asChild>
+               <Button className="bg-slate-900 hover:bg-slate-800 shadow-lg">
+                 <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+                 موازنة جديدة
+               </Button>
+             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>إنشاء موازنة جديدة</DialogTitle>
@@ -260,7 +260,7 @@ const Budgets = () => {
       </div>
 
       {/* Budget Execution Overview */}
-      <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50">
+      <Card className="bg-white border border-slate-200">
         <CardHeader>
           <CardTitle>نظرة عامة على تنفيذ الموازنة</CardTitle>
           <CardDescription>مقارنة المخطط بالفعلي</CardDescription>
@@ -294,7 +294,7 @@ const Budgets = () => {
       </Card>
 
       {/* Main Content */}
-      <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50">
+      <Card className="bg-white border border-slate-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -327,20 +327,20 @@ const Budgets = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <Table className="min-w-[600px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>اسم الموازنة</TableHead>
-                  <TableHead>السنة المالية</TableHead>
-                  <TableHead>الإيرادات المتوقعة</TableHead>
-                  <TableHead>المصروفات المتوقعة</TableHead>
-                  <TableHead>صافي الدخل</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>تاريخ الإنشاء</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <Table className="min-w-[600px]" aria-label="جدول الموازنات">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead scope="col">اسم الموازنة</TableHead>
+                      <TableHead scope="col">السنة المالية</TableHead>
+                      <TableHead scope="col">الإيرادات المتوقعة</TableHead>
+                      <TableHead scope="col">المصروفات المتوقعة</TableHead>
+                      <TableHead scope="col">صافي الدخل</TableHead>
+                      <TableHead scope="col">الحالة</TableHead>
+                      <TableHead scope="col">تاريخ الإنشاء</TableHead>
+                      <TableHead scope="col">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
               <TableBody>
                 {filteredBudgets?.map((budget) => {
                   const netIncome = (budget.total_revenue || 0) - (budget.total_expenses || 0)
@@ -357,11 +357,11 @@ const Budgets = () => {
                       <TableCell className={netIncome >= 0 ? 'text-green-600' : 'text-red-600'}>
                         {formatCurrency(netIncome)}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusColor(budget.status)}>
-                          {getStatusLabel(budget.status)}
-                        </Badge>
-                      </TableCell>
+                       <TableCell>
+                         <Badge variant={getStatusColor(budget.status)} aria-label={`الحالة: ${getStatusLabel(budget.status)}`}>
+                           {getStatusLabel(budget.status)}
+                         </Badge>
+                       </TableCell>
                       <TableCell>
                         {new Date(budget.created_at).toLocaleDateString('en-GB')}
                       </TableCell>
@@ -374,15 +374,17 @@ const Budgets = () => {
                               setSelectedBudget(budget)
                               setIsViewDialogOpen(true)
                             }}
+                            aria-label="عرض"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleEditBudget(budget)}
+                            aria-label="تعديل"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </TableCell>
@@ -450,14 +452,14 @@ const Budgets = () => {
                 </p>
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">الحالة</Label>
-                <div className="mt-1">
-                  <Badge variant={getStatusColor(selectedBudget.status)}>
-                    {getStatusLabel(selectedBudget.status)}
-                  </Badge>
-                </div>
-              </div>
+               <div>
+                 <Label className="text-sm font-medium text-muted-foreground">الحالة</Label>
+                 <div className="mt-1">
+                   <Badge variant={getStatusColor(selectedBudget.status)} aria-label={`الحالة: ${getStatusLabel(selectedBudget.status)}`}>
+                     {getStatusLabel(selectedBudget.status)}
+                   </Badge>
+                 </div>
+               </div>
 
               {selectedBudget.notes && (
                 <div>

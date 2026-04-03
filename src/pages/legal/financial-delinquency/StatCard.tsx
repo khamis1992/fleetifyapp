@@ -33,7 +33,7 @@ export const StatCard: React.FC<StatCardProps> = ({
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
       className={cn(
-        "relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all duration-300",
+        "relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all duration-300",
         "hover:shadow-lg",
         onClick && "cursor-pointer",
         isActive && "ring-2 ring-offset-2"

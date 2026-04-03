@@ -245,9 +245,9 @@ const MobileOverdue: React.FC = () => {
       </div>
 
       {/* Summary Card */}
-      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
+      <div className="bg-white border border-slate-200 rounded-xl p-5">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-rose-500/20">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-rose-500/20">
             <AlertCircle className="w-6 h-6 text-white" strokeWidth={2.5} />
           </div>
           <div className="flex-1">
@@ -322,7 +322,7 @@ const MobileOverdue: React.FC = () => {
               key={contract.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
+              className="bg-white border border-slate-200 rounded-xl p-4"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -392,7 +392,7 @@ const MobileOverdue: React.FC = () => {
                     setSelectedContract(contract);
                     setShowPaymentModal(true);
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white text-sm font-medium shadow-lg shadow-teal-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-teal-500 text-white text-sm font-medium shadow-sm"
                 >
                   <CreditCard className="w-4 h-4" />
                   تسجيل دفعة
@@ -437,7 +437,7 @@ const MobileOverdue: React.FC = () => {
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   placeholder="QAR 0.00"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
                 />
               </div>
 
@@ -475,7 +475,7 @@ const MobileOverdue: React.FC = () => {
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
                   placeholder="TRF-2024-001234"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
                 />
               </div>
 
@@ -489,7 +489,7 @@ const MobileOverdue: React.FC = () => {
                     setPaymentReference('');
                   }}
                   disabled={processing}
-                  className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-700 font-semibold"
+                  className="flex-1 py-4 rounded-xl border border-slate-200 text-slate-700 font-semibold"
                 >
                   إلغاء
                 </button>
@@ -497,8 +497,8 @@ const MobileOverdue: React.FC = () => {
                   onClick={handleRecordPayment}
                   disabled={processing || !paymentAmount}
                   className={cn(
-                    'flex-1 py-4 rounded-2xl font-semibold text-white',
-                    'bg-gradient-to-r from-teal-500 to-teal-600',
+                    'flex-1 py-4 rounded-xl font-semibold text-white',
+                    'bg-teal-500',
                     'shadow-lg shadow-teal-500/30',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
@@ -527,7 +527,7 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick }) => (
       'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
       active
         ? 'bg-red-500 text-white shadow-md shadow-rose-500/20'
-        : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
+        : 'bg-white/80 text-slate-600 border border-slate-200 hover:bg-slate-100'
     )}
   >
     {label}

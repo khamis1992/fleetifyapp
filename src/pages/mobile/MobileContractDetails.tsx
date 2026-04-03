@@ -234,7 +234,7 @@ export const MobileContractDetails: React.FC = () => {
             <p className="text-sm text-slate-500 mb-6">لم يتم العثور على العقد المطلوب</p>
             <button
               onClick={() => navigate('/mobile/home')}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold"
+              className="px-6 py-3 rounded-xl bg-teal-500 text-white font-semibold"
             >
               العودة للرئيسية
             </button>
@@ -247,7 +247,7 @@ export const MobileContractDetails: React.FC = () => {
   return (
     <MobileDetailLayout currentTab="contracts">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="flex items-center gap-3 p-4">
           <button
             onClick={() => navigate('/mobile/home')}
@@ -271,7 +271,7 @@ export const MobileContractDetails: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
+          className="bg-white border border-slate-200 rounded-xl p-4"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600">
@@ -311,7 +311,7 @@ export const MobileContractDetails: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
+            className="bg-white border border-slate-200 rounded-xl p-4"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600">
@@ -353,7 +353,7 @@ export const MobileContractDetails: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
+          className="bg-white border border-slate-200 rounded-xl p-4"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600">
@@ -382,7 +382,7 @@ export const MobileContractDetails: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4"
+          className="bg-white border border-slate-200 rounded-xl p-4"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-green-500 to-green-600">
@@ -421,7 +421,7 @@ export const MobileContractDetails: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl overflow-hidden"
+          className="bg-white border border-slate-200 rounded-xl overflow-hidden"
         >
           <button
             onClick={() => setShowPayments(!showPayments)}
@@ -465,7 +465,7 @@ export const MobileContractDetails: React.FC = () => {
                         key={payment.id}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-slate-50/50 rounded-2xl p-3 border border-slate-100"
+                        className="bg-slate-50/50 rounded-xl p-3 border border-slate-100"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">

@@ -81,7 +81,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, iconBg, i
   <motion.div
     variants={itemVariants}
     whileHover={{ scale: 1.02, y: -2 }}
-    className="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 cursor-default"
+    className="bg-white rounded-xl p-5 shadow-sm border border-neutral-100 cursor-default"
   >
     <div className="flex items-center justify-between">
       <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', iconBg)}>
@@ -479,7 +479,7 @@ function UserManagementContent() {
   if (accountsError) {
     return (
       <div className="min-h-screen bg-[#f0efed] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 shadow-lg max-w-md text-center">
+        <div className="bg-white rounded-xl p-8 shadow-lg max-w-md text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-neutral-900 mb-2">خطأ في تحميل البيانات</h3>
           <p className="text-neutral-600 mb-4">{(accountsError as Error).message}</p>
@@ -600,7 +600,7 @@ function UserManagementContent() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-3"
+                className="bg-white rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-3"
               >
                 <div className="relative flex-1">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-5 h-5" />
@@ -642,7 +642,7 @@ function UserManagementContent() {
                 </div>
 
                 {filteredUsers.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-12 text-center">
+                  <div className="bg-white rounded-xl p-12 text-center">
                     <Users className="w-12 h-12 text-neutral-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-neutral-900 mb-2">لا توجد نتائج</h3>
                     <p className="text-neutral-500">جرب تغيير معايير البحث أو التصفية</p>
@@ -679,7 +679,7 @@ function UserManagementContent() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl p-6 shadow-sm"
+                  className="bg-white rounded-xl p-6 shadow-sm"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center text-2xl font-bold text-coral-600">
@@ -705,7 +705,7 @@ function UserManagementContent() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden"
+                className="bg-white rounded-xl shadow-sm overflow-hidden"
               >
                 <PermissionsMatrix 
                   selectedUser={selectedUserForMatrix}

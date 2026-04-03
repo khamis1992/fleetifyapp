@@ -149,7 +149,7 @@ export const MobileNotifications: React.FC = () => {
                   'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2',
                   activeTab === tab.id
                     ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-                    : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
+                    : 'bg-white/80 text-slate-600 border border-slate-200 hover:bg-slate-100'
                 )}
               >
                 {tab.label}
@@ -193,7 +193,7 @@ export const MobileNotifications: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-8 text-center"
+              className="bg-white border border-slate-200 rounded-xl p-8 text-center"
             >
               <Bell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <p className="text-slate-600 font-medium">لا توجد إشعارات</p>
@@ -219,9 +219,9 @@ export const MobileNotifications: React.FC = () => {
                       transition={{ delay: index * 0.03 }}
                       onClick={() => handleNotificationClick(notification.id, notification.is_read)}
                       className={cn(
-                        'border rounded-2xl p-4 cursor-pointer transition-all',
+                        'border rounded-xl p-4 cursor-pointer transition-all',
                         notification.is_read
-                          ? 'bg-white/60 border-slate-200/50'
+                          ? 'bg-white/60 border-slate-200'
                           : `${style.bg} ${style.border}`,
                         'hover:shadow-lg active:scale-[0.98]'
                       )}

@@ -857,7 +857,7 @@ const FinancialDelinquencyPage: React.FC = () => {
         >
           <div className="flex items-center gap-4">
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+              className="flex h-14 w-14 items-center justify-center rounded-xl shadow-lg"
               style={{ background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))` }}
             >
               <Gavel className="h-7 w-7 text-white" />
@@ -900,7 +900,7 @@ const FinancialDelinquencyPage: React.FC = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-2xl border bg-card p-5 shadow-sm overflow-hidden"
+            className="rounded-xl border bg-card p-5 shadow-sm overflow-hidden"
             style={{
               background: `linear-gradient(135deg, hsl(${colors.primaryDark}), hsl(${colors.primary}))`,
               borderColor: `hsl(${colors.primary} / 0.3)`
@@ -1021,7 +1021,7 @@ const FinancialDelinquencyPage: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border bg-card p-5 shadow-sm"
+            className="rounded-xl border bg-card p-5 shadow-sm"
             style={{ borderColor: `hsl(${colors.primary} / 0.2)` }}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -1088,7 +1088,7 @@ const FinancialDelinquencyPage: React.FC = () => {
             {/* Customers Tab */}
             <TabsContent value="customers" className="mt-0 space-y-6">
               {/* Filters & Controls */}
-              <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+              <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
                 {/* Risk Level Filters */}
                 <div className="border-b bg-muted/30 px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -1320,8 +1320,8 @@ const FinancialDelinquencyPage: React.FC = () => {
                   <LoadingSpinner size="lg" />
                 </div>
               ) : !customers || customers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-80 text-center rounded-2xl border bg-card p-8">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl mb-6" style={{ backgroundColor: `hsl(${colors.success} / 0.1)` }}>
+                <div className="flex flex-col items-center justify-center h-80 text-center rounded-xl border bg-card p-8">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-xl mb-6" style={{ backgroundColor: `hsl(${colors.success} / 0.1)` }}>
                     <CheckCircle className="w-12 h-12" style={{ color: `hsl(${colors.success})` }} />
                   </div>
                   <p className="text-foreground text-2xl font-bold mb-3">لا يوجد عملاء متأخرين!</p>
@@ -1337,7 +1337,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                   {/* Cards View */}
                   {viewMode === 'cards' && (
                     <div className="space-y-4">
-                      <div className="rounded-2xl border bg-card p-4 flex items-center gap-2">
+                      <div className="rounded-xl border bg-card p-4 flex items-center gap-2">
                         <Checkbox
                           checked={selectedIds.size === paginatedCustomers.length && paginatedCustomers.length > 0}
                           onCheckedChange={handleSelectAll}
@@ -1367,7 +1367,7 @@ const FinancialDelinquencyPage: React.FC = () => {
 
                   {/* Compact View */}
                   {viewMode === 'compact' && (
-                    <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+                    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/50">
@@ -1443,7 +1443,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                         const groupCustomers = customers.filter(c => c.risk_level === level || (!c.risk_level && level === 'LOW'));
                         const levelColor = getRiskColor(level);
                         return (
-                          <div key={level} className="rounded-2xl border-2 bg-card overflow-hidden" style={{ borderColor: `hsl(${levelColor} / 0.3)` }}>
+                          <div key={level} className="rounded-xl border-2 bg-card overflow-hidden" style={{ borderColor: `hsl(${levelColor} / 0.3)` }}>
                             <div className="p-4 border-b" style={{ backgroundColor: `hsl(${levelColor} / 0.1)`, borderColor: `hsl(${levelColor} / 0.2)` }}>
                               <div className="flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `hsl(${levelColor})` }}>
@@ -1483,7 +1483,7 @@ const FinancialDelinquencyPage: React.FC = () => {
 
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="rounded-2xl border bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="rounded-xl border bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <span className="text-sm text-muted-foreground">
                         عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, customers.length)} من {customers.length}
                       </span>
@@ -1519,8 +1519,8 @@ const FinancialDelinquencyPage: React.FC = () => {
                   <LoadingSpinner size="lg" />
                 </div>
               ) : !overdueContracts.length ? (
-                <div className="flex flex-col items-center justify-center h-80 text-center rounded-2xl border bg-card p-8">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-3xl mb-6" style={{ backgroundColor: `hsl(${colors.success} / 0.1)` }}>
+                <div className="flex flex-col items-center justify-center h-80 text-center rounded-xl border bg-card p-8">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-xl mb-6" style={{ backgroundColor: `hsl(${colors.success} / 0.1)` }}>
                     <CheckCircle className="w-12 h-12" style={{ color: `hsl(${colors.success})` }} />
                   </div>
                   <p className="text-foreground text-2xl font-bold mb-3">ممتاز! لا توجد عقود متأخرة</p>

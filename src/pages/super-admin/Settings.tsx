@@ -78,12 +78,12 @@ const SuperAdminSettings: React.FC = () => {
       <div className="space-y-4">
         <Breadcrumbs />
 
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500/10 via-teal-500/5 to-transparent border border-teal-500/20 backdrop-blur-xl">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-500/10 via-teal-500/5 to-transparent border border-teal-500/20 backdrop-blur-xl">
           <div className="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-teal-500/10 opacity-50"></div>
           <div className="relative p-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3 animate-fade-in">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+                <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
                   <Settings className="h-8 w-8 text-white" />
                 </div>
                 <div>
@@ -101,7 +101,7 @@ const SuperAdminSettings: React.FC = () => {
       </div>
 
       {/* Settings Tabs */}
-      <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+      <Card className="border-0 shadow-lg bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-900">
             <Settings className="h-5 w-5 text-teal-600" />
@@ -113,12 +113,12 @@ const SuperAdminSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="security" className="space-y-6">
-            <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl">
+            <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl">
               {settingsTabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="flex flex-col items-center gap-2 p-4 h-auto data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-xl transition-all hover:bg-teal-50"
+                  className="flex flex-col items-center gap-2 p-4 h-auto data-[state=active]:bg-teal-500 data-[state=active]:text-white rounded-xl transition-all hover:bg-teal-50"
                 >
                   <tab.icon className="h-5 w-5" />
                   <span className="text-xs font-medium text-center leading-tight">

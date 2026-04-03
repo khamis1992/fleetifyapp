@@ -516,15 +516,15 @@ const { user } = useAuth();
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
             <Users className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900">إدارة الموظفين</h1>
-            <p className="text-sm text-slate-600">إدارة بيانات الموظفين والمناصب</p>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة الموظفين</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">إدارة بيانات الموظفين والمناصب</p>
           </div>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20">
+        <Button onClick={() => setIsDialogOpen(true)} className="w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white shadow-sm">
           <Plus className="h-4 w-4 ml-2" />
           إضافة موظف جديد
         </Button>
@@ -537,7 +537,7 @@ const { user } = useAuth();
             placeholder="البحث عن موظف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl"
+            className="pr-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
           />
         </div>
       </div>
@@ -547,14 +547,14 @@ const { user } = useAuth();
 
       <div className="grid gap-4">
         {filteredEmployees.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
             <CardContent className="p-8">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center mx-auto mb-4">
                   <Users className="h-8 w-8 text-white" />
                 </div>
-                <p className="text-slate-600">لا توجد موظفين مسجلين</p>
-                <Button className="mt-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20" onClick={() => setIsDialogOpen(true)}>
+                <p className="text-slate-600 dark:text-slate-400">لا توجد موظفين مسجلين</p>
+                <Button className="mt-4 bg-teal-500 hover:bg-teal-600 text-white shadow-sm" onClick={() => setIsDialogOpen(true)}>
                   <Plus className="h-4 w-4 ml-2" />
                   إضافة أول موظف
                 </Button>
@@ -565,80 +565,84 @@ const { user } = useAuth();
           filteredEmployees.map((employee) => (
             <Card 
               key={employee.id} 
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 cursor-pointer"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-md transition-all duration-300 cursor-pointer"
               onClick={() => navigate(`/hr/employees/${employee.id}`)}
             >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center shrink-0">
                       <Users className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg text-slate-900">
+                      <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
                         {employee.first_name} {employee.last_name}
                       </h3>
-                      <p className="text-slate-600">رقم الموظف: {employee.employee_number}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-slate-600">
+                      <p className="text-slate-600 dark:text-slate-400">رقم الموظف: {employee.employee_number}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
                           {employee.position || 'غير محدد'}
                         </span>
-                        <span className="text-sm text-slate-600">•</span>
-                        <span className="text-sm text-slate-600">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">•</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
                           {employee.department || 'غير محدد'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="text-left">
-                      <p className="text-sm text-slate-600">الراتب الأساسي</p>
-                      <p className="font-semibold text-slate-900">
-                        {formatCurrency(employee.basic_salary)}
-                      </p>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className="text-right sm:text-left flex-1 sm:flex-initial">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">الراتب الأساسي</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {formatCurrency(employee.basic_salary)}
+                        </p>
+                      </div>
+                      <div className="text-right sm:text-left flex-1 sm:flex-initial">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">البدلات</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {formatCurrency(employee.allowances)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="text-sm text-slate-600">البدلات</p>
-                      <p className="font-semibold text-slate-900">
-                        {formatCurrency(employee.allowances)}
-                      </p>
-                    </div>
-                    <Badge variant={employee.is_active ? "default" : "secondary"} className={employee.is_active ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white" : ""}>
-                      {employee.is_active ? "نشط" : "غير نشط"}
-                    </Badge>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); handleViewPayroll(employee); }}
-                        title="عرض الرواتب"
-                        className="border-slate-200/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10"
-                      >
-                        <DollarSign className="h-4 w-4" />
-                      </Button>
-                      {canEdit && (
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Badge variant={employee.is_active ? "default" : "secondary"} className={employee.is_active ? "bg-teal-500 text-white" : ""}>
+                        {employee.is_active ? "نشط" : "غير نشط"}
+                      </Badge>
+                      <div className="flex gap-2 mr-auto sm:mr-0">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
-                          disabled={updateEmployeeMutation.isPending}
-                          className="border-slate-200/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10"
+                          onClick={(e) => { e.stopPropagation(); handleViewPayroll(employee); }}
+                          title="عرض الرواتب"
+                          className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 dark:hover:border-teal-500/50"
                         >
-                          <Edit className="h-4 w-4" />
+                          <DollarSign className="h-4 w-4" />
                         </Button>
-                      )}
-                      {canDelete && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
-                          disabled={deleteEmployeeMutation.isPending}
-                          className="border-slate-200/50 hover:border-red-500/30 hover:shadow-lg hover:shadow-rose-500/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                        {canEdit && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleEditEmployee(employee); }}
+                            disabled={updateEmployeeMutation.isPending}
+                            className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50 dark:hover:border-teal-500/50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(employee); }}
+                            disabled={deleteEmployeeMutation.isPending}
+                            className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-red-500/30 dark:hover:border-red-500/50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

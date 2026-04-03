@@ -247,7 +247,7 @@ const DashboardLanding: React.FC = () => {
                   animate={{ opacity: 1, x: 0, transition: { delay: index * 0.06 } }}
                   exit={{ opacity: 0, x: -20 }}
                   onClick={() => handleAction(action.id)}
-                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-slate-100"
+                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-slate-100"
                 >
                   <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', action.color)}>
                     <action.icon className="w-5 h-5 text-white" />
@@ -265,8 +265,8 @@ const DashboardLanding: React.FC = () => {
           whileHover={{ scale: isOpen ? 1.05 : 1.1 }}
           whileTap={{ scale: 0.95 }}
           className={cn(
-            'w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all',
-            isOpen ? 'bg-slate-900' : 'bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-teal-500/30'
+            'w-16 h-16 rounded-xl flex items-center justify-center shadow-2xl transition-all',
+            isOpen ? 'bg-slate-900' : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/30'
           )}
         >
           <Plus className="w-7 h-7 text-white" strokeWidth={3} />
@@ -394,12 +394,12 @@ const DashboardLanding: React.FC = () => {
       </div>
 
       {/* Landing Page Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
+                <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
                   <Activity className="w-7 h-7 text-white" strokeWidth={2.5} />
                 </div>
                 <div>
@@ -454,7 +454,7 @@ const DashboardLanding: React.FC = () => {
               )}
 
               <motion.button
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl text-sm font-semibold hover:from-teal-600 hover:to-teal-700 hover:shadow-lg transition-all shadow-md shadow-teal-500/20"
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-500 text-white rounded-xl text-sm font-semibold hover:bg-teal-600 hover:shadow-lg transition-all shadow-md shadow-teal-500/20"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => openAIChat()}
@@ -492,10 +492,10 @@ const DashboardLanding: React.FC = () => {
                   onClick={() => stat.linkTo && navigate(stat.linkTo)}
                   className="relative group cursor-pointer"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-teal-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 hover:border-teal-500/50 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-teal-500/10">
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-teal-600/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative bg-white border border-slate-200 rounded-xl p-6 hover:border-teal-500/50 transition-all duration-300 shadow-sm hover:shadow-sm">
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg`}>
+                      <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
                         <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
                       </div>
                       {stat.change && (
@@ -551,7 +551,7 @@ const DashboardLanding: React.FC = () => {
               variants={itemVariants}
               whileHover={{ y: -4, scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className="col-span-5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/50 transition-all cursor-pointer"
+              className="col-span-5 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all cursor-pointer"
               onClick={() => navigate('/finance')}
             >
               <div className="flex items-start justify-between mb-6">
@@ -559,7 +559,7 @@ const DashboardLanding: React.FC = () => {
                   <h3 className="text-xl font-bold text-slate-900 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>الأداء المالي</h3>
                   <p className="text-sm text-slate-500 font-medium">تحليل الإيرادات الشهرية</p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
                   <Activity className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -607,7 +607,7 @@ const DashboardLanding: React.FC = () => {
                 ].map((item, index) => (
                   <motion.div
                     key={index}
-                    className={cn('text-center p-3 rounded-2xl', item.bg)}
+                    className={cn('text-center p-3 rounded-xl', item.bg)}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 + index * 0.1 }}
@@ -631,7 +631,7 @@ const DashboardLanding: React.FC = () => {
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-3 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/50 transition-all"
+              className="col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -639,7 +639,7 @@ const DashboardLanding: React.FC = () => {
                   <p className="text-sm text-slate-500">توزيع المركبات</p>
                 </div>
                 <motion.span
-                  className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-500/30 cursor-pointer"
+                  className="px-4 py-2 bg-teal-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-teal-500/30 cursor-pointer"
                   whileHover={{ scale: 1.05 }}
                   onClick={() => navigate('/fleet')}
                 >
@@ -682,7 +682,7 @@ const DashboardLanding: React.FC = () => {
                         if (!payload?.[0]) return null;
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-white px-4 py-3 rounded-2xl shadow-xl border border-slate-100">
+                          <div className="bg-white px-4 py-3 rounded-xl shadow-xl border border-slate-100">
                             <p className="font-bold text-sm text-slate-900">{data.name}</p>
                             <p className="text-slate-600 text-xs mt-1">{data.value} مركبة</p>
                           </div>
@@ -738,7 +738,7 @@ const DashboardLanding: React.FC = () => {
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-4 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/50 transition-all"
+              className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -815,7 +815,7 @@ const DashboardLanding: React.FC = () => {
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-4 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/50 transition-all"
+              className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
             >
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -842,9 +842,9 @@ const DashboardLanding: React.FC = () => {
                   <motion.div
                     key={index}
                     className={cn(
-                      'aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm',
+                      'aspect-square rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm',
                       day.isToday
-                        ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30'
+                        ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
                         : day.occupancy > 80
                         ? 'bg-red-50 border-2 border-red-200 hover:border-red-400 hover:bg-red-100'
                         : day.occupancy > 60
@@ -874,7 +874,7 @@ const DashboardLanding: React.FC = () => {
               </div>
 
               <motion.div
-                className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 rounded-2xl cursor-pointer hover:from-blue-100 hover:to-teal-100 transition-all"
+                className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl cursor-pointer hover:from-blue-100 hover:to-teal-100 transition-all"
                 whileHover={{ scale: 1.02 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -918,7 +918,7 @@ const DashboardLanding: React.FC = () => {
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -4 }}
-              className="col-span-4 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/50 transition-all"
+              className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
             >
               <div className="flex items-start justify-between mb-5">
                 <div>
@@ -926,7 +926,7 @@ const DashboardLanding: React.FC = () => {
                   <p className="text-sm text-slate-500">تحليل ذكي باستخدام AI</p>
                 </div>
                 <motion.div
-                  className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/30"
+                  className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30"
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ repeat: Infinity, duration: 5, repeatDelay: 2 }}
                 >
@@ -949,7 +949,7 @@ const DashboardLanding: React.FC = () => {
                   </div>
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-600 shadow-inner"
+                      className="h-full rounded-full bg-teal-500 shadow-inner"
                       initial={{ width: 0 }}
                       animate={{ width: '80%' }}
                       transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
@@ -981,7 +981,7 @@ const DashboardLanding: React.FC = () => {
               </div>
 
               <motion.div
-                className="p-4 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl"
+                className="p-4 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-xl"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}

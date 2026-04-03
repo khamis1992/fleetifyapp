@@ -350,7 +350,7 @@ export default function NativeMobileDemo() {
           {/* Product Card Example */}
           <NativeCard pressable variant="elevated">
             <NativeCardContent className="flex items-start gap-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center justify-center">
                 <ShoppingCart className="h-8 w-8 text-primary" />
               </div>
               <div className="flex-1">

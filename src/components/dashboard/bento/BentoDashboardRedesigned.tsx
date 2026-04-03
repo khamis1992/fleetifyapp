@@ -568,11 +568,11 @@ const BentoDashboardRedesigned: React.FC = () => {
 
         {/* Stats Row - 4 Interactive cards */}
         {statsLoading ? (
-          <div className="grid grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
             <SkeletonMetrics count={4} columns={{ sm: 2, md: 2, lg: 4 }} />
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
             <StatCard
               title="إجمالي المركبات"
               value={stats?.totalVehicles || 0}

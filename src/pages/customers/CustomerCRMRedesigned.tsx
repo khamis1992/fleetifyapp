@@ -129,7 +129,7 @@ const StatCard = ({
   return (
     <motion.button
       onClick={onClick}
-      className={cn('bg-white rounded-2xl p-5 text-right hover:shadow-lg transition-all duration-300 border border-slate-100', onClick && 'cursor-pointer group')}
+      className={cn('bg-white rounded-xl p-5 text-right hover:shadow-lg transition-all duration-300 border border-slate-100', onClick && 'cursor-pointer group')}
       whileHover={{ y: -2 }}
     >
       <div className="flex items-start justify-between mb-3">
@@ -281,7 +281,7 @@ const CustomerTableRow = ({
           <Button
             size="sm"
             onClick={onWhatsApp}
-            className="h-8 w-8 p-0 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-md shadow-teal-200 hover:shadow-lg hover:shadow-teal-300 transition-all duration-300 hover:scale-105"
+            className="h-8 w-8 p-0 rounded-lg bg-teal-500 hover:bg-teal-600 text-white shadow-md shadow-teal-200 hover:shadow-lg hover:shadow-teal-300 transition-all duration-300 hover:scale-105"
           >
             <MessageCircle size={14} />
           </Button>
@@ -343,7 +343,7 @@ const CustomerCard = ({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-slate-100 p-5 hover:shadow-lg hover:border-slate-200 transition-all duration-300"
+      className="bg-white rounded-xl border border-slate-100 p-5 hover:shadow-lg hover:border-slate-200 transition-all duration-300"
     >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
@@ -1084,7 +1084,7 @@ export default function CustomerCRMRedesigned() {
           <ScheduledFollowupsPanel />
 
           {/* Filters & Content */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Filter Tabs */}
             <div className="border-b border-slate-200 px-6 py-4 overflow-x-auto">
               <div className="flex gap-2">
@@ -1150,7 +1150,7 @@ export default function CustomerCRMRedesigned() {
                     {paginatedCustomers.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="text-center py-20">
-                          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                             <Search className="text-slate-400" size={24} />
                           </div>
                           <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
@@ -1184,7 +1184,7 @@ export default function CustomerCRMRedesigned() {
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {paginatedCustomers.length === 0 ? (
                   <div className="col-span-full text-center py-20">
-                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                       <Search className="text-slate-400" size={24} />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>
@@ -1261,7 +1261,7 @@ export default function CustomerCRMRedesigned() {
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200"
+                className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200"
               >
                 <div className="flex justify-between items-center p-6 border-b border-slate-200">
                   <div className="flex items-center gap-3">

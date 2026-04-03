@@ -154,8 +154,8 @@ export default function EmployeeDetails() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-6" dir="rtl">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="h-64 bg-muted rounded-3xl"></div>
-          <div className="h-48 bg-muted rounded-3xl"></div>
+          <div className="h-64 bg-muted rounded-xl"></div>
+          <div className="h-48 bg-muted rounded-xl"></div>
         </div>
       </div>
     );
@@ -164,12 +164,12 @@ export default function EmployeeDetails() {
   if (error || !employee) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-6" dir="rtl">
-        <Card className="bg-white/80 backdrop-blur-xl border border-red-200 rounded-3xl">
+        <Card className="bg-white border border-red-200 rounded-xl">
           <CardContent className="p-8 text-center">
             <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-slate-900 mb-2">لم يتم العثور على الموظف</h2>
             <p className="text-slate-600 mb-4">الموظف المطلوب غير موجود أو تم حذفه</p>
-            <Button onClick={() => navigate('/hr/employees')} className="bg-gradient-to-r from-teal-500 to-teal-600">
+            <Button onClick={() => navigate('/hr/employees')} className="bg-teal-500">
               <ArrowRight className="w-4 h-4 ml-2" />
               العودة للقائمة
             </Button>
@@ -197,7 +197,7 @@ export default function EmployeeDetails() {
             <ArrowRight className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center">
+            <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center">
               <User className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -208,7 +208,7 @@ export default function EmployeeDetails() {
                 </Badge>
                 <Badge 
                   variant={employee.is_active ? "default" : "secondary"}
-                  className={employee.is_active ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white" : ""}
+                  className={employee.is_active ? "bg-teal-500 text-white" : ""}
                 >
                   {employee.is_active ? "نشط" : "غير نشط"}
                 </Badge>
@@ -221,7 +221,7 @@ export default function EmployeeDetails() {
           <Button
             variant="outline"
             onClick={() => setShowPayrollDialog(true)}
-            className="border-slate-200/50 hover:border-teal-500/30"
+            className="border-slate-200 hover:border-teal-500/50"
           >
             <DollarSign className="w-4 h-4 ml-2" />
             الرواتب
@@ -230,7 +230,7 @@ export default function EmployeeDetails() {
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(true)}
-              className="border-slate-200/50 hover:border-teal-500/30"
+              className="border-slate-200 hover:border-teal-500/50"
             >
               <Edit className="w-4 h-4 ml-2" />
               تعديل
@@ -251,20 +251,20 @@ export default function EmployeeDetails() {
 
       {/* Content Tabs */}
       <Tabs defaultValue="info" className="space-y-6">
-        <TabsList className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-1">
-          <TabsTrigger value="info" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+        <TabsList className="bg-white border border-slate-200 rounded-xl p-1">
+          <TabsTrigger value="info" className="rounded-xl data-[state=active]:bg-teal-500 data-[state=active]:text-white">
             <User className="w-4 h-4 ml-2" />
             المعلومات الأساسية
           </TabsTrigger>
-          <TabsTrigger value="salary" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+          <TabsTrigger value="salary" className="rounded-xl data-[state=active]:bg-teal-500 data-[state=active]:text-white">
             <DollarSign className="w-4 h-4 ml-2" />
             الراتب والبدلات
           </TabsTrigger>
-          <TabsTrigger value="attendance" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+          <TabsTrigger value="attendance" className="rounded-xl data-[state=active]:bg-teal-500 data-[state=active]:text-white">
             <Clock className="w-4 h-4 ml-2" />
             الحضور
           </TabsTrigger>
-          <TabsTrigger value="documents" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+          <TabsTrigger value="documents" className="rounded-xl data-[state=active]:bg-teal-500 data-[state=active]:text-white">
             <FileText className="w-4 h-4 ml-2" />
             المستندات
           </TabsTrigger>
@@ -274,7 +274,7 @@ export default function EmployeeDetails() {
         <TabsContent value="info" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Info */}
-            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <User className="w-5 h-5 text-teal-600" />
@@ -290,7 +290,7 @@ export default function EmployeeDetails() {
             </Card>
 
             {/* Contact Info */}
-            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Phone className="w-5 h-5 text-teal-600" />
@@ -315,7 +315,7 @@ export default function EmployeeDetails() {
             </Card>
 
             {/* Work Info */}
-            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Building2 className="w-5 h-5 text-teal-600" />
@@ -334,7 +334,7 @@ export default function EmployeeDetails() {
             </Card>
 
             {/* Bank Info */}
-            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <CreditCard className="w-5 h-5 text-teal-600" />
@@ -350,7 +350,7 @@ export default function EmployeeDetails() {
 
           {/* Notes */}
           {employee.notes && (
-            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+            <Card className="bg-white border border-slate-200 rounded-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <FileText className="w-5 h-5 text-teal-600" />
@@ -367,19 +367,19 @@ export default function EmployeeDetails() {
         {/* Salary Tab */}
         <TabsContent value="salary" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-3xl">
+            <Card className="bg-teal-500 text-white rounded-xl">
               <CardContent className="p-6">
                 <p className="text-teal-100 text-sm">الراتب الأساسي</p>
                 <p className="text-3xl font-bold mt-2">{formatCurrency(employee.basic_salary)}</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl">
               <CardContent className="p-6">
                 <p className="text-blue-100 text-sm">البدلات</p>
                 <p className="text-3xl font-bold mt-2">{formatCurrency(employee.allowances)}</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-3xl">
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl">
               <CardContent className="p-6">
                 <p className="text-emerald-100 text-sm">إجمالي الراتب</p>
                 <p className="text-3xl font-bold mt-2">{formatCurrency(employee.basic_salary + employee.allowances)}</p>
@@ -387,11 +387,11 @@ export default function EmployeeDetails() {
             </Card>
           </div>
 
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+          <Card className="bg-white border border-slate-200 rounded-xl">
             <CardContent className="p-6">
               <Button 
                 onClick={() => setShowPayrollDialog(true)}
-                className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                className="w-full bg-teal-500 hover:bg-teal-600"
               >
                 <DollarSign className="w-4 h-4 ml-2" />
                 عرض تفاصيل الرواتب والمستحقات
@@ -402,7 +402,7 @@ export default function EmployeeDetails() {
 
         {/* Attendance Tab */}
         <TabsContent value="attendance" className="space-y-6">
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+          <Card className="bg-white border border-slate-200 rounded-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Clock className="w-5 h-5 text-teal-600" />
@@ -413,7 +413,7 @@ export default function EmployeeDetails() {
               {attendanceRecords && attendanceRecords.length > 0 ? (
                 <div className="space-y-3">
                   {attendanceRecords.map((record: any) => (
-                    <div key={record.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                    <div key={record.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
                           <Calendar className="w-5 h-5 text-teal-600" />
@@ -445,7 +445,7 @@ export default function EmployeeDetails() {
 
         {/* Documents Tab */}
         <TabsContent value="documents" className="space-y-6">
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+          <Card className="bg-white border border-slate-200 rounded-xl">
             <CardContent className="p-8 text-center">
               <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <p className="text-slate-500">لا توجد مستندات مرفقة</p>

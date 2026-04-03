@@ -288,7 +288,7 @@ export default function LawsuitDocumentsView() {
           className="text-center space-y-2"
         >
           <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg">
+            <div className="p-3 bg-teal-500 rounded-xl shadow-lg">
               <FileCheck className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">

@@ -824,11 +824,11 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1 }}
       className={cn(
-        "rounded-2xl p-6",
+        "rounded-xl p-6",
         "backdrop-blur-xl border",
         isDark 
           ? "bg-slate-900/60 border-slate-800/50" 
-          : "bg-white/80 border-slate-200/50",
+          : "bg-white/80 border-slate-200",
         "shadow-xl"
       )}
     >

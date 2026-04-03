@@ -652,9 +652,9 @@ export default function TrafficViolationsRedesigned() {
       </Dialog>
 
       {/* --- Top Navbar --- */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 rounded-xl shadow-lg shadow-teal-500/20">
+          <div className="bg-teal-500 p-2.5 rounded-xl shadow-sm">
             <FileWarning className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -666,7 +666,7 @@ export default function TrafficViolationsRedesigned() {
           <Button
             variant="outline"
             onClick={() => refetch()}
-            className="border-slate-200/50 hover:bg-slate-50 rounded-xl hover:border-teal-500/30"
+            className="border-slate-200 hover:bg-slate-50 rounded-xl hover:border-teal-500/50"
           >
             <RefreshCw className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">تحديث</span>
@@ -682,7 +682,7 @@ export default function TrafficViolationsRedesigned() {
           <Button
             variant="outline"
             onClick={handleOpenReportDialog}
-            className="border-slate-200/50 hover:bg-slate-50 rounded-xl hover:border-teal-500/30"
+            className="border-slate-200 hover:bg-slate-50 rounded-xl hover:border-teal-500/50"
           >
             <Printer className="w-4 h-4 ml-2" />
             <span className="hidden md:inline">طباعة التقرير</span>
@@ -699,7 +699,7 @@ export default function TrafficViolationsRedesigned() {
             <DialogTrigger asChild>
               <Button
                 onClick={() => handleOpenModal(null)}
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/20"
+                className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm"
               >
                 <Plus className="w-5 h-5 ml-2" />
                 تسجيل مخالفة
@@ -741,15 +741,15 @@ export default function TrafficViolationsRedesigned() {
         />
 
         {/* --- Tabs Section --- */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 shadow-sm overflow-hidden hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:border-teal-500/50 hover:shadow-sm transition-all">
           <Tabs defaultValue="list" className="w-full">
             <div className="border-b border-neutral-100 px-4 pt-2">
               <TabsList className="h-auto flex justify-start gap-1 p-1 bg-transparent">
-                <TabsTrigger value="list" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger value="list" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <List className="w-4 h-4" />
                   قائمة المخالفات
                 </TabsTrigger>
-                <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                <TabsTrigger value="import" className="flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
                   <Upload className="w-4 h-4" />
                   استيراد PDF
                 </TabsTrigger>
@@ -767,7 +767,7 @@ export default function TrafficViolationsRedesigned() {
                   <input 
                     type="text" 
                     placeholder="بحث: رقم المخالفة، المركبة، العميل..."
-                    className="w-full pr-10 pl-4 py-2.5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none transition hover:border-teal-500/30"
+                    className="w-full pr-10 pl-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none transition hover:border-teal-500/50"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -782,7 +782,7 @@ export default function TrafficViolationsRedesigned() {
                     <select 
                       value={filterCar} 
                       onChange={(e) => setFilterCar(e.target.value)}
-                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
+                      className="w-full pr-9 pl-8 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/50 transition"
                     >
                       <option value="all">جميع المركبات</option>
                       {vehicles.map(v => (
@@ -798,7 +798,7 @@ export default function TrafficViolationsRedesigned() {
                     <select 
                       value={filterCustomer} 
                       onChange={(e) => setFilterCustomer(e.target.value)}
-                      className="w-full pr-9 pl-8 py-2.5 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/30 transition"
+                      className="w-full pr-9 pl-8 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none appearance-none text-sm font-medium text-neutral-700 cursor-pointer hover:bg-neutral-50 hover:border-teal-500/50 transition"
                     >
                       <option value="all">جميع العملاء</option>
                       {customers.map(c => (
@@ -1012,7 +1012,7 @@ export default function TrafficViolationsRedesigned() {
                       size="sm"
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
-                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                      className="rounded-lg border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                     >
                       الأولى
                     </Button>
@@ -1021,7 +1021,7 @@ export default function TrafficViolationsRedesigned() {
                       size="sm"
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                      className="rounded-lg border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                     >
                       السابق
                     </Button>
@@ -1047,8 +1047,8 @@ export default function TrafficViolationsRedesigned() {
                             onClick={() => setCurrentPage(pageNum)}
                             className={`min-w-[40px] rounded-lg ${
                               currentPage === pageNum
-                                ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/20'
-                                : 'border-slate-200/50 hover:bg-slate-50'
+                                ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
+                                : 'border-slate-200 hover:bg-slate-50'
                             }`}
                           >
                             {pageNum}
@@ -1062,7 +1062,7 @@ export default function TrafficViolationsRedesigned() {
                       size="sm"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                      className="rounded-lg border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                     >
                       التالي
                     </Button>
@@ -1071,7 +1071,7 @@ export default function TrafficViolationsRedesigned() {
                       size="sm"
                       onClick={() => setCurrentPage(totalPages)}
                       disabled={currentPage === totalPages}
-                      className="rounded-lg border-slate-200/50 hover:bg-slate-50 disabled:opacity-50"
+                      className="rounded-lg border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                     >
                       الأخيرة
                     </Button>

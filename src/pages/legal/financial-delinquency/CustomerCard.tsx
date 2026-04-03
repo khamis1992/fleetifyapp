@@ -74,7 +74,7 @@ export const CustomerCard = React.forwardRef<HTMLDivElement, CustomerCardProps>(
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
       className={cn(
-        "group rounded-2xl border-2 bg-card transition-all duration-300 hover:shadow-lg",
+        "group rounded-xl border-2 bg-card transition-all duration-300 hover:shadow-lg",
         verificationStatus?.status === 'verified' && "border-green-300 bg-green-50/30",
         !verificationStatus && customer.risk_level === 'CRITICAL' && "border-red-200 hover:border-red-300",
         !verificationStatus && customer.risk_level === 'HIGH' && "border-orange-200 hover:border-orange-300",

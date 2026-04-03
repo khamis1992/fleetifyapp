@@ -120,11 +120,11 @@ export default function LegalDocumentGeneratorPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-xl sticky top-0 z-10 border-slate-200/50">
+      <div className="border-b bg-white sticky top-0 z-10 border-slate-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
                 <FileText className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -136,7 +136,7 @@ export default function LegalDocumentGeneratorPage() {
             </div>
 
             {currentStep !== 'category' && (
-              <Button variant="outline" onClick={handleNewDocument} className="border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50/30 rounded-xl">
+              <Button variant="outline" onClick={handleNewDocument} className="border-slate-200 hover:border-teal-500/50 hover:bg-teal-50/30 rounded-xl">
                 <Plus className="h-4 w-4 ml-2" />
                 كتاب جديد
               </Button>
@@ -181,7 +181,7 @@ export default function LegalDocumentGeneratorPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="generator" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 bg-white/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-200/50">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6 bg-white p-1.5 rounded-xl border border-slate-200">
             <TabsTrigger value="generator" className="hover:bg-teal-50/30 rounded-xl">
               <FileText className="h-4 w-4 ml-2" />
               إنشاء كتاب
@@ -200,7 +200,7 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
                   <CardHeader>
                     <CardTitle className="text-slate-900">اختر نوع الكتاب</CardTitle>
                     <CardDescription className="text-slate-600">
@@ -230,7 +230,7 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -263,7 +263,7 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -295,7 +295,7 @@ export default function LegalDocumentGeneratorPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -327,7 +327,7 @@ export default function LegalDocumentGeneratorPage() {
           </TabsContent>
 
           <TabsContent value="history">
-            <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+            <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-slate-900">سجل الكتب</CardTitle>
                 <CardDescription className="text-slate-600">
@@ -364,8 +364,8 @@ function StepIndicator({ number, label, active, completed }: StepIndicatorProps)
       <div
         className={`
           w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
-          ${completed ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20' : ''}
-          ${active && !completed ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20' : ''}
+          ${completed ? 'bg-teal-500 text-white shadow-sm' : ''}
+          ${active && !completed ? 'bg-teal-500 text-white shadow-sm' : ''}
           ${!active && !completed ? 'bg-slate-100 text-slate-500' : ''}
         `}
       >

@@ -125,11 +125,11 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-2xl p-4",
+        "rounded-xl p-4",
         "backdrop-blur-xl border",
         isDark 
           ? "bg-slate-900/60 border-slate-800/50" 
-          : "bg-white/80 border-slate-200/50",
+          : "bg-white/80 border-slate-200",
         "shadow-lg"
       )}
     >

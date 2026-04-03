@@ -55,7 +55,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
+    className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -165,13 +165,13 @@ const Ledger = () => {
       <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
         {/* Hero Header */}
         <motion.div
-          className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+          className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <FileText className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -271,7 +271,7 @@ const Ledger = () => {
 
         {/* Filters Card */}
         <motion.div
-          className="bg-white rounded-2xl shadow-sm p-4 mb-6"
+          className="bg-white rounded-xl shadow-sm p-4 mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -343,13 +343,13 @@ const Ledger = () => {
           transition={{ delay: 0.3 }}
         >
           {isLoadingEntries ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
               <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-rose-500" />
               <p className="text-neutral-500">جاري تحميل القيود المحاسبية...</p>
             </div>
           ) : !journalEntries || journalEntries.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+              <div className="w-16 h-16 rounded-xl bg-rose-100 flex items-center justify-center mx-auto mb-4">
                 <Receipt className="h-8 w-8 text-rose-500" />
               </div>
               <h3 className="text-lg font-semibold mb-2 text-neutral-900">لا توجد قيود محاسبية</h3>

@@ -63,7 +63,7 @@ export default function ReportsHub() {
       <div className="container mx-auto p-6 space-y-6" dir="rtl">
         {/* Page Header */}
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-2xl">
+          <div className="p-3 bg-teal-500 shadow-sm rounded-xl">
             <BarChart3 className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -73,7 +73,7 @@ export default function ReportsHub() {
         </div>
 
         {/* Quick Reports Section */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-slate-900">التقارير السريعة</CardTitle>
             <CardDescription className="text-slate-600">تقارير جاهزة للاستخدام الفوري</CardDescription>
@@ -85,12 +85,12 @@ export default function ReportsHub() {
                 return (
                   <Card
                     key={report.id}
-                    className="cursor-pointer bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300"
+                    className="cursor-pointer bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300"
                     onClick={() => handleQuickReportClick(report.id, report.name)}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-2">
-                        <div className="p-2 bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-xl">
+                        <div className="p-2 bg-teal-500 shadow-sm rounded-xl">
                           <Icon className="h-5 w-5 text-white" />
                         </div>
                         <CardTitle className="text-base text-slate-900">{report.name}</CardTitle>
@@ -108,7 +108,7 @@ export default function ReportsHub() {
 
         {/* Favorites Section - Only show if user has favorites */}
         {!favoritesLoading && favorites.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -124,7 +124,7 @@ export default function ReportsHub() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {favorites.map((favorite) => (
-                  <Card key={favorite.id} className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+                  <Card key={favorite.id} className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base text-slate-900">{favorite.name}</CardTitle>
                       <CardDescription className="text-xs">
@@ -137,7 +137,7 @@ export default function ReportsHub() {
                       <Button
                         size="sm"
                         onClick={() => handleRunFavorite(favorite.id, favorite.name)}
-                        className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20"
+                        className="flex-1 bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
                       >
                         <Play className="h-4 w-4 mr-2" />
                         تشغيل
@@ -146,7 +146,7 @@ export default function ReportsHub() {
                         size="sm"
                         variant="outline"
                         onClick={() => deleteFavorite(favorite.id)}
-                        className="border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-500/10"
+                        className="border-slate-200 hover:border-teal-500/50 hover:bg-teal-500/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -160,7 +160,7 @@ export default function ReportsHub() {
 
         {/* Recent Reports Section - Only show if user has recent reports */}
         {!recentLoading && recentReports.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+          <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-900">
                 <Clock className="h-5 w-5 text-teal-600" />
@@ -215,7 +215,7 @@ export default function ReportsHub() {
 
         {/* Empty States */}
         {!favoritesLoading && favorites.length === 0 && !recentLoading && recentReports.length === 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+          <Card className="bg-white border border-slate-200 rounded-xl">
             <CardContent className="py-8">
               <div className="text-center text-slate-600">
                 <p>لا توجد تقارير مفضلة أو حديثة بعد</p>

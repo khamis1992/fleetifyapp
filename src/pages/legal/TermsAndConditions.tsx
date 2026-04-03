@@ -31,7 +31,7 @@ export default function TermsAndConditions() {
         >
           {/* Title */}
           <div className="text-center mb-12">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-teal-500 flex items-center justify-center">
               <FileText className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
@@ -45,7 +45,7 @@ export default function TermsAndConditions() {
           {/* Main Content */}
           <div className="space-y-8">
             {/* Introduction */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <h2 className="text-2xl font-bold text-white mb-4">قبول الشروط</h2>
               <p className="text-slate-300 leading-relaxed">
                 باستخدامك لمنصة Fleetify، فإنك توافق على الالتزام بهذه الشروط والأحكام. إذا كنت لا توافق على هذه الشروط، يرجى عدم استخدام المنصة.
@@ -53,7 +53,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Services Description */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-teal-400" />
@@ -89,7 +89,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* User Responsibilities */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <User className="w-6 h-6 text-teal-400" />
@@ -114,7 +114,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Prohibited Activities */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
                   <Ban className="w-6 h-6 text-red-400" />
@@ -154,7 +154,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Payment Terms */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <CreditCard className="w-6 h-6 text-teal-400" />
@@ -187,7 +187,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Limitation of Liability */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
                   <AlertCircle className="w-6 h-6 text-yellow-400" />
@@ -215,7 +215,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Data Protection */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-teal-400" />
@@ -237,7 +237,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Termination */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <h2 className="text-2xl font-bold text-white mb-4">إنهاء الخدمة</h2>
 
               <div className="space-y-4">
@@ -258,7 +258,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Changes to Terms */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <h2 className="text-2xl font-bold text-white mb-4">تغييرات على الشروط</h2>
               <p className="text-slate-300 leading-relaxed">
                 قد نقوم بتحديث هذه الشروط والأحكام من وقت لآخر. سنقوم بإشعارك بأي تغييرات جوهرية عبر البريد الإلكتروني أو من خلال المنصة. استمرارك في استخدام الخدمة بعد التغييرات يعتبر قبولاً لها.
@@ -266,7 +266,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Contact */}
-            <section className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-2xl border border-teal-500/30 p-8">
+            <section className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-xl border border-teal-500/30 p-8">
               <h2 className="text-2xl font-bold text-white mb-4">تواصل معنا</h2>
               <p className="text-slate-300 mb-4">
                 إذا كان لديك أي أسئلة حول هذه الشروط والأحكام، يرجى التواصل معنا:
@@ -286,7 +286,7 @@ export default function TermsAndConditions() {
             </section>
 
             {/* Acceptance */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-teal-500/30 p-8 text-center">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-teal-500/30 p-8 text-center">
               <p className="text-slate-300 mb-4">
                 باستخدامك لمنصة Fleetify، تقر بأنك قد قرأت وفهمت وقبلت هذه الشروط والأحكام.
               </p>
@@ -303,7 +303,7 @@ export default function TermsAndConditions() {
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <span className="text-white font-bold">Fleetify</span>

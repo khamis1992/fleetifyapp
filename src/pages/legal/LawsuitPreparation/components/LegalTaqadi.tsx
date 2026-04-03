@@ -226,7 +226,7 @@ export function LegalTaqadi() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-3 mb-6"
       >
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-600/20 to-teal-700/20
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-600/20 to-teal-700/20
                        border border-teal-600/30 flex items-center justify-center shadow-lg shadow-teal-600/10">
           <Gavel className="h-6 w-6 text-teal-600" />
         </div>

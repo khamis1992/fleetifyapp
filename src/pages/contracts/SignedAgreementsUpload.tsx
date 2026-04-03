@@ -503,7 +503,7 @@ export default function SignedAgreementsUpload() {
         >
           <CardContent className="p-12">
             <div className="flex flex-col items-center justify-center text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center">
                 <Upload className="w-8 h-8 text-green-600" />
               </div>
               <div>

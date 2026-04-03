@@ -144,7 +144,7 @@ export const MobileCustomers: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/mobile/customers/new')}
-          className="p-3 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 shadow-lg shadow-teal-500/30"
+          className="p-3 rounded-xl bg-teal-500 shadow-lg shadow-teal-500/30"
         >
           <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
         </button>
@@ -159,8 +159,8 @@ export const MobileCustomers: React.FC = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="بحث في العملاء..."
           className={cn(
-            'w-full pr-10 pl-10 py-3 rounded-2xl',
-            'bg-white/80 backdrop-blur-xl border border-slate-200/50',
+            'w-full pr-10 pl-10 py-3 rounded-xl',
+            'bg-white border border-slate-200',
             'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
             'transition-all duration-200'
           )}
@@ -201,12 +201,12 @@ export const MobileCustomers: React.FC = () => {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => navigate(`/mobile/customers/${customer.id}`)}
-                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+                className="bg-white border border-slate-200 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
               >
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
                   <div className={cn(
-                    'flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br shadow-lg flex items-center justify-center text-white font-semibold text-lg',
+                    'flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br shadow-lg flex items-center justify-center text-white font-semibold text-lg',
                     getAvatarColor(customer.first_name)
                   )}>
                     {getCustomerInitials(customer.first_name, customer.last_name)}
@@ -295,7 +295,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ title, description, actionLabel
     {actionLabel && onAction && (
       <button
         onClick={onAction}
-        className="px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold shadow-lg shadow-teal-500/30"
+        className="px-6 py-3 rounded-xl bg-teal-500 text-white font-semibold shadow-lg shadow-teal-500/30"
       >
         {actionLabel}
       </button>

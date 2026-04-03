@@ -183,7 +183,7 @@ const EnhancedStatCard: React.FC<EnhancedStatCardProps> = ({
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
     onClick={onClick}
-    className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 p-6 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 cursor-pointer"
+    className="group relative overflow-hidden rounded-xl bg-white border border-slate-200/60 p-6 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 cursor-pointer"
   >
     {/* Background gradient decoration */}
     <div className={cn(
@@ -630,7 +630,7 @@ export default function MaintenanceRedesigned() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50/30">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
@@ -686,7 +686,7 @@ export default function MaintenanceRedesigned() {
               <Button
                 size="sm"
                 onClick={handleCreateNew}
-                className="bg-teal-600 hover:bg-teal-700 text-white gap-2 rounded-xl shadow-lg shadow-teal-500/20"
+                className="bg-teal-600 hover:bg-teal-700 text-white gap-2 rounded-xl shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 صيانة جديدة
@@ -744,7 +744,7 @@ export default function MaintenanceRedesigned() {
             {/* Quick Summary & Alerts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Quick Summary */}
-              <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-6 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
+              <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
                 <div className="flex items-center justify-between mb-5">
                   <div>
                     <h2 className="font-bold text-lg text-slate-900">ملخص الصيانات</h2>
@@ -793,7 +793,7 @@ export default function MaintenanceRedesigned() {
               </div>
 
               {/* Alerts */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-6 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
+              <div className="bg-white rounded-xl border border-slate-200 p-6 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
                 <div className="flex items-center justify-between mb-5">
                   <div>
                     <h2 className="font-bold text-lg text-slate-900">التنبيهات</h2>
@@ -839,7 +839,7 @@ export default function MaintenanceRedesigned() {
 
             {/* Vehicles in Maintenance */}
             {(maintenanceVehicles?.length || 0) > 0 && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all">
+              <div className="bg-white rounded-xl border border-slate-200 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/10 transition-all">
                 <div className="p-5 border-b flex items-center justify-between">
                   <div>
                     <h2 className="font-bold text-lg text-slate-900 flex items-center gap-2">
@@ -878,7 +878,7 @@ export default function MaintenanceRedesigned() {
             )}
 
             {/* Recent Activity */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
+            <div className="bg-white rounded-xl border border-slate-200 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
               <div className="p-5 border-b flex items-center justify-between">
                 <div>
                   <h2 className="font-bold text-lg text-slate-900">النشاط الأخير</h2>
@@ -924,7 +924,7 @@ export default function MaintenanceRedesigned() {
         ) : (
           <>
             {/* Search & Filters Bar */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
               <div className="flex flex-col lg:flex-row gap-3">
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -1022,7 +1022,7 @@ export default function MaintenanceRedesigned() {
               ))}
 
               {paginatedRecords.length === 0 && (
-                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                   <div className="p-4 bg-slate-50 rounded-full w-16 h-16 mx-auto mb-4">
                     <Wrench className="w-8 h-8 text-slate-400 mx-auto" />
                   </div>
@@ -1044,7 +1044,7 @@ export default function MaintenanceRedesigned() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
+              <div className="bg-white rounded-xl border border-slate-200 p-4 hover:border-sky-500/30 hover:shadow-xl hover:shadow-sky-500/10 transition-all">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-slate-500">
                     صفحة <span className="font-bold text-slate-900">{currentPage}</span> من{' '}
@@ -1127,7 +1127,7 @@ export default function MaintenanceRedesigned() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!recordToDelete} onOpenChange={(open) => !open && setRecordToDelete(null)}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent className="rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
             <AlertDialogDescription>

@@ -39,7 +39,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay, type: 'spring', bounce: 0.4 }}
     className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-3xl overflow-hidden',
+      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden',
       className
     )}
   >
@@ -50,7 +50,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
 const StatCard = ({ title, value, subtitle, icon: Icon, color, trend, delay }: any) => (
   <GlassCard className="p-6" delay={delay}>
     <div className="flex items-start justify-between mb-3">
-      <div className={cn('p-3 rounded-2xl', color)}>
+      <div className={cn('p-3 rounded-xl', color)}>
         <Icon className="w-6 h-6 text-white" />
       </div>
       {trend && (

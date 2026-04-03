@@ -145,7 +145,7 @@ export default function HelpCenter() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-2xl">
+            <div className="w-24 h-24 mx-auto mb-8 rounded-xl bg-teal-500 flex items-center justify-center shadow-2xl">
               <BookOpen className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6">
@@ -186,7 +186,7 @@ export default function HelpCenter() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-6 hover:border-teal-500/30 transition-all"
+                      className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-6 hover:border-teal-500/50 transition-all"
                     >
                       <p className="text-teal-400 text-sm mb-2">{article.category}</p>
                       <h3 className="text-lg font-bold text-white mb-3">{article.question}</h3>
@@ -228,13 +228,13 @@ export default function HelpCenter() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 overflow-hidden"
+                  className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 overflow-hidden"
                 >
                   <button
                     onClick={() => setExpandedCategory(expandedCategory === category.id ? null : category.id)}
                     className="w-full p-6 flex items-center gap-4 hover:bg-slate-800/50 transition-all"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center flex-shrink-0">
                       <category.icon className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1 text-right">
@@ -283,7 +283,7 @@ export default function HelpCenter() {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
                 <Video className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">دروس فيديو</h2>
@@ -304,7 +304,7 @@ export default function HelpCenter() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 overflow-hidden hover:border-purple-500/30 transition-all cursor-pointer group"
+                  className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 overflow-hidden hover:border-purple-500/30 transition-all cursor-pointer group"
                 >
                   <div className="aspect-video bg-gradient-to-br from-purple-500/20 to-purple-600/20 flex items-center justify-center relative">
                     <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -336,7 +336,7 @@ export default function HelpCenter() {
               viewport={{ once: true }}
               className="max-w-4xl mx-auto"
             >
-              <div className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-2xl border border-teal-500/30 p-8 lg:p-12 text-center">
+              <div className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-xl border border-teal-500/30 p-8 lg:p-12 text-center">
                 <h2 className="text-3xl font-bold text-white mb-4">لم تجد إجابة؟</h2>
                 <p className="text-slate-300 mb-8">
                   فريق الدعم لدينا جاهز لمساعدتك. تواصل معنا وسنرد عليك في أسرع وقت ممكن.
@@ -373,7 +373,7 @@ export default function HelpCenter() {
 
                 <Link
                   to="/onboarding"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:shadow-teal-500/30 transition-all"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:shadow-teal-500/30 transition-all"
                 >
                   ابدأ محادثة مع الدعم
                   <ExternalLink className="w-5 h-5" />
@@ -389,7 +389,7 @@ export default function HelpCenter() {
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <span className="text-white font-bold">Fleetify</span>
