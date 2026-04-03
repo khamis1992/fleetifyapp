@@ -43,7 +43,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay, type: 'spring', bounce: 0.4 }}
     className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-3xl overflow-hidden',
+      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden',
       className
     )}
   >
@@ -153,7 +153,7 @@ export const TeamReports: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3 mb-2"
           >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20 text-white">
+            <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-sm text-white">
               <FileText className="w-6 h-6" />
             </div>
             <div>

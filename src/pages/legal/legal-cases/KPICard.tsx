@@ -30,7 +30,7 @@ const KPICard: React.FC<KPICardProps> = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition-all"
+    className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all"
   >
     <div className="flex justify-between items-start mb-4">
       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shadow-md", color)}>

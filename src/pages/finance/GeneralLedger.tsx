@@ -156,31 +156,33 @@ export default function GeneralLedger() {
                   عرض وإدارة جميع القيود المحاسبية والتقارير المالية
                 </p>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setIsCreateDialogOpen(true)}
-                  className="bg-slate-900 hover:bg-slate-800"
-                >
-                  <Plus className="h-4 w-4 ml-2" />
-                  قيد جديد
-                </Button>
-                <Button
-                  onClick={() => refetchEntries()}
-                  variant="outline"
-                  size="sm"
-                >
-                  <RefreshCw className="h-4 w-4 ml-2" />
-                  تحديث
-                </Button>
-                <Button
-                  onClick={() => navigate('/finance/accounting')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ArrowLeft className="h-4 w-4 ml-2" />
-                  العودة
-                </Button>
-              </div>
+               <div className="flex gap-2">
+                 <Button
+                   onClick={() => setIsCreateDialogOpen(true)}
+                   className="bg-slate-900 hover:bg-slate-800"
+                 >
+                   <Plus className="h-4 w-4 ml-2" aria-hidden="true" />
+                   قيد جديد
+                 </Button>
+                 <Button
+                   onClick={() => refetchEntries()}
+                   variant="outline"
+                   size="sm"
+                   aria-label="تحديث"
+                 >
+                   <RefreshCw className="h-4 w-4 ml-2" aria-hidden="true" />
+                   تحديث
+                 </Button>
+                 <Button
+                   onClick={() => navigate('/finance/accounting')}
+                   variant="outline"
+                   size="sm"
+                   aria-label="رجوع"
+                 >
+                   <ArrowLeft className="h-4 w-4 ml-2" aria-hidden="true" />
+                   العودة
+                 </Button>
+               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -284,19 +286,19 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto -mx-4 md:mx-0">
-                        <Table className="min-w-[600px]">
-                          <TableHeader>
-                            <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                              <TableHead className="text-right">رمز الحساب</TableHead>
-                              <TableHead className="text-right">اسم الحساب</TableHead>
-                              <TableHead className="text-center">نوع الحساب</TableHead>
-                              <TableHead className="text-center">الرصيد الافتتاحي</TableHead>
-                              <TableHead className="text-center text-emerald-700">إجمالي المدين</TableHead>
-                              <TableHead className="text-center text-red-700">إجمالي الدائن</TableHead>
-                              <TableHead className="text-center font-bold">الرصيد الختامي</TableHead>
-                            </TableRow>
-                          </TableHeader>
+                       <div className="overflow-x-auto -mx-4 md:mx-0">
+                         <Table className="min-w-[600px]" aria-label="جدول القيود المحاسبية - أرصدة الحسابات">
+                           <TableHeader>
+                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                               <TableHead className="text-right" scope="col">رمز الحساب</TableHead>
+                               <TableHead className="text-right" scope="col">اسم الحساب</TableHead>
+                               <TableHead className="text-center" scope="col">نوع الحساب</TableHead>
+                               <TableHead className="text-center" scope="col">الرصيد الافتتاحي</TableHead>
+                               <TableHead className="text-center text-emerald-700" scope="col">إجمالي المدين</TableHead>
+                               <TableHead className="text-center text-red-700" scope="col">إجمالي الدائن</TableHead>
+                               <TableHead className="text-center font-bold" scope="col">الرصيد الختامي</TableHead>
+                             </TableRow>
+                           </TableHeader>
                           <TableBody>
                             <AnimatePresence>
                               {accountBalances?.map((balance, index) => (
@@ -364,18 +366,18 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto -mx-4 md:mx-0">
-                        <Table className="min-w-[600px]">
-                          <TableHeader>
-                            <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                              <TableHead className="text-right">رمز الحساب</TableHead>
-                              <TableHead className="text-right">اسم الحساب</TableHead>
-                              <TableHead className="text-center">نوع الحساب</TableHead>
-                              <TableHead className="text-center">المستوى</TableHead>
-                              <TableHead className="text-center text-emerald-700">الرصيد المدين</TableHead>
-                              <TableHead className="text-center text-red-700">الرصيد الدائن</TableHead>
-                            </TableRow>
-                          </TableHeader>
+                       <div className="overflow-x-auto -mx-4 md:mx-0">
+                         <Table className="min-w-[600px]" aria-label="جدول القيود المحاسبية - ميزان المراجعة">
+                           <TableHeader>
+                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                               <TableHead className="text-right" scope="col">رمز الحساب</TableHead>
+                               <TableHead className="text-right" scope="col">اسم الحساب</TableHead>
+                               <TableHead className="text-center" scope="col">نوع الحساب</TableHead>
+                               <TableHead className="text-center" scope="col">المستوى</TableHead>
+                               <TableHead className="text-center text-emerald-700" scope="col">الرصيد المدين</TableHead>
+                               <TableHead className="text-center text-red-700" scope="col">الرصيد الدائن</TableHead>
+                             </TableRow>
+                           </TableHeader>
                           <TableBody>
                             <AnimatePresence>
                               {trialBalance?.map((item, index) => (
@@ -441,18 +443,18 @@ export default function GeneralLedger() {
                         <LoadingSpinner />
                       </div>
                     ) : (
-                      <div className="overflow-x-auto -mx-4 md:mx-0">
-                        <Table className="min-w-[600px]">
-                          <TableHeader>
-                            <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                              <TableHead className="text-right">رمز المركز</TableHead>
-                              <TableHead className="text-right">اسم المركز</TableHead>
-                              <TableHead className="text-center text-emerald-700">إجمالي المدين</TableHead>
-                              <TableHead className="text-center text-red-700">إجمالي الدائن</TableHead>
-                              <TableHead className="text-center">صافي المبلغ</TableHead>
-                              <TableHead className="text-center">عدد القيود</TableHead>
-                            </TableRow>
-                          </TableHeader>
+                       <div className="overflow-x-auto -mx-4 md:mx-0">
+                         <Table className="min-w-[600px]" aria-label="جدول القيود المحاسبية - مراكز التكلفة">
+                           <TableHeader>
+                             <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                               <TableHead className="text-right" scope="col">رمز المركز</TableHead>
+                               <TableHead className="text-right" scope="col">اسم المركز</TableHead>
+                               <TableHead className="text-center text-emerald-700" scope="col">إجمالي المدين</TableHead>
+                               <TableHead className="text-center text-red-700" scope="col">إجمالي الدائن</TableHead>
+                               <TableHead className="text-center" scope="col">صافي المبلغ</TableHead>
+                               <TableHead className="text-center" scope="col">عدد القيود</TableHead>
+                             </TableRow>
+                           </TableHeader>
                           <TableBody>
                             <AnimatePresence>
                               {costCenterAnalysis?.map((center, index) => (

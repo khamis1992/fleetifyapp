@@ -97,7 +97,7 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
           {/* Left side - Title & Breadcrumb */}
           <div className="flex items-center gap-4">
             <motion.div
-              className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20"
+              className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20"
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
@@ -276,7 +276,7 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
                     transition={{ duration: 0.2 }}
                   >
                     <TabsContent value="quick-entry" className="mt-0 space-y-6">
-                      <div className="relative overflow-hidden rounded-2xl">
+                      <div className="relative overflow-hidden rounded-xl">
                         {/* Decorative background elements */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 rounded-full blur-3xl" />
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-500/5 to-indigo-500/5 rounded-full blur-3xl" />
@@ -321,7 +321,7 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
                     </TabsContent>
 
                     <TabsContent value="payment-history" className="mt-0">
-                      <div className="relative overflow-hidden rounded-2xl">
+                      <div className="relative overflow-hidden rounded-xl">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 rounded-full blur-3xl" />
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
 

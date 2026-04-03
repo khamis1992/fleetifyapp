@@ -203,7 +203,12 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1280;
+    }
+    return false;
+  });
   const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet']);
   const [recentPages, setRecentPages] = useState<Array<{label: string; href: string; icon: React.ElementType}>>([]);
   const { startTour } = useTourGuide();
@@ -382,6 +387,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
             title={collapsed ? 'توسيع' : 'تصغير'}
+            aria-label={collapsed ? 'توسيع القائمة' : 'تصغير القائمة'}
           >
             {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>
@@ -394,6 +400,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-400 dark:text-neutral-400 text-xs hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors"
+            aria-label="بحث سريع"
           >
             <Search className="w-3.5 h-3.5" />
             <span className="flex-1 text-right">بحث...</span>
@@ -407,7 +414,11 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
           <div className="flex items-center justify-between mb-1 px-1">
             <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">المؤخر</span>
-            <button onClick={() => setRecentPages([])} className="text-slate-300 hover:text-slate-500 dark:text-neutral-600 dark:hover:text-neutral-400">
+            <button 
+              onClick={() => setRecentPages([])} 
+              className="text-slate-300 hover:text-slate-500 dark:text-neutral-600 dark:hover:text-neutral-400"
+              aria-label="مسح الصفحات الأخيرة"
+            >
               <X className="w-3 h-3" />
             </button>
           </div>
@@ -488,6 +499,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             }}
             className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-lg shadow-teal-500/30 hover:from-teal-600 hover:to-teal-700 transition-all cursor-pointer"
             title="الملف الشخصي"
+            aria-label="الملف الشخصي"
           >
             {userInitials}
           </button>
@@ -510,6 +522,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                 onClick={handleSignOut}
                 className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
                 title="تسجيل الخروج"
+                aria-label="تسجيل الخروج"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -522,6 +535,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
               onClick={handleSignOut}
               className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               title="تسجيل الخروج"
+              aria-label="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />
             </button>

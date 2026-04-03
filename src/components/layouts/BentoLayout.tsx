@@ -39,7 +39,7 @@ const MobileBottomNav: React.FC = () => {
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 safe-area-pb">
-      <nav className="flex items-center justify-around h-16">
+      <nav role="navigation" aria-label="التنقل السريع" className="flex items-center justify-around h-16">
         {bottomNavItems.map((item) => {
           const isActive = location.pathname === item.href || 
             (item.id === 'finance' && location.pathname.startsWith('/finance')) ||
@@ -55,6 +55,8 @@ const MobileBottomNav: React.FC = () => {
                 'flex flex-col items-center justify-center gap-1 flex-1 h-full min-h-[44px]',
                 isActive ? 'text-primary' : 'text-neutral-400'
               )}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
             >
               <item.icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{item.label}</span>
@@ -116,10 +118,13 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
     <TourProvider>
       <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950" dir="rtl">
         {/* Mobile Header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 z-40 flex items-center justify-between px-4">
+        <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 z-40 flex items-center justify-between px-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-600"
+            aria-label={isMobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -128,6 +133,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
             <button
               onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
               className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
+              aria-label="بحث"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -135,7 +141,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
             <NotificationBell />
             <TaskNotificationBell />
           </div>
-        </div>
+        </header>
 
         {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
@@ -147,6 +153,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                aria-hidden="true"
               />
               <motion.div
                 initial={{ x: '100%' }}
@@ -155,7 +162,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 className="lg:hidden fixed top-0 right-0 bottom-0 w-72 z-50"
               >
-                <BentoSidebar isMobile onCloseMobile={() => setIsMobileMenuOpen(false)} />
+                <nav role="navigation" aria-label="التنقل السريع" id="mobile-navigation">
+                  <BentoSidebar isMobile onCloseMobile={() => setIsMobileMenuOpen(false)} />
+                </nav>
               </motion.div>
             </>
           )}
@@ -163,11 +172,15 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
 
         {/* Desktop Sidebar - Fixed Position */}
         <div className="hidden lg:block">
-          <BentoSidebar />
+          <aside role="complementary" aria-label="القائمة الجانبية">
+            <BentoSidebar />
+          </aside>
         </div>
         
         {/* Main Content Area - With margin for fixed sidebar */}
         <motion.main
+          role="main"
+          aria-label="المحتوى الرئيسي"
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
@@ -176,7 +189,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         >
           <div className="p-4 md:p-6 min-h-screen">
             {/* Breadcrumb Navigation */}
-            <PageBreadcrumb className="mb-4" />
+            <nav role="navigation" aria-label="التنقل الرئيسي">
+              <PageBreadcrumb className="mb-4" />
+            </nav>
             {children}
           </div>
         </motion.main>

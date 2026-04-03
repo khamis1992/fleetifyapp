@@ -56,7 +56,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay, type: "spring", bounce: 0.4 }}
     className={cn(
-      "bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-3xl overflow-hidden",
+      "bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden",
       className
     )}
   >
@@ -67,7 +67,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
 const StatCard = ({ title, value, subtitle, icon: Icon, color, delay }: any) => (
   <GlassCard className="p-6 flex flex-col justify-between h-full group hover:shadow-md transition-all duration-300" delay={delay}>
     <div className="flex justify-between items-start mb-4">
-      <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110 duration-300", color)}>
+      <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110 duration-300", color)}>
         <Icon className="w-6 h-6 text-white" />
       </div>
       {subtitle && (
@@ -239,7 +239,7 @@ export const TeamManagement: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3 mb-2"
           >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20 text-white">
+            <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-sm text-white">
               <Users className="w-6 h-6" />
             </div>
             <div>
@@ -291,7 +291,7 @@ export const TeamManagement: React.FC = () => {
           <Button
             size="sm"
             onClick={() => setShowAssignDialog(true)}
-            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/20"
+            className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm"
           >
             <UserPlus className="ml-2 h-4 w-4" />
             تعيين عقد
@@ -413,14 +413,14 @@ export const TeamManagement: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group p-5 bg-white rounded-2xl border border-neutral-100 hover:border-teal-200 hover:shadow-lg transition-all cursor-pointer"
+                  className="group p-5 bg-white rounded-xl border border-neutral-100 hover:border-teal-200 hover:shadow-lg transition-all cursor-pointer"
                   onClick={() => navigate(`/employee/${employee.employee_id}`)}
                 >
                   {/* Employee Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        <div className="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                           {employee.employee_name?.charAt(0) || '؟'}
                         </div>
                         {/* Active Indicator */}
@@ -450,7 +450,7 @@ export const TeamManagement: React.FC = () => {
                     </div>
                     <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-teal-500 to-teal-600 rounded-full"
+                        className="h-full bg-teal-500 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${employee.performance_score || 0}%` }}
                         transition={{ duration: 1, delay: index * 0.05 }}
@@ -515,7 +515,7 @@ export const TeamManagement: React.FC = () => {
             {companyId && (
               <Button
                 onClick={() => navigate('/settings/team')}
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                className="bg-teal-500 hover:bg-teal-600"
               >
                 <UserPlus className="ml-2 h-4 w-4" />
                 إضافة موظف

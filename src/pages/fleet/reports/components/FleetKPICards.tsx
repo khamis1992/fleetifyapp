@@ -57,11 +57,11 @@ const KPICard: React.FC<KPICardProps> = ({
       transition={{ duration: 0.5, delay }}
       whileHover={{ scale: 1.02, y: -4 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl p-5",
+        "relative overflow-hidden rounded-xl p-5",
         "backdrop-blur-xl border",
         isDark 
           ? "bg-slate-900/60 border-slate-800/50" 
-          : "bg-white/80 border-slate-200/50",
+          : "bg-white/80 border-slate-200",
         "shadow-xl"
       )}
     >

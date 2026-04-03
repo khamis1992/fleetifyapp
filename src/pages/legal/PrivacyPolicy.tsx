@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
         >
           {/* Title */}
           <div className="text-center mb-12">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-teal-500 flex items-center justify-center">
               <Shield className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
@@ -45,7 +45,7 @@ export default function PrivacyPolicy() {
           {/* Main Content */}
           <div className="space-y-8">
             {/* Introduction */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <h2 className="text-2xl font-bold text-white mb-4">مقدمة</h2>
               <p className="text-slate-300 leading-relaxed">
                 نحن في Fleetify نلتزم بحماية خصوصية معلوماتك. توضح هذه السياسة كيف نقوم بجمع واستخدام وحماية بياناتك عند استخدامك لمنصتنا لإدارة الأسطول.
@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
             </section>
 
             {/* Information We Collect */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <Database className="w-6 h-6 text-teal-400" />
@@ -86,7 +86,7 @@ export default function PrivacyPolicy() {
             </section>
 
             {/* How We Use Your Information */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <Eye className="w-6 h-6 text-teal-400" />
@@ -112,7 +112,7 @@ export default function PrivacyPolicy() {
             </section>
 
             {/* Data Security */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-teal-400" />
@@ -144,7 +144,7 @@ export default function PrivacyPolicy() {
             </section>
 
             {/* Your Rights */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <UserX className="w-6 h-6 text-teal-400" />
@@ -169,7 +169,7 @@ export default function PrivacyPolicy() {
             </section>
 
             {/* Cookies */}
-            <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8">
+            <section className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
                   <Cookie className="w-6 h-6 text-teal-400" />
@@ -197,7 +197,7 @@ export default function PrivacyPolicy() {
             </section>
 
             {/* Contact */}
-            <section className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-2xl border border-teal-500/30 p-8">
+            <section className="bg-gradient-to-r from-teal-500/10 to-emerald-500/10 rounded-xl border border-teal-500/30 p-8">
               <h2 className="text-2xl font-bold text-white mb-4">تواصل معنا</h2>
               <p className="text-slate-300 mb-4">
                 إذا كان لديك أي أسئلة أو استفسارات حول سياسة الخصوصية، يرجى التواصل معنا:
@@ -224,7 +224,7 @@ export default function PrivacyPolicy() {
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <span className="text-white font-bold">Fleetify</span>

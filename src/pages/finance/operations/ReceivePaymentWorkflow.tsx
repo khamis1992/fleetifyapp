@@ -631,7 +631,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               {/* ملخص الدفعة */}
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl p-6 text-center">
+              <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-xl p-6 text-center">
                 <p className="text-green-100 text-sm mb-2">المبلغ المستلم</p>
                 <p className="text-4xl font-bold mb-1">{formatCurrency(formData.amount)}</p>
                 <p className="text-green-100 text-sm">

@@ -149,12 +149,12 @@ export default function CostCenters() {
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-slate-900 hover:bg-slate-800">
-              <Plus className="h-4 w-4 mr-2" />
-              مركز تكلفة جديد
-            </Button>
-          </DialogTrigger>
+           <DialogTrigger asChild>
+             <Button className="bg-slate-900 hover:bg-slate-800">
+               <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+               مركز تكلفة جديد
+             </Button>
+           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>إنشاء مركز تكلفة جديد</DialogTitle>
@@ -280,20 +280,20 @@ export default function CostCenters() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <Table className="min-w-[600px]">
-              <TableHeader>
-                <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                  <TableHead>رمز المركز</TableHead>
-                  <TableHead>اسم المركز</TableHead>
-                  <TableHead>الموازنة المخصصة</TableHead>
-                  <TableHead>المصروف الفعلي</TableHead>
-                  <TableHead>المتبقي</TableHead>
-                  <TableHead>نسبة الاستغلال</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
+           <div className="overflow-x-auto -mx-4 md:mx-0">
+             <Table className="min-w-[600px]" aria-label="جدول مراكز التكلفة">
+               <TableHeader>
+                 <TableRow className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+                   <TableHead scope="col">رمز المركز</TableHead>
+                   <TableHead scope="col">اسم المركز</TableHead>
+                   <TableHead scope="col">الموازنة المخصصة</TableHead>
+                   <TableHead scope="col">المصروف الفعلي</TableHead>
+                   <TableHead scope="col">المتبقي</TableHead>
+                   <TableHead scope="col">نسبة الاستغلال</TableHead>
+                   <TableHead scope="col">الحالة</TableHead>
+                   <TableHead scope="col">الإجراءات</TableHead>
+                 </TableRow>
+               </TableHeader>
             <TableBody>
               {filteredCostCenters?.map((center) => {
                 const budgetAmount = center.budget_amount ?? 0;
@@ -331,61 +331,64 @@ export default function CostCenters() {
                       </div>
                     </TableCell>
                     <TableCell>
-                    <Badge variant={center.is_active ? "default" : "secondary"}>
-                      {center.is_active ? "نشط" : "غير نشط"}
-                    </Badge>
+                     <Badge variant={center.is_active ? "default" : "secondary"} aria-label={`الحالة: ${center.is_active ? "نشط" : "غير نشط"}`}>
+                       {center.is_active ? "نشط" : "غير نشط"}
+                     </Badge>
                     </TableCell>
-                    <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleViewCostCenter(center as CostCenter)}
-                                className="h-8 w-8"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>عرض التفاصيل</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleEditCostCenter(center as CostCenter)}
-                                className="h-8 w-8"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>تعديل</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          <AlertDialog>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <AlertDialogTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>حذف</p>
-                              </TooltipContent>
-                            </Tooltip>
+                     <TableCell>
+                         <div className="flex items-center space-x-2">
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Button 
+                                 variant="ghost" 
+                                 size="icon"
+                                 onClick={() => handleViewCostCenter(center as CostCenter)}
+                                 className="h-8 w-8"
+                                 aria-label="عرض التفاصيل"
+                               >
+                                 <Eye className="h-4 w-4" aria-hidden="true" />
+                               </Button>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>عرض التفاصيل</p>
+                             </TooltipContent>
+                           </Tooltip>
+                           
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Button 
+                                 variant="ghost" 
+                                 size="icon"
+                                 onClick={() => handleEditCostCenter(center as CostCenter)}
+                                 className="h-8 w-8"
+                                 aria-label="تعديل"
+                               >
+                                 <Edit className="h-4 w-4" aria-hidden="true" />
+                               </Button>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>تعديل</p>
+                             </TooltipContent>
+                           </Tooltip>
+                           
+                           <AlertDialog>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <AlertDialogTrigger asChild>
+                                   <Button 
+                                     variant="ghost" 
+                                     size="icon"
+                                     className="h-8 w-8 text-destructive hover:text-destructive"
+                                     aria-label="حذف"
+                                   >
+                                     <Trash2 className="h-4 w-4" aria-hidden="true" />
+                                   </Button>
+                                 </AlertDialogTrigger>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>حذف</p>
+                               </TooltipContent>
+                             </Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>

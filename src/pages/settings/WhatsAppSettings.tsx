@@ -161,7 +161,7 @@ const RecipientDialog: React.FC<{
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+      <DialogContent className="max-w-lg bg-white border border-slate-200 rounded-xl">
         <DialogHeader>
           <DialogTitle className="text-slate-900">
             {recipient ? 'تعديل مستلم' : 'إضافة مستلم جديد'}
@@ -226,7 +226,7 @@ const RecipientDialog: React.FC<{
                   size="sm"
                   onClick={() => toggleReportType(type)}
                   className={formData.reportTypes.includes(type)
-                    ? 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white'
+                    ? 'bg-teal-500 hover:bg-teal-600 text-white'
                     : 'border-slate-200 hover:border-teal-500 hover:text-teal-600'
                   }
                 >
@@ -252,7 +252,7 @@ const RecipientDialog: React.FC<{
                   size="sm"
                   onClick={() => toggleAlertType(type)}
                   className={formData.alertTypes.includes(type)
-                    ? 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white'
+                    ? 'bg-teal-500 hover:bg-teal-600 text-white'
                     : 'border-slate-200 hover:border-teal-500 hover:text-teal-600'
                   }
                 >
@@ -282,7 +282,7 @@ const RecipientDialog: React.FC<{
           </Button>
           <Button
             onClick={handleSubmit}
-            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+            className="bg-teal-500 hover:bg-teal-600"
           >
             {recipient ? 'حفظ التغييرات' : 'إضافة'}
           </Button>
@@ -392,7 +392,7 @@ const WhatsAppSettings: React.FC = () => {
         >
           <div className="flex items-center gap-4">
             <motion.div
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20"
+              className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-sm"
               whileHover={{ rotate: 10, scale: 1.1 }}
               transition={{ type: "spring", stiffness: 400 }}
             >
@@ -427,31 +427,31 @@ const WhatsAppSettings: React.FC = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/80 backdrop-blur-xl border border-slate-200/50 p-1 rounded-2xl">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white border border-slate-200 p-1 rounded-xl">
             <TabsTrigger
               value="connection"
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-xl transition-all"
+              className="gap-2 data-[state=active]:bg-teal-500 data-[state=active]:text-white rounded-xl transition-all"
             >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">الاتصال</span>
             </TabsTrigger>
             <TabsTrigger
               value="recipients"
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-xl transition-all"
+              className="gap-2 data-[state=active]:bg-teal-500 data-[state=active]:text-white rounded-xl transition-all"
             >
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">المستلمون</span>
             </TabsTrigger>
             <TabsTrigger
               value="schedule"
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-xl transition-all"
+              className="gap-2 data-[state=active]:bg-teal-500 data-[state=active]:text-white rounded-xl transition-all"
             >
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">الجدولة</span>
             </TabsTrigger>
             <TabsTrigger
               value="logs"
-              className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white rounded-xl transition-all"
+              className="gap-2 data-[state=active]:bg-teal-500 data-[state=active]:text-white rounded-xl transition-all"
             >
               <History className="w-4 h-4" />
               <span className="hidden sm:inline">السجل</span>
@@ -465,7 +465,7 @@ const WhatsAppSettings: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
@@ -507,7 +507,7 @@ const WhatsAppSettings: React.FC = () => {
                   <div className="flex gap-3">
                     <Button
                       onClick={handleInitialize}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                      className="bg-teal-500 hover:bg-teal-600"
                     >
                       <Wifi className="w-4 h-4 ml-2" />
                       اتصال
@@ -554,7 +554,7 @@ const WhatsAppSettings: React.FC = () => {
               </Card>
 
               {/* Quick Actions */}
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -573,7 +573,7 @@ const WhatsAppSettings: React.FC = () => {
                     <Button
                       onClick={() => sendDailyReport()}
                       disabled={!connected || isSending}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                      className="bg-teal-500 hover:bg-teal-600"
                     >
                       <Send className="w-4 h-4 ml-2" />
                       إرسال التقرير اليومي
@@ -599,7 +599,7 @@ const WhatsAppSettings: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -618,7 +618,7 @@ const WhatsAppSettings: React.FC = () => {
                         setEditingRecipient(undefined);
                         setRecipientDialogOpen(true);
                       }}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                      className="bg-teal-500 hover:bg-teal-600"
                     >
                       <Plus className="w-4 h-4 ml-2" />
                       إضافة مستلم
@@ -640,7 +640,7 @@ const WhatsAppSettings: React.FC = () => {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md hover:border-teal-500/30 transition-all border border-slate-200/50"
+                          className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md hover:border-teal-500/50 transition-all border border-slate-200"
                         >
                           <div className="flex items-center gap-4">
                             <div className={cn(
@@ -697,7 +697,7 @@ const WhatsAppSettings: React.FC = () => {
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+                              <AlertDialogContent className="bg-white border border-slate-200 rounded-xl">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="text-slate-900">
                                     حذف المستلم
@@ -735,7 +735,7 @@ const WhatsAppSettings: React.FC = () => {
               className="space-y-6"
             >
               {/* Daily Report */}
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -772,7 +772,7 @@ const WhatsAppSettings: React.FC = () => {
               </Card>
 
               {/* Weekly Report */}
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -829,7 +829,7 @@ const WhatsAppSettings: React.FC = () => {
               </Card>
 
               {/* Instant Alerts */}
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -874,7 +874,7 @@ const WhatsAppSettings: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+              <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -902,7 +902,7 @@ const WhatsAppSettings: React.FC = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
-                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/50 hover:border-teal-500/30 transition-all"
+                          className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-teal-500/50 transition-all"
                         >
                           <div className="flex items-center gap-3">
                             <div className={cn(

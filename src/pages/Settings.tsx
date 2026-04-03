@@ -113,7 +113,7 @@ const Settings: React.FC = () => {
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+            <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
               <SettingsIcon className="h-8 w-8 text-white" />
             </div>
             <div>
@@ -125,7 +125,7 @@ const Settings: React.FC = () => {
           <Separator />
 
           {/* User Info Card */}
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+          <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
             <CardHeader>
               <CardTitle className="text-slate-900">معلومات المستخدم</CardTitle>
               <CardDescription className="text-slate-600">معلومات أساسية عن حسابك</CardDescription>
@@ -159,7 +159,7 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Settings Options */}
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+          <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
             <CardHeader>
               <CardTitle className="text-slate-900">إعدادات التطبيق</CardTitle>
               <CardDescription className="text-slate-600">خيارات تخصيص التطبيق وإعداداته</CardDescription>
@@ -172,12 +172,12 @@ const Settings: React.FC = () => {
                     <div key={index}>
                       <Button
                         variant="ghost"
-                        className="w-full justify-between h-auto p-4 hover:bg-teal-50/50 hover:border-teal-500/30 rounded-2xl transition-all"
+                        className="w-full justify-between h-auto p-4 hover:bg-teal-50/50 hover:border-teal-500/50 rounded-xl transition-all"
                         onClick={option.action}
                         disabled={!option.available}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-xl ${option.available ? 'bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20' : 'bg-slate-200'}`}>
+                          <div className={`p-2 rounded-xl ${option.available ? 'bg-teal-500 shadow-sm' : 'bg-slate-200'}`}>
                             <IconComponent className={`h-4 w-4 ${option.available ? 'text-white' : 'text-slate-400'}`} />
                           </div>
                           <div className="text-right flex-1">

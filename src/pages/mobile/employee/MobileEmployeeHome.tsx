@@ -146,7 +146,7 @@ export const MobileEmployeeHome: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/80 backdrop-blur-xl border border-amber-200/50 rounded-3xl p-5 shadow-sm"
+              className="bg-white border border-amber-200/50 rounded-xl p-5 shadow-sm"
             >
               <div className="flex items-center gap-2 mb-4">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
@@ -166,7 +166,7 @@ export const MobileEmployeeHome: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     onClick={() => navigate(`/mobile/employee/contracts/${contract.id}`)}
-                    className="flex items-center gap-3 p-3 bg-amber-50/50 rounded-2xl border border-amber-100 hover:bg-amber-50 active:scale-[0.98] transition-all cursor-pointer"
+                    className="flex items-center gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-100 hover:bg-amber-50 active:scale-[0.98] transition-all cursor-pointer"
                   >
                     {/* Number Badge */}
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-200 text-amber-700 flex items-center justify-center text-sm font-bold">
@@ -238,7 +238,7 @@ export const MobileEmployeeHome: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className={cn(
-                    'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4',
+                    'bg-white border border-slate-200 rounded-xl p-4',
                     task.status === 'completed' && 'opacity-60'
                   )}
                 >
@@ -307,7 +307,7 @@ export const MobileEmployeeHome: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-8 text-center"
+              className="bg-white border border-slate-200 rounded-xl p-8 text-center"
             >
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
               <p className="text-slate-600 font-medium">لا توجد مهام لهذا اليوم 🎉</p>
@@ -321,7 +321,7 @@ export const MobileEmployeeHome: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4"
+            className="bg-white border border-slate-200 rounded-xl p-4"
           >
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>

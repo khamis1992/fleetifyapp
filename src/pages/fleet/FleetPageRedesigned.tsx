@@ -612,16 +612,16 @@ const exportVehiclesToExcel = async (
 
 // ===== Status Config =====
 const statusConfig = {
-  available: { label: 'متاحة', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  rented: { label: 'مؤجرة', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-  street_52: { label: 'شارع 52', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-  maintenance: { label: 'صيانة', color: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
-  out_of_service: { label: 'خارج الخدمة', color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500' },
-  accident: { label: 'حادث', color: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' },
-  stolen: { label: 'مسروقة', color: 'bg-slate-50 text-slate-700 border-slate-200', dot: 'bg-slate-500' },
-  police_station: { label: 'في مركز الشرطة', color: 'bg-orange-50 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
-  reserved_employee: { label: 'محجوزة لموظف', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
-  municipality: { label: 'البلدية', color: 'bg-teal-50 text-teal-700 border-teal-200', dot: 'bg-teal-500' },
+  available: { label: 'متاحة', color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700', dot: 'bg-emerald-500' },
+  rented: { label: 'مؤجرة', color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700', dot: 'bg-blue-500' },
+  street_52: { label: 'شارع 52', color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700', dot: 'bg-purple-500' },
+  maintenance: { label: 'صيانة', color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700', dot: 'bg-amber-500' },
+  out_of_service: { label: 'خارج الخدمة', color: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700', dot: 'bg-red-500' },
+  accident: { label: 'حادث', color: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700', dot: 'bg-rose-500' },
+  stolen: { label: 'مسروقة', color: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700', dot: 'bg-slate-500' },
+  police_station: { label: 'في مركز الشرطة', color: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700', dot: 'bg-orange-500' },
+  reserved_employee: { label: 'محجوزة لموظف', color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700', dot: 'bg-indigo-500' },
+  municipality: { label: 'البلدية', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700', dot: 'bg-teal-500' },
 };
 
 const statusCycle = ['available', 'rented', 'maintenance', 'out_of_service'] as const;
@@ -682,7 +682,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative rounded-3xl border bg-white/80 backdrop-blur-xl shadow-sm hover:shadow-md hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all cursor-pointer overflow-hidden"
+      className="group relative rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-teal-500/50 hover:shadow-sm transition-all cursor-pointer overflow-hidden"
       onClick={onView}
     >
       {/* Status Bar */}
@@ -776,7 +776,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         </div>
 
         {/* Vehicle Image */}
-        <div className="h-36 rounded-lg overflow-hidden bg-neutral-100 mb-3 relative">
+        <div className="h-36 rounded-lg overflow-hidden bg-neutral-100 dark:bg-slate-800 mb-3 relative">
           {vehicle.images && vehicle.images[0] ? (
             <img
               src={vehicle.images[0]}
@@ -787,8 +787,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-50">
-              <Car className="w-12 h-12 text-neutral-300" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-slate-800 dark:to-slate-900">
+              <Car className="w-12 h-12 text-neutral-300 dark:text-slate-600" />
             </div>
           )}
 
@@ -800,11 +800,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 
         {/* Vehicle Info */}
         <div className="space-y-2">
-          <h3 className="font-semibold text-neutral-900 text-sm truncate">
+          <h3 className="font-semibold text-neutral-900 dark:text-slate-100 text-sm truncate">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h3>
 
-          <div className="flex items-center gap-3 text-xs text-neutral-500">
+          <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-slate-400">
             <div className="flex items-center gap-1">
               <Settings className="w-3 h-3" />
               <span>{vehicle.engine_size || '2.5L'}</span>
@@ -815,22 +815,22 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 
           {/* VIN */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-xs text-neutral-400">
+            <div className="flex items-center gap-1 text-xs text-neutral-400 dark:text-slate-500">
               <Tag className="w-3 h-3" />
               <span className="font-mono truncate max-w-[120px]">{vehicle.vin || 'N/A'}</span>
             </div>
             {vehicle.vin && (
               <button
                 onClick={handleCopyVin}
-                className="p-1 hover:bg-neutral-100 rounded transition-colors"
+                className="p-1 hover:bg-neutral-100 dark:hover:bg-slate-800 rounded transition-colors"
               >
-                <Copy className="w-3 h-3 text-neutral-400 hover:text-rose-500" />
+                <Copy className="w-3 h-3 text-neutral-400 hover:text-rose-500 dark:text-slate-500" />
               </button>
             )}
           </div>
 
           {/* Maintenance Tags */}
-          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-neutral-100">
+          <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-neutral-100 dark:border-slate-800">
             {maintenanceTags.slice(0, 2).map((tag, i) => (
               <Badge
                 key={i}
@@ -838,15 +838,15 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
                 className={cn(
                   "text-[10px] px-2 py-0 rounded",
                   tag === 'جاهزة للاستخدام'
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                    : 'bg-amber-50 text-amber-600 border-amber-200'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700'
+                    : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-700'
                 )}
               >
                 {tag}
               </Badge>
             ))}
             {maintenanceTags.length > 2 && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0 rounded bg-neutral-50 text-neutral-500">
+              <Badge variant="outline" className="text-[10px] px-2 py-0 rounded bg-neutral-50 dark:bg-slate-800 text-neutral-500 dark:text-slate-400">
                 +{maintenanceTags.length - 2}
               </Badge>
             )}
@@ -873,14 +873,14 @@ const StatusChip: React.FC<StatusChipProps> = ({ label, count, status, active, o
       onClick={onClick}
       className={cn(
         "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-        active ? config.color : "bg-white border hover:border-neutral-300"
+        active ? config.color : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-neutral-300 dark:hover:border-slate-600"
       )}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current" />
       {label}
       <span className={cn(
         "px-1.5 py-0.5 rounded-full text-xs",
-        active ? "bg-white/20" : "bg-neutral-100"
+        active ? "bg-white/20" : "bg-neutral-100 dark:bg-slate-800"
       )}>
         {count}
       </span>
@@ -1059,27 +1059,27 @@ const FleetPageRedesigned: React.FC = () => {
   // Loading
   if (statusLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-teal-600">جاري التحميل...</p>
+          <p className="text-sm text-teal-600 dark:text-teal-400">جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-10">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-slate-100">
                 الأسطول
               </h1>
-              <p className="text-sm text-neutral-500 mt-1">
+              <p className="text-sm text-neutral-500 dark:text-slate-400 mt-1">
                 إدارة وتتبع جميع المركبات ({vehiclesData?.count || 0} مركبة)
               </p>
             </div>
@@ -1092,7 +1092,7 @@ const FleetPageRedesigned: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                   >
                     <Download className="w-4 h-4" />
                     تصدير
@@ -1103,14 +1103,14 @@ const FleetPageRedesigned: React.FC = () => {
                     <FileText className="w-4 h-4 text-green-600" />
                     <div className="flex flex-col">
                       <span className="font-medium">Excel (XLSX)</span>
-                      <span className="text-xs text-neutral-500">ملف جدول بيانات</span>
+                      <span className="text-xs text-neutral-500 dark:text-slate-400">ملف جدول بيانات</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('html')} className="gap-2">
                     <FileText className="w-4 h-4 text-blue-600" />
                     <div className="flex flex-col">
                       <span className="font-medium">تقرير HTML</span>
-                      <span className="text-xs text-neutral-500">تقرير منسق للطباعة</span>
+                      <span className="text-xs text-neutral-500 dark:text-slate-400">تقرير منسق للطباعة</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1120,7 +1120,7 @@ const FleetPageRedesigned: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowGroupManagement(true)}
-                className="gap-2"
+                className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <Layers3 className="w-4 h-4" />
                 المجموعات
@@ -1131,7 +1131,7 @@ const FleetPageRedesigned: React.FC = () => {
                 size="sm"
                 onClick={handleSyncVehicleStatus}
                 disabled={isSyncing}
-                className="gap-2"
+                className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <RotateCcw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
                 {isSyncing ? 'مزامنة...' : 'مزامنة'}
@@ -1141,7 +1141,7 @@ const FleetPageRedesigned: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDocumentDistribution(true)}
-                className="gap-2"
+                className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                 title="توزيع المستندات"
               >
                 <FileText className="w-4 h-4" />
@@ -1153,20 +1153,20 @@ const FleetPageRedesigned: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowCSVUpload(true)}
-                  className="gap-2"
+                  className="gap-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                 >
                   <Upload className="w-4 h-4" />
                 </Button>
               )}
 
-              <Button
-                size="sm"
-                onClick={() => setShowVehicleForm(true)}
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-lg shadow-teal-500/20"
-              >
-                <Plus className="w-4 h-4" />
-                إضافة مركبة
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowVehicleForm(true)}
+                  className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  إضافة مركبة
+                </Button>
             </div>
           </div>
         </div>
@@ -1183,9 +1183,9 @@ const FleetPageRedesigned: React.FC = () => {
 
 
         {/* Quick Status Filter Bar */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-sm transition-all">
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm text-neutral-500 font-medium">تصفية سريع:</span>
+            <span className="text-sm text-neutral-500 dark:text-slate-400 font-medium">تصفية سريع:</span>
 
             <StatusChip
               label="متاحة"
@@ -1219,7 +1219,7 @@ const FleetPageRedesigned: React.FC = () => {
               onClick={() => handleStatCardClick('out_of_service')}
             />
 
-            <div className="h-6 w-px bg-neutral-200 mx-2" />
+            <div className="h-6 w-px bg-neutral-200 dark:bg-slate-700 mx-2" />
 
             <StatusChip
               label="محجوزة"
@@ -1240,7 +1240,7 @@ const FleetPageRedesigned: React.FC = () => {
             {filters.status && (
               <button
                 onClick={() => handleStatCardClick(filters.status!)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-all"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-neutral-100 dark:bg-slate-800 text-neutral-600 dark:text-slate-300 hover:bg-neutral-200 dark:hover:bg-slate-700 transition-all"
               >
                 <X className="w-3 h-3" />
                 مسح الفلتر
@@ -1250,11 +1250,11 @@ const FleetPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-sm transition-all">
           <div className="flex flex-col lg:flex-row gap-3">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-slate-500" />
               <Input
                 placeholder="بحث باللوحة، الموديل، VIN..."
                 value={searchQuery}
@@ -1262,21 +1262,21 @@ const FleetPageRedesigned: React.FC = () => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 pr-10 text-sm"
+                className="h-10 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500 dark:focus:border-teal-500"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-100 rounded"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-100 dark:hover:bg-slate-700 rounded"
                 >
-                  <X className="w-3 h-3 text-neutral-400" />
+                  <X className="w-3 h-3 text-neutral-400 dark:text-slate-500" />
                 </button>
               )}
             </div>
 
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="h-10 w-40">
+              <SelectTrigger className="h-10 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SlidersHorizontal className="w-4 h-4 ml-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -1293,7 +1293,7 @@ const FleetPageRedesigned: React.FC = () => {
               value={filters.status || "all"}
               onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v)}
             >
-              <SelectTrigger className="h-10 w-40">
+              <SelectTrigger className="h-10 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
@@ -1317,7 +1317,7 @@ const FleetPageRedesigned: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={handleResetFilters}
-                className="h-10"
+                className="h-10 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
               >
                 <RotateCcw className="w-4 h-4 ml-1" />
               </Button>
@@ -1329,7 +1329,7 @@ const FleetPageRedesigned: React.FC = () => {
         {vehiclesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-72 bg-white rounded-xl border animate-pulse" />
+              <div key={i} className="h-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 animate-pulse" />
             ))}
           </div>
         ) : vehiclesData?.data && vehiclesData.data.length > 0 ? (
@@ -1339,16 +1339,16 @@ const FleetPageRedesigned: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-teal-50 border border-teal-200 rounded-3xl p-4 flex items-center justify-between"
+                className="bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-xl p-4 flex items-center justify-between"
               >
-                <p className="text-sm text-teal-700">
+                <p className="text-sm text-teal-700 dark:text-teal-300">
                   <span className="font-semibold">{selectedVehicles.size}</span> مركبة محددة
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="h-9">
+                  <Button size="sm" variant="outline" className="h-9 border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
                     تصدير
                   </Button>
-                  <Button size="sm" variant="outline" className="h-9" onClick={() => setSelectedVehicles(new Set())}>
+                  <Button size="sm" variant="outline" className="h-9 border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500" onClick={() => setSelectedVehicles(new Set())}>
                     إلغاء التحديد
                   </Button>
                 </div>
@@ -1364,7 +1364,7 @@ const FleetPageRedesigned: React.FC = () => {
                     type="checkbox"
                     checked={selectedVehicles.has(vehicle.id)}
                     onChange={() => handleSelectVehicle(vehicle.id)}
-                    className="absolute top-4 left-4 z-10 w-4 h-4 rounded border-neutral-300 checked:bg-rose-500 focus:ring-rose-500 cursor-pointer"
+                    className="absolute top-4 left-4 z-10 w-4 h-4 rounded border-neutral-300 dark:border-slate-600 bg-white dark:bg-slate-800 checked:bg-rose-500 focus:ring-rose-500 cursor-pointer"
                     onClick={(e) => e.stopPropagation()}
                   />
 
@@ -1384,10 +1384,10 @@ const FleetPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-4 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
-                <p className="text-sm text-neutral-500">
-                  صفحة <span className="font-medium text-neutral-900">{currentPage}</span> من{' '}
-                  <span className="font-medium text-neutral-900">{totalPages}</span>
+              <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-sm transition-all">
+                <p className="text-sm text-neutral-500 dark:text-slate-400">
+                  صفحة <span className="font-medium text-neutral-900 dark:text-slate-100">{currentPage}</span> من{' '}
+                  <span className="font-medium text-neutral-900 dark:text-slate-100">{totalPages}</span>
                 </p>
 
                 <div className="flex items-center gap-1">
@@ -1396,7 +1396,7 @@ const FleetPageRedesigned: React.FC = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="h-9"
+                    className="h-9 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -1409,7 +1409,7 @@ const FleetPageRedesigned: React.FC = () => {
                       onClick={() => setCurrentPage(page)}
                       className={cn(
                         "h-9 w-9",
-                        currentPage === page && "bg-coral-600 text-white hover:bg-coral-700"
+                        currentPage === page && "bg-teal-500 text-white hover:bg-teal-600"
                       )}
                     >
                       {page}
@@ -1418,14 +1418,14 @@ const FleetPageRedesigned: React.FC = () => {
 
                   {totalPages > 5 && (
                     <>
-                      <span className="px-2 text-neutral-400">...</span>
+                      <span className="px-2 text-neutral-400 dark:text-slate-500">...</span>
                       <Button
                         variant={currentPage === totalPages ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setCurrentPage(totalPages)}
                         className={cn(
                           "h-9 w-9",
-                          currentPage === totalPages && "bg-coral-600 text-white hover:bg-coral-700"
+                          currentPage === totalPages && "bg-teal-500 text-white hover:bg-teal-600"
                         )}
                       >
                         {totalPages}
@@ -1438,7 +1438,7 @@ const FleetPageRedesigned: React.FC = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="h-9"
+                    className="h-9 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
@@ -1447,15 +1447,15 @@ const FleetPageRedesigned: React.FC = () => {
             )}
           </>
         ) : (
-          <div className="bg-white rounded-xl p-12 text-center border">
-            <Car className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">لا توجد مركبات</h3>
-            <p className="text-sm text-neutral-500 mb-6">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center border border-slate-200 dark:border-slate-800">
+            <Car className="w-16 h-16 text-neutral-300 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-slate-100 mb-2">لا توجد مركبات</h3>
+            <p className="text-sm text-neutral-500 dark:text-slate-400 mb-6">
               {activeFiltersCount > 0 || searchQuery
                 ? 'لم يتم العثور على مركبات تطابق البحث'
                 : 'ابدأ بإضافة أول مركبة للأسطول'}
             </p>
-            <Button onClick={() => setShowVehicleForm(true)} className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700">
+            <Button onClick={() => setShowVehicleForm(true)} className="bg-teal-500 hover:bg-teal-600 text-white">
               <Plus className="w-4 h-4 ml-2" />
               إضافة مركبة
             </Button>

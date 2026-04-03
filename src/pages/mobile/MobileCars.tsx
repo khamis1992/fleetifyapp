@@ -198,7 +198,7 @@ const MobileCars: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">حالة الأسطول</h1>
           <p className="text-sm text-slate-500 mt-1">إدارة المركبات</p>
         </div>
-        <button className="p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50">
+        <button className="p-2 rounded-xl bg-white border border-slate-200">
           <Filter className="w-5 h-5 text-slate-600" />
         </button>
       </div>
@@ -261,7 +261,7 @@ const MobileCars: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={() => navigate(`/mobile/cars/${vehicle.id}`)}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
+              className="bg-white border border-slate-200 rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -318,7 +318,7 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ value, label, color }) => (
-  <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-3 text-center">
+  <div className="bg-white border border-slate-200 rounded-xl p-3 text-center">
     <p className="text-xl font-bold text-slate-900">{value}</p>
     <p className="text-[10px] text-slate-500">{label}</p>
   </div>
@@ -338,7 +338,7 @@ const FilterChip: React.FC<FilterChipProps> = ({ label, active, onClick, count }
       'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2',
       active
         ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-        : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
+        : 'bg-white/80 text-slate-600 border border-slate-200 hover:bg-slate-100'
     )}
   >
     {label}

@@ -82,7 +82,7 @@ export function LegalHeader() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative bg-gradient-to-br from-slate-50 via-white to-white border border-slate-200 rounded-2xl p-8 shadow-2xl shadow-slate-200/50"
+        className="relative bg-gradient-to-br from-slate-50 via-white to-white border border-slate-200 rounded-xl p-8 shadow-2xl shadow-slate-200/50"
       >
         {/* Top Bar */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
@@ -125,7 +125,7 @@ export function LegalHeader() {
         <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-8">
           {/* Icon */}
           <div className="flex-shrink-0">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-600/20 to-teal-700/20 border border-teal-600/30 flex items-center justify-center shadow-lg shadow-teal-600/10">
+            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-teal-600/20 to-teal-700/20 border border-teal-600/30 flex items-center justify-center shadow-lg shadow-teal-600/10">
               <Gavel className="h-10 w-10 text-teal-600" />
             </div>
           </div>

@@ -187,10 +187,10 @@ const StatCard: React.FC<StatCardProps> = ({
     transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
     onClick={onClick}
     className={cn(
-      "relative group overflow-hidden rounded-3xl border bg-white/80 backdrop-blur-xl",
+      "relative group overflow-hidden rounded-xl border bg-white",
       "hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-1",
       "transition-all duration-500 cursor-pointer",
-      "border-slate-200/50 hover:border-teal-500/30"
+      "border-slate-200 hover:border-teal-500/50"
     )}
   >
     {/* Animated Background Gradient */}
@@ -206,7 +206,7 @@ const StatCard: React.FC<StatCardProps> = ({
     <div className="relative p-6">
       <div className="flex items-start justify-between mb-4">
         <div className={cn(
-          "p-3 rounded-2xl bg-gradient-to-br shadow-lg",
+          "p-3 rounded-xl bg-gradient-to-br shadow-lg",
           "group-hover:scale-110 group-hover:rotate-3",
           "transition-all duration-500"
         )} style={{ background: color.replace('text-', 'bg-') + '/10' }}>
@@ -282,10 +282,10 @@ const ReservationCard: React.FC<ReservationCardProps> = ({
     >
       {/* Card Container */}
       <div className={cn(
-        "relative bg-white/80 backdrop-blur-xl rounded-3xl border overflow-hidden",
+        "relative bg-white rounded-xl border overflow-hidden",
         "hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-1",
         "transition-all duration-500",
-        "border-slate-200/50 hover:border-teal-500/30"
+        "border-slate-200 hover:border-teal-500/50"
       )}>
         {/* Status Bar */}
         <div className={cn(
@@ -359,7 +359,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({
           {/* Customer & Vehicle Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             {/* Customer */}
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-2xl">
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-teal-200">
                 {customerInitials}
               </div>
@@ -375,7 +375,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({
             </div>
 
             {/* Vehicle */}
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-2xl">
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white shadow-lg">
                 <Car className="w-5 h-5" />
               </div>
@@ -394,7 +394,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({
           </div>
 
           {/* Price Section */}
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-emerald-50/50 rounded-2xl mb-4">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-emerald-50/50 rounded-xl mb-4">
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-teal-600" />
               <span className="text-sm font-medium text-slate-700">المبلغ الإجمالي</span>
@@ -433,7 +433,7 @@ const ReservationCard: React.FC<ReservationCardProps> = ({
               <Button
                 size="sm"
                 onClick={() => {/* Activate reservation */}}
-                className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-200 hover:shadow-xl hover:shadow-teal-300 transition-all duration-300"
+                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white shadow-lg shadow-teal-200 hover:shadow-xl hover:shadow-teal-300 transition-all duration-300"
               >
                 <Sparkles className="w-4 h-4 ml-1" />
                 تفعيل
@@ -489,7 +489,7 @@ const FilterPill: React.FC<FilterPillProps> = ({ active, onClick, children, coun
       "relative inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300",
       "hover:shadow-md hover:-translate-y-0.5",
       active
-        ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30"
+        ? "bg-teal-500 text-white shadow-lg shadow-teal-500/30"
         : "bg-white border border-slate-200 text-slate-600 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
     )}
   >
@@ -712,12 +712,12 @@ export default function Reservations() {
 
       <div className="relative">
         {/* Header */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30">
+        <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Title */}
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/30">
+                <div className="p-3 bg-teal-500 rounded-xl shadow-lg shadow-teal-500/30">
                   <CalendarDays className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -768,7 +768,7 @@ export default function Reservations() {
                 <Button
                   size="sm"
                   onClick={handleCreateNew}
-                  className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30 transition-all duration-300"
+                  className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm hover:shadow-xl hover:shadow-teal-500/30 transition-all duration-300"
                 >
                   <Plus className="w-4 h-4 ml-2" />
                   حجز جديد
@@ -831,7 +831,7 @@ export default function Reservations() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-6 hover:border-teal-500/30 hover:shadow-lg transition-all"
+              className="bg-white rounded-xl border border-slate-200 p-6 hover:border-teal-500/50 hover:shadow-lg transition-all"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -862,7 +862,7 @@ export default function Reservations() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-6 hover:border-teal-500/30 hover:shadow-xl transition-all"
+              className="bg-white rounded-xl border border-slate-200 p-6 hover:border-teal-500/50 hover:shadow-xl transition-all"
             >
               <ReservationsCalendar
                 reservations={data.reservations || []}
@@ -879,7 +879,7 @@ export default function Reservations() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-6 hover:border-teal-500/30 hover:shadow-xl transition-all"
+                className="bg-white rounded-xl border border-slate-200 p-6 hover:border-teal-500/50 hover:shadow-xl transition-all"
               >
                 {/* Search */}
                 <div className="flex flex-col lg:flex-row gap-4 mb-6">
@@ -982,7 +982,7 @@ export default function Reservations() {
 
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/50 p-4">
+                    <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 p-4">
                       <p className="text-sm text-slate-600">
                         صفحة <span className="font-bold text-slate-900">{currentPage}</span> من <span className="font-bold text-slate-900">{totalPages}</span>
                       </p>
@@ -1006,7 +1006,7 @@ export default function Reservations() {
                             onClick={() => setCurrentPage(page)}
                             className={cn(
                               "w-10 h-10 rounded-lg",
-                              currentPage === page && "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
+                              currentPage === page && "bg-teal-500 text-white hover:bg-teal-600"
                             )}
                           >
                             {page}
@@ -1022,7 +1022,7 @@ export default function Reservations() {
                               onClick={() => setCurrentPage(totalPages)}
                               className={cn(
                                 "w-10 h-10 rounded-lg",
-                                currentPage === totalPages && "bg-gradient-to-r from-teal-500 to-teal-600 text-white"
+                                currentPage === totalPages && "bg-teal-500 text-white"
                               )}
                             >
                               {totalPages}
@@ -1048,9 +1048,9 @@ export default function Reservations() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-dashed border-slate-300 p-16 text-center"
+                  className="bg-white rounded-xl border border-dashed border-slate-300 p-16 text-center"
                 >
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                     <CalendarDays className="w-10 h-10 text-slate-400" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-2">لا توجد حجوزات</h3>
@@ -1062,7 +1062,7 @@ export default function Reservations() {
                   {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && !dateFilter && (
                     <Button
                       onClick={handleCreateNew}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/20"
+                      className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm"
                     >
                       <Plus className="w-4 h-4 ml-2" />
                       إنشاء حجز جديد
@@ -1115,7 +1115,7 @@ export default function Reservations() {
               <div className="p-6 space-y-6">
                 {/* Status Badge */}
                 <div className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-2xl",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl",
                   statusConfig[selectedReservation.status as ReservationStatus]?.bgGradient
                 )}>
                   <div className={cn(
@@ -1137,7 +1137,7 @@ export default function Reservations() {
                 {/* Reservation Info */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-slate-700">معلومات الحجز</h3>
-                  <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+                  <div className="bg-slate-50 rounded-xl p-4 space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-500">رقم الحجز</span>
                       <span className="font-mono text-sm font-bold text-slate-900">
@@ -1200,7 +1200,7 @@ export default function Reservations() {
                         handleEdit(selectedReservation);
                         setShowDetailPanel(false);
                       }}
-                      className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white"
+                      className="flex-1 bg-teal-500 hover:bg-teal-600 text-white"
                     >
                       <Edit className="w-4 h-4 ml-2" />
                       تعديل
@@ -1233,7 +1233,7 @@ export default function Reservations() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              className="relative bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
             >
               <Suspense fallback={
                 <div className="flex items-center justify-center p-12">

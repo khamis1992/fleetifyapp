@@ -100,33 +100,33 @@ export default function Attendance() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
             <Clock className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">الحضور والانصراف</h1>
-            <p className="text-slate-600">إدارة حضور الموظفين ومراقبة أوقات العمل</p>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">الحضور والانصراف</h1>
+            <p className="text-sm md:text-base text-slate-600 dark:text-slate-400">إدارة حضور الموظفين ومراقبة أوقات العمل</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <div className="relative flex-1 w-full sm:max-w-md">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input
             placeholder="البحث عن موظف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl"
+            className="pr-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
           />
         </div>
 
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="justify-start text-right bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10">
+            <Button variant="outline" className="w-full sm:w-auto min-h-[44px] justify-start text-right bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-teal-500/50">
               <CalendarIcon className="ml-2 h-4 w-4" />
               {format(selectedDate, 'PPP', { locale: ar })}
             </Button>
@@ -146,13 +146,13 @@ export default function Attendance() {
 
       <div className="grid gap-4">
         {filteredRecords.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+          <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
             <CardContent className="p-8">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center mx-auto mb-4">
                   <Clock className="h-8 w-8 text-white" />
                 </div>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-400">
                   لا توجد سجلات حضور لتاريخ {format(selectedDate, 'PPP', { locale: ar })}
                 </p>
               </div>
@@ -162,65 +162,67 @@ export default function Attendance() {
           filteredRecords.map((record) => {
             const statusInfo = getStatusBadge(record.status);
             return (
-              <Card key={record.id} className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+              <Card key={record.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center shrink-0">
                         <Clock className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg text-slate-900">
+                        <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">
                           {record.employees?.first_name} {record.employees?.last_name}
                         </h3>
-                        <p className="text-slate-600">
+                        <p className="text-slate-600 dark:text-slate-400">
                           رقم الموظف: {record.employees?.employee_number}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                      <div className="text-center">
-                        <p className="text-sm text-slate-600">وقت الحضور</p>
-                        <p className="font-semibold text-slate-900">
-                          {record.check_in_time || '--:--'}
-                        </p>
-                      </div>
-
-                      <div className="text-center">
-                        <p className="text-sm text-slate-600">وقت الانصراف</p>
-                        <p className="font-semibold text-slate-900">
-                          {record.check_out_time || '--:--'}
-                        </p>
-                      </div>
-
-                      <div className="text-center">
-                        <p className="text-sm text-slate-600">ساعات العمل</p>
-                        <p className="font-semibold text-slate-900">
-                          {record.total_hours.toFixed(1)} ساعة
-                        </p>
-                      </div>
-
-                      {record.late_hours > 0 && (
-                        <div className="text-center">
-                          <p className="text-sm text-slate-600">ساعات التأخير</p>
-                          <p className="font-semibold text-orange-600">
-                            {record.late_hours.toFixed(1)} ساعة
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full md:w-auto">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full sm:w-auto">
+                        <div className="text-right sm:text-center">
+                          <p className="text-sm text-slate-600 dark:text-slate-400">وقت الحضور</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            {record.check_in_time || '--:--'}
                           </p>
                         </div>
-                      )}
 
-                      {record.overtime_hours > 0 && (
-                        <div className="text-center">
-                          <p className="text-sm text-slate-600">ساعات إضافية</p>
-                          <p className="font-semibold text-green-600">
-                            {record.overtime_hours.toFixed(1)} ساعة
+                        <div className="text-right sm:text-center">
+                          <p className="text-sm text-slate-600 dark:text-slate-400">وقت الانصراف</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            {record.check_out_time || '--:--'}
                           </p>
                         </div>
-                      )}
 
-                      <div className="flex items-center gap-2">
-                        <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white' : ''}>
+                        <div className="text-right sm:text-center">
+                          <p className="text-sm text-slate-600 dark:text-slate-400">ساعات العمل</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            {record.total_hours.toFixed(1)} ساعة
+                          </p>
+                        </div>
+
+                        {record.late_hours > 0 && (
+                          <div className="text-right sm:text-center">
+                            <p className="text-sm text-slate-600 dark:text-slate-400">ساعات التأخير</p>
+                            <p className="font-semibold text-orange-600">
+                              {record.late_hours.toFixed(1)} ساعة
+                            </p>
+                          </div>
+                        )}
+
+                        {record.overtime_hours > 0 && (
+                          <div className="text-right sm:text-center">
+                            <p className="text-sm text-slate-600 dark:text-slate-400">ساعات إضافية</p>
+                            <p className="font-semibold text-green-600">
+                              {record.overtime_hours.toFixed(1)} ساعة
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 mr-auto sm:mr-0">
+                        <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-teal-500 text-white' : ''}>
                           {statusInfo.label}
                         </Badge>
                         {record.is_approved ? (

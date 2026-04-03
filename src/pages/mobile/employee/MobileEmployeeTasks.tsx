@@ -83,7 +83,7 @@ export const MobileEmployeeTasks: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4"
+            className="bg-white border border-slate-200 rounded-xl p-4"
           >
             <div className="flex items-center justify-between">
               <motion.button
@@ -119,7 +119,7 @@ export const MobileEmployeeTasks: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4"
+            className="bg-white border border-slate-200 rounded-xl p-4"
           >
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
@@ -168,7 +168,7 @@ export const MobileEmployeeTasks: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-8 text-center"
+              className="bg-white border border-slate-200 rounded-xl p-8 text-center"
             >
               <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
               <p className="text-slate-600 font-medium">
@@ -208,7 +208,7 @@ export const MobileEmployeeTasks: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl p-4 text-white"
+              className="bg-teal-500 rounded-xl p-4 text-white"
             >
               <div className="flex items-center justify-between">
                 <div>

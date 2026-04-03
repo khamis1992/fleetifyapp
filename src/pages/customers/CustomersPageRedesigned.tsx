@@ -94,15 +94,15 @@ const ProStatCard: React.FC<ProStatCardProps> = ({ value, label, description, ic
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    className="relative bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all duration-300"
+    className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300"
   >
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <p className="text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
-        <p className="text-sm font-medium text-slate-900 mt-1">{label}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+        <p className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-1">{label}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
       </div>
-      <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+      <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
         <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
       </div>
     </div>
@@ -177,13 +177,13 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:border-teal-500/30 transition-all duration-300 cursor-pointer"
+      className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300 cursor-pointer"
       onClick={onView}
     >
       {/* VIP Badge */}
       {customer.is_vip && (
         <div className="absolute top-4 right-4">
-          <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 gap-1">
+          <Badge className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 gap-1">
             <Crown className="w-3 h-3" />
             VIP
           </Badge>
@@ -198,7 +198,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-neutral-900 truncate group-hover:text-coral-600 transition-colors">
+          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 truncate group-hover:text-coral-600 transition-colors">
             {getCustomerName()}
           </h3>
           <div className="flex items-center gap-2 mt-1">
@@ -218,22 +218,22 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
 
       {/* Contact Info */}
       <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2 text-sm text-neutral-600">
+        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
           <Mail className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
           <span className="truncate">{customer.email || '-'}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-600">
+        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
           <Phone className="w-3.5 h-3.5 flex-shrink-0 text-neutral-400" />
           <span className="font-mono truncate" dir="ltr">{customer.phone || '-'}</span>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t">
+      <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-1.5 text-sm">
           <FileText className="w-4 h-4 text-neutral-400" />
-          <span className="font-medium text-neutral-900">{contractCount}</span>
-          <span className="text-neutral-500">عقود</span>
+          <span className="font-medium text-neutral-900 dark:text-neutral-100">{contractCount}</span>
+          <span className="text-neutral-500 dark:text-neutral-400">عقود</span>
         </div>
 
         {contractCount === 0 && (
@@ -787,12 +787,12 @@ const CustomersPageRedesigned: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-[1600px] mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             {/* Title */}
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
                 <Users className="w-6 h-6 text-white" strokeWidth={2.5} />
               </div>
               <div>
@@ -808,7 +808,7 @@ const CustomersPageRedesigned: React.FC = () => {
             {/* Actions */}
             <div className="flex items-center gap-2">
               {/* View Toggle */}
-              <div className="flex items-center bg-slate-100/80 backdrop-blur rounded-2xl p-1 border border-slate-200/50">
+              <div className="flex items-center bg-slate-100/80 backdrop-blur rounded-xl p-1 border border-slate-200">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
@@ -839,7 +839,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowCSVUpload(true)}
-                className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+                className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
               >
                 <Upload className="w-4 h-4" />
                 استيراد
@@ -850,7 +850,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 size="sm"
                 onClick={() => setShowExportDialog(true)}
                 disabled={isLoading}
-                className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+                className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
               >
                 <Download className="w-4 h-4" />
                 تصدير
@@ -861,7 +861,7 @@ const CustomersPageRedesigned: React.FC = () => {
                 size="sm"
                 onClick={() => setShowDocumentDistribution(true)}
                 disabled={isLoading}
-                className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+                className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
               >
                 <IdCard className="w-4 h-4" />
                 توزيع البطاقات
@@ -870,7 +870,7 @@ const CustomersPageRedesigned: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => setShowCreateDialog(true)}
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white gap-2 shadow-lg shadow-teal-500/20"
+                className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm"
               >
                 <UserPlus className="w-4 h-4" />
                 إضافة عميل
@@ -909,7 +909,7 @@ const CustomersPageRedesigned: React.FC = () => {
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 shadow-sm hover:border-teal-500/30 transition-all duration-300">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-teal-500/50 transition-all duration-300">
           <div className="flex flex-col lg:flex-row gap-3">
             {/* Search */}
             <div className="flex-1 relative">
@@ -921,7 +921,7 @@ const CustomersPageRedesigned: React.FC = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 pr-10 text-sm bg-white/50 border-slate-200/50 focus:border-teal-500/50"
+                className="h-10 pr-10 text-sm bg-white/50 border-slate-200 focus:border-teal-500/50"
               />
               {searchTerm && (
                 <button
@@ -976,7 +976,7 @@ const CustomersPageRedesigned: React.FC = () => {
             ))}
           </div>
         ) : error ? (
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-12 text-center">
+          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
@@ -987,14 +987,14 @@ const CustomersPageRedesigned: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => refetch()}
-              className="gap-2 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+              className="gap-2 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
             >
               <RefreshCw className="w-4 h-4" />
               إعادة المحاولة
             </Button>
           </div>
         ) : customers.length === 0 ? (
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-12 text-center">
+          <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-teal-500/10 to-teal-600/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="w-8 h-8 text-teal-500" />
             </div>
@@ -1004,7 +1004,7 @@ const CustomersPageRedesigned: React.FC = () => {
             </p>
             <Button
               onClick={() => setShowCreateDialog(true)}
-              className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-lg shadow-teal-500/20"
+              className="bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
             >
               <UserPlus className="w-4 h-4 ml-2" />
               إضافة عميل
@@ -1041,7 +1041,7 @@ const CustomersPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4">
+              <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-4">
                 <p className="text-sm text-slate-500">
                   صفحة <span className="font-medium text-slate-900">{currentPage}</span> من{' '}
                   <span className="font-medium text-slate-900">{totalPages}</span>
@@ -1053,7 +1053,7 @@ const CustomersPageRedesigned: React.FC = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="h-9 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+                    className="h-9 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
@@ -1067,7 +1067,7 @@ const CustomersPageRedesigned: React.FC = () => {
                       className={cn(
                         "h-9 w-9",
                         currentPage === page
-                          ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
+                          ? "bg-teal-500 text-white hover:bg-teal-600"
                           : "hover:bg-slate-100"
                       )}
                     >
@@ -1084,7 +1084,7 @@ const CustomersPageRedesigned: React.FC = () => {
                         className={cn(
                           "h-9 w-9",
                           currentPage === totalPages
-                            ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:from-teal-600 hover:to-teal-700"
+                            ? "bg-teal-500 text-white hover:bg-teal-600"
                             : "hover:bg-slate-100"
                         )}
                       >
@@ -1098,7 +1098,7 @@ const CustomersPageRedesigned: React.FC = () => {
                     size="sm"
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="h-9 border-slate-200/50 hover:border-teal-500/30 hover:bg-teal-50"
+                    className="h-9 border-slate-200 hover:border-teal-500/50 hover:bg-teal-50"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>

@@ -417,7 +417,7 @@ export const MobileLogin: React.FC = () => {
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3 backdrop-blur-xl"
+                className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3 backdrop-blur-xl"
               >
                 <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
                   <AlertCircle className="w-5 h-5 text-red-400" />
@@ -440,7 +440,7 @@ export const MobileLogin: React.FC = () => {
             </label>
             <div className="relative">
               <div className={cn(
-                "absolute inset-0 rounded-2xl transition-opacity duration-300",
+                "absolute inset-0 rounded-xl transition-opacity duration-300",
                 focusedField === 'email' 
                   ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/20 opacity-100" 
                   : "opacity-0"
@@ -458,7 +458,7 @@ export const MobileLogin: React.FC = () => {
                   onBlur={() => setFocusedField(null)}
                   placeholder="example@email.com"
                   className={cn(
-                    'w-full pr-12 pl-4 py-4 rounded-2xl text-base',
+                    'w-full pr-12 pl-4 py-4 rounded-xl text-base',
                     'bg-white/5 border-2 transition-all duration-300',
                     focusedField === 'email'
                       ? 'border-teal-500/50 bg-white/10'
@@ -484,7 +484,7 @@ export const MobileLogin: React.FC = () => {
             </label>
             <div className="relative">
               <div className={cn(
-                "absolute inset-0 rounded-2xl transition-opacity duration-300",
+                "absolute inset-0 rounded-xl transition-opacity duration-300",
                 focusedField === 'password' 
                   ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/20 opacity-100" 
                   : "opacity-0"
@@ -502,7 +502,7 @@ export const MobileLogin: React.FC = () => {
                   onBlur={() => setFocusedField(null)}
                   placeholder="••••••••"
                   className={cn(
-                    'w-full pr-12 pl-14 py-4 rounded-2xl text-base',
+                    'w-full pr-12 pl-14 py-4 rounded-xl text-base',
                     'bg-white/5 border-2 transition-all duration-300',
                     focusedField === 'password'
                       ? 'border-teal-500/50 bg-white/10'
@@ -551,7 +551,7 @@ export const MobileLogin: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               disabled={isSubmitting}
               className={cn(
-                'w-full py-4 rounded-2xl font-bold text-white text-base relative overflow-hidden',
+                'w-full py-4 rounded-xl font-bold text-white text-base relative overflow-hidden',
                 'bg-gradient-to-r from-teal-500 to-emerald-500',
                 'shadow-xl shadow-teal-500/25',
                 'disabled:opacity-60 disabled:cursor-not-allowed',
@@ -594,7 +594,7 @@ export const MobileLogin: React.FC = () => {
                 onClick={handleBiometricLogin}
                 disabled={biometricLoading}
                 className={cn(
-                  'w-full py-4 rounded-2xl font-bold text-white text-base relative overflow-hidden',
+                  'w-full py-4 rounded-xl font-bold text-white text-base relative overflow-hidden',
                   'bg-gradient-to-r from-purple-500 to-indigo-500',
                   'shadow-xl shadow-purple-500/25',
                   'disabled:opacity-60 disabled:cursor-not-allowed',
@@ -757,7 +757,7 @@ export const MobileLogin: React.FC = () => {
                       onClick={handleBiometricSetup}
                       disabled={isSubmitting}
                       className={cn(
-                        'w-full py-4 rounded-2xl font-bold text-white',
+                        'w-full py-4 rounded-xl font-bold text-white',
                         'bg-gradient-to-r from-purple-500 to-indigo-500',
                         'shadow-xl shadow-purple-500/25',
                         'disabled:opacity-60 disabled:cursor-not-allowed',
@@ -782,7 +782,7 @@ export const MobileLogin: React.FC = () => {
                       whileTap={{ scale: 0.98 }}
                       onClick={skipBiometricSetup}
                       className={cn(
-                        'w-full py-4 rounded-2xl font-semibold',
+                        'w-full py-4 rounded-xl font-semibold',
                         'bg-white/5 border border-white/10 text-white/70',
                         'hover:bg-white/10 hover:text-white',
                         'transition-all duration-300'

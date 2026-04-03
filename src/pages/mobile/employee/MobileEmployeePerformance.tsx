@@ -124,7 +124,7 @@ export const MobileEmployeePerformance: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
-                  'bg-gradient-to-br shadow-xl rounded-3xl p-6 text-white relative overflow-hidden',
+                  'bg-gradient-to-br shadow-xl rounded-xl p-6 text-white relative overflow-hidden',
                   getGradeColor(performanceGrade?.grade)
                 )}
               >
@@ -168,7 +168,7 @@ export const MobileEmployeePerformance: React.FC = () => {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4"
+                      className="bg-white border border-slate-200 rounded-xl p-4"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export const MobileEmployeePerformance: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4"
+                className="bg-white border border-slate-200 rounded-xl p-4"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -239,7 +239,7 @@ export const MobileEmployeePerformance: React.FC = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.1 }}
-                      className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-2xl p-4 text-center"
+                      className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-4 text-center"
                     >
                       <div className="text-3xl mb-2">{achievement.icon}</div>
                       <p className="text-xs font-medium text-amber-900">

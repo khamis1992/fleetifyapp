@@ -209,15 +209,15 @@ export default function TasksPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
-      <div className="p-6 space-y-6" dir="rtl">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-rose-500" />
+            <h1 className="text-xl md:text-2xl font-bold text-neutral-900 flex items-center gap-2">
+              <Sparkles className="h-5 md:h-6 w-5 md:w-6 text-rose-500" />
               إدارة المهام
             </h1>
-            <p className="text-neutral-500 mt-1">تتبع وإدارة مهامك وأهدافك</p>
+            <p className="text-sm md:text-base text-neutral-500 mt-1">تتبع وإدارة مهامك وأهدافك</p>
           </div>
 
           <Button
@@ -225,7 +225,7 @@ export default function TasksPage() {
               setEditingTask(null);
               setShowTaskForm(true);
             }}
-            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+            className="w-full sm:w-auto min-h-[44px] bg-teal-500 hover:bg-teal-600"
           >
             <Plus className="h-4 w-4 ml-2" />
             إضافة مهمة
@@ -234,12 +234,12 @@ export default function TasksPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="w-full md:w-auto bg-white/80 backdrop-blur-xl border border-slate-200/50 p-1 h-auto flex-wrap rounded-3xl">
+          <TabsList className="w-full md:w-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 h-auto flex-wrap rounded-xl">
             {tabItems.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-teal-600 data-[state=active]:text-white px-4 py-2 rounded-2xl data-[state=active]:shadow-lg data-[state=active]:shadow-teal-500/20"
+                className="flex items-center gap-2 data-[state=active]:bg-teal-500 data-[state=active]:text-white px-3 md:px-4 py-2 rounded-lg data-[state=active]:shadow-sm text-sm md:text-base"
               >
                 {tab.icon}
                 {tab.label}
@@ -253,17 +253,17 @@ export default function TasksPage() {
             <MyTasksDashboard />
 
             {/* Tasks Section */}
-            <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-xl p-1.5">
+                    <div className="bg-teal-500 shadow-sm rounded-lg p-1.5">
                       <ListTodo className="h-5 w-5 text-white" />
                     </div>
                     مهامي
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center border rounded-lg p-1">
+                    <div className="flex items-center border rounded-lg p-1 border-slate-200 dark:border-slate-700">
                       <Button
                         variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
                         size="sm"
@@ -291,7 +291,7 @@ export default function TasksPage() {
           {/* All Tasks Tab */}
           <TabsContent value="all" className="mt-6 space-y-6">
             {/* Statistics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {statsCards.map((stat, index) => (
                 <motion.div
                   key={stat.title}
@@ -299,14 +299,14 @@ export default function TasksPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
-                    <CardContent className="p-4">
+                  <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl md:rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all">
+                    <CardContent className="p-3 md:p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-neutral-500">{stat.title}</p>
-                          <p className={cn('text-2xl font-bold mt-1', stat.color)}>{stat.value}</p>
+                          <p className="text-xs md:text-sm text-neutral-500 dark:text-neutral-400">{stat.title}</p>
+                          <p className={cn('text-xl md:text-2xl font-bold mt-1', stat.color)}>{stat.value}</p>
                         </div>
-                        <div className={cn('p-3 rounded-xl', stat.bgColor, stat.color)}>
+                        <div className={cn('p-2 md:p-3 rounded-xl', stat.bgColor, stat.color)}>
                           {stat.icon}
                         </div>
                       </div>
@@ -317,9 +317,9 @@ export default function TasksPage() {
             </div>
 
             {/* Filters & Search */}
-            <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
-              <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row gap-4">
+            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl md:rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex flex-col gap-4">
                   {/* Search */}
                   <div className="relative flex-1">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -327,19 +327,19 @@ export default function TasksPage() {
                       placeholder="ابحث عن مهمة..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pr-10"
+                      className="pr-10 min-h-[44px]"
                     />
                   </div>
 
                   {/* Quick Filters */}
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     <Select
                       value={filters.status as string || 'all'}
                       onValueChange={(value) =>
                         setFilters({ ...filters, status: value === 'all' ? undefined : value as Task['status'] })
                       }
                     >
-                      <SelectTrigger className="w-[140px]">
+                      <SelectTrigger className="w-full sm:w-[140px] min-h-[44px]">
                         <SelectValue placeholder="الحالة" />
                       </SelectTrigger>
                       <SelectContent>
@@ -358,7 +358,7 @@ export default function TasksPage() {
                         setFilters({ ...filters, priority: value === 'all' ? undefined : value as Task['priority'] })
                       }
                     >
-                      <SelectTrigger className="w-[140px]">
+                      <SelectTrigger className="w-full sm:w-[140px] min-h-[44px]">
                         <SelectValue placeholder="الأولوية" />
                       </SelectTrigger>
                       <SelectContent>
@@ -376,7 +376,7 @@ export default function TasksPage() {
                         setFilters({ ...filters, assigned_to: value === 'all' ? undefined : value })
                       }
                     >
-                      <SelectTrigger className="w-[160px]">
+                      <SelectTrigger className="w-full sm:w-[160px] min-h-[44px]">
                         <SelectValue placeholder="المسؤول" />
                       </SelectTrigger>
                       <SelectContent>
@@ -391,7 +391,7 @@ export default function TasksPage() {
                     </Select>
 
                     {hasActiveFilters && (
-                      <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full sm:w-auto min-h-[44px]">
                         <X className="h-4 w-4 ml-1" />
                         مسح الفلاتر
                       </Button>
@@ -404,6 +404,7 @@ export default function TasksPage() {
                       variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('kanban')}
+                      className="flex-1 sm:flex-initial min-h-[44px]"
                     >
                       <Kanban className="h-4 w-4" />
                     </Button>
@@ -411,6 +412,7 @@ export default function TasksPage() {
                       variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('list')}
+                      className="flex-1 sm:flex-initial min-h-[44px]"
                     >
                       <List className="h-4 w-4" />
                     </Button>
@@ -418,6 +420,7 @@ export default function TasksPage() {
                       variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('grid')}
+                      className="flex-1 sm:flex-initial min-h-[44px]"
                     >
                       <LayoutGrid className="h-4 w-4" />
                     </Button>
@@ -524,11 +527,11 @@ function renderTasksContent(
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle2 className="h-8 w-8 text-neutral-400" />
+        <div className="w-16 h-16 bg-neutral-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle2 className="h-8 w-8 text-neutral-400 dark:text-slate-500" />
         </div>
-        <h3 className="text-lg font-medium text-neutral-900 mb-2">لا توجد مهام</h3>
-        <p className="text-neutral-500 text-center max-w-md mb-4">
+        <h3 className="text-lg font-medium text-neutral-900 dark:text-slate-100 mb-2">لا توجد مهام</h3>
+        <p className="text-neutral-500 dark:text-slate-400 text-center max-w-md mb-4">
           {hasActiveFilters
             ? 'لا توجد مهام تطابق معايير البحث الحالية'
             : 'ابدأ بإضافة مهمة جديدة لتتبع أعمالك'}
@@ -538,7 +541,7 @@ function renderTasksContent(
             setEditingTask(null);
             setShowTaskForm(true);
           }}
-          className="bg-gradient-to-r from-teal-500 to-teal-600"
+          className="bg-teal-500 hover:bg-teal-600"
         >
           <Plus className="h-4 w-4 ml-2" />
           إضافة مهمة
@@ -560,30 +563,30 @@ function renderTasksContent(
 
   if (viewMode === 'list') {
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-neutral-50 border-b">
+      <div className="overflow-x-auto -mx-4 md:mx-0">
+        <table className="w-full min-w-[600px]">
+          <thead className="bg-neutral-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
             <tr>
-              <th className="text-right p-4 font-medium text-neutral-600">المهمة</th>
-              <th className="text-right p-4 font-medium text-neutral-600">الحالة</th>
-              <th className="text-right p-4 font-medium text-neutral-600">الأولوية</th>
-              <th className="text-right p-4 font-medium text-neutral-600">المسؤول</th>
-              <th className="text-right p-4 font-medium text-neutral-600">تاريخ الاستحقاق</th>
-              <th className="text-right p-4 font-medium text-neutral-600">الإجراءات</th>
+              <th className="text-right p-4 font-medium text-neutral-600 dark:text-slate-300">المهمة</th>
+              <th className="text-right p-4 font-medium text-neutral-600 dark:text-slate-300">الحالة</th>
+              <th className="text-right p-4 font-medium text-neutral-600 dark:text-slate-300">الأولوية</th>
+              <th className="text-right p-4 font-medium text-neutral-600 dark:text-slate-300">المسؤول</th>
+              <th className="text-right p-4 font-medium text-neutral-600 dark:text-slate-300">تاريخ الاستحقاق</th>
+              <th className="text-right p-4 font-medium text-neutral-600 dark:text-slate-300">الإجراءات</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {tasks.map((task) => (
               <tr
                 key={task.id}
-                className="hover:bg-neutral-50 cursor-pointer"
+                className="hover:bg-neutral-50 dark:hover:bg-slate-800 cursor-pointer bg-white dark:bg-slate-900"
                 onClick={() => handleTaskClick(task)}
               >
                 <td className="p-4">
                   <div>
-                    <p className="font-medium text-neutral-900">{task.title}</p>
+                    <p className="font-medium text-neutral-900 dark:text-slate-100">{task.title}</p>
                     {task.description && (
-                      <p className="text-sm text-neutral-500 truncate max-w-xs">
+                      <p className="text-sm text-neutral-500 dark:text-slate-400 truncate max-w-xs">
                         {task.description}
                       </p>
                     )}
@@ -603,7 +606,7 @@ function renderTasksContent(
                 <td className="p-4">
                   <div className="flex items-center gap-2">
                     <div className={cn('w-2 h-2 rounded-full', priorityColors[task.priority])} />
-                    <span className="text-sm">
+                    <span className="text-sm text-neutral-900 dark:text-slate-100">
                       {task.priority === 'urgent' ? 'عاجلة' :
                        task.priority === 'high' ? 'عالية' :
                        task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
@@ -615,42 +618,42 @@ function renderTasksContent(
                     <div className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
                         <AvatarImage src={task.assignee.avatar_url || ''} />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className="text-xs bg-slate-200 dark:bg-slate-700">
                           {(task.assignee.first_name_ar || task.assignee.first_name || '?')[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm">
+                      <span className="text-sm text-neutral-900 dark:text-slate-100">
                         {task.assignee.first_name_ar || task.assignee.first_name}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-neutral-400 text-sm">غير معين</span>
+                    <span className="text-neutral-400 dark:text-slate-500 text-sm">غير معين</span>
                   )}
                 </td>
                 <td className="p-4">
                   {task.due_date ? (
-                    <span className="text-sm">
+                    <span className="text-sm text-neutral-900 dark:text-slate-100">
                       {format(new Date(task.due_date), 'd MMM yyyy', { locale: ar })}
                     </span>
                   ) : (
-                    <span className="text-neutral-400 text-sm">-</span>
+                    <span className="text-neutral-400 dark:text-slate-500 text-sm">-</span>
                   )}
                 </td>
                 <td className="p-4">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] hover:bg-slate-100 dark:hover:bg-slate-800">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditTask(task); }}>
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditTask(task); }} className="hover:bg-slate-100 dark:hover:bg-slate-700">
                         تعديل
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                       <DropdownMenuItem
                         onClick={(e) => { e.stopPropagation(); setTaskToDelete(task.id); }}
-                        className="text-red-600"
+                        className="text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                       >
                         حذف
                       </DropdownMenuItem>
@@ -667,18 +670,18 @@ function renderTasksContent(
 
   // Grid view
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
       {tasks.map((task) => (
-        <motion.div
-          key={task.id}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <Card
-            className="cursor-pointer bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all"
-            onClick={() => handleTaskClick(task)}
-          >
-            <CardContent className="p-4">
+    <motion.div
+      key={task.id}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+    >
+      <Card
+        className="cursor-pointer bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl md:rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all"
+        onClick={() => handleTaskClick(task)}
+      >
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h3 className="font-medium text-neutral-900">{task.title}</h3>
@@ -690,7 +693,7 @@ function renderTasksContent(
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px]">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>

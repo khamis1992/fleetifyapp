@@ -197,7 +197,7 @@ export const MobileHome: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/mobile/notifications')}
-          className="relative p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50"
+          className="relative p-2 rounded-xl bg-white border border-slate-200"
         >
           <Bell className="w-5 h-5 text-slate-600" />
           {alerts.length > 0 && (
@@ -248,10 +248,10 @@ export const MobileHome: React.FC = () => {
 
       {/* Monthly Revenue */}
       <div>
-        <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <div className="p-2.5 rounded-xl bg-teal-500 shadow-sm">
                 <TrendingUp className="w-5 h-5 text-white" strokeWidth={2.5} />
               </div>
               <div>
@@ -275,7 +275,7 @@ export const MobileHome: React.FC = () => {
           {/* Progress Bar */}
           <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
             <div
-              className="h-full bg-gradient-to-r from-teal-500 to-teal-600 rounded-full"
+              className="h-full bg-teal-500 rounded-full"
               style={{ width: `${revenuePercentage}%` }}
             />
           </div>
@@ -316,7 +316,7 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ icon: Icon, value, label, color }) => (
-  <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4">
+  <div className="bg-white border border-slate-200 rounded-xl p-4">
     <div className={`p-2 rounded-xl bg-gradient-to-br ${color} shadow-lg mb-2`}>
       <Icon className="w-4 h-4 text-white" strokeWidth={2.5} />
     </div>
@@ -338,7 +338,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
 
   return (
     <div className={cn(
-      'border rounded-2xl p-4',
+      'border rounded-xl p-4',
       severityColors[alert.severity]
     )}>
       <p className="text-sm font-semibold text-slate-900 mb-1">{alert.title}</p>
@@ -362,9 +362,9 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
 }) => (
   <button
     onClick={onClick}
-    className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 text-right"
+    className="bg-white border border-slate-200 rounded-xl p-4 text-right"
   >
-    <div className={`p-2.5 rounded-2xl bg-gradient-to-br ${color} shadow-lg shadow-teal-500/20 mb-3 w-fit`}>
+    <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} shadow-sm mb-3 w-fit`}>
       <Icon className="w-5 h-5 text-white" strokeWidth={2.5} />
     </div>
     <p className="text-sm font-semibold text-slate-900">{label}</p>

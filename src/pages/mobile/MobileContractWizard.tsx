@@ -248,7 +248,7 @@ const MobileContractWizard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="sticky top-0 bg-white border-b border-slate-200 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="flex items-center justify-between px-4 py-4">
           <button onClick={() => navigate('/mobile/contracts')} className="p-2">
             <ChevronLeft className="w-5 h-5 text-slate-600" />
@@ -270,7 +270,7 @@ const MobileContractWizard: React.FC = () => {
                 <div className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors',
                   currentStep >= step
-                    ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/20'
+                    ? 'bg-teal-500 text-white shadow-sm'
                     : 'bg-slate-200 text-slate-500'
                 )}>
                   {currentStep > step ? <Check className="w-4 h-4" /> : step}
@@ -330,14 +330,14 @@ const MobileContractWizard: React.FC = () => {
 
       {/* Bottom Actions */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200/50"
+        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-200"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex gap-3 p-4">
           {currentStep > 1 && (
             <button
               onClick={handlePrevious}
-              className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-700 font-semibold"
+              className="flex-1 py-4 rounded-xl border border-slate-200 text-slate-700 font-semibold"
             >
               السابق
             </button>
@@ -346,8 +346,8 @@ const MobileContractWizard: React.FC = () => {
             onClick={currentStep === 4 ? handleCreateContract : handleNext}
             disabled={!validateStep(currentStep) || loading}
             className={cn(
-              'flex-1 py-4 rounded-2xl font-semibold text-white',
-              'bg-gradient-to-r from-teal-500 to-teal-600',
+              'flex-1 py-4 rounded-xl font-semibold text-white',
+              'bg-teal-500',
               'shadow-lg shadow-teal-500/30',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'transition-all duration-200'
@@ -393,7 +393,7 @@ const Step1CustomerVehicle: React.FC<{
                 setFormData({ ...formData, customerId: customer.id });
               }}
               className={cn(
-                'w-full p-4 rounded-2xl border-2 text-right transition-all',
+                'w-full p-4 rounded-xl border-2 text-right transition-all',
                 formData.customerId === customer.id
                   ? 'border-teal-500 bg-teal-50'
                   : 'border-slate-200 bg-white hover:bg-slate-50'
@@ -429,7 +429,7 @@ const Step1CustomerVehicle: React.FC<{
                 setFormData({ ...formData, vehicleId: vehicle.id });
               }}
               className={cn(
-                'w-full p-4 rounded-2xl border-2 text-right transition-all',
+                'w-full p-4 rounded-xl border-2 text-right transition-all',
                 formData.vehicleId === vehicle.id
                   ? 'border-teal-500 bg-teal-50'
                   : 'border-slate-200 bg-white hover:bg-slate-50'
@@ -464,7 +464,7 @@ const Step1CustomerVehicle: React.FC<{
             type="date"
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
           />
         </div>
         <div>
@@ -475,7 +475,7 @@ const Step1CustomerVehicle: React.FC<{
             type="date"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+            className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
           />
         </div>
       </div>
@@ -519,7 +519,7 @@ const Step2PricingTerms: React.FC<{
               key={type.value}
               onClick={() => setFormData({ ...formData, contractType: type.value as any })}
               className={cn(
-                'py-3 rounded-2xl border-2 text-sm font-semibold transition-colors',
+                'py-3 rounded-xl border-2 text-sm font-semibold transition-colors',
                 formData.contractType === type.value
                   ? 'border-teal-500 bg-teal-50 text-teal-600'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -532,7 +532,7 @@ const Step2PricingTerms: React.FC<{
       </div>
 
       {/* Amount Display */}
-      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5">
+      <div className="bg-white border border-slate-200 rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm text-slate-500">المبلغ الشهري</span>
           <div className="text-left">
@@ -584,7 +584,7 @@ const Step2PricingTerms: React.FC<{
       </div>
 
       {/* Auto Renew */}
-      <div className="flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4">
+      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-4">
         <div>
           <p className="font-semibold text-slate-900">تجديد تلقائي</p>
           <p className="text-xs text-slate-500">تجديد العقد تلقائياً عند الانتهاء</p>
@@ -615,7 +615,7 @@ const Step2PricingTerms: React.FC<{
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="أي شروط إضافية..."
           rows={3}
-          className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
+          className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
         />
       </div>
     </motion.div>
@@ -664,7 +664,7 @@ const Step3VehicleCondition: React.FC<{
           value={formData.mileage}
           onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
           placeholder="0"
-          className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
+          className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500"
         />
       </div>
 
@@ -724,7 +724,7 @@ const Step3VehicleCondition: React.FC<{
           onChange={(e) => setFormData({ ...formData, existingDamage: e.target.value })}
           placeholder="صف أي أضراف موجودة..."
           rows={3}
-          className="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
+          className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none"
         />
       </div>
 
@@ -735,7 +735,7 @@ const Step3VehicleCondition: React.FC<{
         </label>
         <div className="grid grid-cols-4 gap-2">
           {formData.photos.map((photo, index) => (
-            <div key={index} className="aspect-square rounded-2xl bg-slate-100 overflow-hidden relative">
+            <div key={index} className="aspect-square rounded-xl bg-slate-100 overflow-hidden relative">
               <img src={photo} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => {
@@ -750,7 +750,7 @@ const Step3VehicleCondition: React.FC<{
             </div>
           ))}
           {formData.photos.length < 8 && (
-            <button className="aspect-square rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:border-teal-500 hover:text-teal-500 transition-colors">
+            <button className="aspect-square rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:border-teal-500 hover:text-teal-500 transition-colors">
               <Camera className="w-6 h-6" />
             </button>
           )}
@@ -793,10 +793,10 @@ const Step4Review: React.FC<{
       className="space-y-4"
     >
       {/* Summary Card */}
-      <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
         {/* Customer */}
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+          <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
             <User className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
@@ -809,7 +809,7 @@ const Step4Review: React.FC<{
 
         {/* Vehicle */}
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20">
             <CarIcon className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
@@ -822,7 +822,7 @@ const Step4Review: React.FC<{
 
         {/* Dates */}
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/20">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/20">
             <Calendar className="w-6 h-6 text-white" strokeWidth={2} />
           </div>
           <div>
@@ -878,7 +878,7 @@ const Step4Review: React.FC<{
       </div>
 
       {/* Confirmation */}
-      <div className="bg-teal-50 border border-teal-200 rounded-3xl p-4 flex items-start gap-3">
+      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" />
         <p className="text-sm text-teal-800">
           بالضغط على "إنشاء العقد"، سيتم إنشاء العقد وإرسال إشعار للعميل. تأكد من صحة جميع المعلومات.

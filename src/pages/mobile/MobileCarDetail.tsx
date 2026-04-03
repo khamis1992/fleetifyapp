@@ -228,7 +228,7 @@ export const MobileCarDetail: React.FC = () => {
   return (
     <MobileDetailLayout currentTab="cars">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 px-4 py-4">
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-4">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
@@ -248,12 +248,12 @@ export const MobileCarDetail: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl shadow-sm border border-slate-200/50 overflow-hidden"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
         >
           {/* Vehicle Header */}
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
                 <CarIcon className="w-8 h-8" strokeWidth={2} />
               </div>
               <div className="flex-1">
@@ -279,7 +279,7 @@ export const MobileCarDetail: React.FC = () => {
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {vehicle.daily_rate && (
-                <div className="bg-teal-50 rounded-2xl p-4">
+                <div className="bg-teal-50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <CreditCard className="w-4 h-4 text-teal-600" />
                     <span className="text-xs text-teal-600 font-medium">سعر التأجير</span>
@@ -292,7 +292,7 @@ export const MobileCarDetail: React.FC = () => {
               )}
 
               {vehicle.mileage && (
-                <div className="bg-blue-50 rounded-2xl p-4">
+                <div className="bg-blue-50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-blue-600" />
                     <span className="text-xs text-blue-600 font-medium">المسافة المقطوعة</span>
@@ -357,7 +357,7 @@ export const MobileCarDetail: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-3xl shadow-sm border border-slate-200/50 p-6"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-100 rounded-xl">
@@ -420,7 +420,7 @@ export const MobileCarDetail: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-3xl shadow-sm border border-slate-200/50 p-6"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
           >
             <div className="text-center py-4">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -438,7 +438,7 @@ export const MobileCarDetail: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-3xl shadow-sm border border-slate-200/50 p-6"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
           >
             <h3 className="text-lg font-bold text-slate-900 mb-4">التواريخ المهمة</h3>
             <div className="space-y-3">
@@ -487,7 +487,7 @@ export const MobileCarDetail: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-3xl shadow-sm border border-slate-200/50 p-6"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
           >
             <h3 className="text-lg font-bold text-slate-900 mb-3">ملاحظات</h3>
             <p className="text-sm text-slate-600 leading-relaxed">{vehicle.notes}</p>

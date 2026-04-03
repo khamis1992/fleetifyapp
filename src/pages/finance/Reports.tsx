@@ -283,7 +283,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'trial-balance')}>
@@ -304,7 +304,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'income-statement')}>
@@ -325,7 +325,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'balance-sheet')}>
@@ -346,7 +346,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'cash-flow')}>
@@ -367,7 +367,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'payroll')}>
@@ -388,7 +388,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'cost-centers')}>
@@ -409,7 +409,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'receivables')}>
@@ -430,7 +430,7 @@ const Reports = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden"
+              className="bg-white rounded-xl shadow-sm overflow-hidden"
             >
               <div className="p-4 border-b flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => exportToCSV([], 'payables')}>

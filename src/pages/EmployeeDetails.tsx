@@ -39,7 +39,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay, type: 'spring', bounce: 0.4 }}
     className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-3xl overflow-hidden',
+      'bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden',
       className
     )}
   >
@@ -50,7 +50,7 @@ const GlassCard = ({ children, className, delay = 0 }: any) => (
 const StatCard = ({ title, value, subtitle, icon: Icon, color, delay }: any) => (
   <GlassCard className="p-6 flex flex-col justify-between h-full" delay={delay}>
     <div className="flex justify-between items-start mb-4">
-      <div className={cn('p-3 rounded-2xl', color)}>
+      <div className={cn('p-3 rounded-xl', color)}>
         <Icon className="w-6 h-6 text-white" />
       </div>
       {subtitle && (
@@ -180,7 +180,7 @@ export const EmployeeDetails: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-4"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+            <div className="w-16 h-16 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
               {employeeName.charAt(0)}
             </div>
             <div>
@@ -223,7 +223,7 @@ export const EmployeeDetails: React.FC = () => {
           </Button>
           <Button
             size="sm"
-            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/20"
+            className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm"
             onClick={() => setShowAssignDialog(true)}
           >
             <UserPlus className="ml-2 h-4 w-4" />

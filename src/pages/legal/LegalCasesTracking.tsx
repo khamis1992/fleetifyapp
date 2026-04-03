@@ -822,7 +822,7 @@ export const LegalCasesTracking: React.FC = () => {
   const DashboardView = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpiData.map((stat, index) => (
           <KPICard key={index} {...stat} />
         ))}
@@ -831,13 +831,13 @@ export const LegalCasesTracking: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Financial Chart */}
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">التحليل المالي للقضايا</h3>
-              <p className="text-sm text-slate-500 mt-1">التعويضات vs المطالبات</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">التحليل المالي للقضايا</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">التعويضات vs المطالبات</p>
             </div>
-            <Badge variant="outline" className="text-xs border-slate-200/50 text-slate-600">
+            <Badge variant="outline" className="text-xs border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
               آخر 6 أشهر
             </Badge>
           </div>
@@ -869,8 +869,8 @@ export const LegalCasesTracking: React.FC = () => {
         </div>
 
         {/* Case Types Pie Chart */}
-        <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">أنواع القضايا</h3>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-teal-500/50 dark:hover:border-teal-500/50 transition-all duration-300">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">أنواع القضايا</h3>
           {caseTypesData.length > 0 ? (
             <>
               <div className="h-56 relative">
@@ -918,7 +918,7 @@ export const LegalCasesTracking: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-white border-slate-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -975,10 +975,10 @@ export const LegalCasesTracking: React.FC = () => {
 
   // --- Cases List View ---
   const CasesListView = () => (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in duration-500">
-      <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-72">
+    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in duration-500">
+      <div className="p-4 md:p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative flex-1 w-full sm:w-72">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
             <Input
               type="text"
@@ -991,23 +991,23 @@ export const LegalCasesTracking: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-100 transition-all min-h-[44px]"
           >
             <Filter size={16} />
             <span>تصفية</span>
           </Button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button
             variant="outline"
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-50 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-sm hover:bg-slate-50 transition-all min-h-[44px]"
           >
             <Download size={16} />
             <span>تصدير</span>
           </Button>
           <Button
             onClick={() => setShowCaseWizard(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-sm hover:bg-teal-700 shadow-md transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-sm hover:bg-teal-700 shadow-md transition-all min-h-[44px]"
           >
             <Plus size={16} />
             <span>تسجيل قضية جديدة</span>
@@ -1024,7 +1024,7 @@ export const LegalCasesTracking: React.FC = () => {
             exit={{ height: 0, opacity: 0 }}
             className="border-b border-slate-100 overflow-hidden"
           >
-            <div className="p-5 bg-slate-50/50 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 bg-slate-50/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="border-slate-200 rounded-xl">
                   <SelectValue placeholder="تصفية حسب الحالة" />
@@ -1056,8 +1056,8 @@ export const LegalCasesTracking: React.FC = () => {
       </AnimatePresence>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <Table>
+      <div className="overflow-x-auto -mx-4 md:mx-0">
+        <Table className="w-full min-w-[600px]">
           <TableHeader>
             <TableRow className="bg-slate-50/50 text-slate-500 border-b border-slate-100 hover:bg-slate-50/50">
               <TableHead className="px-6 py-4 font-medium w-10">
@@ -1266,11 +1266,11 @@ export const LegalCasesTracking: React.FC = () => {
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-sm border border-slate-200/50 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-teal-500/50 hover:shadow-sm transition-all duration-300 p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-slate-900 text-lg">جدول الجلسات</h3>
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs border-slate-200/50 text-slate-600">
+              <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
                 {futureHearings.length} جلسة قادمة
               </Badge>
             </div>
@@ -1281,7 +1281,7 @@ export const LegalCasesTracking: React.FC = () => {
                 <div
                   key={idx}
                   className={cn(
-                    "flex gap-4 p-4 rounded-2xl border transition-all bg-white",
+                    "flex gap-4 p-4 rounded-xl border transition-all bg-white",
                     event.daysUntil <= 3
                       ? "border-red-200 bg-red-50/50 shadow-sm"
                       : "border-slate-100 hover:border-rose-200 hover:shadow-md"
@@ -1352,7 +1352,7 @@ export const LegalCasesTracking: React.FC = () => {
         <div className="space-y-6">
           {/* Next Hearing Card */}
           {nextHearing ? (
-            <div className="bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl p-6 shadow-lg shadow-rose-200">
+            <div className="bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-xl p-6 shadow-lg shadow-rose-200">
               <div className="flex items-center gap-2 mb-1">
                 <CalendarDays className="w-5 h-5" />
                 <h3 className="font-bold text-lg">الجلسة القادمة</h3>
@@ -1360,7 +1360,7 @@ export const LegalCasesTracking: React.FC = () => {
               <p className="text-rose-100 text-sm mb-5">
                 {nextHearing.daysUntil === 0 ? 'اليوم!' : nextHearing.daysUntil === 1 ? 'غداً' : `باقي ${nextHearing.daysUntil} يوم`}
               </p>
-              <div className="bg-white/15 backdrop-blur-sm p-5 rounded-2xl mb-5 border border-white/20 shadow-inner">
+              <div className="bg-white/15 backdrop-blur-sm p-5 rounded-xl mb-5 border border-white/20 shadow-inner">
                 <div className="text-3xl font-bold mb-2">
                   {nextHearing.displayDate}
                 </div>
@@ -1379,7 +1379,7 @@ export const LegalCasesTracking: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <div className="bg-slate-100 text-slate-500 rounded-2xl p-6 border border-slate-200">
+            <div className="bg-slate-100 text-slate-500 rounded-xl p-6 border border-slate-200">
               <div className="text-center">
                 <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-50" />
                 <h3 className="font-medium">لا توجد جلسات قادمة</h3>
@@ -1389,7 +1389,7 @@ export const LegalCasesTracking: React.FC = () => {
           )}
 
           {/* Tasks Card - Linked to real case hearings */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <h3 className="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
               <Clock size={16} className="text-rose-500" />
               تذكيرات المهام
@@ -1436,7 +1436,7 @@ export const LegalCasesTracking: React.FC = () => {
   // --- Settings View ---
   const SettingsView = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <Card className="rounded-2xl border-slate-200 shadow-sm">
+      <Card className="rounded-xl border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">الإنشاء التلقائي للقضايا</CardTitle>
           <CardDescription className="text-slate-500">
@@ -1453,7 +1453,7 @@ export const LegalCasesTracking: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-slate-200 shadow-sm">
+      <Card className="rounded-xl border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">مولد الإنذارات القانونية</CardTitle>
           <CardDescription className="text-slate-500">

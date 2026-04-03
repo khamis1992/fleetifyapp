@@ -25,7 +25,7 @@ export function CaseSummary() {
       animate={{ opacity: 1, y: 0 }}
       className="mb-6"
     >
-      <Card className="bg-gradient-to-r from-teal-600 to-teal-700 text-white border-0 shadow-lg shadow-teal-500/20">
+      <Card className="bg-gradient-to-r from-teal-600 to-teal-700 text-white border-0 shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">

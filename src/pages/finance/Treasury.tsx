@@ -149,22 +149,22 @@ export default function Treasury() {
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'deposit':
-        return <ArrowDownRight className="h-4 w-4 text-emerald-600" />;
+        return <ArrowDownRight className="h-4 w-4 text-emerald-600" aria-hidden="true" />;
       case 'withdrawal':
-        return <ArrowUpRight className="h-4 w-4 text-rose-600" />;
+        return <ArrowUpRight className="h-4 w-4 text-rose-600" aria-hidden="true" />;
       default:
-        return <ArrowRightLeft className="h-4 w-4 text-sky-600" />;
+        return <ArrowRightLeft className="h-4 w-4 text-sky-600" aria-hidden="true" />;
     }
   };
 
   const getTransactionBadge = (type: string) => {
     switch (type) {
       case 'deposit':
-        return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">إيداع</Badge>;
+        return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200" aria-label="الحالة: إيداع">إيداع</Badge>;
       case 'withdrawal':
-        return <Badge className="bg-rose-100 text-rose-700 border-rose-200">سحب</Badge>;
+        return <Badge className="bg-rose-100 text-rose-700 border-rose-200" aria-label="الحالة: سحب">سحب</Badge>;
       default:
-        return <Badge className="bg-sky-100 text-sky-700 border-sky-200">تحويل</Badge>;
+        return <Badge className="bg-sky-100 text-sky-700 border-sky-200" aria-label="الحالة: تحويل">تحويل</Badge>;
     }
   };
 
@@ -203,7 +203,7 @@ export default function Treasury() {
       >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg">
               <Landmark className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -211,15 +211,15 @@ export default function Treasury() {
               <p className="text-sm text-slate-500">إدارة الحسابات المصرفية والمعاملات النقدية</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/finance/hub')}>
-              العودة للوحة التحكم
-            </Button>
-            <Button className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-lg" onClick={() => setIsCreateBankDialogOpen(true)}>
-              <Plus className="w-4 h-4 ml-2" />
-              حساب جديد
-            </Button>
-          </div>
+           <div className="flex gap-2">
+             <Button variant="outline" onClick={() => navigate('/finance/hub')} aria-label="رجوع">
+               العودة للوحة التحكم
+             </Button>
+             <Button className="bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white shadow-lg" onClick={() => setIsCreateBankDialogOpen(true)}>
+               <Plus className="w-4 h-4 ml-2" aria-hidden="true" />
+               حساب جديد
+             </Button>
+           </div>
         </div>
       </motion.div>
 
@@ -299,7 +299,7 @@ export default function Treasury() {
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
                   {bank.is_primary && (
-                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
+                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs" aria-label="الحالة: رئيسي">
                       رئيسي
                     </Badge>
                   )}
@@ -329,7 +329,7 @@ export default function Treasury() {
                   </Badge>
                   <Badge className={cn(
                     bank.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"
-                  )}>
+                  )} aria-label={`الحالة: ${bank.is_active ? 'نشط' : 'غير نشط'}`}>
                     {bank.is_active ? 'نشط' : 'غير نشط'}
                   </Badge>
                 </div>
@@ -374,16 +374,17 @@ export default function Treasury() {
             </div>
             <div className="flex gap-3">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
                 <Input
                   placeholder="البحث..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-10 w-64"
+                  aria-label="بحث"
                 />
               </div>
               <Button className="bg-gradient-to-r from-rose-500 to-orange-500" onClick={() => setIsCreateTransactionDialogOpen(true)}>
-                <Plus className="w-4 h-4 ml-2" />
+                <Plus className="w-4 h-4 ml-2" aria-hidden="true" />
                 معاملة جديدة
               </Button>
             </div>
@@ -396,16 +397,16 @@ export default function Treasury() {
           </div>
         ) : (
           <div className="overflow-x-auto -mx-4 md:mx-0">
-            <Table className="min-w-[600px]">
+            <Table className="min-w-[600px]" aria-label="جدول المعاملات">
               <TableHeader>
                 <TableRow className="bg-slate-50 border-b border-slate-100">
-                  <TableHead className="text-right font-semibold">رقم المعاملة</TableHead>
-                  <TableHead className="text-right font-semibold">التاريخ</TableHead>
-                  <TableHead className="text-right font-semibold">النوع</TableHead>
-                  <TableHead className="text-right font-semibold">المبلغ</TableHead>
-                  <TableHead className="text-right font-semibold">الوصف</TableHead>
-                  <TableHead className="text-right font-semibold">الحالة</TableHead>
-                  <TableHead className="text-right font-semibold">الإجراءات</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">رقم المعاملة</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">التاريخ</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">النوع</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">المبلغ</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">الوصف</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">الحالة</TableHead>
+                  <TableHead className="text-right font-semibold" scope="col">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -450,7 +451,7 @@ export default function Treasury() {
                           transaction.status === 'completed'
                             ? "bg-emerald-100 text-emerald-700 border-emerald-200"
                             : "bg-amber-100 text-amber-700 border-amber-200"
-                        )}>
+                        )} aria-label={`الحالة: ${transaction.status === 'completed' ? 'مكتملة' : 'معلقة'}`}>
                           {transaction.status === 'completed' ? 'مكتملة' : 'معلقة'}
                         </Badge>
                       </TableCell>

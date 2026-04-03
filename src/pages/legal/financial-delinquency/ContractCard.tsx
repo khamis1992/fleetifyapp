@@ -28,7 +28,7 @@ export const ContractCard = React.forwardRef<HTMLDivElement, ContractCardProps>(
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="rounded-2xl border-2 bg-card p-5 transition-all duration-300 hover:shadow-lg"
+      className="rounded-xl border-2 bg-card p-5 transition-all duration-300 hover:shadow-lg"
       style={{ borderColor: `hsl(${color} / 0.3)` }}
     >
       <div className="flex items-start justify-between mb-4">

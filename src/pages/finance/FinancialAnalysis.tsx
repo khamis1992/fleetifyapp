@@ -62,7 +62,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => (
   <motion.div
-    className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
+    className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-all border border-slate-100"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
@@ -218,13 +218,13 @@ const FinancialAnalysis = () => {
     <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
       {/* Hero Header */}
       <motion.div
-        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-2xl p-6 mb-6 text-white shadow-lg"
+        className="bg-gradient-to-r from-rose-500 to-orange-500 rounded-xl p-6 mb-6 text-white shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <PieChart className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -351,7 +351,7 @@ const FinancialAnalysis = () => {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-white" />
@@ -410,7 +410,7 @@ const FinancialAnalysis = () => {
             className="grid grid-cols-1 lg:grid-cols-2 gap-6"
           >
             {/* Financial Performance */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-white" />
@@ -443,7 +443,7 @@ const FinancialAnalysis = () => {
             </div>
 
             {/* Key Indicators */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
@@ -502,7 +502,7 @@ const FinancialAnalysis = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                   <Target className="w-5 h-5 text-white" />
@@ -617,7 +617,7 @@ const FinancialAnalysis = () => {
               <>
                 {/* Financial Health Score */}
                 {advancedAnalytics?.financialHealthScore && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center">
                         <Activity className="w-5 h-5 text-white" />
@@ -689,7 +689,7 @@ const FinancialAnalysis = () => {
 
                 {/* Cash Flow Analysis */}
                 {advancedAnalytics?.cashFlowAnalysis && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                         <Wallet className="w-5 h-5 text-white" />
@@ -743,7 +743,7 @@ const FinancialAnalysis = () => {
 
                 {/* Cost Center Performance */}
                 {advancedAnalytics?.costCenterPerformance && advancedAnalytics.costCenterPerformance.length > 0 && (
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <div className="bg-white rounded-xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                         <Target className="w-5 h-5 text-white" />
@@ -819,7 +819,7 @@ const FinancialAnalysis = () => {
             className="space-y-6"
           >
             {/* Forecasts */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-white" />
@@ -892,7 +892,7 @@ const FinancialAnalysis = () => {
 
             {/* Historical Comparison */}
             {analysisData?.historicalComparison && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
                     <LineChart className="w-5 h-5 text-white" />
@@ -954,7 +954,7 @@ const FinancialAnalysis = () => {
             className="space-y-6"
           >
             {ratioCategories.map((category, catIndex) => (
-              <div key={catIndex} className="bg-white rounded-2xl p-6 shadow-sm">
+              <div key={catIndex} className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className={cn(
                     "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center",

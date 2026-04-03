@@ -490,7 +490,7 @@ export function LegalDocuments() {
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-white to-slate-50 p-6 border border-slate-200"
+        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-50 via-white to-slate-50 p-6 border border-slate-200"
       >
         {/* Decorative elements */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(13,148,136,0.08),transparent_50%)]" />
@@ -826,7 +826,7 @@ export function LegalDocuments() {
           className="
             px-8 py-6 text-lg font-semibold
             bg-gradient-to-r from-teal-600 to-teal-700
-            text-white hover:from-teal-500 hover:to-teal-600
+            text-white hover:bg-teal-500
             shadow-[0_0_30px_rgba(13,148,136,0.4)]
             hover:shadow-[0_0_40px_rgba(13,148,136,0.6)]
             transition-all duration-300

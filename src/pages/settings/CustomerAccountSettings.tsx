@@ -7,7 +7,7 @@ export default function CustomerAccountSettingsPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 container mx-auto py-6 px-4 max-w-4xl">
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+          <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
             <CreditCard className="h-6 w-6 text-white" />
           </div>
           <div>

@@ -202,7 +202,7 @@ const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => {
   const colorStyles = {
-    primary: { bg: 'bg-gradient-to-br from-teal-500 to-teal-600', shadow: 'shadow-teal-500/20', border: 'border-teal-200' },
+    primary: { bg: 'bg-teal-500', shadow: 'shadow-teal-500/20', border: 'border-teal-200' },
     success: { bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-500/20', border: 'border-emerald-200' },
     warning: { bg: 'bg-gradient-to-br from-amber-500 to-amber-600', shadow: 'shadow-amber-500/20', border: 'border-amber-200' },
     danger: { bg: 'bg-gradient-to-br from-rose-500 to-rose-600', shadow: 'shadow-rose-500/20', border: 'border-rose-200' },
@@ -220,7 +220,7 @@ const StatCard: React.FC<StatCardProps> = ({
       transition={{ delay }}
       onClick={onClick}
       className={cn(
-        "relative overflow-hidden rounded-2xl border bg-white p-5 transition-all duration-300",
+        "relative overflow-hidden rounded-xl border bg-white p-5 transition-all duration-300",
         onClick && "cursor-pointer hover:shadow-lg hover:scale-[1.02]",
         style.border
       )}
@@ -308,7 +308,7 @@ const CustomerGridCard: React.FC<CustomerGridCardProps> = ({
     <motion.div
       variants={itemVariants}
       layout
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-300 hover:border-teal-300 hover:shadow-xl hover:shadow-teal-500/5"
+      className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white transition-all duration-300 hover:border-teal-300 hover:shadow-xl hover:shadow-teal-500/5"
     >
       {/* VIP Badge */}
       {isVIP && (
@@ -818,12 +818,12 @@ const CustomersPageNew: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50" dir="rtl">
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-[1600px] px-4 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             {/* Title */}
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500 shadow-sm">
                 <Users className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -1023,7 +1023,7 @@ const CustomersPageNew: React.FC = () => {
         ) : isLoading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-64 animate-pulse rounded-2xl bg-slate-200" />
+              <div key={i} className="h-64 animate-pulse rounded-xl bg-slate-200" />
             ))}
           </div>
         ) : error ? (
@@ -1041,7 +1041,7 @@ const CustomersPageNew: React.FC = () => {
         ) : filteredCustomers.length === 0 ? (
           <Card className="border-slate-200">
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-slate-100">
                 <SearchX className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900">لا توجد نتائج</h3>

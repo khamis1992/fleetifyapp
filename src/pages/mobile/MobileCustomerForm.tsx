@@ -245,7 +245,7 @@ export const MobileCustomerForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
         <div className="flex items-center gap-3 px-4 py-4">
           <button
             onClick={() => navigate(mode === 'edit' && customerId ? `/mobile/customers/${customerId}` : '/mobile/customers')}
@@ -407,8 +407,8 @@ export const MobileCustomerForm: React.FC = () => {
           type="submit"
           disabled={saving}
           className={cn(
-            'w-full py-4 rounded-2xl font-semibold shadow-lg transition-all',
-            'bg-gradient-to-r from-teal-500 to-teal-600 text-white',
+            'w-full py-4 rounded-xl font-semibold shadow-lg transition-all',
+            'bg-teal-500 text-white',
             'shadow-teal-500/30',
             saving && 'opacity-70 cursor-not-allowed'
           )}
@@ -463,8 +463,8 @@ const FormField: React.FC<FormFieldProps> = ({
           placeholder={placeholder}
           rows={3}
           className={cn(
-            'w-full px-4 py-3 rounded-2xl',
-            'bg-white/80 backdrop-blur-xl border border-slate-200/50',
+            'w-full px-4 py-3 rounded-xl',
+            'bg-white border border-slate-200',
             'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
             'transition-all duration-200 resize-none',
             error && 'border-red-300 focus:ring-red-500/50 focus:border-red-500'
@@ -478,8 +478,8 @@ const FormField: React.FC<FormFieldProps> = ({
           placeholder={placeholder}
           required={required}
           className={cn(
-            'w-full px-4 py-3 rounded-2xl',
-            'bg-white/80 backdrop-blur-xl border border-slate-200/50',
+            'w-full px-4 py-3 rounded-xl',
+            'bg-white border border-slate-200',
             'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
             'transition-all duration-200',
             error && 'border-red-300 focus:ring-red-500/50 focus:border-red-500'
@@ -511,8 +511,8 @@ const DateField: React.FC<DateFieldProps> = ({ label, value, onChange }) => {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
-            'w-full px-4 py-3 rounded-2xl',
-            'bg-white/80 backdrop-blur-xl border border-slate-200/50',
+            'w-full px-4 py-3 rounded-xl',
+            'bg-white border border-slate-200',
             'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
             'transition-all duration-200'
           )}

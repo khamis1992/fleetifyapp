@@ -104,11 +104,11 @@ export const DefaultersList: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="container mx-auto py-6 space-y-6">
         {/* Page Header */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+                <div className="p-3 rounded-xl bg-teal-500 shadow-sm">
                   <AlertTriangle className="h-8 w-8 text-white" />
                 </div>
                 <div>
@@ -130,7 +130,7 @@ export const DefaultersList: React.FC = () => {
                 <Button
                   onClick={handleCreateLegalCases}
                   disabled={autoCreateCases.isPending}
-                  className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 rounded-xl shadow-lg shadow-teal-500/20"
+                  className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
                 >
                   <Scale className="h-4 w-4 mr-2" />
                   إنشاء قضايا قانونية ({selectedCustomers.length})
@@ -142,10 +142,10 @@ export const DefaultersList: React.FC = () => {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-700">إجمالي المتأخرين</CardTitle>
-            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+            <div className="p-2 rounded-xl bg-teal-500 shadow-sm">
               <AlertTriangle className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -157,10 +157,10 @@ export const DefaultersList: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-700">إجمالي المبالغ المستحقة</CardTitle>
-            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+            <div className="p-2 rounded-xl bg-teal-500 shadow-sm">
               <DollarSign className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -172,10 +172,10 @@ export const DefaultersList: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-700">متوسط التأخير</CardTitle>
-            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20">
+            <div className="p-2 rounded-xl bg-teal-500 shadow-sm">
               <Calendar className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -193,11 +193,11 @@ export const DefaultersList: React.FC = () => {
       </div>
 
       {/* Defaulters Table */}
-      <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300">
+      <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-slate-900">تفاصيل المتأخرين</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleSelectAll} className="border-slate-200/50 hover:border-teal-500/30 rounded-xl">
+            <Button variant="outline" size="sm" onClick={handleSelectAll} className="border-slate-200 hover:border-teal-500/50 rounded-xl">
               {selectedCustomers.length === lateCustomers?.length ? 'إلغاء التحديد' : 'تحديد الكل'}
             </Button>
           </div>
@@ -307,7 +307,7 @@ export const DefaultersList: React.FC = () => {
 
       {/* Info Alert */}
       {lateCustomers && lateCustomers.length > 0 && (
-        <Alert className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+        <Alert className="bg-white border border-slate-200 rounded-xl">
           <FileText className="h-4 w-4 text-teal-600" />
           <AlertDescription className="text-slate-700">
             <strong>ملاحظة:</strong> يتم إدراج العملاء تلقائياً في هذه القائمة إذا لم يدفعوا حتى يوم 10 من كل شهر.

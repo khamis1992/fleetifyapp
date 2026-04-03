@@ -63,7 +63,7 @@ const Auth: React.FC = () => {
   if (showError || mountError || sessionError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6" dir="rtl">
-        <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl rounded-2xl p-8 border border-slate-800 text-center space-y-6">
+        <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl rounded-xl p-8 border border-slate-800 text-center space-y-6">
           <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto">
             <AlertTriangle className="w-8 h-8 text-amber-400" />
           </div>

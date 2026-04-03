@@ -106,10 +106,10 @@ export const MobileCollections: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-5 shadow-sm"
+            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20">
                 <DollarSign className="w-6 h-6 text-white" strokeWidth={2.5} />
               </div>
               <div className="flex-1">
@@ -178,8 +178,8 @@ export const MobileCollections: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="بحث عن عميل..."
               className={cn(
-                'w-full pr-10 pl-10 py-3 rounded-2xl',
-                'bg-white/80 backdrop-blur-xl border border-slate-200/50',
+                'w-full pr-10 pl-10 py-3 rounded-xl',
+                'bg-white border border-slate-200',
                 'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
                 'transition-all duration-200'
               )}
@@ -208,7 +208,7 @@ export const MobileCollections: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-8 text-center"
+              className="bg-white border border-slate-200 rounded-xl p-8 text-center"
             >
               <DollarSign className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <p className="text-slate-600 font-medium">

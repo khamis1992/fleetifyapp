@@ -921,8 +921,8 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl blur-xl opacity-20" />
-            <div className="relative p-3 bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-rose-600 rounded-xl blur-xl opacity-20" />
+            <div className="relative p-3 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -991,7 +991,7 @@ export const ReportGeneratorRedesigned: React.FC<ReportGeneratorProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.1 + index * 0.1 }}
                   className={cn(
-                    "group relative p-6 rounded-2xl border-2 transition-all duration-300",
+                    "group relative p-6 rounded-xl border-2 transition-all duration-300",
                     "bg-white hover:shadow-xl",
                     styles.border,
                     styles.hover

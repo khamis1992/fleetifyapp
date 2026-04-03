@@ -183,7 +183,7 @@ export const MobileCustomerDetails: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
         <div className="flex items-center gap-3 px-4 py-4">
           <button
             onClick={() => navigate('/mobile/customers')}
@@ -207,11 +207,11 @@ export const MobileCustomerDetails: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-6"
+          className="bg-white border border-slate-200 rounded-xl p-6"
         >
           <div className="flex items-center gap-4 mb-4">
             <div className={cn(
-              'w-16 h-16 rounded-2xl bg-gradient-to-br shadow-lg flex items-center justify-center text-white font-bold text-xl',
+              'w-16 h-16 rounded-xl bg-gradient-to-br shadow-lg flex items-center justify-center text-white font-bold text-xl',
               getAvatarColor(customer.first_name)
             )}>
               {getAvatarInitials(customer.first_name, customer.last_name)}
@@ -256,7 +256,7 @@ export const MobileCustomerDetails: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 space-y-3"
+          className="bg-white border border-slate-200 rounded-xl p-4 space-y-3"
         >
           <h3 className="font-semibold text-slate-900 flex items-center gap-2">
             <Phone className="w-4 h-4 text-teal-500" />
@@ -311,7 +311,7 @@ export const MobileCustomerDetails: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 space-y-3"
+          className="bg-white border border-slate-200 rounded-xl p-4 space-y-3"
         >
           <h3 className="font-semibold text-slate-900 flex items-center gap-2">
             <User className="w-4 h-4 text-teal-500" />
@@ -375,7 +375,7 @@ export const MobileCustomerDetails: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 space-y-3"
+            className="bg-white border border-slate-200 rounded-xl p-4 space-y-3"
           >
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
               <FileText className="w-4 h-4 text-teal-500" />
@@ -416,7 +416,7 @@ export const MobileCustomerDetails: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onClick={() => navigate(`/mobile/customers/${customer.id}/edit`)}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold shadow-lg shadow-teal-500/30"
+          className="w-full py-4 rounded-xl bg-teal-500 text-white font-semibold shadow-lg shadow-teal-500/30"
         >
           تعديل بيانات العميل
         </motion.button>

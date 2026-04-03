@@ -302,7 +302,7 @@ const QuickStatCard = ({
       variants={itemVariants}
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-300",
+        "relative overflow-hidden rounded-xl border border-slate-200 bg-white transition-all duration-300",
         "hover:shadow-lg hover:shadow-black/5"
       )}
     >
@@ -418,7 +418,7 @@ const ContractListItem = ({
       initial="rest"
       animate="rest"
       className={cn(
-        "group relative bg-white rounded-2xl border p-5 transition-all duration-300",
+        "group relative bg-white rounded-xl border p-5 transition-all duration-300",
         "hover:shadow-xl hover:shadow-black/5 hover:border-slate-300",
         "cursor-pointer"
       )}
@@ -584,7 +584,7 @@ const DraftCard = ({
 }) => (
   <motion.div
     variants={itemVariants}
-    className="bg-white rounded-2xl border border-slate-200/60 p-4 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 group"
+    className="bg-white rounded-xl border border-slate-200/60 p-4 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 group"
   >
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1 min-w-0">
@@ -968,12 +968,12 @@ function ContractsRedesigned() {
     <PageCustomizer pageId="contracts-page" title="" titleAr="">
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100" dir="rtl">
         {/* Header Section */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+        <header className="sticky top-0 z-40 bg-white border-b border-slate-200">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-4">
               {/* Title */}
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/25">
+                <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/25">
                   <FileSignature className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -989,7 +989,7 @@ function ContractsRedesigned() {
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => setShowContractWizard(true)}
-                        className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-500/25 transition-all duration-300 hover:shadow-xl"
+                        className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-500/25 transition-all duration-300 hover:shadow-xl"
                       >
                         <Plus className="w-4 h-4 ml-2" />
                         عقد جديد
@@ -1125,7 +1125,7 @@ function ContractsRedesigned() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-gradient-to-br from-violet-50 to-white rounded-2xl border border-violet-200/50 p-6"
+                className="bg-gradient-to-br from-violet-50 to-white rounded-xl border border-violet-200/50 p-6"
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -1151,7 +1151,7 @@ function ContractsRedesigned() {
           </AnimatePresence>
 
           {/* Search & Filters Bar */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4">
+          <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-4">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Search */}
               <div className="flex-1 relative">
@@ -1192,7 +1192,7 @@ function ContractsRedesigned() {
           </div>
 
           {/* Tabs & Content */}
-          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
             {/* Tabs */}
             <div className="border-b border-slate-200/60 bg-slate-50/50">
               <ScrollArea className="w-full whitespace-nowrap">
@@ -1250,7 +1250,7 @@ function ContractsRedesigned() {
                 <LateFinesSettings />
               ) : sortedContracts.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <div className="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-6">
                     <FileText className="w-10 h-10 text-slate-400" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-2">لا توجد عقود</h3>
@@ -1267,7 +1267,7 @@ function ContractsRedesigned() {
                       <p className="text-slate-500 mb-6">ابدأ بإنشاء عقد جديد</p>
                       <Button 
                         onClick={() => setShowContractWizard(true)}
-                        className="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl"
+                        className="bg-teal-500 text-white rounded-xl"
                       >
                         <Plus className="w-4 h-4 ml-2" />
                         إنشاء عقد جديد
@@ -1382,7 +1382,7 @@ function ContractsRedesigned() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full"
+                className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full"
               >
                 <ContractCreationProgress 
                   creationState={creationState} 
@@ -1420,7 +1420,7 @@ function ContractsRedesigned() {
         
         {/* Remove Legal Procedure Dialog */}
         <AlertDialog open={showRemoveLegalDialog} onOpenChange={setShowRemoveLegalDialog}>
-          <AlertDialogContent className="rounded-2xl" dir="rtl">
+          <AlertDialogContent className="rounded-xl" dir="rtl">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-emerald-600 flex items-center gap-2">
                 <CheckCircle className="w-5 h-5" />

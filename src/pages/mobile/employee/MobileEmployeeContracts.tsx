@@ -98,8 +98,8 @@ export const MobileEmployeeContracts: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="بحث في العقود..."
               className={cn(
-                'w-full pr-10 pl-10 py-3 rounded-2xl',
-                'bg-white/80 backdrop-blur-xl border border-slate-200/50',
+                'w-full pr-10 pl-10 py-3 rounded-xl',
+                'bg-white border border-slate-200',
                 'focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500',
                 'transition-all duration-200'
               )}
@@ -127,7 +127,7 @@ export const MobileEmployeeContracts: React.FC = () => {
                     'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2',
                     activeFilter === chip.id
                       ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-                      : 'bg-white/80 text-slate-600 border border-slate-200/50 hover:bg-slate-100'
+                      : 'bg-white/80 text-slate-600 border border-slate-200 hover:bg-slate-100'
                   )}
                 >
                   {chip.label}
@@ -158,7 +158,7 @@ export const MobileEmployeeContracts: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-8 text-center"
+              className="bg-white border border-slate-200 rounded-xl p-8 text-center"
             >
               <Filter className="w-12 h-12 text-slate-300 mx-auto mb-3" />
               <p className="text-slate-600 font-medium">

@@ -126,7 +126,7 @@ export default function HRSettings() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-6 space-y-6" dir="rtl">
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl shadow-lg shadow-teal-500/20">
+        <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
           <Settings className="h-6 w-6 text-white" />
         </div>
         <div>
@@ -137,7 +137,7 @@ export default function HRSettings() {
 
       <div className="grid gap-6">
         {/* إعدادات الحضور */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-teal-600" />
@@ -238,7 +238,7 @@ export default function HRSettings() {
         </Card>
 
         {/* إعدادات الرواتب */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
           <CardHeader>
             <div className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-teal-600" />
@@ -332,7 +332,7 @@ export default function HRSettings() {
         </Card>
 
         {/* إعدادات الإجازات */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -355,13 +355,13 @@ export default function HRSettings() {
                         description: ''
                       });
                     }}
-                    className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                    className="bg-teal-500 hover:bg-teal-600"
                   >
                     <Plus className="h-4 w-4 ml-2" />
                     إضافة نوع إجازة
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl">
+                <DialogContent className="bg-white border border-slate-200 rounded-xl">
                   <DialogHeader>
                     <DialogTitle className="text-slate-900">
                       {editingLeaveType ? 'تعديل نوع الإجازة' : 'إضافة نوع إجازة جديد'}
@@ -431,7 +431,7 @@ export default function HRSettings() {
                     <Button
                       onClick={editingLeaveType ? handleUpdateLeaveType : handleCreateLeaveType}
                       disabled={isCreatingLeaveType}
-                      className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+                      className="bg-teal-500 hover:bg-teal-600"
                     >
                       {editingLeaveType ? 'تحديث' : 'إضافة'}
                     </Button>
@@ -456,7 +456,7 @@ export default function HRSettings() {
                   {leaveTypes && leaveTypes.length > 0 ? (
                     <div className="space-y-2">
                       {leaveTypes.map((leaveType) => (
-                        <div key={leaveType.id} className="flex items-center justify-between p-3 border border-slate-200/50 rounded-xl hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/10 transition-all bg-white/50 backdrop-blur-sm">
+                        <div key={leaveType.id} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all bg-white/50 backdrop-blur-sm">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <h5 className="font-medium text-slate-900">{leaveType.type_name_ar || leaveType.type_name}</h5>
@@ -505,7 +505,7 @@ export default function HRSettings() {
         </Card>
 
         {/* إعدادات النظام */}
-        <Card className="bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
           <CardHeader>
             <CardTitle className="text-slate-900">إعدادات النظام</CardTitle>
             <CardDescription className="text-slate-600">إعدادات عامة للنظام والإشعارات</CardDescription>
@@ -567,7 +567,7 @@ export default function HRSettings() {
           <Button
             onClick={handleSaveSettings}
             disabled={isUpdating}
-            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700"
+            className="bg-teal-500 hover:bg-teal-600"
           >
             {isUpdating ? (
               <LoadingSpinner />

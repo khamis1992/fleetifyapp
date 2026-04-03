@@ -130,11 +130,11 @@ const StatCard: React.FC<{
     transition={{ duration: 0.5, delay }}
     whileHover={{ scale: 1.02, y: -4 }}
     className={cn(
-      "relative overflow-hidden rounded-2xl p-6",
+      "relative overflow-hidden rounded-xl p-6",
       "backdrop-blur-xl border",
       isDark 
         ? "bg-slate-900/60 border-slate-800/50" 
-        : "bg-white/80 border-slate-200/50",
+        : "bg-white/80 border-slate-200",
       "shadow-xl"
     )}
   >
@@ -205,11 +205,11 @@ const QuickAction: React.FC<{
     whileTap={{ scale: 0.95 }}
     onClick={onClick}
     className={cn(
-      "flex flex-col items-center gap-2 p-4 rounded-2xl",
+      "flex flex-col items-center gap-2 p-4 rounded-xl",
       "transition-all duration-300",
       isDark 
         ? "bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/50" 
-        : "bg-white/80 hover:bg-white border border-slate-200/50",
+        : "bg-white/80 hover:bg-white border border-slate-200",
       "backdrop-blur-xl shadow-lg"
     )}
   >
@@ -592,11 +592,11 @@ const DashboardV2: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className={cn(
-              "lg:col-span-2 rounded-2xl p-6",
+              "lg:col-span-2 rounded-xl p-6",
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200/50"
+                : "bg-white/80 border-slate-200"
             )}
           >
             <div className="flex items-center justify-between mb-6">
@@ -658,11 +658,11 @@ const DashboardV2: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
             className={cn(
-              "rounded-2xl p-6",
+              "rounded-xl p-6",
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200/50"
+                : "bg-white/80 border-slate-200"
             )}
           >
             <div className="flex items-center justify-between mb-4">
@@ -745,11 +745,11 @@ const DashboardV2: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             className={cn(
-              "rounded-2xl p-6",
+              "rounded-xl p-6",
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200/50"
+                : "bg-white/80 border-slate-200"
             )}
           >
             <div className="flex items-center justify-between mb-4">
@@ -839,11 +839,11 @@ const DashboardV2: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
             className={cn(
-              "rounded-2xl p-6",
+              "rounded-xl p-6",
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200/50"
+                : "bg-white/80 border-slate-200"
             )}
           >
             <h3 className={cn(

@@ -60,7 +60,7 @@ export default function AboutUs() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-2xl">
+            <div className="w-24 h-24 mx-auto mb-8 rounded-xl bg-teal-500 flex items-center justify-center shadow-2xl">
               <Users className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6">
@@ -117,9 +117,9 @@ export default function AboutUs() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8 hover:border-teal-500/30 transition-all"
+                className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8 hover:border-teal-500/50 transition-all"
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center mb-6">
                   <value.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">{value.title}</h3>
@@ -138,7 +138,7 @@ export default function AboutUs() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-8 lg:p-12"
+              className="bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-800 p-8 lg:p-12"
             >
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6 text-center">قصتنا</h2>
               <div className="space-y-4 text-slate-300 leading-relaxed">
@@ -173,7 +173,7 @@ export default function AboutUs() {
             <div className="flex flex-wrap justify-center gap-4">
               <a
                 href="mailto:info@fleetify.qa"
-                className="px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:shadow-teal-500/30 transition-all flex items-center gap-2"
+                className="px-8 py-4 bg-teal-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:shadow-teal-500/30 transition-all flex items-center gap-2"
               >
                 <Mail className="w-5 h-5" />
                 تواصل معنا
@@ -194,7 +194,7 @@ export default function AboutUs() {
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <span className="text-white font-bold">Fleetify</span>

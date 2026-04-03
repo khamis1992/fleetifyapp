@@ -311,7 +311,7 @@ const BillingCenter = () => {
       confirmed: { label: 'مؤكدة', className: 'bg-green-100 text-green-700' },
     };
     const config = configs[status] || { label: status, className: 'bg-slate-100 text-slate-700' };
-    return <Badge className={config.className}>{config.label}</Badge>;
+    return <Badge className={config.className} aria-label={`الحالة: ${config.label}`}>{config.label}</Badge>;
   };
 
   const openCancelPaymentDialog = (payment: any) => {
@@ -543,7 +543,7 @@ const BillingCenter = () => {
         {/* Invoices Tab */}
         <TabsContent value="invoices">
           <motion.div 
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
@@ -563,21 +563,21 @@ const BillingCenter = () => {
               </div>
             ) : (
               <div className="overflow-x-auto -mx-4 md:mx-0">
-                <Table className="min-w-[600px]">
+                <Table className="min-w-[600px]" aria-label="جدول الفواتير">
                   <TableHeader>
                     <TableRow className="bg-neutral-50">
-                      <TableHead className="w-12">
+                      <TableHead className="w-12" scope="col">
                         <Checkbox
                           checked={selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0}
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
-                      <TableHead className="text-right">رقم الفاتورة</TableHead>
-                      <TableHead className="text-right">العميل</TableHead>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-center">الإجراءات</TableHead>
+                      <TableHead className="text-right" scope="col">رقم الفاتورة</TableHead>
+                      <TableHead className="text-right" scope="col">العميل</TableHead>
+                      <TableHead className="text-right" scope="col">التاريخ</TableHead>
+                      <TableHead className="text-right" scope="col">المبلغ</TableHead>
+                      <TableHead className="text-right" scope="col">الحالة</TableHead>
+                      <TableHead className="text-center" scope="col">الإجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
@@ -603,6 +603,7 @@ const BillingCenter = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => { setSelectedInvoice(invoice); setIsPreviewOpen(true); }}
+                            aria-label="عرض"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -610,6 +611,7 @@ const BillingCenter = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => setEditingInvoice(invoice)}
+                            aria-label="تعديل"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -619,6 +621,7 @@ const BillingCenter = () => {
                               variant="ghost"
                               className="text-green-600"
                               onClick={() => { setSelectedInvoice(invoice); setShowPayDialog(true); }}
+                              aria-label="دفع"
                             >
                               <DollarSign className="w-4 h-4" />
                             </Button>
@@ -628,6 +631,7 @@ const BillingCenter = () => {
                             variant="ghost"
                             className="text-red-600"
                             onClick={() => { setInvoiceToDelete(invoice); setDeleteDialogOpen(true); }}
+                            aria-label="حذف"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -645,7 +649,7 @@ const BillingCenter = () => {
         {/* Payments Tab */}
         <TabsContent value="payments">
           <motion.div 
-            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
@@ -680,16 +684,16 @@ const BillingCenter = () => {
               </div>
             ) : (
               <div className="overflow-x-auto -mx-4 md:mx-0">
-                <Table className="min-w-[600px]">
+                <Table className="min-w-[600px]" aria-label="جدول المدفوعات">
                   <TableHeader>
                     <TableRow className="bg-neutral-50">
-                      <TableHead className="text-right">رقم الدفعة</TableHead>
-                      <TableHead className="text-right">العميل</TableHead>
-                      <TableHead className="text-right">التاريخ</TableHead>
-                      <TableHead className="text-right">المبلغ</TableHead>
-                      <TableHead className="text-right">طريقة الدفع</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                      <TableHead className="text-center">الإجراءات</TableHead>
+                      <TableHead className="text-right" scope="col">رقم الدفعة</TableHead>
+                      <TableHead className="text-right" scope="col">العميل</TableHead>
+                      <TableHead className="text-right" scope="col">التاريخ</TableHead>
+                      <TableHead className="text-right" scope="col">المبلغ</TableHead>
+                      <TableHead className="text-right" scope="col">طريقة الدفع</TableHead>
+                      <TableHead className="text-right" scope="col">الحالة</TableHead>
+                      <TableHead className="text-center" scope="col">الإجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
@@ -719,7 +723,7 @@ const BillingCenter = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => { setSelectedPayment(payment); setIsPaymentPreviewOpen(true); }}
-                            title="معاينة"
+                            aria-label="عرض"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -728,7 +732,7 @@ const BillingCenter = () => {
                             variant="ghost"
                             className="text-green-600"
                             onClick={() => handleSendPaymentVoucher(payment)}
-                            title="إرسال عبر واتساب"
+                            aria-label="إرسال عبر واتساب"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
@@ -738,7 +742,7 @@ const BillingCenter = () => {
                               variant="ghost"
                               className="text-red-600"
                               onClick={() => openCancelPaymentDialog(payment)}
-                              title="إلغاء الدفعة"
+                              aria-label="إلغاء الدفعة"
                               disabled={cancelPayment.isPending}
                             >
                               <XCircle className="w-4 h-4" />

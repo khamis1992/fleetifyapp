@@ -324,7 +324,7 @@ export default function SmartDocumentGenerator() {
                   >
                     <div
                       className={cn(
-                        'max-w-[85%] rounded-2xl px-5 py-4 shadow-subtle',
+                        'max-w-[85%] rounded-xl px-5 py-4 shadow-subtle',
                         message.type === 'user'
                           ? 'bg-primary text-primary-foreground rounded-br-md'
                           : 'bg-accent/50 text-foreground rounded-bl-md border border-border/50'
@@ -368,7 +368,7 @@ export default function SmartDocumentGenerator() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="bg-accent/50 border border-border/50 rounded-2xl rounded-bl-md px-5 py-4 shadow-subtle">
+                  <div className="bg-accent/50 border border-border/50 rounded-xl rounded-bl-md px-5 py-4 shadow-subtle">
                     <div className="flex items-center gap-3">
                       <div className="flex gap-1.5">
                         {[0, 1, 2].map((i) => (
@@ -397,7 +397,7 @@ export default function SmartDocumentGenerator() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="flex justify-center py-6"
                 >
-                  <div className="flex flex-col items-center gap-4 p-6 bg-accent/30 rounded-2xl border border-border/50">
+                  <div className="flex flex-col items-center gap-4 p-6 bg-accent/30 rounded-xl border border-border/50">
                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
                     <div className="text-center">
                       <p className="text-foreground font-medium">جاري إنشاء الكتاب...</p>

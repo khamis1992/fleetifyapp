@@ -107,7 +107,7 @@ const StatCard: React.FC<StatCardProps> = ({
   
   return (
     <motion.div 
-      className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all"
+      className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all"
       whileHover={{ y: -4, scale: 1.02 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -157,7 +157,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className={cn("bg-white rounded-2xl p-6 shadow-sm", className)}
+    className={cn("bg-white rounded-xl p-6 shadow-sm", className)}
   >
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-3">
@@ -285,7 +285,7 @@ const FleetReportsPage: React.FC = () => {
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -367,7 +367,7 @@ const FleetReportsPage: React.FC = () => {
           transition={{ delay: 0.2 }}
           className="mb-6"
         >
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
             <ReportFilters
               filters={filters}
               onFiltersChange={setFilters}
@@ -381,7 +381,7 @@ const FleetReportsPage: React.FC = () => {
 
         {/* Tabs Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="w-full justify-start bg-white rounded-2xl p-1 shadow-sm gap-1 overflow-x-auto">
+          <TabsList className="w-full justify-start bg-white rounded-xl p-1 shadow-sm gap-1 overflow-x-auto">
             <TabsTrigger 
               value="overview" 
               className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
@@ -1047,7 +1047,7 @@ const FleetReportsPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="mt-6 bg-gradient-to-l from-rose-50 to-orange-50 rounded-2xl p-6 border border-rose-100"
+          className="mt-6 bg-gradient-to-l from-rose-50 to-orange-50 rounded-xl p-6 border border-rose-100"
         >
           <div className="flex items-center gap-4">
             <div className="p-3 bg-gradient-to-l from-rose-500 to-orange-500 rounded-xl">
