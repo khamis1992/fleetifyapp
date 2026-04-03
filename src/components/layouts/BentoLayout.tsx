@@ -5,21 +5,65 @@
  */
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import BentoSidebar from '@/components/dashboard/bento/BentoSidebar';
 import { PageBreadcrumb } from '@/components/ui/page-breadcrumb';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Search, LayoutDashboard, Wallet, Car, Users, Settings } from 'lucide-react';
 import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
 import { TourProvider } from '@/components/tour-guide';
 import { VerificationTaskAlert } from '@/components/notifications/VerificationTaskAlert';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { cn } from '@/lib/utils';
 
 // Lazy load AI Chat Widget for performance
 const AIChatWidget = lazy(() => import('@/components/ai-chat-assistant/AIChatWidget'));
+
+// Mobile Bottom Navigation Configuration
+const bottomNavItems = [
+  { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard, href: '/dashboard' },
+  { id: 'finance', label: 'المالية', icon: Wallet, href: '/finance/overview' },
+  { id: 'fleet', label: 'الأسطول', icon: Car, href: '/fleet' },
+  { id: 'customers', label: 'العملاء', icon: Users, href: '/customers' },
+  { id: 'settings', label: 'المزيد', icon: Settings, href: '/settings' },
+];
+
+// Mobile Bottom Navigation Component
+const MobileBottomNav: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  return (
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 safe-area-pb">
+      <nav className="flex items-center justify-around h-16">
+        {bottomNavItems.map((item) => {
+          const isActive = location.pathname === item.href || 
+            (item.id === 'finance' && location.pathname.startsWith('/finance')) ||
+            (item.id === 'fleet' && location.pathname.startsWith('/fleet')) ||
+            (item.id === 'customers' && location.pathname.startsWith('/customers')) ||
+            (item.id === 'dashboard' && location.pathname === '/dashboard');
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => navigate(item.href)}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1 flex-1 h-full min-h-[44px]',
+                isActive ? 'text-primary' : 'text-neutral-400'
+              )}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+};
 
 interface BentoLayoutProps {
   children?: React.ReactNode;
@@ -79,7 +123,13 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           <span className="font-bold text-neutral-900">Fleetify</span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-600"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             <NotificationBell />
             <TaskNotificationBell />
           </div>
@@ -139,6 +189,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
 
         {/* Verification Task Alert Modal */}
         <VerificationTaskAlert />
+
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav />
       </div>
     </TourProvider>
   );
