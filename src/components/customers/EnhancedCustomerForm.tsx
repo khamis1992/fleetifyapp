@@ -393,7 +393,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
               <FormLabel className="text-slate-700 font-medium">نوع العميل *</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                  <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                     <SelectValue placeholder="اختر نوع العميل" />
                   </SelectTrigger>
                 </FormControl>
@@ -432,7 +432,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     <Input 
                       {...field} 
                       placeholder="أدخل الاسم الأول" 
-                      className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     />
                   </FormControl>
                   <FormMessage />
@@ -452,7 +452,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     <Input
                       {...field}
                       placeholder="أدخل اسم العائلة"
-                      className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     />
                   </FormControl>
                   <FormMessage />
@@ -476,7 +476,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                   <Input 
                     {...field} 
                     placeholder="أدخل اسم الشركة" 
-                    className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                   />
                 </FormControl>
                 <FormMessage />
@@ -505,7 +505,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     <Input 
                       {...field} 
                       placeholder="أدخل رقم البطاقة المدنية" 
-                      className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     />
                   </FormControl>
                   <FormMessage />
@@ -532,7 +532,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-right font-normal bg-white/80 backdrop-blur-sm border-teal-200/50 hover:border-teal-300 transition-all",
+                              "w-full justify-start text-right font-normal bg-white dark:bg-slate-900 border-teal-200/50 hover:border-teal-300 transition-all",
                               !field.value && "text-muted-foreground",
                               isExpired && "border-red-500 text-red-500 hover:border-red-600"
                             )}
@@ -574,7 +574,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     <Input 
                       {...field} 
                       placeholder="أدخل الجنسية (مثال: قطري، مصري، هندي)" 
-                      className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     />
                   </FormControl>
                   <FormMessage />
@@ -594,7 +594,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     <Input 
                       {...field} 
                       placeholder="أدخل رقم الجواز" 
-                      className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                      className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     />
                   </FormControl>
                   <FormMessage />
@@ -650,7 +650,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-right font-normal bg-white/80 backdrop-blur-sm border-teal-200/50 hover:border-teal-300 transition-all",
+                              "w-full justify-start text-right font-normal bg-white dark:bg-slate-900 border-teal-200/50 hover:border-teal-300 transition-all",
                               !field.value && "text-muted-foreground",
                               isExpired && "border-red-500 text-red-500 hover:border-red-600"
                             )}
@@ -723,7 +723,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                   <Input
                     {...field}
                     placeholder="أدخل رقم الهاتف"
-                    className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     dir="ltr"
                   />
                 </FormControl>
@@ -748,7 +748,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     {...field}
                     type="email"
                     placeholder="أدخل البريد الإلكتروني"
-                    className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                     dir="ltr"
                   />
                 </FormControl>
@@ -777,7 +777,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     {...field} 
                     value={field.value || ''}
                     placeholder="أدخل العنوان" 
-                    className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                   />
                 </FormControl>
                 <FormMessage />
@@ -795,7 +795,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     {...field} 
                     value={field.value || ''}
                     placeholder="أدخل المدينة" 
-                    className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                   />
                 </FormControl>
                 <FormMessage />
@@ -813,7 +813,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                     {...field} 
                     value={field.value || ''}
                     placeholder="أدخل البلد" 
-                    className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                    className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                   />
                 </FormControl>
                 <FormMessage />
@@ -837,7 +837,7 @@ export const EnhancedCustomerForm: React.FC<EnhancedCustomerFormProps> = ({
                 <Textarea
                   {...field}
                   placeholder="أدخل أي ملاحظات إضافية..."
-                  className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all min-h-[100px]"
+                  className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all min-h-[100px]"
                 />
               </FormControl>
               <FormMessage />
@@ -1272,7 +1272,7 @@ const QuickCustomerDialogContent: React.FC<{
             <Input
               {...form.register('full_name')}
               placeholder="أدخل اسم العميل"
-              className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+              className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
             />
             {form.formState.errors.full_name && (
               <p className="text-xs text-red-500 mt-1">{form.formState.errors.full_name.message as string}</p>
@@ -1287,7 +1287,7 @@ const QuickCustomerDialogContent: React.FC<{
             <Input
               {...form.register('phone')}
               placeholder="أدخل رقم الهاتف"
-              className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+              className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
               dir="ltr"
             />
             {form.formState.errors.phone && (
@@ -1304,7 +1304,7 @@ const QuickCustomerDialogContent: React.FC<{
               <Input
                 {...form.register('national_id')}
                 placeholder="أدخل الرقم الشخصي"
-                className={cn("bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all", duplicateCheck.exists && "border-amber-500")}
+                className={cn("bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all", duplicateCheck.exists && "border-amber-500")}
                 dir="ltr"
               />
               {duplicateCheck.checking && (
@@ -1339,7 +1339,7 @@ const QuickCustomerDialogContent: React.FC<{
                     });
                     form.reset();
                   }}
-                  className="mt-2 w-full border-amber-300 bg-white/80 backdrop-blur-sm hover:bg-amber-50 hover:border-amber-400 transition-all"
+                  className="mt-2 w-full border-amber-300 bg-white dark:bg-slate-900 hover:bg-amber-50 hover:border-amber-400 transition-all"
                 >
                   <CheckCircle className="h-4 w-4 ml-1" />
                   استخدام العميل الموجود

@@ -331,7 +331,7 @@ const ReportsAndAnalysis = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <TabsList className="bg-white/80 backdrop-blur-sm p-1.5 rounded-xl shadow-sm">
+          <TabsList className="bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm">
             {TABS.map((tab) => (
               <TabsTrigger
                 key={tab.id}

@@ -233,7 +233,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 bg-white rounded-3xl" dir="rtl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 bg-white rounded-xl" dir="rtl">
         {/* Header */}
         <DialogHeader className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-l from-teal-500 via-teal-600 to-emerald-600" />

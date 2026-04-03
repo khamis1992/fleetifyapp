@@ -124,7 +124,7 @@ export const PropertyPerformanceWidget: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <Card className="bg-white/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-300">
+      <Card className="bg-white dark:bg-slate-900 shadow-xl hover:shadow-sm transition-all duration-300">
         <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">

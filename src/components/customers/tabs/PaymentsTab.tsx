@@ -185,7 +185,7 @@ const PaymentsTab = ({ payments, navigate, onAddPayment, customerName, customerP
       </div>
 
       {payments.length > 0 ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-teal-100 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-teal-100 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200">
               <tr>

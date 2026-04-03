@@ -193,7 +193,7 @@ export const ForecastingSection: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-slate-900">توقعات الإيرادات</h3>
@@ -281,7 +281,7 @@ export const ForecastingSection: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-slate-900">تقويم الحجوزات</h3>

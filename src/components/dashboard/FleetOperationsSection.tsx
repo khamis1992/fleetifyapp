@@ -173,7 +173,7 @@ export const FleetOperationsSection: React.FC = () => {
     return (
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="glass-card rounded-3xl p-6 animate-pulse">
+          <div key={i} className="glass-card rounded-xl p-6 animate-pulse">
             <div className="h-6 bg-slate-200 rounded mb-4"></div>
             <div className="h-64 bg-slate-200 rounded"></div>
           </div>
@@ -189,7 +189,7 @@ export const FleetOperationsSection: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="mb-6">
           <h3 className="text-lg font-bold text-slate-900">حالة الأسطول</h3>
@@ -254,7 +254,7 @@ export const FleetOperationsSection: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900">جدول الصيانة</h3>
@@ -312,7 +312,7 @@ export const FleetOperationsSection: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900">أداء المركبات</h3>

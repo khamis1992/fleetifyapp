@@ -76,7 +76,7 @@ export function EnterpriseLiveDemo() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden"
+            className="bg-white rounded-xl shadow-sm border-2 border-slate-200 overflow-hidden"
           >
             {/* Dashboard Header */}
             <div className="bg-slate-900 p-6">

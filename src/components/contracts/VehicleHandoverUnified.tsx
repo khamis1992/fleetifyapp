@@ -717,7 +717,7 @@ export function VehicleHandoverUnified({
   return (
     <div className={cn('min-h-screen bg-gradient-to-br', gradientBg, 'font-sans')}>
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -814,7 +814,7 @@ export function VehicleHandoverUnified({
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
           {/* Step Header */}
           <div className={cn('bg-gradient-to-r', gradientHeader, 'px-8 py-6 text-white')}>
             <div className="flex items-center justify-between">

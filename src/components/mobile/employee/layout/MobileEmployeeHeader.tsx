@@ -57,7 +57,7 @@ export const MobileEmployeeHeader: React.FC<MobileEmployeeHeaderProps> = ({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate(-1)}
-            className="p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50 hover:bg-white transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-white transition-colors"
           >
             <ArrowRight className="w-5 h-5 text-slate-600" />
           </motion.button>
@@ -67,7 +67,7 @@ export const MobileEmployeeHeader: React.FC<MobileEmployeeHeaderProps> = ({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onMenuClick}
-            className="p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50 hover:bg-white transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-white transition-colors"
           >
             <Menu className="w-5 h-5 text-slate-600" />
           </motion.button>
@@ -87,7 +87,7 @@ export const MobileEmployeeHeader: React.FC<MobileEmployeeHeaderProps> = ({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onRefresh}
-            className="p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50 hover:bg-white transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-white transition-colors"
           >
             <RefreshCw className="w-5 h-5 text-slate-600" />
           </motion.button>
@@ -97,7 +97,7 @@ export const MobileEmployeeHeader: React.FC<MobileEmployeeHeaderProps> = ({
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/mobile/employee/notifications')}
-            className="relative p-2 rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/50 hover:bg-white transition-colors"
+            className="relative p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-white transition-colors"
           >
             <Bell className="w-5 h-5 text-slate-600" />
             {stats.unread > 0 && (

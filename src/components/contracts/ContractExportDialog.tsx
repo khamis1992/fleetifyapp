@@ -509,7 +509,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-teal-50/30 border-0 rounded-3xl shadow-2xl">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-gradient-to-br from-slate-50 to-teal-50/30 border-0 rounded-xl shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-6 text-white">
           <div className="flex items-center justify-between">
@@ -554,7 +554,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
         {/* Content */}
         <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
           {/* Section Tabs */}
-          <div className="flex gap-2 p-1 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50">
+          <div className="flex gap-2 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50">
             {[
               { id: 'format', label: 'نوع الملف', icon: FileText },
               { id: 'filters', label: 'الفلاتر', icon: Filter },
@@ -627,7 +627,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                 className="space-y-4"
               >
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4">
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 p-4">
                     <Label className="flex items-center gap-2 text-slate-700 mb-3">
                       <Calendar className="w-4 h-4 text-teal-500" />
                       نطاق التاريخ
@@ -645,7 +645,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                     </Select>
                   </div>
 
-                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4">
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 p-4">
                     <Label className="flex items-center gap-2 text-slate-700 mb-3">
                       <BarChart3 className="w-4 h-4 text-teal-500" />
                       حالة العقد
@@ -743,7 +743,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
 
                 {dateRange === 'custom' && (
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 p-4">
                       <Label className="text-slate-700 mb-3 block">من تاريخ</Label>
                       <Input
                         type="date"
@@ -752,7 +752,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                         className="bg-white/50 border-slate-200/50 rounded-xl"
                       />
                     </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 p-4">
                       <Label className="text-slate-700 mb-3 block">إلى تاريخ</Label>
                       <Input
                         type="date"
@@ -764,7 +764,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                   </div>
                 )}
 
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 p-4">
                   <Label className="flex items-center gap-2 text-slate-700 mb-3">
                     <FileText className="w-4 h-4 text-teal-500" />
                     نوع العقد
@@ -793,7 +793,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-3"
               >
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 p-4">
                   <h4 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                     <Settings2 className="w-4 h-4 text-teal-500" />
                     البيانات المضمنة في التقرير
@@ -867,7 +867,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 bg-white/80 backdrop-blur-sm border-t border-slate-200/50">
+        <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-200/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {selectedFormat && (

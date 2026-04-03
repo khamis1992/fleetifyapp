@@ -53,7 +53,7 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl">
+      <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl">
         <CardContent className="flex items-center justify-center h-32">
           <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
         </CardContent>
@@ -63,7 +63,7 @@ export const VerificationTasksList: React.FC<VerificationTasksListProps> = ({
 
   return (
     <Card className={cn(
-      'bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+      'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
       compact && 'border-0 shadow-none'
     )}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
@@ -135,7 +135,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onOpen }) => {
 
   return (
     <div
-      className="p-4 rounded-2xl border bg-white/80 backdrop-blur-xl hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all cursor-pointer group"
+      className="p-4 rounded-2xl border bg-white dark:bg-slate-900 hover:border-orange-500/30 hover:shadow-lg hover:shadow-orange-500/10 transition-all cursor-pointer group"
       onClick={() => onOpen(task.id)}
     >
       <div className="flex items-start justify-between gap-4">

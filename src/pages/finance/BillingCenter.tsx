@@ -482,7 +482,7 @@ const BillingCenter = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center justify-between">
-          <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-xl">
+          <TabsList className="bg-white dark:bg-slate-900 p-1 rounded-xl">
             <TabsTrigger 
               value="invoices" 
               className="data-[state=active]:bg-rose-500 data-[state=active]:text-white rounded-lg px-6"

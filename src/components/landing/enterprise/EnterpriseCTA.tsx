@@ -40,7 +40,7 @@ export function EnterpriseCTA() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            className="inline-flex w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 items-center justify-center mb-8 shadow-2xl shadow-amber-500/30"
+            className="inline-flex w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 items-center justify-center mb-8 shadow-sm shadow-amber-500/30"
           >
             <Sparkles className="w-10 h-10 text-white" />
           </motion.div>

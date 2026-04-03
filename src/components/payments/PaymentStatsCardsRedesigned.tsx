@@ -259,8 +259,8 @@ export function PaymentStatsCardsRedesigned() {
                     variant={stat.change.trend === 'up' ? 'default' : 'secondary'}
                     className={`flex items-center gap-1 backdrop-blur-sm ${
                       stat.change.trend === 'up'
-                        ? 'bg-white/80 text-emerald-700 hover:bg-white'
-                        : 'bg-white/80 text-red-700 hover:bg-white'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        : 'bg-white dark:bg-slate-900 text-red-700 dark:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                     } shadow-sm`}
                   >
                     {stat.change.trend === 'up' ? (

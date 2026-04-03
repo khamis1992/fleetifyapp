@@ -168,7 +168,7 @@ export const FleetAvailabilityWidget: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4" ref={chartRef}>
           {/* Availability Percentage */}
-          <div className="p-4 rounded-lg bg-white/80 border border-teal-200/50">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-muted-foreground">نسبة التوافر</span>
               <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">

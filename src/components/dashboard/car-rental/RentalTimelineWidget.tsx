@@ -250,7 +250,7 @@ export const RentalTimelineWidget: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4" ref={chartRef}>
           {/* Date Range Display */}
-          <div className="p-3 rounded-lg bg-white/80 border border-indigo-200/50 text-center">
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-center">
             <span className="text-sm font-medium text-muted-foreground">
               {format(startDate, 'dd MMM yyyy', { locale: ar })} -{' '}
               {format(endDate, 'dd MMM yyyy', { locale: ar })}
@@ -288,7 +288,7 @@ export const RentalTimelineWidget: React.FC = () => {
                 return (
                   <div
                     key={vehicle.id}
-                    className="p-3 rounded-lg bg-white/80 border border-indigo-200/50"
+                    className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800"
                   >
                     <div className="flex items-start gap-3">
                       {/* Vehicle Name */}

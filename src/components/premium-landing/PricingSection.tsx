@@ -182,12 +182,12 @@ export function PricingSection() {
               )}
 
               {/* Glow Effect */}
-              <div className={`absolute -inset-0.5 bg-gradient-to-r ${plan.color} rounded-3xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-500`} />
+              <div className={`absolute -inset-0.5 bg-gradient-to-r ${plan.color} rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-500`} />
 
               {/* Card */}
               <div className={`relative h-full bg-card/50 backdrop-blur-sm border ${
                 plan.popular ? 'border-primary/50 shadow-elevated' : 'border-border/50'
-              } rounded-3xl p-8 hover:border-primary/30 transition-all duration-300`}>
+              } rounded-xl p-8 hover:border-primary/30 transition-all duration-300`}>
                 {/* Icon */}
                 <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${plan.color} mb-4 shadow-lg`}>
                   <plan.icon className="h-6 w-6 text-white" />

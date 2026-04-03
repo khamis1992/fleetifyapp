@@ -8,14 +8,6 @@ interface GlassCardProps {
   hover?: boolean;
 }
 
-/**
- * GlassCard - Reusable glass-morphism card component
- *
- * Usage:
- * <GlassCard>Content</GlassCard>
- * <GlassCard hover>Clickable card</GlassCard>
- * <GlassCard noPadding>Custom padding content</GlassCard>
- */
 export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   className,
@@ -25,8 +17,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   return (
     <div
       className={cn(
-        'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl transition-all duration-300 shadow-sm',
-        hover && 'hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 cursor-pointer',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-300 shadow-sm',
+        hover && 'hover:border-teal-500/50 hover:shadow-md cursor-pointer',
         !noPadding && 'p-6',
         className
       )}

@@ -361,7 +361,7 @@ export function VehicleDocumentsPanel({ vehicleId, documents = [], onDocumentAdd
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
+      className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow"
     >
       {/* العنوان وزر الرفع */}
       <div className="flex items-center justify-between mb-5">

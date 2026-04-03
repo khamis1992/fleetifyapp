@@ -17,7 +17,7 @@ const PhoneNumbersTab = ({ customer }: { customer: any }) => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm"
+      className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-teal-100 shadow-sm"
     >
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">

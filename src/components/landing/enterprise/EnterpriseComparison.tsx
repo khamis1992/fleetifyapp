@@ -185,14 +185,14 @@ export function EnterpriseComparison() {
 
             {/* Slider Handle */}
             <div
-              className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl cursor-col-resize z-20"
+              className="absolute top-0 bottom-0 w-1 bg-white shadow-sm cursor-col-resize z-20"
               style={{ left: `${sliderPosition}%` }}
               onMouseDown={(e) => {
                 e.stopPropagation();
                 setIsDragging(true);
               }}
             >
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-col-resize hover:scale-110 transition-transform">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center cursor-col-resize hover:scale-110 transition-transform">
                 <div className="w-1 h-6 bg-slate-300 rounded-full absolute"></div>
                 <div className="w-1 h-6 bg-slate-300 rounded-full absolute rotate-90"></div>
               </div>

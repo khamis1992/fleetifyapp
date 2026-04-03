@@ -127,7 +127,7 @@ export const MobileEmployeeContracts: React.FC = () => {
                     'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2',
                     activeFilter === chip.id
                       ? 'bg-teal-500 text-white shadow-md shadow-teal-500/20'
-                      : 'bg-white/80 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
                   )}
                 >
                   {chip.label}

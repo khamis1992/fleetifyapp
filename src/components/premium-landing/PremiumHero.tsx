@@ -177,13 +177,13 @@ export function PremiumHero() {
             className="relative hidden lg:block"
           >
             {/* Glow Effect */}
-            <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-3xl" />
+            <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-xl" />
             
             {/* Main Card */}
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="relative bg-card/50 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-elevated"
+              className="relative bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-8 shadow-elevated"
             >
               {/* Window Controls */}
               <div className="flex items-center gap-2 mb-6">

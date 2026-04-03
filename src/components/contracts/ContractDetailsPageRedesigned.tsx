@@ -689,7 +689,7 @@ const VehicleTab = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-gradient-to-br from-[#00A896] via-[#008F7A] to-[#007A68] rounded-3xl p-6 text-white relative overflow-hidden"
+        className="bg-gradient-to-br from-[#00A896] via-[#008F7A] to-[#007A68] rounded-xl p-6 text-white relative overflow-hidden"
       >
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">

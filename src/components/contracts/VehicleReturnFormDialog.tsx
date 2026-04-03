@@ -627,7 +627,7 @@ export const VehicleReturnFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden rounded-3xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden rounded-xl">
         <DialogHeader className="px-8 pt-8 pb-4 border-b border-neutral-100 bg-gradient-to-br from-teal-50 to-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

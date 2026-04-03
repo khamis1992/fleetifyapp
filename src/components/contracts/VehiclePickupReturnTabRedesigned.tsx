@@ -443,7 +443,7 @@ const EmptyState = ({ type, onCreate }: { type: 'pickup' | 'return'; onCreate: (
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "w-24 h-24 rounded-3xl bg-gradient-to-br flex items-center justify-center mx-auto mb-6",
+          "w-24 h-24 rounded-xl bg-gradient-to-br flex items-center justify-center mx-auto mb-6",
           isPickup ? "from-teal-50 to-teal-100" : "from-amber-50 to-amber-100"
         )}
       >

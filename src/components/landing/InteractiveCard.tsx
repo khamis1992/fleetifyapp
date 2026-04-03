@@ -65,7 +65,7 @@ export function InteractiveCard({ children, className = '', glowColor = 'hsl(var
         }}
         transition={{ duration: 0.3 }}
       />
-      <Card className="relative bg-card/80 backdrop-blur-md border-border/50 shadow-2xl">
+      <Card className="relative bg-card/80 backdrop-blur-md border-border/50 shadow-sm">
         <CardContent className="p-6" style={{ transform: 'translateZ(75px)' }}>
           {children}
         </CardContent>

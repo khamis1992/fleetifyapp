@@ -113,7 +113,7 @@ const SuperAdminSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="security" className="space-y-6">
-            <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl">
+            <TabsList className="grid grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-2 bg-white dark:bg-slate-900 border border-slate-200 rounded-xl">
               {settingsTabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}

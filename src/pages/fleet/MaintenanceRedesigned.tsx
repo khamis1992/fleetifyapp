@@ -287,7 +287,7 @@ const AlertCard: React.FC<AlertCardProps> = ({
     <div className="flex-1">
       <p className="text-sm font-semibold text-slate-900">{title}</p>
     </div>
-    <span className="px-3 py-1 rounded-full bg-white/80 text-sm font-bold">{count}</span>
+    <span className="px-3 py-1 rounded-full bg-white dark:bg-slate-900 text-sm font-bold">{count}</span>
   </motion.div>
 );
 

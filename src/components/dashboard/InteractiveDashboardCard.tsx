@@ -92,7 +92,7 @@ export function InteractiveDashboardCard({
         gradient 
           ? 'bg-gradient-to-br from-card via-card/90 to-card/80' 
           : 'bg-card/90'
-        } backdrop-blur-md border-border/50 shadow-xl hover:shadow-2xl hover:border-primary/20`}>
+        } backdrop-blur-md border-border/50 shadow-xl hover:shadow-sm hover:border-primary/20`}>
         {(title || Icon) && (
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">

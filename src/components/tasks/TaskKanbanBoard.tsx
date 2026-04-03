@@ -157,7 +157,7 @@ const TaskCard: React.FC<{
       animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className={cn(
-        'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 cursor-pointer hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 cursor-pointer hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
         isDragging && 'shadow-lg ring-2 ring-teal-500'
       )}
       onClick={onClick}
@@ -309,7 +309,7 @@ const KanbanColumn: React.FC<{
       {/* Column Header */}
       <div
         className={cn(
-          'flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/80 backdrop-blur-xl',
+          'flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white dark:bg-slate-900',
         )}
       >
         <div className={cn('flex items-center gap-2', column.color)}>

@@ -142,7 +142,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
   }
 
   return (
-    <Card className={cn('bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -301,7 +301,7 @@ export const PersonalReminders: React.FC<PersonalRemindersProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     className={cn(
-                      'flex items-center gap-3 p-3 rounded-2xl border bg-white/80 backdrop-blur-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+                      'flex items-center gap-3 p-3 rounded-2xl border bg-white dark:bg-slate-900 hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
                       reminder.is_completed && 'opacity-50'
                     )}
                   >

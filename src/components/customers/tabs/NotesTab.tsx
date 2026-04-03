@@ -288,7 +288,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
       </div>
 
       {/* القسم الثاني: سجل التواصل والملاحظات */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-teal-100 shadow-sm">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
@@ -389,7 +389,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="اكتب ملاحظتك هنا..."
-                className="min-h-[100px] border-teal-200 focus:border-teal-500 focus:ring-teal-500/20 bg-white/80"
+                className="min-h-[100px] border-teal-200 focus:border-teal-500 focus:ring-teal-500/20 bg-white dark:bg-slate-900"
               />
               <div className="flex justify-end gap-2">
                 <Button
@@ -440,7 +440,7 @@ const NotesTab = ({ customerId, customerPhone, companyId }: { customerId: string
                 <div className="absolute right-3 w-6 h-6 rounded-full bg-white border-2 border-teal-300 flex items-center justify-center shadow-sm">
                   {getActivityIcon(activity.note_type, activity.call_status)}
                 </div>
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-teal-100 hover:border-teal-300 hover:shadow-md transition-all">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-teal-100 hover:border-teal-300 hover:shadow-md transition-all">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs border-teal-200 text-teal-700 bg-teal-50/50">

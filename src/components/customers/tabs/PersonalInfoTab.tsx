@@ -30,7 +30,7 @@ const PersonalInfoTab = ({ customer }: { customer: any }) => {
       animate={{ opacity: 1, y: 0 }}
       className="grid grid-cols-1 lg:grid-cols-2 gap-6"
     >
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
             <User className="w-5 h-5 text-white" />
@@ -47,7 +47,7 @@ const PersonalInfoTab = ({ customer }: { customer: any }) => {
         </div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-teal-100 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
             <MapPin className="w-5 h-5 text-white" />

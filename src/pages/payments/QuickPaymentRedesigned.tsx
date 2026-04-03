@@ -91,7 +91,7 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 border-b border-neutral-200/50 shadow-sm"
+        className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-neutral-200 dark:border-neutral-800 shadow-sm"
       >
         <div className="flex items-center justify-between px-6 py-4">
           {/* Left side - Title & Breadcrumb */}

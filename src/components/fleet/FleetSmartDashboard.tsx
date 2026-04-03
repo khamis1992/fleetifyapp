@@ -269,7 +269,7 @@ export const FleetSmartDashboard: React.FC<FleetSmartDashboardProps> = ({
   const { data: stats, isLoading } = useVehicleStats();
 
   if (isLoading || !stats) {
-    return <div className="h-64 bg-neutral-50 rounded-3xl animate-pulse" />;
+    return <div className="h-64 bg-neutral-50 rounded-xl animate-pulse" />;
   }
 
   // Group Definitions

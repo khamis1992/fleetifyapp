@@ -1851,7 +1851,7 @@ export const DelinquentCustomersTab: React.FC = () => {
           ) : !customers || customers.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-80 text-center rounded-2xl border bg-card p-8">
               <div
-                className="flex h-24 w-24 items-center justify-center rounded-3xl mb-6 shadow-lg"
+                className="flex h-24 w-24 items-center justify-center rounded-xl mb-6 shadow-lg"
                 style={{ backgroundColor: `hsl(${colors.success} / 0.1)` }}
               >
                 <CheckCircle className="w-12 h-12" style={{ color: `hsl(${colors.success})` }} />

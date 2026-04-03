@@ -134,7 +134,7 @@ const StatCard: React.FC<{
       "backdrop-blur-xl border",
       isDark 
         ? "bg-slate-900/60 border-slate-800/50" 
-        : "bg-white/80 border-slate-200",
+        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800",
       "shadow-xl"
     )}
   >
@@ -209,7 +209,7 @@ const QuickAction: React.FC<{
       "transition-all duration-300",
       isDark 
         ? "bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/50" 
-        : "bg-white/80 hover:bg-white border border-slate-200",
+        : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800",
       "backdrop-blur-xl shadow-lg"
     )}
   >
@@ -596,7 +596,7 @@ const DashboardV2: React.FC = () => {
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             )}
           >
             <div className="flex items-center justify-between mb-6">
@@ -662,7 +662,7 @@ const DashboardV2: React.FC = () => {
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             )}
           >
             <div className="flex items-center justify-between mb-4">
@@ -749,7 +749,7 @@ const DashboardV2: React.FC = () => {
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             )}
           >
             <div className="flex items-center justify-between mb-4">
@@ -843,7 +843,7 @@ const DashboardV2: React.FC = () => {
               "backdrop-blur-xl border",
               isDark 
                 ? "bg-slate-900/60 border-slate-800/50" 
-                : "bg-white/80 border-slate-200"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
             )}
           >
             <h3 className={cn(

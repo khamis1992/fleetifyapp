@@ -253,7 +253,7 @@ export const MaintenanceScheduleWidget: React.FC = () => {
                     <motion.div
                       key={item.vehicleId}
                       whileHover={{ scale: 1.01 }}
-                      className="p-3 rounded-lg bg-white/80 border border-orange-200/50 hover:border-orange-300 transition-all duration-200"
+                      className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-800 hover:border-orange-300 transition-all duration-200"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">

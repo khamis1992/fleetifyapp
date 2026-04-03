@@ -311,7 +311,7 @@ export const InsuranceAlertsWidget: React.FC = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                       whileHover={{ scale: 1.01 }}
-                      className={`p-3 rounded-lg bg-white/80 border ${badge.bgColor} hover:border-red-300 transition-all duration-200`}
+                      className={`p-3 rounded-lg bg-white dark:bg-slate-900 border ${badge.bgColor} hover:border-red-300 transition-all duration-200`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">

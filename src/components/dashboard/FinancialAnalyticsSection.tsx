@@ -280,11 +280,11 @@ export const FinancialAnalyticsSection: React.FC = () => {
   if (isLoading) {
     return (
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-        <div className="glass-card rounded-3xl p-6 animate-pulse">
+        <div className="glass-card rounded-xl p-6 animate-pulse">
           <div className="h-8 bg-slate-200 rounded mb-4"></div>
           <div className="h-80 bg-slate-200 rounded"></div>
         </div>
-        <div className="glass-card rounded-3xl p-6 animate-pulse">
+        <div className="glass-card rounded-xl p-6 animate-pulse">
           <div className="h-8 bg-slate-200 rounded mb-4"></div>
           <div className="h-80 bg-slate-200 rounded"></div>
         </div>
@@ -299,7 +299,7 @@ export const FinancialAnalyticsSection: React.FC = () => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -400,7 +400,7 @@ export const FinancialAnalyticsSection: React.FC = () => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="glass-card rounded-3xl p-6"
+        className="glass-card rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-6">
           <div>

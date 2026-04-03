@@ -98,7 +98,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4',
         'hover:shadow-lg hover:border-teal-200/50 active:scale-[0.98]',
         'transition-all duration-200 cursor-pointer',
         className

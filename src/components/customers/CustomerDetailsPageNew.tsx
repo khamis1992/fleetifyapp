@@ -417,7 +417,7 @@ const CustomerDetailsPageNew = () => {
     <TooltipProvider>
     <div className="min-h-screen bg-slate-50">
       {/* ─── Slim Header ─── */}
-        <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40">
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200/60 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-14">
               <Button
@@ -840,7 +840,7 @@ const CustomerDetailsPageNew = () => {
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="px-4 pt-4 pb-0">
-              <TabsList className="w-full justify-start bg-slate-100/80 border border-slate-200/50 rounded-xl h-auto p-1 gap-0.5 overflow-x-auto flex-nowrap">
+              <TabsList className="w-full justify-start bg-slate-100/80 border border-slate-200 dark:border-slate-800 rounded-xl h-auto p-1 gap-0.5 overflow-x-auto flex-nowrap">
                 {[
                   { value: 'info', label: 'معلومات العميل', icon: User },
                   { value: 'phones', label: 'أرقام الهاتف', icon: Phone },
@@ -857,7 +857,7 @@ const CustomerDetailsPageNew = () => {
                     value={tab.value}
                     className={cn(
                       "px-3.5 py-2 text-xs font-medium rounded-lg transition-all gap-1.5 whitespace-nowrap",
-                      "data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200/50",
+                      "data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-slate-200 dark:border-slate-800",
                       "data-[state=inactive]:text-slate-500 hover:text-slate-700"
                     )}
                   >

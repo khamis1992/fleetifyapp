@@ -611,7 +611,7 @@ export const CompanyBrandingSettings = () => {
                   handleSettingChange('sidebar_border_color', 'rgba(0,0,0,0.1)');
                 }}
               >
-                <div className="w-8 h-6 rounded border bg-white/80 border-black/10"></div>
+                <div className="w-8 h-6 rounded border bg-white dark:bg-slate-900 border-black/10 dark:border-slate-700"></div>
                 <span className="text-xs">شفاف</span>
               </Button>
             </div>

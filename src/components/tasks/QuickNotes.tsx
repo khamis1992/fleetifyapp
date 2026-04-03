@@ -115,7 +115,7 @@ export const QuickNotes: React.FC<QuickNotesProps> = ({
   }
 
   return (
-    <Card className={cn('bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
+    <Card className={cn('bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all', compact && 'border-0 shadow-none')}>
       <CardHeader className={cn('pb-3', compact && 'px-0 pt-0')}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">

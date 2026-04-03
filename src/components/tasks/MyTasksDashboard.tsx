@@ -124,7 +124,7 @@ export const MyTasksDashboard: React.FC = () => {
           >
             <Card
               className={cn(
-                'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
+                'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all',
                 stat.highlight && 'ring-2 ring-red-400 ring-offset-2'
               )}
             >
@@ -149,7 +149,7 @@ export const MyTasksDashboard: React.FC = () => {
       {/* Quick Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Today's Tasks */}
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
@@ -198,7 +198,7 @@ export const MyTasksDashboard: React.FC = () => {
         </Card>
 
         {/* Upcoming Reminders */}
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
@@ -239,7 +239,7 @@ export const MyTasksDashboard: React.FC = () => {
         </Card>
 
         {/* Goals Progress */}
-        <Card className="bg-white/80 backdrop-blur-xl border-slate-200/50 rounded-3xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/30 hover:shadow-xl hover:shadow-teal-500/10 transition-all">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <div className="bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg shadow-teal-500/20 rounded-lg p-1">
@@ -297,7 +297,7 @@ export const MyTasksDashboard: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-3xl p-4"
+          className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4"
         >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-100 rounded-xl">

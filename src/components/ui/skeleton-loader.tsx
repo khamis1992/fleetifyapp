@@ -62,7 +62,7 @@ export const Skeleton = ({
  */
 export const CardSkeleton = () => {
   return (
-    <div className="glass-card rounded-3xl p-6 space-y-4">
+    <div className="glass-card rounded-xl p-6 space-y-4">
       <Skeleton variant="text" width="60%" height={24} />
       <Skeleton variant="text" width="40%" height={16} />
       <div className="space-y-2 mt-4">

@@ -283,7 +283,7 @@ const QuickActionsDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="glass-card rounded-3xl p-8 relative overflow-hidden">
+        <div className="glass-card rounded-xl p-8 relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
             <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl"></div>
@@ -314,7 +314,7 @@ const QuickActionsDashboard: React.FC = () => {
                   className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 hover:from-red-500 hover:to-red-600 border border-red-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <FileText className="w-7 h-7 text-red-600 group-hover:text-red-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">عقد جديد</span>
@@ -336,7 +336,7 @@ const QuickActionsDashboard: React.FC = () => {
                   className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-500 hover:to-orange-600 border border-orange-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Car className="w-7 h-7 text-orange-600 group-hover:text-orange-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">إضافة مركبة</span>
@@ -358,7 +358,7 @@ const QuickActionsDashboard: React.FC = () => {
                   className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-500 hover:to-blue-600 border border-blue-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Users className="w-7 h-7 text-blue-600 group-hover:text-blue-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">عميل جديد</span>
@@ -380,7 +380,7 @@ const QuickActionsDashboard: React.FC = () => {
                   className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 hover:from-amber-500 hover:to-yellow-600 border border-amber-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <DollarSign className="w-7 h-7 text-amber-600 group-hover:text-amber-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">تسجيل دفعة</span>
@@ -402,7 +402,7 @@ const QuickActionsDashboard: React.FC = () => {
                   className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-red-50 to-pink-100 hover:from-red-600 hover:to-pink-600 border border-pink-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Calculator className="w-7 h-7 text-pink-600 group-hover:text-pink-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">الحاسبة المالية</span>
@@ -424,7 +424,7 @@ const QuickActionsDashboard: React.FC = () => {
                   className="w-full h-full p-6 rounded-2xl bg-gradient-to-br from-orange-50 to-red-100 hover:from-orange-600 hover:to-red-600 border border-orange-200 hover:border-transparent transition-all duration-300 shadow-sm hover:shadow-xl"
                 >
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/90 transition-all">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center group-hover:bg-white/90 transition-all">
                       <Search className="w-7 h-7 text-orange-600 group-hover:text-orange-700" />
                     </div>
                     <span className="font-semibold text-slate-800 group-hover:text-white text-sm text-center">البحث المتقدم</span>

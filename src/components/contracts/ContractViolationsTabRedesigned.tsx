@@ -615,7 +615,7 @@ const ViolationsEmptyState = () => (
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-24 h-24 rounded-3xl bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center mx-auto mb-6"
+      className="w-24 h-24 rounded-xl bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center mx-auto mb-6"
     >
       <CheckCircle className="w-12 h-12 text-green-500" />
     </motion.div>

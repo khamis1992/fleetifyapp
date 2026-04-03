@@ -233,7 +233,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
             <>
               {/* Key Metrics */}
               <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg bg-white/80 border border-purple-200/50">
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800">
               <EnhancedTooltip kpi={kpiDefinitions.utilizationRate}>
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar className="h-4 w-4 text-purple-600" />
@@ -261,7 +261,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-white/80 border border-purple-200/50">
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800">
               <div className="flex items-center gap-2 mb-1">
                 <Calendar className="h-4 w-4 text-pink-600" />
                 <span className="text-xs font-medium text-muted-foreground">
@@ -273,7 +273,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-white/80 border border-purple-200/50 col-span-2">
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800 col-span-2">
               <div className="flex items-center gap-2 mb-1">
                 <DollarSign className="h-4 w-4 text-purple-600" />
                 <span className="text-xs font-medium text-muted-foreground">
@@ -288,7 +288,7 @@ export const RentalAnalyticsWidget: React.FC = () => {
 
           {/* Utilization Trend Chart */}
           {trendData.length > 0 && (
-            <div className="p-3 rounded-lg bg-white/80 border border-purple-200/50">
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800">
               <h4 className="text-sm font-semibold text-muted-foreground mb-3">اتجاه الاستخدام</h4>
               <ResponsiveContainer width="100%" height={120}>
                 <LineChart data={trendData}>

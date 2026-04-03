@@ -85,7 +85,7 @@ export const MobileCustomerCollectionCard: React.FC<MobileCustomerCollectionCard
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'bg-white/80 backdrop-blur-xl border border-slate-200/50 rounded-3xl overflow-hidden',
+        'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden',
         'hover:shadow-lg hover:border-teal-200/50',
         'transition-all duration-200',
         className
@@ -172,7 +172,7 @@ export const MobileCustomerCollectionCard: React.FC<MobileCustomerCollectionCard
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-slate-200/50 bg-slate-50/50"
+            className="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50"
           >
             <div className="p-3 space-y-2">
               {customer.invoices.map((invoice) => {

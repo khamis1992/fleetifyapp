@@ -392,7 +392,7 @@ export const ContractPDFImportRedesigned: React.FC<ContractPDFImportRedesignedPr
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-3xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>

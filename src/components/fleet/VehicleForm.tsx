@@ -597,7 +597,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                 value={assetCodeInput}
                                 onChange={(e) => handleAssetCodeChange(e.target.value)}
                                 placeholder="أدخل رقم الأصل لجلب البيانات تلقائياً"
-                                className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                                className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                                 dir="rtl"
                               />
                               {assetLoading && (
@@ -650,7 +650,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                              <FormItem className="text-right">
                                <FormLabel className="text-right text-slate-700 font-medium">الماركة/الشركة المصنعة *</FormLabel>
                                <FormControl>
-                                 <Input {...field} placeholder="مثال: تويوتا" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
+                                 <Input {...field} placeholder="مثال: تويوتا" className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                                </FormControl>
                                <FormMessage className="text-right" />
                              </FormItem>
@@ -664,7 +664,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                              <FormItem className="text-right">
                                <FormLabel className="text-right text-slate-700 font-medium">الطراز *</FormLabel>
                                <FormControl>
-                                 <Input {...field} placeholder="مثال: كامري" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
+                                 <Input {...field} placeholder="مثال: كامري" className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                                </FormControl>
                                <FormMessage className="text-right" />
                              </FormItem>
@@ -679,7 +679,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               <FormLabel className="text-right text-slate-700 font-medium">السنة *</FormLabel>
                               <FormControl>
                                 <div className="relative">
-                                  <NumberInput {...field} min="1990" max={new Date().getFullYear() + 1} className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all text-right" />
+                                  <NumberInput {...field} min="1990" max={new Date().getFullYear() + 1} className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all text-right" />
                                 </div>
                               </FormControl>
                               <FormMessage className="text-right" />
@@ -696,7 +696,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                            <FormItem>
                              <FormLabel className="text-slate-700 font-medium">مصدر الشراء</FormLabel>
                              <FormControl>
-                               <Input {...field} placeholder="مثال: وكالة، معرض، مزاد" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                               <Input {...field} placeholder="مثال: وكالة، معرض، مزاد" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                              </FormControl>
                              <FormMessage />
                            </FormItem>
@@ -711,7 +711,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                              <FormLabel className="text-slate-700 font-medium">نوع التمويل</FormLabel>
                              <FormControl>
                                <Select onValueChange={field.onChange} value={field.value}>
-                                 <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                                 <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                    <SelectValue placeholder="اختر نوع التمويل" />
                                  </SelectTrigger>
                                  <SelectContent>
@@ -745,7 +745,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem className="text-right">
                               <FormLabel className="text-right text-slate-700 font-medium">رقم اللوحة *</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="أدخل رقم اللوحة" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
+                                <Input {...field} placeholder="أدخل رقم اللوحة" className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               {vehicle && (
                                 <div className="mt-2 space-y-2">
@@ -789,7 +789,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem className="text-right">
                               <FormLabel className="text-right text-slate-700 font-medium">اللون</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="مثال: أبيض" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
+                                <Input {...field} placeholder="مثال: أبيض" className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -828,7 +828,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem className="text-right">
                               <FormLabel className="text-right text-slate-700 font-medium">رقم الهيكل (VIN)</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="رقم تعريف المركبة" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
+                                <Input {...field} placeholder="رقم تعريف المركبة" className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -842,7 +842,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem className="text-right">
                               <FormLabel className="text-right text-slate-700 font-medium">رقم المحرك</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="رقم المحرك" className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
+                                <Input {...field} placeholder="رقم المحرك" className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl" />
                               </FormControl>
                               <FormMessage className="text-right" />
                             </FormItem>
@@ -859,7 +859,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               <FormLabel className="text-right text-slate-700 font-medium">ناقل الحركة</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl">
+                                  <SelectTrigger className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl">
                                     <SelectValue placeholder="اختر ناقل الحركة" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -882,7 +882,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               <FormLabel className="text-right text-slate-700 font-medium">نوع الوقود</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="text-right bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl">
+                                  <SelectTrigger className="text-right bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" dir="rtl">
                                     <SelectValue placeholder="اختر نوع الوقود" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -907,7 +907,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormLabel className="text-slate-700 font-medium">فئة المركبة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                              <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الفئة" />
                               </SelectTrigger>
                             </FormControl>
@@ -934,7 +934,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">عدد المقاعد</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min="2" max="50" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" min="2" max="50" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -964,7 +964,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">سعة خزان الوقود (لتر)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.1" placeholder="60" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.1" placeholder="60" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -979,7 +979,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormLabel className="text-slate-700 font-medium">نوع الدفع</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                              <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر نوع الدفع" />
                               </SelectTrigger>
                             </FormControl>
@@ -1003,7 +1003,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormLabel className="text-slate-700 font-medium">حالة المركبة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                              <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الحالة" />
                               </SelectTrigger>
                             </FormControl>
@@ -1027,7 +1027,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">تاريخ التسجيل</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1041,7 +1041,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">انتهاء صلاحية التسجيل</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1055,7 +1055,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">تاريخ الصيانة القادمة</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1069,7 +1069,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">الموقع الحالي</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="مثال: مواقف الشركة" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} placeholder="مثال: مواقف الشركة" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1083,7 +1083,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">جهاز تتبع GPS</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="رقم/نوع جهاز التتبع" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} placeholder="رقم/نوع جهاز التتبع" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1098,7 +1098,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormLabel className="text-slate-700 font-medium">حالة الملكية</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                              <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر حالة الملكية" />
                               </SelectTrigger>
                             </FormControl>
@@ -1122,7 +1122,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem>
                               <FormLabel className="text-slate-700 font-medium">شركة التأجير</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="اسم شركة التأجير" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                                <Input {...field} placeholder="اسم شركة التأجير" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1136,7 +1136,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem>
                               <FormLabel className="text-slate-700 font-medium">القسط الشهري (د.ك)</FormLabel>
                               <FormControl>
-                                <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                                <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1150,7 +1150,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem>
                               <FormLabel className="text-slate-700 font-medium">بداية التأجير</FormLabel>
                               <FormControl>
-                                <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                                <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1164,7 +1164,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             <FormItem>
                               <FormLabel className="text-slate-700 font-medium">نهاية التأجير</FormLabel>
                               <FormControl>
-                                <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                                <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1180,7 +1180,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">بداية الضمان</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1194,7 +1194,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">نهاية الضمان</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1223,7 +1223,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">تاريخ الشراء</FormLabel>
                           <FormControl>
-                            <Input {...field} type="date" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="date" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1237,7 +1237,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">تكلفة الشراء (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1251,7 +1251,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">العمر الإنتاجي (بالسنوات)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min="1" max="50" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" min="1" max="50" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1265,7 +1265,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">القيمة المتبقية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1280,7 +1280,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormLabel className="text-slate-700 font-medium">طريقة الإهلاك</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                              <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الطريقة" />
                               </SelectTrigger>
                             </FormControl>
@@ -1307,7 +1307,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                                   variant="outline"
                                   role="combobox"
                                   className={cn(
-                                    "w-full justify-between text-right bg-white/80 backdrop-blur-sm border-teal-200/50 hover:border-teal-300 transition-all",
+                                    "w-full justify-between text-right bg-white dark:bg-slate-900 border-teal-200/50 hover:border-teal-300 transition-all",
                                     !field.value && "text-muted-foreground"
                                   )}
                                 >
@@ -1498,7 +1498,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">المسافة المقطوعة الحالية (كم)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.1" placeholder="0" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.1" placeholder="0" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1513,7 +1513,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormLabel className="text-slate-700 font-medium">الحالة</FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
+                              <SelectTrigger className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all">
                                 <SelectValue placeholder="اختر الحالة" />
                               </SelectTrigger>
                             </FormControl>
@@ -1542,7 +1542,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">التعرفة اليومية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1556,7 +1556,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">التعرفة الأسبوعية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1570,7 +1570,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">التعرفة الشهرية (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1584,7 +1584,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-medium">التأمين (د.ك)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                            <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1612,7 +1612,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر اليومي (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1626,7 +1626,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الأسبوعي (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1640,7 +1640,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-medium">الحد الأدنى للسعر الشهري (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1656,7 +1656,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-medium">الحد الأدنى العام (د.ك)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
+                              <Input {...field} type="number" step="0.01" placeholder="0.00" className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all" />
                             </FormControl>
                             <div className="text-xs text-slate-500">
                               يُستخدم في حالة عدم تحديد حد أدنى للفترة المحددة
@@ -1716,7 +1716,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                               {...field}
                               placeholder="ملاحظات إضافية حول المركبة..."
                               rows={4}
-                              className="bg-white/80 backdrop-blur-sm border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
+                              className="bg-white dark:bg-slate-900 border-teal-200/50 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 hover:border-teal-300 transition-all"
                             />
                           </FormControl>
                           <FormMessage />

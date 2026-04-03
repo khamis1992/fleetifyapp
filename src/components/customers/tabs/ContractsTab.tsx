@@ -47,7 +47,7 @@ const ContractsTab = ({ contracts, navigate, customerId }: { contracts: any[], n
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-teal-100 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer group"
+                className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-teal-100 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all cursor-pointer group"
                 onClick={() => navigate(`/contracts/${contract.contract_number}`)}
               >
                 <div className="flex items-start justify-between mb-4">

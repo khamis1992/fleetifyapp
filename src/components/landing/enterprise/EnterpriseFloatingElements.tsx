@@ -64,7 +64,7 @@ export function EnterpriseFloatingElements() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed left-6 bottom-6 z-50 max-w-sm"
           >
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 shadow-2xl border border-slate-700">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 shadow-sm border border-slate-700">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
                   <Bell className="w-6 h-6 text-white animate-pulse" />
@@ -107,7 +107,7 @@ export function EnterpriseFloatingElements() {
         animate={{ scale: 1, opacity: 1 }}
         className="fixed right-6 bottom-6 z-50"
       >
-        <div className="bg-white rounded-2xl p-4 shadow-2xl border-2 border-green-200">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border-2 border-green-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center">
               <stat.icon className="w-5 h-5 text-white" />

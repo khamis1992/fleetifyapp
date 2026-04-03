@@ -103,7 +103,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
                   animate={{ opacity: 1, x: 0, transition: { delay: index * 0.06 } }}
                   exit={{ opacity: 0, x: -20 }}
                   onClick={() => handleAction(action.id)}
-                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-white/20 dark:border-neutral-700/20 min-h-[44px]"
+                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-sm transition-all hover:translate-x-1 min-w-[180px] border border-white/20 dark:border-neutral-700/20 min-h-[44px]"
                 >
                   <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', action.color)}>
                     <action.icon className="w-5 h-5 text-white" />
@@ -119,7 +119,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
           onClick={() => onClose()}
           animate={{ rotate: isOpen ? 135 : 0, scale: isOpen ? 1.05 : 1 }}
           className={cn(
-            'w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl transition-all',
+            'w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm transition-all',
             isOpen ? 'bg-neutral-900' : 'bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
           )}
           style={{
@@ -299,7 +299,7 @@ interface GlassCardProps {
 const GlassCard: React.FC<GlassCardProps> = ({ children, className, delay = 0, onClick }) => (
   <motion.div
     className={cn(
-      "relative overflow-hidden bg-white/60 backdrop-blur-xl rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-white/40",
+      "relative overflow-hidden bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-200 dark:border-slate-800",
       onClick && "cursor-pointer",
       className
     )}

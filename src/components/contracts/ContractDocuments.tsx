@@ -428,7 +428,7 @@ export function ContractDocuments({ contractId, customerId, vehicleId }: Contrac
       {/* Documents List */}
       <motion.div
         variants={fadeInUp}
-        className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm"
+        className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm"
       >
         <div className="flex items-center justify-between mb-6">
           <div>

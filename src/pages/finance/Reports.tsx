@@ -219,7 +219,7 @@ const Reports = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <TabsList className="bg-white/80 backdrop-blur-sm p-1.5 rounded-xl shadow-sm w-full flex flex-wrap justify-start gap-1">
+          <TabsList className="bg-white dark:bg-slate-900 p-1.5 rounded-xl shadow-sm w-full flex flex-wrap justify-start gap-1">
             {TABS.map((tab) => (
               <TabsTrigger
                 key={tab.id}

@@ -140,7 +140,7 @@ export const DashboardCustomizer: React.FC<DashboardCustomizerProps> = ({
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl shadow-2xl z-50 max-h-[90vh] overflow-hidden"
+            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-xl shadow-sm z-50 max-h-[90vh] overflow-hidden"
           >
             {/* رأس النافذة */}
             <div className="flex items-center justify-between p-4 border-b border-neutral-200">

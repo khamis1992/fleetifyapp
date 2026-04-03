@@ -828,7 +828,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
         "backdrop-blur-xl border",
         isDark 
           ? "bg-slate-900/60 border-slate-800/50" 
-          : "bg-white/80 border-slate-200",
+          : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800",
         "shadow-xl"
       )}
     >

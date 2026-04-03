@@ -221,7 +221,7 @@ export const RevenueOptimizationWidget: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4" ref={chartRef}>
           {/* Revenue Trend */}
-          <div className="p-4 rounded-lg bg-white/80 border border-emerald-200/50">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <span className="text-sm font-medium text-muted-foreground">إيرادات الشهر الحالي</span>
@@ -250,7 +250,7 @@ export const RevenueOptimizationWidget: React.FC = () => {
 
           {/* Revenue by Vehicle Type Chart */}
           {revenueByType.length > 0 && (
-            <div className="p-3 rounded-lg bg-white/80 border border-emerald-200/50">
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800">
               <h4 className="text-sm font-semibold text-muted-foreground mb-3">الإيرادات حسب نوع المركبة</h4>
               <ResponsiveContainer width="100%" height={150}>
                 <BarChart data={revenueByType.slice(0, 5)}>

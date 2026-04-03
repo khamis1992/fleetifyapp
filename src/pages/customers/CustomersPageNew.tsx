@@ -401,7 +401,7 @@ const CustomerGridCard: React.FC<CustomerGridCardProps> = ({
       <div className="absolute left-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-white/80 backdrop-blur shadow-sm hover:bg-white">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

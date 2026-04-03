@@ -135,7 +135,7 @@ export function SystemLogsDebugger() {
   };
 
   return (
-    <Card className="fixed bottom-4 left-4 w-96 shadow-2xl border-2 border-primary/20 z-50 bg-background/95 backdrop-blur">
+    <Card className="fixed bottom-4 left-4 w-96 shadow-sm border-2 border-primary/20 z-50 bg-background/95 backdrop-blur">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
