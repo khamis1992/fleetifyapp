@@ -28,132 +28,79 @@ export const ProtectedFinanceRoute: React.FC<ProtectedFinanceRouteProps> = ({
   const permissionCheck = usePermissionCheck(permission);
   
   const [error, setError] = useState<Error | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
-  // تشخيص مفصل للحالة
-  const [diagnostics, setDiagnostics] = useState({
-    userLoaded: false,
-    companyLoaded: false,
-    moduleChecked: false,
-    permissionChecked: false
-  });
+  // Stable references to prevent infinite loops
+  const hasPermission = permissionCheck.data?.hasPermission ?? false;
+  const permIsLoading = permissionCheck.isLoading;
+  const permError = permissionCheck.error;
+  const hasModule = hasModuleAccess;
+  const modLoading = moduleLoading;
 
-  useEffect(() => {
-    console.log('🛡️ [PROTECTED_FINANCE] Route protection check:', {
-      user: !!user,
-      userId: user?.id,
-      companyId,
-      hasCompanyAdminAccess,
-      permission,
-      requireModule,
-      hasModuleAccess,
-      moduleLoading,
-      permissionCheck: {
-        data: permissionCheck.data,
-        isLoading: permissionCheck.isLoading,
-        error: permissionCheck.error
-      }
-    });
-
-    setDiagnostics({
-      userLoaded: !!user,
-      companyLoaded: !!companyId,
-      moduleChecked: !moduleLoading,
-      permissionChecked: !permissionCheck.isLoading
-    });
-
-    // تحديد الأخطاء
-    if (!user) {
-      setError(new Error('يجب تسجيل الدخول للوصول إلى النظام المحاسبي'));
-      return;
-    }
-
-    if (!companyId) {
-      setError(new Error('لا توجد بيانات شركة مرتبطة بحسابك. يرجى التواصل مع المدير.'));
-      return;
-    }
-
-    if (requireModule && !moduleLoading && !hasModuleAccess) {
-      setError(new Error('الوحدة المحاسبية غير مفعلة لشركتك. يرجى التواصل مع المدير لتفعيل الوحدة.'));
-      return;
-    }
-
-    if (!permissionCheck.isLoading && permissionCheck.error) {
-      setError(new Error(`خطأ في التحقق من الصلاحيات: ${permissionCheck.error.message}`));
-      return;
-    }
-
-    if (!permissionCheck.isLoading && !permissionCheck.data?.hasPermission && !hasCompanyAdminAccess) {
-      setError(new Error(`ليس لديك صلاحية "${permission}" للوصول إلى هذه الصفحة. يرجى التواصل مع المدير.`));
-      return;
-    }
-
-    // إذا وصلنا هنا، فكل شيء طبيعي
-    if (error && user && companyId && (hasModuleAccess || !requireModule) && 
-        (permissionCheck.data?.hasPermission || hasCompanyAdminAccess)) {
-      setError(null);
-    }
-  }, [
-    user, 
-    companyId, 
-    hasModuleAccess, 
-    moduleLoading, 
-    permissionCheck.data, 
-    permissionCheck.isLoading, 
-    permissionCheck.error,
-    hasCompanyAdminAccess,
-    permission,
-    requireModule
-    // Removed 'error' from dependencies to prevent infinite loop
-  ]);
-
-  const handleRetry = () => {
-    console.log('🔄 [PROTECTED_FINANCE] Retrying...', { retryCount });
-    setError(null);
-    setRetryCount(prev => prev + 1);
-    
-    // إعادة تحديث البيانات
-    if (permissionCheck.refetch) {
-      permissionCheck.refetch();
-    }
-  };
-
-  // تحميل البيانات - تحسين الأداء: لا ننتظر كل التحميلات
+  // Basic auth check
   const hasBasicAuth = !!user && !!companyId;
-  const hasAllPermissions = !moduleLoading && !permissionCheck.isLoading && (permissionCheck.data?.hasPermission || hasCompanyAdminAccess);
-  const isLoading = !hasBasicAuth || moduleLoading || permissionCheck.isLoading;
- 
-  // عرض محتوى مؤقت أثناء التحقق من الصلاحيات للمستخدمين ذوي الخبرة
-  if (isLoading && !hasBasicAuth) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-            <LoadingSpinner size="lg" />
-            <div className="text-center space-y-2">
-              <h3 className="font-medium">جاري التحقق من الصلاحيات...</h3>
-              <div className="text-sm text-muted-foreground">
-                يتم تحميل بياناتك. قد يستغرق هذا بضع ثوانٍ في المرة الأولى.
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const hasAllPermissions = !modLoading && !permIsLoading && (hasPermission || hasCompanyAdminAccess);
+  const isLoading = !hasBasicAuth || modLoading || permIsLoading;
 
-  // إعادة توجيه للمصادقة إذا لم يكن المستخدم مسجل دخول
+  // Redirect if not logged in
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
+  // Show loading only if no basic auth yet
+  if (isLoading && !hasBasicAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-sm text-muted-foreground">جاري التحقق من الصلاحيات...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Permission error checks (computed, not in useEffect — no infinite loop)
+  if (!companyId) {
+    error !== undefined || setError(new Error('لا توجد بيانات شركة مرتبطة بحسابك. يرجى التواصل مع المدير.'));
+    return (
+      <FinanceErrorBoundary error={error} onRetry={() => setError(null)} title={`خطأ في الوصول إلى ${title}`}>
+        {children}
+      </FinanceErrorBoundary>
+    );
+  }
+
+  if (requireModule && !modLoading && !hasModule) {
+    setError(new Error('الوحدة المحاسبية غير مفعلة لشركتك.'));
+    return (
+      <FinanceErrorBoundary error={error} onRetry={() => setError(null)} title={`خطأ في الوصول إلى ${title}`}>
+        {children}
+      </FinanceErrorBoundary>
+    );
+  }
+
+  if (!permIsLoading && permError) {
+    setError(new Error(`خطأ في التحقق من الصلاحيات: ${permError.message}`));
+    return (
+      <FinanceErrorBoundary error={error} onRetry={() => setError(null)} title={`خطأ في الوصول إلى ${title}`}>
+        {children}
+      </FinanceErrorBoundary>
+    );
+  }
+
+  if (!permIsLoading && !hasPermission && !hasCompanyAdminAccess) {
+    setError(new Error(`ليس لديك صلاحية "${permission}".`));
+    return (
+      <FinanceErrorBoundary error={error} onRetry={() => setError(null)} title={`خطأ في الوصول إلى ${title}`}>
+        {children}
+      </FinanceErrorBoundary>
+    );
+  }
+
+  // All checks passed — render children
   return (
     <FinanceErrorBoundary
-      error={error}
-      isLoading={isLoading}
-      onRetry={handleRetry}
+      error={null}
+      isLoading={false}
       title={`خطأ في الوصول إلى ${title}`}
-      context={`المسار: ${window.location.pathname} | الصلاحية: ${permission}`}
     >
       {children}
     </FinanceErrorBoundary>

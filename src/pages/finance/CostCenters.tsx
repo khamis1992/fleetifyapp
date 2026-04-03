@@ -124,6 +124,7 @@ export default function CostCenters() {
   }
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-[#f0efed] p-6 space-y-6" dir="rtl">
       {/* Breadcrumb */}
       <Breadcrumb>
@@ -525,5 +526,6 @@ export default function CostCenters() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }
