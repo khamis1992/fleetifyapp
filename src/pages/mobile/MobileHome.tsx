@@ -73,12 +73,10 @@ export const MobileHome: React.FC = () => {
           return; // Exit early - no valid company_id
         }
 
-        companyId = employeeData.company_id;
+      companyId = employeeData.company_id;
       } else {
         companyId = profileData.company_id;
       }
-
-      console.log('[MobileHome] Using company_id:', companyId);
 
       // Fetch active contracts count only
       const { count: activeCount } = await supabase

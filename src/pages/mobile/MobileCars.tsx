@@ -70,12 +70,10 @@ const MobileCars: React.FC = () => {
           return;
         }
 
-        companyId = employeeData.company_id;
+      companyId = employeeData.company_id;
       } else {
         companyId = profileData.company_id;
       }
-
-      console.log('[MobileCars] Using company_id:', companyId);
 
       const { data, error } = await supabase
         .from('vehicles')

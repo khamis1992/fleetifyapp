@@ -28,7 +28,6 @@ const DashboardInner: React.FC = () => {
     // Set a timeout to force render even if loading isn't complete
     loadingTimeoutRef.current = setTimeout(() => {
       if (mountedRef.current && !forceRender) {
-        console.warn('🏢 [DASHBOARD] Force render after 2s to prevent multi-tab hang');
         setForceRender(true);
       }
     }, 2000);

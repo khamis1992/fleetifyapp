@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ModuleLayout } from '@/modules/core/components/ModuleLayout';
 import { PropertyOwnerForm } from '@/modules/properties/components';
 import { PropertyOwnerSampleDataOptions } from '@/components/tenants/PropertyOwnerSampleDataOptions';
-import { usePropertyOwners, useDeletePropertyOwner, useCreatePropertyOwner } from '@/modules/properties/hooks';
+import { usePropertyOwners, useDeletePropertyOwner, useCreatePropertyOwner, useUpdatePropertyOwner } from '@/modules/properties/hooks';
 import { 
   Table, 
   TableBody, 
@@ -35,8 +35,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { PageHelp } from "@/components/help";
-import { PropertyOwnersPageHelpContent } from "@/components/help/content";
 
 export default function PropertyOwners() {
   const [search, setSearch] = useState('');
@@ -48,6 +46,7 @@ export default function PropertyOwners() {
   
   const { data: owners = [], isLoading } = usePropertyOwners(search);
   const createOwnerMutation = useCreatePropertyOwner();
+  const updateOwnerMutation = useUpdatePropertyOwner();
   const deleteOwnerMutation = useDeletePropertyOwner();
 
   const handleSelectSampleData = (data: any) => {
@@ -88,16 +87,18 @@ export default function PropertyOwners() {
                 onSubmit={async (data) => {
                   try {
                     if (selectedOwner) {
-                      // تحديث المالك - سيتم إضافة هذه الوظيفة لاحقاً
-                      toast.success('سيتم إضافة وظيفة التحديث قريباً');
+                      await updateOwnerMutation.mutateAsync({ id: selectedOwner.id, updates: data });
+                      toast.success('تم تحديث بيانات المالك بنجاح');
                     } else {
                       await createOwnerMutation.mutateAsync(data);
+                      toast.success('تم إضافة المالك بنجاح');
                     }
                     setShowAddForm(false);
                     setSelectedOwner(null);
                     setSampleData(null);
                   } catch (error) {
                     console.error('Error saving owner:', error);
+                    toast.error('حدث خطأ أثناء حفظ البيانات');
                   }
                 }}
                 onCancel={() => {
@@ -105,7 +106,7 @@ export default function PropertyOwners() {
                   setSelectedOwner(null);
                   setSampleData(null);
                 }}
-                isLoading={createOwnerMutation.isPending}
+                isLoading={createOwnerMutation.isPending || updateOwnerMutation.isPending}
                 initialData={sampleData || undefined}
               />
             </DialogContent>

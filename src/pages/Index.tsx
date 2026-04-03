@@ -13,26 +13,21 @@ import { ParallaxSection } from '@/components/landing/ParallaxSection';
 const Index = () => {
   const { user, loading } = useAuth();
 
-  console.log('🏠 [INDEX] Rendering Index page', { user: !!user, loading });
-
   // CRITICAL FIX: Don't block the landing page with loading state
   // Allow landing page to render even while auth is loading
   // Only redirect to dashboard if we have a confirmed user
   if (loading && user) {
     // Only show loading if we already know there's a user (fast path)
-    console.log('🏠 [INDEX] User exists but still loading details');
     return <Navigate to="/dashboard" replace />;
   }
 
   if (!loading && user) {
     // User is fully loaded and authenticated
-    console.log('🏠 [INDEX] User authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
   // Show landing page immediately - don't wait for auth to complete
   // This prevents blank page if auth fails or times out
-  console.log('🏠 [INDEX] Rendering landing page');
 
   return (
     <div className="min-h-screen bg-background">

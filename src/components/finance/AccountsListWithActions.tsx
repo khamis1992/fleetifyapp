@@ -19,11 +19,11 @@ import {
   Search, 
   Eye,
   Edit,
-  FileText,
-  Filter
+  FileText
 } from 'lucide-react';
 import { useChartOfAccounts, useDeleteAccount } from '@/hooks/useChartOfAccounts';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AccountsListWithActionsProps {
   onViewAccount?: (account: any) => void;
@@ -55,6 +55,57 @@ export const AccountsListWithActions: React.FC<AccountsListWithActionsProps> = (
   const { data: allAccounts, isLoading } = useChartOfAccounts();
   const deleteAccount = useDeleteAccount();
 
+  const handleExportAccountStatement = async (account: any) => {
+    try {
+      const { data: transactions, error } = await supabase
+        .from('journal_entry_lines')
+        .select(`
+          line_number,
+          line_description,
+          debit_amount,
+          credit_amount,
+          journal_entries!inner(
+            entry_number,
+            entry_date,
+            description
+          )
+        `)
+        .eq('account_code', account.account_code)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      if (!transactions || transactions.length === 0) {
+        toast.info('لا توجد حركات لهذا الحساب');
+        return;
+      }
+
+      const csvContent = [
+        ['رقم القيد', 'التاريخ', 'الوصف', 'مدين', 'دائن', 'الرصيد'],
+        ...transactions.map((t: any) => [
+          t.journal_entries.entry_number,
+          t.journal_entries.entry_date,
+          t.line_description || t.journal_entries.description,
+          t.debit_amount || 0,
+          t.credit_amount || 0,
+          ((t.debit_amount || 0) - (t.credit_amount || 0)).toFixed(3)
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `account_statement_${account.account_code}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+
+      toast.success('تم تصدير كشف الحساب بنجاح');
+    } catch (error: any) {
+      console.error('Error exporting account statement:', error);
+      toast.error('فشل في تصدير كشف الحساب');
+    }
+  };
+
   const handleDeleteSingle = async (account: any) => {
     if (!account?.id) return;
     
@@ -74,9 +125,9 @@ export const AccountsListWithActions: React.FC<AccountsListWithActionsProps> = (
       // استدعاء callback إذا كان موجود
       onDeleteAccount?.(account);
       
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('[DELETE_SINGLE] فشل حذف الحساب:', error);
-      toast.error(`فشل في حذف الحساب ${account.account_code}: ${error.message}`);
+      toast.error(`فشل في حذف الحساب ${account.account_code}: ${(error as Error).message}`);
     } finally {
       setDeletingAccountId(null);
     }
@@ -266,10 +317,7 @@ export const AccountsListWithActions: React.FC<AccountsListWithActionsProps> = (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              // يمكن إضافة logic لكشف الحساب هنا
-                              toast.info(`كشف حساب ${account.account_code} - قريباً`);
-                            }}
+                            onClick={() => handleExportAccountStatement(account)}
                             className="h-8 w-8 p-0"
                             title="كشف حساب"
                           >

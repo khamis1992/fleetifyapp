@@ -9,10 +9,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
   Scale, 
@@ -51,6 +53,7 @@ interface LegalCasesTrackingV2FinalProps {
 
 const LegalCasesTrackingV2Final: React.FC<LegalCasesTrackingV2FinalProps> = ({ companyId: propCompanyId }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const companyId = propCompanyId || user?.profile?.company_id || user?.company?.id || '';
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -120,18 +123,49 @@ const LegalCasesTrackingV2Final: React.FC<LegalCasesTrackingV2FinalProps> = ({ c
   };
 
   const handleEditCase = (caseId: string) => {
-    toast.info(`تعديل القضية: ${caseId}`);
-    // TODO: Open edit dialog
+    navigate(`/legal/cases-v2?edit=${caseId}`);
   };
 
   const handleCloseCase = (caseId: string) => {
-    toast.info(`إغلاق القضية: ${caseId}`);
-    // TODO: Implement close case
+    const caseToClose = mappedCases.find((c) => c.id === caseId);
+    if (caseToClose) {
+      toast.promise(
+        async () => {
+          const { error } = await supabase
+            .from('legal_cases')
+            .update({ 
+              case_status: 'closed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', caseId);
+          if (error) throw error;
+        },
+        {
+          loading: 'جاري إغلاق القضية...',
+          success: 'تم إغلاق القضية بنجاح',
+          error: 'فشل إغلاق القضية'
+        }
+      );
+    }
   };
 
   const handleDeleteCase = (caseId: string) => {
-    toast.info(`حذف القضية: ${caseId}`);
-    // TODO: Implement delete case
+    if (window.confirm('هل أنت متأكد من حذف هذه القضية؟')) {
+      toast.promise(
+        async () => {
+          const { error } = await supabase
+            .from('legal_cases')
+            .delete()
+            .eq('id', caseId);
+          if (error) throw error;
+        },
+        {
+          loading: 'جاري حذف القضية...',
+          success: 'تم حذف القضية بنجاح',
+          error: 'فشل حذف القضية'
+        }
+      );
+    }
   };
 
   const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {

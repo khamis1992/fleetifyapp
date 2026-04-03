@@ -140,8 +140,15 @@ const SalesOrders = () => {
                 أدخل بيانات الطلبية الجديدة
               </DialogDescription>
             </DialogHeader>
-            <div className="p-4 text-center text-muted-foreground">
-              نموذج إضافة الطلبية سيتم إضافته قريباً
+            <div className="p-8 text-center">
+              <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">نظام إدارة الطلبيات قيد التطوير</h3>
+              <p className="text-muted-foreground mb-4">
+                يمكنكم إنشاء الطلبيات يدوياً من خلال النظام الأساسي
+              </p>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                إغلاق
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

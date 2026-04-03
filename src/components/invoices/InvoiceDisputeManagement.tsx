@@ -384,12 +384,62 @@ const DisputeCreateDialog: React.FC<{
   );
 };
 
-// Placeholder for Resolve Dispute Dialog
 const DisputeResolveDialog: React.FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dispute: Dispute | null;
 }> = ({ open, onOpenChange, dispute }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [resolutionStatus, setResolutionStatus] = useState('resolved');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleResolve = async () => {
+    if (!dispute || !resolutionNotes.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال ملاحظات الحل',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('invoice_disputes')
+        .update({
+          status: resolutionStatus,
+          resolution_notes: resolutionNotes,
+          resolved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', dispute.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'تم الحل',
+        description: 'تم حل النزاع بنجاح'
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['pending-disputes'] });
+      queryClient.invalidateQueries({ queryKey: ['dispute-stats'] });
+      setResolutionNotes('');
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error resolving dispute:', error);
+      toast({
+        title: 'خطأ',
+        description: 'حدث خطأ أثناء حل النزاع',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -397,12 +447,48 @@ const DisputeResolveDialog: React.FC<{
           <DialogTitle>حل النزاع: {dispute?.dispute_number}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Alert>
-            <AlertDescription>
-              سيتم إضافة نموذج الحل الكامل قريباً
-            </AlertDescription>
-          </Alert>
+          <div className="space-y-2">
+            <Label htmlFor="resolution-status">حالة الحل</Label>
+            <Select value={resolutionStatus} onValueChange={setResolutionStatus}>
+              <SelectTrigger id="resolution-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="resolved">تم الحل</SelectItem>
+                <SelectItem value="partially_resolved">حل جزئي</SelectItem>
+                <SelectItem value="rejected">مرفوض</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="resolution-notes">ملاحظات الحل</Label>
+            <Textarea
+              id="resolution-notes"
+              value={resolutionNotes}
+              onChange={(e) => setResolutionNotes(e.target.value)}
+              placeholder="أدخل تفاصيل الحل..."
+              rows={5}
+            />
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">معلومات النزاع</h4>
+            <div className="text-sm space-y-1 text-muted-foreground">
+              <p>العميل: {dispute?.customer_name_ar}</p>
+              <p>الفاتورة: {dispute?.invoice_number}</p>
+              <p>المبلغ المتنازع عليه: {dispute?.disputed_amount?.toFixed(3)} د.ك</p>
+            </div>
+          </div>
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            إلغاء
+          </Button>
+          <Button onClick={handleResolve} disabled={isSubmitting}>
+            {isSubmitting ? 'جاري الحفظ...' : 'تأكيد الحل'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

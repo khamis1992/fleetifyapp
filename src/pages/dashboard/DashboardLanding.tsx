@@ -73,9 +73,6 @@ const DashboardLanding: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-    console.log('Current user email:', user?.email);
-    console.log('Email check result:', user?.email?.toLowerCase().trim() === 'khamis-1992@hotmail.com');
-    console.log('Email after transform:', user?.email?.toLowerCase().trim());
   }, [user]);
 
   // CRITICAL FIX: Use stable company ID from CompanyContext (persists across navigation)

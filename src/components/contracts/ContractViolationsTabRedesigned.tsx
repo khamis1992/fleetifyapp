@@ -1202,10 +1202,7 @@ export const ContractViolationsTabRedesigned = ({
   };
 
   const handleDownloadPDF = () => {
-    toast({
-      title: 'قريباً',
-      description: 'سيتم إضافة ميزة تحميل PDF قريباً',
-    });
+    window.print();
   };
 
   const handlePaymentComplete = (violationId: string) => {

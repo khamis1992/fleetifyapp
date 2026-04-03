@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Fingerprint, Shield, Check } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useBiometricAuth } from '@/hooks/useBiometricAuth';
@@ -54,44 +55,25 @@ export const MobileLogin: React.FC = () => {
 
   // SIMPLIFIED: Single useEffect for all redirect logic
   useEffect(() => {
-    console.log('🔄 [MobileLogin useEffect] State:', {
-      hasRedirected: hasRedirectedRef.current,
-      authLoading,
-      user: !!user,
-      userId: user?.id,
-      loginSuccess,
-      pathname: window.location.pathname
-    });
-    
     // Skip if already redirected
     if (hasRedirectedRef.current) {
-      console.log('⏭️ [MobileLogin] Already redirected, skipping');
       return;
     }
     
     // Skip if still loading
     if (authLoading) {
-      console.log('⏳ [MobileLogin] Auth still loading, waiting...');
       return;
     }
     
     // Case 1: User is authenticated (either already logged in or just logged in)
     if (user) {
-      console.log('✅ [MobileLogin] User found, preparing redirect...', {
-        userId: user.id,
-        email: user.email,
-        loginSuccess
-      });
-      
       hasRedirectedRef.current = true;
       setIsSubmitting(false);
       
       // Show biometric setup prompt only after successful login (not for already logged in users)
       if (loginSuccess && biometricAvailable && !hasSavedCredentials) {
-        console.log('✅ [MobileLogin] Showing biometric setup');
         setShowBiometricPrompt(true);
       } else {
-        console.log('✅ [MobileLogin] Navigating to employee home...');
         // Use setTimeout to ensure state updates are complete
         setTimeout(() => {
           navigate('/mobile/employee/home', { replace: true });
@@ -102,11 +84,9 @@ export const MobileLogin: React.FC = () => {
     
     // Case 2: Login was successful but AuthContext hasn't updated yet (with timeout)
     if (loginSuccess && !user) {
-      console.log('⏳ [MobileLogin] Login successful, waiting for AuthContext to update user...');
       const timeout = setTimeout(() => {
         if (!hasRedirectedRef.current && !user) {
-          console.warn('⚠️ [MobileLogin] AuthContext timeout (3s) - user still not set!');
-          console.warn('⚠️ [MobileLogin] This might indicate a session persistence issue');
+          console.warn('AuthContext timeout (3s) - user still not set');
           // Reset to allow retry
           setLoginSuccess(false);
           setIsSubmitting(false);
@@ -131,18 +111,12 @@ export const MobileLogin: React.FC = () => {
     }
 
     try {
-      console.log('🔐 [MobileLogin] Attempting login with:', { email });
-
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
 
-      console.log('🔐 [MobileLogin] Supabase response:', { data, error: authError });
-
       if (authError) {
-        console.error('❌ [MobileLogin] Supabase error:', authError);
-
         // Translate common errors to Arabic
         let errorMessage = authError.message;
         if (authError.message.includes('Invalid login credentials')) {
@@ -159,54 +133,22 @@ export const MobileLogin: React.FC = () => {
       }
 
       if (data.user && data.session) {
-        console.log('✅ [MobileLogin] Login successful for user:', data.user.email);
-        console.log('🔑 [MobileLogin] Session received:', {
-          access_token: data.session.access_token ? 'present' : 'missing',
-          refresh_token: data.session.refresh_token ? 'present' : 'missing',
-          expires_at: data.session.expires_at
-        });
-
-        // CRITICAL: Verify session is saved to storage
-        // Wait longer on native platforms for storage sync
-        const checkDelay = Capacitor.isNativePlatform() ? 2000 : 1000;
-        setTimeout(async () => {
-          const { data: { session: checkSession } } = await supabase.auth.getSession();
-          console.log('🔍 [MobileLogin] Session check after ' + checkDelay + 'ms:', {
-            sessionFound: !!checkSession,
-            userId: checkSession?.user?.id,
-            expiresAt: checkSession?.expires_at
-          });
-          
-          // Check localStorage directly
-          const keys = Object.keys(localStorage);
-          const authKeys = keys.filter(k => k.startsWith('sb-'));
-          console.log('🔍 [MobileLogin] LocalStorage auth keys:', authKeys);
-          
-          if (!checkSession) {
-            console.error('🚨 [MobileLogin] CRITICAL: Session not found after login!');
-            console.error('🚨 [MobileLogin] This indicates a storage persistence issue');
-          }
-        }, checkDelay);
-
         // Save credentials for biometric login (don't block on this)
         try {
           await saveCredentials(email.trim());
         } catch (saveErr) {
-          console.warn('⚠️ [MobileLogin] Failed to save credentials for biometric:', saveErr);
-          // Continue anyway - this is not critical
+          console.warn('Failed to save credentials for biometric:', saveErr);
         }
 
         // Set login success flag - the useEffect will handle navigation
         // once AuthContext updates the user state
         setLoginSuccess(true);
-        console.log('🔄 [MobileLogin] Login success flag set, waiting for AuthContext...');
       } else {
-        console.error('❌ [MobileLogin] Login response missing user or session:', { user: !!data.user, session: !!data.session });
         setError('فشل تسجيل الدخول - يرجى المحاولة مرة أخرى');
         setIsSubmitting(false);
       }
     } catch (err: any) {
-      console.error('❌ [MobileLogin] Unexpected error:', err);
+      console.error('Login error:', err);
       setError(err.message || 'حدث خطأ غير متوقع');
       setIsSubmitting(false);
     }
@@ -221,14 +163,12 @@ export const MobileLogin: React.FC = () => {
       const result = await authenticateWithBiometrics(savedEmail || email);
 
       if (result.success) {
-        console.log('✅ [MobileLogin] Biometric login successful');
         setLoginSuccess(true);
-        console.log('🔄 [MobileLogin] Waiting for AuthContext to update user state...');
       } else {
         setError(result.error || 'فشلت المصادقة البيومترية');
       }
     } catch (err: any) {
-      console.error('❌ [MobileLogin] Biometric error:', err);
+      console.error('Biometric error:', err);
       setError(err.message || 'حدث خطأ في المصادقة البيومترية');
     }
   };

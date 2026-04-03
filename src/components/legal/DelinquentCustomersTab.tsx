@@ -2272,8 +2272,6 @@ className={cn(
         warning={currentWarning}
         customer={currentCustomer}
         isGenerating={generateWarning.isPending}
-        onSendEmail={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
-        onSendSMS={() => toast.info('سيتم تطبيق هذه الميزة قريباً')}
       />
 
       {/* Create Legal Case Dialog */}

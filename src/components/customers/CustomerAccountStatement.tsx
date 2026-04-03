@@ -190,9 +190,12 @@ export const CustomerAccountStatement: React.FC<CustomerAccountStatementProps> =
         link.click();
         
         toast.success('تم تصدير الكشف بصيغة CSV بنجاح');
+      } else if (format === 'pdf') {
+        handlePrint();
+        toast.success('تم فتح نافذة الطباعة للتصدير كـ PDF');
       } else {
-        // For Excel/PDF, we'll implement later or integrate with a reporting service
-        toast.info(`تصدير بصيغة ${format.toUpperCase()} سيتم إضافته قريباً`);
+        handlePrint();
+        toast.success('تم فتح نافذة الطباعة للتصدير');
       }
     } catch (error) {
       console.error('Export error:', error);

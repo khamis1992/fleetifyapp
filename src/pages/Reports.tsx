@@ -75,9 +75,7 @@ export default function Reports() {
     : getReportModulesForBusinessType('default');
 
   const handlePropertyExport = async (options: ExportOptions) => {
-    // Implementation for property report export
-    console.log('Exporting property report with options:', options);
-    // This would integrate with actual export functionality
+    // TODO: Implement property report export functionality
   };
 
   // Show loading state while fetching company data

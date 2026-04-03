@@ -183,32 +183,14 @@ const PaymentsDashboard = () => {
             <Plus className="ml-2 h-4 w-4" />
             تسجيل دفعة
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" disabled className="h-11">
-                  <Mail className="ml-2 h-4 w-4" />
-                  إرسال تذكيرات
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>ستتوفر قريباً</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" disabled className="h-11">
-                  <FileText className="ml-2 h-4 w-4" />
-                  تقرير المدفوعات
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>ستتوفر قريباً</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button variant="outline" disabled className="h-11 opacity-50 cursor-not-allowed">
+            <Mail className="ml-2 h-4 w-4" />
+            إرسال تذكيرات
+          </Button>
+          <Button variant="outline" disabled className="h-11 opacity-50 cursor-not-allowed">
+            <FileText className="ml-2 h-4 w-4" />
+            تقرير المدفوعات
+          </Button>
         </CardContent>
       </Card>
 

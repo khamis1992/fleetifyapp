@@ -103,8 +103,6 @@ export const MobileContractDetails: React.FC = () => {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractId);
       const isContractNumber = !isUUID && contractId.toLowerCase().startsWith('c');
 
-      console.log('[MobileContractDetails] Fetching contract:', { contractId, isUUID, isContractNumber });
-
       const { data, error } = await supabase
         .from('contracts')
         .select(`
@@ -132,8 +130,6 @@ export const MobileContractDetails: React.FC = () => {
         .eq('company_id', companyId)
         .single();
 
-      console.log('[MobileContractDetails] Contract query result:', { data, error, found: !!data });
-
       if (error) throw error;
 
       const actualContractId = data.id;
@@ -157,14 +153,6 @@ export const MobileContractDetails: React.FC = () => {
         .eq('contract_id', actualContractId)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false });
-
-      console.log('[MobileContractDetails] Payments query result:', {
-        contractId,
-        actualContractId,
-        paymentsCount: paymentsData?.length || 0,
-        paymentsError,
-        payments: paymentsData
-      });
 
       if (!paymentsError && paymentsData) {
         setPayments(paymentsData);

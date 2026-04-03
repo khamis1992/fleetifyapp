@@ -756,7 +756,7 @@ export default function LawsuitDataPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            toast.info('سيتم فتح تفاصيل القضية قريباً');
+                            navigate(`/legal/lawsuits/${lawsuit.id}`);
                           }}
                         >
                           <Eye className="h-4 w-4" />

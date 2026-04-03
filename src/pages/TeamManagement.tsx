@@ -113,7 +113,6 @@ export const TeamManagement: React.FC = () => {
     if (userProfile) {
       const role = userProfile.role?.toLowerCase();
       if (!role || !['admin', 'manager'].includes(role)) {
-        console.log('Access denied. Role:', role);
         navigate('/dashboard');
       }
     }

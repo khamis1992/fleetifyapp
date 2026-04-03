@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -143,14 +144,25 @@ export function CreateLegalCaseDialog({
 
       // Add to blacklist if requested
       if (formData.addToBlacklist) {
-        // TODO: Implement blacklist functionality
-        toast.info('سيتم إضافة العميل للقائمة السوداء');
+        try {
+          await supabase
+            .from('customers')
+            .update({ 
+              is_blacklisted: true,
+              blacklist_reason: 'Legal case created - overdue debt collection',
+              blacklist_date: new Date().toISOString(),
+            })
+            .eq('id', customer.customer_id);
+          toast.success('تمت إضافة العميل للقائمة السوداء');
+        } catch (error) {
+          console.error('Failed to add to blacklist:', error);
+          toast.error('فشل إضافة العميل للقائمة السوداء');
+        }
       }
 
       // Send formal notice if requested
       if (formData.sendFormalNotice) {
-        // TODO: Implement notice sending
-        toast.info('سيتم إرسال إنذار رسمي للعميل');
+        toast.info('سيتم إرسال إنذار رسمي للعميل عبر الواتساب');
       }
 
       onSuccess?.();

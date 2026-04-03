@@ -86,14 +86,12 @@ const MobileOverdue: React.FC = () => {
           return;
         }
 
-        companyId = employeeData.company_id;
+      companyId = employeeData.company_id;
       } else {
         companyId = profileData.company_id;
       }
 
-      console.log('[MobileOverdue] Using company_id:', companyId);
-
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from('contracts')
         .select(`
           id,
@@ -114,13 +112,6 @@ const MobileOverdue: React.FC = () => {
         .eq('company_id', companyId)
         .eq('payment_status', 'unpaid')
         .order('days_overdue', { ascending: false, nullsFirst: false });
-
-      console.log('[MobileOverdue] Query result:', {
-        count,
-        dataLength: data?.length,
-        error,
-        firstRecord: data?.[0]
-      });
 
       if (error) throw error;
 

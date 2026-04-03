@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSalesQuotes, useCreateSalesQuote, useUpdateSalesQuote, useDeleteSalesQuote, useGenerateQuoteNumber, type SalesQuote } from "@/hooks/useSalesQuotes";
 import { useQuotePDFGenerator } from "@/hooks/useQuotePDFGenerator";
 import { useQuoteToContract } from "@/hooks/useQuoteToContract";
+import { useVehicles } from "@/hooks/useVehicles";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Plus, Search, Edit, Trash2, Eye, Send, CheckCircle, XCircle, Clock, Download, FileCheck } from "lucide-react";
@@ -20,13 +22,25 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 
 const SalesQuotes = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<SalesQuote | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const [rentalOptions, setRentalOptions] = useState({
+    start_date: new Date().toISOString().split('T')[0],
+    rental_type: 'monthly' as 'daily' | 'weekly' | 'monthly',
+    duration: 1,
+    include_driver: false,
+    include_gps: false,
+    delivery_required: false,
+    delivery_address: '',
+  });
 
   const { data: quotes, isLoading } = useSalesQuotes({
     search: searchTerm,
@@ -38,84 +52,27 @@ const SalesQuotes = () => {
   const deleteQuote = useDeleteSalesQuote();
   const { generateQuotePDF, isGenerating } = useQuotePDFGenerator();
   const { convertQuoteToContract, canConvertToContract, isConverting } = useQuoteToContract();
+  const { data: vehicles } = useVehicles({ status: 'available' });
 
-  // Form state
-  const [formData, setFormData] = useState({
-    quote_number: "",
-    items: [] as any[],
-    subtotal: 0,
-    tax: 0,
-    total: 0,
-    valid_until: "",
-    status: "draft",
-    notes: "",
-    is_active: true,
-  });
-
-  const filteredQuotes = quotes?.filter(quote => {
-    const matchesStatus = selectedStatus === "all" || quote.status === selectedStatus;
-    const matchesTab = activeTab === "all" || quote.status === activeTab;
-    return matchesStatus && matchesTab;
-  }) || [];
-
-  const handleCreateQuote = async () => {
-    try {
-      await createQuote.mutateAsync({
-        ...formData,
-        quote_number: nextQuoteNumber || formData.quote_number,
+  const handleConvertToContractSubmit = async () => {
+    if (!selectedQuote || !selectedVehicleId) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى اختيار مركبة متاحة',
+        variant: 'destructive',
       });
-      setIsCreateDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error creating quote:", error);
+      return;
+    }
+
+    const result = await convertQuoteToContract(selectedQuote.id, selectedVehicleId, rentalOptions);
+    
+    if (result.success && result.contractId) {
+      setConvertDialogOpen(false);
+      navigate(`/contracts/${result.contractId}`);
     }
   };
 
-  const handleUpdateQuote = async () => {
-    if (!selectedQuote) return;
-    try {
-      await updateQuote.mutateAsync({
-        id: selectedQuote.id,
-        data: formData,
-      });
-      setIsEditDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error updating quote:", error);
-    }
-  };
-
-  const handleDeleteQuote = async (quote: SalesQuote) => {
-    try {
-      await deleteQuote.mutateAsync(quote.id);
-    } catch (error) {
-      console.error("Error deleting quote:", error);
-    }
-  };
-
-  const handleEditQuote = (quote: SalesQuote) => {
-    setSelectedQuote(quote);
-    setFormData({
-      quote_number: quote.quote_number,
-      items: quote.items || [],
-      subtotal: quote.subtotal,
-      tax: quote.tax,
-      total: quote.total,
-      valid_until: quote.valid_until || "",
-      status: quote.status,
-      notes: quote.notes || "",
-      is_active: quote.is_active,
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleViewDetails = (quote: SalesQuote) => {
-    setSelectedQuote(quote);
-    setIsDetailsDialogOpen(true);
-  };
-
-  const handleConvertToContract = async (quote: SalesQuote) => {
-    // Check if quote can be converted
+  const handleOpenConvertDialog = (quote: SalesQuote) => {
     const { canConvert, reason } = canConvertToContract(quote);
     if (!canConvert) {
       toast({
@@ -125,21 +82,19 @@ const SalesQuotes = () => {
       });
       return;
     }
-
-    // For now, we'll need to prompt user to select a vehicle
-    // In a real implementation, this would open a dialog to select vehicle and rental options
-    // For demo purposes, we'll show a message
-    toast({
-      title: 'تحويل لعقد',
-      description: 'يرجى اختيار المركبة وتفاصيل الإيجار. سيتم إضافة نافذة حوارية للتحويل.',
+    
+    setSelectedQuote(quote);
+    setSelectedVehicleId("");
+    setRentalOptions({
+      start_date: new Date().toISOString().split('T')[0],
+      rental_type: 'monthly',
+      duration: 1,
+      include_driver: false,
+      include_gps: false,
+      delivery_required: false,
+      delivery_address: '',
     });
-
-    // TODO: Open dialog to select vehicle and rental options
-    // const result = await convertQuoteToContract(quote.id, vehicleId, rentalOptions);
-    // if (result.success) {
-    //   // Navigate to contract page
-    //   window.location.href = `/contracts/${result.contractId}`;
-    // }
+    setConvertDialogOpen(true);
   };
 
   const resetForm = () => {
@@ -533,7 +488,7 @@ const SalesQuotes = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleConvertToContract(quote)}
+                                onClick={() => handleOpenConvertDialog(quote)}
                                 disabled={isConverting}
                                 title="تحويل لعقد"
                                 className="text-green-600 hover:text-green-700"
@@ -783,6 +738,145 @@ const SalesQuotes = () => {
             }}>
               <Edit className="h-4 w-4 mr-2" />
               تعديل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Convert to Contract Dialog */}
+      <Dialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تحويل العرض إلى عقد</DialogTitle>
+            <DialogDescription>
+              اختر المركبة وتفاصيل الإيجار لتحويل العرض {selectedQuote?.quote_number} إلى عقد
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>المركبة المتاحة</Label>
+              <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مركبة" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(vehicles || [])
+                    .filter(v => v.status === 'available')
+                    .map(vehicle => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.make} {vehicle.model} - {vehicle.plate_number}
+                      </SelectItem>
+                    ))}
+                  {availableVehicles.length === 0 && (
+                    <SelectItem value="_none" disabled>
+                      لا توجد مركبات متاحة
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>تاريخ البداية</Label>
+                <Input
+                  type="date"
+                  value={rentalOptions.start_date}
+                  onChange={(e) => setRentalOptions({ ...rentalOptions, start_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>نوع الإيجار</Label>
+                <Select
+                  value={rentalOptions.rental_type}
+                  onValueChange={(value: 'daily' | 'weekly' | 'monthly') => 
+                    setRentalOptions({ ...rentalOptions, rental_type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">يومي</SelectItem>
+                    <SelectItem value="weekly">أسبوعي</SelectItem>
+                    <SelectItem value="monthly">شهري</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>المدة ({rentalOptions.rental_type === 'daily' ? 'أيام' : rentalOptions.rental_type === 'weekly' ? 'أسابيع' : 'أشهر'})</Label>
+              <Input
+                type="number"
+                min={1}
+                value={rentalOptions.duration}
+                onChange={(e) => setRentalOptions({ ...rentalOptions, duration: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="include_driver"
+                  checked={rentalOptions.include_driver}
+                  onChange={(e) => setRentalOptions({ ...rentalOptions, include_driver: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="include_driver">إضافة سائق</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="include_gps"
+                  checked={rentalOptions.include_gps}
+                  onChange={(e) => setRentalOptions({ ...rentalOptions, include_gps: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="include_gps">إضافة GPS</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="delivery_required"
+                  checked={rentalOptions.delivery_required}
+                  onChange={(e) => setRentalOptions({ ...rentalOptions, delivery_required: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="delivery_required">توصيل للموقع</Label>
+              </div>
+              {rentalOptions.delivery_required && (
+                <div className="space-y-2">
+                  <Label>عنوان التوصيل</Label>
+                  <Textarea
+                    value={rentalOptions.delivery_address}
+                    onChange={(e) => setRentalOptions({ ...rentalOptions, delivery_address: e.target.value })}
+                    placeholder="أدخل عنوان التوصيل..."
+                    rows={2}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConvertDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleConvertToContractSubmit} disabled={!selectedVehicleId || isConverting}>
+              {isConverting ? (
+                <>
+                  <LoadingSpinner className="mr-2" />
+                  جاري التحويل...
+                </>
+              ) : (
+                <>
+                  <FileCheck className="h-4 w-4 mr-2" />
+                  تحويل إلى عقد
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

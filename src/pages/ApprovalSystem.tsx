@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Settings, CheckSquare, BarChart3, Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { WorkflowManager } from '@/components/approval/WorkflowManager';
 import { WorkflowForm } from '@/components/approval/WorkflowForm';
 import { ApprovalRequestsList } from '@/components/approval/ApprovalRequestsList';
 import { useApprovalRequests } from '@/hooks/useApprovalWorkflows';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ApprovalSystem() {
   const [activeTab, setActiveTab] = useState('requests');
@@ -18,6 +20,23 @@ export default function ApprovalSystem() {
   // جلب إحصائيات سريعة
   const { data: pendingRequests } = useApprovalRequests({ status: 'pending' });
   const { data: allRequests } = useApprovalRequests();
+
+  const { data: analyticsData } = useQuery({
+    queryKey: ['approval-analytics'],
+    queryFn: async () => {
+      const [pendingResult, approvedResult, rejectedResult] = await Promise.all([
+        supabase.from('approval_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('approval_requests').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('approval_requests').select('id', { count: 'exact', head: true }).eq('status', 'rejected')
+      ]);
+
+      return {
+        pending: pendingResult.count || 0,
+        approved: approvedResult.count || 0,
+        rejected: rejectedResult.count || 0
+      };
+    }
+  });
 
   const stats = [
     {
@@ -57,7 +76,7 @@ export default function ApprovalSystem() {
   };
 
   const handleViewRequest = (requestId: string) => {
-    console.log('View request:', requestId);
+    // TODO: Implement view request functionality
   };
 
   const handleWorkflowSuccess = () => {
@@ -153,16 +172,19 @@ export default function ApprovalSystem() {
                 تحليل أداء نظام الموافقات والإحصائيات التفصيلية
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-12 text-center">
-              <div className="space-y-4">
-                <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6 text-muted-foreground" />
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-6 bg-yellow-50 rounded-lg border">
+                  <div className="text-3xl font-bold text-yellow-700">{analyticsData?.pending || 0}</div>
+                  <div className="text-sm text-yellow-600 mt-1">طلبات معلقة</div>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">قريباً: لوحة التحليلات</h3>
-                  <p className="text-muted-foreground">
-                    ستتوفر تقارير مفصلة عن أداء نظام الموافقات وإحصائيات الاستخدام
-                  </p>
+                <div className="p-6 bg-green-50 rounded-lg border">
+                  <div className="text-3xl font-bold text-green-700">{analyticsData?.approved || 0}</div>
+                  <div className="text-sm text-green-600 mt-1">طلبات موافق عليها</div>
+                </div>
+                <div className="p-6 bg-red-50 rounded-lg border">
+                  <div className="text-3xl font-bold text-red-700">{analyticsData?.rejected || 0}</div>
+                  <div className="text-sm text-red-600 mt-1">طلبات مرفوضة</div>
                 </div>
               </div>
             </CardContent>

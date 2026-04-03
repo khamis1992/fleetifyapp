@@ -59,18 +59,15 @@ export const MobileEmployeeContracts: React.FC = () => {
   };
 
   const handlePayment = (contractId: string) => {
-    console.log('Open payment modal for:', contractId);
-    // TODO: Open payment modal
+    navigate(`/finance/payments/quick?contract=${contractId}`);
   };
 
   const handleNote = (contractId: string) => {
-    console.log('Open note modal for:', contractId);
-    // TODO: Open note modal
+    navigate(`/contracts/${contractId}?action=note`);
   };
 
   const handleSchedule = (contractId: string) => {
-    console.log('Open schedule modal for:', contractId);
-    // TODO: Open schedule modal
+    navigate(`/contracts/${contractId}?action=schedule`);
   };
 
   return (

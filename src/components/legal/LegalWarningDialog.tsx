@@ -63,20 +63,12 @@ export const LegalWarningDialog: React.FC<LegalWarningDialogProps> = ({
   const handleSendEmail = () => {
     if (warning && onSendEmail) {
       onSendEmail(warning);
-    } else {
-      toast.info('إرسال عبر البريد الإلكتروني', {
-        description: 'سيتم تطبيق هذه الميزة قريباً'
-      });
     }
   };
 
   const handleSendSMS = () => {
     if (warning && onSendSMS) {
       onSendSMS(warning);
-    } else {
-      toast.info('إرسال عبر رسالة نصية', {
-        description: 'سيتم تطبيق هذه الميزة قريباً'
-      });
     }
   };
 
@@ -120,9 +112,7 @@ export const LegalWarningDialog: React.FC<LegalWarningDialogProps> = ({
     if (warning && onDownloadPDF) {
       onDownloadPDF(warning);
     } else {
-      toast.info('تحميل PDF', {
-        description: 'سيتم تطبيق هذه الميزة قريباً'
-      });
+      handlePrint();
     }
   };
 

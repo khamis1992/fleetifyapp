@@ -135,11 +135,7 @@ export function CustomerLegalCaseDialog({
 
   // Handle download PDF
   const handleDownloadPDF = () => {
-    // TODO: Implement PDF download
-    toast({
-      title: 'قريباً',
-      description: 'ميزة تحميل PDF قيد التطوير',
-    });
+    handlePrint();
   };
 
   // Handle print

@@ -4,13 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Plus,
-  Filter,
   FileText,
   User,
   Car as CarIcon,
   Calendar,
   CreditCard,
-  ChevronLeft,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,7 +44,6 @@ export const MobileContracts: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchContracts();
@@ -70,7 +67,7 @@ export const MobileContracts: React.FC = () => {
         .single();
 
       if (profileError || !profileData?.company_id) {
-        console.warn('[MobileContracts] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
+      console.warn('[MobileContracts] No company_id in profiles, trying employees table', { profileError, user_id: user.id });
 
         // Try fallback to employees table
         const { data: employeeData, error: employeeError } = await supabase
@@ -85,12 +82,8 @@ export const MobileContracts: React.FC = () => {
           return;
         }
 
-        companyId = employeeData.company_id;
-      } else {
-        companyId = profileData.company_id;
+      companyId = employeeData.company_id;
       }
-
-      console.log('[MobileContracts] Using company_id:', companyId);
 
       const { data, error } = await supabase
         .from('contracts')
@@ -184,7 +177,7 @@ export const MobileContracts: React.FC = () => {
     if (contract.status === 'active' && new Date(contract.end_date) <= sevenDaysFromNow) {
       return (
         <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-600">
-          ينتهق قريباً
+          ينتهي قريباً
         </span>
       );
     }
@@ -269,7 +262,7 @@ export const MobileContracts: React.FC = () => {
           onClick={() => setActiveFilter('active')}
         />
         <FilterChip
-          label="ينتهق قريباً"
+          label="ينتهي قريباً"
           active={activeFilter === 'expiring'}
           onClick={() => setActiveFilter('expiring')}
         />

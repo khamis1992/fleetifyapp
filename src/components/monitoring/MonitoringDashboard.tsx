@@ -14,6 +14,8 @@ import { useMonitoring, useInfrastructureMonitoring, useErrorTracking } from '..
 import { monitoring, errorTracking } from '../../lib/monitoring/core';
 import { infrastructureMonitoring } from '../../lib/monitoring/infrastructure';
 import { AlertTriangle, CheckCircle, XCircle, Activity, Cpu, HardDrive, Wifi, Database, Clock, TrendingUp, TrendingDown, RefreshCw, Download, Settings } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../../integrations/supabase/client';
 
 interface MetricCardProps {
   title: string;
@@ -131,7 +133,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({ error, onResolve, onIgnore }) =
 };
 
 export const MonitoringDashboard: React.FC = () => {
-  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+  const [refreshInterval, setRefreshInterval] = useState(30000);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
@@ -142,6 +144,27 @@ export const MonitoringDashboard: React.FC = () => {
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [performanceSummary, setPerformanceSummary] = useState<any>(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState('1h');
+
+  const { data: businessMetrics } = useQuery({
+    queryKey: ['business-metrics-dashboard'],
+    queryFn: async () => {
+      const [vehiclesResult, customersResult, contractsResult, invoicesResult] = await Promise.all([
+        supabase.from('vehicles').select('id', { count: 'exact', head: true }),
+        supabase.from('customers').select('id', { count: 'exact', head: true }),
+        supabase.from('contracts').select('id', { count: 'exact', head: true }),
+        supabase.from('invoices').select('total_amount')
+      ]);
+
+      const totalRevenue = invoicesResult.data?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
+
+      return {
+        totalVehicles: vehiclesResult.count || 0,
+        totalCustomers: customersResult.count || 0,
+        totalContracts: contractsResult.count || 0,
+        totalRevenue
+      };
+    }
+  });
 
   // Fetch comprehensive system health
   const fetchSystemHealth = async () => {
@@ -556,34 +579,49 @@ export const MonitoringDashboard: React.FC = () => {
 
         {/* Business Metrics Tab */}
         <TabsContent value="business" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <MetricCard
-              title="Active Users"
-              value={1247}
-              trend="up"
-              change={5.2}
+              title="السيارات"
+              value={businessMetrics?.totalVehicles || 0}
+              icon={<Activity className="h-5 w-5" />}
             />
             <MetricCard
-              title="Fleet Utilization"
-              value={78}
-              unit="%"
-              trend="up"
-              change={2.1}
+              title="العملاء"
+              value={businessMetrics?.totalCustomers || 0}
+              icon={<Activity className="h-5 w-5" />}
             />
             <MetricCard
-              title="Revenue Today"
-              value="$12,847"
-              trend="up"
-              change={8.7}
+              title="العقود"
+              value={businessMetrics?.totalContracts || 0}
+              icon={<Activity className="h-5 w-5" />}
+            />
+            <MetricCard
+              title="إجمالي الإيرادات"
+              value={`${(businessMetrics?.totalRevenue || 0).toFixed(3)}`}
+              unit="د.ك"
+              icon={<Activity className="h-5 w-5" />}
             />
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Business Performance</CardTitle>
+              <CardTitle>أداء الأعمال</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-600">Business metrics integration coming soon...</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-600">إجمالي السيارات</p>
+                  <p className="text-2xl font-bold text-blue-900">{businessMetrics?.totalVehicles || 0}</p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-600">العملاء النشطين</p>
+                  <p className="text-2xl font-bold text-green-900">{businessMetrics?.totalCustomers || 0}</p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-lg">
+                  <p className="text-sm text-purple-600">العقود النشطة</p>
+                  <p className="text-2xl font-bold text-purple-900">{businessMetrics?.totalContracts || 0}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

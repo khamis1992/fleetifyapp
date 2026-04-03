@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,39 +24,30 @@ import { BarChart3, Star, Clock, Play, Trash2 } from 'lucide-react';
  * @returns {JSX.Element} The Reports Hub page
  */
 export default function ReportsHub() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { favorites, isLoading: favoritesLoading, deleteFavorite } = useReportFavorites();
   const { recentReports, isLoading: recentLoading } = useRecentReports();
 
   /**
-   * Handles quick report card click
-   * Shows a placeholder toast notification
+   * Handles quick report card click - navigates to the report
    */
-  const handleQuickReportClick = (reportId: string, reportName: string) => {
-    toast({
-      title: 'قريباً',
-      description: `سيتم تشغيل تقرير ${reportName} قريباً`,
-    });
+  const handleQuickReportClick = (reportId: string) => {
+    navigate(`/reports/${reportId}`);
   };
 
   /**
-   * Handles running a favorite report
+   * Handles running a favorite report - navigates to the report
    */
-  const handleRunFavorite = (favoriteId: string, favoriteName: string) => {
-    toast({
-      title: 'قريباً',
-      description: `سيتم تشغيل تقرير ${favoriteName} قريباً`,
-    });
+  const handleRunFavorite = (favoriteId: string) => {
+    navigate(`/reports/${favoriteId}`);
   };
 
   /**
-   * Handles viewing a recent report
+   * Handles viewing a recent report - navigates to the report
    */
   const handleViewReport = (reportId: string) => {
-    toast({
-      title: 'قريباً',
-      description: 'سيتم عرض التقرير قريباً',
-    });
+    navigate(`/reports/${reportId}`);
   };
 
   return (
@@ -86,7 +78,7 @@ export default function ReportsHub() {
                   <Card
                     key={report.id}
                     className="cursor-pointer bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300"
-                    onClick={() => handleQuickReportClick(report.id, report.name)}
+                    onClick={() => handleQuickReportClick(report.id)}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-2">
@@ -136,7 +128,7 @@ export default function ReportsHub() {
                     <CardContent className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleRunFavorite(favorite.id, favorite.name)}
+                        onClick={() => handleRunFavorite(favorite.id)}
                         className="flex-1 bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
                       >
                         <Play className="h-4 w-4 mr-2" />

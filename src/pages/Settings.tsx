@@ -7,10 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   User,
-  Bell,
   Shield,
   Palette,
-  Globe,
   Lock,
   ChevronRight,
   Crown,
@@ -20,8 +18,6 @@ import {
 } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { toast } from 'sonner';
-import { PageHelp } from "@/components/help";
-import { SettingsPageHelpContent } from "@/components/help/content";
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -36,13 +32,14 @@ const Settings: React.FC = () => {
       action: () => navigate('/profile'),
       available: true
     },
-    {
-      title: "الإشعارات",
-      description: "إعدادات الإشعارات والتنبيهات",
-      icon: Bell,
-      action: () => {},
-      available: false
-    },
+    // Notifications feature - hidden until implemented
+    // {
+    //   title: "الإشعارات",
+    //   description: "إعدادات الإشعارات والتنبيهات",
+    //   icon: Bell,
+    //   action: () => {},
+    //   available: false
+    // },
     {
       title: "الأمان والخصوصية",
       description: "إعدادات كلمة المرور والأمان",
@@ -70,13 +67,14 @@ const Settings: React.FC = () => {
       action: () => navigate('/settings/advanced'),
       available: true
     },
-    {
-      title: "اللغة والمنطقة",
-      description: "إعدادات اللغة والمنطقة الزمنية",
-      icon: Globe,
-      action: () => {},
-      available: false
-    },
+    // Language & Region feature - hidden until implemented
+    // {
+    //   title: "اللغة والمنطقة",
+    //   description: "إعدادات اللغة والمنطقة الزمنية",
+    //   icon: Globe,
+    //   action: () => {},
+    //   available: false
+    // },
     {
       title: "الصلاحيات",
       description: "عرض صلاحياتك في النظام",

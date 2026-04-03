@@ -153,8 +153,61 @@ export function PerformanceMonitor({ className, endpoint }: PerformanceMonitorPr
       const report = await apiAnalytics.generatePerformanceReport(
         getTimeRange(selectedTimeWindow)
       );
-      console.log('Performance report generated:', report);
-      // TODO: Display or download the report
+      
+      const reportContent = `
+Performance Report
+==================
+
+Generated: ${new Date().toLocaleString()}
+
+Time Window: ${selectedTimeWindow}
+
+${metrics ? `
+Summary
+-------
+Average Response Time: ${formatResponseTime(metrics.averageResponseTime)}
+P95 Response Time: ${formatResponseTime(metrics.p95ResponseTime)}
+Throughput: ${metrics.throughput.toFixed(1)} requests/min
+Error Rate: ${(metrics.errorRate * 100).toFixed(2)}%
+
+Top Endpoints by Response Time
+------------------------------
+${topEndpoints.map((ep, i) => 
+  `${i + 1}. ${ep.endpoint}
+   - Avg: ${formatResponseTime(ep.avgResponseTime)}, P95: ${formatResponseTime(ep.p95ResponseTime)}
+   - Requests: ${ep.requests}, Error Rate: ${(ep.errorRate * 100).toFixed(2)}%`
+).join('\n')}
+
+${slowQueries.length > 0 ? `
+Slow Queries (Performance Issues)
+---------------------------------
+${slowQueries.map((q, i) => 
+  `${i + 1}. ${q.endpoint} (${q.method})
+   - Response Time: ${formatResponseTime(q.responseTime)}
+   - Frequency: ${q.frequency} times
+   ${q.query ? ` - Query: ${q.query.substring(0, 100)}...` : ''}`
+).join('\n')}
+` : 'No slow queries detected.'}
+
+${trends.length > 0 ? `
+Trend Analysis
+--------------
+${trends.map(t => 
+  `- ${t.metric}: ${t.trend} (${t.changeRate > 0 ? '+' : ''}${t.changeRate.toFixed(1)}%), Significance: ${t.significance}`
+).join('\n')}
+` : ''}
+` : 'No data available.'}
+      `.trim();
+      
+      const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `performance-report-${new Date().toISOString().split('T')[0]}.txt`;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to generate performance report:', error);
     } finally {

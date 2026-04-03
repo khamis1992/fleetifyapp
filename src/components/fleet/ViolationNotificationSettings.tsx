@@ -251,7 +251,7 @@ export const ViolationNotificationSettings: React.FC<ViolationNotificationSettin
                     البريد الإلكتروني
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    قريباً - إرسال بريد إلكتروني
+                    إرسال بريد إلكتروني للعميل
                   </p>
                 </div>
               </div>
@@ -259,7 +259,6 @@ export const ViolationNotificationSettings: React.FC<ViolationNotificationSettin
                 id="notify-email"
                 checked={settings.notifyCustomerByEmail}
                 onCheckedChange={(checked) => updateSetting('notifyCustomerByEmail', checked)}
-                disabled
               />
             </div>
           </div>

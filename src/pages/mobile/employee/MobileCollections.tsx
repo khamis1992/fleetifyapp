@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   DollarSign,
-  TrendingUp,
   Search,
   X,
 } from 'lucide-react';
@@ -81,10 +80,8 @@ export const MobileCollections: React.FC = () => {
     }
   };
 
-  const handlePayment = (customerId: string, customerName: string) => {
-    // Navigate to payment dialog or page
-    console.log('Open payment for:', customerId, customerName);
-    // TODO: Open payment modal
+  const handlePayment = (customerId: string) => {
+    navigate(`/finance/payments/quick?customer=${customerId}`);
   };
 
   return (
@@ -160,7 +157,7 @@ export const MobileCollections: React.FC = () => {
               </div>
               <div className="text-center">
                 <p className="text-xl font-bold text-red-600">
-                  {stats.overdueCount || 0}
+                  {filteredCustomers.filter(c => c.total_pending > 0).length || 0}
                 </p>
                 <p className="text-xs text-slate-500">متأخر</p>
               </div>
@@ -229,7 +226,7 @@ export const MobileCollections: React.FC = () => {
                 >
                   <MobileCustomerCollectionCard
                     customer={customer}
-                    onPayment={() => handlePayment(customer.customer_id, customer.customer_name)}
+                    onPayment={() => handlePayment(customer.customer_id)}
                     onCall={() => handleCall(customer.customer_phone)}
                   />
                 </motion.div>
