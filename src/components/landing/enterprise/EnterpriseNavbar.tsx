@@ -116,7 +116,7 @@ export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
               <div className="pt-4 space-y-2 border-t border-slate-800">
                 <button
                   onClick={() => {
-                    navigate('/auth/login');
+                    navigate('/auth');
                     setMobileMenuOpen(false);
                   }}
                   className="w-full py-2.5 text-white font-semibold hover:text-teal-400"
