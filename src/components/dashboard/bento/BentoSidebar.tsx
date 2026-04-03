@@ -18,6 +18,7 @@ import {
   Truck,
   PanelLeftClose,
   PanelLeft,
+  Search,
   UserCheck,
   Shield,
   ListTodo,
@@ -364,6 +365,20 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           </button>
         )}
       </div>
+
+      {/* === Search Trigger === */}
+      {(!collapsed || isMobile) && (
+        <div className="px-3 py-2 border-b border-slate-100">
+          <button
+            onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-slate-400 text-xs hover:bg-slate-200 transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="flex-1 text-right">بحث...</span>
+            <kbd className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono">⌘K</kbd>
+          </button>
+        </div>
+      )}
 
       {/* === Navigation with Categories === */}
       <nav className="flex-1 overflow-y-auto py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
