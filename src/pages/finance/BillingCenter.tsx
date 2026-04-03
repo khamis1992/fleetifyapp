@@ -5,8 +5,9 @@
  */
 import { useState, useMemo, Suspense, lazy, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { PageSkeletonFallback } from "@/components/common/LazyPageWrapper";
+import { Loader2 } from "lucide-react";
 
 // Lazy load additional tabs
 const Deposits = lazy(() => import("./Deposits"));
@@ -14,6 +15,7 @@ const MonthlyRentTracking = lazy(() => import("./MonthlyRentTracking"));
 import { useInvoices } from "@/hooks/finance/useInvoices";
 import { usePayments } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
+import { useTreasurySummary } from "@/hooks/useTreasury";
 import { InvoiceForm } from "@/components/finance/InvoiceForm";
 import { InvoicePreviewDialog } from "@/components/finance/InvoicePreviewDialog";
 import { InvoiceEditDialog } from "@/components/finance/InvoiceEditDialog";
@@ -45,7 +47,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
+import {
   Receipt, 
   CreditCard,
   Plus, 
@@ -56,15 +58,12 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  TrendingDown,
-  FileText,
-  Loader2,
-  Send,
   Wallet,
   CalendarDays,
   XCircle,
+  Landmark,
+  Loader2,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,6 +74,7 @@ import { ar } from "date-fns/locale";
 import { usePaymentOperations } from "@/hooks/business/usePaymentOperations";
 
 import { StatCard } from "@/components/ui/StatCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ===== Main Component =====
 const BillingCenter = () => {
@@ -113,6 +113,7 @@ const BillingCenter = () => {
   // Data fetching
   const { data: invoicesData, isLoading: invoicesLoading } = useInvoices({ pageSize: 100 });
   const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
+  const { data: treasuryData } = useTreasurySummary();
 
   // Extract data
   const invoices = useMemo(() => {
@@ -358,7 +359,7 @@ const BillingCenter = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0efed] p-6" dir="rtl">
+    <div className="min-h-screen p-6" dir="rtl">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -489,15 +490,14 @@ const BillingCenter = () => {
                 <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
               </div>
             ) : filteredInvoices.length === 0 ? (
-              <div className="text-center py-20">
-                <Receipt className="w-16 h-16 mx-auto text-neutral-300 mb-4" />
-                <p className="text-neutral-500">لا توجد فواتير</p>
-                <Button 
-                  onClick={() => setIsCreateInvoiceOpen(true)}
-                  className="mt-4 bg-rose-500 hover:bg-coral-600"
-                >
-                  إنشاء فاتورة جديدة
-                </Button>
+              <div className="p-6">
+                <EmptyState
+                  icon={Receipt}
+                  title="لا توجد فواتير"
+                  description="أنشئ فاتورتك الأولى أو اترك النظام يولدها تلقائياً من العقود"
+                  onAction={() => setIsCreateInvoiceOpen(true)}
+                  actionLabel="فاتورة جديدة"
+                />
               </div>
             ) : (
               <Table>
@@ -573,20 +573,34 @@ const BillingCenter = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
+            {/* Treasury Balance Indicator */}
+            {treasuryData && (
+              <div className="p-4 border-b border-neutral-100">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <Landmark className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">رصيد الخزينة الحالي</p>
+                    <p className="text-lg font-bold text-blue-700">{formatCurrency(treasuryData.totalBalance || 0)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {paymentsLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
               </div>
             ) : filteredPayments.length === 0 ? (
-              <div className="text-center py-20">
-                <CreditCard className="w-16 h-16 mx-auto text-neutral-300 mb-4" />
-                <p className="text-neutral-500">لا توجد مدفوعات</p>
-                <Button 
-                  onClick={() => setIsCreatePaymentOpen(true)}
-                  className="mt-4 bg-rose-500 hover:bg-coral-600"
-                >
-                  تسجيل دفعة جديدة
-                </Button>
+              <div className="p-6">
+                <EmptyState
+                  icon={CreditCard}
+                  title="لا توجد مدفوعات"
+                  description="لم يتم تسجيل أي مدفوعات بعد"
+                  onAction={() => setIsCreatePaymentOpen(true)}
+                  actionLabel="تسجيل دفعة"
+                />
               </div>
             ) : (
               <Table>

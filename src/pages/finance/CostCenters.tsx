@@ -17,6 +17,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { HelpIcon } from '@/components/help/HelpIcon';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { StatCard } from "@/components/ui/StatCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { motion } from "framer-motion";
 
 export default function CostCenters() {
@@ -125,7 +126,7 @@ export default function CostCenters() {
 
   return (
     <TooltipProvider>
-    <div className="min-h-screen bg-[#f0efed] p-6 space-y-6" dir="rtl">
+    <div className="p-6 space-y-6" dir="rtl">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -408,14 +409,20 @@ export default function CostCenters() {
                 );
               })}
             </TableBody>
-          </Table>
-          {filteredCostCenters?.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد مراكز تكلفة
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </Table>
+            {filteredCostCenters?.length === 0 && (
+              <div className="p-6">
+                <EmptyState
+                  icon={Target}
+                  title="لا توجد مراكز تكلفة"
+                  description="لم يتم إنشاء أي مراكز تكلفة بعد. ابدأ بإنشاء مركز تكلفة جديد لتتبع المصروفات"
+                  onAction={() => setIsCreateDialogOpen(true)}
+                  actionLabel="مركز تكلفة جديد"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>

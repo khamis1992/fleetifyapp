@@ -15,6 +15,8 @@ import { Menu, X } from 'lucide-react';
 import { TaskNotificationBell } from '@/components/tasks/TaskNotificationBell';
 import { TourProvider } from '@/components/tour-guide';
 import { VerificationTaskAlert } from '@/components/notifications/VerificationTaskAlert';
+import { CommandPalette } from '@/components/ui/CommandPalette';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 
 // Lazy load AI Chat Widget for performance
 const AIChatWidget = lazy(() => import('@/components/ai-chat-assistant/AIChatWidget'));
@@ -77,7 +79,10 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           <span className="font-bold text-neutral-900">Fleetify</span>
-          <TaskNotificationBell />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <TaskNotificationBell />
+          </div>
         </div>
 
         {/* Mobile Sidebar Overlay */}
@@ -128,6 +133,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         <Suspense fallback={<div className="w-16 h-16 rounded-full bg-muted animate-pulse" />}>
           <AIChatWidget hideFloatingButton={true} />
         </Suspense>
+
+        {/* Command Palette (Ctrl+K / Cmd+K) */}
+        <CommandPalette />
 
         {/* Verification Task Alert Modal */}
         <VerificationTaskAlert />

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import StatCard from "@/components/ui/StatCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { 
   Plus, 
   Calculator, 
@@ -31,6 +32,7 @@ import {
   MapPin,
   Calendar,
   Briefcase,
+  Building2,
 } from "lucide-react";
 import { useFixedAssets, useCreateFixedAsset, useUpdateFixedAsset, useDeleteFixedAsset, FixedAsset } from "@/hooks/useFinance";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
@@ -303,7 +305,7 @@ const FixedAssets = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6" dir="rtl">
+    <div className="p-6" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -487,16 +489,14 @@ const FixedAssets = () => {
           </div>
 
           {filteredAssets.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <Briefcase className="w-8 h-8 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">لا توجد أصول ثابتة</h3>
-              <p className="text-slate-500 mb-4">لم يتم العثور على أصول تطابق معايير البحث</p>
-              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-slate-900 hover:bg-slate-800">
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة أصل جديد
-              </Button>
+            <div className="p-6">
+              <EmptyState
+                icon={Building2}
+                title="لا توجد أصول ثابتة"
+                description="لم يتم العثور على أصول تطابق معايير البحث. ابدأ بإضافة أصل جديد"
+                onAction={() => setIsCreateDialogOpen(true)}
+                actionLabel="إضافة أصل جديد"
+              />
             </div>
           ) : (
             <div className="overflow-x-auto">
