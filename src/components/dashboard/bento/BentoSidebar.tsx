@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -37,8 +37,11 @@ import {
   FolderOpen,
   FileWarning,
   Target,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useTourGuide } from '@/components/tour-guide';
 
 // === Types ===
 interface SubItem {
@@ -202,6 +205,26 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['customers', 'fleet']);
+  const [recentPages, setRecentPages] = useState<Array<{label: string; href: string; icon: React.ElementType}>>([]);
+  const { startTour } = useTourGuide();
+
+  const allNavItems = navigation.flatMap(item => 
+    item.children ? [item, ...item.children] : [item]
+  );
+
+  useEffect(() => {
+    const current = allNavItems.find(item => 
+      location.pathname === item.href || 
+      location.pathname.startsWith(item.href + "/")
+    );
+    if (current) {
+      setRecentPages(prev => {
+        const filtered = prev.filter(p => p.href !== current.href);
+        const icon = 'icon' in current ? current.icon : List;
+        return [{ label: current.label, href: current.href!, icon }, ...filtered].slice(0, 5);
+      });
+    }
+  }, [location.pathname]);
 
   const handleLinkClick = () => {
     if (isMobile && onCloseMobile) {
@@ -275,7 +298,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden mr-2 mt-1 space-y-0.5 border-r-2 border-neutral-100"
+                className="overflow-hidden mr-2 mt-1 space-y-0.5 border-r-2 border-neutral-100 dark:border-neutral-800"
               >
                 {item.children!.map((child) => {
                   const ChildIcon = child.icon;
@@ -289,7 +312,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                           'flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-200',
                           isChildActive
                             ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/20 font-medium'
-                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                            : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-white'
                         )}
                       >
                         <ChildIcon className={cn(
@@ -308,7 +331,6 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
       );
     }
 
-    // Simple link
     return (
       <NavLink
         key={item.id}
@@ -318,7 +340,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
           isDirectActive
             ? 'bg-gradient-to-l from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
-            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+            : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-800 dark:hover:text-white'
         )}
       >
         <item.icon className={cn(
@@ -337,12 +359,12 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
       className={cn(
         // ✅ Fixed positioning - يبقى ثابتاً عند التمرير
         "fixed top-0 right-0 h-screen z-40",
-        "bg-white flex flex-col shadow-sm",
-        isMobile ? "border-none" : "border-l border-slate-200"
+        "bg-white dark:bg-neutral-900 flex flex-col shadow-sm",
+        isMobile ? "border-none" : "border-l border-slate-200 dark:border-neutral-800"
       )}
     >
       {/* === Header: Logo & Collapse Button === */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 flex-shrink-0">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 dark:border-neutral-800 flex-shrink-0">
         {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -352,13 +374,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             <div className="w-8 h-8 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-lg">F</span>
             </div>
-            <span className="font-bold text-slate-900">Fleetify</span>
+            <span className="font-bold text-slate-900 dark:text-white">Fleetify</span>
           </motion.div>
         )}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
             title={collapsed ? 'توسيع' : 'تصغير'}
           >
             {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
@@ -368,26 +390,61 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
 
       {/* === Search Trigger === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2 border-b border-slate-100">
+        <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 text-slate-400 text-xs hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-400 dark:text-neutral-400 text-xs hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
             <span className="flex-1 text-right">بحث...</span>
-            <kbd className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono">⌘K</kbd>
+            <kbd className="text-[10px] bg-white dark:bg-neutral-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-neutral-600 font-mono">⌘K</kbd>
+          </button>
+        </div>
+      )}
+
+      {/* === Recent Pages === */}
+      {(!collapsed || isMobile) && recentPages.length > 0 && (
+        <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
+          <div className="flex items-center justify-between mb-1 px-1">
+            <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">المؤخر</span>
+            <button onClick={() => setRecentPages([])} className="text-slate-300 hover:text-slate-500 dark:text-neutral-600 dark:hover:text-neutral-400">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+          {recentPages.map(page => (
+            <Link 
+              key={page.href} 
+              to={page.href} 
+              onClick={handleLinkClick}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
+            >
+              {page.icon && <page.icon className="w-3.5 h-3.5" />}
+              {page.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* === Start Tour Button === */}
+      {(!collapsed || isMobile) && (
+        <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
+          <button
+            onClick={() => startTour('dashboard-overview')}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-orange-500 text-white text-xs font-medium hover:from-rose-600 hover:to-orange-600 transition-all shadow-sm"
+          >
+            <span className="flex-1 text-right">🎓 ابدأ جولة تعريفية</span>
           </button>
         </div>
       )}
 
       {/* === Navigation with Categories === */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent">
+      <nav className="flex-1 overflow-y-auto py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
         {Object.entries(groupedNavigation).map(([category, items], categoryIndex) => (
           <div key={category} className={cn(categoryIndex > 0 && 'mt-4')}>
             {/* Category Label */}
             {categoryLabels[category] && (!collapsed || isMobile) && (
               <div className="px-3 py-2 mb-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
                   {categoryLabels[category]}
                 </span>
               </div>
@@ -402,14 +459,21 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
 
             {/* Separator between categories */}
             {categoryIndex < Object.keys(groupedNavigation).length - 1 && (
-              <div className="mt-4 mx-3 border-b border-slate-100" />
+              <div className="mt-4 mx-3 border-b border-slate-100 dark:border-neutral-800" />
             )}
           </div>
         ))}
       </nav>
 
+      {/* === Theme Toggle === */}
+      {!isMobile && (
+        <div className="px-3 py-2 border-t border-slate-100 dark:border-neutral-800">
+          <ThemeToggle />
+        </div>
+      )}
+
       {/* === Compact User Profile === */}
-      <div className="p-2 border-t border-slate-100 flex-shrink-0 bg-slate-50/50">
+      <div className="p-2 border-t border-slate-100 dark:border-neutral-800 flex-shrink-0 bg-slate-50/50 dark:bg-neutral-900/50">
         <div
           className={cn(
             'flex items-center gap-2 p-2 rounded-lg',

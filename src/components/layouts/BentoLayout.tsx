@@ -18,6 +18,7 @@ import { VerificationTaskAlert } from '@/components/notifications/VerificationTa
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 // Lazy load AI Chat Widget for performance
 const AIChatWidget = lazy(() => import('@/components/ai-chat-assistant/AIChatWidget'));
@@ -37,7 +38,7 @@ const MobileBottomNav: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 safe-area-pb">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 safe-area-pb">
       <nav className="flex items-center justify-around h-16">
         {bottomNavItems.map((item) => {
           const isActive = location.pathname === item.href || 
@@ -113,9 +114,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
 
   return (
     <TourProvider>
-      <div className="min-h-screen flex bg-neutral-50" dir="rtl">
+      <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-950" dir="rtl">
         {/* Mobile Header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-neutral-200 z-40 flex items-center justify-between px-4">
+        <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 z-40 flex items-center justify-between px-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-600"
@@ -126,10 +127,11 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           <div className="flex items-center gap-1">
             <button
               onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
-              className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-600"
+              className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300"
             >
               <Search className="w-5 h-5" />
             </button>
+            <ThemeToggle />
             <NotificationBell />
             <TaskNotificationBell />
           </div>
@@ -166,9 +168,9 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         
         {/* Main Content Area - With margin for fixed sidebar */}
         <motion.main
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
           className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0 lg:mr-[260px]"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
