@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Save } from "lucide-react";
 import { useCreateInvoice, useFixedAssets } from "@/hooks/useFinance";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { useEntryAllowedAccounts } from "@/hooks/useEntryAllowedAccounts";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useCompanyCurrency } from "@/hooks/useCompanyCurrency";
 import { cn } from "@/lib/utils";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 interface InvoiceItem {
   id: string;
@@ -48,13 +49,15 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
   const { user } = useAuth();
   const { data: accounts } = useEntryAllowedAccounts();
   const { data: costCenters } = useCostCenters();
-  const { data: fixedAssets } = useFixedAssets();
+  useFixedAssets();
   const createInvoice = useCreateInvoice();
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: companyCurrency } = useCompanyCurrency();
   const { data: contracts } = useActiveContracts(customerId, vendorId);
 
   const [step, setStep] = useState(1);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const [invoiceData, setInvoiceData] = useState({
     invoice_number: '',
@@ -72,6 +75,54 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: '1', description: '', quantity: 1, unit_price: 0, tax_rate: 0 }
   ]);
+
+  const autoSaveKey = `invoice-draft-${type}-${customerId || vendorId || 'new'}`;
+  const { loadDraft, clearDraft } = useAutoSave(
+    { ...invoiceData, items },
+    autoSaveKey,
+    15000
+  );
+
+  useEffect(() => {
+    if (open) {
+      const draft = loadDraft();
+      if (draft && draft.invoice_number) {
+        setShowDraftPrompt(true);
+      }
+    }
+  }, [open]);
+
+  const handleRestoreDraft = () => {
+    const draft = loadDraft();
+    if (draft) {
+      setInvoiceData({
+        invoice_number: draft.invoice_number || '',
+        invoice_date: draft.invoice_date || new Date().toISOString().split('T')[0],
+        due_date: draft.due_date || '',
+        terms: draft.terms || '',
+        notes: draft.notes || '',
+        currency: draft.currency || companyCurrency,
+        discount_amount: draft.discount_amount || 0,
+        cost_center_id: draft.cost_center_id || '',
+        fixed_asset_id: draft.fixed_asset_id || '',
+        contract_id: draft.contract_id || '',
+      });
+      setItems(draft.items || [{ id: '1', description: '', quantity: 1, unit_price: 0, tax_rate: 0 }]);
+      toast.success("تم استعادة المسودة");
+    }
+    setShowDraftPrompt(false);
+  };
+
+  const handleDismissDraft = () => {
+    clearDraft();
+    setShowDraftPrompt(false);
+  };
+
+  useEffect(() => {
+    if (invoiceData.invoice_number || items.some(i => i.description)) {
+      setLastSaved(new Date());
+    }
+  }, [invoiceData, items]);
 
   const addItem = () => {
     setItems([...items, {
@@ -147,6 +198,7 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
       });
 
       toast.success(`تم إنشاء ${type === 'sales' ? 'فاتورة المبيعات' : 'فاتورة المشتريات'} بنجاح`);
+      clearDraft();
       onOpenChange(false);
       
       setInvoiceData({
@@ -185,13 +237,41 @@ export function InvoiceFormWizard({ open, onOpenChange, customerId, vendorId, ty
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {type === 'sales' ? 'إنشاء فاتورة مبيعات جديدة' : 'إنشاء فاتورة مشتريات جديدة'}
+          <DialogTitle className="flex items-center justify-between">
+            <span>
+              {type === 'sales' ? 'إنشاء فاتورة مبيعات جديدة' : 'إنشاء فاتورة مشتريات جديدة'}
+            </span>
+            {lastSaved && (
+              <span className="text-xs font-normal text-slate-500 flex items-center gap-1.5">
+                <Save className="w-3.5 h-3.5" />
+                تم الحفظ تلقائياً
+              </span>
+            )}
           </DialogTitle>
           <DialogDescription>
             {type === 'sales' ? 'أدخل تفاصيل فاتورة المبيعات والأصناف' : 'أدخل تفاصيل فاتورة المشتريات والأصناف'}
           </DialogDescription>
         </DialogHeader>
+
+        {showDraftPrompt && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <Save className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900">يوجد مسودة محفوظة</p>
+                <p className="text-xs text-amber-700 mt-1">هل تريد استعادة البيانات السابقة؟</p>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={handleDismissDraft}>
+                  تجاهل
+                </Button>
+                <Button size="sm" onClick={handleRestoreDraft}>
+                  استعادة
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 mb-6">
           {STEPS.map((s, index) => (

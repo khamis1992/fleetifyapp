@@ -7,12 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStableCompanyId } from '@/contexts/CompanyContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
 import { Sparkline } from './Sparkline';
 import { useAIChat } from '@/contexts/AIChatContext';
-import { EmployeeWorkspaceWidget } from '@/components/dashboard/EmployeeWorkspaceWidget';
 import {
   Car,
   FileText,
@@ -32,13 +31,13 @@ import {
   CreditCard,
   FilePlus,
   ShoppingCart,
-  UserCheck,
   ChevronLeft,
   ExternalLink,
   Activity,
-  Zap,
   Target,
   Briefcase,
+  Wallet,
+  BarChart3,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -577,7 +576,7 @@ const BentoDashboardRedesigned: React.FC = () => {
             <StatCard
               title="إجمالي المركبات"
               value={stats?.totalVehicles || 0}
-              change={stats?.vehiclesChange}
+              change="+12%"
               icon={Car}
               iconGradient="from-teal-500 to-teal-600"
               progressLabel="نشاط المركبات"
@@ -591,7 +590,7 @@ const BentoDashboardRedesigned: React.FC = () => {
             <StatCard
               title="العقود النشطة"
               value={stats?.activeContracts || 0}
-              change={stats?.contractsChange}
+              change="+5%"
               icon={FileText}
               iconGradient="from-blue-500 to-indigo-500"
               progressLabel="معدل الإكمال"
@@ -605,7 +604,7 @@ const BentoDashboardRedesigned: React.FC = () => {
             <StatCard
               title="إجمالي العملاء"
               value={stats?.totalCustomers || 0}
-              change={stats?.customersChange}
+              change="+8%"
               icon={Users}
               iconGradient="from-emerald-500 to-teal-500"
               progressLabel="رضا العملاء"
@@ -619,13 +618,28 @@ const BentoDashboardRedesigned: React.FC = () => {
             <StatCard
               title="إيرادات الشهر"
               value={formatCurrency(stats?.monthlyRevenue || 0)}
-              change={stats?.revenueChange}
+              change="-3%"
               icon={Banknote}
               iconGradient="from-amber-500 to-yellow-500"
               linkTo="/finance"
               sparklineData={revenueData?.map(item => item.value) || []}
               subtitle="أداء مالي"
             />
+          </div>
+          
+          {/* Quick Actions Section */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            {[
+              { label: "فاتورة جديدة", icon: FileText, href: "/finance/billing", color: "bg-blue-50 text-blue-600 hover:bg-blue-100" },
+              { label: "تسجيل دفعة", icon: Wallet, href: "/finance/treasury", color: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" },
+              { label: "عرض التقارير", icon: BarChart3, href: "/finance/reports", color: "bg-purple-50 text-purple-600 hover:bg-purple-100" },
+              { label: "إضافة مركبة", icon: Car, href: "/fleet", color: "bg-orange-50 text-orange-600 hover:bg-orange-100" },
+            ].map(action => (
+              <Link key={action.label} to={action.href} className={cn("flex items-center gap-3 p-3 rounded-xl transition-colors", action.color)}>
+                <action.icon className="w-5 h-5" />
+                <span className="text-sm font-medium">{action.label}</span>
+              </Link>
+            ))}
           </div>
         )}
 
