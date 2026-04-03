@@ -38,7 +38,7 @@ export function EnterpriseComparison() {
   const afterTotalSeconds = 35; // 30 + 5 + 0 + 0 + 0
 
   return (
-    <section id="comparison" className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+    <section id="comparison" className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 opacity-10">
@@ -55,13 +55,13 @@ export function EnterpriseComparison() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-teal-500/20 to-teal-500/20 text-teal-300 rounded-full text-sm font-bold mb-4 border border-teal-500/30">
+          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300 rounded-full text-sm font-bold mb-4 border border-teal-500/30">
             مقارنة واقعية
           </span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             قبل وبعد Fleetify
           </h2>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
             شاهد الفرق الهائل في الإنتاجية والكفاءة مع Fleetify
           </p>
         </motion.div>
@@ -74,7 +74,7 @@ export function EnterpriseComparison() {
           className="max-w-6xl mx-auto"
         >
           <div
-            className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-700 cursor-grab active:cursor-grabbing"
+            className="relative rounded-xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing"
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
@@ -211,50 +211,50 @@ export function EnterpriseComparison() {
             </div>
           </div>
 
-          {/* Stats Summary */}
+           {/* Stats Summary */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="mt-12 grid md:grid-cols-3 gap-6"
           >
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-7 h-7 text-teal-400" />
+                <div className="w-14 h-14 rounded-xl bg-teal-50 dark:bg-teal-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-7 h-7 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-white">99%</p>
-                  <p className="text-slate-400 text-sm">أسرع</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">99%</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">أسرع</p>
                 </div>
               </div>
-              <p className="text-slate-300 text-sm">توفير هائل في الوقت والجهد</p>
+              <p className="text-slate-700 dark:text-slate-300 text-sm">توفير هائل في الوقت والجهد</p>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                  <AlertCircle className="w-7 h-7 text-teal-400" />
+                <div className="w-14 h-14 rounded-xl bg-teal-50 dark:bg-teal-500/20 flex items-center justify-center">
+                  <AlertCircle className="w-7 h-7 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-white">0%</p>
-                  <p className="text-slate-400 text-sm">أخطاء</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">0%</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">أخطاء</p>
                 </div>
               </div>
-              <p className="text-slate-300 text-sm">دقة تامة مع الأتمتة الكاملة</p>
+              <p className="text-slate-700 dark:text-slate-300 text-sm">دقة تامة مع الأتمتة الكاملة</p>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-xl bg-teal-500/20 flex items-center justify-center">
-                  <DollarSign className="w-7 h-7 text-teal-400" />
+                <div className="w-14 h-14 rounded-xl bg-teal-50 dark:bg-teal-500/20 flex items-center justify-center">
+                  <DollarSign className="w-7 h-7 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-white">70%</p>
-                  <p className="text-slate-400 text-sm">توفير التكاليف</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white">70%</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">توفير التكاليف</p>
                 </div>
               </div>
-              <p className="text-slate-300 text-sm">تقليل التكاليف التشغيلية</p>
+              <p className="text-slate-700 dark:text-slate-300 text-sm">تقليل التكاليف التشغيلية</p>
             </div>
           </motion.div>
         </motion.div>

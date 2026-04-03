@@ -63,20 +63,20 @@ const Auth: React.FC = () => {
   if (showError || mountError || sessionError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6" dir="rtl">
-        <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl rounded-xl p-8 border border-slate-800 text-center space-y-6">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-8 text-center space-y-6">
           <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto">
             <AlertTriangle className="w-8 h-8 text-amber-400" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-white">مشكلة في تحميل الصفحة</h2>
-            <p className="text-slate-400 text-sm">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">مشكلة في تحميل الصفحة</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
               {sessionError || mountError || 'حدثت مشكلة أثناء تحميل صفحة تسجيل الدخول. يرجى المحاولة مرة أخرى.'}
             </p>
           </div>
           <div className="flex gap-3">
             <Button 
               onClick={handleReload}
-              className="flex-1 bg-teal-500 hover:bg-teal-400 text-white"
+              className="flex-1 bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-sm min-h-[44px]"
             >
               <RefreshCw className="w-4 h-4 ml-2" />
               إعادة تحميل
@@ -84,7 +84,7 @@ const Auth: React.FC = () => {
             <Button 
               onClick={() => setShowError(false)}
               variant="outline"
-              className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800"
+              className="flex-1 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl min-h-[44px]"
             >
               المتابعة
             </Button>
@@ -98,10 +98,10 @@ const Auth: React.FC = () => {
   // CRITICAL FIX: Always show auth form after timeout to prevent blank page
   if (loading && !loadingTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 dark:bg-slate-950">
         <div className="text-center space-y-4">
           <LoadingSpinner size="lg" />
-          <p className="text-sm text-slate-400">جاري التحقق من الجلسة...</p>
+          <p className="text-sm text-slate-400 dark:text-slate-400">جاري التحقق من الجلسة...</p>
         </div>
       </div>
     );

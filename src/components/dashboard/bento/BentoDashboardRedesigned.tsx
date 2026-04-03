@@ -81,7 +81,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40"
+            className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-[2px] z-40"
             onClick={onClose}
           />
         )}
@@ -103,12 +103,12 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
                   animate={{ opacity: 1, x: 0, transition: { delay: index * 0.06 } }}
                   exit={{ opacity: 0, x: -20 }}
                   onClick={() => handleAction(action.id)}
-                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-white/20"
+                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-white/20 dark:border-neutral-700/20 min-h-[44px]"
                 >
                   <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', action.color)}>
                     <action.icon className="w-5 h-5 text-white" />
                   </div>
-                  <span className="font-bold text-neutral-800 text-sm">{action.label}</span>
+                  <span className="font-bold text-neutral-800 dark:text-white text-sm">{action.label}</span>
                 </motion.button>
               ))}
             </motion.div>
@@ -178,7 +178,7 @@ const StatCard: React.FC<StatCardProps> = ({
   return (
     <motion.div
       className={cn(
-        "relative overflow-hidden bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow-sm hover:shadow-2xl transition-all duration-500 h-full flex flex-col group border border-white/40",
+        "relative overflow-hidden bg-white/70 dark:bg-neutral-800/70 backdrop-blur-xl rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-500 h-full flex flex-col group border border-neutral-200/40 dark:border-neutral-700/40",
         isClickable && "cursor-pointer"
       )}
       onClick={isClickable ? handleClick : undefined}
@@ -196,7 +196,7 @@ const StatCard: React.FC<StatCardProps> = ({
 
       <div className="relative flex items-start justify-between mb-4">
         <motion.div
-          className={cn('w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-lg', iconGradient)}
+          className={cn('w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', iconGradient)}
           whileHover={{ rotate: 15, scale: 1.1 }}
           transition={{ type: "spring", stiffness: 400 }}
         >
@@ -208,8 +208,8 @@ const StatCard: React.FC<StatCardProps> = ({
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm',
                 isPositive
-                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                  : 'bg-red-100 text-red-700 border border-red-200'
+                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
               )}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -225,16 +225,16 @@ const StatCard: React.FC<StatCardProps> = ({
               initial={{ x: -5 }}
               animate={{ x: 0 }}
             >
-              <ExternalLink className="w-4 h-4 text-neutral-400" />
+              <ExternalLink className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
             </motion.div>
           )}
         </div>
       </div>
 
       <div className="relative flex-1 flex flex-col">
-        <p className="text-xs text-neutral-500 font-semibold tracking-wide uppercase mb-2">{title}</p>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-semibold tracking-wide uppercase mb-2">{title}</p>
         <motion.p
-          className="text-3xl font-black text-neutral-900 leading-none mb-2 tracking-tight"
+          className="text-3xl font-black text-neutral-900 dark:text-white leading-none mb-2 tracking-tight"
           key={String(value)}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -244,7 +244,7 @@ const StatCard: React.FC<StatCardProps> = ({
         </motion.p>
 
         {subtitle && (
-          <p className="text-xs text-neutral-500 mt-1">{subtitle}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{subtitle}</p>
         )}
 
         {/* Mini Sparkline Chart */}
@@ -256,13 +256,13 @@ const StatCard: React.FC<StatCardProps> = ({
 
         {progressLabel && progressValue !== undefined && (
           <div className="mt-auto">
-            <div className="flex items-center justify-between text-xs text-neutral-600 mb-2">
+            <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-300 mb-2">
               <span className="font-medium">{progressLabel}</span>
-              <span className={cn('font-bold', 'text-teal-600')}>
+              <span className={cn('font-bold', 'text-teal-600 dark:text-teal-400')}>
                 {progressValue}%
               </span>
             </div>
-            <div className="h-2 bg-neutral-200/60 rounded-full overflow-hidden backdrop-blur-sm">
+            <div className="h-2 bg-neutral-200/60 dark:bg-neutral-700/60 rounded-full overflow-hidden backdrop-blur-sm">
               <motion.div
                 className={cn('h-full rounded-full bg-gradient-to-r shadow-inner', progressColor)}
                 initial={{ width: 0 }}
@@ -281,7 +281,7 @@ const StatCard: React.FC<StatCardProps> = ({
           initial={{ y: 5 }}
           animate={{ y: 0 }}
         >
-          <span className="text-[10px] text-teal-600 font-bold tracking-wide">اضغط للتفاصيل ←</span>
+          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold tracking-wide">اضغط للتفاصيل ←</span>
         </motion.div>
       )}
     </motion.div>
@@ -480,28 +480,28 @@ const BentoDashboardRedesigned: React.FC = () => {
   }, [navigate, triggerQuickSearch]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-100">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-100 via-neutral-50 to-neutral-100 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
       <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} onActionSelect={handleActionSelect} />
 
       {/* NEW STICKY HEADER - Clean, Professional */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-30">
+      <header className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-30">
         <div className="px-6 py-3">
           <div className="flex items-center justify-between">
             {/* Left - Logo & Date */}
-            <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
                   <Activity className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-neutral-900">لوحة التحكم</span>
+                <span className="font-bold text-neutral-900 dark:text-white">لوحة التحكم</span>
               </div>
 
-              <div className="h-6 w-px bg-neutral-200" />
+              <div className="h-6 w-px bg-neutral-200 dark:bg-neutral-700" />
 
               <div className="flex items-center gap-2 text-sm">
-                <span className="font-bold text-neutral-900">{dayNumber}</span>
-                <span className="text-neutral-600">{dayName}</span>
-                <span className="text-neutral-400">{gregorianDate}</span>
+                <span className="font-bold text-neutral-900 dark:text-white">{dayNumber}</span>
+                <span className="text-neutral-600 dark:text-neutral-300">{dayName}</span>
+                <span className="text-neutral-400 dark:text-neutral-500">{gregorianDate}</span>
               </div>
             </div>
 
@@ -511,12 +511,12 @@ const BentoDashboardRedesigned: React.FC = () => {
                 <input
                   type="text"
                   placeholder="بحث..."
-                  className="w-64 pl-4 pr-10 py-2 bg-neutral-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                  className="w-64 pl-4 pr-10 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20"
                 />
                 <Search className="w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
 
-              <div className="h-6 w-px bg-neutral-200" />
+              <div className="h-6 w-px bg-neutral-200 dark:bg-neutral-700" />
 
               {/* Employee Workspace Button */}
               <motion.button

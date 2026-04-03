@@ -6,7 +6,7 @@ import { FileSignature } from 'lucide-react'
 
 const ElectronicSignatureSettings: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
           <FileSignature className="h-8 w-8 text-white" />

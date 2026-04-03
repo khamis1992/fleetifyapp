@@ -411,68 +411,68 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">قيد الانتظار</CardTitle>
             <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <Clock className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{pendingQuotations.length}</div>
-            <p className="text-xs text-slate-500">عرض معلق</p>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{pendingQuotations.length}</div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">عرض معلق</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مقبولة</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">مقبولة</CardTitle>
             <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <CheckCircle className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{acceptedQuotations.length}</div>
-            <p className="text-xs text-slate-500">تم القبول</p>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{acceptedQuotations.length}</div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">تم القبول</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مرفوضة</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">مرفوضة</CardTitle>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
               <XCircle className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{rejectedQuotations.length}</div>
-            <p className="text-xs text-slate-500">تم الرفض</p>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{rejectedQuotations.length}</div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">تم الرفض</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">محولة لعقود</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">محولة لعقود</CardTitle>
             <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <FileText className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{convertedQuotations.length}</div>
-            <p className="text-xs text-slate-500">تم التحويل</p>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{convertedQuotations.length}</div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">تم التحويل</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 hover:shadow-sm transition-all">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">القيمة الإجمالية</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-300">القيمة الإجمالية</CardTitle>
             <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
               <DollarSign className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{formatCurrency(totalQuotationValue)}</div>
-            <p className="text-xs text-slate-500">العروض المعلقة</p>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(totalQuotationValue)}</div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">العروض المعلقة</p>
           </CardContent>
         </Card>
       </div>
@@ -480,12 +480,12 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
       {/* Quotations List */}
       <div className="grid gap-4">
         {quotations?.map((quotation) => (
-          <Card key={quotation.id} className="bg-white border-slate-200 hover:shadow-sm transition-all">
+          <Card key={quotation.id} className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all">
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-lg text-slate-900">عرض سعر رقم {quotation.quotation_number}</h3>
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">عرض سعر رقم {quotation.quotation_number}</h3>
                     <Badge className={getStatusColor(quotation.status)}>
                       {getStatusIcon(quotation.status)}
                       <span className="mr-1">
@@ -495,7 +495,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                       </span>
                     </Badge>
                     {hasGlobalAccess && quotation.companies && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-slate-200 dark:border-slate-700">
                         <Building className="h-3 w-3 mr-1" />
                         {quotation.companies.name}
                       </Badge>
@@ -504,8 +504,8 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
 
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm text-slate-700">
+                      <Users className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">
                         {quotation.customers ? (
                           quotation.customers.customer_type === 'corporate'
                             ? quotation.customers.company_name
@@ -517,57 +517,57 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm text-slate-700">
+                      <Clock className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">
                         {quotation.duration} {quotation.quotation_type === 'daily' ? 'يوم' :
                                             quotation.quotation_type === 'weekly' ? 'أسبوع' : 'شهر'}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm font-medium text-slate-900">
+                      <DollarSign className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                         {formatCurrency(quotation.total_amount || 0)}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm text-slate-700">
+                      <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">
                         صالح حتى: {new Date(quotation.valid_until).toLocaleDateString('en-GB')}
                       </span>
                     </div>
                   </div>
 
                   {quotation.description && (
-                    <p className="text-sm text-slate-500">{quotation.description}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{quotation.description}</p>
                   )}
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="rounded-xl hover:shadow-sm">
+                  <Button variant="outline" size="default" className="rounded-xl hover:shadow-sm min-h-[44px] border-slate-200 dark:border-slate-700">
                     <Eye className="h-4 w-4 mr-1" />
                     عرض
                   </Button>
-                  <Button variant="outline" size="sm" className="rounded-xl hover:shadow-sm">
+                  <Button variant="outline" size="default" className="rounded-xl hover:shadow-sm min-h-[44px] border-slate-200 dark:border-slate-700">
                     <FileDown className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={() => shareViaWhatsApp(quotation)}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50 rounded-xl hover:shadow-sm"
+                    className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-xl hover:shadow-sm min-h-[44px] border-green-200 dark:border-green-800"
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
                     ارسال
                   </Button>
                   {quotation.status === 'accepted' && (
                     <Button
-                      size="sm"
+                      size="default"
                       onClick={() => convertToContractMutation.mutate(quotation.id)}
                       disabled={convertToContractMutation.isPending}
-                      className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
+                      className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm min-h-[44px]"
                     >
                       تحويل لعقد
                     </Button>
@@ -579,16 +579,16 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
         ))}
 
         {quotations?.length === 0 && (
-          <Card className="bg-white border-slate-200">
+          <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-slate-400" />
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center mb-4">
+                <FileText className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">لا توجد عروض أسعار بعد</h3>
-              <p className="text-slate-500 text-center mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">لا توجد عروض أسعار بعد</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-4">
                 ابدأ في إنشاء عروض أسعار جديدة للعملاء
               </p>
-              <Button onClick={() => setShowQuotationForm(true)} className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm">
+              <Button onClick={() => setShowQuotationForm(true)} className="bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm min-h-[44px]">
                 <Plus className="h-4 w-4 mr-2" />
                 إنشاء عرض سعر جديد
               </Button>
@@ -606,13 +606,13 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
           
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* معلومات أساسية */}
-            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
-              <h3 className="text-lg font-semibold mb-4 text-slate-900">المعلومات الأساسية</h3>
+            <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">المعلومات الأساسية</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customer">العميل *</Label>
+                  <Label htmlFor="customer" className="text-slate-700 dark:text-slate-300">العميل *</Label>
                   <Select onValueChange={(value) => setValue('customer_id', value)}>
-                    <SelectTrigger id="customer" className="rounded-xl">
+                    <SelectTrigger id="customer" className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                       <SelectValue placeholder="اختر العميل" />
                     </SelectTrigger>
                     <SelectContent>
@@ -628,9 +628,9 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="vehicle">المركبة</Label>
+                  <Label htmlFor="vehicle" className="text-slate-700 dark:text-slate-300">المركبة</Label>
                   <Select onValueChange={(value) => setValue('vehicle_id', value)}>
-                    <SelectTrigger id="vehicle" className="rounded-xl">
+                    <SelectTrigger id="vehicle" className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                       <SelectValue placeholder="اختر المركبة (اختياري)" />
                     </SelectTrigger>
                     <SelectContent>
@@ -646,16 +646,16 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
 
             {/* تفاصيل السعر */}
-            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
-              <h3 className="text-lg font-semibold mb-4 text-slate-900">تفاصيل السعر</h3>
+            <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">تفاصيل السعر</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="quotation_type">نوع الإيجار *</Label>
+                  <Label htmlFor="quotation_type" className="text-slate-700 dark:text-slate-300">نوع الإيجار *</Label>
                   <Select
                     value={quotationType}
                     onValueChange={(value) => setValue('quotation_type', value as 'daily' | 'weekly' | 'monthly')}
                   >
-                    <SelectTrigger id="quotation_type" className="rounded-xl">
+                    <SelectTrigger id="quotation_type" className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -667,42 +667,42 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">المدة *</Label>
+                  <Label htmlFor="duration" className="text-slate-700 dark:text-slate-300">المدة *</Label>
                   <Input
                     id="duration"
                     type="number"
                     min="1"
                     placeholder="عدد الأيام/الأسابيع/الشهور"
-                    className="rounded-xl"
+                    className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                     {...register('duration', { required: true, valueAsNumber: true })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rate_per_unit">السعر لكل وحدة (د.ك) *</Label>
+                  <Label htmlFor="rate_per_unit" className="text-slate-700 dark:text-slate-300">السعر لكل وحدة (د.ك) *</Label>
                   <Input
                     id="rate_per_unit"
                     type="number"
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    className="rounded-xl"
+                    className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                     {...register('rate_per_unit', { required: true, valueAsNumber: true })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount">المبلغ الإجمالي (د.ك) *</Label>
+                  <Label htmlFor="total_amount" className="text-slate-700 dark:text-slate-300">المبلغ الإجمالي (د.ك) *</Label>
                   <Input
                     id="total_amount"
                     type="number"
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    className="font-semibold text-slate-900 rounded-xl"
+                    className="font-semibold text-slate-900 dark:text-slate-100 rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                     {...register('total_amount', { required: true, valueAsNumber: true })}
                   />
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     محسوب تلقائياً: {calculatedAmount.toFixed(3)} د.ك
                   </p>
                 </div>
@@ -710,36 +710,36 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
             </div>
 
             {/* تفاصيل إضافية */}
-            <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200">
-              <h3 className="text-lg font-semibold mb-4 text-slate-900">التفاصيل الإضافية</h3>
+            <div className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">التفاصيل الإضافية</h3>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="valid_until">صالح حتى *</Label>
+                  <Label htmlFor="valid_until" className="text-slate-700 dark:text-slate-300">صالح حتى *</Label>
                   <Input
                     id="valid_until"
                     type="date"
-                    className="rounded-xl"
+                    className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                     {...register('valid_until', { required: true })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">الوصف</Label>
+                  <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">الوصف</Label>
                   <Textarea
                     id="description"
                     placeholder="وصف موجز لعرض السعر..."
-                    className="rounded-xl"
+                    className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                     {...register('description')}
                     rows={2}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="terms">الشروط والأحكام</Label>
+                  <Label htmlFor="terms" className="text-slate-700 dark:text-slate-300">الشروط والأحكام</Label>
                   <Textarea
                     id="terms"
                     placeholder="الشروط والأحكام الخاصة بعرض السعر..."
-                    className="rounded-xl"
+                    className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                     {...register('terms')}
                     rows={3}
                   />
@@ -747,7 +747,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
               <Button
                 type="button"
                 variant="outline"
@@ -755,14 +755,14 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                   setShowQuotationForm(false)
                   reset()
                 }}
-                className="px-6 rounded-xl"
+                className="px-6 rounded-xl min-h-[44px] border-slate-200 dark:border-slate-700"
               >
                 إلغاء
               </Button>
               <Button
                 type="submit"
                 disabled={createQuotationMutation.isPending}
-                className="px-6 bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm"
+                className="px-6 bg-teal-500 hover:bg-teal-600 rounded-xl shadow-sm min-h-[44px]"
               >
                 {createQuotationMutation.isPending ? 'جاري الحفظ...' : 'حفظ عرض السعر'}
               </Button>

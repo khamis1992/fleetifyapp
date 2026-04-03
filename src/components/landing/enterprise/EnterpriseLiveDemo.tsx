@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Plus, BarChart3, Calendar, Users, Car } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, BarChart3, Calendar, Car } from 'lucide-react';
 import { useState } from 'react';
 
 type DemoStep = 'idle' | 'adding' | 'processing' | 'complete';
@@ -44,7 +44,7 @@ export function EnterpriseLiveDemo() {
   };
 
   return (
-    <section id="demo" className="py-24 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden" dir="rtl">
+    <section id="demo" className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden" dir="rtl">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 right-20 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl"></div>
@@ -59,13 +59,13 @@ export function EnterpriseLiveDemo() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-1.5 bg-teal-500/10 text-teal-400 rounded-full text-sm font-bold mb-4 border border-teal-500/20">
+          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 rounded-full text-sm font-bold mb-4 border border-teal-500/20">
             تجربة تفاعلية
           </span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             جرب Fleetify الآن
           </h2>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             شاهد كيف تعمل المنصة في الوقت الفعلي
           </p>
         </motion.div>
@@ -79,10 +79,10 @@ export function EnterpriseLiveDemo() {
             className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden"
           >
             {/* Dashboard Header */}
-            <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6">
+            <div className="bg-slate-900 p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center">
                     <BarChart3 className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -204,7 +204,7 @@ export function EnterpriseLiveDemo() {
               </div>
 
               {/* Action Area */}
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-6 border-2 border-slate-200">
+              <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h4 className="text-lg font-bold text-slate-900">إضافة مركبة جديدة</h4>
@@ -226,7 +226,7 @@ export function EnterpriseLiveDemo() {
                       whileTap={{ scale: 0.95 }}
                       onClick={runDemo}
                       disabled={isPlaying}
-                      className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-bold text-sm hover:from-teal-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-6 py-2 min-h-[44px] bg-teal-500 text-white rounded-xl font-bold text-sm hover:bg-teal-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {isPlaying ? (
                         <>
@@ -296,7 +296,7 @@ export function EnterpriseLiveDemo() {
 
               {/* Recent Activity */}
               <div className="mt-6">
-                <h5 className="text-sm font-bold text-slate-700 mb-3">النشاط الأخير</h5>
+                 <h5 className="text-sm font-bold text-slate-700 dark:text-slate-100 mb-3">النشاط الأخير</h5>
                 <div className="space-y-2">
                   {[
                     { action: 'إضافة مركبة تويوتا كامري', time: 'منذ قليل', type: 'success' },

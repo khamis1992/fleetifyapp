@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { MapPin, Car, Users, Building2, FileText, TrendingUp } from 'lucide-react';
+import { Car } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -178,9 +178,9 @@ export function EnterpriseTrustedBy() {
   };
 
   return (
-    <section
+     <section
       id="coverage"
-      className="py-24 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden"
+      className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden"
       dir="rtl"
     >
       {/* Animated Background Pattern */}
@@ -210,13 +210,13 @@ export function EnterpriseTrustedBy() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-1.5 bg-teal-500/10 text-teal-400 rounded-full text-sm font-bold mb-4 shadow-sm border border-teal-500/20">
+          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 rounded-full text-sm font-bold mb-4 border border-teal-500/20">
             🇶🇦 تغطية شاملة لقطر
           </span>
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             موجودون في كل مكان
           </h2>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             نخدم أكثر من 34 شركة في جميع أنحاء قطر مع شبكة موزعة تغطي المدن الرئيسية
           </p>
         </motion.div>
@@ -229,7 +229,7 @@ export function EnterpriseTrustedBy() {
             viewport={{ once: true }}
             className="w-full max-w-5xl relative"
           >
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
+                  <div className="relative rounded-xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               {/* Map Container */}
               <div className="h-[600px] w-full relative">
                 {!isMapReady && (
@@ -263,11 +263,11 @@ export function EnterpriseTrustedBy() {
                         click: () => handleLocationClick(loc),
                       }}
                     >
-                      <Popup dir="rtl" className="custom-popup">
-                        <div
-                          className="text-center p-4"
-                          style={{ minWidth: '220px', fontFamily: 'system-ui' }}
-                        >
+                     <Popup className="custom-popup">
+                         <div
+                           className="text-center p-4"
+                           style={{ minWidth: '220px', fontFamily: 'system-ui' }}
+                         >
                           <div
                             className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
                             style={{ background: loc.color }}
@@ -310,18 +310,18 @@ export function EnterpriseTrustedBy() {
 
               {/* Top Info Bar */}
               <div className="absolute top-4 right-4 z-20 flex gap-2">
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-4 py-2.5 border border-slate-200 flex items-center gap-2">
+                <div className="bg-white rounded-xl shadow-sm px-4 py-2.5 border border-slate-200 flex items-center gap-2">
                   <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-sm font-bold text-slate-700">خريطة مباشرة</span>
                 </div>
-                <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-4 py-2.5 border border-slate-200 flex items-center gap-2">
+                <div className="bg-white rounded-xl shadow-sm px-4 py-2.5 border border-slate-200 flex items-center gap-2">
                   <span className="text-lg">🇶🇦</span>
                   <span className="text-sm font-bold text-slate-700">قطر</span>
                 </div>
               </div>
 
               {/* Stats Badge */}
-              <div className="absolute bottom-4 left-4 z-20 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-xl shadow-lg px-5 py-3 border border-slate-700">
+              <div className="absolute bottom-4 left-4 z-20 bg-slate-900 text-white rounded-xl shadow-sm px-5 py-3 border border-slate-700">
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <p className="text-2xl font-bold">{locations.length}</p>

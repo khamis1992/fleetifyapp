@@ -1,6 +1,6 @@
+import { useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Car, FileText, BarChart3, Users, MapPin, Activity, Zap, TrendingUp } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
 
 export function EnterpriseVideo() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +71,7 @@ export function EnterpriseVideo() {
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden" dir="rtl">
+     <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden" dir="rtl">
       {/* Animated grid background */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0" style={{
@@ -122,24 +122,24 @@ export function EnterpriseVideo() {
           transition={{ duration: 0.8 }}
           className="text-center mb-20"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-teal-500/10 to-teal-500/5 backdrop-blur-md rounded-full border border-teal-500/30 text-teal-400 text-sm font-bold mb-8 shadow-lg shadow-teal-500/20"
-          >
+           <motion.div
+             initial={{ opacity: 0, scale: 0.8 }}
+             whileInView={{ opacity: 1, scale: 1 }}
+             viewport={{ once: true }}
+             className="inline-flex items-center gap-3 px-6 py-3 bg-teal-50 dark:bg-teal-500/10 rounded-full border border-teal-500/30 text-teal-700 dark:text-teal-400 text-sm font-bold mb-8"
+           >
             <Activity className="w-5 h-5 animate-pulse" />
             <span>نظام تحكم متطور</span>
           </motion.div>
 
-          <h2 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+          <h2 className="text-5xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-6 leading-tight">
             اكتشف قوة
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-teal-300">
+            <span className="block text-teal-600 dark:text-teal-400">
               المنصة الذكية
             </span>
           </h2>
 
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
             واجهة تحكم هolographic ثلاثية الأبعاد مع بيانات مباشرة وتحليلات فورية
           </p>
         </motion.div>
@@ -294,15 +294,13 @@ export function EnterpriseVideo() {
                 onHoverStart={() => setHoveredCard(index)}
                 onHoverEnd={() => setHoveredCard(null)}
               >
-                <motion.div
-                  className="relative backdrop-blur-xl bg-slate-900/60 rounded-2xl p-6 border border-teal-500/30 shadow-2xl overflow-hidden"
-                  whileHover={{
-                    scale: 1.05,
-                    borderColor: 'rgba(20, 184, 166, 0.6)',
-                    boxShadow: '0 0 30px rgba(20, 184, 166, 0.3)'
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
+              <motion.div
+                   className="relative bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+                   whileHover={{
+                     scale: 1.05,
+                   }}
+                   transition={{ duration: 0.3 }}
+                 >
                   {/* Holographic shimmer effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent" />
 
@@ -311,20 +309,19 @@ export function EnterpriseVideo() {
                   <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-teal-500/50 rounded-bl-lg" />
 
                   {/* Icon */}
-                  <div className={`relative w-14 h-14 rounded-xl bg-gradient-to-br ${data.color} flex items-center justify-center mb-4 shadow-lg`}>
+                  <div className={`relative w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center mb-4 shadow-sm`}>
                     <data.icon className="w-7 h-7 text-white" />
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
                   </div>
 
                   {/* Content */}
-                  <p className="text-slate-400 text-sm mb-1">{data.label}</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm mb-1">{data.label}</p>
                   <motion.p
-                    className="text-4xl font-bold text-white mb-1"
+                    className="text-4xl font-bold text-slate-900 dark:text-white mb-1"
                     animate={hoveredCard === index ? { scale: [1, 1.1, 1] } : {}}
                   >
                     {data.value}
                   </motion.p>
-                  <p className="text-teal-400 text-xs">{data.subtext}</p>
+                  <p className="text-teal-600 dark:text-teal-400 text-xs">{data.subtext}</p>
 
                   {/* Animated underline */}
                   {hoveredCard === index && (
@@ -379,22 +376,18 @@ export function EnterpriseVideo() {
             { icon: Zap, title: 'سرعة فائقة', desc: 'أداء متفوق', stat: '< 100ms' },
             { icon: TrendingUp, title: 'تحليلات ذكية', desc: 'تقارير مفصلة', stat: '24/7' },
           ].map((feature, index) => (
-            <motion.div
-              key={index}
-              className="group relative backdrop-blur-xl bg-slate-900/40 rounded-2xl p-6 border border-slate-700/50 hover:border-teal-500/50 transition-all overflow-hidden"
-              whileHover={{
-                y: -8,
-                borderColor: 'rgba(20, 184, 166, 0.5)',
-                boxShadow: '0 20px 40px rgba(20, 184, 166, 0.2)'
-              }}
-            >
-              {/* Background gradient on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+             <motion.div
+               key={index}
+               className="group relative bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-teal-500/50 transition-all overflow-hidden"
+               whileHover={{
+                 y: -8,
+               }}
+             >
 
-              {/* Icon */}
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500/20 to-teal-500/10 flex items-center justify-center mb-4 border border-teal-500/30 group-hover:scale-110 transition-transform">
-                <feature.icon className="w-8 h-8 text-teal-400" />
-              </div>
+               {/* Icon */}
+               <div className="relative w-16 h-16 rounded-xl bg-teal-500/10 flex items-center justify-center mb-4 border border-teal-500/30 group-hover:scale-110 transition-transform">
+                 <feature.icon className="w-8 h-8 text-teal-600 dark:text-teal-400" />
+               </div>
 
               {/* Stat badge */}
               <motion.div
@@ -406,11 +399,11 @@ export function EnterpriseVideo() {
               </motion.div>
 
               {/* Content */}
-              <h3 className="relative text-xl font-bold text-white mb-2">{feature.title}</h3>
-              <p className="relative text-slate-400 text-sm">{feature.desc}</p>
+              <h3 className="relative text-xl font-bold text-slate-900 dark:text-white mb-2">{feature.title}</h3>
+              <p className="relative text-slate-600 dark:text-slate-400 text-sm">{feature.desc}</p>
 
               {/* Corner decoration */}
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-teal-500/30 rounded-br-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-teal-500/30 rounded-br-xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
           ))}
         </motion.div>

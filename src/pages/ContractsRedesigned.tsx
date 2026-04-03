@@ -499,22 +499,22 @@ const ContractListItem = ({
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-2 lg:flex-col lg:items-end" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onView(contract)}
-              className="rounded-xl border-slate-200 hover:bg-slate-50"
-            >
-              <Eye className="w-4 h-4 ml-1.5" />
-              عرض
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-xl border-slate-200 px-2">
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
+             <Button
+               variant="outline"
+               size="default"
+               onClick={() => onView(contract)}
+               className="rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 min-h-[44px]"
+             >
+               <Eye className="w-4 h-4 ml-1.5" />
+               عرض
+             </Button>
+
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="outline" size="default" className="rounded-xl border-slate-200 dark:border-slate-700 px-3 min-h-[44px]">
+                   <MoreVertical className="w-4 h-4" />
+                 </Button>
+               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => onEdit(contract)}>
                   <Edit className="w-4 h-4 ml-2" />
@@ -603,15 +603,15 @@ const DraftCard = ({
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
-    <Button 
-      variant="outline" 
-      size="sm" 
-      className="w-full rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50"
-      onClick={() => onLoad(draft.id)}
-    >
-      <FileEdit className="h-4 w-4 ml-2" />
-      استئناف التحرير
-    </Button>
+           <Button
+             variant="outline"
+             size="default"
+             className="w-full rounded-xl border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 min-h-[44px]"
+             onClick={() => onLoad(draft.id)}
+           >
+             <FileEdit className="h-4 w-4 ml-2" />
+             استئناف التحرير
+           </Button>
   </motion.div>
 );
 
@@ -984,29 +984,29 @@ function ContractsRedesigned() {
 
               {/* Quick Actions */}
               <div className="flex flex-wrap items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => setShowContractWizard(true)}
-                        className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-500/25 transition-all duration-300 hover:shadow-xl"
-                      >
-                        <Plus className="w-4 h-4 ml-2" />
-                        عقد جديد
-                      </Button>
-                    </TooltipTrigger>
+                 <TooltipProvider>
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Button
+                         onClick={() => setShowContractWizard(true)}
+                         className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-500/25 transition-all duration-300 hover:shadow-xl min-h-[44px]"
+                       >
+                         <Plus className="w-4 h-4 ml-2" />
+                         عقد جديد
+                       </Button>
+                     </TooltipTrigger>
                     <TooltipContent>
                       <p>إنشاء عقد جديد</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="rounded-xl border-slate-200">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                     <Button variant="outline" size="default" className="rounded-xl border-slate-200 dark:border-slate-700 min-h-[44px]">
+                       <MoreVertical className="w-4 h-4" />
+                     </Button>
+                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     {user?.roles?.includes('super_admin') && (
                       <DropdownMenuItem onClick={() => setShowCSVUpload(true)}>
@@ -1034,14 +1034,15 @@ function ContractsRedesigned() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button
-                  onClick={handleRefresh}
-                  variant="outline"
-                  className="rounded-xl border-slate-200"
-                  disabled={isRefreshing}
-                >
-                  <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-                </Button>
+                 <Button
+                   onClick={handleRefresh}
+                   variant="outline"
+                   size="default"
+                   className="rounded-xl border-slate-200 dark:border-slate-700 min-h-[44px]"
+                   disabled={isRefreshing}
+                 >
+                   <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                 </Button>
               </div>
             </div>
           </div>
@@ -1156,15 +1157,15 @@ function ContractsRedesigned() {
               {/* Search */}
               <div className="flex-1 relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input
-                  placeholder="بحث برقم العقد، اسم العميل، رقم الجوال، الرقم الشخصي، رقم المركبة..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setPage(1);
-                  }}
-                  className="h-12 pr-12 text-base bg-slate-50 border-slate-200 rounded-xl focus:bg-white focus:border-teal-500 transition-all"
-                />
+                 <Input
+                   placeholder="بحث برقم العقد، اسم العميل، رقم الجوال، الرقم الشخصي، رقم المركبة..."
+                   value={searchTerm}
+                   onChange={(e) => {
+                     setSearchTerm(e.target.value);
+                     setPage(1);
+                   }}
+                   className="h-12 pr-12 text-base bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:border-teal-500 transition-all"
+                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
@@ -1177,16 +1178,16 @@ function ContractsRedesigned() {
 
               {/* Sort */}
               <div className="flex items-center gap-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
-                >
-                  <option value="default">ترتيب افتراضي</option>
-                  <option value="customer_name">حسب اسم العميل</option>
-                  <option value="contract_date">حسب تاريخ العقد</option>
-                  <option value="end_date">حسب تاريخ الانتهاء</option>
-                </select>
+                 <select
+                   value={sortBy}
+                   onChange={(e) => setSortBy(e.target.value as any)}
+                   className="h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all"
+                 >
+                   <option value="default">ترتيب افتراضي</option>
+                   <option value="customer_name">حسب اسم العميل</option>
+                   <option value="contract_date">حسب تاريخ العقد</option>
+                   <option value="end_date">حسب تاريخ الانتهاء</option>
+                 </select>
               </div>
             </div>
           </div>

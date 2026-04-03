@@ -100,7 +100,7 @@ export default function Attendance() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
@@ -221,16 +221,16 @@ export default function Attendance() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 mr-auto sm:mr-0">
-                        <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-teal-500 text-white' : ''}>
-                          {statusInfo.label}
-                        </Badge>
-                        {record.is_approved ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-600" />
-                        )}
-                      </div>
+                       <div className="flex items-center gap-2 mr-auto sm:mr-0">
+                         <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-teal-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}>
+                           {statusInfo.label}
+                         </Badge>
+                         {record.is_approved ? (
+                           <Check className="h-4 w-4 text-green-600" />
+                         ) : (
+                           <X className="h-4 w-4 text-red-600" />
+                         )}
+                       </div>
                     </div>
                   </div>
                 </CardContent>
