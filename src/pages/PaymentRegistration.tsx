@@ -163,7 +163,7 @@ const PaymentRegistration = () => {
   const [monthFilter, setMonthFilter] = useState<string>('all');
 
   // Sorting state
-  const [sortBy, setSortBy] = useState<'name' | 'amount' | 'overdue' | 'date'>('name');
+  const [sortField, setSortField] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Bulk actions state
@@ -534,18 +534,27 @@ const PaymentRegistration = () => {
     // 5. Sorting
     const sorted = [...filtered].sort((a, b) => {
       let comparison = 0;
-      switch (sortBy) {
+      switch (sortField) {
         case 'name':
           comparison = a.customerName.localeCompare(b.customerName, 'ar');
           break;
         case 'amount':
+        case 'monthlyAmount':
           comparison = a.monthlyPayment - b.monthlyPayment;
           break;
         case 'overdue':
+        case 'daysOverdue':
           comparison = a.daysOverdue - b.daysOverdue;
           break;
         case 'date':
+        case 'month':
           comparison = a.paymentMonth.localeCompare(b.paymentMonth);
+          break;
+        case 'amountPaid':
+          comparison = a.amountPaid - b.amountPaid;
+          break;
+        case 'status':
+          comparison = a.status.localeCompare(b.status);
           break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -573,7 +582,7 @@ const PaymentRegistration = () => {
       statistics: stats,
       totalPages: pages
     };
-  }, [contracts, debouncedSearchTerm, statusFilter, paymentMethodFilter, monthFilter, sortBy, sortOrder, currentPage, itemsPerPage]);
+  }, [contracts, debouncedSearchTerm, statusFilter, paymentMethodFilter, monthFilter, sortField, sortOrder, currentPage, itemsPerPage]);
 
   // For backward compatibility
   const filteredContracts = paginatedContracts;
