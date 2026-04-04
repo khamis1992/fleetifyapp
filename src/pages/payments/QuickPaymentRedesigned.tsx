@@ -119,7 +119,13 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
             >
               <Button
                 size="sm"
-                onClick={() => { setActiveTab('quick-entry'); setCurrentStep(0); }}
+                onClick={() => { 
+                  setActiveTab('quick-entry'); 
+                  setCurrentStep(0); 
+                  setShowFilters(false);
+                  setSearchTerm('');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="bg-teal-500 hover:bg-teal-600 gap-2 min-h-[44px]"
               >
                 <Sparkles className="h-4 w-4" />

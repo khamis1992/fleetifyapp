@@ -315,11 +315,23 @@ export const TourGuide: React.FC<TourGuideProps> = ({ tour, isActive, onEnd }) =
       } else {
         console.warn(`Tour target not found: ${currentStepData.target}`);
         setTargetElement(null);
+        // Skip to next step if target not found after retry
+        const retryTimer = setTimeout(() => {
+          if (tour && currentStep < tour.steps.length - 1) {
+            setCurrentStep(prev => prev + 1);
+          } else {
+            // End tour if last step
+            tour?.onComplete?.();
+            setCurrentStep(0);
+            onEnd();
+          }
+        }, 2000);
+        return () => clearTimeout(retryTimer);
       }
     };
 
-    // تأخير قصير لضمان تحميل الصفحة
-    const timer = setTimeout(findElement, 300);
+    // تأخير لضمان تحميل الصفحة والعناصر
+    const timer = setTimeout(findElement, 800);
     return () => clearTimeout(timer);
   }, [isActive, currentStepData, currentStep]);
 
