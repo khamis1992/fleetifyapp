@@ -95,7 +95,7 @@ const Finance = () => {
       <Route 
         path="reports-analysis" 
         element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
+          <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <ReportsAndAnalysis />
             </Suspense>
@@ -183,7 +183,7 @@ const Finance = () => {
       <Route 
         path="financial-ratios" 
         element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
+          <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <FinancialRatios />
             </Suspense>
@@ -193,7 +193,7 @@ const Finance = () => {
       <Route 
         path="invoice-journal-report" 
         element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
+          <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <InvoiceJournalReport />
             </Suspense>
@@ -313,7 +313,7 @@ const Finance = () => {
       <Route 
         path="reports" 
         element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
+          <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <Reports />
             </Suspense>
@@ -528,7 +528,7 @@ const Finance = () => {
       <Route 
         path="unified-reports" 
         element={
-          <ProtectedFinanceRoute permission="finance.reports.view">
+          <ProtectedFinanceRoute permission="finance.view">
             <Suspense fallback={<PageSkeletonFallback />}>
               <UnifiedReports />
             </Suspense>
