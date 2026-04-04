@@ -328,6 +328,8 @@ const InvoiceCard = ({
   onPay,
   onPreview,
   onCancel,
+  onDownload,
+  onPrint,
   isCancelling,
 }: {
   invoice: Invoice;
@@ -335,6 +337,8 @@ const InvoiceCard = ({
   onPay: () => void;
   onPreview: () => void;
   onCancel: () => void;
+  onDownload?: () => void;
+  onPrint?: () => void;
   isCancelling?: boolean;
 }) => {
   const statusInfo = getInvoiceStatusInfo(invoice);
@@ -380,11 +384,11 @@ const InvoiceCard = ({
               <Eye className="w-4 h-4" />
               <span>معاينة</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
+            <DropdownMenuItem onClick={onDownload} className="gap-2">
               <Download className="w-4 h-4" />
               <span>تحميل PDF</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
+            <DropdownMenuItem onClick={onPrint} className="gap-2">
               <Printer className="w-4 h-4" />
               <span>طباعة</span>
             </DropdownMenuItem>
@@ -491,6 +495,8 @@ const InvoiceTableRow = ({
   formatCurrency,
   onPay,
   onPreview,
+  onDownload,
+  onPrint,
   onCancel,
   isCancelling,
 }: {
@@ -498,6 +504,8 @@ const InvoiceTableRow = ({
   formatCurrency: (amount: number) => string;
   onPay: () => void;
   onPreview: () => void;
+  onDownload?: () => void;
+  onPrint?: () => void;
   onCancel: () => void;
   isCancelling?: boolean;
 }) => {
@@ -1487,6 +1495,14 @@ export const ContractInvoicesTabRedesigned = ({
                   formatCurrency={formatCurrency}
                   onPay={() => onPayInvoice(invoice)}
                   onPreview={() => onPreviewInvoice(invoice)}
+                  onDownload={() => {
+                    if (invoice.pdf_url) {
+                      window.open(invoice.pdf_url, '_blank');
+                    } else {
+                      window.print();
+                    }
+                  }}
+                  onPrint={() => window.print()}
                   onCancel={() => onCancelInvoice(invoice)}
                   isCancelling={isCancellingInvoice}
                 />
@@ -1514,6 +1530,14 @@ export const ContractInvoicesTabRedesigned = ({
                         formatCurrency={formatCurrency}
                         onPay={() => onPayInvoice(invoice)}
                         onPreview={() => onPreviewInvoice(invoice)}
+                        onDownload={() => {
+                          if (invoice.pdf_url) {
+                            window.open(invoice.pdf_url, '_blank');
+                          } else {
+                            window.print();
+                          }
+                        }}
+                        onPrint={() => window.print()}
                         onCancel={() => onCancelInvoice(invoice)}
                         isCancelling={isCancellingInvoice}
                       />

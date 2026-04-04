@@ -538,7 +538,15 @@ const CustomerDetailsPageNew = () => {
                       <Printer className="w-4 h-4" />
                       طباعة
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="gap-2">
+                    <DropdownMenuItem className="gap-2" onClick={() => {
+                      const url = window.location.href;
+                      if (navigator.share) {
+                        navigator.share({ title: customerName, url }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(url);
+                        toast({ title: 'تم نسخ الرابط', description: 'تم نسخ رابط العميل إلى الحافظة' });
+                      }
+                    }}>
                       <Share2 className="w-4 h-4" />
                       مشاركة
                     </DropdownMenuItem>

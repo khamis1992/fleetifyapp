@@ -167,21 +167,61 @@ const DashboardLanding: React.FC = () => {
     { name: 'محجوز', value: fleetStatus?.reserved || 0, color: '#3b82f6' },
   ];
 
+  const { data: reservationsData } = useQuery({
+    queryKey: ['reservations-week', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 7);
+      
+      const { data } = await supabase
+        .from('reservations')
+        .select('start_date, end_date')
+        .eq('company_id', companyId)
+        .in('status', ['confirmed', 'active'])
+        .gte('end_date', startDate.toISOString())
+        .lt('start_date', endDate.toISOString());
+      
+      return data || [];
+    },
+    enabled: isReady,
+    placeholderData: (prev: any) => prev,
+  });
+
   const getWeekDays = () => {
     const days = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date();
       date.setDate(today.getDate() + i);
-      const occupancy = Math.floor(Math.random() * 50) + 40;
+      
+      let occupancy = 0;
+      if (reservationsData && fleetStatus) {
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const overlapping = reservationsData.filter((r: any) => {
+          const rStart = new Date(r.start_date);
+          const rEnd = new Date(r.end_date);
+          return rStart <= dayEnd && rEnd >= dayStart;
+        }).length;
+        
+        occupancy = totalVehicles > 0 ? Math.round((overlapping / totalVehicles) * 100) : 0;
+        occupancy = Math.min(occupancy, 100);
+      }
+      
       days.push({
         day: date.getDate(),
         isToday: i === 0,
-        occupancy,
+        occupancy: occupancy || 0,
       });
     }
     return days;
   };
-  const weekDays = getWeekDays();
+  const weekDays = reservationsData ? getWeekDays() : [];
 
   const triggerQuickSearch = useCallback(() => {
     const event = new KeyboardEvent('keydown', {

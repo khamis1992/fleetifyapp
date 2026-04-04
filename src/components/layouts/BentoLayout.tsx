@@ -75,6 +75,7 @@ interface BentoLayoutProps {
 export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const location = useLocation();
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -97,6 +98,15 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle sidebar toggle event from keyboard shortcuts
+  useEffect(() => {
+    const handleToggleSidebar = () => {
+      setIsMobileMenuOpen(prev => !prev);
+    };
+    window.addEventListener('toggle-sidebar', handleToggleSidebar);
+    return () => window.removeEventListener('toggle-sidebar', handleToggleSidebar);
   }, []);
 
   // CRITICAL FIX: Only show loading on initial mount, not during navigation

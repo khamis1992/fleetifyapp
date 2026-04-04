@@ -1,16 +1,19 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Car, MoreVertical, Wrench, Edit, Trash2, Eye } from "lucide-react"
 import { Vehicle } from "@/hooks/useVehicles"
 import { VehicleForm } from "./VehicleForm"
 import { VehicleStatusChangeDialog } from "./VehicleStatusChangeDialog"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { useRolePermissions } from "@/hooks/useRolePermissions"
+import { useToast } from "@/components/ui/use-toast"
 
 interface VehicleCardProps {
   vehicle: Vehicle
@@ -41,10 +44,13 @@ const statusLabels = {
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
   const [showEditForm, setShowEditForm] = useState(false)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
   const { hasPermission } = useRolePermissions()
-  const queryClient = useQueryClient()
 
   const status = vehicle.status || 'available'
   const { formatCurrency } = useCurrencyFormatter()
@@ -54,6 +60,26 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
   
   const handleViewDetails = () => {
     navigate(`/fleet/vehicles/${vehicle.id}`)
+  }
+
+  const handleDeactivate = async () => {
+    setDeactivating(true)
+    try {
+      const { error } = await supabase
+        .from('vehicles')
+        .update({ is_active: false, status: 'out_of_service' })
+        .eq('id', vehicle.id)
+      
+      if (error) throw error
+      
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] })
+      toast({ title: 'تم إلغاء تفعيل المركبة', description: 'تم نقل المركبة إلى خارج الخدمة' })
+      setShowDeactivateDialog(false)
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'فشل في إلغاء تفعيل المركبة', variant: 'destructive' })
+    } finally {
+      setDeactivating(false)
+    }
   }
 
   return (
@@ -96,8 +122,11 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                     </DropdownMenuItem>
                   )}
                   {canDelete && (
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
+                    <DropdownMenuItem 
+                      className="text-destructive gap-2"
+                      onClick={() => setShowDeactivateDialog(true)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                       إلغاء التفعيل
                     </DropdownMenuItem>
                   )}
@@ -166,6 +195,23 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           queryClient.invalidateQueries({ queryKey: ['vehicles'] })
         }}
       />
+
+      <AlertDialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>إلغاء تفعيل المركبة</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إلغاء تفعيل المركبة {vehicle.plate_number}؟ سيتم نقلها إلى خارج الخدمة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deactivating}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeactivate} disabled={deactivating} className="bg-red-600 hover:bg-red-700">
+              {deactivating ? 'جاري الإلغاء...' : 'تأكيد الإلغاء'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
