@@ -183,19 +183,16 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         </AnimatePresence>
 
         {/* Desktop Sidebar - Fixed Position */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:block fixed top-0 right-0 h-full z-30">
           <aside role="complementary" aria-label="القائمة الجانبية">
             <BentoSidebar />
           </aside>
         </div>
         
         {/* Main Content Area - With margin for fixed sidebar */}
-        <motion.main
+        <main
           role="main"
           aria-label="المحتوى الرئيسي"
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
           className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0 lg:mr-[260px]"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
@@ -206,7 +203,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
             </nav>
             {children}
           </div>
-        </motion.main>
+        </main>
 
         {/* AI Chat Assistant Widget */}
         <Suspense fallback={<div className="w-16 h-16 rounded-full bg-muted animate-pulse" />}>
