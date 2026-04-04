@@ -84,51 +84,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-8 left-8 z-50">
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="absolute bottom-20 left-0 flex flex-col gap-3"
-            >
-              {actions.map((action, index) => (
-                <motion.button
-                  key={action.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0, transition: { delay: index * 0.06 } }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onClick={() => handleAction(action.id)}
-                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-sm transition-all hover:translate-x-1 min-w-[180px] border border-white/20 dark:border-neutral-700/20 min-h-[44px]"
-                >
-                  <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', action.color)}>
-                    <action.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-bold text-neutral-800 dark:text-white text-sm">{action.label}</span>
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          onClick={() => onClose()}
-          animate={{ rotate: isOpen ? 135 : 0, scale: isOpen ? 1.05 : 1 }}
-          className={cn(
-            'w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm transition-all',
-            isOpen ? 'bg-neutral-900' : 'bg-gradient-to-br from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700'
-          )}
-          style={{
-            boxShadow: isOpen
-              ? '0 8px 32px rgba(0,0,0,0.4)'
-              : '0 8px 32px rgba(13, 148, 136, 0.5), inset 0 -2px 4px rgba(0,0,0,0.1)'
-          }}
-        >
-          <Plus className="w-7 h-7 text-white" strokeWidth={3} />
-        </motion.button>
-      </div>
-    </>
+      </>
   );
 };
 
