@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { SkeletonMetrics } from '@/components/loaders';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStableCompanyId } from '@/contexts/CompanyContext';
@@ -10,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
 import { SimpleContractWizard } from '@/components/contracts/SimpleContractWizard';
 import { UnifiedNotificationBell } from '@/components/notifications/UnifiedNotificationBell';
-import { Sparkline } from './Sparkline';
 import { useAIChat } from '@/contexts/AIChatContext';
 import {
   Car,
@@ -32,7 +30,6 @@ import {
   FilePlus,
   ShoppingCart,
   ChevronLeft,
-  ExternalLink,
   Activity,
   Target,
   Briefcase,
@@ -135,7 +132,7 @@ const FABMenu: React.FC<FABMenuProps> = ({ isOpen, onClose, onActionSelect }) =>
   );
 };
 
-// ===== Enhanced Stat Card Component =====
+// ===== Compact Stat Card Component =====
 interface StatCardProps {
   title: string;
   value: string | number;
@@ -147,8 +144,6 @@ interface StatCardProps {
   progressColor?: string;
   linkTo?: string;
   onClick?: () => void;
-  sparklineData?: number[];
-  subtitle?: string;
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -162,8 +157,6 @@ const StatCard: React.FC<StatCardProps> = ({
   progressColor = 'from-teal-500 to-teal-600',
   linkTo,
   onClick,
-  sparklineData,
-  subtitle,
 }) => {
   const navigate = useNavigate();
   const changeStr = String(change || '');
@@ -175,96 +168,57 @@ const StatCard: React.FC<StatCardProps> = ({
     else if (linkTo) navigate(linkTo);
   };
 
+  // Extract colors from gradient for dark mode
+  const colorMatch = iconGradient.match(/from-(\w+)-/);
+  const colorBase = colorMatch ? colorMatch[1] : 'teal';
+  const lightBg = `bg-${colorBase}-50`;
+  const darkBg = `dark:bg-${colorBase}-500/10`;
+
   return (
     <motion.div
       className={cn(
-        "relative overflow-hidden bg-white/70 dark:bg-neutral-800/70 backdrop-blur-xl rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-500 h-full flex flex-col group border border-neutral-200/40 dark:border-neutral-700/40",
+        "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-sm transition-all h-full",
         isClickable && "cursor-pointer"
       )}
       onClick={isClickable ? handleClick : undefined}
-      whileHover={isClickable ? { y: -8, scale: 1.02 } : { y: -4 }}
+      whileHover={isClickable ? { y: -4 } : undefined}
       whileTap={isClickable ? { scale: 0.98 } : undefined}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
+      transition={{ duration: 0.3 }}
     >
-      {/* Background gradient decoration */}
-      <div className={cn(
-        "absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br opacity-5 blur-3xl",
-        iconGradient
-      )} />
-
-      <div className="relative flex items-start justify-between mb-4">
-        <motion.div
-          className={cn('w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', iconGradient)}
-          whileHover={{ rotate: 15, scale: 1.1 }}
-          transition={{ type: "spring", stiffness: 400 }}
-        >
-          <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
-        </motion.div>
-        <div className="flex items-center gap-2">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className={cn('p-2 rounded-lg', lightBg, darkBg)}>
+            <Icon className={cn('w-5 h-5', `text-${colorBase}-600 dark:text-${colorBase}-400`)} />
+          </div>
           {change !== undefined && change !== null && (
-            <motion.span
+            <span
               className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm',
+                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold',
                 isPositive
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+                  ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400'
               )}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", delay: 0.2 }}
             >
-              {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {changeStr}
-            </motion.span>
-          )}
-          {isClickable && (
-            <motion.div
-              className="opacity-0 group-hover:opacity-100 transition-all duration-300"
-              initial={{ x: -5 }}
-              animate={{ x: 0 }}
-            >
-              <ExternalLink className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-            </motion.div>
+            </span>
           )}
         </div>
-      </div>
 
-      <div className="relative flex-1 flex flex-col">
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-semibold tracking-wide uppercase mb-2">{title}</p>
-        <motion.p
-          className="text-3xl font-black text-neutral-900 dark:text-white leading-none mb-2 tracking-tight"
-          key={String(value)}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, type: "spring" }}
-        >
-          {value}
-        </motion.p>
-
-        {subtitle && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{subtitle}</p>
-        )}
-
-        {/* Mini Sparkline Chart */}
-        {sparklineData && sparklineData.length > 0 && (
-          <div className="h-8 mt-2 mb-3">
-            <Sparkline data={sparklineData} color={progressColor} height={32} />
-          </div>
-        )}
+        <h3 className="text-xs text-slate-500 dark:text-slate-400 mb-1">{title}</h3>
+        <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
 
         {progressLabel && progressValue !== undefined && (
-          <div className="mt-auto">
-            <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-300 mb-2">
-              <span className="font-medium">{progressLabel}</span>
-              <span className={cn('font-bold', 'text-teal-600 dark:text-teal-400')}>
-                {progressValue}%
-              </span>
+          <div className="mt-2">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+              <span>{progressLabel}</span>
+              <span className="font-bold text-teal-600 dark:text-teal-400">{progressValue}%</span>
             </div>
-            <div className="h-2 bg-neutral-200/60 dark:bg-neutral-700/60 rounded-full overflow-hidden backdrop-blur-sm">
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <motion.div
-                className={cn('h-full rounded-full bg-gradient-to-r shadow-inner', progressColor)}
+                className={cn('h-full rounded-full bg-gradient-to-r', progressColor)}
                 initial={{ width: 0 }}
                 animate={{ width: `${progressValue}%` }}
                 transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1], delay: 0.3 }}
@@ -273,17 +227,6 @@ const StatCard: React.FC<StatCardProps> = ({
           </div>
         )}
       </div>
-
-      {/* Hover hint for clickable cards */}
-      {isClickable && (
-        <motion.div
-          className="absolute bottom-4 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity"
-          initial={{ y: 5 }}
-          animate={{ y: 0 }}
-        >
-          <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold tracking-wide">اضغط للتفاصيل ←</span>
-        </motion.div>
-      )}
     </motion.div>
   );
 };
@@ -318,7 +261,8 @@ const BentoDashboardRedesigned: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: statsData } = useDashboardStats();
+  const stats = statsData as any;
   const { openChat: openAIChat } = useAIChat();
   const [fabOpen, setFabOpen] = useState(false);
   const [showContractWizard, setShowContractWizard] = useState(false);
@@ -338,7 +282,7 @@ const BentoDashboardRedesigned: React.FC = () => {
   const isReady = !!companyId;
 
   // Fleet Status Query
-  const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
+  const { data: fleetStatus } = useQuery({
     queryKey: ['fleet-status-redesign', companyId],
     queryFn: async () => {
       if (!companyId) {
@@ -566,81 +510,72 @@ const BentoDashboardRedesigned: React.FC = () => {
       {/* Main Content - Glassmorphism Design */}
       <div className="p-6">
 
-        {/* Stats Row - 4 Interactive cards */}
-        {statsLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <SkeletonMetrics count={4} columns={{ sm: 2, md: 2, lg: 4 }} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-            <StatCard
-              title="إجمالي المركبات"
-              value={stats?.totalVehicles || 0}
-              change="+12%"
-              icon={Car}
-              iconGradient="from-teal-500 to-teal-600"
-              progressLabel="نشاط المركبات"
-              progressValue={stats?.vehicleActivityRate || 85}
-              progressColor="from-teal-500 to-teal-600"
-              linkTo="/fleet"
-              sparklineData={revenueData?.map(item => item.value) || []}
-              subtitle="أسطول نشط"
-            />
+        {/* Stats Row - 4 Compact cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <StatCard
+            title="إجمالي المركبات"
+            value={stats?.totalVehicles || 0}
+            change="+12%"
+            icon={Car}
+            iconGradient="from-teal-500 to-teal-600"
+            progressLabel="نشاط"
+            progressValue={stats?.vehicleActivityRate || 85}
+            progressColor="from-teal-500 to-teal-600"
+            linkTo="/fleet"
+          />
 
-            <StatCard
-              title="العقود النشطة"
-              value={stats?.activeContracts || 0}
-              change="+5%"
-              icon={FileText}
-              iconGradient="from-blue-500 to-indigo-500"
-              progressLabel="معدل الإكمال"
-              progressValue={stats?.contractCompletionRate || 78}
-              progressColor="from-blue-500 to-indigo-500"
-              linkTo="/contracts"
-              sparklineData={revenueData?.map(item => item.value) || []}
-              subtitle="عقود سارية"
-            />
+          <StatCard
+            title="العقود النشطة"
+            value={stats?.activeContracts || 0}
+            change="+5%"
+            icon={FileText}
+            iconGradient="from-blue-500 to-indigo-500"
+            progressLabel="إكمال"
+            progressValue={stats?.contractCompletionRate || 78}
+            progressColor="from-blue-500 to-indigo-500"
+            linkTo="/contracts"
+          />
 
-            <StatCard
-              title="إجمالي العملاء"
-              value={stats?.totalCustomers || 0}
-              change="+8%"
-              icon={Users}
-              iconGradient="from-emerald-500 to-teal-500"
-              progressLabel="رضا العملاء"
-              progressValue={stats?.customerSatisfactionRate || 92}
-              progressColor="from-emerald-500 to-teal-500"
-              linkTo="/customers"
-              sparklineData={revenueData?.map(item => item.value) || []}
-              subtitle="قاعدة عملاء"
-            />
+          <StatCard
+            title="إجمالي العملاء"
+            value={stats?.totalCustomers || 0}
+            change="+8%"
+            icon={Users}
+            iconGradient="from-emerald-500 to-teal-500"
+            progressLabel="رضا"
+            progressValue={stats?.customerSatisfactionRate || 92}
+            progressColor="from-emerald-500 to-teal-500"
+            linkTo="/customers"
+          />
 
-            <StatCard
-              title="إيرادات الشهر"
-              value={formatCurrency(stats?.monthlyRevenue || 0)}
-              change="-3%"
-              icon={Banknote}
-              iconGradient="from-amber-500 to-yellow-500"
-              linkTo="/finance"
-              sparklineData={revenueData?.map(item => item.value) || []}
-              subtitle="أداء مالي"
-            />
-          </div>
-        )}
+          <StatCard
+            title="إيرادات الشهر"
+            value={formatCurrency(stats?.monthlyRevenue || 0)}
+            change="-3%"
+            icon={Banknote}
+            iconGradient="from-amber-500 to-yellow-500"
+            linkTo="/finance"
+          />
+        </div>
 
         {/* Quick Actions Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: "فاتورة جديدة", icon: FileText, href: "/finance/billing", color: "bg-blue-50 text-blue-600 hover:bg-blue-100" },
-            { label: "تسجيل دفعة", icon: Wallet, href: "/finance/treasury", color: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" },
-            { label: "عرض التقارير", icon: BarChart3, href: "/finance/reports", color: "bg-purple-50 text-purple-600 hover:bg-purple-100" },
-            { label: "إضافة مركبة", icon: Car, href: "/fleet", color: "bg-orange-50 text-orange-600 hover:bg-orange-100" },
-          ].map(action => (
-            <Link key={action.label} to={action.href} className={cn("flex items-center gap-3 p-3 rounded-xl transition-colors", action.color)}>
-              <action.icon className="w-5 h-5" />
-              <span className="text-sm font-medium">{action.label}</span>
-            </Link>
-          ))}
+          <Link to="/finance/billing" title="إنشاء فاتورة جديدة" className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors min-h-[44px]">
+            <FileText className="w-5 h-5" />
+            <span className="text-sm font-medium">فاتورة جديدة</span>
+          </Link>
+          <Link to="/finance/treasury" title="تسجيل دفعة" className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors min-h-[44px]">
+            <Wallet className="w-5 h-5" />
+            <span className="text-sm font-medium">تسجيل دفعة</span>
+          </Link>
+          <Link to="/finance/reports" title="عرض التقارير المالية" className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors min-h-[44px]">
+            <BarChart3 className="w-5 h-5" />
+            <span className="text-sm font-medium">عرض التقارير</span>
+          </Link>
+          <Link to="/fleet" title="إضافة مركبة جديدة" className="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors min-h-[44px]">
+            <Car className="w-5 h-5" />
+            <span className="text-sm font-medium">إضافة مركبة</span>
+          </Link>
         </div>
 
         {/* Main Grid */}

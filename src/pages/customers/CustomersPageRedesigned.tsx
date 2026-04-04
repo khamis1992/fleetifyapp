@@ -883,7 +883,7 @@ const CustomersPageRedesigned: React.FC = () => {
       <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
 
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <ProStatCard
             value={totalCustomersInDB}
             label="إجمالي العملاء"
@@ -1020,7 +1020,7 @@ const CustomersPageRedesigned: React.FC = () => {
             </div>
 
             {/* Customer Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {customers.map((customer, index) => (
                 <ProCustomerCard
                   key={customer.id}

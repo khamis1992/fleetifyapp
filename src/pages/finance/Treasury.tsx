@@ -224,7 +224,7 @@ export default function Treasury() {
       </motion.div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="إجمالي الأرصدة"
           value={formatCurrency(summary?.totalBalance || 0)}

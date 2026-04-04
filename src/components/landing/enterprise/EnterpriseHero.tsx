@@ -1,81 +1,56 @@
-import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function EnterpriseHero() {
+  const navigate = useNavigate();
+
   return (
-    <section className="relative min-h-screen flex items-center bg-slate-950 overflow-hidden" dir="rtl">
-      {/* Subtle geometric pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(90deg, rgba(20, 184, 166, .05) 1px, transparent 1px),
-            linear-gradient(rgba(20, 184, 166, .05) 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px'
-        }} />
-      </div>
-
-      <div className="container mx-auto px-6 pt-32 pb-20 relative z-10">
+    <section className="relative min-h-screen flex items-center bg-white dark:bg-slate-950" dir="rtl">
+      <div className="container mx-auto px-6 py-20">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            {/* Badge */}
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500/10 rounded-full border border-teal-500/20 text-white text-sm font-semibold mb-8"
-            >
-              <CheckCircle className="w-4 h-4 text-teal-400" />
+          <div className="max-w-xl">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-50 dark:bg-teal-500/10 rounded-xl border border-teal-200 dark:border-teal-500/20 text-teal-700 dark:text-teal-400 text-sm font-semibold mb-8">
+              <CheckCircle className="w-4 h-4" />
               <span>حل متكامل لإدارة الأسطول</span>
-            </motion.div>
+            </div>
 
-            {/* Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-6"
-            >
+            <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white leading-tight mb-6">
               ادر أسطولك
               <br />
-              <span className="text-teal-400">
+              <span className="text-teal-600 dark:text-teal-400">
                 بذكاء وكفاءة
               </span>
-            </motion.h1>
+            </h1>
 
-            {/* Subheadline */}
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-xl text-slate-400 dark:text-slate-400 mb-10 leading-relaxed max-w-xl"
-            >
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 leading-relaxed">
               منصة متكاملة لإدارة الأسطول مع تحليلات فورية،
               تقارير مفصلة، ودعم على مدار الساعة
-            </motion.p>
-          </motion.div>
+            </p>
 
-          {/* Dashboard Preview */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative"
-          >
-            {/* Main Dashboard Card */}
-             <div className="relative bg-white dark:bg-slate-900 rounded-xl p-4 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-              {/* Dashboard Header */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => navigate('/auth')}
+                className="min-h-[44px] px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-semibold text-lg transition-colors flex items-center justify-center gap-2"
+              >
+                ابدأ مجاناً
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => navigate('/auth')}
+                className="min-h-[44px] px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-semibold text-lg border border-slate-200 dark:border-slate-700 hover:border-teal-500 transition-colors flex items-center justify-center gap-2"
+              >
+                <Play className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                شاهد العرض
+              </button>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                  <p className="text-slate-400 text-sm">لوحة التحكم</p>
-                  <p className="text-white font-bold text-lg">نظرة عامة</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">لوحة التحكم</p>
+                  <p className="text-slate-900 dark:text-white font-bold text-lg">نظرة عامة</p>
                 </div>
                 <div className="flex gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -84,81 +59,67 @@ export function EnterpriseHero() {
                 </div>
               </div>
 
-              {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">المركبات النشطة</p>
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">المركبات النشطة</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">248</p>
                 </div>
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">العقود</p>
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">العقود</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">1,247</p>
                 </div>
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">الإيرادات</p>
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">الإيرادات</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">45K</p>
                 </div>
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
-                  <p className="text-slate-600 dark:text-slate-400 text-xs mb-1">العملاء</p>
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">العملاء</p>
                   <p className="text-slate-900 dark:text-white text-2xl font-bold">89</p>
                 </div>
               </div>
 
-              {/* Activity Chart */}
-              <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 mb-4">
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 mb-4 border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-slate-400 text-sm font-semibold">النشاط الأسبوعي</p>
-                  <span className="text-teal-400 text-xs">+12%</span>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm font-semibold">النشاط الأسبوعي</p>
+                  <span className="text-teal-600 dark:text-teal-400 text-xs font-semibold">+12%</span>
                 </div>
                 <div className="flex items-end gap-2 h-24">
                   {[40, 65, 45, 80, 55, 90, 70].map((height, i) => (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${height}%` }}
-                      transition={{ delay: i * 0.1 + 0.6 }}
-                      className="flex-1 bg-teal-500 rounded-t-lg"
+                      className="flex-1 bg-teal-500 rounded-t"
+                      style={{ height: `${height}%` }}
                     />
                   ))}
                 </div>
               </div>
 
-              {/* Recent Activity */}
               <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                   <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                  <p className="text-slate-300 text-xs flex-1">إضافة مركبة جديدة</p>
-                  <span className="text-slate-500 text-xs">منذ دقيقتين</span>
+                  <p className="text-slate-700 dark:text-slate-300 text-xs flex-1">إضافة مركبة جديدة</p>
+                  <span className="text-slate-400 dark:text-slate-500 text-xs">منذ دقيقتين</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                   <div className="w-2 h-2 rounded-full bg-teal-400"></div>
-                  <p className="text-slate-300 text-xs flex-1">عقد جديد #1234</p>
-                  <span className="text-slate-500 text-xs">منذ 5 دقائق</span>
+                  <p className="text-slate-700 dark:text-slate-300 text-xs flex-1">عقد جديد #1234</p>
+                  <span className="text-slate-400 dark:text-slate-500 text-xs">منذ 5 دقائق</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-slate-950/50 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                   <div className="w-2 h-2 rounded-full bg-teal-300"></div>
-                  <p className="text-slate-300 text-xs flex-1">تم استلام الدفعة</p>
-                  <span className="text-slate-500 text-xs">منذ 8 دقائق</span>
+                  <p className="text-slate-700 dark:text-slate-300 text-xs flex-1">تم استلام الدفعة</p>
+                  <span className="text-slate-400 dark:text-slate-500 text-xs">منذ 8 دقائق</span>
                 </div>
               </div>
             </div>
 
-            {/* Floating badges */}
-             <motion.div
-               animate={{ y: [0, -10, 0] }}
-               transition={{ duration: 3, repeat: Infinity }}
-               className="absolute -right-4 top-20 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-sm text-sm font-bold"
-             >
-               ✓ 99.9% مدة تشغيل
-             </motion.div>
-             <motion.div
-               animate={{ y: [0, 10, 0] }}
-               transition={{ duration: 4, repeat: Infinity }}
-               className="absolute -left-4 bottom-20 bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm text-sm font-bold border border-teal-500/30"
-             >
-               أسرع 10 مرات
-             </motion.div>
-          </motion.div>
+            <div className="absolute -right-4 top-20 bg-teal-600 text-white px-4 py-2 rounded-xl shadow-sm text-sm font-bold">
+              ✓ 99.9% مدة تشغيل
+            </div>
+            <div className="absolute -left-4 bottom-20 bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm text-sm font-bold border border-slate-700">
+              أسرع 10 مرات
+            </div>
+          </div>
         </div>
       </div>
     </section>

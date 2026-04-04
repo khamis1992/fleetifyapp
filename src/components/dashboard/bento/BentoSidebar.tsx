@@ -441,7 +441,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
           <button
             onClick={() => startTour('dashboard-overview')}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-orange-500 text-white text-xs font-medium hover:from-rose-600 hover:to-orange-600 transition-all shadow-sm"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium transition-colors shadow-sm min-h-[44px]"
           >
             <span className="flex-1 text-right">🎓 ابدأ جولة تعريفية</span>
           </button>

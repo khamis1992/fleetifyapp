@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useModuleConfig } from '@/modules/core/hooks';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useDashboardStats, DashboardStats } from '@/hooks/useDashboardStats';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStableCompanyId } from '@/contexts/CompanyContext';
@@ -31,13 +31,8 @@ import {
   FilePlus,
   ShoppingCart,
   ChevronLeft,
-  ExternalLink,
   Activity,
-  Zap,
   Target,
-  Bell,
-  Settings,
-  MapPin,
   Briefcase,
 } from 'lucide-react';
 import {
@@ -64,7 +59,8 @@ const DashboardLanding: React.FC = () => {
   const { company } = useModuleConfig();
   const { user } = useAuth();
   const { formatCurrency } = useCurrencyFormatter();
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: dashboardData } = useDashboardStats();
+  const stats = dashboardData as DashboardStats | undefined;
   const { openChat: openAIChat } = useAIChat();
   const [mounted, setMounted] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -84,7 +80,7 @@ const DashboardLanding: React.FC = () => {
   const isReady = !!companyId;
 
   // Fleet Status Query
-  const { data: fleetStatus, isLoading: fleetLoading } = useQuery({
+  const { data: fleetStatus } = useQuery({
     queryKey: ['fleet-status-landing', companyId],
     queryFn: async () => {
       if (!companyId) return null;
@@ -338,46 +334,42 @@ const DashboardLanding: React.FC = () => {
       value: stats?.totalVehicles || 0,
       change: stats?.vehiclesChange,
       icon: Car,
-      color: 'from-teal-400 to-teal-600',
-      bgColor: 'bg-teal-50',
+      color: 'bg-teal-50 dark:bg-teal-500/10',
+      iconBg: 'bg-teal-500',
       progressLabel: 'نشاط المركبات',
       progressValue: stats?.vehicleActivityRate || 85,
       linkTo: '/fleet',
-      sparklineData: revenueData?.map(item => item.value) || [],
     },
     {
       title: 'العقود النشطة',
       value: stats?.activeContracts || 0,
       change: stats?.contractsChange,
       icon: FileText,
-      color: 'from-blue-400 to-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'bg-blue-50 dark:bg-blue-500/10',
+      iconBg: 'bg-blue-500',
       progressLabel: 'معدل الإكمال',
       progressValue: stats?.contractCompletionRate || 78,
       linkTo: '/contracts',
-      sparklineData: revenueData?.map(item => item.value) || [],
     },
     {
       title: 'إجمالي العملاء',
       value: stats?.totalCustomers || 0,
       change: stats?.customersChange,
       icon: Users,
-      color: 'from-emerald-400 to-emerald-600',
-      bgColor: 'bg-emerald-50',
+      color: 'bg-emerald-50 dark:bg-emerald-500/10',
+      iconBg: 'bg-emerald-500',
       progressLabel: 'رضا العملاء',
       progressValue: stats?.customerSatisfactionRate || 92,
       linkTo: '/customers',
-      sparklineData: revenueData?.map(item => item.value) || [],
     },
     {
       title: 'إيرادات الشهر',
       value: formatCurrency(stats?.monthlyRevenue || 0),
       change: stats?.revenueChange,
       icon: Banknote,
-      color: 'from-amber-400 to-amber-600',
-      bgColor: 'bg-amber-50',
+      color: 'bg-amber-50 dark:bg-amber-500/10',
+      iconBg: 'bg-amber-500',
       linkTo: '/finance',
-      sparklineData: revenueData?.map(item => item.value) || [],
     },
   ];
 
@@ -474,7 +466,7 @@ const DashboardLanding: React.FC = () => {
           animate={mounted ? "visible" : "hidden"}
         >
           {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div data-tour="stats-cards" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {statsCards.map((stat, index) => {
               const Icon = stat.icon;
               const changeStr = String(stat.change || '');
@@ -484,49 +476,45 @@ const DashboardLanding: React.FC = () => {
                 <motion.div
                   key={index}
                   variants={itemVariants}
-                  whileHover={{ y: -8, scale: 1.02 }}
+                  whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => stat.linkTo && navigate(stat.linkTo)}
-                  className="relative group cursor-pointer"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-sm transition-all cursor-pointer"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-teal-600/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative bg-white border border-slate-200 rounded-xl p-6 hover:border-teal-500/50 transition-all duration-300 shadow-sm hover:shadow-sm">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
-                        <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={cn('p-2 rounded-lg', stat.color)}>
+                        <Icon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                       </div>
                       {stat.change && (
-                        <motion.span
+                        <span
                           className={cn(
-                            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm',
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold',
                             isPositive
-                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                              : 'bg-red-100 text-red-700 border border-red-200'
+                              ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                              : 'bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400'
                           )}
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ type: "spring", delay: 0.3 }}
                         >
-                          {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                          {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {changeStr}
-                        </motion.span>
+                        </span>
                       )}
                     </div>
 
-                    <h3 className="text-slate-500 text-sm mb-2 font-semibold">{stat.title}</h3>
-                    <p className="text-3xl font-bold text-slate-900 mb-3" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                    <h3 className="text-xs text-slate-500 dark:text-slate-400 mb-1">{stat.title}</h3>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">
                       <AnimatedCounter value={stat.value} />
                     </p>
 
                     {stat.progressLabel && stat.progressValue && (
-                      <div className="mt-auto">
-                        <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
-                          <span className="font-medium">{stat.progressLabel}</span>
-                          <span className="font-bold text-teal-600">{stat.progressValue}%</span>
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                          <span>{stat.progressLabel}</span>
+                          <span className="font-bold text-teal-600 dark:text-teal-400">{stat.progressValue}%</span>
                         </div>
-                        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <motion.div
-                            className={cn('h-full rounded-full bg-gradient-to-r shadow-inner', stat.color)}
+                            className="h-full bg-teal-500 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${stat.progressValue}%` }}
                             transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1], delay: 0.4 }}
@@ -542,8 +530,53 @@ const DashboardLanding: React.FC = () => {
 
           {/* Main Grid */}
           <div className="grid grid-cols-12 gap-6">
+            {/* Quick Actions with tooltips */}
+            <div className="col-span-12 grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+              <motion.button
+                title="إنشاء فاتورة جديدة"
+                onClick={() => navigate('/finance/billing')}
+                className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors min-h-[44px]"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <FileText className="w-5 h-5" />
+                <span className="text-sm font-semibold">فاتورة جديدة</span>
+              </motion.button>
+              <motion.button
+                title="تسجيل دفعة"
+                onClick={() => navigate('/finance/treasury')}
+                className="flex items-center gap-2 px-4 py-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors min-h-[44px]"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Banknote className="w-5 h-5" />
+                <span className="text-sm font-semibold">تسجيل دفعة</span>
+              </motion.button>
+              <motion.button
+                title="عرض التقارير المالية"
+                onClick={() => navigate('/finance/reports')}
+                className="flex items-center gap-2 px-4 py-3 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors min-h-[44px]"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Activity className="w-5 h-5" />
+                <span className="text-sm font-semibold">عرض التقارير</span>
+              </motion.button>
+              <motion.button
+                title="إضافة مركبة جديدة"
+                onClick={() => navigate('/fleet')}
+                className="flex items-center gap-2 px-4 py-3 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors min-h-[44px]"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Car className="w-5 h-5" />
+                <span className="text-sm font-semibold">إضافة مركبة</span>
+              </motion.button>
+            </div>
+          </div>
 
-            {/* Financial Performance Chart */}
+          {/* Charts Grid */}
+          <div className="grid grid-cols-12 gap-6 mt-6">
             <motion.div
               variants={itemVariants}
               whileHover={{ y: -4, scale: 1.01 }}
@@ -626,6 +659,7 @@ const DashboardLanding: React.FC = () => {
 
             {/* Fleet Status */}
             <motion.div
+              data-tour="fleet-status"
               variants={itemVariants}
               whileHover={{ y: -4 }}
               className="col-span-3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
@@ -810,6 +844,7 @@ const DashboardLanding: React.FC = () => {
 
             {/* Reservations Calendar */}
             <motion.div
+              data-tour="calendar"
               variants={itemVariants}
               whileHover={{ y: -4 }}
               className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"
@@ -913,6 +948,7 @@ const DashboardLanding: React.FC = () => {
 
             {/* Revenue Forecast */}
             <motion.div
+              data-tour="recent-activities"
               variants={itemVariants}
               whileHover={{ y: -4 }}
               className="col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-sm hover:border-teal-500/50 transition-all"

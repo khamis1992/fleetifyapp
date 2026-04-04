@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Clock, Search, Calendar as CalendarIcon, Check, X } from 'lucide-react';
+import { Clock, Search, Calendar as CalendarIcon, Check, X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -15,7 +15,6 @@ import { AttendancePageHelpContent } from "@/components/help/content";
 // Lazy load Calendar component for better performance
 const Calendar = lazy(() => import('@/components/ui/calendar').then(m => ({ default: m.Calendar })));
 
-interface AttendanceRecord {
   id: string;
   employee_id: string;
   attendance_date: string;
@@ -35,6 +34,7 @@ interface AttendanceRecord {
 
 export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: attendanceRecords, isLoading } = useQuery({
@@ -82,6 +82,40 @@ export default function Attendance() {
     return statusMap[status as keyof typeof statusMap] || { label: status, variant: 'outline' as const };
   };
 
+  const stats = {
+    present: attendanceRecords?.filter(r => r.status === 'present').length || 0,
+    absent: attendanceRecords?.filter(r => r.status === 'absent').length || 0,
+    late: attendanceRecords?.filter(r => r.status === 'late').length || 0,
+    onLeave: attendanceRecords?.filter(r => r.status === 'vacation' || r.status === 'sick_leave').length || 0,
+  };
+
+  const handleExport = () => {
+    if (!attendanceRecords || attendanceRecords.length === 0) return;
+    
+    const csvContent = [
+      ['الموظف', 'رقم الموظف', 'التاريخ', 'وقت الحضور', 'وقت الانصراف', 'ساعات العمل', 'الحالة'].join(','),
+      ...attendanceRecords.map(r => [
+        `${r.employees?.first_name} ${r.employees?.last_name}`,
+        r.employees?.employee_number,
+        r.attendance_date,
+        r.check_in_time || '--:--',
+        r.check_out_time || '--:--',
+        r.total_hours?.toFixed(1) || '0',
+        getStatusBadge(r.status).label
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `attendance-${format(selectedDate, 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const filteredRecords = attendanceRecords?.filter(record =>
     record.employees?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     record.employees?.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,6 +145,81 @@ export default function Attendance() {
             <p className="text-sm md:text-base text-slate-600 dark:text-slate-400">إدارة حضور الموظفين ومراقبة أوقات العمل</p>
           </div>
         </div>
+        <Button onClick={handleExport} variant="outline" className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50" disabled={!attendanceRecords || attendanceRecords.length === 0}>
+          <Download className="h-4 w-4 ml-2" />
+          تصدير التقرير
+        </Button>
+      </div>
+
+      {/* Attendance Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500 rounded-lg">
+              <Check className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">حاضر</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.present}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500 rounded-lg">
+              <X className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">غائب</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.absent}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500 rounded-lg">
+              <Clock className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">متأخر</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.late}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-slate-500 rounded-lg">
+              <CalendarIcon className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">في إجازة</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.onLeave}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Month Navigation */}
+      <div className="flex items-center justify-center gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))}
+          className="min-h-[44px] min-w-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <div className="text-lg font-semibold text-slate-900 dark:text-slate-100 min-w-[200px] text-center">
+          {format(currentMonth, 'MMMM yyyy', { locale: ar })}
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))}
+          className="min-h-[44px] min-w-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500/50"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -239,7 +348,7 @@ export default function Attendance() {
           })
         )}
       </div>
-    <PageHelp content={<AttendancePageHelpContent />} />
+    <PageHelp children={<AttendancePageHelpContent />} />
 
     </div>
   );

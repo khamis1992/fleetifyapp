@@ -1,11 +1,9 @@
-import { motion } from 'framer-motion';
 import { Car } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default marker icons in Leaflet with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -13,7 +11,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const locations = [
+type Location = {
+  name: string;
+  position: [number, number];
+  vehicles: number;
+  description: string;
+  color: string;
+};
+
+const locations: Location[] = [
   {
     name: 'الدوحة',
     position: [25.2854, 51.5310] as [number, number],
@@ -51,8 +57,7 @@ const locations = [
   },
 ];
 
-// Custom icon for the markers with enhanced design
-const createCustomIcon = (location: typeof locations[0], isActive: boolean) => {
+const createCustomIcon = (location: Location, isActive: boolean) => {
   const size = isActive ? 50 : 40;
   const pulseSize = isActive ? 70 : 55;
 
@@ -67,7 +72,6 @@ const createCustomIcon = (location: typeof locations[0], isActive: boolean) => {
         width: ${pulseSize}px;
         height: ${pulseSize}px;
       ">
-        <!-- Outer Pulse Ring -->
         <div style="
           position: absolute;
           width: 100%;
@@ -78,7 +82,6 @@ const createCustomIcon = (location: typeof locations[0], isActive: boolean) => {
           opacity: 0.3;
         "></div>
 
-        <!-- Middle Ring -->
         <div style="
           position: absolute;
           width: ${size + 15}px;
@@ -89,14 +92,13 @@ const createCustomIcon = (location: typeof locations[0], isActive: boolean) => {
           opacity: 0.5;
         "></div>
 
-        <!-- Main Marker -->
         <div style="
           width: ${size}px;
           height: ${size}px;
-          background: linear-gradient(135deg, ${location.color} 0%, ${location.color}dd 100%);
+          background: ${location.color};
           border: 4px solid white;
           border-radius: 50%;
-          box-shadow: 0 8px 24px ${location.color}40, 0 4px 8px rgba(0,0,0,0.2);
+          box-shadow: 0 4px 12px ${location.color}40;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -109,12 +111,11 @@ const createCustomIcon = (location: typeof locations[0], isActive: boolean) => {
           </svg>
         </div>
 
-        <!-- Vehicle Badge -->
         <div style="
           position: absolute;
           top: -5px;
           right: -5px;
-          background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+          background: #1E293B;
           color: white;
           border: 2px solid white;
           border-radius: 12px;
@@ -142,24 +143,21 @@ const createCustomIcon = (location: typeof locations[0], isActive: boolean) => {
   });
 };
 
-// Component to auto-fit map bounds and fly to location
 function MapController({
   locations,
   activeLocation,
 }: {
-  locations: typeof locations;
-  activeLocation: typeof locations[0];
+  locations: Location[];
+  activeLocation: Location;
 }) {
   const map = useMap();
 
   useEffect(() => {
-    // Initial fit bounds
-    const bounds = L.latLngBounds(locations.map((loc) => loc.position));
+    const bounds = L.latLngBounds(locations.map((loc: Location) => loc.position));
     map.fitBounds(bounds, { padding: [60, 60], maxZoom: 10 });
   }, [map, locations]);
 
   useEffect(() => {
-    // Fly to active location when it changes
     map.flyTo(activeLocation.position, 11, {
       duration: 1.5,
       easeLinearity: 0.25,
@@ -178,39 +176,14 @@ export function EnterpriseTrustedBy() {
   };
 
   return (
-     <section
+    <section
       id="coverage"
-      className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden"
+      className="py-20 bg-slate-50 dark:bg-slate-950"
       dir="rtl"
     >
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div
-          className="absolute w-96 h-96 -top-48 -right-48 bg-teal-500/5 rounded-full blur-3xl"
-          style={{ animation: 'float 8s ease-in-out infinite' }}
-        ></div>
-        <div
-          className="absolute w-96 h-96 -bottom-48 -left-48 bg-teal-500/5 rounded-full blur-3xl"
-          style={{ animation: 'float 8s ease-in-out infinite 4s' }}
-        ></div>
-      </div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(30px, 30px); }
-        }
-      `}</style>
-
-      <div className="container mx-auto px-6 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 rounded-full text-sm font-bold mb-4 border border-teal-500/20">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-16">
+          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 rounded-xl text-sm font-semibold mb-4 border border-teal-200 dark:border-teal-500/20">
             🇶🇦 تغطية شاملة لقطر
           </span>
           <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
@@ -219,24 +192,17 @@ export function EnterpriseTrustedBy() {
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             نخدم أكثر من 34 شركة في جميع أنحاء قطر مع شبكة موزعة تغطي المدن الرئيسية
           </p>
-        </motion.div>
+        </div>
 
-        {/* Interactive Map Section */}
         <div className="flex justify-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="w-full max-w-5xl relative"
-          >
-                  <div className="relative rounded-xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              {/* Map Container */}
+          <div className="w-full max-w-5xl relative">
+            <div className="relative rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               <div className="h-[600px] w-full relative">
                 {!isMapReady && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 z-0">
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 z-0">
                     <div className="text-center">
                       <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-slate-400 font-semibold">جاري تحميل الخريطة...</p>
+                      <p className="text-slate-500 dark:text-slate-400 font-semibold">جاري تحميل الخريطة...</p>
                     </div>
                   </div>
                 )}
@@ -263,11 +229,11 @@ export function EnterpriseTrustedBy() {
                         click: () => handleLocationClick(loc),
                       }}
                     >
-                     <Popup className="custom-popup">
-                         <div
-                           className="text-center p-4"
-                           style={{ minWidth: '220px', fontFamily: 'system-ui' }}
-                         >
+                      <Popup className="custom-popup">
+                        <div
+                          className="text-center p-4"
+                          style={{ minWidth: '220px', fontFamily: 'system-ui' }}
+                        >
                           <div
                             className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
                             style={{ background: loc.color }}
@@ -308,19 +274,17 @@ export function EnterpriseTrustedBy() {
                 </MapContainer>
               </div>
 
-              {/* Top Info Bar */}
               <div className="absolute top-4 right-4 z-20 flex gap-2">
-                <div className="bg-white rounded-xl shadow-sm px-4 py-2.5 border border-slate-200 flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-bold text-slate-700">خريطة مباشرة</span>
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-2.5 border border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">خريطة مباشرة</span>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm px-4 py-2.5 border border-slate-200 flex items-center gap-2">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm px-4 py-2.5 border border-slate-200 dark:border-slate-700 flex items-center gap-2">
                   <span className="text-lg">🇶🇦</span>
-                  <span className="text-sm font-bold text-slate-700">قطر</span>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">قطر</span>
                 </div>
               </div>
 
-              {/* Stats Badge */}
               <div className="absolute bottom-4 left-4 z-20 bg-slate-900 text-white rounded-xl shadow-sm px-5 py-3 border border-slate-700">
                 <div className="flex items-center gap-4">
                   <div className="text-center">
@@ -338,18 +302,15 @@ export function EnterpriseTrustedBy() {
               </div>
             </div>
 
-            {/* Quick City Pills */}
             <div className="flex flex-wrap gap-2 mt-4 justify-center">
               {locations.map((loc) => (
-                <motion.button
+                <button
                   key={loc.name}
                   onClick={() => handleLocationClick(loc)}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all shadow-md ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
                     activeLocation.name === loc.name
-                      ? 'text-white shadow-lg'
-                      : 'bg-white text-slate-700 hover:bg-slate-50'
+                      ? 'text-white border-transparent'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500'
                   }`}
                   style={
                     activeLocation.name === loc.name
@@ -359,18 +320,18 @@ export function EnterpriseTrustedBy() {
                 >
                   <span className="mr-1">{loc.name}</span>
                   <span
-                    className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+                    className={`ml-1 px-2 py-0.5 rounded-lg text-xs ${
                       activeLocation.name === loc.name
                         ? 'bg-white/20'
-                        : 'bg-slate-100'
+                        : 'bg-slate-100 dark:bg-slate-700'
                     }`}
                   >
                     {loc.vehicles}
                   </span>
-                </motion.button>
+                </button>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

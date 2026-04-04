@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -42,40 +41,34 @@ export function EnterpriseFooter() {
     <footer className="bg-slate-900 text-slate-300" dir="rtl">
       <div className="container mx-auto px-6 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-6 gap-12">
-          {/* Brand Column */}
           <div className="lg:col-span-2">
-           <motion.div
-             whileHover={{ scale: 1.05 }}
-             className="flex items-center gap-3 mb-4 cursor-pointer"
-             onClick={() => navigate('/')}
-           >
-             <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center">
-               <span className="text-white font-bold text-xl">F</span>
-             </div>
-             <span className="text-2xl font-bold text-white">Fleetify</span>
-           </motion.div>
+            <div
+              className="flex items-center gap-3 mb-4 cursor-pointer"
+              onClick={() => navigate('/')}
+            >
+              <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center">
+                <span className="text-white font-bold text-xl">F</span>
+              </div>
+              <span className="text-2xl font-bold text-white">Fleetify</span>
+            </div>
             <p className="text-slate-400 leading-relaxed mb-6 max-w-md">
               نظام إدارة الأساطيل الأول في قطر. نساعد شركات تأجير السيارات وإدارة الأساطيل على تحسين كفاءتها وزيادة أرباحها.
             </p>
 
-            {/* Social Links */}
-             <div className="flex items-center gap-3">
-               {socialLinks.map((social) => (
-                 <motion.a
-                   key={social.name}
-                   href={social.href}
-                   whileHover={{ scale: 1.1, y: -3 }}
-                   whileTap={{ scale: 0.9 }}
-                   className="w-10 h-10 min-h-[44px] min-w-[44px] bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-colors"
-                   aria-label={social.name}
-                 >
-                   <social.icon className="w-5 h-5" />
-                 </motion.a>
-               ))}
-             </div>
+            <div className="flex items-center gap-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  className="min-h-[44px] min-w-[44px] w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-colors"
+                  aria-label={social.name}
+                >
+                  <social.icon className="w-5 h-5" />
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Footer Links */}
           {footerSections.map((section) => (
             <div key={section.title}>
               <h4 className="text-white font-bold mb-4">{section.title}</h4>
@@ -94,7 +87,6 @@ export function EnterpriseFooter() {
             </div>
           ))}
 
-          {/* Contact Column */}
           <div>
             <h4 className="text-white font-bold mb-4">تواصل معنا</h4>
             <ul className="space-y-4">
@@ -116,7 +108,6 @@ export function EnterpriseFooter() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-slate-800">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-slate-500 text-sm">

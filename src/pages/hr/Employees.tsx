@@ -4,7 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Users, DollarSign } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, DollarSign, UserCheck, UserX, Building2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -50,6 +51,10 @@ export default function Employees() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [showAdvancedfilters, setShowAdvancedFilters] = useState(false);
+  const [filterDepartment, setFilterDepartment] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterContractType, setFilterContractType] = useState<string>('');
   const { hasPermission } = useRolePermissions();
   
   const canEdit = hasPermission('edit_employees' as any);
@@ -494,12 +499,29 @@ export default function Employees() {
     createPayrollMutation.mutate(data);
   };
 
-  const filteredEmployees = employees?.filter(employee =>
-    employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employee_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredEmployees = employees?.filter(employee => {
+    const matchesSearch = employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.employee_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDepartment = !filterDepartment || employee.department === filterDepartment || employee.department_ar === filterDepartment;
+    const matchesStatus = !filterStatus || 
+      (filterStatus === 'active' && employee.is_active) ||
+      (filterStatus === 'on_leave' && !employee.is_active) ||
+      (filterStatus === 'terminated' && !employee.is_active);
+    
+    return matchesSearch && matchesDepartment && matchesStatus;
+  }) || [];
+
+  const departments = [...new Set(employees?.map(e => e.department).filter(Boolean) || [])];
+  
+  const stats = {
+    total: employees?.length || 0,
+    active: employees?.filter(e => e.is_active).length || 0,
+    onLeave: employees?.filter(e => !e.is_active).length || 0,
+    departments: departments.length,
+  };
 
   if (isLoading) {
     return (
@@ -529,6 +551,114 @@ export default function Employees() {
           إضافة موظف جديد
         </Button>
       </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500 rounded-lg">
+              <Users className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">إجمالي الموظفين</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500 rounded-lg">
+              <UserCheck className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">نشط</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.active}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500 rounded-lg">
+              <UserX className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">إجازة</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.onLeave}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500 rounded-lg">
+              <Building2 className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">الأقسام</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{stats.departments}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Filters */}
+      <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+        <button
+          onClick={() => setShowAdvancedFilters(!showAdvancedfilters)}
+          className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors rounded-xl"
+        >
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <span className="font-medium text-slate-900 dark:text-slate-100">الفلاتر المتقدمة</span>
+          </div>
+          {showAdvancedfilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {showAdvancedfilters && (
+          <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-700 mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">القسم</label>
+              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                <SelectTrigger className="min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <SelectValue placeholder="جميع الأقسام" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">جميع الأقسام</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept || ''}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">الحالة</label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <SelectValue placeholder="جميع الحالات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">جميع الحالات</SelectItem>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="on_leave">في إجازة</SelectItem>
+                  <SelectItem value="terminated">منتهي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">نوع العقد</label>
+              <Select value={filterContractType} onValueChange={setFilterContractType}>
+                <SelectTrigger className="min-h-[44px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <SelectValue placeholder="جميع العقود" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">جميع العقود</SelectItem>
+                  <SelectItem value="full_time">دوام كامل</SelectItem>
+                  <SelectItem value="part_time">دوام جزئي</SelectItem>
+                  <SelectItem value="contract">عقد</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+      </Card>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
         <div className="relative flex-1 sm:max-w-md">
@@ -568,7 +698,7 @@ export default function Employees() {
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-md transition-all duration-300 cursor-pointer"
               onClick={() => navigate(`/hr/employees/${employee.id}`)}
             >
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-teal-500 rounded-xl shadow-sm flex items-center justify-center shrink-0">

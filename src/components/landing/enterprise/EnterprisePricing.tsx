@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Check, Crown, Zap, Building2 } from 'lucide-react';
 
 const plans = [
@@ -17,8 +16,6 @@ const plans = [
       'تخزين سحابي 10GB',
     ],
     popular: false,
-    color: 'from-slate-700 to-slate-800',
-    buttonColor: 'from-slate-700 to-slate-800',
   },
   {
     name: 'المحترف',
@@ -37,8 +34,6 @@ const plans = [
       'إعداد مجاني',
     ],
     popular: true,
-    color: 'from-teal-500 to-teal-600',
-    buttonColor: 'from-teal-600 to-teal-700',
   },
   {
     name: 'المؤسسي',
@@ -57,23 +52,15 @@ const plans = [
       'استضافة خاصة',
     ],
     popular: false,
-    color: 'from-slate-700 to-slate-800',
-    buttonColor: 'from-slate-700 to-slate-800',
   },
 ];
 
 export function EnterprisePricing() {
   return (
-    <section id="pricing" className="py-24 bg-white dark:bg-slate-900" dir="rtl">
+    <section id="pricing" className="py-20 bg-white dark:bg-slate-900" dir="rtl">
       <div className="container mx-auto px-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 rounded-full text-sm font-semibold mb-4">
+        <div className="text-center mb-16">
+          <span className="inline-block px-4 py-1.5 bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 rounded-xl text-sm font-semibold mb-4 border border-teal-200 dark:border-teal-500/20">
             أسعار مرنة
           </span>
           <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-4">
@@ -82,48 +69,41 @@ export function EnterprisePricing() {
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             خطط مرنة تنمو مع عملك. يمكنك التغيير أو الإلغاء في أي وقت.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-               {plans.map((plan, index) => (
-             <motion.div
-               key={plan.name}
-               initial={{ opacity: 0, y: 30 }}
-               whileInView={{ opacity: 1, y: 0 }}
-               viewport={{ once: true }}
-               transition={{ delay: index * 0.1 }}
-               className={`relative rounded-xl overflow-hidden ${
-                plan.popular ? 'shadow-lg scale-105' : 'shadow-sm'
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`relative rounded-xl overflow-hidden border ${
+                plan.popular 
+                  ? 'border-teal-500 shadow-sm' 
+                  : 'border-slate-200 dark:border-slate-800 shadow-sm'
               }`}
             >
-              {/* Popular Badge */}
-               {plan.popular && (
-                <div className="absolute top-0 left-0 right-0 bg-teal-500 text-white text-center py-2 text-sm font-semibold">
+              {plan.popular && (
+                <div className="bg-teal-500 text-white text-center py-2 text-sm font-semibold">
                   الأكثر شيوعاً
                 </div>
               )}
 
-               {/* Card Content */}
-              <div className={`p-4 md:p-8 ${plan.popular ? 'pt-14' : ''} bg-slate-50 dark:bg-slate-800`}>
-                {/* Icon */}
-                <div className={`inline-flex w-14 h-14 rounded-xl ${
-                  plan.popular ? 'bg-teal-500' : 'bg-slate-700'
-                } items-center justify-center mb-6`}>
+              <div className={`p-8 bg-white dark:bg-slate-900 ${plan.popular ? 'pt-12' : ''}`}>
+                <div className={`inline-flex w-14 h-14 rounded-xl items-center justify-center mb-6 border ${
+                  plan.popular 
+                    ? 'bg-teal-500 border-teal-500' 
+                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                }`}>
                   <plan.icon className="w-7 h-7 text-white" />
                 </div>
 
-                {/* Name & Description */}
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{plan.name}</h3>
                 <p className="text-slate-600 dark:text-slate-400 mb-6">{plan.description}</p>
 
-                {/* Price */}
                 <div className="mb-6">
                   <span className="text-5xl font-bold text-slate-900 dark:text-white">{plan.price}</span>
                   <span className="text-slate-600 dark:text-slate-400 mr-2">{plan.period}</span>
                 </div>
 
-                {/* Features */}
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
@@ -133,49 +113,40 @@ export function EnterprisePricing() {
                   ))}
                 </ul>
 
-                {/* CTA Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full py-4 min-h-[44px] rounded-xl font-semibold text-lg transition-colors ${
+                <button
+                  className={`w-full min-h-[44px] py-4 rounded-xl font-semibold text-lg transition-colors border ${
                     plan.popular 
-                      ? 'bg-teal-500 hover:bg-teal-600 text-white' 
-                      : 'bg-slate-700 hover:bg-slate-800 text-white'
-                  } shadow-sm`}
+                      ? 'bg-teal-500 hover:bg-teal-600 text-white border-teal-500' 
+                      : 'bg-slate-700 hover:bg-slate-800 text-white border-slate-700'
+                  }`}
                 >
                   {plan.price === 'مخصص' ? 'تواصل معنا' : 'ابدأ الآن'}
-                </motion.button>
+                </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
-        {/* Additional Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-16 text-center"
-        >
-           <p className="text-slate-600 dark:text-slate-400 mb-4">
-             جميع الخطط تتضمن تجربة مجانية 14 يوم بدون حاجة لبطاقة ائتمانية
-           </p>
-           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500 dark:text-slate-400">
-             <span className="flex items-center gap-2">
-               <Check className="w-4 h-4 text-teal-500" />
-               بدون رسوم خفية
-             </span>
-             <span className="flex items-center gap-2">
-               <Check className="w-4 h-4 text-teal-500" />
-               إلغاء في أي وقت
-             </span>
-             <span className="flex items-center gap-2">
-               <Check className="w-4 h-4 text-teal-500" />
-               دعم فني 24/7
-             </span>
-           </div>
-         </motion.div>
-       </div>
-     </section>
-   );
- }
+        <div className="mt-16 text-center">
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            جميع الخطط تتضمن تجربة مجانية 14 يوم بدون حاجة لبطاقة ائتمانية
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-teal-500" />
+              بدون رسوم خفية
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-teal-500" />
+              إلغاء في أي وقت
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-teal-500" />
+              دعم فني 24/7
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,222 +1,207 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { 
+  BarChart3, FileText, Car, Users, Scale, TrendingUp, DollarSign, 
+  Clock, Play, CreditCard, Briefcase, Activity, PieChart, LineChart,
+  FileSpreadsheet, Building2, AlertTriangle, CheckCircle2, FileBarChart
+} from 'lucide-react';
 import { useReportFavorites } from '@/hooks/useReportFavorites';
 import { useRecentReports } from '@/hooks/useRecentReports';
-import { quickReports } from '@/components/reports/QuickReports';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import { BarChart3, Star, Clock, Play, Trash2 } from 'lucide-react';
 
-/**
- * Reports Hub Component
- *
- * A centralized dashboard for quick access to reports, favorites, and recent reports.
- * Provides three main sections:
- * 1. Quick Reports - Predefined commonly used reports
- * 2. Favorites - User-saved favorite report configurations
- * 3. Recent Reports - History of recently generated reports
- *
- * @returns {JSX.Element} The Reports Hub page
- */
+type ReportCategory = 'all' | 'finance' | 'fleet' | 'hr' | 'legal';
+
+interface Report {
+  id: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  category: 'finance' | 'fleet' | 'hr' | 'legal';
+  icon: React.ElementType;
+  color: string;
+}
+
+const reports: Report[] = [
+  // Finance
+  { id: 'income-statement', name: 'Income Statement', nameAr: 'قائمة الدخل', description: 'Revenue vs expenses summary', category: 'finance', icon: TrendingUp, color: 'emerald' },
+  { id: 'balance-sheet', name: 'Balance Sheet', nameAr: 'الميزانية العمومية', description: 'Assets, liabilities, equity', category: 'finance', icon: FileBarChart, color: 'blue' },
+  { id: 'cash-flow', name: 'Cash Flow', nameAr: 'التدفق النقدي', description: 'Cash inflows and outflows', category: 'finance', icon: DollarSign, color: 'green' },
+  { id: 'revenue-analysis', name: 'Revenue Analysis', nameAr: 'تحليل الإيرادات', description: 'Revenue breakdown by category', category: 'finance', icon: LineChart, color: 'teal' },
+  { id: 'expense-report', name: 'Expense Report', nameAr: 'تقرير المصروفات', description: 'Operating expenses summary', category: 'finance', icon: CreditCard, color: 'orange' },
+  { id: 'profit-loss', name: 'Profit & Loss', nameAr: 'الأرباح والخسائر', description: 'Net profit breakdown', category: 'finance', icon: PieChart, color: 'purple' },
+  // Fleet
+  { id: 'vehicle-utilization', name: 'Vehicle Utilization', nameAr: 'استغلال المركبات', description: 'Fleet usage statistics', category: 'fleet', icon: Car, color: 'blue' },
+  { id: 'maintenance-costs', name: 'Maintenance Costs', nameAr: 'تكاليف الصيانة', description: 'Service and repair costs', category: 'fleet', icon: Activity, color: 'amber' },
+  { id: 'fuel-consumption', name: 'Fuel Consumption', nameAr: 'استهلاك الوقود', description: 'Fuel usage breakdown', category: 'fleet', icon: FileText, color: 'red' },
+  { id: 'fleet-status', name: 'Fleet Status', nameAr: 'حالة الأسطول', description: 'Vehicle availability status', category: 'fleet', icon: Building2, color: 'cyan' },
+  { id: 'driver-performance', name: 'Driver Performance', nameAr: 'أداء السائقين', description: 'Driver metrics report', category: 'fleet', icon: Users, color: 'indigo' },
+  // HR
+  { id: 'payroll-report', name: 'Payroll Report', nameAr: 'تقرير الرواتب', description: 'Salary and wages summary', category: 'hr', icon: DollarSign, color: 'green' },
+  { id: 'attendance-summary', name: 'Attendance Summary', nameAr: 'ملخص الحضور', description: 'Employee attendance data', category: 'hr', icon: Clock, color: 'orange' },
+  { id: 'leave-balance', name: 'Leave Balance', nameAr: 'رصيد الإجازات', description: 'Employee leave tracking', category: 'hr', icon: Briefcase, color: 'purple' },
+  { id: 'employee-performance', name: 'Employee Performance', nameAr: 'أداء الموظفين', description: 'Staff performance stats', category: 'hr', icon: TrendingUp, color: 'teal' },
+  // Legal
+  { id: 'cases-status', name: 'Cases Status', nameAr: 'حالة القضايا', description: 'Legal cases overview', category: 'legal', icon: Scale, color: 'red' },
+  { id: 'contract-expiry', name: 'Contract Expiry', nameAr: 'انتهاء العقود', description: 'Upcoming renewals', category: 'legal', icon: FileText, color: 'amber' },
+  { id: 'violations-report', name: 'Violations Report', nameAr: 'تقرير المخالفات', description: 'Traffic violations list', category: 'legal', icon: AlertTriangle, color: 'orange' },
+];
+
+const colorClasses: Record<string, { bg: string; text: string }> = {
+  emerald: { bg: 'bg-emerald-500', text: 'text-white' },
+  blue: { bg: 'bg-blue-500', text: 'text-white' },
+  green: { bg: 'bg-green-500', text: 'text-white' },
+  teal: { bg: 'bg-teal-500', text: 'text-white' },
+  orange: { bg: 'bg-orange-500', text: 'text-white' },
+  purple: { bg: 'bg-purple-500', text: 'text-white' },
+  amber: { bg: 'bg-amber-500', text: 'text-white' },
+  red: { bg: 'bg-red-500', text: 'text-white' },
+  cyan: { bg: 'bg-cyan-500', text: 'text-white' },
+  indigo: { bg: 'bg-indigo-500', text: 'text-white' },
+};
+
 export default function ReportsHub() {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { favorites, isLoading: favoritesLoading, deleteFavorite } = useReportFavorites();
-  const { recentReports, isLoading: recentLoading } = useRecentReports();
+  const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
+  const { favorites } = useReportFavorites();
+  const { recentReports } = useRecentReports();
 
-  /**
-   * Handles quick report card click - navigates to the report
-   */
-  const handleQuickReportClick = (reportId: string) => {
-    navigate(`/reports/${reportId}`);
-  };
+  const categories: { key: ReportCategory; label: string }[] = [
+    { key: 'all', label: 'الكل' },
+    { key: 'finance', label: 'المالية' },
+    { key: 'fleet', label: 'الأسطول' },
+    { key: 'hr', label: 'الموارد البشرية' },
+    { key: 'legal', label: 'القانونية' },
+  ];
 
-  /**
-   * Handles running a favorite report - navigates to the report
-   */
-  const handleRunFavorite = (favoriteId: string) => {
-    navigate(`/reports/${favoriteId}`);
-  };
+  const filteredReports = activeCategory === 'all' 
+    ? reports 
+    : reports.filter(r => r.category === activeCategory);
 
-  /**
-   * Handles viewing a recent report - navigates to the report
-   */
-  const handleViewReport = (reportId: string) => {
+  const mostUsedReports = reports.slice(0, 3);
+
+  const handleGenerateReport = (reportId: string) => {
     navigate(`/reports/${reportId}`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
-      <div className="container mx-auto p-6 space-y-6" dir="rtl">
-        {/* Page Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-teal-500 shadow-sm rounded-xl">
-            <BarChart3 className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">مركز التقارير</h1>
-            <p className="text-slate-600">الوصول السريع للتقارير المفضلة والمستخدمة بكثرة</p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 space-y-4 md:space-y-6" dir="rtl">
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-teal-500 rounded-xl shadow-sm">
+          <BarChart3 className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">مركز التقارير</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">إنشاء وإدارة التقارير المختلفة</p>
+        </div>
+      </div>
+
+      {/* Category Filter Tabs */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map(cat => (
+          <Button
+            key={cat.key}
+            variant={activeCategory === cat.key ? 'default' : 'outline'}
+            onClick={() => setActiveCategory(cat.key)}
+            className={`min-h-[44px] ${activeCategory === cat.key 
+              ? 'bg-teal-500 hover:bg-teal-600 text-white' 
+              : 'border-slate-200 dark:border-slate-700 hover:border-teal-500/50'}`}
+          >
+            {cat.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* Most Used Reports Section */}
+      {activeCategory === 'all' && mostUsedReports.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-teal-500" />
+            الأكثر استخداماً
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {mostUsedReports.map(report => {
+              const Icon = report.icon;
+              const colors = colorClasses[report.color];
+              return (
+                <Card key={report.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${colors.bg}`}>
+                        <Icon className={`h-5 w-5 ${colors.text}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{report.nameAr}</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{report.description}</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => handleGenerateReport(report.id)}
+                      className="w-full mt-3 min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white"
+                    >
+                      <Play className="h-4 w-4 ml-2" />
+                      توليد التقرير
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
+      )}
 
-        {/* Quick Reports Section */}
-        <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="text-slate-900">التقارير السريعة</CardTitle>
-            <CardDescription className="text-slate-600">تقارير جاهزة للاستخدام الفوري</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickReports.map((report) => {
-                const Icon = report.icon;
-                return (
-                  <Card
-                    key={report.id}
-                    className="cursor-pointer bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300"
-                    onClick={() => handleQuickReportClick(report.id)}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-teal-500 shadow-sm rounded-xl">
-                          <Icon className="h-5 w-5 text-white" />
-                        </div>
-                        <CardTitle className="text-base text-slate-900">{report.name}</CardTitle>
+      {/* All Reports Grid */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          {activeCategory === 'all' ? 'جميع التقارير' : categories.find(c => c.key === activeCategory)?.label}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredReports.map(report => {
+            const Icon = report.icon;
+            const colors = colorClasses[report.color];
+            const categoryBadge = categories.find(c => c.key === report.category);
+            
+            return (
+              <Card key={report.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${colors.bg}`}>
+                      <Icon className={`h-5 w-5 ${colors.text}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{report.nameAr}</h3>
+                        <Badge variant="outline" className="text-xs border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400">
+                          {categoryBadge?.label}
+                        </Badge>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-slate-600">{report.description}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{report.description}</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleGenerateReport(report.id)}
+                    className="w-full mt-3 min-h-[44px] bg-teal-500 hover:bg-teal-600 text-white"
+                  >
+                    <Play className="h-4 w-4 ml-2" />
+                    توليد التقرير
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Empty State */}
+      {filteredReports.length === 0 && (
+        <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+          <CardContent className="p-8 text-center">
+            <FileSpreadsheet className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-600 dark:text-slate-400">لا توجد تقارير في هذه الفئة</p>
           </CardContent>
         </Card>
-
-        {/* Favorites Section - Only show if user has favorites */}
-        {!favoritesLoading && favorites.length > 0 && (
-          <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-slate-900">
-                    <Star className="h-5 w-5 text-yellow-500" />
-                    التقارير المفضلة
-                  </CardTitle>
-                  <CardDescription className="text-slate-600">التقارير التي قمت بحفظها للوصول السريع</CardDescription>
-                </div>
-                <Badge variant="secondary" className="bg-teal-500/10 text-teal-700 border-teal-500/20">{favorites.length}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {favorites.map((favorite) => (
-                  <Card key={favorite.id} className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base text-slate-900">{favorite.name}</CardTitle>
-                      <CardDescription className="text-xs">
-                        <Badge variant="outline" className="text-xs border-teal-500/20 text-teal-700 bg-teal-500/10">
-                          {favorite.report_type}
-                        </Badge>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleRunFavorite(favorite.id)}
-                        className="flex-1 bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
-                      >
-                        <Play className="h-4 w-4 mr-2" />
-                        تشغيل
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteFavorite(favorite.id)}
-                        className="border-slate-200 hover:border-teal-500/50 hover:bg-teal-500/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recent Reports Section - Only show if user has recent reports */}
-        {!recentLoading && recentReports.length > 0 && (
-          <Card className="bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-900">
-                <Clock className="h-5 w-5 text-teal-600" />
-                التقارير الأخيرة
-              </CardTitle>
-              <CardDescription className="text-slate-600">التقارير التي تم إنشاؤها مؤخراً</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right text-slate-900">اسم التقرير</TableHead>
-                    <TableHead className="text-right text-slate-900">النوع</TableHead>
-                    <TableHead className="text-right text-slate-900">التاريخ</TableHead>
-                    <TableHead className="text-right text-slate-900">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentReports.map((report) => (
-                    <TableRow key={report.id} className="hover:bg-teal-500/5 transition-colors">
-                      <TableCell className="font-medium text-slate-900">{report.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="border-teal-500/20 text-teal-700 bg-teal-500/10">{report.type}</Badge>
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {format(new Date(report.generated_at), 'PPp', { locale: ar })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleViewReport(report.id)}
-                          className="hover:bg-teal-500/10 hover:text-teal-700"
-                        >
-                          عرض
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Loading States */}
-        {(favoritesLoading || recentLoading) && (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
-          </div>
-        )}
-
-        {/* Empty States */}
-        {!favoritesLoading && favorites.length === 0 && !recentLoading && recentReports.length === 0 && (
-          <Card className="bg-white border border-slate-200 rounded-xl">
-            <CardContent className="py-8">
-              <div className="text-center text-slate-600">
-                <p>لا توجد تقارير مفضلة أو حديثة بعد</p>
-                <p className="text-sm mt-2">استخدم التقارير السريعة أعلاه للبدء</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      )}
     </div>
   );
 }
