@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { ProtectedFinanceRoute } from '@/components/finance/ProtectedFinanceRoute';
-import { FinanceErrorBoundary } from '@/components/finance/FinanceErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -22,13 +20,6 @@ const UnifiedReports = () => {
   const [activeTab, setActiveTab] = useState('balance-sheet');
 
   return (
-    <FinanceErrorBoundary
-        error={null}
-        isLoading={false}
-        onRetry={() => window.location.reload()}
-        title="خطأ في التقارير المالية"
-        context="التقارير المالية"
-      >
         <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -163,7 +154,6 @@ const UnifiedReports = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </FinanceErrorBoundary>
   );
 };
 

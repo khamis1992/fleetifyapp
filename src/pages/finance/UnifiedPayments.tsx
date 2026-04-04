@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { ProtectedFinanceRoute } from '@/components/finance/ProtectedFinanceRoute';
-import { FinanceErrorBoundary } from '@/components/finance/FinanceErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -145,7 +143,7 @@ const UnifiedPayments = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </FinanceErrorBoundary>
+
   );
 };
 
