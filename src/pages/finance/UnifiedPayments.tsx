@@ -16,13 +16,7 @@ const UnifiedPayments = () => {
   const [activeTab, setActiveTab] = useState('list');
 
   return (
-    <FinanceErrorBoundary
-        error={null}
-        isLoading={false}
-        onRetry={() => window.location.reload()}
-        title="خطأ في المدفوعات"
-        context="إدارة المدفوعات"
-      >
+
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
           <div className="flex justify-between items-center">
