@@ -1443,9 +1443,9 @@ const PaymentRegistration = () => {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>عرض</span>
                   <select
-                    value={pageSize}
+                    value={itemsPerPage}
                     onChange={(e) => {
-                      setPageSize(Number(e.target.value));
+                      setItemsPerPage(Number(e.target.value));
                       setPage(1);
                     }}
                     className="border rounded-md px-2 py-1 bg-background"
