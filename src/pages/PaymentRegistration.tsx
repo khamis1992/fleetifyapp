@@ -1474,7 +1474,7 @@ const PaymentRegistration = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
+                    disabled={currentPage === totalPages}
                   >
                     التالي
                   </Button>
