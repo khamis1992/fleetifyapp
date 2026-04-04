@@ -115,7 +115,7 @@ const CustomerDetailsPageNew = () => {
   // State
   const [activeTab, setActiveTab] = useState('info');
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
+  const [, setSelectedDocumentType] = useState<string>('identity');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
@@ -247,7 +247,7 @@ const CustomerDetailsPageNew = () => {
     const activeContracts = contracts.filter(c => c.status === 'active').length;
     const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const totalContractAmount = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + calculateContractTotalAmount(c), 0);
-    const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.paid_amount || 0), 0);
+    const totalPaid = contracts.filter(c => c.status === 'active').reduce((sum, c) => sum + (c.balance_due || 0), 0);
     const outstandingAmount = totalContractAmount - totalPaid;
     
     const today = new Date();
@@ -462,7 +462,7 @@ const CustomerDetailsPageNew = () => {
                               toast({ title: 'رقم الهاتف غير متوفر', description: 'لا يوجد رقم هاتف مسجل لهذا العميل', variant: 'destructive' });
                               return;
                             }
-                            const whatsappNumber = customer.whatsapp || customer.phone;
+                            const whatsappNumber = customer.phone || customer.phone;
                             const cleanedNumber = whatsappNumber.replace(/[^0-9]/g, '');
                             if (!cleanedNumber || cleanedNumber.length < 7) {
                               toast({ title: 'رقم الهاتف غير صالح', description: 'رقم الهاتف لا يمكن استخدامه مع واتساب', variant: 'destructive' });
@@ -546,7 +546,7 @@ const CustomerDetailsPageNew = () => {
                     <DropdownMenuItem
                       className="gap-2 text-indigo-700 focus:text-indigo-700 focus:bg-indigo-50"
                       onClick={() => {
-                        const activeContract = customer?.contracts?.find((c: any) => c.status === 'active');
+                        const activeContract = contracts?.find((c: any) => c.status === 'active');
                         if (activeContract) {
                           navigate(`/legal/lawsuit/prepare/${activeContract.id}`);
                         } else {
@@ -607,14 +607,14 @@ const CustomerDetailsPageNew = () => {
                 <div className="min-w-0">
                   <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{customerName}</h1>
-                    {customer.is_vip && (
+                    {customer.is_blacklisted && (
                       <Badge className="bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0">
                         <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                         VIP
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-slate-500">{customer.job_title || 'عميل'}</p>
+                  <p className="text-sm text-slate-500">{'عميل'}</p>
                 </div>
               </div>
 

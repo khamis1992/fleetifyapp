@@ -41,13 +41,12 @@ import {
   Download,
   IdCard,
   Gavel,
-  CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Checkbox } from "@/components/ui/checkbox";
+
 import {
   Select,
   SelectContent,
@@ -366,12 +365,12 @@ const getInvalidFields = (customer: Customer): string[] => {
 };
 
 // ===== Excel Export Helper with Missing Data Highlighting =====
-const exportCustomersToExcel = async (
-  customers: Customer[],
+const _exportCustomersToExcel = async (
+  _customers: Customer[],
   companyId: string,
   filters: CustomerFilters,
   supabaseClient: any
-) => {
+): Promise<void> => {
   if (!companyId) {
     toast.error('لا يمكن تصدير البيانات - لا يوجد معرف الشركة');
     return;
@@ -394,7 +393,7 @@ const exportCustomersToExcel = async (
       query = query.eq('is_active', true);
     }
 
-    if (filters.customer_type && filters.customer_type !== 'all') {
+    if (filters.customer_type && filters.customer_type !== 'all' && filters.customer_type !== undefined) {
       query = query.eq('customer_type', filters.customer_type);
     }
 
@@ -642,8 +641,8 @@ const CustomersPageRedesigned: React.FC = () => {
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();
   const { hasPermission } = useRolePermissions();
 
-  const canEdit = hasPermission('edit_customers');
-  const canDelete = hasPermission('delete_customers');
+  const canEdit = hasPermission('edit_customers' as any);
+  const canDelete = hasPermission('delete_customers' as any);
 
   // State
   const [searchTerm, setSearchTerm] = useState('');
@@ -716,7 +715,7 @@ const CustomersPageRedesigned: React.FC = () => {
   // Counts
   const { data: individualCount = 0 } = useCustomerCount({ customer_type: 'individual', includeInactive: false });
   const { data: corporateCount = 0 } = useCustomerCount({ customer_type: 'corporate', includeInactive: false });
-  const vipCount = customers.filter(c => c.is_vip).length;
+
 
   const totalPages = Math.ceil(totalCustomersInDB / pageSize);
 

@@ -13,9 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
-  Printer,
   FileText,
-  FileSignature,
   User,
   Car,
   RefreshCw,
@@ -33,8 +31,6 @@ import {
   CheckCircle,
   CheckCircle2,
   Trash2,
-  Plus,
-  Eye,
   Scale,
   Loader2,
   LayoutDashboard,
@@ -43,8 +39,6 @@ import {
   Phone,
   Mail,
   MapPin,
-  Building2,
-  Download,
   Palette,
   Gauge,
   Fuel,
@@ -63,22 +57,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
-import { useVehicleInspections } from '@/hooks/useVehicleInspections';
-import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
-import { ContractDocuments } from './ContractDocuments';
-import { OfficialContractView } from './OfficialContractView';
-import { ContractStatusBadge } from './ContractStatusBadge';
 import { ContractStatusManagement } from './ContractStatusManagement';
 import { ConvertToLegalDialog } from './ConvertToLegalDialog';
-import { VehicleHandoverUnified } from '@/components/contracts/VehicleHandoverUnified';
+
 import { PayInvoiceDialog } from '@/components/finance/PayInvoiceDialog';
 import { InvoicePreviewDialog } from '@/components/finance/InvoicePreviewDialog';
 import { ContractInvoiceDialog } from '@/components/contracts/ContractInvoiceDialog';
@@ -88,11 +74,10 @@ import { ContractPrintDialog } from './ContractPrintDialog';
 import { FinancialDashboard } from './FinancialDashboard';
 import { ContractAlerts } from './ContractAlerts';
 import { TimelineView } from './TimelineView';
-import { QuickActionsButton } from './QuickActionsButton';
+
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { useContractPaymentSchedules, useGeneratePaymentSchedulesFromInvoices } from '@/hooks/usePaymentSchedules';
-// Re-importing to ensure HMR update
-import { ContractPaymentsTab } from './ContractPaymentsTab';
+
 import { ContractPaymentsTabRedesigned } from './ContractPaymentsTabRedesigned';
 import { ContractInvoicesTabRedesigned } from './ContractInvoicesTabRedesigned';
 import { EnhancedPaymentScheduleTabRedesigned } from './EnhancedPaymentScheduleTabRedesigned';
@@ -125,14 +110,7 @@ const scaleIn = {
   }
 };
 
-const slideIn = {
-  hidden: { opacity: 0, x: -20 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }
-  }
-};
+
 
 // ===== Stats Cards Component =====
 const ContractStatsGrid = ({
@@ -156,7 +134,7 @@ const ContractStatsGrid = ({
     {
       label: 'مدة العقد',
       value: `${contractStats?.totalMonths || 0} شهر`,
-      subtext: `${contractStats?.daysRemaining > 0 ? `${contractStats.daysRemaining} يوم متبقي` : contractStats?.daysRemaining === 0 ? 'ينتهي اليوم' : 'منتهي'}`,
+      subtext: `${(contractStats?.daysRemaining as number) > 0 ? `${contractStats.daysRemaining} يوم متبقي` : contractStats?.daysRemaining === 0 ? 'ينتهي اليوم' : 'منتهي'}`,
       icon: Calendar,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
@@ -188,7 +166,7 @@ const ContractStatsGrid = ({
       {stats.map((stat, idx) => (
         <motion.div
           key={idx}
-          variants={scaleIn}
+          variants={fadeInUp}
           whileHover={{ y: -4 }}
           className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-all"
         >

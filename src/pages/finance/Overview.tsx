@@ -6,6 +6,9 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import {
   TrendingUp,
   AlertTriangle,
@@ -45,6 +48,7 @@ import {
 const Overview: React.FC = () => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrencyFormatter();
+  const { companyId } = useUnifiedCompanyAccess();
   const { data: stats } = useDashboardStats();
   const { data: recentActivities } = useRecentActivities();
   const { data: treasurySummary } = useTreasurySummary();
@@ -58,6 +62,124 @@ const Overview: React.FC = () => {
     return new Date(inv.due_date) < new Date();
   });
 
+  const { data: revenueDataRaw } = useQuery({
+    queryKey: ['finance-revenue-chart', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('invoice_date, total_amount')
+        .eq('company_id', companyId)
+        .gte('invoice_date', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('invoice_date', { ascending: true });
+      if (error) return [];
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: topCustomersRaw } = useQuery({
+    queryKey: ['finance-top-customers', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from('contracts')
+        .select(`
+          customer_id,
+          total_paid,
+          customer:customers!customer_id(
+            first_name,
+            last_name,
+            first_name_ar,
+            last_name_ar,
+            company_name,
+            company_name_ar,
+            customer_type
+          )
+        `)
+        .eq('company_id', companyId);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: collectionRate } = useQuery({
+    queryKey: ['finance-collection-rate', companyId],
+    queryFn: async () => {
+      if (!companyId) return { rate: 0, change: 0 };
+      const { data: invoicesData } = await supabase
+        .from('invoices')
+        .select('total_amount, paid_amount')
+        .eq('company_id', companyId)
+        .neq('payment_status', 'cancelled');
+      if (!invoicesData || invoicesData.length === 0) return { rate: 0, change: 0 };
+      const totalAmount = invoicesData.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+      const paidAmount = invoicesData.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+      const rate = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+      return { rate, change: 0 };
+    },
+    enabled: !!companyId,
+  });
+
+  const revenueData = useMemo(() => {
+    if (!revenueDataRaw || revenueDataRaw.length === 0) {
+      const now = new Date();
+      return Array.from({ length: 6 }, (_, i) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+        return {
+          name: date.toLocaleDateString('ar-SA', { month: 'short' }),
+          revenue: 0,
+          expenses: 0,
+        };
+      });
+    }
+    const now = new Date();
+    const months: Record<string, number> = {};
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = date.toLocaleDateString('ar-SA', { month: 'short' });
+      months[key] = 0;
+    }
+    revenueDataRaw.forEach(inv => {
+      if (inv.invoice_date) {
+        const date = new Date(inv.invoice_date);
+        const key = date.toLocaleDateString('ar-SA', { month: 'short' });
+        if (months[key] !== undefined) {
+          months[key] += inv.total_amount || 0;
+        }
+      }
+    });
+    return Object.entries(months).map(([name, revenue]) => ({
+      name,
+      revenue,
+      expenses: 0,
+    }));
+  }, [revenueDataRaw]);
+
+  const topCustomersData = useMemo(() => {
+    if (!topCustomersRaw || topCustomersRaw.length === 0) {
+      return [
+        { name: 'لا توجد بيانات', revenue: 0 },
+      ];
+    }
+    const customerRevenue: Record<string, { name: string; revenue: number }> = {};
+    topCustomersRaw.forEach((c: any) => {
+      if (!c.customer) return;
+      const customer = c.customer;
+      const name = customer.customer_type === 'corporate'
+        ? (customer.company_name_ar || customer.company_name || 'شركة')
+        : (customer.first_name_ar || customer.first_name || '') + ' ' + (customer.last_name_ar || customer.last_name || '');
+      if (!customerRevenue[c.customer_id]) {
+        customerRevenue[c.customer_id] = { name: name.trim() || 'عميل', revenue: 0 };
+      }
+      customerRevenue[c.customer_id].revenue += c.total_paid || 0;
+    });
+    return Object.values(customerRevenue)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [topCustomersRaw]);
+
   const kpiCards = [
     {
       title: 'إيرادات الشهر',
@@ -69,8 +191,8 @@ const Overview: React.FC = () => {
     },
     {
       title: 'نسبة التحصيل',
-      value: '85%',
-      change: 12,
+      value: `${collectionRate?.rate || 0}%`,
+      change: collectionRate?.change || 0,
       icon: CreditCard,
       color: 'sky' as const,
       path: '/finance/billing',
@@ -127,29 +249,6 @@ const Overview: React.FC = () => {
       status: 'completed' as const,
     }));
   }, [recentActivities]);
-
-  const revenueData = useMemo(() => {
-    const data = [];
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = date.toLocaleDateString('ar-SA', { month: 'short' });
-      data.push({
-        name: monthName,
-        revenue: Math.floor(Math.random() * 50000) + 30000,
-        expenses: Math.floor(Math.random() * 30000) + 15000,
-      });
-    }
-    return data;
-  }, []);
-
-  const topCustomersData = [
-    { name: 'شركة الأمل', revenue: 120000 },
-    { name: 'شركة النور', revenue: 95000 },
-    { name: 'شركة الفجر', revenue: 87500 },
-    { name: 'شركة السلام', revenue: 72000 },
-    { name: 'شركة الوفاء', revenue: 65000 },
-  ];
 
   return (
     <div className="min-h-screen bg-slate-50" dir="rtl">
@@ -249,6 +348,7 @@ const Overview: React.FC = () => {
                       border: '1px solid #e2e8f0',
                       borderRadius: '8px'
                     }}
+                    formatter={(value: number) => [formatCurrency(value), 'الإيرادات']}
                   />
                   <Area
                     type="monotone"

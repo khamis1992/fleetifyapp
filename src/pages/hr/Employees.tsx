@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Users, DollarSign, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -52,15 +52,15 @@ export default function Employees() {
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const { hasPermission } = useRolePermissions();
   
-  const canEdit = hasPermission('edit_employees');
-  const canDelete = hasPermission('delete_employees');
+  const canEdit = hasPermission('edit_employees' as any);
+  const canDelete = hasPermission('delete_employees' as any);
   const [accountData, setAccountData] = useState<any>(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
   const [selectedEmployeeForPayroll, setSelectedEmployeeForPayroll] = useState<Employee | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { logAudit } = useAuditLog();
  
    const { formatCurrency } = useCurrencyFormatter();
@@ -261,7 +261,7 @@ const { user } = useAuth();
         // Log audit trail for account creation
         await logAudit({
           action: 'CREATE',
-          resource_type: 'user_account',
+          resource_type: 'user_account' as any,
           resource_id: result.user_id || employee.id,
           entity_name: employeeData.accountEmail,
           changes_summary: `Created user account for ${employee.first_name} ${employee.last_name}`,
@@ -694,7 +694,9 @@ const { user } = useAuth();
           isCreatingPayroll={createPayrollMutation.isPending}
         />
       )}
-    <PageHelp content={<EmployeesPageHelpContent />} />
+    <PageHelp title="مساعدة" description="إدارة الموظفين">
+      <EmployeesPageHelpContent />
+    </PageHelp>
 
     </div>
   );

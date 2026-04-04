@@ -5,7 +5,7 @@
  * @component FleetPageRedesigned
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -22,29 +22,20 @@ import {
   Search,
   SlidersHorizontal,
   Copy,
-  Eye,
   Edit3,
   Trash2,
   ChevronLeft,
   ChevronRight,
   Wrench,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Fuel,
   Settings,
   Tag,
   Upload,
   Download,
   Layers3,
   RotateCcw,
-  LayoutGrid,
-  Columns,
   FileText,
   MoreHorizontal,
   X,
-  Calendar,
-  MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,12 +121,25 @@ const getMissingVehicleDocuments = (
 };
 
 // ===== HTML Export Helper with Professional Report =====
+const statusLabels: Record<string, string> = {
+  available: 'متاحة',
+  rented: 'مؤجرة',
+  street_52: 'شارع 52',
+  maintenance: 'صيانة',
+  out_of_service: 'خارج الخدمة',
+  accident: 'حادث',
+  stolen: 'مسروقة',
+  police_station: 'في مركز الشرطة',
+  reserved_employee: 'محجوزة لموظف',
+  municipality: 'البلدية',
+};
+
 const exportVehiclesToHTML = async (
-  vehicles: Vehicle[],
+  _vehicles: Vehicle[],
   companyId: string,
   filters: IVehicleFilters,
   supabaseClient: any
-) => {
+): Promise<void> => {
   if (!companyId) {
     toast.error('لا يمكن تصدير البيانات - لا يوجد معرف الشركة');
     return;
@@ -144,18 +148,15 @@ const exportVehiclesToHTML = async (
   try {
     toast.loading('جاري تحضير البيانات للتصدير...');
 
-    // Build query to fetch ALL vehicles matching filters (no pagination)
     let query = supabaseClient
       .from('vehicles')
       .select('*')
       .eq('company_id', companyId);
 
-    // Apply filters
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
 
-    // Search filter
     if (filters.search) {
       const searchWords = filters.search
         .trim()
@@ -172,7 +173,6 @@ const exportVehiclesToHTML = async (
       );
     }
 
-    // Order results
     query = query.order('created_at', { ascending: false });
 
     const { data: allVehicles, error } = await query;
@@ -304,11 +304,11 @@ const isExpiringSoon = (dateStr: string | undefined, days: number = 30): boolean
 
 // ===== Excel Export Helper with Missing Data Highlighting =====
 const exportVehiclesToExcel = async (
-  vehicles: Vehicle[],
+  _vehicles: Vehicle[],
   companyId: string,
   filters: IVehicleFilters,
   supabaseClient: any
-) => {
+): Promise<void> => {
   if (!companyId) {
     toast.error('لا يمكن تصدير البيانات - لا يوجد معرف الشركة');
     return;
@@ -317,21 +317,17 @@ const exportVehiclesToExcel = async (
   try {
     toast.loading('جاري تحضير البيانات للتصدير...');
 
-    // Import ExcelJS dynamically
     const ExcelJS = await import('exceljs');
 
-    // Build query to fetch ALL vehicles matching filters (no pagination)
     let query = supabaseClient
       .from('vehicles')
       .select('*')
       .eq('company_id', companyId);
 
-    // Apply filters
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
 
-    // Search filter
     if (filters.search) {
       const searchWords = filters.search
         .trim()
@@ -348,7 +344,6 @@ const exportVehiclesToExcel = async (
       );
     }
 
-    // Order results
     query = query.order('created_at', { ascending: false });
 
     const { data: allVehicles, error } = await query;
@@ -624,7 +619,7 @@ const statusConfig = {
   municipality: { label: 'البلدية', color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700', dot: 'bg-teal-500' },
 };
 
-const statusCycle = ['available', 'rented', 'maintenance', 'out_of_service'] as const;
+// Status cycle for quick status changes
 
 // ===== Professional Vehicle Card =====
 interface VehicleCardProps {
@@ -660,8 +655,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 
   const getMaintenanceTags = () => {
     const tags: string[] = [];
-    if (vehicle.next_service_date) {
-      const serviceDate = new Date(vehicle.next_service_date);
+    if (vehicle.next_service_due) {
+      const serviceDate = new Date(vehicle.next_service_due);
       if (serviceDate <= new Date()) tags.push('فحص دوري');
     }
     if (vehicle.current_mileage && vehicle.current_mileage > 50000) {
@@ -779,13 +774,13 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         <div className="h-36 rounded-lg overflow-hidden bg-neutral-100 dark:bg-slate-800 mb-3 relative">
           {vehicle.images && vehicle.images[0] ? (
             <img
-              src={vehicle.images[0]}
-              alt={`${vehicle.make} ${vehicle.model}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400';
-              }}
-            />
+          src={vehicle.images?.[0] || vehicle.image_url || ''}
+          alt={`${vehicle.make} ${vehicle.model}`}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400';
+          }}
+        />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-slate-800 dark:to-slate-900">
               <Car className="w-12 h-12 text-neutral-300 dark:text-slate-600" />
@@ -804,14 +799,14 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h3>
 
-          <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-slate-400">
-            <div className="flex items-center gap-1">
-              <Settings className="w-3 h-3" />
-              <span>{vehicle.engine_size || '2.5L'}</span>
+            <div className="flex items-center gap-3 text-xs text-neutral-500 dark:text-slate-400">
+              <div className="flex items-center gap-1">
+                <Settings className="w-3 h-3" />
+                <span>{'2.5L'}</span>
+              </div>
+              <span>•</span>
+              <span>{vehicle.transmission === 'automatic' ? 'أوتوماتيك' : 'يدوي'}</span>
             </div>
-            <span>•</span>
-            <span>{vehicle.transmission === 'automatic' ? 'أوتوماتيك' : 'يدوي'}</span>
-          </div>
 
           {/* VIN */}
           <div className="flex items-center justify-between">
@@ -1291,7 +1286,7 @@ const FleetPageRedesigned: React.FC = () => {
             {/* Status Filter Dropdown */}
             <Select
               value={filters.status || "all"}
-              onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v)}
+              onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v as any)}
             >
               <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                 <SelectValue placeholder="الحالة" />
