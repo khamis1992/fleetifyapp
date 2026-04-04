@@ -18,11 +18,7 @@ const UnifiedPayments = () => {
   const [activeTab, setActiveTab] = useState('list');
 
   return (
-    <ProtectedFinanceRoute 
-      permission="finance.payments.view"
-      title="المدفوعات"
-    >
-      <FinanceErrorBoundary
+    <FinanceErrorBoundary
         error={null}
         isLoading={false}
         onRetry={() => window.location.reload()}
@@ -150,7 +146,6 @@ const UnifiedPayments = () => {
           </Tabs>
         </div>
       </FinanceErrorBoundary>
-    </ProtectedFinanceRoute>
   );
 };
 

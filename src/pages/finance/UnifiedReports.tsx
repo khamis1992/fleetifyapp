@@ -22,11 +22,7 @@ const UnifiedReports = () => {
   const [activeTab, setActiveTab] = useState('balance-sheet');
 
   return (
-    <ProtectedFinanceRoute 
-      permission="finance.view"
-      title="التقارير المالية"
-    >
-      <FinanceErrorBoundary
+    <FinanceErrorBoundary
         error={null}
         isLoading={false}
         onRetry={() => window.location.reload()}
@@ -168,7 +164,6 @@ const UnifiedReports = () => {
           </Tabs>
         </div>
       </FinanceErrorBoundary>
-    </ProtectedFinanceRoute>
   );
 };
 
