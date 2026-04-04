@@ -1,16 +1,22 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { supabase } from "@/integrations/supabase/client"
+import { useQueryClient } from "@tanstack/react-query"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus } from "lucide-react"
+import { MoreVertical, Wrench, Clock, CheckCircle, XCircle, AlertTriangle, Plus, Eye, Edit, Trash2 } from "lucide-react"
 import { useVehicleMaintenance } from "@/hooks/useVehicles"
 import { MaintenanceForm } from "./MaintenanceForm"
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter"
 import { useRolePermissions } from "@/hooks/useRolePermissions"
+import { useToast } from "@/components/ui/use-toast"
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -56,7 +62,15 @@ const StatusIcon = ({ status }: { status: string }) => {
 }
 
 export function MaintenanceList() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false)
+  const [selectedMaintenance, setSelectedMaintenance] = useState<any>(null)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
   const { data: maintenanceRecords, isLoading } = useVehicleMaintenance()
   const { formatCurrency } = useCurrencyFormatter()
   const { hasPermission } = useRolePermissions()
@@ -64,6 +78,67 @@ export function MaintenanceList() {
   const canCreate = hasPermission('create_maintenance')
   const canEdit = hasPermission('edit_maintenance')
   const canDelete = hasPermission('delete_maintenance')
+
+  const handleViewDetails = (maintenance: any) => {
+    setSelectedMaintenance(maintenance)
+    setShowViewDialog(true)
+  }
+
+  const handleEdit = (maintenance: any) => {
+    setSelectedMaintenance(maintenance)
+    setShowEditDialog(true)
+  }
+
+  const handleStartMaintenance = async (maintenance: any) => {
+    try {
+      const { error } = await supabase
+        .from('vehicle_maintenance')
+        .update({ status: 'in_progress' })
+        .eq('id', maintenance.id)
+      
+      if (error) throw error
+      queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance'] })
+      toast({ title: 'تم بدء الصيانة', description: 'تم تحديث حالة الصيانة إلى قيد التنفيذ' })
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'فشل في تحديث الحالة', variant: 'destructive' })
+    }
+  }
+
+  const handleComplete = async (maintenance: any) => {
+    try {
+      const { error } = await supabase
+        .from('vehicle_maintenance')
+        .update({ status: 'completed' })
+        .eq('id', maintenance.id)
+      
+      if (error) throw error
+      queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance'] })
+      toast({ title: 'تم إكمال الصيانة', description: 'تم تحديث حالة الصيانة إلى مكتملة' })
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'فشل في تحديث الحالة', variant: 'destructive' })
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!selectedMaintenance) return
+    setCancelLoading(true)
+    try {
+      const { error } = await supabase
+        .from('vehicle_maintenance')
+        .update({ status: 'cancelled' })
+        .eq('id', selectedMaintenance.id)
+      
+      if (error) throw error
+      queryClient.invalidateQueries({ queryKey: ['vehicle-maintenance'] })
+      toast({ title: 'تم الإلغاء', description: 'تم إلغاء طلب الصيانة' })
+      setShowCancelDialog(false)
+      setSelectedMaintenance(null)
+    } catch (error) {
+      toast({ title: 'خطأ', description: 'فشل في إلغاء طلب الصيانة', variant: 'destructive' })
+    } finally {
+      setCancelLoading(false)
+    }
+  }
 
   const pendingMaintenance = maintenanceRecords?.filter(m => m.status === 'pending') || []
   const inProgressMaintenance = maintenanceRecords?.filter(m => m.status === 'in_progress') || []
@@ -147,17 +222,35 @@ export function MaintenanceList() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>View Details</DropdownMenuItem>
-                  {canEdit && <DropdownMenuItem>Edit</DropdownMenuItem>}
+                  <DropdownMenuItem onClick={() => handleViewDetails(maintenance)} className="gap-2">
+                    <Eye className="h-4 w-4" />
+                    عرض التفاصيل
+                  </DropdownMenuItem>
+                  {canEdit && (
+                    <DropdownMenuItem onClick={() => handleEdit(maintenance)} className="gap-2">
+                      <Edit className="h-4 w-4" />
+                      تعديل
+                    </DropdownMenuItem>
+                  )}
                   {maintenance.status === 'pending' && canEdit && (
-                    <DropdownMenuItem>Start Maintenance</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStartMaintenance(maintenance)} className="gap-2">
+                      <Wrench className="h-4 w-4" />
+                      بدء الصيانة
+                    </DropdownMenuItem>
                   )}
                   {maintenance.status === 'in_progress' && canEdit && (
-                    <DropdownMenuItem>Complete</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleComplete(maintenance)} className="gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      إكمال
+                    </DropdownMenuItem>
                   )}
-                  {canDelete && (
-                    <DropdownMenuItem className="text-destructive">
-                      Cancel
+                  {canDelete && maintenance.status !== 'cancelled' && (
+                    <DropdownMenuItem 
+                      className="text-destructive gap-2"
+                      onClick={() => { setSelectedMaintenance(maintenance); setShowCancelDialog(true); }}
+                    >
+                      <XCircle className="h-4 w-4" />
+                      إلغاء
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -340,6 +433,88 @@ export function MaintenanceList() {
         open={showMaintenanceForm}
         onOpenChange={setShowMaintenanceForm}
       />
+
+      {/* View Details Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تفاصيل الصيانة</DialogTitle>
+          </DialogHeader>
+          {selectedMaintenance && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">رقم الصيانة</p>
+                  <p className="font-medium">{selectedMaintenance.maintenance_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الحالة</p>
+                  <Badge className={statusColors[selectedMaintenance.status as keyof typeof statusColors]}>
+                    {statusLabels[selectedMaintenance.status as keyof typeof statusLabels]}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">المركبة</p>
+                  <p className="font-medium">{selectedMaintenance.vehicles?.plate_number}</p>
+                  <p className="text-xs text-muted-foreground">{selectedMaintenance.vehicles?.make} {selectedMaintenance.vehicles?.model}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">نوع الصيانة</p>
+                  <p className="font-medium">{selectedMaintenance.maintenance_type}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">الأولوية</p>
+                  <Badge className={priorityColors[selectedMaintenance.priority as keyof typeof priorityColors]}>
+                    {priorityLabels[selectedMaintenance.priority as keyof typeof priorityLabels]}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">التكلفة المقدرة</p>
+                  <p className="font-medium">{formatCurrency(selectedMaintenance.estimated_cost || 0)}</p>
+                </div>
+                {selectedMaintenance.actual_cost > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">التكلفة الفعلية</p>
+                    <p className="font-medium">{formatCurrency(selectedMaintenance.actual_cost)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">التاريخ المجدول</p>
+                  <p className="font-medium">
+                    {selectedMaintenance.scheduled_date 
+                      ? new Date(selectedMaintenance.scheduled_date).toLocaleDateString('ar-QA')
+                      : 'غير محدد'}
+                  </p>
+                </div>
+              </div>
+              {selectedMaintenance.description && (
+                <div>
+                  <p className="text-sm text-muted-foreground">الوصف</p>
+                  <p className="text-sm">{selectedMaintenance.description}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>إلغاء طلب الصيانة</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إلغاء طلب الصيانة؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelLoading}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancel} disabled={cancelLoading} className="bg-red-600 hover:bg-red-700">
+              {cancelLoading ? 'جاري الإلغاء...' : 'تأكيد الإلغاء'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

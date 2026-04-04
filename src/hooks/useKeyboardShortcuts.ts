@@ -33,6 +33,8 @@ interface UseKeyboardShortcutsOptions {
   onExport?: () => void;
   /** Callback for help (?) */
   onShowHelp?: () => void;
+  /** Callback for sidebar toggle (Ctrl+/) */
+  onToggleSidebar?: () => void;
 }
 
 export const useKeyboardShortcuts = ({
@@ -43,6 +45,7 @@ export const useKeyboardShortcuts = ({
   onNewItem,
   onExport,
   onShowHelp,
+  onToggleSidebar,
 }: UseKeyboardShortcutsOptions = {}) => {
   const navigate = useNavigate();
   const shortcutsRef = useRef(shortcuts);
@@ -85,10 +88,22 @@ export const useKeyboardShortcuts = ({
             return;
           }
 
-          // Ctrl+N: New item
+          // Ctrl+N: Navigate to billing (new invoice)
           if (event.ctrlKey && event.key === 'n') {
             event.preventDefault();
-            onNewItem?.();
+            navigate('/finance/billing');
+            return;
+          }
+
+          // Ctrl+/: Toggle sidebar
+          if (event.ctrlKey && event.key === '/') {
+            event.preventDefault();
+            if (onToggleSidebar) {
+              onToggleSidebar();
+            } else {
+              // Dispatch custom event for sidebar toggle
+              window.dispatchEvent(new CustomEvent('toggle-sidebar'));
+            }
             return;
           }
 
@@ -150,6 +165,7 @@ export const useKeyboardShortcuts = ({
       onNewItem,
       onExport,
       onShowHelp,
+      onToggleSidebar,
     ]
   );
 
@@ -205,6 +221,14 @@ export const useKeyboardShortcuts = ({
           description: 'عرض المساعدة',
         });
       }
+      if (onToggleSidebar) {
+        globalShortcuts.push({
+          key: '/',
+          ctrl: true,
+          callback: onToggleSidebar,
+          description: 'تبديل القائمة الجانبية',
+        });
+      }
 
       // Navigation shortcuts
       globalShortcuts.push(
@@ -219,6 +243,18 @@ export const useKeyboardShortcuts = ({
           ctrl: true,
           callback: () => navigate(-1),
           description: 'الرجوع للصفحة السابقة',
+        },
+        {
+          key: 'n',
+          ctrl: true,
+          callback: () => navigate('/finance/billing'),
+          description: 'إنشاء فاتورة جديدة',
+        },
+        {
+          key: '/',
+          ctrl: true,
+          callback: () => window.dispatchEvent(new CustomEvent('toggle-sidebar')),
+          description: 'تبديل القائمة الجانبية',
         },
         {
           key: 'Escape',
@@ -238,6 +274,7 @@ export const useKeyboardShortcuts = ({
     onNewItem,
     onExport,
     onShowHelp,
+    onToggleSidebar,
   ]);
 
   return {
