@@ -204,58 +204,6 @@ const PaymentRegistration = () => {
   // Mobile view state
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ctrl+S: Save all (prevent default browser save)
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        toast.info('تم حفظ جميع التغييرات');
-      }
-      
-      // Ctrl+A: Select all
-      if (e.ctrlKey && e.key === 'a' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
-        e.preventDefault();
-        setSelectedContracts(new Set(paginatedContracts.map(c => c.contractId)));
-        toast.info(`تم تحديد ${paginatedContracts.length} عقد`);
-      }
-      
-      // Ctrl+D: Deselect all
-      if (e.ctrlKey && e.key === 'd') {
-        e.preventDefault();
-        setSelectedContracts(new Set());
-        toast.info('تم إلغاء التحديد');
-      }
-      
-      // Ctrl+E: Export selected
-      if (e.ctrlKey && e.key === 'e') {
-        e.preventDefault();
-        if (selectedContracts.size > 0) {
-          const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
-          exportToCSV(selectedData, 'تسجيل_الدفعات_المختارة');
-          toast.success(`تم تصدير ${selectedData.length} عقد`);
-        } else {
-          toast.error('يرجى اختيار عقود للتصدير');
-        }
-      }
-      
-      // Esc: Close modals
-      if (e.key === 'Escape') {
-        setShowBulkPaymentModal(false);
-        setAiModalData(null);
-      }
-      
-      // /: Focus search
-      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
-        e.preventDefault();
-        document.querySelector<HTMLInputElement>('input[placeholder*="بحث"]')?.focus();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [paginatedContracts, selectedContracts]);
-
   // جلب العقود النشطة
   useEffect(() => {
     fetchActiveContracts();
@@ -631,6 +579,46 @@ const PaymentRegistration = () => {
   const filteredContracts = paginatedContracts;
   const paidCount = statistics.paid;
   const pendingCount = statistics.pending;
+
+  // Keyboard shortcuts (must be after paginatedContracts is defined)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        toast.info('تم حفظ جميع التغييرات');
+      }
+      if (e.ctrlKey && e.key === 'a' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        setSelectedContracts(new Set(paginatedContracts.map(c => c.contractId)));
+        toast.info(`تم تحديد ${paginatedContracts.length} عقد`);
+      }
+      if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        setSelectedContracts(new Set());
+        toast.info('تم إلغاء التحديد');
+      }
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        if (selectedContracts.size > 0) {
+          const selectedData = paginatedContracts.filter(c => selectedContracts.has(c.contractId));
+          exportToCSV(selectedData, 'تسجيل_الدفعات_المختارة');
+          toast.success(`تم تصدير ${selectedData.length} عقد`);
+        } else {
+          toast.error('يرجى اختيار عقود للتصدير');
+        }
+      }
+      if (e.key === 'Escape') {
+        setShowBulkPaymentModal(false);
+        setAiModalData(null);
+      }
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('input[placeholder*="بحث"]')?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [paginatedContracts, selectedContracts]);
 
   if (loading) {
     return (
