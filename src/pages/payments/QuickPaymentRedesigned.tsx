@@ -119,7 +119,8 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
             >
               <Button
                 size="sm"
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 gap-2 shadow-lg shadow-emerald-500/20"
+                onClick={() => { setActiveTab('quick-entry'); setCurrentStep(0); }}
+                className="bg-teal-500 hover:bg-teal-600 gap-2 min-h-[44px]"
               >
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">دفع سريع</span>
@@ -257,10 +258,10 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
                       >
                         <Filter className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => { const table = document.querySelector('table'); if (table) { const rows = Array.from(table.querySelectorAll('tr')); const csv = rows.map(r => Array.from(r.querySelectorAll('th,td')).map(c => c.textContent?.trim()).join(',')).join('\n'); const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'payments.csv'; a.click(); } }} aria-label="تصدير CSV" className="min-h-[44px]">
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => window.location.reload()} aria-label="تحديث البيانات" className="min-h-[44px]">
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                     </motion.div>
