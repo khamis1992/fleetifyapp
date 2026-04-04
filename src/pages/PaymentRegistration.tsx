@@ -1463,12 +1463,12 @@ const PaymentRegistration = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
+                    disabled={currentPage === 1}
                   >
                     السابق
                   </Button>
                   <span className="text-sm text-muted-foreground">
-                    صفحة {page} من {totalPages}
+                    صفحة {currentPage} من {totalPages}
                   </span>
                   <Button
                     variant="outline"
