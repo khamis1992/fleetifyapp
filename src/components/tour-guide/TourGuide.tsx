@@ -295,44 +295,49 @@ export const TourGuide: React.FC<TourGuideProps> = ({ tour, isActive, onEnd }) =
 
   const currentStepData = tour?.steps[currentStep];
 
-  // البحث عن العنصر المستهدف
+  // البحث عن العنصر المستهدف مع إعادة المحاولة
   useEffect(() => {
     if (!isActive || !currentStepData) return;
 
+    let cancelled = false;
+    let retryCount = 0;
+    const maxRetries = 10;
+
     const findElement = () => {
+      if (cancelled) return;
+      
       const element = document.querySelector(currentStepData.target) as HTMLElement;
       if (element) {
         setTargetElement(element);
-        
-        // التمرير للعنصر
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-
-        // تنفيذ onEnter
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         currentStepData.onEnter?.();
-      } else {
-        console.warn(`Tour target not found: ${currentStepData.target}`);
-        setTargetElement(null);
-        // Skip to next step if target not found after retry
-        const retryTimer = setTimeout(() => {
-          if (tour && currentStep < tour.steps.length - 1) {
-            setCurrentStep(prev => prev + 1);
-          } else {
-            // End tour if last step
-            tour?.onComplete?.();
-            setCurrentStep(0);
-            onEnd();
-          }
-        }, 2000);
-        return () => clearTimeout(retryTimer);
+        return;
       }
+
+      retryCount++;
+      if (retryCount >= maxRetries) {
+        // Skip step after max retries
+        if (tour && currentStep < tour.steps.length - 1) {
+          setCurrentStep(prev => prev + 1);
+        } else {
+          tour?.onComplete?.();
+          setCurrentStep(0);
+          onEnd();
+        }
+        return;
+      }
+
+      // Retry with increasing delay (500ms, 600ms, 700ms... up to 2s)
+      setTimeout(findElement, 500 + retryCount * 150);
     };
 
-    // تأخير لضمان تحميل الصفحة والعناصر
-    const timer = setTimeout(findElement, 800);
-    return () => clearTimeout(timer);
+    // Wait for page to load, then start looking
+    const timer = setTimeout(findElement, 1000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [isActive, currentStepData, currentStep]);
 
   const handleNext = useCallback(() => {
