@@ -66,36 +66,24 @@ export const QuickCreateFAB: React.FC = () => {
         <div className="relative">
           <AnimatePresence>
             {isOpen && (
-              <>
-                {fabActions.map((action, index) => (
-                  <motion.div
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                className="absolute bottom-16 left-0 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-2 min-w-[180px] mb-2"
+              >
+                {fabActions.map((action) => (
+                  <button
                     key={action.id}
-                    initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                    transition={{
-                      delay: index * 0.05,
-                      type: 'spring',
-                      stiffness: 300,
-                      damping: 25,
-                    }}
-                    className="absolute bottom-16 left-0"
-                    style={{ transform: `translateY(-${index * 52}px)` }}
+                    onClick={() => handleAction(action)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <Button
-                      onClick={() => handleAction(action)}
-                      className={cn(
-                        'gap-2 text-white shadow-lg min-w-[140px] justify-start',
-                        action.color
-                      )}
-                      size="sm"
-                    >
-                      <action.icon className="h-4 w-4" />
-                      {action.label}
-                    </Button>
-                  </motion.div>
+                    <action.icon className="h-4 w-4" />
+                    {action.label}
+                  </button>
                 ))}
-              </>
+              </motion.div>
             )}
           </AnimatePresence>
 
