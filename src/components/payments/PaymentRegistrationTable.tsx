@@ -44,6 +44,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,6 +106,9 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -412,16 +433,16 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setSelectedPayment(payment); setIsDetailOpen(true); }}>
                               <Eye className="h-4 w-4 ml-2" />
                               عرض التفاصيل
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toast.info('يمكنك تعديل الدفعة من صفحة الفاتورة المرتبطة')}>
                               <Edit className="h-4 w-4 ml-2" />
                               تعديل
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem className="text-red-600" onClick={() => { setSelectedPayment(payment); setIsDeleteOpen(true); }}>
                               <Trash2 className="h-4 w-4 ml-2" />
                               حذف
                             </DropdownMenuItem>
@@ -436,6 +457,54 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
           </div>
         </CardContent>
       </Card>
+
+      {/* View Details Dialog */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الدفعة</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div><span className="text-slate-500">العميل:</span><p className="font-medium">{selectedPayment.customer_name}</p></div>
+                <div><span className="text-slate-500">المبلغ:</span><p className="font-bold text-teal-600">{selectedPayment.payment_amount?.toLocaleString()} ر.ق</p></div>
+                <div><span className="text-slate-500">رقم الفاتورة:</span><p className="font-medium">{selectedPayment.invoice_number}</p></div>
+                <div><span className="text-slate-500">التاريخ:</span><p className="font-medium">{selectedPayment.payment_date}</p></div>
+                <div><span className="text-slate-500">طريقة الدفع:</span><p className="font-medium">{selectedPayment.payment_method}</p></div>
+                <div><span className="text-slate-500">الحالة:</span><p className="font-medium">{selectedPayment.status}</p></div>
+              </div>
+              {selectedPayment.notes && <div><span className="text-slate-500">ملاحظات:</span><p>{selectedPayment.notes}</p></div>}
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setIsDetailOpen(false)}>إغلاق</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف هذه الدفعة؟ لا يمكن التراجع.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (!selectedPayment) return;
+              try {
+                const { error } = await supabase.from('payments').delete().eq('id', selectedPayment.id);
+                if (error) throw error;
+                toast.success('تم حذف الدفعة');
+                setIsDeleteOpen(false);
+                setRefreshKey(k => k + 1);
+              } catch { toast.error('فشل الحذف'); }
+            }} className="bg-red-500 hover:bg-red-600">حذف</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
