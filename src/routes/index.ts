@@ -1314,6 +1314,17 @@ const routeConfigs: RouteConfig[] = [
 
   // === HR Management Routes ===
   {
+    path: '/hr',
+    component: Employees,
+    lazy: true,
+    exact: true,
+    title: 'HR',
+    description: 'Human Resources',
+    group: 'hr',
+    protected: true,
+    layout: 'bento',
+  },
+  {
     path: '/hr/employees',
     component: Employees,
     lazy: true,
