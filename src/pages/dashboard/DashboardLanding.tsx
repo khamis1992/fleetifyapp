@@ -63,8 +63,7 @@ const DashboardLanding: React.FC = () => {
   const stats = dashboardData as DashboardStats | undefined;
   const { openChat: openAIChat } = useAIChat();
   const [mounted, setMounted] = useState(false);
-  const [fabOpen, setFabOpen] = useState(false);
-  const [showContractWizard, setShowContractWizard] = useState(false);
+    const [showContractWizard, setShowContractWizard] = useState(false);
   const [activeFleetIndex, setActiveFleetIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -250,64 +249,6 @@ const DashboardLanding: React.FC = () => {
   }, [navigate, triggerQuickSearch]);
 
   // FAB Menu Component
-  const FABMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-    const actions = [
-      { id: 'payment', label: 'تسجيل دفعة', icon: CreditCard, color: 'from-emerald-400 to-emerald-600' },
-      { id: 'contract', label: 'إنشاء عقد', icon: FilePlus, color: 'from-teal-400 to-teal-600' },
-      { id: 'search', label: 'البحث', icon: Search, color: 'from-amber-400 to-amber-600' },
-      { id: 'purchase', label: 'أمر شراء', icon: ShoppingCart, color: 'from-blue-400 to-blue-600' },
-    ];
-
-    const handleAction = (actionId: string) => {
-      onClose();
-      handleActionSelect(actionId);
-    };
-
-    return (
-      <div className="fixed bottom-8 left-8 z-50">
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="absolute bottom-20 left-0 flex flex-col gap-3"
-            >
-              {actions.map((action, index) => (
-                <motion.button
-                  key={action.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0, transition: { delay: index * 0.06 } }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onClick={() => handleAction(action.id)}
-                  className="group flex items-center gap-3 px-5 py-3.5 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 min-w-[180px] border border-slate-100"
-                >
-                  <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg', action.color)}>
-                    <action.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-bold text-slate-800 text-sm">{action.label}</span>
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          onClick={() => setFabOpen(!fabOpen)}
-          animate={{ rotate: isOpen ? 135 : 0, scale: isOpen ? 1.05 : 1 }}
-          whileHover={{ scale: isOpen ? 1.05 : 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className={cn(
-            'w-16 h-16 rounded-xl flex items-center justify-center shadow-2xl transition-all',
-            isOpen ? 'bg-slate-900' : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/30'
-          )}
-        >
-          <Plus className="w-7 h-7 text-white" strokeWidth={3} />
-        </motion.button>
-      </div>
-    );
-  };
-
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -1090,9 +1031,6 @@ const DashboardLanding: React.FC = () => {
 
         </motion.div>
       </div>
-
-      {/* FAB Menu */}
-      <FABMenu isOpen={fabOpen} onClose={() => setFabOpen(!fabOpen)} />
 
       {/* Contract Wizard Modal */}
       <AnimatePresence>
