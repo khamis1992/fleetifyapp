@@ -115,7 +115,7 @@ const CustomerDetailsPageNew = () => {
   // State
   const [activeTab, setActiveTab] = useState('info');
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [, setSelectedDocumentType] = useState<string>('identity');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('identity');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
