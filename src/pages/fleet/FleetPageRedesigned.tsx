@@ -26,6 +26,8 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Wrench,
   Settings,
   Tag,
@@ -36,6 +38,7 @@ import {
   FileText,
   MoreHorizontal,
   X,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -894,6 +897,7 @@ const FleetPageRedesigned: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [filters, setFilters] = useState<IVehicleFilters>({ excludeMaintenanceStatus: false });
+  const [showFilters, setShowFilters] = useState(false);
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
@@ -1064,24 +1068,51 @@ const FleetPageRedesigned: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Title */}
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-slate-100">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 الأسطول
               </h1>
-              <p className="text-sm text-neutral-500 dark:text-slate-400 mt-1">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 إدارة وتتبع جميع المركبات ({vehiclesData?.count || 0} مركبة)
               </p>
             </div>
 
-            {/* Actions */}
+            {/* Actions - Prominent Add Button First */}
             <div className="flex items-center gap-2">
+              <Button
+                size="default"
+                onClick={() => setShowVehicleForm(true)}
+                className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm min-h-[44px]"
+              >
+                <Plus className="w-4 h-4" />
+                إضافة مركبة
+              </Button>
               
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "gap-2 min-h-[44px] border-slate-200 dark:border-slate-700",
+                  showFilters && "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                )}
+              >
+                <Filter className="w-4 h-4" />
+                الفلاتر
+                {activeFiltersCount > 0 && (
+                  <Badge className="ml-1 px-1.5 py-0.5 text-xs bg-teal-500 text-white">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+                {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -1098,14 +1129,14 @@ const FleetPageRedesigned: React.FC = () => {
                     <FileText className="w-4 h-4 text-green-600" />
                     <div className="flex flex-col">
                       <span className="font-medium">Excel (XLSX)</span>
-                      <span className="text-xs text-neutral-500 dark:text-slate-400">ملف جدول بيانات</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">ملف جدول بيانات</span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('html')} className="gap-2">
                     <FileText className="w-4 h-4 text-blue-600" />
                     <div className="flex flex-col">
                       <span className="font-medium">تقرير HTML</span>
-                      <span className="text-xs text-neutral-500 dark:text-slate-400">تقرير منسق للطباعة</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">تقرير منسق للطباعة</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1153,22 +1184,13 @@ const FleetPageRedesigned: React.FC = () => {
                   <Upload className="w-4 h-4" />
                 </Button>
               )}
-
-                <Button
-                  size="default"
-                  onClick={() => setShowVehicleForm(true)}
-                  className="bg-teal-500 hover:bg-teal-600 text-white gap-2 shadow-sm min-h-[44px]"
-                >
-                  <Plus className="w-4 h-4" />
-                  إضافة مركبة
-                </Button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-4">
 
         {/* Smart Dashboard */}
         <FleetSmartDashboard
@@ -1176,149 +1198,156 @@ const FleetPageRedesigned: React.FC = () => {
           activeStatus={filters.status}
         />
 
+        {/* Collapsible Filters Panel */}
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm"
+          >
+            <div className="space-y-4">
+              {/* Search and Sort Row */}
+              <div className="flex flex-col lg:flex-row gap-3">
+                {/* Search */}
+                <div className="flex-1 relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                  <Input
+                    placeholder="بحث باللوحة، الموديل، VIN..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="h-11 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500 dark:focus:border-teal-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                    >
+                      <X className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                    </button>
+                  )}
+                </div>
 
-        {/* Quick Status Filter Bar */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm text-neutral-500 dark:text-slate-400 font-medium">تصفية سريع:</span>
+                {/* Sort */}
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                    <SlidersHorizontal className="w-4 h-4 ml-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">الأحدث</SelectItem>
+                    <SelectItem value="oldest">الأقدم</SelectItem>
+                    <SelectItem value="name">الاسم</SelectItem>
+                    <SelectItem value="mileage">المسافة</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            <StatusChip
-              label="متاحة"
-              status="available"
-              count={fleetStatus?.available || 0}
-              active={filters.status === 'available'}
-              onClick={() => handleStatCardClick('available')}
-            />
-
-            <StatusChip
-              label="مؤجرة"
-              status="rented"
-              count={fleetStatus?.rented || 0}
-              active={filters.status === 'rented'}
-              onClick={() => handleStatCardClick('rented')}
-            />
-
-            <StatusChip
-              label="صيانة"
-              status="maintenance"
-              count={fleetStatus?.maintenance || 0}
-              active={filters.status === 'maintenance'}
-              onClick={() => handleStatCardClick('maintenance')}
-            />
-
-            <StatusChip
-              label="خارج الخدمة"
-              status="out_of_service"
-              count={fleetStatus?.outOfService || 0}
-              active={filters.status === 'out_of_service'}
-              onClick={() => handleStatCardClick('out_of_service')}
-            />
-
-            <div className="h-6 w-px bg-neutral-200 dark:bg-slate-700 mx-2" />
-
-            <StatusChip
-              label="محجوزة"
-              status="reserved"
-              count={fleetStatus?.reserved || 0}
-              active={filters.status === 'reserved'}
-              onClick={() => handleStatCardClick('reserved')}
-            />
-
-            <StatusChip
-              label="حادث"
-              status="accident"
-              count={fleetStatus?.accident || 0}
-              active={filters.status === 'accident'}
-              onClick={() => handleStatCardClick('accident')}
-            />
-
-            {filters.status && (
-              <button
-                onClick={() => handleStatCardClick(filters.status!)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-neutral-100 dark:bg-slate-800 text-neutral-600 dark:text-slate-300 hover:bg-neutral-200 dark:hover:bg-slate-700 transition-all"
-              >
-                <X className="w-3 h-3" />
-                مسح الفلتر
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search & Filters Bar */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-sm transition-all">
-          <div className="flex flex-col lg:flex-row gap-3">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-slate-500" />
-                <Input
-                  placeholder="بحث باللوحة، الموديل، VIN..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="h-11 pr-10 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-teal-500 dark:focus:border-teal-500"
-                />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-neutral-100 dark:hover:bg-slate-700 rounded"
+                {/* Status Filter Dropdown */}
+                <Select
+                  value={filters.status || "all"}
+                  onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v as any)}
                 >
-                  <X className="w-3 h-3 text-neutral-400 dark:text-slate-500" />
-                </button>
-              )}
+                  <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                    <SelectValue placeholder="الحالة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
+                    <SelectItem value="available">متاحة</SelectItem>
+                    <SelectItem value="rented">مؤجرة</SelectItem>
+                    <SelectItem value="street_52">شارع 52</SelectItem>
+                    <SelectItem value="maintenance">صيانة</SelectItem>
+                    <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
+                    <SelectItem value="accident">حادث</SelectItem>
+                    <SelectItem value="stolen">مسروقة</SelectItem>
+                    <SelectItem value="police_station">في مركز الشرطة</SelectItem>
+                    <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
+                    <SelectItem value="municipality">البلدية</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Reset */}
+                {(activeFiltersCount > 0 || searchQuery) && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={handleResetFilters}
+                    className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
+                  >
+                    <RotateCcw className="w-4 h-4 ml-1" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Quick Status Filter Bar */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">تصفية سريع:</span>
+
+                <StatusChip
+                  label="متاحة"
+                  status="available"
+                  count={fleetStatus?.available || 0}
+                  active={filters.status === 'available'}
+                  onClick={() => handleStatCardClick('available')}
+                />
+
+                <StatusChip
+                  label="مؤجرة"
+                  status="rented"
+                  count={fleetStatus?.rented || 0}
+                  active={filters.status === 'rented'}
+                  onClick={() => handleStatCardClick('rented')}
+                />
+
+                <StatusChip
+                  label="صيانة"
+                  status="maintenance"
+                  count={fleetStatus?.maintenance || 0}
+                  active={filters.status === 'maintenance'}
+                  onClick={() => handleStatCardClick('maintenance')}
+                />
+
+                <StatusChip
+                  label="خارج الخدمة"
+                  status="out_of_service"
+                  count={fleetStatus?.outOfService || 0}
+                  active={filters.status === 'out_of_service'}
+                  onClick={() => handleStatCardClick('out_of_service')}
+                />
+
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+
+                <StatusChip
+                  label="محجوزة"
+                  status="reserved"
+                  count={fleetStatus?.reserved || 0}
+                  active={filters.status === 'reserved'}
+                  onClick={() => handleStatCardClick('reserved')}
+                />
+
+                <StatusChip
+                  label="حادث"
+                  status="accident"
+                  count={fleetStatus?.accident || 0}
+                  active={filters.status === 'accident'}
+                  onClick={() => handleStatCardClick('accident')}
+                />
+
+                {filters.status && (
+                  <button
+                    onClick={() => handleStatCardClick(filters.status!)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                  >
+                    <X className="w-3 h-3" />
+                    مسح الفلتر
+                  </button>
+                )}
+              </div>
             </div>
-
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <SlidersHorizontal className="w-4 h-4 ml-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">الأحدث</SelectItem>
-                <SelectItem value="oldest">الأقدم</SelectItem>
-                <SelectItem value="name">الاسم</SelectItem>
-                <SelectItem value="mileage">المسافة</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter Dropdown */}
-            <Select
-              value={filters.status || "all"}
-              onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v as any)}
-            >
-              <SelectTrigger className="h-11 w-40 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                <SelectValue placeholder="الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="available">متاحة</SelectItem>
-                <SelectItem value="rented">مؤجرة</SelectItem>
-                <SelectItem value="street_52">شارع 52</SelectItem>
-                <SelectItem value="maintenance">صيانة</SelectItem>
-                <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
-                <SelectItem value="accident">حادث</SelectItem>
-                <SelectItem value="stolen">مسروقة</SelectItem>
-                <SelectItem value="police_station">في مركز الشرطة</SelectItem>
-                <SelectItem value="reserved_employee">محجوزة لموظف</SelectItem>
-                <SelectItem value="municipality">البلدية</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Reset */}
-            {(activeFiltersCount > 0 || searchQuery) && (
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleResetFilters}
-                className="min-h-[44px] border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-500"
-              >
-                <RotateCcw className="w-4 h-4 ml-1" />
-              </Button>
-            )}
-          </div>
-        </div>
+          </motion.div>
+        )}
 
         {/* Vehicle List */}
         {vehiclesLoading ? (
@@ -1334,13 +1363,13 @@ const FleetPageRedesigned: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-xl p-4 flex items-center justify-between"
+                className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-3 flex items-center justify-between shadow-sm"
               >
                 <p className="text-sm text-teal-700 dark:text-teal-300">
                   <span className="font-semibold">{selectedVehicles.size}</span> مركبة محددة
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500">
+                  <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500 bg-white dark:bg-slate-900">
                     تصدير
                   </Button>
                   <Button size="default" variant="outline" className="min-h-[44px] border-teal-200 dark:border-teal-700 hover:border-teal-500 dark:hover:border-teal-500" onClick={() => setSelectedVehicles(new Set())}>
@@ -1379,10 +1408,10 @@ const FleetPageRedesigned: React.FC = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-teal-500/50 dark:hover:border-teal-500/50 hover:shadow-sm transition-all">
-                <p className="text-sm text-neutral-500 dark:text-slate-400">
-                  صفحة <span className="font-medium text-neutral-900 dark:text-slate-100">{currentPage}</span> من{' '}
-                  <span className="font-medium text-neutral-900 dark:text-slate-100">{totalPages}</span>
+              <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-sm">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  صفحة <span className="font-medium text-slate-900 dark:text-slate-100">{currentPage}</span> من{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{totalPages}</span>
                 </p>
 
                 <div className="flex items-center gap-1">
@@ -1413,7 +1442,7 @@ const FleetPageRedesigned: React.FC = () => {
 
                   {totalPages > 5 && (
                     <>
-                      <span className="px-2 text-neutral-400 dark:text-slate-500">...</span>
+                      <span className="px-2 text-slate-400 dark:text-slate-500">...</span>
                       <Button
                         variant={currentPage === totalPages ? "default" : "ghost"}
                         size="default"
@@ -1442,10 +1471,10 @@ const FleetPageRedesigned: React.FC = () => {
             )}
           </>
         ) : (
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center border border-slate-200 dark:border-slate-800">
-            <Car className="w-16 h-16 text-neutral-300 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-slate-100 mb-2">لا توجد مركبات</h3>
-            <p className="text-sm text-neutral-500 dark:text-slate-400 mb-6">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-12 text-center border border-slate-200 dark:border-slate-800 shadow-sm">
+            <Car className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">لا توجد مركبات</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
               {activeFiltersCount > 0 || searchQuery
                 ? 'لم يتم العثور على مركبات تطابق البحث'
                 : 'ابدأ بإضافة أول مركبة للأسطول'}
