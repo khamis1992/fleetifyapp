@@ -15,6 +15,7 @@ import { AttendancePageHelpContent } from "@/components/help/content";
 // Lazy load Calendar component for better performance
 const Calendar = lazy(() => import('@/components/ui/calendar').then(m => ({ default: m.Calendar })));
 
+interface AttendanceRecord {
   id: string;
   employee_id: string;
   attendance_date: string;
