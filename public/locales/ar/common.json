@@ -174,7 +174,6 @@
     "of": "من",
     "showing": "عرض",
     "to": "إلى",
-    "of": "من",
     "entries": "مدخلات",
     "per_page": "لكل صفحة",
     "all": "الكل",
@@ -336,5 +335,16 @@
     "SAR": "الريال السعودي",
     "AED": "درهم الإمارات",
     "KWD": "الدينار الكويتي"
-  }
+  },
+  "login": "تسجيل الدخول",
+  "email": "البريد الإلكتروني",
+  "password": "كلمة المرور",
+  "rememberMe": "تذكر بياناتي",
+  "forgotPassword": "هل نسيت كلمة المرور",
+  "submit": "إرسال",
+  "cancel": "إلغاء",
+  "loading": "جاري التحميل",
+  "emailPlaceholder": "example@domain.com",
+  "passwordHide": "إخفاء كلمة المرور",
+  "passwordShow": "إظهار كلمة المرور"
 }

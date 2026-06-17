@@ -1,0 +1,25 @@
+{
+  "moved_files": [
+    "components/contracts/AlarafOfficialContract.tsx",
+    "components/contracts/ContractHeader.tsx",
+    "components/contracts/ContractPaymentsTab.tsx",
+    "components/contracts/EnhancedPaymentScheduleTab.tsx",
+    "components/dashboard/bento/BentoDashboardRedesigned.tsx",
+    "components/fleet/TrafficViolationPDFImportRedesigned.tsx",
+    "components/fleet/TrafficViolationSidePanelNew.tsx",
+    "components/payments/PaymentRegistrationTableRedesigned.tsx",
+    "components/payments/PaymentStatsCardsRedesigned.tsx",
+    "hooks/useEmployeeContracts.tsx",
+    "hooks/useEmployeePerformance.tsx",
+    "hooks/useEmployeeTasks.tsx",
+    "hooks/useNotifications.tsx",
+    "pages/customers/CustomersPageNew.tsx",
+    "pages/fleet/reports/components/ReportGeneratorRedesigned.tsx",
+    "pages/legal/LegalCasesTrackingV2.tsx",
+    "pages/legal/LegalReportsRedesigned.tsx",
+    "pages/payments/QuickPaymentRedesigned.tsx"
+  ],
+  "moved_count": 18,
+  "remaining_duplicate_groups": 0,
+  "remaining_duplicates": {}
+}

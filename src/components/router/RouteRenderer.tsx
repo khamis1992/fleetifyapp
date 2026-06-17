@@ -10,18 +10,12 @@ import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { LazyLoadErrorBoundary } from '@/components/common/LazyLoadErrorBoundary';
 import { RouteErrorBoundary } from '@/components/common/RouteErrorBoundary';
 import { RouteWrapper } from '@/components/common/RouteWrapper';
-import { ProtectedRoute } from '@/components/common/ProtectedRoute';
-import { AdminRoute } from '@/components/common/ProtectedRoute';
-import { SuperAdminRoute } from '@/components/common/ProtectedRoute';
+import { ProtectedRoute, AdminRoute, SuperAdminRoute } from '@/components/common/ProtectedRoute';
 import { DashboardLayout } from '@/components/layouts/DashboardLayout';
 import { SuperAdminLayout } from '@/components/layouts/SuperAdminLayout';
 import { CompanyBrowserLayout } from '@/components/layouts/CompanyBrowserLayout';
 import { BentoLayout } from '@/components/layouts/BentoLayout';
 
-// Debug at file level - only in development
-if (import.meta.env.DEV) {
-  console.log('🔍 [RouteRenderer] Module loaded');
-}
 
 interface RouteRendererProps {
   routes: RouteConfig[];
@@ -34,10 +28,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   fallback: FallbackComponent = PageSkeletonFallback,
   errorBoundary: ErrorBoundaryComponent = RouteErrorBoundary,
 }) => {
-  // Only log in development
-  if (import.meta.env.DEV) {
-    console.log('🔍 [RouteRenderer] Component rendered, routes:', routes.length);
-  }
+
 
   const renderRoute = React.useCallback((route: RouteConfig) => {
     const Component = route.component;
@@ -45,7 +36,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     const requiredRole = route.requiredRole;
     const layout = route.layout || 'none';
 
-    // Create the protected component wrapper based on role
+    // Create the protected component wrapper based on role/permissions
     let protectedElement: React.ReactNode;
     const componentElement = <Component />;
 
@@ -56,7 +47,17 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     } else if (requiredRole === 'admin') {
       protectedElement = <AdminRoute>{componentElement}</AdminRoute>;
     } else {
-      protectedElement = <ProtectedRoute>{componentElement}</ProtectedRoute>;
+      protectedElement = (
+        <ProtectedRoute
+          permission={route.requiredPermissions?.[0]}
+          feature={route.featureFlag}
+          role={route.requiredRole as 'admin' | 'super_admin' | undefined}
+          requireCompanyAdmin={route.requiredRole === 'company_admin'}
+          requireGlobalAccess={route.requiredRole === 'super_admin'}
+        >
+          {componentElement}
+        </ProtectedRoute>
+      );
     }
 
     // Wrap with layout
@@ -128,12 +129,6 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     return routes.sort((a, b) => a.priority - b.priority);
   }, [routes]);
 
-  // Debug: Log routes to verify they're loaded - only in development
-  React.useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('🔍 [RouteRenderer] Total routes:', routes.length);
-    }
-  }, [routes]);
 
   return (
     <ErrorBoundaryComponent>

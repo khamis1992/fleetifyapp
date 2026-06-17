@@ -174,7 +174,6 @@
     "of": "of",
     "showing": "Showing",
     "to": "to",
-    "of": "of",
     "entries": "entries",
     "per_page": "Per page",
     "all": "All",
@@ -336,5 +335,16 @@
     "SAR": "Saudi Riyal",
     "AED": "UAE Dirham",
     "KWD": "Kuwaiti Dinar"
-  }
+  },
+  "login": "Login",
+  "email": "Email",
+  "password": "Password",
+  "rememberMe": "Remember me",
+  "forgotPassword": "Forgot password?",
+  "submit": "Submit",
+  "cancel": "Cancel",
+  "loading": "Loading",
+  "emailPlaceholder": "example@domain.com",
+  "passwordHide": "Hide password",
+  "passwordShow": "Show password"
 }

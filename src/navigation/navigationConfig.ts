@@ -41,7 +41,6 @@ import {
   PlayCircle,
   MessageSquare,
   PhoneCall,
-  Sparkles,
   LucideIcon,
 } from 'lucide-react'
 
@@ -120,7 +119,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Fleet Management (Consolidated - 5 items)
+  // Fleet Management
   {
     id: 'fleet',
     name: 'إدارة الأسطول',
@@ -172,7 +171,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Quotations & Contracts (Simple - No submenu)
+  // Quotations & Contracts
   {
     id: 'quotations-contracts',
     name: 'العروض والعقود',
@@ -194,11 +193,11 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Finance (Reduced from 16 to 7 items)
+  // Finance & Sales
   {
     id: 'finance',
-    name: 'المالية',
-    name_en: 'Finance',
+    name: 'المالية والمبيعات',
+    name_en: 'Finance & Sales',
     icon: DollarSign,
     requiresAdmin: true,
     submenu: [
@@ -244,16 +243,6 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         href: '/finance/reports',
         icon: PieChart,
       },
-    ],
-  },
-
-  // Sales (4 items)
-  {
-    id: 'sales',
-    name: 'المبيعات',
-    name_en: 'Sales',
-    icon: TrendingUp,
-    submenu: [
       {
         id: 'sales-pipeline',
         name: 'مسار المبيعات',
@@ -281,7 +270,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Inventory (Consolidated - 3 items)
+  // Inventory
   {
     id: 'inventory',
     name: 'المخزون',
@@ -309,7 +298,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Human Resources (Consolidated - 4 items)
+  // Human Resources
   {
     id: 'hr',
     name: 'الموارد البشرية',
@@ -344,28 +333,6 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Legal Affairs (Combined - 2 items)
-  {
-    id: 'legal',
-    name: 'الشؤون القانونية',
-    name_en: 'Legal Affairs',
-    icon: Shield,
-    submenu: [
-      {
-        id: 'legal-cases',
-        name: 'تتبع القضايا',
-        href: '/legal/cases',
-        icon: FileText,
-      },
-      {
-        id: 'legal-document-generator',
-        name: 'مساعد الكتب الذكي',
-        href: '/legal/document-generator',
-        icon: Sparkles,
-      },
-    ],
-  },
-
   // Reports
   {
     id: 'reports',
@@ -373,79 +340,6 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     name_en: 'Reports',
     href: '/reports',
     icon: BarChart3,
-  },
-
-  // Support
-  {
-    id: 'support',
-    name: 'الدعم الفني',
-    name_en: 'Support',
-    href: '/support',
-    icon: Headphones,
-  },
-
-  // Help & Documentation
-  {
-    id: 'help',
-    name: 'المساعدة والتوثيق',
-    name_en: 'Help & Documentation',
-    icon: BookOpenIcon,
-    submenu: [
-      {
-        id: 'help-hub',
-        name: 'مركز المساعدة',
-        href: '/help',
-        icon: BookOpenIcon,
-      },
-      {
-        id: 'help-user-guide',
-        name: 'دليل المستخدم',
-        href: '/help/user-guide',
-        icon: PlayCircle,
-      },
-      {
-        id: 'help-dashboard',
-        name: 'دليل لوحة التحكم',
-        href: '/help/dashboard',
-        icon: Home,
-      },
-      {
-        id: 'help-contracts',
-        name: 'دليل العقود',
-        href: '/help/contracts',
-        icon: FileText,
-      },
-      {
-        id: 'help-customers',
-        name: 'دليل العملاء',
-        href: '/help/customers',
-        icon: Users,
-      },
-      {
-        id: 'help-finance',
-        name: 'دليل المالية',
-        href: '/help/finance',
-        icon: DollarSign,
-      },
-      {
-        id: 'help-collections',
-        name: 'دليل التحصيل',
-        href: '/help/collections',
-        icon: MessageSquare,
-      },
-      {
-        id: 'help-fleet',
-        name: 'دليل الأسطول',
-        href: '/help/fleet',
-        icon: Car,
-      },
-      {
-        id: 'help-faq',
-        name: 'الأسئلة الشائعة',
-        href: '/help/faq',
-        icon: HelpCircle,
-      },
-    ],
   },
 ]
 
@@ -525,6 +419,13 @@ const hrSettingsItems: NavSection[] = [
 // System Administration
 const adminItems: NavSection[] = [
   {
+    id: 'admin-legal',
+    name: 'الشؤون القانونية',
+    name_en: 'Legal Affairs',
+    href: '/legal/cases',
+    icon: Shield,
+  },
+  {
     id: 'admin-approvals',
     name: 'نظام الموافقات',
     href: '/approvals',
@@ -555,6 +456,36 @@ const adminItems: NavSection[] = [
 // SETTINGS DRAWER (Secondary Menu)
 // ============================================================================
 
+
+// Help & Support
+const helpSupportItems: NavSection[] = [
+  {
+    id: 'help-hub',
+    name: 'مركز المساعدة',
+    name_en: 'Help Center',
+    href: '/help',
+    icon: BookOpenIcon,
+  },
+  {
+    id: 'help-user-guide',
+    name: 'دليل المستخدم',
+    href: '/help/user-guide',
+    icon: PlayCircle,
+  },
+  {
+    id: 'help-faq',
+    name: 'الأسئلة الشائعة',
+    href: '/help/faq',
+    icon: HelpCircle,
+  },
+  {
+    id: 'support',
+    name: 'الدعم الفني',
+    name_en: 'Support',
+    href: '/support',
+    icon: Headphones,
+  },
+]
 export const SETTINGS_DRAWER: NavDrawer = {
   id: 'settings',
   label: 'الإعدادات والإدارة',
@@ -581,6 +512,12 @@ export const SETTINGS_DRAWER: NavDrawer = {
       icon: Settings,
       requiresAdmin: true,
     },
+    {
+      id: 'help-support-section',
+      name: 'المساعدة والدعم',
+      name_en: 'Help & Support',
+      icon: HelpCircle,
+    },
   ],
 }
 
@@ -588,6 +525,7 @@ export const SETTINGS_ITEMS = {
   finance: financeSettingsItems,
   hr: hrSettingsItems,
   admin: adminItems,
+  help: helpSupportItems,
 }
 
 // ============================================================================

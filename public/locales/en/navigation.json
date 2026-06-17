@@ -1,0 +1,13 @@
+{
+  "dashboard": "Dashboard",
+  "customers": "Customer Management",
+  "fleet": "Fleet Management",
+  "contracts": "Quotations & Contracts",
+  "finance": "Finance & Sales",
+  "inventory": "Inventory",
+  "hr": "Human Resources",
+  "reports": "Reports",
+  "settings": "Settings",
+  "help": "Help",
+  "support": "Support"
+}

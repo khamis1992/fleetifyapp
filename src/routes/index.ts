@@ -4,12 +4,11 @@
  */
 
 import React, { lazy } from 'react';
-import type { RouteConfig, RouteGroup, LazyRouteComponent } from './types';
+import type { RouteConfig, RouteGroup } from './types';
 
 // === Lazy loaded components with proper typing ===
 
 // Critical pages - loaded immediately
-import Index from '@/pages/Index';
 import PremiumLanding from '@/pages/PremiumLanding';
 import EnterpriseLanding from '@/pages/landing/EnterpriseLanding';
 const Auth = lazy(() => import('@/pages/Auth'));
@@ -21,10 +20,8 @@ import NotFound from '@/pages/NotFound';
 // Public pages
 const AboutUs = lazy(() => import('@/pages/AboutUs'));
 const Careers = lazy(() => import('@/pages/Careers'));
-const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
 
 // Demo pages - lazy loaded
-const HeroDemo = lazy(() => import('@/pages/HeroDemo'));
 const NativeMobileDemo = lazy(() => import('@/pages/NativeMobileDemo'));
 
 // Mobile app pages
@@ -52,7 +49,6 @@ const MobileAppOverdue: React.FC = () => React.createElement(MobileApp, { initia
 
 // Core application pages - lazy loaded
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const DashboardV2 = lazy(() => import('@/pages/dashboards/DashboardV2'));
 const DashboardLanding = lazy(() => import('@/pages/dashboard/DashboardLanding'));
 const EmployeeWorkspace = lazy(() => import('@/pages/EmployeeWorkspace'));
 const TeamManagement = lazy(() => import('@/pages/TeamManagement'));
@@ -60,7 +56,7 @@ const TeamReports = lazy(() => import('@/pages/TeamReports'));
 const TeamEmployeeDetails = lazy(() => import('@/pages/EmployeeDetails'));
 const EmployeeDetailedReport = lazy(() => import('@/pages/EmployeeDetailedReport'));
 const Finance = lazy(() => import('@/pages/Finance'));
-const CustomersPageNew = lazy(() => import('@/pages/customers/CustomersPageNew'));
+const CustomersPageRedesigned = lazy(() => import('@/pages/customers/CustomersPageRedesigned'));
 const CustomerDetailsPageNew = lazy(() => import('@/components/customers/CustomerDetailsPageNew'));
 const CustomerCRM = lazy(() => import('@/pages/customers/CustomerCRMRedesigned'));
 const Contracts = lazy(() => import('@/pages/ContractsRedesigned'));
@@ -79,7 +75,7 @@ const InvoiceScannerPage = lazy(() => import('@/pages/InvoiceScannerPage'));
 const FinancialTracking = lazy(() => import('@/pages/FinancialTracking'));
 const SyncPaymentsToLedger = lazy(() => import('@/pages/SyncPaymentsToLedger'));
 const PaymentRegistration = lazy(() => import('@/pages/PaymentRegistration'));
-const QuickPayment = lazy(() => import('@/pages/payments/QuickPaymentRedesigned'));
+const QuickPayment = lazy(() => import('@/pages/payments/QuickPayment'));
 
 // Super Admin pages
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin'));
@@ -172,9 +168,8 @@ const Legal = lazy(() => import('@/pages/Legal'));
 const PrivacyPolicy = lazy(() => import('@/pages/legal/PrivacyPolicy'));
 const TermsAndConditions = lazy(() => import('@/pages/legal/TermsAndConditions'));
 const LegalCasesTracking = lazy(() => import('@/pages/legal/LegalCasesTracking'));
-const LegalCasesTrackingV2 = lazy(() => import('@/pages/legal/LegalCasesTrackingV2'));
 const DefaultersList = lazy(() => import('@/pages/legal/DefaultersList'));
-const LegalReports = lazy(() => import('@/pages/legal/LegalReportsRedesigned'));
+const LegalReports = lazy(() => import('@/pages/legal/LegalReports'));
 const LateFees = lazy(() => import('@/pages/legal/LateFees'));
 const WhatsAppReminders = lazy(() => import('@/pages/legal/WhatsAppReminders'));
 const InvoiceDisputes = lazy(() => import('@/pages/legal/InvoiceDisputes'));
@@ -248,6 +243,16 @@ const routeConfigs: RouteConfig[] = [
     priority: 3,
   },
   {
+    path: '/login',
+    component: Auth,
+    lazy: true,
+    exact: true,
+    title: 'Login',
+    description: 'Login page alias',
+    group: 'public',
+    priority: 3,
+  },
+  {
     path: '/onboarding',
     component: Onboarding,
     lazy: false,
@@ -297,28 +302,8 @@ const routeConfigs: RouteConfig[] = [
     group: 'public',
     priority: 3,
   },
-  {
-    path: '/help',
-    component: HelpCenter,
-    lazy: true,
-    exact: true,
-    title: 'Help Center',
-    description: 'Help and support center',
-    group: 'public',
-    priority: 3,
-  },
 
-  // === Demo Routes ===
-  {
-    path: '/hero-demo',
-    component: HeroDemo,
-    lazy: true,
-    exact: true,
-    title: 'Hero Demo',
-    description: 'Hero section demo',
-    group: 'demo',
-    priority: 6,
-  },
+
   {
     path: '/mobile-demo',
     component: NativeMobileDemo,
@@ -328,6 +313,7 @@ const routeConfigs: RouteConfig[] = [
     description: 'Mobile app demo',
     group: 'demo',
     priority: 7,
+    requiredRole: 'admin',
   },
 
   // === Mobile App Routes ===
@@ -475,6 +461,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 3,
     protected: true,
+    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/collections',
@@ -486,6 +473,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 4,
     protected: true,
+    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/contracts',
@@ -497,6 +485,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 5,
     protected: true,
+    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/tasks',
@@ -508,6 +497,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 6,
     protected: true,
+    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/performance',
@@ -519,6 +509,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 7,
     protected: true,
+    requiredRole: 'admin',
   },
   {
     path: '/mobile/employee/notifications',
@@ -530,6 +521,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'mobile-employee',
     priority: 8,
     protected: true,
+    requiredRole: 'admin',
   },
 
   // === Main Application Routes ===
@@ -544,18 +536,20 @@ const routeConfigs: RouteConfig[] = [
     priority: 10,
     protected: true,
     layout: 'bento', // New Bento design with shared sidebar
+    requiredRole: 'admin',
   },
   {
     path: '/dashboard-v2',
-    component: DashboardV2,
+    component: Dashboard,
     lazy: true,
     exact: true,
-    title: 'Dashboard V2',
-    description: 'New professional dashboard design',
+    title: 'Dashboard',
+    description: 'Dashboard redirect',
     group: 'dashboard',
     priority: 11,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/employee-workspace',
@@ -592,6 +586,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 12,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/dashboard-landing',
@@ -604,6 +599,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 12,
     protected: true,
     layout: 'bento', // Use bento layout with sidebar
+    requiredRole: 'admin',
   },
   {
     path: '/finance/*',
@@ -616,10 +612,11 @@ const routeConfigs: RouteConfig[] = [
     priority: 11,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/customers',
-    component: CustomersPageNew,
+    component: CustomersPageRedesigned,
     lazy: true,
     exact: true,
     title: 'Customers',
@@ -628,6 +625,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 12,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/customers/:customerId',
@@ -640,6 +638,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 13,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/customers/crm',
@@ -652,6 +651,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 14,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/contracts',
@@ -664,6 +664,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 15,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/contracts/:contractNumber',
@@ -676,6 +677,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 16,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet',
@@ -688,6 +690,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 17,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/vehicles/:vehicleId',
@@ -700,18 +703,20 @@ const routeConfigs: RouteConfig[] = [
     priority: 18,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/vehicles/:vehicleId/classic',
-    component: VehicleDetailsPage,
+    component: VehicleDetailsPageRedesigned,
     lazy: true,
     exact: true,
-    title: 'Vehicle Details Classic',
-    description: 'Classic vehicle details page design',
+    title: 'تفاصيل المركبة',
+    description: 'Vehicle details redirect',
     group: 'fleet',
     priority: 18,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/reports',
@@ -724,6 +729,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 19,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/reports/hub',
@@ -736,6 +742,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 20,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/reports/:id',
@@ -748,6 +755,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 21,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/search',
@@ -760,6 +768,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 22,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/import',
@@ -772,6 +781,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 23,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Financial Management Routes ===
@@ -786,6 +796,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 24,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/tracking',
@@ -798,6 +809,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 25,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/sync-payments',
@@ -810,6 +822,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 26,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/payments/register',
@@ -822,6 +835,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 27,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/payments/quick',
@@ -834,6 +848,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 28,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/vendors/categories',
@@ -846,6 +861,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 29,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/reports/ar-aging',
@@ -858,6 +874,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 30,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/payments/tracking',
@@ -870,6 +887,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 31,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Super Admin Routes ===
@@ -1027,6 +1045,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 50,
     protected: true,
     layout: 'bento',
+    requiredRole: 'super_admin',
   },
 
   // === Settings and Profile Routes ===
@@ -1041,6 +1060,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 50,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/settings',
@@ -1053,6 +1073,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 51,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/settings/advanced',
@@ -1065,6 +1086,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 52,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/settings/audit-logs',
@@ -1077,6 +1099,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 53,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/settings/permissions',
@@ -1102,6 +1125,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 55,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/settings/e-signature',
@@ -1114,6 +1138,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 56,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/settings/whatsapp',
@@ -1126,6 +1151,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 57,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Property Management Routes ===
@@ -1140,6 +1166,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 60,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/properties/add',
@@ -1152,6 +1179,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 61,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/properties/:id',
@@ -1164,6 +1192,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 62,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/properties/owners',
@@ -1176,6 +1205,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 63,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/properties/map',
@@ -1188,6 +1218,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 64,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/properties/maintenance',
@@ -1200,6 +1231,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 65,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/properties/contracts',
@@ -1212,6 +1244,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 66,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Fleet Management Sub-routes ===
@@ -1226,6 +1259,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 70,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/traffic-violations',
@@ -1238,6 +1272,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 71,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/traffic-violations/import',
@@ -1250,6 +1285,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 72,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/traffic-violations/payments',
@@ -1262,6 +1298,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 73,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/reports',
@@ -1274,6 +1311,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 73,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/dispatch-permits',
@@ -1286,6 +1324,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 74,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/reservations',
@@ -1298,6 +1337,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 76,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/fleet/vehicle-installments',
@@ -1310,6 +1350,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 77,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === HR Management Routes ===
@@ -1323,6 +1364,7 @@ const routeConfigs: RouteConfig[] = [
     group: 'hr',
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/employees',
@@ -1335,6 +1377,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 80,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/employees/:employeeId',
@@ -1347,6 +1390,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 80,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/users',
@@ -1359,6 +1403,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 81,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/user-management',
@@ -1371,6 +1416,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 81,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/attendance',
@@ -1383,6 +1429,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 82,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/leave',
@@ -1395,6 +1442,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 83,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/locations',
@@ -1407,6 +1455,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 84,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/payroll',
@@ -1419,6 +1468,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 85,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/reports',
@@ -1431,6 +1481,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 86,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/hr/settings',
@@ -1443,6 +1494,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 87,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Finance Sub-routes ===
@@ -1457,6 +1509,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 88,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/finance/purchase-orders',
@@ -1469,6 +1522,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 89,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Inventory Management ===
@@ -1483,6 +1537,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 90,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Integration Dashboard ===
@@ -1497,6 +1552,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 91,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Sales/CRM Routes ===
@@ -1511,6 +1567,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 100,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/sales/leads',
@@ -1523,6 +1580,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 101,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/sales/opportunities',
@@ -1535,6 +1593,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 102,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/sales/quotes',
@@ -1547,6 +1606,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 103,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/sales/orders',
@@ -1559,6 +1619,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 104,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/sales/analytics',
@@ -1571,6 +1632,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 105,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Quotations ===
@@ -1585,6 +1647,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 106,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/quotations/approval',
@@ -1597,6 +1660,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 107,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Other Utility Routes ===
@@ -1637,6 +1701,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 112,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/support',
@@ -1649,6 +1714,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 113,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/support/tickets/:id',
@@ -1661,6 +1727,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 114,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/tenants',
@@ -1686,6 +1753,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 116,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Legal Routes ===
@@ -1700,6 +1768,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 120,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/privacy-policy',
@@ -1732,18 +1801,20 @@ const routeConfigs: RouteConfig[] = [
     priority: 121,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/cases-v2',
-    component: LegalCasesTrackingV2,
+    component: LegalCasesTracking,
     lazy: true,
     exact: true,
-    title: 'Legal Cases V2',
-    description: 'Legal cases tracking v2',
+    title: 'تتبع القضايا',
+    description: 'Legal cases redirect',
     group: 'legal',
     priority: 122,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/defaulters',
@@ -1756,6 +1827,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 123,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/reports',
@@ -1768,6 +1840,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 124,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/late-fees',
@@ -1780,6 +1853,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 125,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/whatsapp-reminders',
@@ -1792,6 +1866,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 126,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/disputes',
@@ -1804,6 +1879,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 127,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/document-generator',
@@ -1816,6 +1892,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 128,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/documents',
@@ -1828,6 +1905,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 129,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/delinquency',
@@ -1840,6 +1918,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 130,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/lawsuit-data',
@@ -1852,6 +1931,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 131,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/overdue-contracts',
@@ -1864,6 +1944,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 131,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/lawsuit/prepare/:contractId',
@@ -1876,6 +1957,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 131,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/lawsuit/documents/:contractId',
@@ -1888,6 +1970,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 131,
     protected: false, // يمكن الوصول بدون تسجيل دخول لمشاركة الرابط
     layout: 'minimal',
+    requiredRole: 'admin',
   },
   {
     path: '/legal/verify/:taskId',
@@ -1900,6 +1983,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 132,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Contract Management ===
@@ -1940,6 +2024,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 132,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Fix and Diagnostic Routes ===
@@ -1969,6 +2054,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 145,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Help & Documentation Routes ===
@@ -1983,6 +2069,7 @@ const routeConfigs: RouteConfig[] = [
     priority: 150,
     protected: true,
     layout: 'bento',
+    requiredRole: 'admin',
   },
 
   // === Performance Monitoring ===
