@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { Badge } from '@/components/ui/badge';
 import { Calendar, DollarSign, AlertCircle, Clock, Printer, FileSpreadsheet, Trash2, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
@@ -129,7 +130,8 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
           </CardHeader>
           <CardContent className="pt-6">
             <div className="overflow-x-auto">
-              <Table>
+              <ResponsiveTable>
+<Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">رقم الشهر</TableHead>
@@ -184,6 +186,7 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
                   ))}
                 </TableBody>
               </Table>
+</ResponsiveTable>
             </div>
             
             {unpaidMonths.filter(m => m.is_overdue).length > 0 && (
@@ -233,7 +236,8 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <Table>
+            <ResponsiveTable>
+<Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">رقم الإيصال</TableHead>
@@ -374,6 +378,7 @@ const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
                 })}
               </TableBody>
             </Table>
+</ResponsiveTable>
           </div>
         </CardContent>
       </Card>

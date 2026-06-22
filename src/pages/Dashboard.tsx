@@ -3,7 +3,7 @@ import { useModuleConfig } from '@/modules/core/hooks';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Lazy load the Redesigned Bento Dashboard
-const BentoDashboard = lazy(() => import('@/components/dashboard/bento/BentoDashboardRedesigned'));
+const BentoDashboard = lazy(() => import('@/components/dashboard/bento/BentoDashboard'));
 
 // Loading component
 const DashboardLoader: React.FC = () => (

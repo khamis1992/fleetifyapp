@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface EnterpriseNavbarProps {
   scrolled?: boolean;
 }
 
 export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
+  const { t } = useFleetifyTranslation("ui");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -33,9 +35,7 @@ export function EnterpriseNavbar({ scrolled = false }: EnterpriseNavbarProps) {
             <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center">
               <span className="text-white font-bold text-xl">F</span>
             </div>
-            <span className="text-2xl font-bold text-white">
-              Fleetify
-            </span>
+            <span className="text-2xl font-bold text-white">{t("fleetify")}</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-8">

@@ -14,6 +14,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
   interface jsPDF {
@@ -22,6 +23,7 @@ declare module 'jspdf' {
 }
 
 export function TrialBalanceReport() {
+  const { t } = useFleetifyTranslation("ui");
   const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const { data: trialBalanceData, isLoading, error } = useTrialBalance(asOfDate);
   const { formatCurrency } = useCurrencyFormatter();
@@ -288,27 +290,21 @@ export function TrialBalanceReport() {
                 size="sm"
                 disabled={isLoading || !trialBalanceData || trialBalanceData.length === 0}
               >
-                <Download className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
+                <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
               <Button
                 onClick={handleExportExcel}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !trialBalanceData || trialBalanceData.length === 0}
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
               <Button
                 onClick={handleExportCSV}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !trialBalanceData || trialBalanceData.length === 0}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
+                <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
             </div>
           </div>
         </CardHeader>

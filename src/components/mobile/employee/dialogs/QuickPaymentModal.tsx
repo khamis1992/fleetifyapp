@@ -20,6 +20,7 @@ import { useEmployeeContracts } from '@/hooks/useEmployeeContracts';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface QuickPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,11 +29,10 @@ interface QuickPaymentModalProps {
 
 type PaymentMethod = 'cash' | 'bank' | 'card' | 'cheque';
 
-export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
-  isOpen,
+export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({ isOpen,
   onClose,
-  preselectedContractId,
-}) => {
+  preselectedContractId, }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
   const { toast } = useToast();
   const { formatCurrency } = useCurrencyFormatter();
@@ -95,9 +95,9 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
           payment_date: new Date().toISOString(),
           payment_method: paymentMethod,
           reference_number: referenceNumber || null,
-          status: 'verified',
+          payment_status: 'verified',
           notes: notes || 'تم التسجيل عبر تطبيق الجوال',
-          recorded_by: user?.id,
+          created_by: user?.id,
         });
 
       if (error) throw error;
@@ -232,9 +232,7 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
                     step="0.01"
                     min="0"
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">
-                    QAR
-                  </span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">{t("qar")}</span>
                 </div>
               </div>
 

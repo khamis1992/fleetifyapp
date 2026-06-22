@@ -10,8 +10,10 @@ import { ComponentType } from 'react';
 export interface RouteConfig {
   /** Route path pattern */
   path: string;
-  /** React component to render */
-  component: ComponentType;
+  /** React component to render (required unless redirectTo is set) */
+  component?: ComponentType;
+  /** Redirect target path (if this is a redirect-only route) */
+  redirectTo?: string;
   /** Whether component is lazy loaded */
   lazy: boolean;
   /** Whether path should match exactly */
@@ -27,7 +29,7 @@ export interface RouteConfig {
   /** Whether route requires authentication */
   protected?: boolean;
   /** Layout to use for this route */
-  layout?: 'none' | 'dashboard' | 'admin' | 'minimal';
+  layout?: 'none' | 'dashboard' | 'admin' | 'minimal' | 'bento' | 'company';
   /** Required user role(s) */
   requiredRole?: string | string[];
   /** Required permissions */
@@ -88,7 +90,7 @@ export interface RouteGroup {
   /** Group description */
   description: string;
   /** Layout to use for routes in this group */
-  layout: 'none' | 'dashboard' | 'admin' | 'minimal';
+  layout: 'none' | 'dashboard' | 'admin' | 'minimal' | 'bento' | 'company';
   /** Priority for ordering */
   priority: number;
   /** Whether group is enabled */

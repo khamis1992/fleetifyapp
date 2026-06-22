@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface CustomerExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -99,13 +100,16 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
   onOpenChange,
   companyId,
   filters,
-}) => {
+}) => 
+ {
+  const { t } = useFleetifyTranslation("ui");
   const [exportFormat, setExportFormat] = useState<ExportFormat>('html');
   const [filterOption, setFilterOption] = useState<FilterOption>('all');
   const [isExporting, setIsExporting] = useState(false);
 
   // جلب العملاء مع العقود السارية
-  const { data: customersWithActiveContracts = [] } = useQuery({
+  const {
+   data: customersWithActiveContracts = [] } = useQuery({
     queryKey: ['customers-with-active-contracts', companyId],
     queryFn: async () => {
       if (!companyId) return [];
@@ -974,7 +978,7 @@ const CustomerExportDialog: React.FC<CustomerExportDialogProps> = ({
                     "w-8 h-8 mb-2",
                     exportFormat === 'excel' ? "text-teal-600" : "text-slate-400"
                   )} />
-                  <span className="font-medium">Excel</span>
+                  <span className="font-medium">{t("excel")}</span>
                   <span className="text-xs text-slate-500 text-center">تقرير مفصل</span>
                 </Label>
               </div>

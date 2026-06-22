@@ -33,7 +33,8 @@ export const TRANSLATION_NAMESPACES = {
   SETTINGS: 'settings',
   ERRORS: 'errors',
   VALIDATION: 'validation',
-  BUSINESS_RULES: 'businessRules'
+  BUSINESS_RULES: 'businessRules',
+  UI: 'ui'
 } as const;
 
 // Supported languages with their configurations
@@ -129,6 +130,8 @@ export const initializeI18n = async (): Promise<void> => {
     .init({
       lng: initialLanguage,
       fallbackLng: FALLBACK_LANGUAGE,
+      // Only declare supported languages that have translation files
+      supportedLngs: ['en', 'ar'],
       debug: import.meta.env.DEV,
 
       // Namespace configuration
@@ -151,18 +154,8 @@ export const initializeI18n = async (): Promise<void> => {
       // Interpolation
       interpolation: {
         escapeValue: false, // React already escapes
-        format: function(value, format, lng) {
-          if (format === 'currency') {
-            return formatCurrency(value, lng || initialLanguage);
-          }
-          if (format === 'number') {
-            return formatNumber(value, lng || initialLanguage);
-          }
-          if (format === 'date') {
-            return formatDate(value, lng || initialLanguage);
-          }
-          return value;
-        }
+        // Legacy format function removed — use formatCurrency/formatNumber/formatDate directly
+        // See: https://www.i18next.com/translation-function/formatting
       },
 
       // React configuration
@@ -180,12 +173,34 @@ export const initializeI18n = async (): Promise<void> => {
       keySeparator: '.',
       nsSeparator: ':',
 
-      // Resources (will be loaded from backend)
-      resources: undefined,
+      // Resources (static fallbacks for instant availability — backend loads the rest)
+      resources: {
+        en: {
+          ui: {
+            pageNotFound: 'Page not found',
+            goToDashboard: 'Go to Dashboard',
+            loading: 'Loading...',
+            fleetify: 'Fleetify',
+            aiAssistant: 'AI Assistant',
+            excel: 'Excel',
+          },
+        },
+        ar: {
+          ui: {
+            pageNotFound: 'الصفحة غير موجودة',
+            goToDashboard: 'الذهاب إلى لوحة التحكم',
+            loading: 'جاري التحميل...',
+            fleetify: 'Fleetify',
+            aiAssistant: 'المساعد الذكي',
+          },
+        },
+      },
 
       // Performance
       load: 'languageOnly',
-      preload: Object.keys(SUPPORTED_LANGUAGES),
+      // Only preload languages that have translation files (en, ar)
+      // Other languages (fr, es, de, zh, hi, ja) will fall back to en
+      preload: ['en', 'ar'],
 
       // Return empty string for missing keys instead of the key itself
       returnEmptyString: false,

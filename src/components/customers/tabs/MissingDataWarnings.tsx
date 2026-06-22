@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { isValidQatarQID, isValidQatarPhone } from './helpers';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const MissingDataWarnings = ({ customer }: { customer: any }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { missingFields, invalidFields } = useMemo(() => {
     const missing: { label: string; priority: 'high' | 'medium' | 'low' }[] = [];
     const invalid: { label: string; value: string }[] = [];
@@ -15,7 +17,7 @@ const MissingDataWarnings = ({ customer }: { customer: any }) => {
     } else {
       const qid = customer.qid || customer.national_id;
       if (qid && !isValidQatarQID(qid)) {
-        invalid.push({ label: 'QID غير صحيح', value: qid });
+        invalid.push({ label: t("qid"), value: qid });
       }
     }
     if (!customer.driver_license) {

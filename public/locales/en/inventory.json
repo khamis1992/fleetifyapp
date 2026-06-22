@@ -1,1 +1,13 @@
-{}
+{
+  "title": "Inventory",
+  "items": "Items",
+  "warehouses": "Warehouses",
+  "movements": "Inventory Movements",
+  "newItem": "New Item",
+  "name": "Name",
+  "quantity": "Quantity",
+  "unit": "Unit",
+  "price": "Price",
+  "search": "Search inventory",
+  "noResults": "No items found"
+}

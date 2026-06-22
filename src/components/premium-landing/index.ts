@@ -11,7 +11,6 @@ export { StatsSection } from './StatsSection';
 export { FeaturesGrid } from './FeaturesGrid';
 export { IntegrationsSection } from './IntegrationsSection';
 export { PricingSection } from './PricingSection';
-export { TestimonialsSection } from './TestimonialsSection';
 export { CTASection } from './CTASection';
 export { PremiumFooter } from './PremiumFooter';
 

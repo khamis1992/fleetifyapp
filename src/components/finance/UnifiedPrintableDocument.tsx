@@ -7,6 +7,7 @@ import { Printer, Download } from "lucide-react";
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 /**
  * Unified Printable Document Component
  * مكون موحد لطباعة المستندات (سندات القبض، الفواتير، الإيصالات)
@@ -87,6 +88,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
   onPrint,
   className = ""
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [amountInWords, setAmountInWords] = useState("");
 
   // Convert amount to Arabic words
@@ -237,7 +239,7 @@ export const UnifiedPrintableDocument: React.FC<UnifiedPrintableDocumentProps> =
           <div className="flex justify-between items-start flex-wrap gap-4">
             {/* Company Info */}
             <div className="space-y-1 text-left rtl:text-right">
-              <h1 className="text-4xl font-black tracking-tighter">AL ARRAF</h1>
+              <h1 className="text-4xl font-black tracking-tighter">{t("alArraf")}</h1>
               <h2 className="text-2xl font-bold">
                 {data.company?.name_ar || 'العراف لتأجير السيارات ذ.م.م'}
               </h2>

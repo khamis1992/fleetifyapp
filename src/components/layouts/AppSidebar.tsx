@@ -44,6 +44,8 @@ import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/common/LazyImage';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { QuickSearch } from "@/components/navigation/QuickSearch";
 // Navigation items are now loaded from centralized config
 // This ensures consistency across the entire application
 
@@ -56,6 +58,7 @@ const NavItemWithTooltip: React.FC<{
   collapsed: boolean;
   isMobile: boolean;
 }> = ({ icon: Icon, label, href, isActive, collapsed, isMobile }) => {
+  const { t } = useFleetifyTranslation("ui");
   const content = (
     <NavLink 
       to={href}
@@ -104,6 +107,7 @@ const NavItemWithTooltip: React.FC<{
 };
 
 export function AppSidebar() {
+  const { t } = useFleetifyTranslation("ui");
   const { signOut } = useAuth();
   const { state, isMobile, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
@@ -260,7 +264,7 @@ export function AppSidebar() {
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <h1 className="font-bold text-sidebar-foreground">Fleetify</h1>
+                  <h1 className="font-bold text-sidebar-foreground">{t("fleetify")}</h1>
                   <p className="text-xs text-sidebar-foreground/60">إدارة تأجير السيارات</p>
                 </motion.div>
               )}
@@ -286,6 +290,11 @@ export function AppSidebar() {
           </Button>
         </div>
       </SidebarHeader>
+
+      {/* Quick Search */}
+      <div className="px-3 py-2">
+        <QuickSearch />
+      </div>
 
       {/* Navigation */}
       <SidebarContent className="px-3 py-4">

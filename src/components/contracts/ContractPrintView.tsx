@@ -33,6 +33,7 @@ import { AlarafOfficialContractComplete } from './AlarafOfficialContractComplete
 import type { Contract } from '@/types/contracts';
 import './ContractPrintView.css';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ContractPrintViewProps {
   contract: Contract & {
     customer?: any;
@@ -41,6 +42,7 @@ interface ContractPrintViewProps {
 }
 
 export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }) => {
+  const { t } = useFleetifyTranslation("ui");
   // حساب جدول الدفعات
   // ✅ إصلاح: حساب الأشهر المتأخرة بناءً على تاريخ الاستحقاق
   const paymentSchedule = useMemo(() => {
@@ -148,7 +150,7 @@ export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }
         {/* الترويسة */}
         <div className="print-header">
           <h1 className="company-name">العراف لتأجير السيارات</h1>
-          <p className="company-name-en">Alaraf Car Rental</p>
+          <p className="company-name-en">{t("alarafCarRental1")}</p>
           
           <div className="company-info">
             <div className="company-info-item">
@@ -176,7 +178,7 @@ export const ContractPrintView: React.FC<ContractPrintViewProps> = ({ contract }
             <FileText size={24} />
             ملخص تفاصيل العقد
           </h2>
-          <p className="contract-subtitle">Contract Details Summary</p>
+          <p className="contract-subtitle">{t("contractDetailsSummary")}</p>
           
           <div className="contract-meta">
             <div>

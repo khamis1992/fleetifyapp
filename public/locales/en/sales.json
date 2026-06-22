@@ -1,1 +1,10 @@
-{}
+{
+  "title": "Sales",
+  "pipeline": "Sales Pipeline",
+  "leads": "Leads",
+  "orders": "Orders",
+  "analytics": "Sales Analytics",
+  "newLead": "New Lead",
+  "search": "Search",
+  "noResults": "No results found"
+}

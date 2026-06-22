@@ -10,7 +10,9 @@ import { useLandingSections } from '@/hooks/useLandingSections';
 import { useLandingThemes } from '@/hooks/useLandingThemes';
 import { useCompanies } from '@/hooks/useCompanies';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const LandingPreview: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [selectedTheme, setSelectedTheme] = useState<string>('');
   const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -57,9 +59,9 @@ export const LandingPreview: React.FC = () => {
               <SelectValue placeholder="Select Company" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Companies (Global)</SelectItem>
+              <SelectItem value="all">{t("allCompaniesGlobal")}</SelectItem>
               {companiesLoading ? (
-                <SelectItem value="" disabled>Loading companies...</SelectItem>
+                <SelectItem value="" disabled>{t("loadingCompanies")}</SelectItem>
               ) : (
                 companies?.map(company => (
                   <SelectItem key={company.id} value={company.id}>
@@ -79,7 +81,7 @@ export const LandingPreview: React.FC = () => {
                 <SelectItem key={theme.id} value={theme.id}>
                   <div className="flex items-center gap-2">
                     {theme.theme_name}
-                    {theme.is_default && <Badge variant="outline">Default</Badge>}
+                    {theme.is_default && <Badge variant="outline">{t("default")}</Badge>}
                   </div>
                 </SelectItem>
               ))}
@@ -89,14 +91,10 @@ export const LandingPreview: React.FC = () => {
         
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />{t("refresh")}</Button>
           
           <Button variant="outline" onClick={handleOpenInNewTab}>
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open in New Tab
-          </Button>
+            <ExternalLink className="h-4 w-4 mr-2" />{t("openInNewTab")}</Button>
         </div>
       </div>
 
@@ -104,11 +102,11 @@ export const LandingPreview: React.FC = () => {
         {/* Preview Controls */}
         <Card className="w-64 flex-shrink-0">
           <CardHeader>
-            <CardTitle>Preview Settings</CardTitle>
+            <CardTitle>{t("previewSettings")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Device View</Label>
+              <Label>{t("deviceView")}</Label>
               <div className="flex gap-1">
                 <Button
                   variant={deviceView === 'desktop' ? 'default' : 'outline'}
@@ -140,7 +138,7 @@ export const LandingPreview: React.FC = () => {
                 checked={showRulers}
                 onCheckedChange={setShowRulers}
               />
-              <Label htmlFor="rulers">Show Rulers</Label>
+              <Label htmlFor="rulers">{t("showRulers")}</Label>
             </div>
             
             <div className="space-y-2">
@@ -159,7 +157,7 @@ export const LandingPreview: React.FC = () => {
             
             {selectedThemeData && (
               <div className="space-y-2">
-                <Label>Theme Info</Label>
+                <Label>{t("themeInfo")}</Label>
                 <div className="text-sm space-y-1">
                   <p><strong>Name:</strong> {selectedThemeData.theme_name}</p>
                   <p><strong>Colors:</strong> {Object.keys(selectedThemeData.colors).length} defined</p>
@@ -220,7 +218,7 @@ export const LandingPreview: React.FC = () => {
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
                         <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-                        <p className="text-muted-foreground">Loading preview...</p>
+                        <p className="text-muted-foreground">{t("loadingPreview")}</p>
                       </div>
                     </div>
                   ) : activeSections.length === 0 ? (
@@ -228,9 +226,7 @@ export const LandingPreview: React.FC = () => {
                       <div className="text-center">
                         <Eye className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
                         <p className="text-muted-foreground">No active sections to preview</p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Add sections in the Content tab to see them here
-                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">{t("addSectionsInThe")}</p>
                       </div>
                     </div>
                   ) : (
@@ -294,28 +290,22 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceV
               fontFamily: theme?.fonts?.heading || 'Cairo, sans-serif',
               color: theme?.colors?.foreground ? `hsl(${theme.colors.foreground})` : '#000000'
             }}
-          >
-            Welcome to Our Platform
-          </h1>
-          <p className="text-xl mb-8 text-muted-foreground">
-            Experience the future of business management
-          </p>
+          >{t("welcomeToOurPlatform")}</h1>
+          <p className="text-xl mb-8 text-muted-foreground">{t("experienceTheFutureOf")}</p>
           <button 
             className="px-8 py-3 rounded-lg font-semibold"
             style={{
               backgroundColor: theme?.colors?.primary ? `hsl(${theme.colors.primary})` : '#3b82f6',
               color: 'white'
             }}
-          >
-            Get Started Today
-          </button>
+          >{t("getStartedToday")}</button>
         </div>
       );
       
     case 'features':
       return (
         <div style={baseStyles}>
-          <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">{t("keyFeatures")}</h2>
           <div className={`grid gap-8 ${deviceView === 'mobile' ? 'grid-cols-1' : 'grid-cols-3'}`}>
             {[1, 2, 3].map(i => (
               <div key={i} className="text-center">
@@ -325,8 +315,8 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceV
                 >
                   <Eye className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Feature {i}</h3>
-                <p className="text-muted-foreground">Description of this amazing feature that will help your business grow.</p>
+                <h3 className="text-xl font-semibold mb-2">{t("featureI")}</h3>
+                <p className="text-muted-foreground">{t("descriptionOfThisAmazing")}</p>
               </div>
             ))}
           </div>
@@ -336,7 +326,7 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceV
     case 'testimonials':
       return (
         <div style={baseStyles} className="bg-muted/30">
-          <h2 className="text-3xl font-bold text-center mb-12">What Our Customers Say</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">{t("whatOurCustomersSay")}</h2>
           <div className={`grid gap-8 ${deviceView === 'mobile' ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {[1, 2].map(i => (
               <div key={i} className="bg-background p-6 rounded-lg shadow-sm">
@@ -346,8 +336,8 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceV
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/20"></div>
                   <div>
-                    <p className="font-semibold">Customer {i}</p>
-                    <p className="text-sm text-muted-foreground">CEO, Company {i}</p>
+                    <p className="font-semibold">{t("customerI")}</p>
+                    <p className="text-sm text-muted-foreground">{t("ceoCompanyI")}</p>
                   </div>
                 </div>
               </div>
@@ -359,10 +349,8 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceV
     case 'cta':
       return (
         <div style={baseStyles} className="text-center bg-primary/5">
-          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl mb-8 text-muted-foreground">
-            Join thousands of satisfied customers today
-          </p>
+          <h2 className="text-3xl font-bold mb-4">{t("readyToGetStarted")}</h2>
+          <p className="text-xl mb-8 text-muted-foreground">{t("joinThousandsOfSatisfied")}</p>
           <div className="flex gap-4 justify-center">
             <button 
               className="px-8 py-3 rounded-lg font-semibold"
@@ -370,12 +358,8 @@ const PreviewSection: React.FC<PreviewSectionProps> = ({ section, theme, deviceV
                 backgroundColor: theme?.colors?.primary ? `hsl(${theme.colors.primary})` : '#3b82f6',
                 color: 'white'
               }}
-            >
-              Start Free Trial
-            </button>
-            <button className="px-8 py-3 rounded-lg font-semibold border border-primary text-primary">
-              Learn More
-            </button>
+            >{t("startFreeTrial")}</button>
+            <button className="px-8 py-3 rounded-lg font-semibold border border-primary text-primary">{t("learnMore")}</button>
           </div>
         </div>
       );

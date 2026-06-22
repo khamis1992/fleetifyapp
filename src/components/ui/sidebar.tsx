@@ -38,6 +38,7 @@ type SidebarContext = {
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
 function useSidebar() {
+  const { t } = useFleetifyTranslation("ui");
   const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.")
@@ -204,7 +205,7 @@ const Sidebar = React.forwardRef<
             side={side}
           >
             <VisuallyHidden>
-              <SheetTitle>Navigation Sidebar</SheetTitle>
+              <SheetTitle>{t("navigationSidebar")}</SheetTitle>
             </VisuallyHidden>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
@@ -279,7 +280,7 @@ const SidebarTrigger = React.forwardRef<
       {...props}
     >
       <PanelLeft />
-      <span className="sr-only">Toggle Sidebar</span>
+      <span className="sr-only">{t("toggleSidebar")}</span>
     </Button>
   )
 })

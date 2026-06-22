@@ -33,6 +33,7 @@ interface VehicleFormProps {
 }
 
 export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
+  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth()
   const { data: entryAllowedAccounts, isLoading: accountsLoading } = useEntryAllowedAccounts()
   const { data: costCenters, isLoading: costCentersLoading } = useCostCenters()
@@ -1447,9 +1448,7 @@ export function VehicleForm({ vehicle, open, onOpenChange }: VehicleFormProps) {
                             </div>
                           </div>
                           {vehicle.cost_center_id && (
-                            <Badge className="bg-teal-100 text-teal-700 border-teal-300 text-xs">
-                              Cost Center
-                            </Badge>
+                            <Badge className="bg-teal-100 text-teal-700 border-teal-300 text-xs">{t("costCenter")}</Badge>
                           )}
                         </div>
 

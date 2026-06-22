@@ -67,20 +67,24 @@ export const useEmployeeTasks = (
           title,
           title_ar,
           description,
-          type,
+          task_type,
           status,
           priority,
           scheduled_date,
-          scheduled_time,
+          due_date,
           completed_at,
           contract_id,
           customer_id,
-          assigned_to_profile_id,
-          created_by,
+          assigned_to,
+          assigned_by,
           notes,
+          result_notes,
+          delay_reason,
+          delay_notes,
+          collection_amount,
           created_at,
           updated_at,
-          customers (
+          customers!employee_tasks_customer_id_fkey (
             id,
             first_name,
             last_name,
@@ -89,7 +93,7 @@ export const useEmployeeTasks = (
             company_name_ar
           )
         `)
-        .eq('assigned_to_profile_id', profile.id);
+        .eq('assigned_to', profile.id);
 
       // Apply filters
       if (filters?.status && filters.status.length > 0) {
@@ -97,7 +101,7 @@ export const useEmployeeTasks = (
       }
 
       if (filters?.type && filters.type.length > 0) {
-        query = query.in('type', filters.type);
+        query = query.in('task_type', filters.type);
       }
 
       if (filters?.priority && filters.priority.length > 0) {

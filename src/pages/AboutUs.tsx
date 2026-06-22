@@ -2,7 +2,9 @@ import { motion } from 'framer-motion';
 import { Target, Eye, Users, Mail, Phone, Facebook, Twitter, Linkedin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export default function AboutUs() {
+  const { t } = useFleetifyTranslation("ui");
   const currentYear = new Date().getFullYear();
 
   const values = [
@@ -197,7 +199,7 @@ export default function AboutUs() {
               <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
-              <span className="text-white font-bold">Fleetify</span>
+              <span className="text-white font-bold">{t("fleetify")}</span>
             </div>
             <p className="text-slate-500 text-sm">
               © {currentYear} Fleetify. جميع الحقوق محفوظة.

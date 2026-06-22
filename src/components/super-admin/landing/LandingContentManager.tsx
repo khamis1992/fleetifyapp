@@ -15,6 +15,7 @@ import { useLandingContent } from '@/hooks/useLandingContent';
 import { useCompanies } from '@/hooks/useCompanies';
 import { toast } from 'sonner';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Section {
   id: string;
   section_type: string;
@@ -27,6 +28,7 @@ interface Section {
 }
 
 export const LandingContentManager: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { sections, loading: sectionsLoading, createSection, updateSection, deleteSection } = useLandingSections();
   const { content, loading: contentLoading, createContent, updateContent, deleteContent } = useLandingContent();
   const { data: companies, isLoading: companiesLoading } = useCompanies();
@@ -36,12 +38,12 @@ export const LandingContentManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('sections');
 
   const sectionTypes = [
-    { value: 'hero', label: 'Hero Section', label_ar: 'قسم البطل' },
-    { value: 'features', label: 'Features', label_ar: 'الميزات' },
-    { value: 'testimonials', label: 'Testimonials', label_ar: 'الشهادات' },
-    { value: 'cta', label: 'Call to Action', label_ar: 'دعوة للعمل' },
-    { value: 'about', label: 'About Us', label_ar: 'عنا' },
-    { value: 'contact', label: 'Contact', label_ar: 'اتصل بنا' },
+    { value: 'hero', label: t("heroSection"), label_ar: 'قسم البطل' },
+    { value: 'features', label: t("features"), label_ar: 'الميزات' },
+    { value: 'testimonials', label: t("testimonials"), label_ar: 'الشهادات' },
+    { value: 'cta', label: t("callToAction"), label_ar: 'دعوة للعمل' },
+    { value: 'about', label: t("aboutUs"), label_ar: 'عنا' },
+    { value: 'contact', label: t("contact"), label_ar: 'اتصل بنا' },
   ];
 
   const handleCreateSection = async (data: any) => {
@@ -115,9 +117,9 @@ export const LandingContentManager: React.FC = () => {
               <SelectValue placeholder="Select Company" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Companies (Global)</SelectItem>
+              <SelectItem value="all">{t("allCompaniesGlobal")}</SelectItem>
               {companiesLoading ? (
-                <SelectItem value="" disabled>Loading companies...</SelectItem>
+                <SelectItem value="" disabled>{t("loadingCompanies")}</SelectItem>
               ) : (
                 companies?.map(company => (
                   <SelectItem key={company.id} value={company.id}>
@@ -141,9 +143,7 @@ export const LandingContentManager: React.FC = () => {
               <DialogTitle>
                 {editingSection ? 'Edit Section' : 'Create New Section'}
               </DialogTitle>
-              <DialogDescription>
-                Configure the section properties and content.
-              </DialogDescription>
+              <DialogDescription>{t("configureTheSectionProperties")}</DialogDescription>
             </DialogHeader>
             <SectionForm
               section={editingSection}
@@ -160,11 +160,11 @@ export const LandingContentManager: React.FC = () => {
       <div className="grid gap-4">
         {sectionsLoading ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading sections...</p>
+            <p className="text-muted-foreground">{t("loadingSections")}</p>
           </div>
         ) : sections.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No sections found. Create your first section to get started.</p>
+            <p className="text-muted-foreground">{t("noSectionsFoundCreate")}</p>
           </div>
         ) : (
           sections.map((section) => (
@@ -269,7 +269,7 @@ const SectionForm: React.FC<SectionFormProps> = ({ section, onSubmit, sectionTyp
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="section_type">Section Type</Label>
+        <Label htmlFor="section_type">{t("sectionType")}</Label>
         <Select value={formData.section_type} onValueChange={(value) => 
           setFormData(prev => ({ ...prev, section_type: value }))
         }>
@@ -287,7 +287,7 @@ const SectionForm: React.FC<SectionFormProps> = ({ section, onSubmit, sectionTyp
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="section_name">Section Name (English)</Label>
+        <Label htmlFor="section_name">{t("sectionNameEnglish")}</Label>
         <Input
           id="section_name"
           value={formData.section_name}
@@ -297,7 +297,7 @@ const SectionForm: React.FC<SectionFormProps> = ({ section, onSubmit, sectionTyp
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="section_name_ar">Section Name (Arabic)</Label>
+        <Label htmlFor="section_name_ar">{t("sectionNameArabic")}</Label>
         <Input
           id="section_name_ar"
           value={formData.section_name_ar}
@@ -306,7 +306,7 @@ const SectionForm: React.FC<SectionFormProps> = ({ section, onSubmit, sectionTyp
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="sort_order">Sort Order</Label>
+        <Label htmlFor="sort_order">{t("sortOrder")}</Label>
         <Input
           id="sort_order"
           type="number"
@@ -322,7 +322,7 @@ const SectionForm: React.FC<SectionFormProps> = ({ section, onSubmit, sectionTyp
           checked={formData.is_active}
           onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
         />
-        <Label htmlFor="is_active">Active</Label>
+        <Label htmlFor="is_active">{t("active")}</Label>
       </div>
 
       <DialogFooter>

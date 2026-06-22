@@ -36,7 +36,9 @@ import {
 } from 'lucide-react';
 import { useCompanyCurrency } from '@/hooks/useCompanyCurrency';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const SuperAdminPayments: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -167,7 +169,7 @@ const SuperAdminPayments: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="stripe">Stripe</SelectItem>
+                      <SelectItem value="stripe">{t("stripe")}</SelectItem>
                       <SelectItem value="paypal">PayPal</SelectItem>
                       <SelectItem value="local_bank">البنك المحلي</SelectItem>
                     </SelectContent>

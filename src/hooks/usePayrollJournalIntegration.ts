@@ -74,14 +74,17 @@ export const usePayrollJournalIntegration = () => {
       }
 
       // Create journal entry lines
-      const lines: unknown[] = [];
+      let lineNumber = 1;
+      const lines: Record<string, unknown>[] = [];
 
       // Debit: Salaries Expense (basic salary)
       if (basicSalary > 0) {
         lines.push({
           account_id: accountMap['5300'], // Salaries Expense
-          debit: basicSalary,
-          credit: 0,
+          line_description: `راتب أساسي - ${payroll.employee_name || 'موظف'}`,
+          debit_amount: basicSalary,
+          credit_amount: 0,
+          line_number: lineNumber++,
         });
       }
 
@@ -89,8 +92,10 @@ export const usePayrollJournalIntegration = () => {
       if (allowances > 0) {
         lines.push({
           account_id: accountMap['5400'], // Benefits Expense
-          debit: allowances,
-          credit: 0,
+          line_description: `بدلات - ${payroll.employee_name || 'موظف'}`,
+          debit_amount: allowances,
+          credit_amount: 0,
+          line_number: lineNumber++,
         });
       }
 
@@ -101,15 +106,19 @@ export const usePayrollJournalIntegration = () => {
         // Credit: Cash (net salary)
         lines.push({
           account_id: accountMap['1010'], // Cash
-          debit: 0,
-          credit: netSalary,
+          line_description: `دفع راتب - ${payroll.employee_name || 'موظف'}`,
+          debit_amount: 0,
+          credit_amount: netSalary,
+          line_number: lineNumber++,
         });
       } else {
         // Credit: Salaries Payable (net salary)
         lines.push({
           account_id: accountMap['2200'], // Salaries Payable
-          debit: 0,
-          credit: netSalary,
+          line_description: `ذمم رواتب - ${payroll.employee_name || 'موظف'}`,
+          debit_amount: 0,
+          credit_amount: netSalary,
+          line_number: lineNumber++,
         });
       }
 
@@ -117,7 +126,6 @@ export const usePayrollJournalIntegration = () => {
       const linesWithEntry = lines.map((line) => ({
         ...line,
         journal_entry_id: entry.id,
-        company_id: payroll.company_id,
       }));
 
       const { error: linesError } = await supabase
@@ -212,17 +220,19 @@ export const usePayrollJournalIntegration = () => {
       const lines = [
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: accountMap['2200'], // Salaries Payable
-          debit: netSalary,
-          credit: 0,
+          line_description: `دفع ذمم رواتب - ${payroll.employee_name || 'موظف'}`,
+          debit_amount: netSalary,
+          credit_amount: 0,
+          line_number: 1,
         },
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: accountMap['1010'], // Cash
-          debit: 0,
-          credit: netSalary,
+          line_description: `دفع راتب - ${payroll.employee_name || 'موظف'}`,
+          debit_amount: 0,
+          credit_amount: netSalary,
+          line_number: 2,
         },
       ];
 

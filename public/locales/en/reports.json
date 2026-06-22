@@ -1,1 +1,10 @@
-{}
+{
+  "title": "Reports",
+  "generate": "Generate Report",
+  "export": "Export",
+  "dateRange": "Date Range",
+  "from": "From",
+  "to": "To",
+  "search": "Search",
+  "noResults": "No reports found"
+}

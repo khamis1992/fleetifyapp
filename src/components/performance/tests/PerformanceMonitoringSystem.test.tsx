@@ -190,7 +190,7 @@ describe('Performance Monitoring System Tests', () => {
       ]);
 
       // Mock the global metrics
-      jest.spyOn(require('@/hooks/usePerformanceMonitor'), 'getGlobalPerformanceMetrics')
+      jest.spyOn({ getGlobalPerformanceMetrics }, 'getGlobalPerformanceMetrics')
         .mockReturnValue(mockMetrics);
 
       const metrics = getGlobalPerformanceMetrics();
@@ -210,7 +210,7 @@ Average Execution Time: 150ms
 Cache Hit Rate: 75.0%
       `;
 
-      jest.spyOn(require('@/hooks/usePerformanceMonitor'), 'getPerformanceSummary')
+      jest.spyOn({ getPerformanceSummary }, 'getPerformanceSummary')
         .mockReturnValue(mockSummary);
 
       const summary = getPerformanceSummary();
@@ -307,7 +307,7 @@ Cache Hit Rate: 75.0%
 
     test('should handle missing performance data', () => {
       // Mock empty metrics
-      jest.spyOn(require('@/hooks/usePerformanceMonitor'), 'getGlobalPerformanceMetrics')
+      jest.spyOn({ getGlobalPerformanceMetrics }, 'getGlobalPerformanceMetrics')
         .mockReturnValue(new Map());
 
       const metrics = getGlobalPerformanceMetrics();

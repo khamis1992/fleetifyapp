@@ -75,20 +75,25 @@ export const useMaintenanceJournalIntegration = () => {
       }
 
       // Create journal entry lines based on payment status
-      const lines: unknown[] = [];
+      let lineNumber = 1;
+      const lines: Record<string, unknown>[] = [];
 
       if (isPaid) {
         // Fully paid - debit expense, credit cash
         lines.push(
           {
             account_id: accountMap['5200'], // Maintenance Expense
-            debit: maintenance.cost,
-            credit: 0,
+            line_description: `صيانة - ${maintenance.maintenance_type || 'عامة'}`,
+            debit_amount: maintenance.cost,
+            credit_amount: 0,
+            line_number: lineNumber++,
           },
           {
             account_id: accountMap['1010'], // Cash
-            debit: 0,
-            credit: maintenance.cost,
+            line_description: `دفع مصروف صيانة`,
+            debit_amount: 0,
+            credit_amount: maintenance.cost,
+            line_number: lineNumber++,
           }
         );
       } else if (isPartiallyPaid) {
@@ -96,16 +101,20 @@ export const useMaintenanceJournalIntegration = () => {
         // 1. Record expense
         lines.push({
           account_id: accountMap['5200'], // Maintenance Expense
-          debit: maintenance.cost,
-          credit: 0,
+          line_description: `صيانة - ${maintenance.maintenance_type || 'عامة'}`,
+          debit_amount: maintenance.cost,
+          credit_amount: 0,
+          line_number: lineNumber++,
         });
 
         // 2. Record cash payment
         if (maintenance.amount_paid > 0) {
           lines.push({
             account_id: accountMap['1010'], // Cash
-            debit: 0,
-            credit: maintenance.amount_paid,
+            line_description: `دفع جزئي للصيانة`,
+            debit_amount: 0,
+            credit_amount: maintenance.amount_paid,
+            line_number: lineNumber++,
           });
         }
 
@@ -114,8 +123,10 @@ export const useMaintenanceJournalIntegration = () => {
         if (remaining > 0) {
           lines.push({
             account_id: accountMap['2100'], // Accounts Payable
-            debit: 0,
-            credit: remaining,
+            line_description: `ذمم دائنة - صيانة متبقية`,
+            debit_amount: 0,
+            credit_amount: remaining,
+            line_number: lineNumber++,
           });
         }
       } else {
@@ -123,13 +134,17 @@ export const useMaintenanceJournalIntegration = () => {
         lines.push(
           {
             account_id: accountMap['5200'], // Maintenance Expense
-            debit: maintenance.cost,
-            credit: 0,
+            line_description: `صيانة - ${maintenance.maintenance_type || 'عامة'}`,
+            debit_amount: maintenance.cost,
+            credit_amount: 0,
+            line_number: lineNumber++,
           },
           {
             account_id: accountMap['2100'], // Accounts Payable
-            debit: 0,
-            credit: maintenance.cost,
+            line_description: `ذمم دائنة - صيانة`,
+            debit_amount: 0,
+            credit_amount: maintenance.cost,
+            line_number: lineNumber++,
           }
         );
       }
@@ -138,7 +153,6 @@ export const useMaintenanceJournalIntegration = () => {
       const linesWithEntry = lines.map((line) => ({
         ...line,
         journal_entry_id: entry.id,
-        company_id: maintenance.company_id,
       }));
 
       const { error: linesError } = await supabase

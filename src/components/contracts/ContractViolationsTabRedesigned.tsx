@@ -69,6 +69,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== Animation Variants =====
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -180,6 +181,7 @@ const ViolationsMetrics = ({
   violations: TrafficViolation[];
   formatCurrency: (amount: number) => string;
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const metrics = useMemo(() => {
     const totalViolations = violations.length;
     const totalFines = violations.reduce((sum, v) => sum + (v.fine_amount || 0), 0);

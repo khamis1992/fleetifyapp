@@ -52,8 +52,7 @@ const roleOptions = [
   { id: 'employee', label: 'موظف', description: 'صلاحيات أساسية' },
 ];
 
-export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
-  open,
+export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ open,
   onOpenChange,
   user,
   companies,
@@ -62,8 +61,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   onResetPassword,
   isUpdating,
   isDeleting,
-  isResettingPassword
-}) => {
+  isResettingPassword }) => {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);

@@ -26,6 +26,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/common/LazyImage';
 import { cn } from '@/lib/utils';
+import { QuickSearch } from "@/components/navigation/QuickSearch";
 
 export function EnhancedSidebar() {
   const { signOut } = useAuth();
@@ -40,7 +41,7 @@ export function EnhancedSidebar() {
 
   const getNavClassName = ({ isActive: active }: { isActive: boolean }) => 
     active 
-      ? "bg-gradient-to-l from-rose-500/20 to-orange-500/10 text-coral-600 font-semibold" 
+      ? "bg-gradient-to-l from-teal-500/20 to-cyan-500/10 text-teal-600 font-semibold" 
       : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground";
 
   return (
@@ -69,6 +70,10 @@ export function EnhancedSidebar() {
             </Button>
           </div>
         </SidebarHeader>
+      {/* Quick Search */}
+      <div className="px-3 py-2">
+        <QuickSearch />
+      </div>
 
         {/* Navigation */}
         <SidebarContent className={cn(
@@ -99,7 +104,7 @@ export function EnhancedSidebar() {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
                           isSectionActive 
-                            ? "bg-gradient-to-l from-rose-500/20 to-orange-500/10 text-coral-600 font-semibold shadow-sm" 
+                            ? "bg-gradient-to-l from-teal-500/20 to-cyan-500/10 text-teal-600 font-semibold shadow-sm" 
                             : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground"
                         )}
                       >
@@ -121,11 +126,11 @@ export function EnhancedSidebar() {
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton className={cn(
                             "h-11 justify-center rounded-xl transition-all duration-200",
-                            isSectionActive && "bg-gradient-to-l from-rose-500/20 to-orange-500/10"
+                            isSectionActive && "bg-gradient-to-l from-teal-500/20 to-cyan-500/10"
                           )}>
                             <section.icon className={cn(
                               "h-5 w-5",
-                              isSectionActive && "text-coral-600"
+                              isSectionActive && "text-teal-600"
                             )} />
                             <span className="font-medium">{section.name}</span>
                             <ChevronDown className="h-4 w-4 ml-auto" />
@@ -158,11 +163,11 @@ export function EnhancedSidebar() {
                   <SidebarMenuItem key={section.id}>
                     <SidebarMenuButton className={cn(
                       "h-11 justify-center rounded-xl transition-all duration-200",
-                      isSectionActive && "bg-gradient-to-l from-rose-500/20 to-orange-500/10"
+                      isSectionActive && "bg-gradient-to-l from-teal-500/20 to-cyan-500/10"
                     )}>
                       <section.icon className={cn(
                         "h-5 w-5",
-                        isSectionActive && "text-coral-600"
+                        isSectionActive && "text-teal-600"
                       )} />
                       <span className="font-medium">{section.name}</span>
                       <ChevronDown className="h-4 w-4 ml-auto" />

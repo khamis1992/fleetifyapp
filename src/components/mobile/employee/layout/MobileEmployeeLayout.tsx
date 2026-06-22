@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface MobileEmployeeLayoutProps {
   children: ReactNode;
   showFAB?: boolean;
@@ -106,11 +107,10 @@ const fabActions: FABAction[] = [
   },
 ];
 
-export const MobileEmployeeLayout: React.FC<MobileEmployeeLayoutProps> = ({
-  children,
+export const MobileEmployeeLayout: React.FC<MobileEmployeeLayoutProps> = ({ children,
   showFAB = true,
-  showBottomNav = true,
-}) => {
+  showBottomNav = true, }) => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const location = useLocation();
   const [showFABMenu, setShowFABMenu] = useState(false);

@@ -61,11 +61,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface PaymentRecord {
   id: string;
@@ -103,6 +102,7 @@ const statusConfig = {
 
 export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentRegistrationTableProps) {
   const { companyId } = useUnifiedCompanyAccess();
+  const { toast } = useToast();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -133,15 +133,15 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
           amount,
           payment_date,
           payment_method,
-          status,
+          payment_status,
           created_at,
           notes,
           customer_id,
           invoice_id,
           contract_id,
-          customers!inner(first_name, last_name, phone),
-          invoices!inner(invoice_number),
-          contracts!inner(contract_number)
+          customers!payments_customer_id_fkey(first_name, last_name, phone),
+          invoices!payments_invoice_id_fkey(invoice_number),
+          contracts!fk_payments_contract_id(contract_number)
         `)
         .eq('company_id', companyId)
         .order('payment_date', { ascending: false })
@@ -149,7 +149,7 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
 
       // Apply filters
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        query = query.eq('payment_status', statusFilter);
       }
 
       if (methodFilter !== 'all') {
@@ -182,24 +182,29 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
 
       if (error) throw error;
 
-      const formattedData: PaymentRecord[] = (data || []).map(payment => ({
-        id: payment.id,
-        customer_name: `${payment.customers.first_name} ${payment.customers.last_name}`,
-        phone: payment.customers.phone,
-        invoice_number: payment.invoices.invoice_number,
-        contract_number: payment.contracts.contract_number,
-        payment_amount: payment.amount,
-        payment_date: payment.payment_date,
-        payment_method: payment.payment_method,
-        status: payment.status as any,
-        created_at: payment.created_at,
-        notes: payment.notes
-      }));
+      const formattedData: PaymentRecord[] = (data || []).map(payment => {
+        const customer = payment.customers as { first_name?: string; last_name?: string; phone?: string } | null;
+        const invoice = payment.invoices as { invoice_number?: string } | null;
+        const contract = payment.contracts as { contract_number?: string } | null;
+        return {
+          id: payment.id,
+          customer_name: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : '—',
+          phone: customer?.phone || '—',
+          invoice_number: invoice?.invoice_number || '—',
+          contract_number: contract?.contract_number || '—',
+          payment_amount: payment.amount,
+          payment_date: payment.payment_date,
+          payment_method: payment.payment_method,
+          status: (payment.payment_status || 'pending') as any,
+          created_at: payment.created_at,
+          notes: payment.notes
+        };
+      });
 
       setPayments(formattedData);
     } catch (error) {
       console.error('Error fetching payments:', error);
-      toast.error('فشل في تحميل بيانات الدفعات');
+      toast({ title: 'فشل في تحميل بيانات الدفعات', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -232,7 +237,7 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
 
   const handleExport = () => {
     // Export functionality
-    toast.success('جاري تصدير البيانات...');
+    toast({ title: 'جاري تصدير البيانات...' });
   };
 
   const getStatusBadge = (status: string) => {
@@ -437,7 +442,7 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
                               <Eye className="h-4 w-4 ml-2" />
                               عرض التفاصيل
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => toast.info('يمكنك تعديل الدفعة من صفحة الفاتورة المرتبطة')}>
+                            <DropdownMenuItem onClick={() => toast({ title: 'يمكنك تعديل الدفعة من صفحة الفاتورة المرتبطة' })}>
                               <Edit className="h-4 w-4 ml-2" />
                               تعديل
                             </DropdownMenuItem>
@@ -497,10 +502,10 @@ export function PaymentRegistrationTable({ searchTerm, showFilters }: PaymentReg
               try {
                 const { error } = await supabase.from('payments').delete().eq('id', selectedPayment.id);
                 if (error) throw error;
-                toast.success('تم حذف الدفعة');
+                toast({ title: 'تم حذف الدفعة' });
                 setIsDeleteOpen(false);
                 setRefreshKey(k => k + 1);
-              } catch { toast.error('فشل الحذف'); }
+              } catch { toast({ title: 'فشل الحذف', variant: 'destructive' }); }
             }} className="bg-red-500 hover:bg-red-600">حذف</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface DashboardStats {
   activeContracts: number;
   rentedVehicles: number;
@@ -29,6 +30,7 @@ interface UrgentAlert {
 }
 
 export const MobileHome: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -109,7 +111,7 @@ export const MobileHome: React.FC = () => {
         .from('payments')
         .select('amount')
         .eq('company_id', companyId)
-        .eq('status', 'verified')
+        .eq('payment_status', 'verified')
         .gte('payment_date', startOfMonth);
 
       const monthlyRevenue = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
@@ -261,9 +263,7 @@ export const MobileHome: React.FC = () => {
 
           <div className="mb-3">
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-slate-900">
-                QAR {stats.monthlyRevenue.toLocaleString()}
-              </span>
+              <span className="text-2xl font-bold text-slate-900">{t("qarStatsmonthlyrevenuetolocalestring")}</span>
               <span className="text-sm text-slate-500">
                 / {stats.monthlyTarget.toLocaleString()}
               </span>

@@ -29,6 +29,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
@@ -62,6 +63,7 @@ interface CashFlowData {
 }
 
 export function CashFlowStatementReport() {
+  const { t } = useFleetifyTranslation("ui");
   const [startDate, setStartDate] = useState<string>(
     format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
   );
@@ -459,27 +461,21 @@ export function CashFlowStatementReport() {
                 size="sm"
                 disabled={isLoading || !cashFlowData}
               >
-                <Download className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
+                <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
               <Button
                 onClick={handleExportExcel}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !cashFlowData}
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
               <Button
                 onClick={handleExportCSV}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !cashFlowData}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
+                <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
             </div>
           </div>
         </CardHeader>
@@ -759,7 +755,7 @@ export function CashFlowStatementReport() {
                       <CardContent>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                            <span>Operating Cash Flow Ratio</span>
+                            <span>{t("operatingCashFlowRatio")}</span>
                             <Badge variant={cashFlowData.netOperating > 0 ? "default" : "destructive"}>
                               {((cashFlowData.netOperating / cashFlowData.beginningCash) * 100).toFixed(2)}%
                             </Badge>
@@ -778,7 +774,7 @@ export function CashFlowStatementReport() {
                       <CardContent>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                            <span>Free Cash Flow</span>
+                            <span>{t("freeCashFlow")}</span>
                             <Badge variant={cashFlowData.netOperating + cashFlowData.netInvesting > 0 ? "default" : "destructive"}>
                               {formatCurrency(cashFlowData.netOperating + cashFlowData.netInvesting)}
                             </Badge>
@@ -797,7 +793,7 @@ export function CashFlowStatementReport() {
                       <CardContent>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                            <span>Cash Flow Adequacy</span>
+                            <span>{t("cashFlowAdequacy")}</span>
                             <Badge variant="secondary">
                               {cashFlowData.netOperating > Math.abs(cashFlowData.netInvesting) ? '✓ كافٍ' : '✗ غير كافٍ'}
                             </Badge>
@@ -816,7 +812,7 @@ export function CashFlowStatementReport() {
                       <CardContent>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center p-3 bg-accent rounded-lg">
-                            <span>Financing Dependency</span>
+                            <span>{t("financingDependency")}</span>
                             <Badge variant={Math.abs(cashFlowData.netFinancing / cashFlowData.netCashFlow) < 0.5 ? "default" : "destructive"}>
                               {((Math.abs(cashFlowData.netFinancing) / Math.abs(cashFlowData.netCashFlow)) * 100).toFixed(0)}%
                             </Badge>

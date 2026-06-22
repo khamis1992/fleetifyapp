@@ -17,6 +17,7 @@ import {
 import { useJournalEntryPermissions } from "@/hooks/useJournalEntryPermissions";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface PermissionRow {
   id: string;
   title: string;
@@ -35,6 +36,7 @@ const PERMISSION_LEVELS = {
 };
 
 export function JournalEntryPermissionsManager() {
+  const { t } = useFleetifyTranslation("ui");
   const permissions = useJournalEntryPermissions();
 
   const permissionRows: PermissionRow[] = [
@@ -177,25 +179,25 @@ export function JournalEntryPermissionsManager() {
             <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canCreateDraft ? 'bg-green-50' : 'bg-slate-50'}`}>
               <FileEdit className={`h-6 w-6 mx-auto mb-2 ${permissions.canCreateDraft ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">مسودة</p>
-              <p className="text-xs text-muted-foreground">Draft</p>
+              <p className="text-xs text-muted-foreground">{t("draft")}</p>
             </div>
             <div className="px-2">→</div>
             <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canReview ? 'bg-green-50' : 'bg-slate-50'}`}>
               <Eye className={`h-6 w-6 mx-auto mb-2 ${permissions.canReview ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">مراجعة</p>
-              <p className="text-xs text-muted-foreground">Review</p>
+              <p className="text-xs text-muted-foreground">{t("review")}</p>
             </div>
             <div className="px-2">→</div>
             <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canApprove ? 'bg-green-50' : 'bg-slate-50'}`}>
               <CheckCircle className={`h-6 w-6 mx-auto mb-2 ${permissions.canApprove ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">معتمد</p>
-              <p className="text-xs text-muted-foreground">Approved</p>
+              <p className="text-xs text-muted-foreground">{t("approved")}</p>
             </div>
             <div className="px-2">→</div>
             <div className={`flex-1 text-center p-3 rounded-lg ${permissions.canPost ? 'bg-green-50' : 'bg-slate-50'}`}>
               <Upload className={`h-6 w-6 mx-auto mb-2 ${permissions.canPost ? 'text-green-600' : 'text-slate-400'}`} />
               <p className="font-medium">مرحل</p>
-              <p className="text-xs text-muted-foreground">Posted</p>
+              <p className="text-xs text-muted-foreground">{t("posted")}</p>
             </div>
           </div>
         </CardContent>

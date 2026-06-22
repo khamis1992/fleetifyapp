@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { Home, FileText, Car, AlertCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface MobileLayoutProps {
   children: ReactNode;
   currentTab?: 'home' | 'contracts' | 'cars' | 'overdue' | 'customers';
@@ -23,11 +24,10 @@ const dockItems: DockItem[] = [
   { id: 'overdue', icon: AlertCircle, label: 'Overdue', labelAr: 'المتأخرات' },
 ];
 
-export const MobileLayout: React.FC<MobileLayoutProps> = ({
-  children,
+export const MobileLayout: React.FC<MobileLayoutProps> = ({ children,
   currentTab = 'home',
-  onTabChange,
-}) => {
+  onTabChange, }) => {
+  const { t } = useFleetifyTranslation("ui");
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30"

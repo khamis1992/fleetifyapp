@@ -1,5 +1,6 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface PaymentReceiptProps {
   receiptNumber: string;
   date: string;
@@ -337,11 +338,10 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
 
         {/* العنوان إنجليزي يسار */}
         <div className="receipt-header-item" style={{ textAlign: 'left' }} dir="ltr">
-          <h1 style={{ fontSize: 'clamp(12px, 2.5vw, 16px)', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '4px', margin: 0 }}>
-            Al-Araf Car Rental <span style={{ fontSize: '0.75em', fontWeight: 'normal', color: '#4b5563' }}>L.L.C</span>
+          <h1 style={{ fontSize: 'clamp(12px, 2.5vw, 16px)', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '4px', margin: 0 }}>{t("alarafCarRental")}<span style={{ fontSize: '0.75em', fontWeight: 'normal', color: '#4b5563' }}>L.L.C</span>
           </h1>
           <p style={{ fontSize: '0.85em', color: '#374151', margin: '4px 0' }}>C.R: 146832</p>
-          <p style={{ fontSize: '0.7em', color: '#4b5563', margin: '2px 0' }}>Umm Salal Mohammed, Commercial St.</p>
+          <p style={{ fontSize: '0.7em', color: '#4b5563', margin: '2px 0' }}>{t("ummSalalMohammedCommercial")}</p>
           <p style={{ fontSize: '0.7em', color: '#4b5563', margin: '2px 0' }}>Bldg (79), 1st Floor, Office (2)</p>
         </div>
       </header>
@@ -375,7 +375,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
             <tr>
               <td className="label-cell" style={{ fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>استلمنا من السيد/</td>
               <td className="value-cell">{customerName}</td>
-              <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">Received From Mr.</td>
+              <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">{t("receivedFromMr")}</td>
             </tr>
           </tbody>
         </table>
@@ -387,7 +387,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
               <tr>
                 <td className="label-cell" style={{ fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>رقم المركبة/</td>
                 <td className="value-cell">{vehicleNumber}</td>
-                <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">Vehicle No.</td>
+                <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">{t("vehicleNo")}</td>
               </tr>
             </tbody>
           </table>
@@ -399,7 +399,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
             <tr>
               <td className="label-cell" style={{ fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>مبلغ وقدره/</td>
               <td className="value-cell">{amountInWords}</td>
-              <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">The Sum of</td>
+              <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">{t("theSumOf")}</td>
             </tr>
           </tbody>
         </table>
@@ -432,7 +432,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
                 <div style={{ fontSize: 'clamp(10px, 2vw, 12px)', color: '#64748b', marginBottom: '4px' }}>
                   المبلغ الإجمالي
                   <br />
-                  <span style={{ fontSize: '0.85em' }}>Total Amount</span>
+                  <span style={{ fontSize: '0.85em' }}>{t("totalAmount")}</span>
                 </div>
                 <div style={{ fontSize: 'clamp(14px, 3vw, 18px)', fontWeight: 'bold', color: '#1e3a8a' }}>
                   {totalAmount.toFixed(2)} <span style={{ fontSize: '0.7em' }}>QAR</span>
@@ -444,7 +444,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
                 <div style={{ fontSize: 'clamp(10px, 2vw, 12px)', color: '#64748b', marginBottom: '4px' }}>
                   المبلغ المدفوع
                   <br />
-                  <span style={{ fontSize: '0.85em' }}>Paid Amount</span>
+                  <span style={{ fontSize: '0.85em' }}>{t("paidAmount")}</span>
                 </div>
                 <div style={{ fontSize: 'clamp(14px, 3vw, 18px)', fontWeight: 'bold', color: '#16a34a' }}>
                   {(paidAmount || 0).toFixed(2)} <span style={{ fontSize: '0.7em' }}>QAR</span>
@@ -456,7 +456,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
                 <div style={{ fontSize: 'clamp(10px, 2vw, 12px)', color: '#64748b', marginBottom: '4px' }}>
                   المبلغ المتبقي
                   <br />
-                  <span style={{ fontSize: '0.85em' }}>Remaining</span>
+                  <span style={{ fontSize: '0.85em' }}>{t("remaining")}</span>
                 </div>
                 <div style={{ 
                   fontSize: 'clamp(14px, 3vw, 18px)', 
@@ -476,7 +476,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
             <tr>
               <td className="label-cell" style={{ fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right', paddingLeft: '8px' }}>وذلك عن/</td>
               <td className="value-cell" style={{ fontWeight: 'normal' }}>{description}</td>
-              <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">Being</td>
+              <td className="label-cell-en" style={{ fontWeight: 'bold', color: '#6b7280', paddingRight: '8px' }} dir="ltr">{t("being")}</td>
             </tr>
           </tbody>
         </table>
@@ -614,9 +614,7 @@ export const PaymentReceipt = forwardRef<HTMLDivElement, PaymentReceiptProps>(({
         textAlign: 'center',
         fontSize: 'clamp(8px, 1.8vw, 10px)',
         color: '#9ca3af'
-      }}>
-        Al-Araf Car Rental System - Generated Document
-      </div>
+      }}>{t("alarafCarRentalSystem")}</div>
     </div>
   );
 });

@@ -79,6 +79,7 @@ import {
 import { whatsAppService } from '@/services/whatsapp';
 import type { WhatsAppRecipient, AlertType, ReportType } from '@/services/whatsapp/types';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ألوان الأدوار - متوافقة مع الداشبورد
 const roleColors = {
   manager: 'bg-rose-100 text-coral-600 border-rose-200',
@@ -294,6 +295,7 @@ const RecipientDialog: React.FC<{
 
 // الصفحة الرئيسية
 const WhatsAppSettings: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [activeTab, setActiveTab] = useState('connection');
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<WhatsAppRecipient | undefined>();
@@ -482,7 +484,7 @@ const WhatsAppSettings: React.FC = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-slate-700">Instance ID</Label>
+                      <Label className="text-slate-700">{t("instanceId")}</Label>
                       <Input
                         value={instanceId}
                         onChange={(e) => setInstanceId(e.target.value)}
@@ -492,7 +494,7 @@ const WhatsAppSettings: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-slate-700">Token</Label>
+                      <Label className="text-slate-700">{t("token")}</Label>
                       <Input
                         value={token}
                         onChange={(e) => setToken(e.target.value)}

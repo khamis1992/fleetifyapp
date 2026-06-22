@@ -3,7 +3,9 @@ import { Search, BookOpen, Video, FileText, MessageCircle, Mail, Phone, ChevronR
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export default function HelpCenter() {
+  const { t } = useFleetifyTranslation("ui");
   const currentYear = new Date().getFullYear();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -392,7 +394,7 @@ export default function HelpCenter() {
               <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
-              <span className="text-white font-bold">Fleetify</span>
+              <span className="text-white font-bold">{t("fleetify")}</span>
             </div>
             <p className="text-slate-500 text-sm">
               © {currentYear} Fleetify. جميع الحقوق محفوظة.

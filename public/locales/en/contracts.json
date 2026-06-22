@@ -1,1 +1,27 @@
-{}
+{
+  "title": "Contracts",
+  "new": "New Contract",
+  "create": "Create Contract",
+  "edit": "Edit Contract",
+  "delete": "Delete Contract",
+  "customer": "Customer",
+  "vehicle": "Vehicle",
+  "startDate": "Start Date",
+  "endDate": "End Date",
+  "amount": "Amount",
+  "status": "Status",
+  "active": "Active",
+  "expired": "Expired",
+  "draft": "Draft",
+  "pending": "Pending",
+  "search": "Search contracts",
+  "noResults": "No contracts found",
+  "contractNumber": "Contract Number",
+  "dailyRate": "Daily Rate",
+  "totalAmount": "Total Amount",
+  "paymentStatus": "Payment Status",
+  "paid": "Paid",
+  "unpaid": "Unpaid",
+  "partial": "Partial",
+  "overdue": "Overdue"
+}

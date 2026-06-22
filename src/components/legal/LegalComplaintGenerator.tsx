@@ -33,6 +33,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
 import { formatCurrency } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface LegalComplaintGeneratorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -122,11 +123,11 @@ const numberToArabicWords = (num: number): string => {
   return convertLessThanThousand(num);
 };
 
-export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = ({
-  open,
+export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = ({ open,
   onOpenChange,
-  caseData,
-}) => {
+  caseData, }) => 
+ {
+  const { t } = useFleetifyTranslation("ui");
   const { companyId } = useUnifiedCompanyAccess();
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState<any>(null);
@@ -490,7 +491,7 @@ export const LegalComplaintGenerator: React.FC<LegalComplaintGeneratorProps> = (
             <div class="header">
               <div class="company-info">
                 <div class="company-name-ar">${companyInfo?.name_ar || 'شركة العراف لتأجير السيارات'}</div>
-                <div class="company-name-en">AL-ARAF CAR RENTAL L.L.C</div>
+                <div class="company-name-en">{t("alarafCarRentalLlc")}</div>
                 <div class="company-details">
                   ${companyInfo?.address || 'قطر - الدوحة'}<br>
                   السجل التجاري: ${companyInfo?.commercial_registration || ''}

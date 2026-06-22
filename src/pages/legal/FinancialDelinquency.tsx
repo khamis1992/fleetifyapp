@@ -118,8 +118,10 @@ import {
 } from './financial-delinquency';
 import { SendVerificationTaskDialog } from '@/components/legal/SendVerificationTaskDialog';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== Main Page Component =====
 const FinancialDelinquencyPage: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabValue>('customers');
   const { companyId } = useUnifiedCompanyAccess();
@@ -1145,7 +1147,7 @@ const FinancialDelinquencyPage: React.FC = () => {
                           {[
                             { id: 'cards', icon: LayoutGrid, label: 'بطاقات' },
                             { id: 'compact', icon: List, label: 'مختصر' },
-                            { id: 'kanban', icon: Columns, label: 'Kanban' },
+                            { id: 'kanban', icon: Columns, label: t("kanban") },
                           ].map(({ id, icon: Icon, label }) => (
                             <button
                               key={id}

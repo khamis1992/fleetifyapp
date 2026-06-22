@@ -123,10 +123,9 @@ export const useVehicleInstallmentJournalIntegration = () => {
       }
 
       // Create journal entry lines
-      const lines = [
+      const lines: any[] = [
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: debitAccountId,
           line_description: `مصروف قسط مركبة - ${debitAccountName}`,
           debit_amount: totalPayment,
@@ -135,7 +134,6 @@ export const useVehicleInstallmentJournalIntegration = () => {
         },
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: cashAccountId,
           line_description: 'دفع من الصندوق/البنك',
           debit_amount: 0,
@@ -165,7 +163,6 @@ export const useVehicleInstallmentJournalIntegration = () => {
           // Add interest expense line
           lines.splice(1, 0, {
             journal_entry_id: entry.id,
-            company_id: companyId,
             account_id: interestAccounts[0].id,
             line_description: 'مصروف الفائدة',
             debit_amount: paymentData.interestAmount,
@@ -290,7 +287,6 @@ export const useVehicleInstallmentJournalIntegration = () => {
       const lines = [
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: accountMap['1400'], // Vehicles (asset)
           line_description: 'شراء مركبة',
           debit_amount: purchasePrice,
@@ -299,7 +295,6 @@ export const useVehicleInstallmentJournalIntegration = () => {
         },
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: accountMap['1010'], // Cash (down payment)
           line_description: 'الدفعة المقدمة',
           debit_amount: 0,
@@ -308,7 +303,6 @@ export const useVehicleInstallmentJournalIntegration = () => {
         },
         {
           journal_entry_id: entry.id,
-          company_id: companyId,
           account_id: accountMap['2300'], // Vehicle Loans Payable (or Accounts Payable)
           line_description: 'ذمم دائنة للوكيل',
           debit_amount: 0,

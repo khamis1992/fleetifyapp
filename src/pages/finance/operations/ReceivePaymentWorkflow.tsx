@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   Select, 
   SelectContent, 
@@ -52,6 +53,7 @@ import {
  * - تحديث رصيد العقد
  */
 const ReceivePaymentWorkflow: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -522,9 +524,7 @@ const ReceivePaymentWorkflow: React.FC = () => {
                     min={0}
                     max={balanceDue}
                   />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
-                    QAR
-                  </span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{t("qar")}</span>
                 </div>
                 {balanceDue > 0 && (
                   <div className="flex gap-2 mt-2">

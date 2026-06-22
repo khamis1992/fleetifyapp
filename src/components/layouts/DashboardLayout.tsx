@@ -3,9 +3,10 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from './AppSidebar';
 import { EnhancedSidebar } from './EnhancedSidebar';
 import { HeaderAttendanceButton } from '@/components/hr/HeaderAttendanceButton';
+import { useOnboarding } from '@/hooks/useOnboarding';
+import { PlayCircle } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const { user, loading, signOut } = useAuth();
+  const { start: startOnboarding } = useOnboarding();
   const navigate = useNavigate();
   const [hasMounted, setHasMounted] = React.useState(false);
 
@@ -83,6 +85,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               
               {/* Attendance Button */}
               <HeaderAttendanceButton />
+              
+              {/* Onboarding Tour Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => startOnboarding()}
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400"
+                title="بدء جولة التعريف"
+              >
+                <PlayCircle className="h-5 w-5" />
+                <span className="hidden md:inline">جولة التعريف</span>
+              </Button>
               
               {/* Team Management Button - Only for khamis-1992@hotmail.com */}
               {user?.email === 'khamis-1992@hotmail.com' && (

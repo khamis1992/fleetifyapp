@@ -21,6 +21,7 @@ import { generateShortContractNumber } from "@/utils/contractNumberGenerator"
 import { PageHelp } from "@/components/help";
 import { QuotationsPageHelpContent } from "@/components/help/content";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface QuotationFormData {
   customer_id: string
   vehicle_id?: string
@@ -34,6 +35,7 @@ interface QuotationFormData {
 }
 
 export default function Quotations() {
+  const { t } = useFleetifyTranslation("ui");
   const [showQuotationForm, setShowQuotationForm] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null)
   const { user } = useAuth()
@@ -550,9 +552,7 @@ ${approvalUrl ? `\n*للموافقة على العرض أو رفضه، يرجى 
                     عرض
                   </Button>
                   <Button variant="outline" size="default" className="rounded-xl hover:shadow-sm min-h-[44px] border-slate-200 dark:border-slate-700">
-                    <FileDown className="h-4 w-4 mr-1" />
-                    PDF
-                  </Button>
+                    <FileDown className="h-4 w-4 mr-1" />{t("pdf")}</Button>
                   <Button
                     variant="outline"
                     size="default"

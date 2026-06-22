@@ -43,6 +43,7 @@ import {
 import { format } from 'date-fns';
 import type { AuditAction, AuditResourceType, AuditStatus, AuditSeverity } from '@/types/auditLog';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const actionIcons: Record<AuditAction, any> = {
   CREATE: CheckCircle,
   UPDATE: FileText,
@@ -85,6 +86,7 @@ const severityColors: Record<AuditSeverity, string> = {
 };
 
 export default function AuditLogsPage() {
+  const { t } = useFleetifyTranslation("ui");
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all');
   const [resourceFilter, setResourceFilter] = useState<AuditResourceType | 'all'>('all');
@@ -134,24 +136,18 @@ export default function AuditLogsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
-            <p className="text-muted-foreground">
-              View and track all sensitive operations in the system
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("auditLogs")}</h1>
+            <p className="text-muted-foreground">{t("viewAndTrackAll")}</p>
           </div>
           <Button onClick={handleExport} disabled={!auditLogs || auditLogs.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+            <Download className="mr-2 h-4 w-4" />{t("exportCsv")}</Button>
         </div>
 
         {/* Filters */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filters
-            </CardTitle>
+              <Filter className="h-5 w-5" />{t("filters")}</CardTitle>
             <CardDescription>
               Filter audit logs by action, resource type, status, and date range
             </CardDescription>
@@ -160,7 +156,7 @@ export default function AuditLogsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Search */}
               <div className="space-y-2">
-                <Label htmlFor="search">Search</Label>
+                <Label htmlFor="search">{t("search")}</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -175,40 +171,40 @@ export default function AuditLogsPage() {
 
               {/* Action Filter */}
               <div className="space-y-2">
-                <Label htmlFor="action">Action</Label>
+                <Label htmlFor="action">{t("action")}</Label>
                 <Select value={actionFilter} onValueChange={(value) => setActionFilter(value as any)}>
                   <SelectTrigger id="action">
                     <SelectValue placeholder="All actions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All actions</SelectItem>
-                    <SelectItem value="CREATE">Create</SelectItem>
-                    <SelectItem value="UPDATE">Update</SelectItem>
+                    <SelectItem value="all">{t("allActions1")}</SelectItem>
+                    <SelectItem value="CREATE">{t("create")}</SelectItem>
+                    <SelectItem value="UPDATE">{t("update")}</SelectItem>
                     <SelectItem value="DELETE">Delete</SelectItem>
-                    <SelectItem value="APPROVE">Approve</SelectItem>
-                    <SelectItem value="REJECT">Reject</SelectItem>
-                    <SelectItem value="CANCEL">Cancel</SelectItem>
-                    <SelectItem value="ARCHIVE">Archive</SelectItem>
-                    <SelectItem value="RESTORE">Restore</SelectItem>
+                    <SelectItem value="APPROVE">{t("approve")}</SelectItem>
+                    <SelectItem value="REJECT">{t("reject")}</SelectItem>
+                    <SelectItem value="CANCEL">{t("cancel")}</SelectItem>
+                    <SelectItem value="ARCHIVE">{t("archive")}</SelectItem>
+                    <SelectItem value="RESTORE">{t("restore")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Resource Type Filter */}
               <div className="space-y-2">
-                <Label htmlFor="resource">Resource Type</Label>
+                <Label htmlFor="resource">{t("resourceType")}</Label>
                 <Select value={resourceFilter} onValueChange={(value) => setResourceFilter(value as any)}>
                   <SelectTrigger id="resource">
                     <SelectValue placeholder="All resources" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All resources</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                    <SelectItem value="customer">Customer</SelectItem>
-                    <SelectItem value="vehicle">Vehicle</SelectItem>
-                    <SelectItem value="invoice">Invoice</SelectItem>
-                    <SelectItem value="payment">Payment</SelectItem>
-                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="all">{t("allResources")}</SelectItem>
+                    <SelectItem value="contract">{t("contract")}</SelectItem>
+                    <SelectItem value="customer">{t("customer")}</SelectItem>
+                    <SelectItem value="vehicle">{t("vehicle")}</SelectItem>
+                    <SelectItem value="invoice">{t("invoice")}</SelectItem>
+                    <SelectItem value="payment">{t("payment")}</SelectItem>
+                    <SelectItem value="employee">{t("employee")}</SelectItem>
                     <SelectItem value="user">User</SelectItem>
                   </SelectContent>
                 </Select>
@@ -216,23 +212,23 @@ export default function AuditLogsPage() {
 
               {/* Status Filter */}
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t("status")}</Label>
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
                   <SelectTrigger id="status">
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="success">Success</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="all">{t("allStatuses1")}</SelectItem>
+                    <SelectItem value="success">{t("success")}</SelectItem>
+                    <SelectItem value="failed">{t("failed")}</SelectItem>
+                    <SelectItem value="pending">{t("pending")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Date From */}
               <div className="space-y-2">
-                <Label htmlFor="date-from">From Date</Label>
+                <Label htmlFor="date-from">{t("fromDate")}</Label>
                 <Input
                   id="date-from"
                   type="date"
@@ -243,7 +239,7 @@ export default function AuditLogsPage() {
 
               {/* Date To */}
               <div className="space-y-2">
-                <Label htmlFor="date-to">To Date</Label>
+                <Label htmlFor="date-to">{t("toDate")}</Label>
                 <Input
                   id="date-to"
                   type="date"
@@ -265,9 +261,7 @@ export default function AuditLogsPage() {
                   setDateFrom('');
                   setDateTo('');
                 }}
-              >
-                Clear Filters
-              </Button>
+              >{t("clearFilters")}</Button>
             </div>
           </CardContent>
         </Card>
@@ -275,7 +269,7 @@ export default function AuditLogsPage() {
         {/* Audit Logs Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Audit Trail</CardTitle>
+            <CardTitle>{t("auditTrail")}</CardTitle>
             <CardDescription>
               {auditLogs ? `${auditLogs.length} log entries found` : 'Loading...'}
             </CardDescription>
@@ -289,15 +283,13 @@ export default function AuditLogsPage() {
 
             {error && (
               <div className="flex items-center justify-center py-12 text-destructive">
-                <AlertCircle className="mr-2 h-5 w-5" />
-                Failed to load audit logs
-              </div>
+                <AlertCircle className="mr-2 h-5 w-5" />{t("failedToLoadAudit")}</div>
             )}
 
             {!isLoading && !error && auditLogs && auditLogs.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <FileText className="h-12 w-12 mb-4" />
-                <p>No audit logs found</p>
+                <p>{t("noAuditLogsFound")}</p>
               </div>
             )}
 
@@ -306,13 +298,13 @@ export default function AuditLogsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date & Time</TableHead>
+                      <TableHead>{t("dateTime")}</TableHead>
                       <TableHead>User</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Resource</TableHead>
-                      <TableHead>Entity</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Changes</TableHead>
+                      <TableHead>{t("action")}</TableHead>
+                      <TableHead>{t("resource")}</TableHead>
+                      <TableHead>{t("entity")}</TableHead>
+                      <TableHead>{t("status")}</TableHead>
+                      <TableHead>{t("changes")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -345,21 +337,15 @@ export default function AuditLogsPage() {
                           <TableCell>
                             {log.status === 'success' && (
                               <Badge className="bg-green-100 text-green-800">
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                                Success
-                              </Badge>
+                                <CheckCircle className="mr-1 h-3 w-3" />{t("success")}</Badge>
                             )}
                             {log.status === 'failed' && (
                               <Badge className="bg-red-100 text-red-800">
-                                <XCircle className="mr-1 h-3 w-3" />
-                                Failed
-                              </Badge>
+                                <XCircle className="mr-1 h-3 w-3" />{t("failed")}</Badge>
                             )}
                             {log.status === 'pending' && (
                               <Badge className="bg-yellow-100 text-yellow-800">
-                                <Clock className="mr-1 h-3 w-3" />
-                                Pending
-                              </Badge>
+                                <Clock className="mr-1 h-3 w-3" />{t("pending")}</Badge>
                             )}
                           </TableCell>
                           <TableCell className="max-w-md truncate">

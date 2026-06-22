@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { Plus, Users, Edit, Trash2 } from "lucide-react";
 import { useVehicleGroups, useCreateVehicleGroup, useUpdateVehicleGroup, useDeleteVehicleGroup } from "@/hooks/useVehicleGroups";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface VehicleGroupManagementProps {
   companyId: string;
 }
@@ -21,6 +22,7 @@ interface GroupFormData {
 }
 
 export function VehicleGroupManagement({ companyId }: VehicleGroupManagementProps) {
+  const { t } = useFleetifyTranslation("ui");
   const [showForm, setShowForm] = useState(false);
   const [editingGroup, setEditingGroup] = useState<any>(null);
   
@@ -74,7 +76,7 @@ export function VehicleGroupManagement({ companyId }: VehicleGroupManagementProp
   };
 
   if (isLoading) {
-    return <div>Loading groups...</div>;
+    return <div>{t("loadingGroups")}</div>;
   }
 
   return (

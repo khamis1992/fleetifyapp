@@ -27,6 +27,7 @@ import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // Extend jsPDF type
 declare module 'jspdf' {
   interface jsPDF {
@@ -45,6 +46,7 @@ const COLORS = {
 };
 
 export function BalanceSheetReport() {
+  const { t } = useFleetifyTranslation("ui");
   const [asOfDate, setAsOfDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -421,27 +423,21 @@ export function BalanceSheetReport() {
                 size="sm"
                 disabled={isLoading || !reportData}
               >
-                <Download className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
+                <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
               <Button
                 onClick={handleExportExcel}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
               <Button
                 onClick={handleExportCSV}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
+                <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
             </div>
           </div>
         </CardHeader>

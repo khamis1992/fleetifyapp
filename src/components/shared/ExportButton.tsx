@@ -15,6 +15,7 @@ import {
 import { Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ExportButtonProps {
   onExportExcel?: () => Promise<void>;
   onExportPDF?: () => Promise<void>;
@@ -25,15 +26,14 @@ interface ExportButtonProps {
   label?: string;
 }
 
-export const ExportButton: React.FC<ExportButtonProps> = ({
-  onExportExcel,
+export const ExportButton: React.FC<ExportButtonProps> = ({ onExportExcel,
   onExportPDF,
   onExportCSV,
   disabled = false,
   variant = 'outline',
   size = 'sm',
-  label = 'تصدير',
-}) => {
+  label = 'تصدير', }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (type: 'excel' | 'pdf' | 'csv', handler?: () => Promise<void>) => {
@@ -61,9 +61,9 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
 
   // If only one export option, show simple button
   const exportOptions = [
-    onExportExcel && { type: 'excel' as const, label: 'Excel', icon: FileSpreadsheet, handler: onExportExcel },
-    onExportPDF && { type: 'pdf' as const, label: 'PDF', icon: FileText, handler: onExportPDF },
-    onExportCSV && { type: 'csv' as const, label: 'CSV', icon: FileSpreadsheet, handler: onExportCSV },
+    onExportExcel && { type: 'excel' as const, label: t("excel"), icon: FileSpreadsheet, handler: onExportExcel },
+    onExportPDF && { type: 'pdf' as const, label: t("pdf"), icon: FileText, handler: onExportPDF },
+    onExportCSV && { type: 'csv' as const, label: t("csv"), icon: FileSpreadsheet, handler: onExportCSV },
   ].filter(Boolean) as Array<{ type: 'excel' | 'pdf' | 'csv'; label: string; icon: any; handler: () => Promise<void> }>;
 
   if (exportOptions.length === 0) {

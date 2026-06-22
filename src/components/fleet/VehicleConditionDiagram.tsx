@@ -8,6 +8,7 @@ import { X, Plus, AlertTriangle, Download, FileText } from 'lucide-react';
 import { useDamageReportExport } from '@/hooks/useDamageReportExport';
 import { LazyImage } from '@/components/common/LazyImage';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface DamagePoint {
   id: string;
   x: number;
@@ -25,13 +26,12 @@ interface VehicleConditionDiagramProps {
   conditionReportId?: string; // For HTML report export
 }
 
-export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = ({
-  damagePoints,
+export const VehicleConditionDiagram: React.FC<VehicleConditionDiagramProps> = ({ damagePoints,
   onDamagePointsChange,
   readOnly = false,
   onExport,
-  conditionReportId
-}) => {
+  conditionReportId }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [showDialog, setShowDialog] = React.useState(false);
   const [selectedPoint, setSelectedPoint] = React.useState<DamagePoint | null>(null);
   const [pendingPoint, setPendingPoint] = React.useState<{x: number, y: number} | null>(null);

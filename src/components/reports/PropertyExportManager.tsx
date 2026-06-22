@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export interface ExportOptions {
   format: 'pdf' | 'excel' | 'csv' | 'html' | 'json';
   includeCharts: boolean;
@@ -49,6 +50,7 @@ export const PropertyExportManager: React.FC<PropertyExportManagerProps> = ({
   reportType,
   onExport
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);

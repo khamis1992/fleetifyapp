@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { initSentry } from './lib/sentry';
+import { initializeI18n } from './lib/i18n/config';
 
 // Initialize Sentry for error tracking
 initSentry();
@@ -165,6 +166,10 @@ if (!import.meta.env.DEV) {
     }
   });
 }
+
+// Initialize i18n before rendering — registers initReactI18next synchronously
+// so useTranslation() has an i18n instance available on first render.
+initializeI18n();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

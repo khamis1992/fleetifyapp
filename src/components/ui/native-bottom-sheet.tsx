@@ -18,8 +18,7 @@ const NativeBottomSheetPortal = DialogPrimitive.Portal
 
 const NativeBottomSheetClose = DialogPrimitive.Close
 
-interface NativeBottomSheetOverlayProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> {}
+type NativeBottomSheetOverlayProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>;
 
 const NativeBottomSheetOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,

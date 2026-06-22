@@ -116,11 +116,9 @@ export const useApprovalRequests = (filters?: {
         .from('approval_requests')
         .select(`
           *,
-          workflow:approval_workflows(workflow_name, workflow_name_ar),
-          requester:profiles!approval_requests_requested_by_fkey(
-            user_id,
-            full_name,
-            email
+          workflow:approval_workflows!approval_requests_workflow_id_fkey(
+            workflow_name,
+            workflow_name_ar
           )
         `)
         .eq('company_id', companyId)

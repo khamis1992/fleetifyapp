@@ -41,6 +41,17 @@ const SalesQuotes = () => {
     delivery_required: false,
     delivery_address: '',
   });
+  const [formData, setFormData] = useState({
+    quote_number: "",
+    items: [] as Array<{ id: string; description: string; quantity: number; unit_price: number; total: number }>,
+    subtotal: 0,
+    tax: 0,
+    total: 0,
+    valid_until: "",
+    status: "draft",
+    notes: "",
+    is_active: true,
+  });
 
   const { data: quotes, isLoading } = useSalesQuotes({
     search: searchTerm,

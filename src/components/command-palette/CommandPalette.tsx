@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface CommandItem {
   id: string;
   title: string;
@@ -43,10 +44,9 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
-export const CommandPalette: React.FC<CommandPaletteProps> = ({
-  open,
-  onClose,
-}) => {
+export const CommandPalette: React.FC<CommandPaletteProps> = ({ open,
+  onClose, }) => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [recentCommands, setRecentCommands] = useState<string[]>([]);
@@ -366,9 +366,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   placeholder="ابحث عن أوامر، صفحات، أو إجراءات..."
                   className="flex h-14 w-full rounded-md bg-transparent py-3 px-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 />
-                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  ESC
-                </kbd>
+                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">{t("esc")}</kbd>
               </div>
 
               <Command.List className="max-h-[400px] overflow-y-auto p-2">
@@ -455,7 +453,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     للتنقل
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-background border">Enter</kbd>
+                    <kbd className="px-1.5 py-0.5 rounded bg-background border">{t("enter")}</kbd>
                     للاختيار
                   </span>
                 </div>

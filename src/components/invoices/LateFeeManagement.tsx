@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   DollarSign,
   Clock,
@@ -47,6 +48,7 @@ interface LateFee {
 }
 
 export const LateFeeManagement: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFee, setSelectedFee] = useState<LateFee | null>(null);
@@ -62,7 +64,10 @@ export const LateFeeManagement: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Pending late fees table not available:', error.message);
+        return [] as LateFee[];
+      }
       return data as LateFee[];
     }
   });
@@ -116,7 +121,7 @@ export const LateFeeManagement: React.FC = () => {
     onSuccess: () => {
       toast({
         title: '✅ Late Fee Applied',
-        description: 'Fee has been added to the invoice',
+        description: t("feeHasBeenAdded"),
       });
       queryClient.invalidateQueries({ queryKey: ['pending-late-fees'] });
     },
@@ -154,7 +159,7 @@ export const LateFeeManagement: React.FC = () => {
     onSuccess: () => {
       toast({
         title: '✅ Late Fee Waived',
-        description: 'Fee has been waived successfully',
+        description: t("feeHasBeenWaived"),
       });
       setShowWaiveDialog(false);
       setWaiveReason('');

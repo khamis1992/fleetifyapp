@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import {
   Upload,
   FileText,
@@ -47,7 +48,9 @@ import {
 import { useViolationMatching, useViolationSave, useViolationEnrichment, EnrichableViolation } from '@/hooks/useViolationMatching';
 import { loadPDFWorker } from '@/lib/pdfWorker';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const TrafficViolationPDFImport: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingResult, setProcessingResult] = useState<ImportProcessingResult | null>(null);
@@ -141,7 +144,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
       if (file.type === 'application/pdf') {
         toast({
           title: '📄 Reading PDF file...',
-          description: 'Extracting text from file',
+          description: t("extractingTextFromFile"),
         });
 
         // Extract text from PDF
@@ -212,7 +215,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
       if (err.message === 'FALLBACK_TO_IMAGES' && file.type === 'application/pdf') {
         toast({
           title: '📸 Converting PDF to images...',
-          description: 'Converting file to images for visual analysis',
+          description: t("convertingFileToImages"),
         });
 
         const images = await convertPDFToImages(file);
@@ -255,8 +258,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const processFiles = async () => {
     if (uploadedFiles.length === 0) {
       toast({
-        title: "Error",
-        description: "Please upload a file (image or PDF) first",
+        title: t("error"),
+        description: t("pleaseUploadAFile"),
         variant: "destructive"
       });
       return;
@@ -278,7 +281,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
         } catch (error: unknown) {
           console.error(`Failed to process file ${file.name}:`, error);
           toast({
-            title: "Warning",
+            title: t("warning"),
             description: `Failed to process file ${file.name}: ${error.message}`,
             variant: "destructive"
           });
@@ -316,13 +319,13 @@ export const TrafficViolationPDFImport: React.FC = () => {
       }
 
       toast({
-        title: "Data extracted successfully",
+        title: t("dataExtractedSuccessfully"),
         description: `Extracted ${result.total_extracted} violations, ${result.successful_matches} matched to vehicles`,
       });
 
     } catch (error: unknown) {
       toast({
-        title: "Processing error",
+        title: t("processingError"),
         description: `Failed to process files: ${error.message}`,
         variant: "destructive"
       });
@@ -388,8 +391,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
   const saveSelectedViolations = async () => {
     if (!processingResult || selectedViolations.size === 0) {
       toast({
-        title: "Error",
-        description: "Please select violations to save",
+        title: t("error"),
+        description: t("pleaseSelectViolationsTo"),
         variant: "destructive"
       });
       return;
@@ -407,7 +410,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
     );
 
     toast({
-      title: "Saved successfully",
+      title: t("savedSuccessfully"),
       description: `Saved ${result.success} violations to the system${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
     });
 
@@ -428,8 +431,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
 
     if (supportedFiles.length !== acceptedFiles.length) {
       toast({
-        title: "Warning",
-        description: "Only PDF and image files accepted (JPG, PNG, GIF, WEBP)",
+        title: t("warning"),
+        description: t("onlyPdfAndImage"),
         variant: "destructive"
       });
     }
@@ -506,12 +509,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
                 <Database className="h-4 w-4 ml-1" />
                 إكمال البيانات ({enrichableViolations.length})
               </TabsTrigger>
-              <TabsTrigger value="review" disabled={!processingResult}>
-                Review & Save
-              </TabsTrigger>
-              <TabsTrigger value="stats" disabled={!processingResult}>
-                Statistics
-              </TabsTrigger>
+              <TabsTrigger value="review" disabled={!processingResult}>{t("reviewSave")}</TabsTrigger>
+              <TabsTrigger value="stats" disabled={!processingResult}>{t("statistics")}</TabsTrigger>
             </TabsList>
 
             {/* Upload Tab */}
@@ -525,11 +524,11 @@ export const TrafficViolationPDFImport: React.FC = () => {
                 <input {...getInputProps()} />
                 <FileText className="h-12 w-12 mx-auto mb-4 text-slate-400" />
                 {isDragActive ? (
-                  <p className="text-blue-600">Drag files here...</p>
+                  <p className="text-blue-600">{t("dragFilesHere")}</p>
                 ) : (
                   <div>
-                    <p className="text-lg font-medium mb-2">Drag files here or click to select</p>
-                    <p className="text-sm text-slate-500">Supports PDF and images (JPG, PNG, GIF, WEBP)</p>
+                    <p className="text-lg font-medium mb-2">{t("dragFilesHereOr")}</p>
+                    <p className="text-sm text-slate-500">{t("supportsPdfAndImages")}</p>
                   </div>
                 )}
               </div>
@@ -537,7 +536,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
               {/* Uploaded files list */}
               {uploadedFiles.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium">Uploaded Files ({uploadedFiles.length})</h4>
+                  <h4 className="font-medium">{t("uploadedFilesUploadedfileslength")}</h4>
                   {uploadedFiles.map((file, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -604,8 +603,8 @@ export const TrafficViolationPDFImport: React.FC = () => {
               {(isProcessing || isMatching) && (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                  <p className="text-lg font-medium">Extracting data from files...</p>
-                  <p className="text-sm text-slate-500 mt-2">Please wait, this may take a few minutes</p>
+                  <p className="text-lg font-medium">{t("extractingDataFromFiles")}</p>
+                  <p className="text-sm text-slate-500 mt-2">{t("pleaseWaitThisMay")}</p>
                 </div>
               )}
             </TabsContent>
@@ -618,7 +617,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                   {processingResult.header && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-base">Document Information</CardTitle>
+                        <CardTitle className="text-base">{t("documentInformation")}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -651,7 +650,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <FileText className="h-5 w-5 text-blue-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.total_extracted}</p>
-                            <p className="text-sm text-slate-600">Total</p>
+                            <p className="text-sm text-slate-600">{t("total")}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -663,7 +662,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <CheckCircle className="h-5 w-5 text-green-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.successful_matches}</p>
-                            <p className="text-sm text-slate-600">Matched</p>
+                            <p className="text-sm text-slate-600">{t("matched")}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -675,7 +674,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <Copy className="h-5 w-5 text-orange-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.duplicates_found}</p>
-                            <p className="text-sm text-slate-600">Duplicates</p>
+                            <p className="text-sm text-slate-600">{t("duplicates")}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -687,7 +686,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <AlertTriangle className="h-5 w-5 text-red-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.errors}</p>
-                            <p className="text-sm text-slate-600">Errors</p>
+                            <p className="text-sm text-slate-600">{t("errors")}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -699,7 +698,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                           <DollarSign className="h-5 w-5 text-orange-600" />
                           <div>
                             <p className="text-2xl font-bold">{processingResult.total_amount.toFixed(2)}</p>
-                            <p className="text-sm text-slate-600">Total (QR)</p>
+                            <p className="text-sm text-slate-600">{t("totalQr")}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -741,24 +740,24 @@ export const TrafficViolationPDFImport: React.FC = () => {
                   {/* Violations table */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Extracted Violations</CardTitle>
+                      <CardTitle>{t("extractedViolations")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="w-12">Select</TableHead>
+                              <TableHead className="w-12">{t("select")}</TableHead>
                               <TableHead>Ref#</TableHead>
-                              <TableHead>Date & Time</TableHead>
-                              <TableHead>Plate</TableHead>
-                              <TableHead>Location</TableHead>
+                              <TableHead>{t("dateTime")}</TableHead>
+                              <TableHead>{t("plate")}</TableHead>
+                              <TableHead>{t("location")}</TableHead>
                               <TableHead>Type</TableHead>
-                              <TableHead>Customer</TableHead>
-                              <TableHead>Contract</TableHead>
-                              <TableHead>Confidence</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead>Status</TableHead>
+                              <TableHead>{t("customer")}</TableHead>
+                              <TableHead>{t("contract")}</TableHead>
+                              <TableHead>{t("confidence")}</TableHead>
+                              <TableHead>{t("amount")}</TableHead>
+                              <TableHead>{t("status")}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -847,9 +846,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                                         violation.status === 'error' ? 'Error' : 'Extracted'}
                                     </Badge>
                                     {violation.is_duplicate && (
-                                      <Badge variant="outline" className="text-xs">
-                                        Duplicate
-                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">{t("duplicate")}</Badge>
                                     )}
                                     {violation.errors.length > 0 && (
                                       <div className="text-xs text-red-600">
@@ -1009,7 +1006,7 @@ export const TrafficViolationPDFImport: React.FC = () => {
                     violations={processingResult.violations}
                     onExport={(format) => {
                       toast({
-                        title: "Export Report",
+                        title: t("exportReport"),
                         description: `Report will be exported in ${format} format soon`,
                       });
                     }}

@@ -38,11 +38,14 @@ import {
   FileWarning,
   Target,
   X,
+  Sparkles,
+  CircleDot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTourGuide } from '@/components/tour-guide';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // === Types ===
 interface SubItem {
   id: string;
@@ -199,7 +202,9 @@ const groupedNavigation = navigation.reduce((acc, item) => {
 }, {} as Record<string, NavItem[]>);
 
 // === Main Component ===
-const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMobile }) => {
+const BentoSidebar: React.FC<BentoSidebarProps> = ({
+  isMobile = false, onCloseMobile }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -213,13 +218,13 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
   const [recentPages, setRecentPages] = useState<Array<{label: string; href: string; icon: React.ElementType}>>([]);
   const { startTour } = useTourGuide();
 
-  const allNavItems = navigation.flatMap(item => 
+  const allNavItems = navigation.flatMap(item =>
     item.children ? [item, ...item.children] : [item]
   );
 
   useEffect(() => {
-    const current = allNavItems.find(item => 
-      location.pathname === item.href || 
+    const current = allNavItems.find(item =>
+      location.pathname === item.href ||
       location.pathname.startsWith(item.href + "/")
     );
     if (current) {
@@ -243,7 +248,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
     );
   };
 
-  const isActiveLink = (href: string) => 
+  const isActiveLink = (href: string) =>
     location.pathname === href || location.pathname.startsWith(href + '/');
 
   const isParentActive = (children?: SubItem[]) =>
@@ -254,8 +259,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
     navigate('/auth');
   };
 
-  const userName = (user?.profile?.first_name && user?.profile?.last_name 
-    ? `${user.profile.first_name} ${user.profile.last_name}` 
+  const userName = (user?.profile?.first_name && user?.profile?.last_name
+    ? `${user.profile.first_name} ${user.profile.last_name}`
     : user?.email?.split('@')[0]) || 'مستخدم';
   const userInitials = userName.slice(0, 2).toUpperCase();
 
@@ -272,25 +277,39 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           <button
             onClick={() => toggleExpanded(item.id)}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+              'group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300',
+              'hover:bg-slate-100/80 dark:hover:bg-neutral-800/60',
               isParentItemActive
-                ? 'bg-gradient-to-l from-teal-500/10 to-teal-600/10 text-teal-600 border-r-2 border-teal-500'
-                : isExpanded
-                ? 'bg-slate-100 text-slate-900'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-600 dark:text-neutral-300'
             )}
+            aria-expanded={isExpanded}
           >
-            <item.icon className={cn(
-              'w-5 h-5 flex-shrink-0 transition-colors',
-              isParentItemActive ? 'text-teal-500' : ''
-            )} />
+            {/* Active accent bar */}
+            {isParentItemActive && (
+              <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-l-full bg-gradient-to-b from-teal-400 to-emerald-500" />
+            )}
+            {/* Icon with subtle container */}
+            <span className={cn(
+              'flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300',
+              'bg-slate-100 dark:bg-neutral-800 group-hover:bg-slate-200/80 dark:group-hover:bg-neutral-700',
+              isParentItemActive && 'bg-gradient-to-br from-teal-500/15 to-emerald-500/15 ring-1 ring-teal-500/20'
+            )}>
+              <item.icon className={cn(
+                'w-4 h-4 transition-colors',
+                isParentItemActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-neutral-400'
+              )} />
+            </span>
             {(!collapsed || isMobile) && (
               <>
-                <span className="flex-1 text-right">{item.label}</span>
+                <span className={cn('flex-1 text-right transition-colors', isParentItemActive && 'font-semibold')}>
+                  {item.label}
+                </span>
                 <ChevronDown
                   className={cn(
-                    'w-4 h-4 transition-transform duration-200',
-                    isExpanded && 'rotate-180'
+                    'w-4 h-4 text-slate-400 transition-transform duration-300',
+                    isExpanded && 'rotate-180',
+                    isParentItemActive && 'text-teal-500'
                   )}
                 />
               </>
@@ -302,8 +321,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden mr-2 mt-1 space-y-0.5 border-r-2 border-neutral-100 dark:border-neutral-800"
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="overflow-hidden mr-3 mt-1 space-y-0.5 border-r-2 border-slate-100 dark:border-neutral-800"
               >
                 {item.children!.map((child) => {
                   const ChildIcon = child.icon;
@@ -314,16 +333,22 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                         to={child.href}
                         onClick={handleLinkClick}
                         className={cn(
-                          'flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-200',
+                          'group flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-300 relative',
                           isChildActive
-                            ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/20 font-medium'
-                            : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-white'
+                            ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/25 font-semibold'
+                            : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800/60 hover:text-slate-800 dark:hover:text-neutral-100'
                         )}
                       >
-                        <ChildIcon className={cn(
-                          'w-4 h-4 flex-shrink-0',
-                          isChildActive ? 'text-white' : 'text-slate-400'
-                        )} />
+                        {/* Active connector dot */}
+                        {isChildActive && (
+                          <span className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-teal-500 ring-2 ring-white dark:ring-neutral-900" />
+                        )}
+                        <span className="flex-shrink-0 flex items-center justify-center">
+                          <ChildIcon className={cn(
+                            'w-4 h-4 transition-transform group-hover:scale-110',
+                            isChildActive ? 'text-white' : 'text-slate-400 dark:text-neutral-500'
+                          )} />
+                        </span>
                         <span>{child.label}</span>
                       </NavLink>
                     </li>
@@ -342,17 +367,31 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
         to={item.href!}
         onClick={handleLinkClick}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+          'group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300',
           isDirectActive
-            ? 'bg-gradient-to-l from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25'
-            : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-800 dark:hover:text-white'
+            ? 'bg-gradient-to-l from-teal-500 via-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/20'
+            : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100/80 dark:hover:bg-neutral-800/60 hover:text-slate-900 dark:hover:text-white'
         )}
       >
-        <item.icon className={cn(
-          'w-5 h-5 flex-shrink-0',
-          isDirectActive ? 'text-white' : ''
-        )} />
-        {(!collapsed || isMobile) && <span>{item.label}</span>}
+        {/* Active accent bar */}
+        {isDirectActive && (
+          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-7 rounded-l-full bg-white/40" />
+        )}
+        {/* Icon container */}
+        <span className={cn(
+          'flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300',
+          isDirectActive
+            ? 'bg-white/15'
+            : 'bg-slate-100 dark:bg-neutral-800 group-hover:bg-slate-200/80 dark:group-hover:bg-neutral-700'
+        )}>
+          <item.icon className={cn(
+            'w-4 h-4',
+            isDirectActive ? 'text-white' : 'text-slate-500 dark:text-neutral-400'
+          )} />
+        </span>
+        {(!collapsed || isMobile) && (
+          <span className={cn(isDirectActive && 'font-semibold')}>{item.label}</span>
+        )}
       </NavLink>
     );
   };
@@ -360,104 +399,140 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isMobile ? 288 : (collapsed ? 72 : 260) }}
+      animate={{ width: isMobile ? 288 : (collapsed ? 76 : 264) }}
       className={cn(
-        // ✅ Fixed positioning - يبقى ثابتاً عند التمرير
         "fixed top-0 right-0 h-screen z-40",
-        "bg-white dark:bg-neutral-900 flex flex-col shadow-sm",
-        isMobile ? "border-none" : "border-l border-slate-200 dark:border-neutral-800"
+        "flex flex-col bg-white dark:bg-neutral-900",
+        "shadow-[0_0_40px_-12px_rgba(15,118,110,0.18)] dark:shadow-[0_0_40px_-12px_rgba(20,184,166,0.15)]",
+        isMobile ? "border-none" : "border-l border-slate-200/70 dark:border-neutral-800"
       )}
     >
+      {/* Decorative top gradient line */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-l from-teal-500 via-emerald-500 to-transparent" />
+
       {/* === Header: Logo & Collapse Button === */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 dark:border-neutral-800 flex-shrink-0">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100/80 dark:border-neutral-800 flex-shrink-0">
         {(!collapsed || isMobile) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2.5"
           >
-            <div className="w-8 h-8 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">F</span>
+            <div className="relative w-9 h-9 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
+              <span className="text-white font-bold text-lg tracking-tight">F</span>
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-neutral-900" />
             </div>
-            <span className="font-bold text-slate-900 dark:text-white">Fleetify</span>
+            <div className="flex flex-col leading-none">
+              <span className="font-bold text-slate-900 dark:text-white text-base tracking-tight">{t("fleetify")}</span>
+              <span className="text-[9px] text-teal-600 dark:text-teal-400 font-medium mt-0.5 tracking-wider">FLEET MANAGEMENT</span>
+            </div>
           </motion.div>
+        )}
+        {(collapsed && !isMobile) && (
+          <div className="w-9 h-9 mx-auto bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
+            <span className="text-white font-bold text-lg">F</span>
+          </div>
         )}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
+            className={cn(
+              'p-1.5 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400',
+              collapsed && 'absolute left-2 top-4'
+            )}
             title={collapsed ? 'توسيع' : 'تصغير'}
             aria-label={collapsed ? 'توسيع القائمة' : 'تصغير القائمة'}
           >
-            {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+            {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
         )}
       </div>
 
       {/* === Search Trigger === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
+        <div className="px-3 py-2.5 border-b border-slate-100/80 dark:border-neutral-800">
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-neutral-800 text-slate-400 dark:text-neutral-400 text-xs hover:bg-slate-200 dark:hover:bg-neutral-700 transition-colors"
+            className={cn(
+              'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
+              'bg-gradient-to-l from-slate-50 to-slate-100/70 dark:from-neutral-800 dark:to-neutral-800/60',
+              'hover:from-teal-50/60 hover:to-emerald-50/40 dark:hover:from-neutral-800 dark:hover:to-neutral-700',
+              'border border-slate-200/60 dark:border-neutral-700/60 hover:border-teal-300/50',
+              'text-slate-400 dark:text-neutral-400 text-xs transition-all duration-300'
+            )}
             aria-label="بحث سريع"
           >
-            <Search className="w-3.5 h-3.5" />
-            <span className="flex-1 text-right">بحث...</span>
-            <kbd className="text-[10px] bg-white dark:bg-neutral-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-neutral-600 font-mono">⌘K</kbd>
+            <Search className="w-3.5 h-3.5 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
+            <span className="flex-1 text-right">بحث سريع...</span>
+            <kbd className="text-[10px] bg-white dark:bg-neutral-700 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-neutral-600 font-mono text-slate-500 dark:text-neutral-300 shadow-sm">⌘K</kbd>
           </button>
         </div>
       )}
 
       {/* === Recent Pages === */}
       {(!collapsed || isMobile) && recentPages.length > 0 && (
-        <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
-          <div className="flex items-center justify-between mb-1 px-1">
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">المؤخر</span>
-            <button 
-              onClick={() => setRecentPages([])} 
-              className="text-slate-300 hover:text-slate-500 dark:text-neutral-600 dark:hover:text-neutral-400"
+        <div className="px-3 py-2 border-b border-slate-100/80 dark:border-neutral-800">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider flex items-center gap-1">
+              <CircleDot className="w-2.5 h-2.5 text-teal-400" />
+              المؤخر
+            </span>
+            <button
+              onClick={() => setRecentPages([])}
+              className="text-slate-300 hover:text-slate-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors"
               aria-label="مسح الصفحات الأخيرة"
             >
               <X className="w-3 h-3" />
             </button>
           </div>
-          {recentPages.map(page => (
-            <Link 
-              key={page.href} 
-              to={page.href} 
-              onClick={handleLinkClick}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-neutral-200 transition-colors"
-            >
-              {page.icon && <page.icon className="w-3.5 h-3.5" />}
-              {page.label}
-            </Link>
-          ))}
+          <div className="space-y-0.5">
+            {recentPages.map(page => (
+              <Link
+                key={page.href}
+                to={page.href}
+                onClick={handleLinkClick}
+                className="group flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800/60 hover:text-teal-600 dark:hover:text-teal-400 transition-all"
+              >
+                {page.icon && <page.icon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />}
+                {page.label}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
       {/* === Start Tour Button === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
+        <div className="px-3 py-2 border-b border-slate-100/80 dark:border-neutral-800">
           <button
             onClick={() => startTour('dashboard-overview')}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium transition-colors shadow-sm min-h-[44px]"
+            className={cn(
+              'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
+              'bg-gradient-to-l from-teal-500/90 via-emerald-500/90 to-teal-600/90',
+              'hover:from-teal-600 hover:via-emerald-600 hover:to-teal-700',
+              'text-white text-xs font-semibold transition-all duration-300',
+              'shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30',
+              'hover:scale-[1.02]'
+            )}
           >
-            <span className="flex-1 text-right">🎓 ابدأ جولة تعريفية</span>
+            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="flex-1 text-right">ابدأ جولة تعريفية</span>
           </button>
         </div>
       )}
 
       {/* === Navigation with Categories === */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
         {Object.entries(groupedNavigation).map(([category, items], categoryIndex) => (
-          <div key={category} className={cn(categoryIndex > 0 && 'mt-4')}>
+          <div key={category} className={cn(categoryIndex > 0 && 'mt-5')}>
             {/* Category Label */}
             {categoryLabels[category] && (!collapsed || isMobile) && (
-              <div className="px-3 py-2 mb-1">
+              <div className="flex items-center gap-2 px-2 py-1.5 mb-1.5">
+                <span className="h-px w-4 bg-gradient-to-l from-slate-300 to-transparent dark:from-neutral-600" />
                 <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
                   {categoryLabels[category]}
                 </span>
+                <span className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent dark:via-neutral-700/60" />
               </div>
             )}
 
@@ -469,42 +544,58 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
             </ul>
 
             {/* Separator between categories */}
-            {categoryIndex < Object.keys(groupedNavigation).length - 1 && (
+            {categoryIndex < Object.keys(groupedNavigation).length - 1 && (collapsed && !isMobile) && (
               <div className="mt-4 mx-3 border-b border-slate-100 dark:border-neutral-800" />
             )}
           </div>
         ))}
       </nav>
 
-      {/* === Theme Toggle === */}
+      {/* === Footer: Theme Toggle + User Profile Card === */}
       {!isMobile && (
-        <div className="px-3 py-2 border-t border-slate-100 dark:border-neutral-800">
+        <div className="px-3 py-1.5 border-t border-slate-100/80 dark:border-neutral-800 flex items-center justify-between">
           <ThemeToggle />
+          {(!collapsed) && (
+            <span className="text-[10px] text-slate-400 dark:text-neutral-500 uppercase tracking-wider">النظام</span>
+          )}
         </div>
       )}
 
-      {/* === Compact User Profile === */}
-      <div className="p-2 border-t border-slate-100 dark:border-neutral-800 flex-shrink-0 bg-slate-50/50 dark:bg-neutral-900/50">
+      <div className="p-2.5 border-t border-slate-100/80 dark:border-neutral-800 flex-shrink-0 bg-gradient-to-l from-slate-50/80 to-teal-50/30 dark:from-neutral-900 dark:to-neutral-900">
         <div
           className={cn(
-            'flex items-center gap-2 p-2 rounded-lg',
+            'group relative flex items-center gap-2.5 p-2 rounded-xl',
+            'bg-white dark:bg-neutral-800/40 shadow-sm border border-slate-200/60 dark:border-neutral-700/40',
+            'hover:border-teal-300/40 hover:shadow-md transition-all duration-300',
             collapsed && !isMobile && 'justify-center'
           )}
         >
+          {/* Online status dot */}
+          {(!collapsed || isMobile) && (
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-neutral-900 z-10" />
+          )}
+
           {/* Avatar - Clickable to go to Profile */}
           <button
             onClick={() => {
               handleLinkClick();
               navigate('/profile');
             }}
-            className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-lg shadow-teal-500/30 hover:from-teal-600 hover:to-teal-700 transition-all cursor-pointer"
+            className={cn(
+              'relative flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 transition-all cursor-pointer',
+              'w-9 h-9 rounded-full',
+              'bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600',
+              'shadow-lg shadow-teal-500/30 hover:from-teal-600 hover:to-emerald-700 hover:scale-105'
+            )}
             title="الملف الشخصي"
             aria-label="الملف الشخصي"
           >
-            {userInitials}
+            <span className="ring-2 ring-white/30 rounded-full w-full h-full flex items-center justify-center">
+              {userInitials}
+            </span>
           </button>
 
-          {/* User Info + Logout in one row */}
+          {/* User Info + Logout */}
           {(!collapsed || isMobile) && (
             <div className="flex-1 flex items-center justify-between min-w-0">
               <button
@@ -512,19 +603,22 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
                   handleLinkClick();
                   navigate('/profile');
                 }}
-                className="min-w-0 text-right hover:bg-slate-100 rounded-md p-1 -m-1 transition-colors cursor-pointer"
+                className="min-w-0 text-right transition-colors cursor-pointer"
                 title="الملف الشخصي"
               >
-                <p className="text-xs font-medium text-slate-800 truncate">{userName}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                <p className="text-xs font-semibold text-slate-800 dark:text-neutral-100 truncate">{userName}</p>
+                <p className="text-[10px] text-slate-400 dark:text-neutral-500 truncate">{user?.email}</p>
               </button>
               <button
                 onClick={handleSignOut}
-                className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                className={cn(
+                  'p-2 rounded-lg transition-all duration-300 flex-shrink-0',
+                  'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
+                )}
                 title="تسجيل الخروج"
                 aria-label="تسجيل الخروج"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -533,11 +627,11 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({ isMobile = false, onCloseMo
           {collapsed && !isMobile && (
             <button
               onClick={handleSignOut}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="absolute -top-1 -left-1 p-1.5 rounded-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 shadow-sm text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
               title="تسجيل الخروج"
               aria-label="تسجيل الخروج"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3 h-3" />
             </button>
           )}
         </div>

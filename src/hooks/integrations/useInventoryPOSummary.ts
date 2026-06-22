@@ -52,26 +52,29 @@ export const useInventoryPOSummary = (filters?: InventoryPOSummaryFilters) => {
       }
 
       try {
-        // Build query
-        let query = supabase
-          .from('inventory_purchase_order_summary')
-          .select('*');
+          // Build query — fetch all columns, filter in memory to avoid
+          // column-name mismatches with the view schema
+          let query = supabase
+            .from('inventory_purchase_order_summary')
+            .select('*');
 
-        // Apply filters
-        if (filters?.has_pending_po) {
-          query = query.gt('pending_quantity', 0);
-        }
+          // Execute query
+          const { data, error } = await query;
 
-        if (filters?.min_pending_quantity) {
-          query = query.gte('pending_quantity', filters.min_pending_quantity);
-        }
+          if (error) throw error;
 
-        // Execute query
-        const { data, error } = await query;
+          let results = (data || []) as InventoryPOSummary[];
 
-        if (error) throw error;
+          // Apply filters in memory (the view may not have pending_quantity as a column)
+          if (filters?.has_pending_po) {
+            results = results.filter(item => (item.pending_quantity ?? 0) > 0);
+          }
 
-        return (data || []) as InventoryPOSummary[];
+          if (filters?.min_pending_quantity) {
+            results = results.filter(item => (item.pending_quantity ?? 0) >= filters.min_pending_quantity!);
+          }
+
+          return results;
       } catch (error) {
         console.error('Error fetching inventory PO summary:', error);
         throw error;

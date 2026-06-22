@@ -8,10 +8,12 @@
  * @version 1.0.0
  */
 
+import i18n from 'i18next';
 import React, { useEffect, useState, useMemo } from 'react';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import { initializeI18n, SupportedLanguage, getCurrentLanguage } from '../../lib/i18n/config';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface I18nProviderProps {
   children: React.ReactNode;
   language?: SupportedLanguage;
@@ -31,6 +33,7 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
   enableIconMirroring = true,
   enableMixedContent = true
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState<SupportedLanguage>(fallbackLanguage);
@@ -219,8 +222,7 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
   // Memoize i18n instance
   const i18nInstance = useMemo(() => {
     try {
-      const i18n = require('i18next');
-      return i18n.default || i18n;
+      return i18n;
     } catch (error) {
       console.error('Failed to load i18next:', error);
       return null;
@@ -233,18 +235,14 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
       <div className="flex items-center justify-center min-h-screen bg-slate-100">
         <div className="text-center">
           <div className="text-red-500 text-xl mb-4">⚠️</div>
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">
-            Internationalization Error
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">{t("internationalizationError")}</h2>
           <p className="text-slate-600 mb-4">
             Failed to initialize internationalization: {initError}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Reload Page
-          </button>
+          >{t("reloadPage")}</button>
         </div>
       </div>
     );
@@ -256,7 +254,7 @@ const I18nProvider: React.FC<I18nProviderProps> = ({
       <div className="flex items-center justify-center min-h-screen bg-slate-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading internationalization...</p>
+          <p className="text-slate-600">{t("loadingInternationalization")}</p>
         </div>
       </div>
     );

@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, Key, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const SystemSecuritySettings: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     enforcePasswordPolicy: true,
@@ -26,16 +28,16 @@ export const SystemSecuritySettings: React.FC = () => {
 
   const handleSave = () => {
     toast({
-      title: "Security settings updated",
-      description: "System security configuration has been saved successfully.",
+      title: t("securitySettingsUpdated"),
+      description: t("systemSecurityConfigurationHas"),
     });
   };
 
   const securityRules = [
-    { name: 'Password Policy', status: 'active', description: 'Minimum 8 characters with special chars' },
+    { name: 'Password Policy', status: 'active', description: t("minimum8CharactersWith") },
     { name: 'Session Management', status: 'active', description: '24-hour automatic timeout' },
-    { name: 'Failed Login Protection', status: 'active', description: 'Account lockout after 5 attempts' },
-    { name: 'Audit Logging', status: 'active', description: 'All system actions are logged' },
+    { name: 'Failed Login Protection', status: 'active', description: t("accountLockoutAfter5") },
+    { name: 'Audit Logging', status: 'active', description: t("allSystemActionsAre") },
   ];
 
   return (
@@ -68,18 +70,14 @@ export const SystemSecuritySettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            Authentication & Access Control
-          </CardTitle>
-          <CardDescription>
-            Configure system-wide authentication policies and access controls
-          </CardDescription>
+            <Key className="h-5 w-5 text-primary" />{t("authenticationAccessControl")}</CardTitle>
+          <CardDescription>{t("configureSystemwideAuthenticationPolicies")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password-policy">Enforce Strong Password Policy</Label>
+                <Label htmlFor="password-policy">{t("enforceStrongPasswordPolicy")}</Label>
                 <Switch
                   id="password-policy"
                   checked={settings.enforcePasswordPolicy}
@@ -90,7 +88,7 @@ export const SystemSecuritySettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="min-length">Minimum Password Length</Label>
+                <Label htmlFor="min-length">{t("minimumPasswordLength")}</Label>
                 <Input
                   id="min-length"
                   type="number"
@@ -102,7 +100,7 @@ export const SystemSecuritySettings: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="special-chars">Require Special Characters</Label>
+                <Label htmlFor="special-chars">{t("requireSpecialCharacters")}</Label>
                 <Switch
                   id="special-chars"
                   checked={settings.requireSpecialChars}
@@ -113,7 +111,7 @@ export const SystemSecuritySettings: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="require-numbers">Require Numbers</Label>
+                <Label htmlFor="require-numbers">{t("requireNumbers")}</Label>
                 <Switch
                   id="require-numbers"
                   checked={settings.requireNumbers}
@@ -126,7 +124,7 @@ export const SystemSecuritySettings: React.FC = () => {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="two-factor">Enable Two-Factor Authentication</Label>
+                <Label htmlFor="two-factor">{t("enableTwofactorAuthentication")}</Label>
                 <Switch
                   id="two-factor"
                   checked={settings.enableTwoFactor}
@@ -137,7 +135,7 @@ export const SystemSecuritySettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="session-timeout">Session Timeout (hours)</Label>
+                <Label htmlFor="session-timeout">{t("sessionTimeoutHours")}</Label>
                 <Select value={settings.sessionTimeout} onValueChange={(value) => 
                   setSettings(prev => ({ ...prev, sessionTimeout: value }))
                 }>
@@ -154,7 +152,7 @@ export const SystemSecuritySettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="failed-logins">Max Failed Login Attempts</Label>
+                <Label htmlFor="failed-logins">{t("maxFailedLoginAttempts")}</Label>
                 <Input
                   id="failed-logins"
                   type="number"
@@ -166,7 +164,7 @@ export const SystemSecuritySettings: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="anonymous">Allow Anonymous Users</Label>
+                <Label htmlFor="anonymous">{t("allowAnonymousUsers")}</Label>
                 <Switch
                   id="anonymous"
                   checked={settings.allowAnonymousUsers}
@@ -184,20 +182,14 @@ export const SystemSecuritySettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            Audit & Monitoring
-          </CardTitle>
-          <CardDescription>
-            Configure system monitoring and audit logging settings
-          </CardDescription>
+            <Shield className="h-5 w-5 text-primary" />{t("auditMonitoring")}</CardTitle>
+          <CardDescription>{t("configureSystemMonitoringAnd")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="audit-log">Enable System Audit Logging</Label>
-              <p className="text-sm text-muted-foreground">
-                Log all system actions and user activities
-              </p>
+              <Label htmlFor="audit-log">{t("enableSystemAuditLogging")}</Label>
+              <p className="text-sm text-muted-foreground">{t("logAllSystemActions")}</p>
             </div>
             <Switch
               id="audit-log"
@@ -210,10 +202,8 @@ export const SystemSecuritySettings: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="auto-signup">Auto-confirm Email Signups</Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically confirm user email addresses upon signup
-              </p>
+              <Label htmlFor="auto-signup">{t("autoconfirmEmailSignups")}</Label>
+              <p className="text-sm text-muted-foreground">{t("automaticallyConfirmUserEmail")}</p>
             </div>
             <Switch
               id="auto-signup"
@@ -229,9 +219,7 @@ export const SystemSecuritySettings: React.FC = () => {
       {/* Save Button */}
       <div className="flex justify-end">
         <Button onClick={handleSave} className="flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          Save Security Settings
-        </Button>
+          <Shield className="h-4 w-4" />{t("saveSecuritySettings")}</Button>
       </div>
     </div>
   );

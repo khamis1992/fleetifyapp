@@ -168,7 +168,7 @@ describe('ContractHeader', () => {
     const onPrint = vi.fn();
 
     render(
-      < <ContractHeader
+      <ContractHeader
         contract={mockContract}
         onEdit={vi.fn()}
         onPrint={onPrint}

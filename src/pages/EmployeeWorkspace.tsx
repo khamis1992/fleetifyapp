@@ -50,11 +50,11 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import {
-  QuickPaymentDialog,
   CallLogDialog,
   ScheduleFollowupDialog,
   AddNoteDialog,
 } from '@/components/employee/dialogs';
+import { QuickPaymentDialog } from '@/components/finance/QuickPaymentDialog';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { exportEmployeeWorkspaceReport } from '@/utils/exports/employeeReport';
 import { NotificationBell } from '@/components/notifications/NotificationBell';

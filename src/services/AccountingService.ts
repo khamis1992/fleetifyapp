@@ -225,11 +225,11 @@ class AccountingService {
       // حساب الرصيد من journal_entry_lines
       const { data: lines } = await supabase
         .from('journal_entry_lines')
-        .select('debit, credit')
+        .select('debit_amount, credit_amount')
         .eq('account_id', accountId);
 
-      const debitTotal = lines?.reduce((sum, line) => sum + (line.debit || 0), 0) || 0;
-      const creditTotal = lines?.reduce((sum, line) => sum + (line.credit || 0), 0) || 0;
+      const debitTotal = lines?.reduce((sum, line) => sum + (line.debit_amount || 0), 0) || 0;
+      const creditTotal = lines?.reduce((sum, line) => sum + (line.credit_amount || 0), 0) || 0;
       const balance = creditTotal - debitTotal;
 
       return {

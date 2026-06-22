@@ -114,7 +114,6 @@ const MirroredIcon = forwardRef<any, MirroredIconProps>(
     },
     ref
   ) => {
-    const { shouldMirrorIcon, rtl, textDirection } = useFleetifyTranslation();
 
     // Determine if icon should be mirrored
     const shouldMirror = useMemo(() => {
@@ -209,7 +208,7 @@ MirroredIcon.displayName = 'MirroredIcon';
 
 // Hook for checking if an icon should be mirrored
 export const useIconMirror = (iconName?: string) => {
-  const { shouldMirrorIcon } = useFleetifyTranslation();
+  const { t, shouldMirrorIcon, rtl, textDirection } = useFleetifyTranslation();
 
   const shouldMirror = useMemo(() => {
     if (!iconName) return false;
@@ -228,7 +227,6 @@ export const withMirroring = <P extends object>(
 ) => {
   const MirroredWrapper = forwardRef<any, P & { iconName?: string }>(
     ({ iconName, ...props }, ref) => {
-      const { shouldMirrorIcon } = useFleetifyTranslation();
       const shouldMirror = iconName ? RTL_MIRROR_ICONS.has(iconName.toLowerCase()) : false;
 
       const mirroredProps = useMemo(() => {

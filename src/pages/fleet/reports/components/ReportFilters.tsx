@@ -35,6 +35,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { DateFilterPeriod, ReportFilters as IReportFilters, ExportFormat } from '../types/reports.types';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ReportFiltersProps {
   filters: IReportFilters;
   onFiltersChange: (filters: IReportFilters) => void;
@@ -53,7 +54,8 @@ const periodOptions: { value: DateFilterPeriod; label: string }[] = [
   { value: 'custom', label: 'فترة مخصصة' },
 ];
 
-const exportOptions: { value: ExportFormat; label: string; icon: string }[] = [
+const exportOptions: {
+   value: ExportFormat; label: string; icon: string }[] = [
   { value: 'pdf', label: 'PDF', icon: '📄' },
   { value: 'excel', label: 'Excel', icon: '📊' },
   { value: 'csv', label: 'CSV', icon: '📋' },
@@ -67,6 +69,7 @@ export const ReportFilters: React.FC<ReportFiltersProps> = ({
   isLoading,
   isDark,
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);

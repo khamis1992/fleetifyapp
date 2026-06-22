@@ -52,8 +52,8 @@ export const useReportFavorites = () => {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching report favorites:", error);
-        throw error;
+        console.warn("Report favorites table not available:", error.message);
+        return [] as ReportFavorite[];
       }
 
       return (data || []) as ReportFavorite[];

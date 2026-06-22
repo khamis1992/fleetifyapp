@@ -102,8 +102,10 @@ import {
 } from './tabs';
 import type { CustomerDocument } from './tabs';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== Main Component =====
 const CustomerDetailsPageNew = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -617,9 +619,7 @@ const CustomerDetailsPageNew = () => {
                     <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{customerName}</h1>
                     {customer.is_blacklisted && (
                       <Badge className="bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        VIP
-                      </Badge>
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />{t("vip")}</Badge>
                     )}
                   </div>
                   <p className="text-sm text-slate-500">{'عميل'}</p>

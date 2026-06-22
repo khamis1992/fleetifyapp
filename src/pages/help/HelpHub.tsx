@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   HelpCircle,
   BookOpen,
@@ -173,6 +174,7 @@ const shortcuts: Shortcut[] = [
 // ==========================================
 
 export default function HelpHub() {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [faqCategory, setFaqCategory] = useState('all');
@@ -500,7 +502,7 @@ export default function HelpHub() {
                 <div className="border rounded-lg p-3">
                   <Printer className="h-5 w-5 text-slate-500 mb-2" />
                   <h5 className="font-semibold text-sm">الطباعة والتصدير</h5>
-                  <p className="text-xs text-muted-foreground">PDF, Excel, CSV</p>
+                  <p className="text-xs text-muted-foreground">{t("pdfExcelCsv")}</p>
                 </div>
               </div>
 

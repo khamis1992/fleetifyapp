@@ -121,7 +121,9 @@ export const useLatePaymentCustomers = () => {
 
             lateCustomers.push({
               customer_id: contract.customer_id,
-              customer_name: (contract.customers as any)?.full_name || 'غير معروف',
+              customer_name: (contract.customers as any)?.customer_type === 'individual'
+                ? `${(contract.customers as any)?.first_name || ''} ${(contract.customers as any)?.last_name || ''}`.trim() || 'غير معروف'
+                : (contract.customers as any)?.company_name || 'غير معروف',
               customer_phone: (contract.customers as any)?.phone,
               customer_email: (contract.customers as any)?.email,
               contract_id: contract.id,

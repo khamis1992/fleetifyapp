@@ -61,6 +61,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Tesseract from 'tesseract.js';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // استخدام Customer OCR عبر Supabase Edge Function (Google Cloud Vision)
 interface CustomerOCRResult {
   success: boolean;
@@ -391,7 +392,9 @@ const parseDate = (dateStr: string): string | undefined => {
 };
 
 // مكون عرض البيانات المستخرجة (يدعم الإنجليزية والعربية)
-const ExtractedDataPreview: React.FC<{ data: ExtractedCustomerData; dataUpdated?: boolean }> = ({ data, dataUpdated }) => {
+const ExtractedDataPreview: React.FC<{
+  data: ExtractedCustomerData; dataUpdated?: boolean }> = ({ data, dataUpdated }) => {
+  const { t } = useFleetifyTranslation("ui");
   const fields = [
     { label: 'رقم البطاقة', value: data.nationalId },
     { label: 'الاسم (EN)', value: data.name },

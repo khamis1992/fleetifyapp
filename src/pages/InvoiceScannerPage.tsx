@@ -24,7 +24,9 @@ import IntelligentInvoiceScanner from '@/components/IntelligentInvoiceScanner';
 import InvoiceScannerAnalytics from '@/components/InvoiceScannerAnalytics';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const InvoiceScannerPage: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [activeTab, setActiveTab] = useState('scanner');
   const [recentScans, setRecentScans] = useState<any[]>([]);
   const { toast } = useToast();
@@ -77,9 +79,7 @@ const InvoiceScannerPage: React.FC = () => {
                 <Brain className="h-8 w-8 text-primary" />
                 ماسح الفواتير الذكي
                 <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                  <Zap className="h-3 w-3 mr-1" />
-                  AI-Powered
-                </Badge>
+                  <Zap className="h-3 w-3 mr-1" />{t("aipowered")}</Badge>
               </h1>
               <p className="text-slate-600 mt-2">
                 نظام متقدم للتعرف الضوئي على النصوص والتطابق الذكي للعملاء باستخدام الذكاء الاصطناعي

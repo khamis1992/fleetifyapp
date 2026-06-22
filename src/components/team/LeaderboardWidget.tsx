@@ -12,15 +12,15 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface LeaderboardWidgetProps {
   limit?: number;
   showTrend?: boolean;
 }
 
-export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
-  limit = 10,
-  showTrend = true,
-}) => {
+export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({ limit = 10,
+  showTrend = true, }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { data: topEmployees, isLoading } = useQuery({
     queryKey: ['leaderboard', limit],
     queryFn: async () => {
@@ -100,9 +100,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
           <Trophy className="w-5 h-5 text-yellow-500" />
           لوحة المتصدرين
         </h3>
-        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-          Top {topEmployees.length}
-        </Badge>
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">{t("topTopemployeeslength")}</Badge>
       </div>
 
       {/* Leaderboard List */}

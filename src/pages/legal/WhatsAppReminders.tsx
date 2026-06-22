@@ -20,7 +20,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import WhatsAppMonitor from '@/components/whatsapp/WhatsAppMonitor';
 import { WhatsAppMessagesReport } from '@/components/whatsapp/WhatsAppMessagesReport';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const WhatsAppReminders: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
@@ -219,15 +221,15 @@ const WhatsAppReminders: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="text-green-600">✓</span>
-                      <span className="text-green-800">Edge Function</span>
+                      <span className="text-green-800">{t("edgeFunction")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-green-600">✓</span>
-                      <span className="text-green-800">Database Migration</span>
+                      <span className="text-green-800">{t("databaseMigration")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-green-600">✓</span>
-                      <span className="text-green-800">React Components</span>
+                      <span className="text-green-800">{t("reactComponents")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-green-600">✓</span>

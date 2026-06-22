@@ -37,7 +37,7 @@ import { useTrafficViolations, TrafficViolation, useDeleteTrafficViolation, useU
 import { useRelinkViolations } from '@/hooks/useRelinkViolations';
 import { TrafficViolationsSmartDashboard } from '@/components/fleet/TrafficViolationsSmartDashboard';
 import { TrafficViolationsAlertsPanel } from '@/components/fleet/TrafficViolationsAlertsPanel';
-import { TrafficViolationSidePanelNew } from '@/components/fleet/TrafficViolationSidePanelNew';
+import { TrafficViolationSidePanel } from '@/components/fleet/TrafficViolationSidePanel';
 import { TrafficViolationReportDialog } from '@/components/fleet/TrafficViolationReportDialog';
 import { TrafficViolationReminderDialog } from '@/components/fleet/TrafficViolationReminderDialog';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -56,7 +56,7 @@ const TrafficViolationPaymentsDialog = lazy(() =>
   import('@/components/fleet/TrafficViolationPaymentsDialog').then(m => ({ default: m.TrafficViolationPaymentsDialog }))
 );
 const TrafficViolationPDFImport = lazy(() =>
-  import('@/components/fleet/TrafficViolationPDFImportRedesigned').then(m => ({ default: m.TrafficViolationPDFImportRedesigned }))
+  import('@/components/fleet/TrafficViolationPDFImport').then(m => ({ default: m.TrafficViolationPDFImport }))
 );
 
 export default function TrafficViolationsRedesigned() {
@@ -434,7 +434,7 @@ export default function TrafficViolationsRedesigned() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 font-sans text-slate-800" dir="rtl">
       
       {/* Side Panel */}
-      <TrafficViolationSidePanelNew
+      <TrafficViolationSidePanel
         violation={selectedViolation}
         open={isSidePanelOpen}
         onClose={() => setIsSidePanelOpen(false)}

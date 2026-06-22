@@ -55,6 +55,7 @@ import { PricingSuggestions } from '@/components/contracts/PricingSuggestions';
 import { AdvancedOptions } from '@/components/ui/collapsible-section';
 import { FormField } from '@/components/ui/form-field';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // === Schema ===
 const contractSchema = z.object({
   customer_id: z.string().min(1, 'يجب اختيار العميل'),
@@ -112,6 +113,7 @@ const StepIndicator: React.FC<{
   totalSteps: number;
   stepTitles: string[];
 }> = ({ currentStep, totalSteps, stepTitles }) => {
+  const { t } = useFleetifyTranslation("ui");
   return (
     <div className="relative">
       {/* Progress bar background */}
@@ -888,15 +890,13 @@ const Step3Review: React.FC<{
 };
 
 // === Main Component ===
-export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({
-  open,
+export const SimpleContractWizard: React.FC<SimpleContractWizardProps> = ({ open,
   onOpenChange,
   onSubmit,
   preselectedCustomerId,
   preselectedVehicleId,
   showAssistant = true,
-  editContract,
-}) => {
+  editContract, }) => {
   const isEditMode = !!editContract;
   const { user } = useAuth();
   const companyId = useCurrentCompanyId();

@@ -11,6 +11,7 @@ import {
 import { useReportFavorites } from '@/hooks/useReportFavorites';
 import { useRecentReports } from '@/hooks/useRecentReports';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 type ReportCategory = 'all' | 'finance' | 'fleet' | 'hr' | 'legal';
 
 interface Report {
@@ -25,27 +26,27 @@ interface Report {
 
 const reports: Report[] = [
   // Finance
-  { id: 'income-statement', name: 'Income Statement', nameAr: 'قائمة الدخل', description: 'Revenue vs expenses summary', category: 'finance', icon: TrendingUp, color: 'emerald' },
-  { id: 'balance-sheet', name: 'Balance Sheet', nameAr: 'الميزانية العمومية', description: 'Assets, liabilities, equity', category: 'finance', icon: FileBarChart, color: 'blue' },
-  { id: 'cash-flow', name: 'Cash Flow', nameAr: 'التدفق النقدي', description: 'Cash inflows and outflows', category: 'finance', icon: DollarSign, color: 'green' },
-  { id: 'revenue-analysis', name: 'Revenue Analysis', nameAr: 'تحليل الإيرادات', description: 'Revenue breakdown by category', category: 'finance', icon: LineChart, color: 'teal' },
-  { id: 'expense-report', name: 'Expense Report', nameAr: 'تقرير المصروفات', description: 'Operating expenses summary', category: 'finance', icon: CreditCard, color: 'orange' },
-  { id: 'profit-loss', name: 'Profit & Loss', nameAr: 'الأرباح والخسائر', description: 'Net profit breakdown', category: 'finance', icon: PieChart, color: 'purple' },
+  { id: 'income-statement', name: 'Income Statement', nameAr: 'قائمة الدخل', description: 'Revenue vs Expenses Summary', category: 'finance', icon: TrendingUp, color: 'emerald' },
+  { id: 'balance-sheet', name: 'Balance Sheet', nameAr: 'الميزانية العمومية', description: 'Assets, Liabilities & Equity', category: 'finance', icon: FileBarChart, color: 'blue' },
+  { id: 'cash-flow', name: 'Cash Flow', nameAr: 'التدفق النقدي', description: 'Cash Inflows and Outflows', category: 'finance', icon: DollarSign, color: 'green' },
+  { id: 'revenue-analysis', name: 'Revenue Analysis', nameAr: 'تحليل الإيرادات', description: 'Revenue Breakdown By Category', category: 'finance', icon: LineChart, color: 'teal' },
+  { id: 'expense-report', name: 'Expense Report', nameAr: 'تقرير المصروفات', description: 'Operating Expenses Summary', category: 'finance', icon: CreditCard, color: 'orange' },
+  { id: 'profit-loss', name: 'Profit & Loss', nameAr: 'الأرباح والخسائر', description: 'Net Profit Breakdown', category: 'finance', icon: PieChart, color: 'purple' },
   // Fleet
-  { id: 'vehicle-utilization', name: 'Vehicle Utilization', nameAr: 'استغلال المركبات', description: 'Fleet usage statistics', category: 'fleet', icon: Car, color: 'blue' },
-  { id: 'maintenance-costs', name: 'Maintenance Costs', nameAr: 'تكاليف الصيانة', description: 'Service and repair costs', category: 'fleet', icon: Activity, color: 'amber' },
-  { id: 'fuel-consumption', name: 'Fuel Consumption', nameAr: 'استهلاك الوقود', description: 'Fuel usage breakdown', category: 'fleet', icon: FileText, color: 'red' },
-  { id: 'fleet-status', name: 'Fleet Status', nameAr: 'حالة الأسطول', description: 'Vehicle availability status', category: 'fleet', icon: Building2, color: 'cyan' },
-  { id: 'driver-performance', name: 'Driver Performance', nameAr: 'أداء السائقين', description: 'Driver metrics report', category: 'fleet', icon: Users, color: 'indigo' },
+  { id: 'vehicle-utilization', name: 'Vehicle Utilization', nameAr: 'استغلال المركبات', description: 'Fleet Usage Statistics', category: 'fleet', icon: Car, color: 'blue' },
+  { id: 'maintenance-costs', name: 'Maintenance Costs', nameAr: 'تكاليف الصيانة', description: 'Service And Repair Costs', category: 'fleet', icon: Activity, color: 'amber' },
+  { id: 'fuel-consumption', name: 'Fuel Consumption', nameAr: 'استهلاك الوقود', description: 'Fuel Usage Breakdown', category: 'fleet', icon: FileText, color: 'red' },
+  { id: 'fleet-status', name: 'Fleet Status', nameAr: 'حالة الأسطول', description: 'Vehicle Availability Status', category: 'fleet', icon: Building2, color: 'cyan' },
+  { id: 'driver-performance', name: 'Driver Performance', nameAr: 'أداء السائقين', description: 'Driver Metrics Report', category: 'fleet', icon: Users, color: 'indigo' },
   // HR
-  { id: 'payroll-report', name: 'Payroll Report', nameAr: 'تقرير الرواتب', description: 'Salary and wages summary', category: 'hr', icon: DollarSign, color: 'green' },
-  { id: 'attendance-summary', name: 'Attendance Summary', nameAr: 'ملخص الحضور', description: 'Employee attendance data', category: 'hr', icon: Clock, color: 'orange' },
-  { id: 'leave-balance', name: 'Leave Balance', nameAr: 'رصيد الإجازات', description: 'Employee leave tracking', category: 'hr', icon: Briefcase, color: 'purple' },
-  { id: 'employee-performance', name: 'Employee Performance', nameAr: 'أداء الموظفين', description: 'Staff performance stats', category: 'hr', icon: TrendingUp, color: 'teal' },
+  { id: 'payroll-report', name: 'Payroll Report', nameAr: 'تقرير الرواتب', description: 'Salary And Wages Summary', category: 'hr', icon: DollarSign, color: 'green' },
+  { id: 'attendance-summary', name: 'Attendance Summary', nameAr: 'ملخص الحضور', description: 'Employee Attendance Data', category: 'hr', icon: Clock, color: 'orange' },
+  { id: 'leave-balance', name: 'Leave Balance', nameAr: 'رصيد الإجازات', description: 'Employee Leave Tracking', category: 'hr', icon: Briefcase, color: 'purple' },
+  { id: 'employee-performance', name: 'Employee Performance', nameAr: 'أداء الموظفين', description: 'Staff Performance Stats', category: 'hr', icon: TrendingUp, color: 'teal' },
   // Legal
-  { id: 'cases-status', name: 'Cases Status', nameAr: 'حالة القضايا', description: 'Legal cases overview', category: 'legal', icon: Scale, color: 'red' },
-  { id: 'contract-expiry', name: 'Contract Expiry', nameAr: 'انتهاء العقود', description: 'Upcoming renewals', category: 'legal', icon: FileText, color: 'amber' },
-  { id: 'violations-report', name: 'Violations Report', nameAr: 'تقرير المخالفات', description: 'Traffic violations list', category: 'legal', icon: AlertTriangle, color: 'orange' },
+  { id: 'cases-status', name: 'Cases Status', nameAr: 'حالة القضايا', description: 'Legal Cases Overview', category: 'legal', icon: Scale, color: 'red' },
+  { id: 'contract-expiry', name: 'Contract Expiry', nameAr: 'انتهاء العقود', description: 'Upcoming Renewals', category: 'legal', icon: FileText, color: 'amber' },
+  { id: 'violations-report', name: 'Violations Report', nameAr: 'تقرير المخالفات', description: 'Traffic Violations List', category: 'legal', icon: AlertTriangle, color: 'orange' },
 ];
 
 const colorClasses: Record<string, { bg: string; text: string }> = {
@@ -62,6 +63,7 @@ const colorClasses: Record<string, { bg: string; text: string }> = {
 };
 
 export default function ReportsHub() {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
   const { favorites } = useReportFavorites();

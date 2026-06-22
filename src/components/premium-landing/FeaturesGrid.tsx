@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   Calculator,
   Users,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export function FeaturesGrid() {
+  const { t } = useFleetifyTranslation("ui");
   const features = [
     {
       icon: Calculator,
@@ -75,7 +77,7 @@ export function FeaturesGrid() {
     {
       icon: Lock,
       title: 'خصوصية البيانات',
-      description: 'GDPR متوافق، تحكم كامل في بياناتك، وحق النسيان والتصدير',
+      description: t("gdpr1"),
       color: 'from-indigo-500 to-indigo-600',
       benefits: ['GDPR', 'تشفير', 'استضافة آمنة', 'تحكم كامل']
     },

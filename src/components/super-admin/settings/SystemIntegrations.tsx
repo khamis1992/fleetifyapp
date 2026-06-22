@@ -10,14 +10,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Zap, Code, Database, MessageSquare, CreditCard, Mail, Webhook } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const SystemIntegrations: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   
   const [integrations] = useState([
     {
       id: 'stripe',
       name: 'Stripe',
-      description: 'Payment processing and subscription management',
+      description: t("paymentProcessingAndSubscription"),
       icon: CreditCard,
       status: 'connected',
       category: 'payment',
@@ -26,7 +28,7 @@ export const SystemIntegrations: React.FC = () => {
     {
       id: 'mailgun',
       name: 'Mailgun',
-      description: 'Email delivery and transactional emails',
+      description: t("emailDeliveryAndTransactional"),
       icon: Mail,
       status: 'connected',
       category: 'email',
@@ -35,7 +37,7 @@ export const SystemIntegrations: React.FC = () => {
     {
       id: 'slack',
       name: 'Slack',
-      description: 'Team notifications and alerts',
+      description: t("teamNotificationsAndAlerts"),
       icon: MessageSquare,
       status: 'disconnected',
       category: 'notification',
@@ -44,7 +46,7 @@ export const SystemIntegrations: React.FC = () => {
     {
       id: 'zapier',
       name: 'Zapier',
-      description: 'Workflow automation and integrations',
+      description: t("workflowAutomationAndIntegrations"),
       icon: Zap,
       status: 'connected',
       category: 'automation',
@@ -96,15 +98,15 @@ export const SystemIntegrations: React.FC = () => {
 
   const testWebhook = (webhookId: string) => {
     toast({
-      title: "Webhook test sent",
-      description: "A test payload has been sent to the webhook endpoint.",
+      title: t("webhookTestSent"),
+      description: t("aTestPayloadHas"),
     });
   };
 
   const generateApiKey = () => {
     toast({
-      title: "API key generated",
-      description: "A new API key has been generated. Please store it securely.",
+      title: t("apiKeyGenerated"),
+      description: t("aNewApiKey"),
     });
   };
 
@@ -112,9 +114,9 @@ export const SystemIntegrations: React.FC = () => {
     <div className="space-y-6">
       <Tabs defaultValue="integrations" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="api">API Management</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+          <TabsTrigger value="integrations">{t("integrations")}</TabsTrigger>
+          <TabsTrigger value="api">{t("apiManagement")}</TabsTrigger>
+          <TabsTrigger value="webhooks">{t("webhooks")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="integrations" className="space-y-6">
@@ -122,12 +124,8 @@ export const SystemIntegrations: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                System Integrations
-              </CardTitle>
-              <CardDescription>
-                Manage third-party integrations and external services
-              </CardDescription>
+                <Zap className="h-5 w-5 text-primary" />{t("systemIntegrations")}</CardTitle>
+              <CardDescription>{t("manageThirdpartyIntegrationsAnd")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -165,9 +163,7 @@ export const SystemIntegrations: React.FC = () => {
                             Last sync: {integration.lastSync}
                           </p>
                         )}
-                        <Button variant="outline" size="sm" className="w-full">
-                          Configure
-                        </Button>
+                        <Button variant="outline" size="sm" className="w-full">{t("configure")}</Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -182,12 +178,8 @@ export const SystemIntegrations: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Code className="h-5 w-5 text-primary" />
-                API Configuration
-              </CardTitle>
-              <CardDescription>
-                Manage API access, rate limiting, and security settings
-              </CardDescription>
+                <Code className="h-5 w-5 text-primary" />{t("apiConfiguration")}</CardTitle>
+              <CardDescription>{t("manageApiAccessRate")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -203,7 +195,7 @@ export const SystemIntegrations: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="cors">Enable CORS</Label>
+                    <Label htmlFor="cors">{t("enableCors")}</Label>
                     <Switch
                       id="cors"
                       checked={apiSettings.enableCors}
@@ -211,7 +203,7 @@ export const SystemIntegrations: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="auth">Require Authentication</Label>
+                    <Label htmlFor="auth">{t("requireAuthentication")}</Label>
                     <Switch
                       id="auth"
                       checked={apiSettings.requireAuth}
@@ -221,26 +213,18 @@ export const SystemIntegrations: React.FC = () => {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>API Key Management</Label>
+                    <Label>{t("apiKeyManagement")}</Label>
                     <div className="flex gap-2">
-                      <Button onClick={generateApiKey}>
-                        Generate New Key
-                      </Button>
-                      <Button variant="outline">
-                        View Keys
-                      </Button>
+                      <Button onClick={generateApiKey}>{t("generateNewKey")}</Button>
+                      <Button variant="outline">{t("viewKeys")}</Button>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>API Documentation</Label>
+                    <Label>{t("apiDocumentation")}</Label>
                     <div className="flex gap-2">
-                      <Button variant="outline">
-                        View Docs
-                      </Button>
-                      <Button variant="outline">
-                        Download OpenAPI
-                      </Button>
+                      <Button variant="outline">{t("viewDocs")}</Button>
+                      <Button variant="outline">{t("downloadOpenapi")}</Button>
                     </div>
                   </div>
                 </div>
@@ -248,23 +232,23 @@ export const SystemIntegrations: React.FC = () => {
 
               {/* API Usage Stats */}
               <div className="pt-6 border-t">
-                <h4 className="font-medium mb-4">API Usage Statistics</h4>
+                <h4 className="font-medium mb-4">{t("apiUsageStatistics")}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 border rounded">
                     <div className="text-2xl font-bold text-primary">45,231</div>
-                    <div className="text-sm text-muted-foreground">Total Requests</div>
+                    <div className="text-sm text-muted-foreground">{t("totalRequests")}</div>
                   </div>
                   <div className="text-center p-4 border rounded">
                     <div className="text-2xl font-bold text-primary">98.5%</div>
-                    <div className="text-sm text-muted-foreground">Success Rate</div>
+                    <div className="text-sm text-muted-foreground">{t("successRate")}</div>
                   </div>
                   <div className="text-center p-4 border rounded">
                     <div className="text-2xl font-bold text-primary">125ms</div>
-                    <div className="text-sm text-muted-foreground">Avg Response</div>
+                    <div className="text-sm text-muted-foreground">{t("avgResponse")}</div>
                   </div>
                   <div className="text-center p-4 border rounded">
                     <div className="text-2xl font-bold text-primary">15</div>
-                    <div className="text-sm text-muted-foreground">Active Keys</div>
+                    <div className="text-sm text-muted-foreground">{t("activeKeys")}</div>
                   </div>
                 </div>
               </div>
@@ -277,20 +261,14 @@ export const SystemIntegrations: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Webhook className="h-5 w-5 text-primary" />
-                Webhook Configuration
-              </CardTitle>
-              <CardDescription>
-                Manage webhook endpoints for real-time event notifications
-              </CardDescription>
+                <Webhook className="h-5 w-5 text-primary" />{t("webhookConfiguration")}</CardTitle>
+              <CardDescription>{t("manageWebhookEndpointsFor")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="webhooks-enabled">Enable Webhooks</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow the system to send webhook notifications
-                  </p>
+                  <Label htmlFor="webhooks-enabled">{t("enableWebhooks")}</Label>
+                  <p className="text-sm text-muted-foreground">{t("allowTheSystemTo")}</p>
                 </div>
                 <Switch
                   id="webhooks-enabled"
@@ -299,7 +277,7 @@ export const SystemIntegrations: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="webhook-secret">Webhook Secret</Label>
+                <Label htmlFor="webhook-secret">{t("webhookSecret")}</Label>
                 <Input
                   id="webhook-secret"
                   type="password"
@@ -310,8 +288,8 @@ export const SystemIntegrations: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Configured Webhooks</h4>
-                  <Button>Add Webhook</Button>
+                  <h4 className="font-medium">{t("configuredWebhooks")}</h4>
+                  <Button>{t("addWebhook")}</Button>
                 </div>
 
                 {webhooks.map((webhook) => (
@@ -332,15 +310,9 @@ export const SystemIntegrations: React.FC = () => {
                     </div>
 
                     <div className="flex gap-2 mt-4">
-                      <Button variant="outline" size="sm" onClick={() => testWebhook(webhook.id)}>
-                        Test
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Logs
-                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => testWebhook(webhook.id)}>{t("test")}</Button>
+                      <Button variant="outline" size="sm">{t("edit")}</Button>
+                      <Button variant="outline" size="sm">{t("logs")}</Button>
                     </div>
                   </div>
                 ))}

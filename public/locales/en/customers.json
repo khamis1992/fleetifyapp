@@ -1,1 +1,19 @@
-{}
+{
+  "title": "Customers",
+  "new": "New Customer",
+  "create": "Create Customer",
+  "edit": "Edit Customer",
+  "delete": "Delete Customer",
+  "name": "Name",
+  "phone": "Phone",
+  "email": "Email",
+  "idNumber": "ID Number",
+  "license": "Driving License",
+  "address": "Address",
+  "search": "Search customers",
+  "noResults": "No customers found",
+  "customerType": "Customer Type",
+  "individual": "Individual",
+  "company": "Company",
+  "nationality": "Nationality"
+}

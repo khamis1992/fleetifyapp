@@ -55,7 +55,7 @@ export const useDuplicateContracts = () => {
           contract_amount,
           status,
           created_at,
-          customers!inner(full_name, full_name_ar)
+          customers!inner(first_name, last_name, company_name, customer_type)
         `)
         .eq('company_id', companyId)
         .order('contract_number', { ascending: true })
@@ -129,7 +129,9 @@ export const useDuplicateContracts = () => {
           payment_schedules_count: paymentSchedules.length,
           total_paid: totalPaid,
           is_safe_to_delete: isSafeToDelete,
-          customer_name: (contract.customers as any)?.full_name || (contract.customers as any)?.full_name_ar
+          customer_name: (contract.customers as any)?.customer_type === 'individual'
+            ? `${(contract.customers as any)?.first_name || ''} ${(contract.customers as any)?.last_name || ''}`.trim()
+            : (contract.customers as any)?.company_name || ''
         };
       }) || [];
 
@@ -211,7 +213,7 @@ export const useDuplicateContractsSummary = () => {
           contract_amount,
           status,
           created_at,
-          customers!inner(full_name, full_name_ar)
+          customers!inner(first_name, last_name, company_name, customer_type)
         `)
         .eq('company_id', companyId);
 

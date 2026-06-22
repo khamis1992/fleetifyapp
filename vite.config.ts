@@ -11,12 +11,9 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     // Fix HMR issues with React hooks and WebSocket connection
     hmr: {
-      protocol: 'ws',
-      host: 'localhost',
-      port: 8080,
       overlay: true,
-      // Add timeout to prevent hanging
-      timeout: 30000,
+      // Remove explicit host/port — let Vite auto-derive from server config
+      // Explicit port=8080 causes WebSocket 400 errors when query params present
     },
     // Prevent hanging on page refresh
     middlewareMode: false,
@@ -70,9 +67,9 @@ export default defineConfig(({ mode }) => ({
     },
     terserOptions: {
       compress: {
-        drop_console: mode === 'production',
+        drop_console: ['log', 'debug', 'info'], // Drop console.log/debug/info in production, keep error/warn
         drop_debugger: mode === 'production',
-        pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : [],
+        pure_funcs: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
       },
     },
     // Code splitting strategy - simplified to avoid bundling issues

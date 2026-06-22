@@ -192,14 +192,10 @@ export const PaymentTracking: React.FC = () => {
   // Reconcile payment mutation
   const reconcilePayment = useMutation({
     mutationFn: async (paymentId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       const { error } = await supabase
         .from('payments')
         .update({
-          reconciled: true,
-          reconciled_at: new Date().toISOString(),
-          reconciled_by: user?.id
+          reconciliation_status: 'reconciled'
         })
         .eq('id', paymentId);
       
@@ -400,13 +396,13 @@ export const PaymentTracking: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="font-bold">{invoice.total_amount.toFixed(3)}</div>
+                          <div className="font-bold">{(invoice.total_amount || 0).toFixed(3)}</div>
                           <div className="text-xs text-green-600">
-                            مدفوع: {invoice.total_paid.toFixed(3)}
+                            مدفوع: {(invoice.total_paid || 0).toFixed(3)}
                           </div>
-                          {invoice.outstanding_balance > 0 && (
+                          {(invoice.outstanding_balance || 0) > 0 && (
                             <div className="text-xs text-red-600">
-                              متبقي: {invoice.outstanding_balance.toFixed(3)}
+                              متبقي: {(invoice.outstanding_balance || 0).toFixed(3)}
                             </div>
                           )}
                         </TableCell>
@@ -417,7 +413,7 @@ export const PaymentTracking: React.FC = () => {
                           <div className="space-y-1 min-w-[120px]">
                             <Progress value={invoice.payment_progress_percentage} />
                             <div className="text-xs text-center text-muted-foreground">
-                              {invoice.payment_progress_percentage.toFixed(1)}%
+                              {(invoice.payment_progress_percentage || 0).toFixed(1)}%
                             </div>
                           </div>
                         </TableCell>
@@ -501,7 +497,7 @@ export const PaymentTracking: React.FC = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">إجمالي المبلغ:</span>
-                            <span className="font-bold">{method.total_amount.toFixed(3)} ر.ق</span>
+                            <span className="font-bold">{(method.total_amount || 0).toFixed(3)} ر.ق</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">عدد المعاملات:</span>
@@ -509,7 +505,7 @@ export const PaymentTracking: React.FC = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">متوسط المعاملة:</span>
-                            <span className="font-medium">{method.average_transaction.toFixed(3)} ر.ق</span>
+                            <span className="font-medium">{(method.average_transaction || 0).toFixed(3)} ر.ق</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">معدل النجاح:</span>
@@ -639,11 +635,11 @@ export const PaymentTracking: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">مبلغ الدفعة:</span>
-                          <span className="font-bold text-green-600">{payment.amount.toFixed(3)} ر.ق</span>
+                          <span className="font-bold text-green-600">{(payment.amount || 0).toFixed(3)} ر.ق</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">المدفوع حتى الآن:</span>
-                          <span className="font-medium">{payment.cumulative_paid.toFixed(3)} ر.ق</span>
+                          <span className="font-medium">{(payment.cumulative_paid || 0).toFixed(3)} ر.ق</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">المتبقي:</span>

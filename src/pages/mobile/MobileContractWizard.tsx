@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Customer {
   id: string;
   first_name: string;
@@ -66,6 +67,7 @@ interface FormData {
 type Step = 1 | 2 | 3 | 4;
 
 const MobileContractWizard: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -843,11 +845,11 @@ const Step4Review: React.FC<{
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-slate-500">المبلغ الشهري:</span>
-            <span className="font-semibold text-slate-900">QAR {formData.monthlyAmount.toLocaleString()}</span>
+            <span className="font-semibold text-slate-900">{t("qarFormdatamonthlyamounttolocalestring")}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-500">الإجمالي:</span>
-            <span className="text-xl font-bold text-teal-600">QAR {total.toLocaleString()}</span>
+            <span className="text-xl font-bold text-teal-600">{t("qarTotaltolocalestring")}</span>
           </div>
         </div>
 

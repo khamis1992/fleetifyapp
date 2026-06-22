@@ -100,7 +100,7 @@ describe('RedesignedJournalEntryCard', () => {
     
     if (header) {
       // Initially details should not be visible
-      expect(screen.queryByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeVisible;
+      expect(screen.queryByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeVisible();
       
       // Click to expand
       fireEvent.click(header);
@@ -112,7 +112,7 @@ describe('RedesignedJournalEntryCard', () => {
       fireEvent.click(header);
       
       // Details should not be visible again
-      expect(screen.queryByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeVisible;
+      expect(screen.queryByText('البيان: دفعة إيجار - إبراهيم حضر عبدالله')).not.toBeVisible();
     }
   });
 

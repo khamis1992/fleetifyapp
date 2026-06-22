@@ -116,6 +116,7 @@ import LegalCaseCreationWizard from '@/components/legal/LegalCaseCreationWizard'
 import AutoCreateCaseTriggersConfig from '@/components/legal/AutoCreateCaseTriggersConfig';
 import EnhancedLegalNoticeGenerator from '@/components/legal/EnhancedLegalNoticeGenerator';
 import { CHART_COLORS, StatusBadge, TabButton, KPICard } from './legal-cases';
+import { EmptyState } from '@/components/ui/EmptyState';
 // DelinquentCustomersTab removed - use /legal/delinquency instead
 
 // --- Main Component ---

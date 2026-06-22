@@ -227,8 +227,7 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
             id,
             contract_number,
             contract_amount,
-            status,
-            vehicle_number
+            status
           ),
           vehicle:vehicles!vehicle_id(
             id,
@@ -250,7 +249,7 @@ export const useRentalPaymentReceipts = (customerId?: string) => {
       // Map vehicle_number and customer_phone from related objects
       const mappedData = (data || []).map(receipt => ({
         ...receipt,
-        vehicle_number: receipt.contract?.vehicle_number || receipt.vehicle?.plate_number || '',
+        vehicle_number: receipt.vehicle?.plate_number || '',
         customer_phone: receipt.customer?.phone || ''
       }));
 
@@ -318,8 +317,7 @@ export const useAllRentalPaymentReceipts = () => {
             id,
             contract_number,
             contract_amount,
-            status,
-            vehicle_number
+            status
           ),
           vehicle:vehicles!vehicle_id(
             id,
@@ -348,7 +346,7 @@ export const useAllRentalPaymentReceipts = () => {
       // Map vehicle_number and customer_phone from related objects
       const mappedData = (data || []).map(receipt => ({
         ...receipt,
-        vehicle_number: receipt.contract?.vehicle_number || receipt.vehicle?.plate_number || '',
+        vehicle_number: receipt.vehicle?.plate_number || '',
         customer_phone: receipt.customer?.phone || ''
       }));
 

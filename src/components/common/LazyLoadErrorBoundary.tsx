@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -186,9 +187,10 @@ export function withLazyLoadErrorBoundary<P extends object>(
   fallback?: ReactNode
 ) {
   return function WrappedComponent(props: P) {
+  const { t } = useFleetifyTranslation("ui");
     return (
       <LazyLoadErrorBoundary fallback={fallback}>
-        <Suspense fallback={fallback || <div>Loading...</div>}>
+        <Suspense fallback={fallback || <div>{t("loading")}</div>}>
           <Component {...props} />
         </Suspense>
       </LazyLoadErrorBoundary>

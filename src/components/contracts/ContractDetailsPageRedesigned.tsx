@@ -78,12 +78,12 @@ import { TimelineView } from './TimelineView';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { useContractPaymentSchedules, useGeneratePaymentSchedulesFromInvoices } from '@/hooks/usePaymentSchedules';
 
-import { ContractPaymentsTabRedesigned } from './ContractPaymentsTabRedesigned';
+import { ContractPaymentsTabRedesigned as ContractPaymentsTab } from './ContractPaymentsTabRedesigned';
 import { ContractInvoicesTabRedesigned } from './ContractInvoicesTabRedesigned';
-import { EnhancedPaymentScheduleTabRedesigned } from './EnhancedPaymentScheduleTabRedesigned';
+import { EnhancedPaymentScheduleTabRedesigned as EnhancedPaymentScheduleTab } from './EnhancedPaymentScheduleTabRedesigned';
 import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesigned';
 import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
-import { ContractHeaderRedesigned } from './ContractHeaderRedesigned';
+import { ContractHeaderRedesigned as ContractHeader } from './ContractHeaderRedesigned';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
@@ -91,6 +91,11 @@ import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 import type { Invoice } from '@/types/finance.types';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { useToast } from '@/hooks/use-toast';
+import { useUnifiedCompanyAccess } from '@/hooks/useUnifiedCompanyAccess';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useVehicleInspections } from '@/hooks/useVehicleInspections';
 // ===== Animation Variants =====
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -122,6 +127,7 @@ const ContractStatsGrid = ({
   trafficViolationsCount: number;
   formatCurrency: (amount: number) => string;
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const stats = [
     {
       label: 'إجمالي القيمة',
@@ -618,7 +624,7 @@ const FinancialTab = ({
     </TabsContent>
 
     <TabsContent value="payments" className="mt-0">
-      <ContractPaymentsTabRedesigned
+      <ContractPaymentsTab
         contractId={contractId}
         companyId={companyId}
         invoiceIds={invoices.map(inv => inv.id)}
@@ -633,7 +639,7 @@ const FinancialTab = ({
     </TabsContent>
 
     <TabsContent value="schedule" className="mt-0">
-      <EnhancedPaymentScheduleTabRedesigned
+      <EnhancedPaymentScheduleTab
         contract={contract}
         formatCurrency={formatCurrency}
         payments={paymentSchedules}
@@ -871,6 +877,7 @@ const DocumentsTab = ({
 
 // ===== Main Component =====
 const ContractDetailsPageRedesigned = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { contractNumber } = useParams<{ contractNumber: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -1523,7 +1530,7 @@ const ContractDetailsPageRedesigned = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Contract Header - Redesigned */}
-        <ContractHeaderRedesigned
+        <ContractHeader
           contract={contract}
           onEdit={() => setIsEditWizardOpen(true)}
           onPrint={handlePrint}

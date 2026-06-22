@@ -91,6 +91,7 @@ import { formatDateInGregorian } from "@/utils/dateFormatter";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { useUnifiedCompanyAccess } from "@/hooks/useUnifiedCompanyAccess";
 import { supabase, supabaseConfig } from "@/integrations/supabase/client";
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // Types
 interface Contract {
@@ -696,6 +697,31 @@ function ContractsRedesigned() {
 
   const safeContracts = useMemo(() => Array.isArray(contracts) ? contracts : [], [contracts]);
   const safeFilteredContracts = useMemo(() => Array.isArray(filteredContracts) ? filteredContracts : [], [filteredContracts]);
+
+  // When the active tab/search/sort changes the filtered list may shrink, and the
+  // browser would otherwise clamp the scroll position to a jarring mid-page spot.
+  // Smoothly return to the top so the user starts at the new list's first item.
+  const prevFilterRef = useRef<{ tab: string; search: string; sort: string }>({
+    tab: activeTab,
+    search: debouncedSearchTerm,
+    sort: sortBy,
+  });
+  useEffect(() => {
+    const prev = prevFilterRef.current;
+    const changed =
+      prev.tab !== activeTab ||
+      prev.search !== debouncedSearchTerm ||
+      prev.sort !== sortBy;
+    if (!changed) return;
+    prevFilterRef.current = { tab: activeTab, search: debouncedSearchTerm, sort: sortBy };
+    const scroller =
+      document.querySelector('main[role="main"]') as HTMLElement | null;
+    if (scroller && scroller.scrollHeight > scroller.clientHeight) {
+      scroller.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeTab, debouncedSearchTerm, sortBy]);
 
   // Sort contracts
   const sortedContracts = useMemo(() => {

@@ -21055,6 +21055,433 @@ export type Database = {
           },
         ]
       }
+      employee_tasks: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
+          collection_amount: number | null
+          company_id: string
+          completed_at: string | null
+          contract_id: string | null
+          created_at: string
+          customer_id: string | null
+          delay_notes: string | null
+          delay_reason: string | null
+          description: string | null
+          due_date: string | null
+          followup_id: string | null
+          id: string
+          priority: string | null
+          result_notes: string | null
+          scheduled_date: string | null
+          status: string | null
+          task_type: string
+          title: string
+          title_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          collection_amount?: number | null
+          company_id: string
+          completed_at?: string | null
+          contract_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          delay_notes?: string | null
+          delay_reason?: string | null
+          description?: string | null
+          due_date?: string | null
+          followup_id?: string | null
+          id?: string
+          priority?: string | null
+          result_notes?: string | null
+          scheduled_date?: string | null
+          status?: string | null
+          task_type: string
+          title: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          collection_amount?: number | null
+          company_id?: string
+          completed_at?: string | null
+          contract_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          delay_notes?: string | null
+          delay_reason?: string | null
+          description?: string | null
+          due_date?: string | null
+          followup_id?: string | null
+          id?: string
+          priority?: string | null
+          result_notes?: string | null
+          scheduled_date?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_tasks_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_tasks_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_tasks_followup_id_fkey"
+            columns: ["followup_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_followups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      call_logs: {
+        Row: {
+          answered: boolean | null
+          call_date: string
+          call_outcome: string | null
+          call_purpose: string | null
+          call_type: string
+          company_id: string
+          contact_name: string | null
+          contact_name_ar: string | null
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          duration_seconds: number | null
+          employee_id: string | null
+          followup_date: string | null
+          followup_required: boolean | null
+          id: string
+          notes: string | null
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          answered?: boolean | null
+          call_date?: string
+          call_outcome?: string | null
+          call_purpose?: string | null
+          call_type: string
+          company_id: string
+          contact_name?: string | null
+          contact_name_ar?: string | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          duration_seconds?: number | null
+          employee_id?: string | null
+          followup_date?: string | null
+          followup_required?: boolean | null
+          id?: string
+          notes?: string | null
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          answered?: boolean | null
+          call_date?: string
+          call_outcome?: string | null
+          call_purpose?: string | null
+          call_type?: string
+          company_id?: string
+          contact_name?: string | null
+          contact_name_ar?: string | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          duration_seconds?: number | null
+          employee_id?: string | null
+          followup_date?: string | null
+          followup_required?: boolean | null
+          id?: string
+          notes?: string | null
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_notes: {
+        Row: {
+          company_id: string
+          content: string
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_pinned: boolean | null
+          is_resolved: boolean | null
+          note_type: string
+          priority: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          title: string | null
+          title_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          content: string
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          is_resolved?: boolean | null
+          note_type: string
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          title?: string | null
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          is_resolved?: boolean | null
+          note_type?: string
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          title?: string | null
+          title_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_notes_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_notes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_performance: {
+        Row: {
+          active_contracts_count: number | null
+          assigned_contracts_count: number | null
+          collection_rate: number | null
+          company_id: string
+          completed_followups: number | null
+          contact_coverage_rate: number | null
+          contracts_with_balance_count: number | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          followup_completion_rate: number | null
+          id: string
+          messages_count: number | null
+          notes: string | null
+          overdue_followups: number | null
+          pending_followups: number | null
+          performance_score: number | null
+          period_end: string
+          period_start: string
+          period_type: string | null
+          phone_calls_count: number | null
+          target_achievement_rate: number | null
+          target_collection_amount: number | null
+          total_balance_due: number | null
+          total_collected: number | null
+          total_communications: number | null
+          total_contract_value: number | null
+          total_followups: number | null
+          updated_at: string
+        }
+        Insert: {
+          active_contracts_count?: number | null
+          assigned_contracts_count?: number | null
+          collection_rate?: number | null
+          company_id: string
+          completed_followups?: number | null
+          contact_coverage_rate?: number | null
+          contracts_with_balance_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          followup_completion_rate?: number | null
+          id?: string
+          messages_count?: number | null
+          notes?: string | null
+          overdue_followups?: number | null
+          pending_followups?: number | null
+          performance_score?: number | null
+          period_end: string
+          period_start: string
+          period_type?: string | null
+          phone_calls_count?: number | null
+          target_achievement_rate?: number | null
+          target_collection_amount?: number | null
+          total_balance_due?: number | null
+          total_collected?: number | null
+          total_communications?: number | null
+          total_contract_value?: number | null
+          total_followups?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active_contracts_count?: number | null
+          assigned_contracts_count?: number | null
+          collection_rate?: number | null
+          company_id?: string
+          completed_followups?: number | null
+          contact_coverage_rate?: number | null
+          contracts_with_balance_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          followup_completion_rate?: number | null
+          id?: string
+          messages_count?: number | null
+          notes?: string | null
+          overdue_followups?: number | null
+          pending_followups?: number | null
+          performance_score?: number | null
+          period_end?: string
+          period_start?: string
+          period_type?: string | null
+          phone_calls_count?: number | null
+          target_achievement_rate?: number | null
+          target_collection_amount?: number | null
+          total_balance_due?: number | null
+          total_collected?: number | null
+          total_communications?: number | null
+          total_contract_value?: number | null
+          total_followups?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_performance_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_performance_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_performance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       ab_test_comparison: {
@@ -22023,6 +22450,43 @@ export type Database = {
           payment_status: string | null
           total_amount: number | null
           total_paid: number | null
+        }
+        Relationships: []
+      }
+      invoice_payment_timeline: {
+        Row: {
+          collection_rate_pct: number | null
+          company_id: string | null
+          completed_payments: number | null
+          contract_amount: number | null
+          contract_balance_due: number | null
+          contract_id: string | null
+          contract_number: string | null
+          contract_payment_status: string | null
+          contract_status: string | null
+          contract_total_paid: number | null
+          current_month_collected: number | null
+          customer_id: string | null
+          customer_name_ar: string | null
+          customer_name_en: string | null
+          end_date: string | null
+          last_month_collected: number | null
+          last_payment_amount: number | null
+          last_payment_date: string | null
+          max_days_overdue: number | null
+          monthly_amount: number | null
+          next_due_date: string | null
+          overdue_invoices: number | null
+          paid_invoices: number | null
+          partial_invoices: number | null
+          past_due_amount: number | null
+          pending_payments: number | null
+          start_date: string | null
+          total_invoices: number | null
+          total_paid_amount: number | null
+          total_payments: number | null
+          unpaid_invoices: number | null
+          upcoming_amount_due: number | null
         }
         Relationships: []
       }

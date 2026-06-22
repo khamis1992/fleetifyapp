@@ -1,1 +1,9 @@
-{}
+{
+  "email": "Invalid email address",
+  "phone": "Invalid phone number",
+  "minLength": "Minimum {{count}} characters",
+  "maxLength": "Maximum {{count}} characters",
+  "required": "This field is required",
+  "number": "Must be a number",
+  "date": "Invalid date"
+}

@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import {
   FileText,
   Download,
@@ -632,7 +633,8 @@ export default function LawsuitDataPage() {
       {/* Table */}
       <Card>
         <div className="overflow-x-auto">
-          <Table>
+          <ResponsiveTable>
+<Table>
             <TableHeader>
               <TableRow className="bg-teal-50">
                 <TableHead className="text-right font-bold">رقم العقد</TableHead>
@@ -790,6 +792,7 @@ export default function LawsuitDataPage() {
               )}
             </TableBody>
           </Table>
+</ResponsiveTable>
         </div>
       </Card>
     </div>

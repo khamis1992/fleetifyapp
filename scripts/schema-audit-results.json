@@ -1,0 +1,327 @@
+{
+  "summary": {
+    "files_scanned": 1289,
+    "tables_in_schema": 339,
+    "total_violations": 34
+  },
+  "violations": [
+    {
+      "file": "components/contracts/ContractDetailsPageRedesigned.tsx",
+      "line": 1321,
+      "table": "payments",
+      "column": "status",
+      "issue": "UPDATE_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".update({"
+    },
+    {
+      "file": "components/contracts/ContractDetailsPageRedesigned.tsx",
+      "line": 1454,
+      "table": "payments",
+      "column": "status",
+      "issue": "UPDATE_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".update({ status: 'available' })"
+    },
+    {
+      "file": "hooks/useAdvancedFinancialAnalytics.ts",
+      "line": 138,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq(\"status\", \"completed\")"
+    },
+    {
+      "file": "hooks/useConvertToLegalCase.ts",
+      "line": 319,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "INSERT_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this column",
+      "code": ".insert({"
+    },
+    {
+      "file": "hooks/useConvertToLegalCase.ts",
+      "line": 319,
+      "table": "journal_entry_lines",
+      "column": "description",
+      "issue": "INSERT_WRONG_COLUMN_NAME",
+      "suggestion": "line_description",
+      "code": ".insert({"
+    },
+    {
+      "file": "hooks/useDashboardStats.ts",
+      "line": 269,
+      "table": "payments",
+      "column": "status",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".select('amount, status')"
+    },
+    {
+      "file": "hooks/useDashboardStats.ts",
+      "line": 271,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".in('status', ['completed', 'paid', 'confirmed'])"
+    },
+    {
+      "file": "hooks/useDelinquentCustomers.ts",
+      "line": 439,
+      "table": "payments",
+      "column": "status",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".select('vehicle_id, fine_amount, status')"
+    },
+    {
+      "file": "hooks/useDelinquentCustomers.ts",
+      "line": 442,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".neq('status', 'paid');"
+    },
+    {
+      "file": "hooks/useEmployeePerformance.ts",
+      "line": 162,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'verified')"
+    },
+    {
+      "file": "hooks/useFinancialAnalysis.ts",
+      "line": 266,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq(\"status\", \"completed\")"
+    },
+    {
+      "file": "hooks/useFinancialOverview.ts",
+      "line": 77,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'paid')"
+    },
+    {
+      "file": "hooks/useFinancialOverview.ts",
+      "line": 189,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'paid')"
+    },
+    {
+      "file": "hooks/useMaintenanceJournalIntegration.ts",
+      "line": 191,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "FILTER_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this filter",
+      "code": ".eq('company_id', companyId)"
+    },
+    {
+      "file": "hooks/usePayrollJournalIntegration.ts",
+      "line": 158,
+      "table": "journal_entry_lines",
+      "column": "account_code",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "account_id",
+      "code": ".select('id, account_code')"
+    },
+    {
+      "file": "hooks/usePayrollJournalIntegration.ts",
+      "line": 159,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "FILTER_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this filter",
+      "code": ".eq('company_id', companyId)"
+    },
+    {
+      "file": "hooks/usePayrollJournalIntegration.ts",
+      "line": 160,
+      "table": "journal_entry_lines",
+      "column": "account_code",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "account_id",
+      "code": ".in('account_code', ['1010', '2200']); // Cash, Salaries Payable"
+    },
+    {
+      "file": "hooks/usePayrollJournalIntegration.ts",
+      "line": 266,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "FILTER_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this filter",
+      "code": ".eq('company_id', companyId)"
+    },
+    {
+      "file": "hooks/useSmartAlerts.ts",
+      "line": 66,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'active')"
+    },
+    {
+      "file": "hooks/useSmartAlerts.ts",
+      "line": 75,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'pending')"
+    },
+    {
+      "file": "hooks/useTrafficViolationJournalIntegration.ts",
+      "line": 147,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "FILTER_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this filter",
+      "code": ".eq('company_id', companyId)"
+    },
+    {
+      "file": "hooks/useVehicleInstallmentJournalIntegration.ts",
+      "line": 341,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "FILTER_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this filter",
+      "code": ".eq('company_id', companyId)"
+    },
+    {
+      "file": "hooks/finance/useJournalEntries.ts",
+      "line": 123,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "INSERT_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this column",
+      "code": ".insert({"
+    },
+    {
+      "file": "hooks/integrations/useInventoryPurchaseOrders.ts",
+      "line": 174,
+      "table": "journal_entry_lines",
+      "column": "company_id",
+      "issue": "FILTER_NONEXISTENT_COLUMN",
+      "suggestion": "Remove this filter",
+      "code": ".eq('company_id', user.profile.company_id)"
+    },
+    {
+      "file": "pages/legal/CustomerVerificationPage.tsx",
+      "line": 347,
+      "table": "payments",
+      "column": "status",
+      "issue": "UPDATE_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".update({"
+    },
+    {
+      "file": "pages/mobile/MobileHome.tsx",
+      "line": 114,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'verified')"
+    },
+    {
+      "file": "pages/mobile/MobileHome.tsx",
+      "line": 146,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".eq('status', 'active')"
+    },
+    {
+      "file": "services/AccountingService.ts",
+      "line": 228,
+      "table": "journal_entry_lines",
+      "column": "debit",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "debit_amount",
+      "code": ".select('debit, credit')"
+    },
+    {
+      "file": "services/AccountingService.ts",
+      "line": 228,
+      "table": "journal_entry_lines",
+      "column": "credit",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "credit_amount",
+      "code": ".select('debit, credit')"
+    },
+    {
+      "file": "services/UnifiedInvoiceService.ts",
+      "line": 425,
+      "table": "payments",
+      "column": "status",
+      "issue": "UPDATE_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".update({"
+    },
+    {
+      "file": "services/whatsapp/ReportScheduler.ts",
+      "line": 135,
+      "table": "payments",
+      "column": "status",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".select('total_amount, amount_paid, status, due_date')"
+    },
+    {
+      "file": "services/whatsapp/ReportScheduler.ts",
+      "line": 137,
+      "table": "payments",
+      "column": "status",
+      "issue": "FILTER_WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".in('status', ['pending', 'partially_paid', 'overdue']);"
+    },
+    {
+      "file": "services/whatsapp/ReportScheduler.ts",
+      "line": 229,
+      "table": "payments",
+      "column": "status",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".select('id, status')"
+    },
+    {
+      "file": "services/whatsapp/ReportScheduler.ts",
+      "line": 236,
+      "table": "payments",
+      "column": "status",
+      "issue": "WRONG_COLUMN_NAME",
+      "suggestion": "payment_status",
+      "code": ".select('status, estimated_cost')"
+    }
+  ],
+  "by_table": {
+    "payments": 21,
+    "journal_entry_lines": 13
+  },
+  "by_issue": {
+    "UPDATE_WRONG_COLUMN_NAME": 4,
+    "FILTER_WRONG_COLUMN_NAME": 13,
+    "INSERT_NONEXISTENT_COLUMN": 2,
+    "INSERT_WRONG_COLUMN_NAME": 1,
+    "WRONG_COLUMN_NAME": 8,
+    "FILTER_NONEXISTENT_COLUMN": 6
+  }
+}

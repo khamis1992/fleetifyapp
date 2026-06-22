@@ -78,7 +78,9 @@ import {
 } from '@/components/customers';
 import CustomerExportDialog from '@/components/customers/CustomerExportDialog';
 import CustomerDocumentDistributionDialog from '@/components/customers/CustomerDocumentDistributionDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== Professional Stat Card =====
 interface ProStatCardProps {
   value: number | string;
@@ -135,6 +137,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
   index,
   navigate,
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const getCustomerName = () => {
     if (customer.customer_type === 'individual') {
       const primaryName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
@@ -183,9 +186,7 @@ const ProCustomerCard: React.FC<ProCustomerCardProps> = ({
       {customer.is_vip && (
         <div className="absolute top-4 right-4">
           <Badge className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 gap-1">
-            <Crown className="w-3 h-3" />
-            VIP
-          </Badge>
+            <Crown className="w-3 h-3" />{t("vip")}</Badge>
         </div>
       )}
 
@@ -636,6 +637,7 @@ const _exportCustomersToExcel = async (
 
 // ===== Main Component =====
 const CustomersPageRedesigned: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { companyId, isAuthenticating } = useUnifiedCompanyAccess();

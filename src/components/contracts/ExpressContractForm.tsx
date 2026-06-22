@@ -42,17 +42,17 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { useContractTemplates, type ContractTemplate } from '@/hooks/useContractTemplates';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ExpressContractFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit?: (contractData: any) => Promise<void>;
 }
 
-export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({
-  open,
+export const ExpressContractForm: React.FC<ExpressContractFormProps> = ({ open,
   onOpenChange,
-  onSubmit,
-}) => {
+  onSubmit, }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
   const companyId = useCurrentCompanyId();
   const { formatCurrency } = useCurrencyFormatter();

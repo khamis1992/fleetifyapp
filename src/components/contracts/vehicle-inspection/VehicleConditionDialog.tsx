@@ -24,6 +24,7 @@ import { Camera, Upload, X, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   VehicleZone,
   ZoneCondition,
@@ -72,6 +73,8 @@ export function VehicleConditionDialog({
   onDelete,
   contractId = '',
 }: VehicleConditionDialogProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
 
   // Form state

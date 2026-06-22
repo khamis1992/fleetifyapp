@@ -29,13 +29,11 @@ const roleOptions = [
   { id: 'sales_agent', label: 'موظف مبيعات', description: 'صلاحيات المبيعات والعملاء' },
 ];
 
-export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
-  open,
+export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({ open,
   onOpenChange,
   onCreateUser,
   companies,
-  isLoading
-}) => {
+  isLoading }) => {
   const {
     register,
     handleSubmit,

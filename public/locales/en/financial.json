@@ -1,1 +1,22 @@
-{}
+{
+  "title": "Finance",
+  "invoices": "Invoices",
+  "payments": "Payments",
+  "chartOfAccounts": "Chart of Accounts",
+  "ledger": "General Ledger",
+  "treasury": "Treasury",
+  "reports": "Financial Reports",
+  "vendor": "Vendor",
+  "invoiceNumber": "Invoice Number",
+  "invoiceDate": "Invoice Date",
+  "dueDate": "Due Date",
+  "amount": "Amount",
+  "paid": "Paid",
+  "unpaid": "Unpaid",
+  "partial": "Partial",
+  "search": "Search invoices",
+  "noResults": "No invoices found",
+  "totalRevenue": "Total Revenue",
+  "totalExpenses": "Total Expenses",
+  "netProfit": "Net Profit"
+}

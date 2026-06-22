@@ -37,6 +37,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ContractExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -94,6 +95,7 @@ export const ContractExportDialog: React.FC<ContractExportDialogProps> = ({
   open,
   onOpenChange
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
   const [exportType, setExportType] = React.useState<ExportFormat>('pdf');
   const [dateRange, setDateRange] = React.useState('all');

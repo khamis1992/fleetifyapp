@@ -10,6 +10,7 @@ import { Upload, Search, Filter, Image, Video, File, Trash2, Edit, Eye } from 'l
 import { useLandingMedia } from '@/hooks/useLandingMedia';
 import { toast } from 'sonner';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface MediaFile {
   id: string;
   file_name: string;
@@ -25,6 +26,7 @@ interface MediaFile {
 }
 
 export const LandingMediaLibrary: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { media, loading, uploadMedia, updateMedia, deleteMedia } = useLandingMedia();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -33,10 +35,10 @@ export const LandingMediaLibrary: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const fileTypes = [
-    { value: 'all', label: 'All Files' },
-    { value: 'image', label: 'Images' },
-    { value: 'video', label: 'Videos' },
-    { value: 'document', label: 'Documents' },
+    { value: 'all', label: t("allFiles") },
+    { value: 'image', label: t("images") },
+    { value: 'video', label: t("videos") },
+    { value: 'document', label: t("documents") },
   ];
 
   const filteredMedia = media.filter(file => {
@@ -133,16 +135,12 @@ export const LandingMediaLibrary: React.FC = () => {
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Media
-            </Button>
+              <Upload className="h-4 w-4 mr-2" />{t("uploadMedia")}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Upload Media Files</DialogTitle>
-              <DialogDescription>
-                Select files to upload to the media library.
-              </DialogDescription>
+              <DialogTitle>{t("uploadMediaFiles")}</DialogTitle>
+              <DialogDescription>{t("selectFilesToUpload")}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -156,12 +154,8 @@ export const LandingMediaLibrary: React.FC = () => {
                 />
                 <label htmlFor="file-upload" className="cursor-pointer">
                   <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to select files or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Supports images, videos, and documents
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t("clickToSelectFiles")}</p>
+                  <p className="text-xs text-muted-foreground mt-2">{t("supportsImagesVideosAnd")}</p>
                 </label>
               </div>
             </div>
@@ -172,7 +166,7 @@ export const LandingMediaLibrary: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {loading ? (
           <div className="col-span-full text-center py-8">
-            <p className="text-muted-foreground">Loading media files...</p>
+            <p className="text-muted-foreground">{t("loadingMediaFiles")}</p>
           </div>
         ) : filteredMedia.length === 0 ? (
           <div className="col-span-full text-center py-8">
@@ -275,10 +269,8 @@ export const LandingMediaLibrary: React.FC = () => {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Media File</DialogTitle>
-            <DialogDescription>
-              Update the metadata for this media file.
-            </DialogDescription>
+            <DialogTitle>{t("editMediaFile")}</DialogTitle>
+            <DialogDescription>{t("updateTheMetadataFor")}</DialogDescription>
           </DialogHeader>
           {selectedFile && (
             <MediaEditForm
@@ -315,7 +307,7 @@ const MediaEditForm: React.FC<MediaEditFormProps> = ({ file, onSubmit }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="alt_text">Alt Text (English)</Label>
+        <Label htmlFor="alt_text">{t("altTextEnglish")}</Label>
         <Input
           id="alt_text"
           value={formData.alt_text}
@@ -325,7 +317,7 @@ const MediaEditForm: React.FC<MediaEditFormProps> = ({ file, onSubmit }) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="alt_text_ar">Alt Text (Arabic)</Label>
+        <Label htmlFor="alt_text_ar">{t("altTextArabic")}</Label>
         <Input
           id="alt_text_ar"
           value={formData.alt_text_ar}
@@ -345,7 +337,7 @@ const MediaEditForm: React.FC<MediaEditFormProps> = ({ file, onSubmit }) => {
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button type="submit">Update Media</Button>
+        <Button type="submit">{t("updateMedia")}</Button>
       </div>
     </form>
   );

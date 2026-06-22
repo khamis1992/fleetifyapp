@@ -78,13 +78,11 @@ export default function QuickPayment({ className }: QuickPaymentProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <PageHelp
-              title="مساعدة صفحة الدفعات"
-              content={<QuickPaymentPageHelpContent />}
-              triggerText="مساعدة"
-            />
-          </Button>
+          <PageHelp
+            title="مساعدة صفحة الدفعات"
+            content={<QuickPaymentPageHelpContent />}
+            triggerText="مساعدة"
+          />
         </div>
       </motion.div>
 

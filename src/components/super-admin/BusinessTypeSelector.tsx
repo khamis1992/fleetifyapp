@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BusinessType, ModuleName } from '@/types/modules';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   Car, 
   Building, 
@@ -31,7 +32,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'car_rental',
     name: 'Car Rental',
     name_ar: 'تأجير السيارات',
-    description: 'Vehicle rental and fleet management',
+    description: t("vehicleRentalAndFleet"),
     description_ar: 'تأجير المركبات وإدارة الأسطول',
     icon: Car,
     modules: ['core', 'finance', 'vehicles', 'contracts', 'customers'],
@@ -41,7 +42,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'real_estate',
     name: 'Real Estate',
     name_ar: 'العقارات',
-    description: 'Property management and rentals',
+    description: t("propertyManagementAndRentals"),
     description_ar: 'إدارة العقارات والإيجارات',
     icon: Building,
     modules: ['core', 'finance', 'properties', 'contracts', 'customers', 'tenants'],
@@ -51,7 +52,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'retail',
     name: 'Retail',
     name_ar: 'التجارة التجزئة',
-    description: 'Retail sales and inventory management',
+    description: t("retailSalesAndInventory"),
     description_ar: 'البيع بالتجزئة وإدارة المخزون',
     icon: ShoppingBag,
     modules: ['core', 'finance', 'inventory', 'sales', 'customers', 'suppliers'],
@@ -61,7 +62,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'medical',
     name: 'Medical',
     name_ar: 'الطبي',
-    description: 'Healthcare and medical services',
+    description: t("healthcareAndMedicalServices"),
     description_ar: 'الرعاية الصحية والخدمات الطبية',
     icon: Stethoscope,
     modules: ['core', 'finance', 'patients', 'appointments', 'medical_records'],
@@ -71,7 +72,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'manufacturing',
     name: 'Manufacturing',
     name_ar: 'التصنيع',
-    description: 'Manufacturing and production',
+    description: t("manufacturingAndProduction"),
     description_ar: 'التصنيع والإنتاج',
     icon: Factory,
     modules: ['core', 'finance', 'inventory', 'suppliers', 'sales'],
@@ -81,7 +82,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'restaurant',
     name: 'Restaurant',
     name_ar: 'المطاعم',
-    description: 'Restaurant and food service',
+    description: t("restaurantAndFoodService"),
     description_ar: 'المطاعم وخدمات الطعام',
     icon: UtensilsCrossed,
     modules: ['core', 'finance', 'menu', 'orders', 'customers', 'inventory'],
@@ -91,7 +92,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'logistics',
     name: 'Logistics',
     name_ar: 'اللوجستيات',
-    description: 'Logistics and transportation',
+    description: t("logisticsAndTransportation"),
     description_ar: 'اللوجستيات والنقل',
     icon: Truck,
     modules: ['core', 'finance', 'vehicles', 'customers', 'contracts'],
@@ -101,7 +102,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'education',
     name: 'Education',
     name_ar: 'التعليم',
-    description: 'Educational institutions',
+    description: t("educationalInstitutions"),
     description_ar: 'المؤسسات التعليمية',
     icon: GraduationCap,
     modules: ['core', 'finance', 'customers'],
@@ -111,7 +112,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'consulting',
     name: 'Consulting',
     name_ar: 'الاستشارات',
-    description: 'Professional consulting services',
+    description: t("professionalConsultingServices"),
     description_ar: 'خدمات الاستشارات المهنية',
     icon: Users,
     modules: ['core', 'finance', 'customers', 'contracts'],
@@ -121,7 +122,7 @@ const businessTypes: BusinessTypeOption[] = [
     type: 'construction',
     name: 'Construction',
     name_ar: 'البناء والتشييد',
-    description: 'Construction and building',
+    description: t("constructionAndBuilding"),
     description_ar: 'البناء والتشييد',
     icon: Hammer,
     modules: ['core', 'finance', 'customers', 'contracts', 'suppliers'],
@@ -140,6 +141,7 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({
   onTypeSelect,
   showModules = true
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const moduleNames: Record<ModuleName, string> = {
     core: 'النواة الأساسية',
     finance: 'المالية',

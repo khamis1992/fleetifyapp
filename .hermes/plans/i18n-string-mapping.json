@@ -1,0 +1,5512 @@
+{
+  "string_to_key": {
+    "A new API key has been generated. Please store it securely.": "aNewApiKey",
+    "A test email has been sent to verify the configuration.": "aTestEmailHas",
+    "A test payload has been sent to the webhook endpoint.": "aTestPayloadHas",
+    "AI Assistant": "aiAssistant",
+    "AI-Powered": "aipowered",
+    "AL ARRAF": "alArraf",
+    "AL-ARAF CAR RENTAL L.L.C": "alarafCarRentalLlc",
+    "API": "api",
+    "API Configuration": "apiConfiguration",
+    "API Documentation": "apiDocumentation",
+    "API Key Management": "apiKeyManagement",
+    "API Management": "apiManagement",
+    "API Usage Statistics": "apiUsageStatistics",
+    "API key generated": "apiKeyGenerated",
+    "About Us": "aboutUs",
+    "Account": "account",
+    "Account Code": "accountCode",
+    "Account lockout after 5 attempts": "accountLockoutAfter5",
+    "Accounting, invoicing, and financial analytics": "accountingInvoicingAndFinancial",
+    "Accuracy Improvement": "accuracyImprovement",
+    "Acknowledge": "acknowledge",
+    "Across all transactions": "acrossAllTransactions",
+    "Across {dbStats.tableCount} tables": "acrossDbstatstablecountTables",
+    "Action": "action",
+    "Active": "active",
+    "Active Alerts": "activeAlerts",
+    "Active Filters": "activeFilters",
+    "Active Financial Alerts": "activeFinancialAlerts",
+    "Active Keys": "activeKeys",
+    "Active users now": "activeUsersNow",
+    "Add Webhook": "addWebhook",
+    "Add sections in the Content tab to see them here": "addSectionsInThe",
+    "Additional Metadata": "additionalMetadata",
+    "Additional Notes": "additionalNotes",
+    "Advanced Audit Search": "advancedAuditSearch",
+    "Advanced Search": "advancedSearch",
+    "Advanced features for established companies": "advancedFeaturesForEstablished",
+    "Agent Performance": "agentPerformance",
+    "Agents": "agents",
+    "Al-Araf Car Rental": "alarafCarRental",
+    "Al-Araf Car Rental Company": "alarafCarRentalCompany",
+    "Al-Araf Car Rental System - Generated Document": "alarafCarRentalSystem",
+    "Alaraf Car Rental": "alarafCarRental1",
+    "All Actions": "allActions",
+    "All Clear": "allClear",
+    "All Companies": "allCompanies",
+    "All Companies (Global)": "allCompaniesGlobal",
+    "All Currencies": "allCurrencies",
+    "All Entity Types": "allEntityTypes",
+    "All Files": "allFiles",
+    "All Severities": "allSeverities",
+    "All Statuses": "allStatuses",
+    "All actions": "allActions1",
+    "All audit records have been verified successfully. No integrity issues detected.": "allAuditRecordsHave",
+    "All resources": "allResources",
+    "All statuses": "allStatuses1",
+    "All system actions are logged": "allSystemActionsAre",
+    "Allow Anonymous Users": "allowAnonymousUsers",
+    "Allow the system to send webhook notifications": "allowTheSystemTo",
+    "Alt Text (Arabic)": "altTextArabic",
+    "Alt Text (English)": "altTextEnglish",
+    "Amount": "amount",
+    "Amount Range": "amountRange",
+    "Analyzed in this period": "analyzedInThisPeriod",
+    "Anonymize user data": "anonymizeUserData",
+    "Approve": "approve",
+    "Approved": "approved",
+    "Archive": "archive",
+    "Assets, liabilities, equity": "assetsLiabilitiesEquity",
+    "Audit & Monitoring": "auditMonitoring",
+    "Audit Filters": "auditFilters",
+    "Audit Log Details": "auditLogDetails",
+    "Audit Logs": "auditLogs",
+    "Audit Trail": "auditTrail",
+    "Audit Trail Status": "auditTrailStatus",
+    "Audit entries analyzed": "auditEntriesAnalyzed",
+    "Authentication & Access Control": "authenticationAccessControl",
+    "Auto-Processed": "autoprocessed",
+    "Auto-confirm Email Signups": "autoconfirmEmailSignups",
+    "Automate compliance checking and alerting": "automateComplianceCheckingAnd",
+    "Automated daily backup": "automatedDailyBackup",
+    "Automatically confirm user email addresses upon signup": "automaticallyConfirmUserEmail",
+    "Automation Rate": "automationRate",
+    "Available Operations": "availableOperations",
+    "Average Query Time": "averageQueryTime",
+    "Avg Accuracy": "avgAccuracy",
+    "Avg Confidence Score": "avgConfidenceScore",
+    "Avg Processing Time": "avgProcessingTime",
+    "Avg Response": "avgResponse",
+    "Avg. Time on Page": "avgTimeOnPage",
+    "Backup Management": "backupManagement",
+    "Backup initiated": "backupInitiated",
+    "Backups & Recovery": "backupsRecovery",
+    "Basic Information": "basicInformation",
+    "Basic features for small teams": "basicFeaturesForSmall",
+    "Batch Job Created": "batchJobCreated",
+    "Batch Processing Failed": "batchProcessingFailed",
+    "Being": "being",
+    "Bottom Sheet": "bottomSheet",
+    "Bounce Rate": "bounceRate",
+    "Bulk Operations": "bulkOperations",
+    "Bulk Processing Started": "bulkProcessingStarted",
+    "Business intelligence and advanced reporting": "businessIntelligenceAndAdvanced",
+    "Button Clicks": "buttonClicks",
+    "CAR RENTAL L.L.C": "carRentalLlc",
+    "CEO, Company {i}": "ceoCompanyI",
+    "CPU Usage": "cpuUsage",
+    "CSV": "csv",
+    "Cache Hit Rate": "cacheHitRate",
+    "Call to Action": "callToAction",
+    "Cancel": "cancel",
+    "Cars": "cars",
+    "Cash Flow Adequacy": "cashFlowAdequacy",
+    "Cash inflows and outflows": "cashInflowsAndOutflows",
+    "Category": "category",
+    "Change subscription plan for selected companies": "changeSubscriptionPlanFor",
+    "Changes": "changes",
+    "Clear": "clear",
+    "Clear All": "clearAll",
+    "Clear Filters": "clearFilters",
+    "Click to select files or drag and drop": "clickToSelectFiles",
+    "Close": "close",
+    "Collections": "collections",
+    "Colors": "colors",
+    "Comma-separated values for spreadsheet applications": "commaseparatedValuesForSpreadsheet",
+    "Company Management": "companyManagement",
+    "Company Selection": "companySelection",
+    "Compliance": "compliance",
+    "Compliance Concern": "complianceConcern",
+    "Compliance Features": "complianceFeatures",
+    "Compliance Flags": "complianceFlags",
+    "Compliance Metrics": "complianceMetrics",
+    "Compliance Monitoring": "complianceMonitoring",
+    "Compliance Recommendations": "complianceRecommendations",
+    "Compliance Score": "complianceScore",
+    "Compliance Status": "complianceStatus",
+    "Compliance Violations": "complianceViolations",
+    "Compliance mode": "complianceMode",
+    "Comprehensive performance metrics and insights": "comprehensivePerformanceMetricsAnd",
+    "Comprehensive view of the audit trail entry": "comprehensiveViewOfThe",
+    "Confidence": "confidence",
+    "Configuration Management": "configurationManagement",
+    "Configure": "configure",
+    "Configure SMTP settings for system-wide email delivery": "configureSmtpSettingsFor",
+    "Configure system monitoring and audit logging settings": "configureSystemMonitoringAnd",
+    "Configure system-wide authentication policies and access controls": "configureSystemwideAuthenticationPolicies",
+    "Configure system-wide settings and manage platform features": "configureSystemwideSettingsAnd",
+    "Configure the section properties and content.": "configureTheSectionProperties",
+    "Configured Webhooks": "configuredWebhooks",
+    "Connections": "connections",
+    "Consider adding more Arabic handwriting training data to improve accuracy": "considerAddingMoreArabic",
+    "Consider reviewing the identified violations and implementing additional controls.": "considerReviewingTheIdentified",
+    "Construction and building": "constructionAndBuilding",
+    "Contact": "contact",
+    "Contract": "contract",
+    "Contract Details Summary": "contractDetailsSummary",
+    "Contracts": "contracts",
+    "Conversion Goal": "conversionGoal",
+    "Conversion Rate": "conversionRate",
+    "Conversions": "conversions",
+    "Converting file to images for visual analysis": "convertingFileToImages",
+    "Cost Center": "costCenter",
+    "Cost Savings Analysis": "costSavingsAnalysis",
+    "Count": "count",
+    "Create": "create",
+    "Create New Template": "createNewTemplate",
+    "Create New Theme": "createNewTheme",
+    "Create Your First Theme": "createYourFirstTheme",
+    "Create and manage database backups for disaster recovery": "createAndManageDatabase",
+    "Critical": "critical",
+    "Critical Integrity Issues": "criticalIntegrityIssues",
+    "Critical Issues": "criticalIssues",
+    "Cryptographic verification of audit trail records": "cryptographicVerificationOfAudit",
+    "Currency": "currency",
+    "Custom CSS": "customCss",
+    "Customer": "customer",
+    "Customer {i}": "customerI",
+    "Customers": "customers",
+    "Daily Processing Volume": "dailyProcessingVolume",
+    "Damaged": "damaged",
+    "Damages Reported": "damagesReported",
+    "Damages Reported (if any)": "damagesReportedIfAny",
+    "Danger": "danger",
+    "Data Changes": "dataChanges",
+    "Data Integrity": "dataIntegrity",
+    "Data Integrity Alert": "dataIntegrityAlert",
+    "Data Integrity Report": "dataIntegrityReport",
+    "Data Integrity Verification": "dataIntegrityVerification",
+    "Data Migration": "dataMigration",
+    "Data Migration Tools": "dataMigrationTools",
+    "Data extracted successfully": "dataExtractedSuccessfully",
+    "Database": "database",
+    "Database Maintenance": "databaseMaintenance",
+    "Database Migration": "databaseMigration",
+    "Database management, backups, and maintenance": "databaseManagementBackupsAnd",
+    "Database optimization started": "databaseOptimizationStarted",
+    "Database restore has been started. This may take several minutes.": "databaseRestoreHasBeen",
+    "Date & Time": "dateTime",
+    "Date Range": "dateRange",
+    "Declare Winner": "declareWinner",
+    "Default": "default",
+    "Default Theme": "defaultTheme",
+    "Description": "description",
+    "Description of this amazing feature that will help your business grow.": "descriptionOfThisAmazing",
+    "Details": "details",
+    "Device Breakdown": "deviceBreakdown",
+    "Device View": "deviceView",
+    "Disk Usage": "diskUsage",
+    "Document Information": "documentInformation",
+    "Documents": "documents",
+    "Download OpenAPI": "downloadOpenapi",
+    "Draft": "draft",
+    "Drag files here or click to select": "dragFilesHereOr",
+    "Drag files here...": "dragFilesHere",
+    "Driver metrics report": "driverMetricsReport",
+    "Duplicate": "duplicate",
+    "Duplicate Theme": "duplicateTheme",
+    "Duplicates": "duplicates",
+    "ESC": "esc",
+    "Edge Function": "edgeFunction",
+    "Edit": "edit",
+    "Edit Media File": "editMediaFile",
+    "Edit Plan": "editPlan",
+    "Educational institutions": "educationalInstitutions",
+    "Efficiency Gain": "efficiencyGain",
+    "Email": "email",
+    "Email Configuration": "emailConfiguration",
+    "Email Templates": "emailTemplates",
+    "Email delivery and transactional emails": "emailDeliveryAndTransactional",
+    "Email settings saved": "emailSettingsSaved",
+    "Employee": "employee",
+    "Employee attendance data": "employeeAttendanceData",
+    "Employee leave tracking": "employeeLeaveTracking",
+    "Employee management, payroll, and attendance tracking": "employeeManagementPayrollAnd",
+    "Enable CORS": "enableCors",
+    "Enable System Audit Logging": "enableSystemAuditLogging",
+    "Enable Two-Factor Authentication": "enableTwofactorAuthentication",
+    "Enable Webhooks": "enableWebhooks",
+    "Enable/disable features and manage subscription plans": "enabledisableFeaturesAndManage",
+    "Enforce Strong Password Policy": "enforceStrongPasswordPolicy",
+    "Enhanced monitoring of high-risk transactions": "enhancedMonitoringOfHighrisk",
+    "Enter": "enter",
+    "Entity": "entity",
+    "Entity Details": "entityDetails",
+    "Entity Type": "entityType",
+    "Error": "error",
+    "Error Processing Files": "errorProcessingFiles",
+    "Error Reduction": "errorReduction",
+    "Errors": "errors",
+    "Essential features for growing businesses": "essentialFeaturesForGrowing",
+    "Event": "event",
+    "Event Tracking": "eventTracking",
+    "Excel": "excel",
+    "Excel (XLSX)": "excelXlsx",
+    "Excellent": "excellent",
+    "Excellent Compliance": "excellentCompliance",
+    "Excellent Integrity": "excellentIntegrity",
+    "Excellent improvement": "excellentImprovement",
+    "Execute": "execute",
+    "Experience the future of business management": "experienceTheFutureOf",
+    "Export": "export",
+    "Export All Data": "exportAllData",
+    "Export Audit Data": "exportAuditData",
+    "Export CSV": "exportCsv",
+    "Export Format": "exportFormat",
+    "Export Plan Data": "exportPlanData",
+    "Export Report": "exportReport",
+    "Export Summary": "exportSummary",
+    "Export Theme": "exportTheme",
+    "Export data for selected companies": "exportDataForSelected",
+    "Export to CSV": "exportToCsv",
+    "Export to PDF": "exportToPdf",
+    "Export {selectedFormat.toUpperCase()}": "exportSelectedformattouppercase",
+    "Export {totalCount.toLocaleString()} audit records in your preferred format": "exportTotalcounttolocalestringAuditRecords",
+    "Exporting...": "exporting",
+    "Exterior": "exterior",
+    "Extracted Violations": "extractedViolations",
+    "Extracting data from files...": "extractingDataFromFiles",
+    "Extracting text from file": "extractingTextFromFile",
+    "Facebook": "facebook",
+    "Failed": "failed",
+    "Failed Checks": "failedChecks",
+    "Failed to load audit logs": "failedToLoadAudit",
+    "Failure Rate": "failureRate",
+    "Faster invoice processing workflow": "fasterInvoiceProcessingWorkflow",
+    "Feature Gates": "featureGates",
+    "Feature Management": "featureManagement",
+    "Feature {i}": "featureI",
+    "Features": "features",
+    "Fee has been added to the invoice": "feeHasBeenAdded",
+    "Fee has been waived successfully": "feeHasBeenWaived",
+    "Fewer Errors": "fewerErrors",
+    "Filter Options": "filterOptions",
+    "Filters": "filters",
+    "Final demand with legal language": "finalDemandWithLegal",
+    "Financial": "financial",
+    "Financial Alerts": "financialAlerts",
+    "Financial Audit Trail": "financialAuditTrail",
+    "Financial Impact": "financialImpact",
+    "Financial Information": "financialInformation",
+    "Financing Dependency": "financingDependency",
+    "Fleet usage statistics": "fleetUsageStatistics",
+    "Fleetify": "fleetify",
+    "Fleetify AI Assistant": "fleetifyAiAssistant",
+    "Form Submissions": "formSubmissions",
+    "Found {searchResults.length} matching audit entries": "foundSearchresultslengthMatchingAudit",
+    "Free Cash Flow": "freeCashFlow",
+    "Free Trial Period (days)": "freeTrialPeriodDays",
+    "From Date": "fromDate",
+    "From Email": "fromEmail",
+    "Fuel Level": "fuelLevel",
+    "Fuel usage breakdown": "fuelUsageBreakdown",
+    "Full Backup": "fullBackup",
+    "GDPR": "gdpr",
+    "GDPR متوافق، تحكم كامل في بياناتك، وحق النسيان والتصدير": "gdpr1",
+    "Generate Investigation Report": "generateInvestigationReport",
+    "Generate New Key": "generateNewKey",
+    "Get Started Today": "getStartedToday",
+    "Global Branding": "globalBranding",
+    "Global Notification Preferences": "globalNotificationPreferences",
+    "Global notification settings and email configurations": "globalNotificationSettingsAnd",
+    "Global subscription plan settings and configurations": "globalSubscriptionPlanSettings",
+    "Go to Dashboard": "goToDashboard",
+    "Good Integrity": "goodIntegrity",
+    "Good with Room for Improvement": "goodWithRoomFor",
+    "Google Vision API": "googleVisionApi",
+    "Healthcare and medical services": "healthcareAndMedicalServices",
+    "Hero Section": "heroSection",
+    "High": "high",
+    "High Risk Transactions": "highRiskTransactions",
+    "Home": "home",
+    "Hours Saved": "hoursSaved",
+    "Images": "images",
+    "Immediate Action Required": "immediateActionRequired",
+    "Implement additional segregation of duties controls": "implementAdditionalSegregationOf",
+    "Import Companies": "importCompanies",
+    "Import Templates": "importTemplates",
+    "Include amounts, currencies, and transaction details": "includeAmountsCurrenciesAnd",
+    "Include compliance flags, retention periods, and audit metadata": "includeComplianceFlagsRetention",
+    "Include financial data": "includeFinancialData",
+    "Include hash signatures and verification status": "includeHashSignaturesAnd",
+    "Include integrity data": "includeIntegrityData",
+    "Incremental Backup": "incrementalBackup",
+    "Input": "input",
+    "Instagram": "instagram",
+    "Instance ID": "instanceId",
+    "Integrations": "integrations",
+    "Integrity": "integrity",
+    "Integrity Issues Detected": "integrityIssuesDetected",
+    "Integrity Status Summary": "integrityStatusSummary",
+    "Interior": "interior",
+    "Internationalization Error": "internationalizationError",
+    "Invoice": "invoice",
+    "Invoice Scanner Analytics": "invoiceScannerAnalytics",
+    "Invoices processed without manual intervention": "invoicesProcessedWithoutManual",
+    "Items Returned": "itemsReturned",
+    "JSON": "json",
+    "Join thousands of satisfied customers today": "joinThousandsOfSatisfied",
+    "Journal Entry": "journalEntry",
+    "Kanban": "kanban",
+    "Key Features": "keyFeatures",
+    "Key Insights & Recommendations": "keyInsightsRecommendations",
+    "Label Text": "labelText",
+    "Last Backup": "lastBackup",
+    "Latest agent activities": "latestAgentActivities",
+    "Latest financial operations and changes": "latestFinancialOperationsAnd",
+    "Learn More": "learnMore",
+    "Legal cases overview": "legalCasesOverview",
+    "Legal documents for court filing": "legalDocumentsForCourt",
+    "LinkedIn": "linkedin",
+    "Loading alerts...": "loadingAlerts",
+    "Loading analytics data...": "loadingAnalyticsData",
+    "Loading companies...": "loadingCompanies",
+    "Loading compliance data...": "loadingComplianceData",
+    "Loading groups...": "loadingGroups",
+    "Loading internationalization...": "loadingInternationalization",
+    "Loading media files...": "loadingMediaFiles",
+    "Loading preview...": "loadingPreview",
+    "Loading sections...": "loadingSections",
+    "Loading...": "loading",
+    "Location": "location",
+    "Log all system actions and user activities": "logAllSystemActions",
+    "Logistics and transportation": "logisticsAndTransportation",
+    "Logs": "logs",
+    "Low": "low",
+    "Machine-readable format for data processing": "machinereadableFormatForData",
+    "Maintenance": "maintenance",
+    "Manage API access, rate limiting, and security settings": "manageApiAccessRate",
+    "Manage all system-wide settings from this centralized control panel": "manageAllSystemwideSettings",
+    "Manage company settings and configurations": "manageCompanySettingsAnd",
+    "Manage global templates and document settings": "manageGlobalTemplatesAnd",
+    "Manage multiple companies from one dashboard": "manageMultipleCompaniesFrom",
+    "Manage system-wide email templates used for notifications": "manageSystemwideEmailTemplates",
+    "Manage third-party integrations and external services": "manageThirdpartyIntegrationsAnd",
+    "Manage webhook endpoints for real-time event notifications": "manageWebhookEndpointsFor",
+    "Manual entry error rate dropped significantly": "manualEntryErrorRate",
+    "Manufacturing and production": "manufacturingAndProduction",
+    "Matched": "matched",
+    "Max Failed Login Attempts": "maxFailedLoginAttempts",
+    "Mechanical": "mechanical",
+    "Medium": "medium",
+    "Memory Usage": "memoryUsage",
+    "Microsoft Excel format with formatting": "microsoftExcelFormatWith",
+    "Migrate Schema": "migrateSchema",
+    "Migration History": "migrationHistory",
+    "Minimum 8 characters with special chars": "minimum8CharactersWith",
+    "Minimum Password Length": "minimumPasswordLength",
+    "Minor": "minor",
+    "Missing Required Approvals": "missingRequiredApprovals",
+    "Moderate": "moderate",
+    "Moderate Integrity Concerns": "moderateIntegrityConcerns",
+    "Monitor audit events in real-time": "monitorAuditEventsIn",
+    "Monitor database performance and resource usage": "monitorDatabasePerformanceAnd",
+    "Monitoring": "monitoring",
+    "Most audit records have been verified successfully. Some minor issues may exist.": "mostAuditRecordsHave",
+    "Navigation Sidebar": "navigationSidebar",
+    "Net profit breakdown": "netProfitBreakdown",
+    "No Theme Selected": "noThemeSelected",
+    "No audit logs found": "noAuditLogsFound",
+    "No change data available for this entry": "noChangeDataAvailable",
+    "No companies selected": "noCompaniesSelected",
+    "No compliance violations detected in this period.": "noComplianceViolationsDetected",
+    "No event data available for the selected period": "noEventDataAvailable",
+    "No financial alerts at this time": "noFinancialAlertsAt",
+    "No page data available": "noPageDataAvailable",
+    "No recent audit activity found": "noRecentAuditActivity",
+    "No recent audit alerts detected": "noRecentAuditAlerts",
+    "No recent events": "noRecentEvents",
+    "No results found": "noResultsFound",
+    "No sections found. Create your first section to get started.": "noSectionsFoundCreate",
+    "Notes": "notes",
+    "Notifications": "notifications",
+    "OCR Accuracy": "ocrAccuracy",
+    "Odometer Reading": "odometerReading",
+    "Only PDF and image files accepted (JPG, PNG, GIF, WEBP)": "onlyPdfAndImage",
+    "Only show records with compliance violations": "onlyShowRecordsWith",
+    "Oops! Page not found": "oopsPageNotFound",
+    "Open in New Tab": "openInNewTab",
+    "Operating Cash Flow Ratio": "operatingCashFlowRatio",
+    "Operating expenses summary": "operatingExpensesSummary",
+    "Operation in progress...": "operationInProgress",
+    "Optimize Database": "optimizeDatabase",
+    "Optimize database performance and manage table statistics": "optimizeDatabasePerformanceAnd",
+    "Options": "options",
+    "Overall Compliance Score": "overallComplianceScore",
+    "Overall Integrity Score": "overallIntegrityScore",
+    "Overall check results": "overallCheckResults",
+    "Overdue": "overdue",
+    "Overview": "overview",
+    "PDF": "pdf",
+    "PDF, Excel, CSV": "pdfExcelCsv",
+    "Page Views": "pageViews",
+    "Page not found": "pageNotFound",
+    "Paid Amount": "paidAmount",
+    "Pass Rate": "passRate",
+    "Pause": "pause",
+    "Payment": "payment",
+    "Payment Grace Period (days)": "paymentGracePeriodDays",
+    "Payment Receipts": "paymentReceipts",
+    "Payment processing and subscription management": "paymentProcessingAndSubscription",
+    "Pending": "pending",
+    "Perform bulk operations on selected companies": "performBulkOperationsOn",
+    "Performance": "performance",
+    "Performance Metrics": "performanceMetrics",
+    "Performance Monitoring": "performanceMonitoring",
+    "Period Analysis": "periodAnalysis",
+    "Photos (Vehicle/Damage)": "photosVehicledamage",
+    "Plan Management": "planManagement",
+    "Plan updated": "planUpdated",
+    "Plate": "plate",
+    "Please select at least one company to perform the operation.": "pleaseSelectAtLeast",
+    "Please select violations to save": "pleaseSelectViolationsTo",
+    "Please upload a file (image or PDF) first": "pleaseUploadAFile",
+    "Please wait, this may take a few minutes": "pleaseWaitThisMay",
+    "Portable Document Format for reports and sharing": "portableDocumentFormatFor",
+    "Posted": "posted",
+    "Preview Settings": "previewSettings",
+    "Previously resolved financial alerts": "previouslyResolvedFinancialAlerts",
+    "Primary": "primary",
+    "Processing Efficiency": "processingEfficiency",
+    "Processing error": "processingError",
+    "Processing failures": "processingFailures",
+    "Professional consulting services": "professionalConsultingServices",
+    "Promise": "promise",
+    "Property management and rentals": "propertyManagementAndRentals",
+    "QAR": "qar",
+    "QAR {formData.monthlyAmount.toLocaleString()}": "qarFormdatamonthlyamounttolocalestring",
+    "QAR {payment.amount.toLocaleString()}": "qarPaymentamounttolocalestring",
+    "QAR {stats.monthlyRevenue.toLocaleString()}": "qarStatsmonthlyrevenuetolocalestring",
+    "QAR {total.toLocaleString()}": "qarTotaltolocalestring",
+    "QAR {totalOverdue.toLocaleString()}": "qarTotaloverduetolocalestring",
+    "QID غير صحيح": "qid",
+    "Quality & Accuracy Trends": "qualityAccuracyTrends",
+    "Quality & compliance monitoring": "qualityComplianceMonitoring",
+    "Quality Trend": "qualityTrend",
+    "Quality Trends": "qualityTrends",
+    "Quality of matches": "qualityOfMatches",
+    "Query Performance": "queryPerformance",
+    "Quick Actions": "quickActions",
+    "REST API access for custom integrations": "restApiAccessFor",
+    "ROI & Efficiency": "roiEfficiency",
+    "React Components": "reactComponents",
+    "Ready to Get Started?": "readyToGetStarted",
+    "Real-time Activity": "realtimeActivity",
+    "Real-time Alerts": "realtimeAlerts",
+    "Real-time monitoring and alerts": "realtimeMonitoringAndAlerts",
+    "Rebuild Indexes": "rebuildIndexes",
+    "Receipt Voucher": "receiptVoucher",
+    "Receipt acknowledgment for payments": "receiptAcknowledgmentForPayments",
+    "Received From Mr.": "receivedFromMr",
+    "Recent Acknowledged Alerts": "recentAcknowledgedAlerts",
+    "Recent Audit Activity": "recentAuditActivity",
+    "Recent Audit Logs": "recentAuditLogs",
+    "Recent Backups": "recentBackups",
+    "Recent Events": "recentEvents",
+    "Recommendations": "recommendations",
+    "Records requiring review": "recordsRequiringReview",
+    "Records with integrity issues": "recordsWithIntegrityIssues",
+    "Reference Number": "referenceNumber",
+    "Refresh": "refresh",
+    "Regular compliance training for staff": "regularComplianceTrainingFor",
+    "Reject": "reject",
+    "Rejected": "rejected",
+    "Reload Page": "reloadPage",
+    "Remaining": "remaining",
+    "Remove user names and email addresses for privacy": "removeUserNamesAnd",
+    "Require Authentication": "requireAuthentication",
+    "Require Numbers": "requireNumbers",
+    "Require Special Characters": "requireSpecialCharacters",
+    "Reset Filters": "resetFilters",
+    "Reset trial period for selected companies": "resetTrialPeriodFor",
+    "Resolved": "resolved",
+    "Resource": "resource",
+    "Resource Type": "resourceType",
+    "Resource Usage": "resourceUsage",
+    "Restaurant and food service": "restaurantAndFoodService",
+    "Restore": "restore",
+    "Restore from Backup": "restoreFromBackup",
+    "Restore initiated": "restoreInitiated",
+    "Results Limit": "resultsLimit",
+    "Retail sales and inventory management": "retailSalesAndInventory",
+    "Return Date": "returnDate",
+    "Return Location": "returnLocation",
+    "Return on Investment": "returnOnInvestment",
+    "Return to Home": "returnToHome",
+    "Revenue breakdown by category": "revenueBreakdownByCategory",
+    "Revenue vs expenses summary": "revenueVsExpensesSummary",
+    "Review": "review",
+    "Review & Save": "reviewSave",
+    "Review Tampered Records": "reviewTamperedRecords",
+    "Review and strengthen approval workflows": "reviewAndStrengthenApproval",
+    "Risk Score": "riskScore",
+    "Run Verification": "runVerification",
+    "SMTP Host": "smtpHost",
+    "SMTP Password": "smtpPassword",
+    "SMTP Port": "smtpPort",
+    "SMTP Username": "smtpUsername",
+    "SMTP configuration has been updated successfully.": "smtpConfigurationHasBeen",
+    "SUV": "suv",
+    "Salary and wages summary": "salaryAndWagesSummary",
+    "Save Changes": "saveChanges",
+    "Save Email Settings": "saveEmailSettings",
+    "Save Security Settings": "saveSecuritySettings",
+    "Save Settings": "saveSettings",
+    "Saved successfully": "savedSuccessfully",
+    "Scroll Depth": "scrollDepth",
+    "Search": "search",
+    "Search Results": "searchResults",
+    "Search audit trail with advanced filters and criteria": "searchAuditTrailWith",
+    "Search audit trail with specific criteria": "searchAuditTrailWith1",
+    "Section Name (Arabic)": "sectionNameArabic",
+    "Section Name (English)": "sectionNameEnglish",
+    "Section Type": "sectionType",
+    "Security": "security",
+    "Security & Access": "securityAccess",
+    "Security settings updated": "securitySettingsUpdated",
+    "Sedan": "sedan",
+    "Segregation of Duties": "segregationOfDuties",
+    "Segregation of Duties Violations Detected": "segregationOfDutiesViolations",
+    "Select": "select",
+    "Select All ({companies.length} companies)": "selectAllCompanieslengthCompanies",
+    "Select an existing theme to edit or create a new one to get started.": "selectAnExistingTheme",
+    "Select companies to perform bulk operations": "selectCompaniesToPerform",
+    "Select files to upload to the media library.": "selectFilesToUpload",
+    "Send system notification to selected companies": "sendSystemNotificationTo",
+    "Service and repair costs": "serviceAndRepairCosts",
+    "Session Timeout (hours)": "sessionTimeoutHours",
+    "Settlement agreement with payment terms": "settlementAgreementWithPayment",
+    "Severe": "severe",
+    "Severity": "severity",
+    "Show Rulers": "showRulers",
+    "Showing {logs.length} of {totalCount}": "showingLogslengthOfTotalcount",
+    "Since system deployment": "sinceSystemDeployment",
+    "Slow Queries": "slowQueries",
+    "Sort Order": "sortOrder",
+    "Spacing": "spacing",
+    "Spacing Configuration": "spacingConfiguration",
+    "Speed Performance": "speedPerformance",
+    "Spinners": "spinners",
+    "Staff performance stats": "staffPerformanceStats",
+    "Start": "start",
+    "Start Free Trial": "startFreeTrial",
+    "Statistics": "statistics",
+    "Status": "status",
+    "Status Distribution": "statusDistribution",
+    "Stripe": "stripe",
+    "Subscription Plans": "subscriptionPlans",
+    "Success": "success",
+    "Success Rate": "successRate",
+    "Super Admin": "superAdmin",
+    "Supports PDF and images (JPG, PNG, GIF, WEBP)": "supportsPdfAndImages",
+    "Supports images, videos, and documents": "supportsImagesVideosAnd",
+    "Suspend access for selected companies": "suspendAccessForSelected",
+    "Suspicious": "suspicious",
+    "System Feature Gates": "systemFeatureGates",
+    "System Health": "systemHealth",
+    "System Integrations": "systemIntegrations",
+    "System Settings": "systemSettings",
+    "System security configuration has been saved successfully.": "systemSecurityConfigurationHas",
+    "System security, authentication, and access control": "systemSecurityAuthenticationAnd",
+    "System-wide branding and appearance settings": "systemwideBrandingAndAppearance",
+    "Table Statistics": "tableStatistics",
+    "Tampered": "tampered",
+    "Tasks": "tasks",
+    "Team notifications and alerts": "teamNotificationsAndAlerts",
+    "Technical": "technical",
+    "Technical Details": "technicalDetails",
+    "Template Management": "templateManagement",
+    "Test": "test",
+    "Test Configuration": "testConfiguration",
+    "Test Name (Arabic)": "testNameArabic",
+    "Test Name (English)": "testNameEnglish",
+    "Test email sent": "testEmailSent",
+    "Testimonials": "testimonials",
+    "The Sum of": "theSumOf",
+    "The system is optimizing database performance. This may take a few minutes.": "theSystemIsOptimizing",
+    "Theme Actions": "themeActions",
+    "Theme Info": "themeInfo",
+    "Theme Name (Arabic)": "themeNameArabic",
+    "Theme Name (English)": "themeNameEnglish",
+    "Theme Settings": "themeSettings",
+    "These alerts require your immediate attention": "theseAlertsRequireYour",
+    "Third-party integrations and API management": "thirdpartyIntegrationsAndApi",
+    "This invoice was generated by Fleetify Financial System": "thisInvoiceWasGenerated",
+    "Time Savings": "timeSavings",
+    "Time on Page": "timeOnPage",
+    "To Date": "toDate",
+    "Toggle Sidebar": "toggleSidebar",
+    "Token": "token",
+    "Top Pages": "topPages",
+    "Top {topEmployees.length}": "topTopemployeeslength",
+    "Total": "total",
+    "Total (QR)": "totalQr",
+    "Total Amount": "totalAmount",
+    "Total Records": "totalRecords",
+    "Total Requests": "totalRequests",
+    "Total Runs": "totalRuns",
+    "Total Savings": "totalSavings",
+    "Total Scans": "totalScans",
+    "Total Size": "totalSize",
+    "Total Transactions": "totalTransactions",
+    "Total Views": "totalViews",
+    "Traceability status": "traceabilityStatus",
+    "Traffic Sources": "trafficSources",
+    "Traffic violations list": "trafficViolationsList",
+    "Truck": "truck",
+    "Twitter": "twitter",
+    "Types of violations detected": "typesOfViolationsDetected",
+    "Typography": "typography",
+    "Typography Settings": "typographySettings",
+    "Umm Salal Mohammed, Commercial St.": "ummSalalMohammedCommercial",
+    "Unique Visitors": "uniqueVisitors",
+    "Unknown": "unknown",
+    "Upcoming renewals": "upcomingRenewals",
+    "Update": "update",
+    "Update Media": "updateMedia",
+    "Update Statistics": "updateStatistics",
+    "Update the metadata for this media file.": "updateTheMetadataFor",
+    "Upload Media": "uploadMedia",
+    "Upload Media Files": "uploadMediaFiles",
+    "Uploaded Files ({uploadedFiles.length})": "uploadedFilesUploadedfileslength",
+    "User Information": "userInformation",
+    "User Productivity": "userProductivity",
+    "VIP": "vip",
+    "Variant A (Control)": "variantAControl",
+    "Variant B (Test)": "variantBTest",
+    "Vehicle": "vehicle",
+    "Vehicle Condition": "vehicleCondition",
+    "Vehicle No.": "vehicleNo",
+    "Vehicle Return - {vehicleName}": "vehicleReturnVehiclename",
+    "Vehicle availability status": "vehicleAvailabilityStatus",
+    "Vehicle rental and fleet management": "vehicleRentalAndFleet",
+    "Vehicle tracking, maintenance, and fleet analytics": "vehicleTrackingMaintenanceAnd",
+    "Verification Errors": "verificationErrors",
+    "Verification Statistics": "verificationStatistics",
+    "Verification Status": "verificationStatus",
+    "Verified": "verified",
+    "Verifying audit trail integrity...": "verifyingAuditTrailIntegrity",
+    "Videos": "videos",
+    "View Detailed Performance Report": "viewDetailedPerformanceReport",
+    "View Details": "viewDetails",
+    "View Docs": "viewDocs",
+    "View Keys": "viewKeys",
+    "View and track all sensitive operations in the system": "viewAndTrackAll",
+    "Violation Breakdown": "violationBreakdown",
+    "Violations": "violations",
+    "Visitors": "visitors",
+    "Voice Recordings": "voiceRecordings",
+    "Warning": "warning",
+    "Webhook Configuration": "webhookConfiguration",
+    "Webhook Secret": "webhookSecret",
+    "Webhook test sent": "webhookTestSent",
+    "Webhooks": "webhooks",
+    "Welcome to Our Platform": "welcomeToOurPlatform",
+    "What Our Customers Say": "whatOurCustomersSay",
+    "Witness Statements": "witnessStatements",
+    "Word": "word",
+    "Workflow automation and integrations": "workflowAutomationAndIntegrations",
+    "Your financial metrics are within normal ranges": "yourFinancialMetricsAre"
+  },
+  "file_string_map": {
+    "src\\components\\ai-chat-assistant\\AIChatWidget.tsx": [
+      [
+        "jsx",
+        "Fleetify AI Assistant",
+        635
+      ]
+    ],
+    "src\\components\\audit\\AuditFilters.tsx": [
+      [
+        "jsx",
+        "Filter Options",
+        104
+      ],
+      [
+        "jsx",
+        "Clear All",
+        111
+      ],
+      [
+        "jsx",
+        "Entity Type",
+        120
+      ],
+      [
+        "jsx",
+        "All Entity Types",
+        131
+      ],
+      [
+        "jsx",
+        "Action",
+        143
+      ],
+      [
+        "jsx",
+        "All Actions",
+        154
+      ],
+      [
+        "jsx",
+        "Status",
+        166
+      ],
+      [
+        "jsx",
+        "All Statuses",
+        177
+      ],
+      [
+        "jsx",
+        "Severity",
+        189
+      ],
+      [
+        "jsx",
+        "All Severities",
+        200
+      ],
+      [
+        "jsx",
+        "Verification Status",
+        212
+      ],
+      [
+        "jsx",
+        "All Statuses",
+        223
+      ],
+      [
+        "jsx",
+        "Currency",
+        235
+      ],
+      [
+        "jsx",
+        "All Currencies",
+        246
+      ],
+      [
+        "jsx",
+        "Date Range",
+        257
+      ],
+      [
+        "jsx",
+        "Amount Range",
+        314
+      ],
+      [
+        "jsx",
+        "Search",
+        333
+      ],
+      [
+        "jsx",
+        "Reference Number",
+        343
+      ],
+      [
+        "jsx",
+        "Account Code",
+        353
+      ],
+      [
+        "jsx",
+        "Compliance Flags",
+        363
+      ],
+      [
+        "jsx",
+        "Only show records with compliance violations",
+        372
+      ],
+      [
+        "jsx",
+        "Active Filters",
+        383
+      ],
+      [
+        "label",
+        "Payment",
+        34
+      ],
+      [
+        "label",
+        "Invoice",
+        35
+      ],
+      [
+        "label",
+        "Contract",
+        36
+      ],
+      [
+        "label",
+        "Journal Entry",
+        37
+      ],
+      [
+        "label",
+        "Account",
+        38
+      ],
+      [
+        "label",
+        "Customer",
+        39
+      ],
+      [
+        "label",
+        "Success",
+        47
+      ],
+      [
+        "label",
+        "Failed",
+        48
+      ],
+      [
+        "label",
+        "Pending",
+        49
+      ],
+      [
+        "label",
+        "Low",
+        53
+      ],
+      [
+        "label",
+        "Medium",
+        54
+      ],
+      [
+        "label",
+        "High",
+        55
+      ],
+      [
+        "label",
+        "Critical",
+        56
+      ],
+      [
+        "label",
+        "Verified",
+        60
+      ],
+      [
+        "label",
+        "Tampered",
+        61
+      ],
+      [
+        "label",
+        "Suspicious",
+        62
+      ]
+    ],
+    "src\\components\\audit\\AuditLogDetailsDialog.tsx": [
+      [
+        "jsx",
+        "Audit Log Details",
+        103
+      ],
+      [
+        "jsx",
+        "Comprehensive view of the audit trail entry",
+        106
+      ],
+      [
+        "jsx",
+        "Overview",
+        113
+      ],
+      [
+        "jsx",
+        "Changes",
+        114
+      ],
+      [
+        "jsx",
+        "Financial",
+        115
+      ],
+      [
+        "jsx",
+        "Technical",
+        116
+      ],
+      [
+        "jsx",
+        "Basic Information",
+        128
+      ],
+      [
+        "jsx",
+        "User Information",
+        183
+      ],
+      [
+        "jsx",
+        "Entity Details",
+        215
+      ],
+      [
+        "jsx",
+        "Data Integrity",
+        251
+      ],
+      [
+        "jsx",
+        "Data Changes",
+        298
+      ],
+      [
+        "jsx",
+        "No change data available for this entry",
+        321
+      ],
+      [
+        "jsx",
+        "Additional Metadata",
+        331
+      ],
+      [
+        "jsx",
+        "Financial Information",
+        347
+      ],
+      [
+        "jsx",
+        "Technical Details",
+        447
+      ],
+      [
+        "jsx",
+        "Close",
+        547
+      ]
+    ],
+    "src\\components\\audit\\AuditSearch.tsx": [
+      [
+        "jsx",
+        "Advanced Audit Search",
+        69
+      ],
+      [
+        "jsx",
+        "Search audit trail with advanced filters and criteria",
+        72
+      ],
+      [
+        "jsx",
+        "Clear",
+        93
+      ],
+      [
+        "jsx",
+        "Entity Type",
+        101
+      ],
+      [
+        "jsx",
+        "All Entity Types",
+        110
+      ],
+      [
+        "jsx",
+        "Payment",
+        111
+      ],
+      [
+        "jsx",
+        "Invoice",
+        112
+      ],
+      [
+        "jsx",
+        "Contract",
+        113
+      ],
+      [
+        "jsx",
+        "Journal Entry",
+        114
+      ],
+      [
+        "jsx",
+        "Account",
+        115
+      ],
+      [
+        "jsx",
+        "Customer",
+        116
+      ],
+      [
+        "jsx",
+        "Date Range",
+        122
+      ],
+      [
+        "jsx",
+        "Results Limit",
+        172
+      ],
+      [
+        "jsx",
+        "Reset Filters",
+        201
+      ],
+      [
+        "jsx",
+        "Search Results",
+        213
+      ],
+      [
+        "jsx",
+        "Found {searchResults.length} matching audit entries",
+        214
+      ],
+      [
+        "jsx",
+        "No results found",
+        280
+      ]
+    ],
+    "src\\components\\audit\\AuditTrailTable.tsx": [
+      [
+        "jsx",
+        "Audit Trail",
+        148
+      ],
+      [
+        "jsx",
+        "Audit Trail",
+        167
+      ],
+      [
+        "jsx",
+        "Refresh",
+        183
+      ],
+      [
+        "jsx",
+        "Entity",
+        219
+      ],
+      [
+        "jsx",
+        "Amount",
+        221
+      ],
+      [
+        "jsx",
+        "Status",
+        222
+      ],
+      [
+        "jsx",
+        "Severity",
+        223
+      ],
+      [
+        "jsx",
+        "Integrity",
+        224
+      ],
+      [
+        "jsx",
+        "Details",
+        225
+      ],
+      [
+        "jsx",
+        "Verified",
+        283
+      ],
+      [
+        "jsx",
+        "Tampered",
+        288
+      ],
+      [
+        "jsx",
+        "Unknown",
+        293
+      ],
+      [
+        "jsx",
+        "View Details",
+        307
+      ]
+    ],
+    "src\\components\\audit\\ComplianceMetrics.tsx": [
+      [
+        "jsx",
+        "Compliance Metrics",
+        74
+      ],
+      [
+        "jsx",
+        "Loading compliance data...",
+        75
+      ],
+      [
+        "jsx",
+        "Compliance Monitoring",
+        97
+      ],
+      [
+        "jsx",
+        "Export Report",
+        110
+      ],
+      [
+        "jsx",
+        "Overall Compliance Score",
+        137
+      ],
+      [
+        "jsx",
+        "Total Transactions",
+        172
+      ],
+      [
+        "jsx",
+        "Analyzed in this period",
+        179
+      ],
+      [
+        "jsx",
+        "High Risk Transactions",
+        187
+      ],
+      [
+        "jsx",
+        "Compliance Violations",
+        205
+      ],
+      [
+        "jsx",
+        "Types of violations detected",
+        212
+      ],
+      [
+        "jsx",
+        "Audit Trail Status",
+        220
+      ],
+      [
+        "jsx",
+        "Traceability status",
+        227
+      ],
+      [
+        "jsx",
+        "Compliance Violations",
+        239
+      ],
+      [
+        "jsx",
+        "Segregation of Duties",
+        276
+      ],
+      [
+        "jsx",
+        "Segregation of Duties Violations Detected",
+        283
+      ],
+      [
+        "jsx",
+        "Missing Required Approvals",
+        315
+      ],
+      [
+        "jsx",
+        "Overview",
+        326
+      ],
+      [
+        "jsx",
+        "Violations",
+        327
+      ],
+      [
+        "jsx",
+        "Recommendations",
+        328
+      ],
+      [
+        "jsx",
+        "Compliance Status",
+        335
+      ],
+      [
+        "jsx",
+        "Period Analysis",
+        361
+      ],
+      [
+        "jsx",
+        "Violation Breakdown",
+        388
+      ],
+      [
+        "jsx",
+        "No compliance violations detected in this period.",
+        394
+      ],
+      [
+        "jsx",
+        "Compliance Recommendations",
+        425
+      ],
+      [
+        "jsx",
+        "Excellent Compliance",
+        432
+      ],
+      [
+        "jsx",
+        "Good with Room for Improvement",
+        440
+      ],
+      [
+        "jsx",
+        "Consider reviewing the identified violations and implementing additional controls.",
+        441
+      ],
+      [
+        "jsx",
+        "Immediate Action Required",
+        448
+      ],
+      [
+        "jsx",
+        "Review and strengthen approval workflows",
+        459
+      ],
+      [
+        "jsx",
+        "Implement additional segregation of duties controls",
+        463
+      ],
+      [
+        "jsx",
+        "Enhanced monitoring of high-risk transactions",
+        467
+      ],
+      [
+        "jsx",
+        "Regular compliance training for staff",
+        471
+      ],
+      [
+        "jsx",
+        "Automate compliance checking and alerting",
+        475
+      ]
+    ],
+    "src\\components\\audit\\ExportDialog.tsx": [
+      [
+        "jsx",
+        "Export Audit Data",
+        82
+      ],
+      [
+        "jsx",
+        "Export {totalCount.toLocaleString()} audit records in your preferred format",
+        85
+      ],
+      [
+        "jsx",
+        "Export Format",
+        93
+      ],
+      [
+        "jsx",
+        "Options",
+        130
+      ],
+      [
+        "jsx",
+        "Compliance",
+        131
+      ],
+      [
+        "jsx",
+        "Include integrity data",
+        144
+      ],
+      [
+        "jsx",
+        "Include hash signatures and verification status",
+        148
+      ],
+      [
+        "jsx",
+        "Include financial data",
+        160
+      ],
+      [
+        "jsx",
+        "Include amounts, currencies, and transaction details",
+        164
+      ],
+      [
+        "jsx",
+        "Anonymize user data",
+        176
+      ],
+      [
+        "jsx",
+        "Remove user names and email addresses for privacy",
+        180
+      ],
+      [
+        "jsx",
+        "Compliance mode",
+        196
+      ],
+      [
+        "jsx",
+        "Include compliance flags, retention periods, and audit metadata",
+        200
+      ],
+      [
+        "jsx",
+        "Compliance Features",
+        209
+      ],
+      [
+        "jsx",
+        "Export Summary",
+        225
+      ],
+      [
+        "jsx",
+        "Cancel",
+        252
+      ],
+      [
+        "jsx",
+        "Exporting...",
+        258
+      ],
+      [
+        "jsx",
+        "Export {selectedFormat.toUpperCase()}",
+        263
+      ],
+      [
+        "label",
+        "CSV",
+        53
+      ],
+      [
+        "label",
+        "Excel",
+        59
+      ],
+      [
+        "label",
+        "PDF",
+        65
+      ],
+      [
+        "label",
+        "JSON",
+        71
+      ],
+      [
+        "description",
+        "Comma-separated values for spreadsheet applications",
+        54
+      ],
+      [
+        "description",
+        "Microsoft Excel format with formatting",
+        60
+      ],
+      [
+        "description",
+        "Portable Document Format for reports and sharing",
+        66
+      ],
+      [
+        "description",
+        "Machine-readable format for data processing",
+        72
+      ]
+    ],
+    "src\\components\\audit\\IntegrityReport.tsx": [
+      [
+        "jsx",
+        "Data Integrity Verification",
+        52
+      ],
+      [
+        "jsx",
+        "Verifying audit trail integrity...",
+        55
+      ],
+      [
+        "jsx",
+        "Data Integrity Report",
+        76
+      ],
+      [
+        "jsx",
+        "Cryptographic verification of audit trail records",
+        77
+      ],
+      [
+        "jsx",
+        "Run Verification",
+        82
+      ],
+      [
+        "jsx",
+        "Overall Integrity Score",
+        91
+      ],
+      [
+        "jsx",
+        "Total Records",
+        132
+      ],
+      [
+        "jsx",
+        "Audit entries analyzed",
+        139
+      ],
+      [
+        "jsx",
+        "Verified",
+        147
+      ],
+      [
+        "jsx",
+        "Tampered",
+        164
+      ],
+      [
+        "jsx",
+        "Records with integrity issues",
+        171
+      ],
+      [
+        "jsx",
+        "Suspicious",
+        179
+      ],
+      [
+        "jsx",
+        "Records requiring review",
+        186
+      ],
+      [
+        "jsx",
+        "Verification Errors",
+        198
+      ],
+      [
+        "jsx",
+        "Integrity Issues Detected",
+        208
+      ],
+      [
+        "jsx",
+        "Recommendations",
+        250
+      ],
+      [
+        "jsx",
+        "Integrity Status Summary",
+        270
+      ],
+      [
+        "jsx",
+        "Excellent Integrity",
+        277
+      ],
+      [
+        "jsx",
+        "All audit records have been verified successfully. No integrity issues detected.",
+        278
+      ],
+      [
+        "jsx",
+        "Good Integrity",
+        285
+      ],
+      [
+        "jsx",
+        "Most audit records have been verified successfully. Some minor issues may exist.",
+        286
+      ],
+      [
+        "jsx",
+        "Moderate Integrity Concerns",
+        293
+      ],
+      [
+        "jsx",
+        "Critical Integrity Issues",
+        301
+      ],
+      [
+        "jsx",
+        "Verification Statistics",
+        310
+      ],
+      [
+        "jsx",
+        "Quick Actions",
+        332
+      ],
+      [
+        "jsx",
+        "Review Tampered Records",
+        335
+      ],
+      [
+        "jsx",
+        "Restore from Backup",
+        339
+      ],
+      [
+        "jsx",
+        "Generate Investigation Report",
+        343
+      ]
+    ],
+    "src\\components\\audit\\RealTimeAlerts.tsx": [
+      [
+        "jsx",
+        "Real-time Alerts",
+        121
+      ],
+      [
+        "jsx",
+        "Monitor audit events in real-time",
+        124
+      ],
+      [
+        "jsx",
+        "All Clear",
+        130
+      ],
+      [
+        "jsx",
+        "No recent audit alerts detected",
+        131
+      ],
+      [
+        "jsx",
+        "Real-time Alerts",
+        143
+      ],
+      [
+        "jsx",
+        "Clear All",
+        159
+      ]
+    ],
+    "src\\components\\auth\\AuthForm.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        240
+      ],
+      [
+        "jsx",
+        "Fleetify",
+        346
+      ]
+    ],
+    "src\\components\\command-palette\\CommandPalette.tsx": [
+      [
+        "jsx",
+        "ESC",
+        369
+      ],
+      [
+        "jsx",
+        "Enter",
+        458
+      ]
+    ],
+    "src\\components\\common\\LazyLoadErrorBoundary.tsx": [
+      [
+        "jsx",
+        "Loading...",
+        191
+      ]
+    ],
+    "src\\components\\common\\LazyPageWrapper.tsx": [
+      [
+        "jsx",
+        "Promise",
+        53
+      ],
+      [
+        "jsx",
+        "Promise",
+        62
+      ]
+    ],
+    "src\\components\\contracts\\AlarafOfficialContractComplete.tsx": [
+      [
+        "jsx",
+        "AL-ARAF CAR RENTAL L.L.C",
+        164
+      ]
+    ],
+    "src\\components\\contracts\\ContractDetailsPageRedesigned.tsx": [
+      [
+        "jsx",
+        "Promise",
+        798
+      ]
+    ],
+    "src\\components\\contracts\\ContractExportDialog.tsx": [
+      [
+        "label",
+        "PDF",
+        59
+      ],
+      [
+        "label",
+        "Excel",
+        67
+      ],
+      [
+        "label",
+        "JSON",
+        75
+      ]
+    ],
+    "src\\components\\contracts\\ContractPrintView.tsx": [
+      [
+        "jsx",
+        "Alaraf Car Rental",
+        151
+      ],
+      [
+        "jsx",
+        "Contract Details Summary",
+        179
+      ]
+    ],
+    "src\\components\\contracts\\ContractViolationsTabRedesigned.tsx": [
+      [
+        "jsx",
+        "Promise",
+        110
+      ]
+    ],
+    "src\\components\\contracts\\DocumentUploadDialog.tsx": [
+      [
+        "jsx",
+        "Promise",
+        40
+      ]
+    ],
+    "src\\components\\contracts\\ExpressContractForm.tsx": [
+      [
+        "jsx",
+        "Promise",
+        48
+      ]
+    ],
+    "src\\components\\contracts\\SimpleContractWizard.tsx": [
+      [
+        "jsx",
+        "Promise",
+        81
+      ]
+    ],
+    "src\\components\\contracts\\vehicle-inspection\\MarkDialog.tsx": [
+      [
+        "label",
+        "Minor",
+        62
+      ],
+      [
+        "label",
+        "Moderate",
+        63
+      ],
+      [
+        "label",
+        "Severe",
+        64
+      ]
+    ],
+    "src\\components\\contracts\\vehicle-inspection\\VehicleConditionDialog.tsx": [
+      [
+        "label",
+        "Minor",
+        60
+      ],
+      [
+        "label",
+        "Moderate",
+        61
+      ],
+      [
+        "label",
+        "Severe",
+        62
+      ]
+    ],
+    "src\\components\\contracts\\vehicle-inspection\\VisualVehicleDiagram.tsx": [
+      [
+        "label",
+        "Exterior",
+        81
+      ],
+      [
+        "label",
+        "Interior",
+        82
+      ],
+      [
+        "label",
+        "Mechanical",
+        83
+      ],
+      [
+        "label",
+        "Sedan",
+        88
+      ],
+      [
+        "label",
+        "SUV",
+        89
+      ],
+      [
+        "label",
+        "Truck",
+        90
+      ]
+    ],
+    "src\\components\\csv\\SmartCSVUpload.tsx": [
+      [
+        "jsx",
+        "Promise",
+        28
+      ]
+    ],
+    "src\\components\\customers\\CallDialog.tsx": [
+      [
+        "jsx",
+        "Promise",
+        23
+      ]
+    ],
+    "src\\components\\customers\\CustomerDetailsPageNew.tsx": [
+      [
+        "jsx",
+        "VIP",
+        620
+      ]
+    ],
+    "src\\components\\customers\\CustomerDocumentDistributionDialog.tsx": [
+      [
+        "jsx",
+        "Promise",
+        544
+      ],
+      [
+        "jsx",
+        "Promise",
+        578
+      ],
+      [
+        "jsx",
+        "Promise",
+        637
+      ]
+    ],
+    "src\\components\\customers\\CustomerExportDialog.tsx": [
+      [
+        "jsx",
+        "Excel",
+        977
+      ]
+    ],
+    "src\\components\\customers\\tabs\\MissingDataWarnings.tsx": [
+      [
+        "label",
+        "QID غير صحيح",
+        18
+      ]
+    ],
+    "src\\components\\dashboard\\bento\\BentoDashboard.tsx": [
+      [
+        "jsx",
+        "AI Assistant",
+        453
+      ]
+    ],
+    "src\\components\\dashboard\\bento\\BentoSidebar.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        382
+      ]
+    ],
+    "src\\components\\finance\\BalanceSheetReport.tsx": [
+      [
+        "jsx",
+        "PDF",
+        424
+      ],
+      [
+        "jsx",
+        "Excel",
+        433
+      ],
+      [
+        "jsx",
+        "CSV",
+        442
+      ]
+    ],
+    "src\\components\\finance\\CashFlowStatementReport.tsx": [
+      [
+        "jsx",
+        "PDF",
+        462
+      ],
+      [
+        "jsx",
+        "Excel",
+        471
+      ],
+      [
+        "jsx",
+        "CSV",
+        480
+      ],
+      [
+        "jsx",
+        "Operating Cash Flow Ratio",
+        762
+      ],
+      [
+        "jsx",
+        "Free Cash Flow",
+        781
+      ],
+      [
+        "jsx",
+        "Cash Flow Adequacy",
+        800
+      ],
+      [
+        "jsx",
+        "Financing Dependency",
+        819
+      ]
+    ],
+    "src\\components\\finance\\CashReceiptVoucher.tsx": [
+      [
+        "jsx",
+        "AL ARRAF",
+        143
+      ],
+      [
+        "jsx",
+        "CAR RENTAL L.L.C",
+        145
+      ],
+      [
+        "jsx",
+        "Receipt Voucher",
+        150
+      ]
+    ],
+    "src\\components\\finance\\charts\\ExportAccountsUtility.tsx": [
+      [
+        "jsx",
+        "PDF",
+        314
+      ],
+      [
+        "jsx",
+        "CSV",
+        324
+      ],
+      [
+        "jsx",
+        "JSON",
+        334
+      ]
+    ],
+    "src\\components\\finance\\ConflictResolutionDialog.tsx": [
+      [
+        "jsx",
+        "Promise",
+        25
+      ]
+    ],
+    "src\\components\\finance\\EnhancedJournalEntriesTab.tsx": [
+      [
+        "jsx",
+        "Promise",
+        98
+      ],
+      [
+        "jsx",
+        "Promise",
+        99
+      ],
+      [
+        "jsx",
+        "Promise",
+        100
+      ],
+      [
+        "jsx",
+        "Promise",
+        101
+      ]
+    ],
+    "src\\components\\finance\\FinancialAlertsSystem.tsx": [
+      [
+        "jsx",
+        "Financial Alerts",
+        108
+      ],
+      [
+        "jsx",
+        "Loading alerts...",
+        109
+      ],
+      [
+        "jsx",
+        "Active Financial Alerts",
+        132
+      ],
+      [
+        "jsx",
+        "These alerts require your immediate attention",
+        136
+      ],
+      [
+        "jsx",
+        "Acknowledge",
+        167
+      ],
+      [
+        "jsx",
+        "Recent Acknowledged Alerts",
+        182
+      ],
+      [
+        "jsx",
+        "Previously resolved financial alerts",
+        185
+      ],
+      [
+        "jsx",
+        "Resolved",
+        204
+      ],
+      [
+        "jsx",
+        "All Clear",
+        218
+      ],
+      [
+        "jsx",
+        "No financial alerts at this time",
+        221
+      ],
+      [
+        "jsx",
+        "Your financial metrics are within normal ranges",
+        228
+      ]
+    ],
+    "src\\components\\finance\\IncomeStatementReport.tsx": [
+      [
+        "jsx",
+        "PDF",
+        382
+      ],
+      [
+        "jsx",
+        "Excel",
+        391
+      ],
+      [
+        "jsx",
+        "CSV",
+        400
+      ]
+    ],
+    "src\\components\\finance\\JournalEntryPermissionsManager.tsx": [
+      [
+        "jsx",
+        "Draft",
+        180
+      ],
+      [
+        "jsx",
+        "Review",
+        186
+      ],
+      [
+        "jsx",
+        "Approved",
+        192
+      ],
+      [
+        "jsx",
+        "Posted",
+        198
+      ]
+    ],
+    "src\\components\\finance\\ProfessionalInvoiceTemplate.tsx": [
+      [
+        "jsx",
+        "Invoice",
+        194
+      ],
+      [
+        "jsx",
+        "This invoice was generated by Fleetify Financial System",
+        337
+      ]
+    ],
+    "src\\components\\finance\\TrialBalanceReport.tsx": [
+      [
+        "jsx",
+        "PDF",
+        291
+      ],
+      [
+        "jsx",
+        "Excel",
+        300
+      ],
+      [
+        "jsx",
+        "CSV",
+        309
+      ]
+    ],
+    "src\\components\\finance\\UnifiedPrintableDocument.tsx": [
+      [
+        "jsx",
+        "AL ARRAF",
+        240
+      ]
+    ],
+    "src\\components\\fleet\\TrafficViolationPDFImport.tsx": [
+      [
+        "jsx",
+        "Review & Save",
+        510
+      ],
+      [
+        "jsx",
+        "Statistics",
+        513
+      ],
+      [
+        "jsx",
+        "Drag files here...",
+        529
+      ],
+      [
+        "jsx",
+        "Drag files here or click to select",
+        532
+      ],
+      [
+        "jsx",
+        "Supports PDF and images (JPG, PNG, GIF, WEBP)",
+        533
+      ],
+      [
+        "jsx",
+        "Uploaded Files ({uploadedFiles.length})",
+        541
+      ],
+      [
+        "jsx",
+        "Extracting data from files...",
+        608
+      ],
+      [
+        "jsx",
+        "Please wait, this may take a few minutes",
+        609
+      ],
+      [
+        "jsx",
+        "Document Information",
+        622
+      ],
+      [
+        "jsx",
+        "Total",
+        655
+      ],
+      [
+        "jsx",
+        "Matched",
+        667
+      ],
+      [
+        "jsx",
+        "Duplicates",
+        679
+      ],
+      [
+        "jsx",
+        "Errors",
+        691
+      ],
+      [
+        "jsx",
+        "Total (QR)",
+        703
+      ],
+      [
+        "jsx",
+        "Extracted Violations",
+        745
+      ],
+      [
+        "jsx",
+        "Select",
+        752
+      ],
+      [
+        "jsx",
+        "Date & Time",
+        754
+      ],
+      [
+        "jsx",
+        "Plate",
+        755
+      ],
+      [
+        "jsx",
+        "Location",
+        756
+      ],
+      [
+        "jsx",
+        "Customer",
+        758
+      ],
+      [
+        "jsx",
+        "Contract",
+        759
+      ],
+      [
+        "jsx",
+        "Confidence",
+        760
+      ],
+      [
+        "jsx",
+        "Amount",
+        761
+      ],
+      [
+        "jsx",
+        "Status",
+        762
+      ],
+      [
+        "jsx",
+        "Duplicate",
+        851
+      ],
+      [
+        "title",
+        "Error",
+        259
+      ],
+      [
+        "title",
+        "Warning",
+        282
+      ],
+      [
+        "title",
+        "Data extracted successfully",
+        320
+      ],
+      [
+        "title",
+        "Processing error",
+        326
+      ],
+      [
+        "title",
+        "Error",
+        392
+      ],
+      [
+        "title",
+        "Saved successfully",
+        411
+      ],
+      [
+        "title",
+        "Warning",
+        432
+      ],
+      [
+        "title",
+        "Export Report",
+        1013
+      ],
+      [
+        "description",
+        "Extracting text from file",
+        145
+      ],
+      [
+        "description",
+        "Converting file to images for visual analysis",
+        216
+      ],
+      [
+        "description",
+        "Please upload a file (image or PDF) first",
+        260
+      ],
+      [
+        "description",
+        "Please select violations to save",
+        393
+      ],
+      [
+        "description",
+        "Only PDF and image files accepted (JPG, PNG, GIF, WEBP)",
+        433
+      ]
+    ],
+    "src\\components\\fleet\\VehicleConditionDiagram.tsx": [
+      [
+        "jsx",
+        "Promise",
+        24
+      ]
+    ],
+    "src\\components\\fleet\\VehicleForm.tsx": [
+      [
+        "jsx",
+        "Cost Center",
+        1450
+      ]
+    ],
+    "src\\components\\fleet\\VehicleGroupManagement.tsx": [
+      [
+        "jsx",
+        "Loading groups...",
+        77
+      ]
+    ],
+    "src\\components\\fleet\\VehicleReturnForm.tsx": [
+      [
+        "jsx",
+        "Approved",
+        70
+      ],
+      [
+        "jsx",
+        "Rejected",
+        72
+      ],
+      [
+        "jsx",
+        "Pending",
+        74
+      ],
+      [
+        "jsx",
+        "Vehicle Return - {vehicleName}",
+        177
+      ],
+      [
+        "jsx",
+        "Return Date",
+        188
+      ],
+      [
+        "jsx",
+        "Odometer Reading",
+        195
+      ],
+      [
+        "jsx",
+        "Fuel Level",
+        202
+      ],
+      [
+        "jsx",
+        "Vehicle Condition",
+        209
+      ],
+      [
+        "jsx",
+        "Return Location",
+        219
+      ],
+      [
+        "jsx",
+        "Damages Reported",
+        229
+      ],
+      [
+        "jsx",
+        "Notes",
+        236
+      ],
+      [
+        "jsx",
+        "Items Returned",
+        242
+      ],
+      [
+        "jsx",
+        "Vehicle Return - {vehicleName}",
+        262
+      ],
+      [
+        "jsx",
+        "Vehicle Condition",
+        295
+      ],
+      [
+        "jsx",
+        "Excellent",
+        309
+      ],
+      [
+        "jsx",
+        "Damaged",
+        313
+      ],
+      [
+        "jsx",
+        "Return Location",
+        327
+      ],
+      [
+        "jsx",
+        "Damages Reported (if any)",
+        349
+      ],
+      [
+        "jsx",
+        "Additional Notes",
+        371
+      ],
+      [
+        "jsx",
+        "Items Returned",
+        389
+      ]
+    ],
+    "src\\components\\help\\content\\ReportsPageHelp.tsx": [
+      [
+        "jsx",
+        "Excel (XLSX)",
+        165
+      ]
+    ],
+    "src\\components\\i18n\\I18nProvider.tsx": [
+      [
+        "jsx",
+        "Internationalization Error",
+        236
+      ],
+      [
+        "jsx",
+        "Reload Page",
+        245
+      ],
+      [
+        "jsx",
+        "Loading internationalization...",
+        259
+      ]
+    ],
+    "src\\components\\IntelligentInvoiceScanner.tsx": [
+      [
+        "jsx",
+        "AI-Powered",
+        401
+      ],
+      [
+        "jsx",
+        "Google Vision API",
+        429
+      ],
+      [
+        "title",
+        "Bulk Processing Started",
+        255
+      ],
+      [
+        "title",
+        "Batch Job Created",
+        288
+      ],
+      [
+        "title",
+        "Batch Processing Failed",
+        307
+      ],
+      [
+        "title",
+        "Error Processing Files",
+        320
+      ]
+    ],
+    "src\\components\\invoices\\LateFeeManagement.tsx": [
+      [
+        "description",
+        "Fee has been added to the invoice",
+        119
+      ],
+      [
+        "description",
+        "Fee has been waived successfully",
+        157
+      ]
+    ],
+    "src\\components\\InvoiceScannerAnalytics.tsx": [
+      [
+        "jsx",
+        "Loading analytics data...",
+        145
+      ],
+      [
+        "jsx",
+        "Invoice Scanner Analytics",
+        158
+      ],
+      [
+        "jsx",
+        "Comprehensive performance metrics and insights",
+        159
+      ],
+      [
+        "jsx",
+        "Refresh",
+        174
+      ],
+      [
+        "jsx",
+        "Export Report",
+        178
+      ],
+      [
+        "jsx",
+        "Total Scans",
+        190
+      ],
+      [
+        "jsx",
+        "Avg Processing Time",
+        203
+      ],
+      [
+        "jsx",
+        "Success Rate",
+        218
+      ],
+      [
+        "jsx",
+        "Avg Accuracy",
+        233
+      ],
+      [
+        "jsx",
+        "Performance Metrics",
+        248
+      ],
+      [
+        "jsx",
+        "User Productivity",
+        249
+      ],
+      [
+        "jsx",
+        "Financial Impact",
+        250
+      ],
+      [
+        "jsx",
+        "Quality Trends",
+        251
+      ],
+      [
+        "jsx",
+        "Daily Processing Volume",
+        259
+      ],
+      [
+        "jsx",
+        "Processing Efficiency",
+        285
+      ],
+      [
+        "jsx",
+        "OCR Accuracy",
+        290
+      ],
+      [
+        "jsx",
+        "Success Rate",
+        298
+      ],
+      [
+        "jsx",
+        "Speed Performance",
+        306
+      ],
+      [
+        "jsx",
+        "Time Savings",
+        321
+      ],
+      [
+        "jsx",
+        "Hours Saved",
+        328
+      ],
+      [
+        "jsx",
+        "Error Reduction",
+        342
+      ],
+      [
+        "jsx",
+        "Fewer Errors",
+        349
+      ],
+      [
+        "jsx",
+        "Manual entry error rate dropped significantly",
+        350
+      ],
+      [
+        "jsx",
+        "Excellent improvement",
+        353
+      ],
+      [
+        "jsx",
+        "Automation Rate",
+        363
+      ],
+      [
+        "jsx",
+        "Auto-Processed",
+        370
+      ],
+      [
+        "jsx",
+        "Invoices processed without manual intervention",
+        371
+      ],
+      [
+        "jsx",
+        "Cost Savings Analysis",
+        388
+      ],
+      [
+        "jsx",
+        "Total Savings",
+        397
+      ],
+      [
+        "jsx",
+        "ROI & Efficiency",
+        420
+      ],
+      [
+        "jsx",
+        "Return on Investment",
+        427
+      ],
+      [
+        "jsx",
+        "Efficiency Gain",
+        436
+      ],
+      [
+        "jsx",
+        "Faster invoice processing workflow",
+        440
+      ],
+      [
+        "jsx",
+        "Quality & Accuracy Trends",
+        451
+      ],
+      [
+        "jsx",
+        "Accuracy Improvement",
+        459
+      ],
+      [
+        "jsx",
+        "Since system deployment",
+        460
+      ],
+      [
+        "jsx",
+        "Avg Confidence Score",
+        465
+      ],
+      [
+        "jsx",
+        "Quality of matches",
+        466
+      ],
+      [
+        "jsx",
+        "Failure Rate",
+        471
+      ],
+      [
+        "jsx",
+        "Processing failures",
+        472
+      ],
+      [
+        "jsx",
+        "Key Insights & Recommendations",
+        477
+      ],
+      [
+        "jsx",
+        "Consider adding more Arabic handwriting training data to improve accuracy",
+        489
+      ]
+    ],
+    "src\\components\\landing\\enterprise\\EnterpriseFooter.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        52
+      ]
+    ],
+    "src\\components\\landing\\enterprise\\EnterpriseNavbar.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        36
+      ]
+    ],
+    "src\\components\\layouts\\AppSidebar.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        263
+      ]
+    ],
+    "src\\components\\layouts\\BentoLayout.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        143
+      ]
+    ],
+    "src\\components\\layouts\\SuperAdminLayout.tsx": [
+      [
+        "jsx",
+        "Super Admin",
+        78
+      ],
+      [
+        "jsx",
+        "Super Admin",
+        185
+      ]
+    ],
+    "src\\components\\legal\\EnhancedLegalNoticeGenerator.tsx": [
+      [
+        "jsx",
+        "PDF",
+        282
+      ]
+    ],
+    "src\\components\\legal\\LegalCaseCreationWizard.tsx": [
+      [
+        "label",
+        "Payment Receipts",
+        1177
+      ],
+      [
+        "label",
+        "Photos (Vehicle/Damage)",
+        1179
+      ],
+      [
+        "label",
+        "Voice Recordings",
+        1180
+      ],
+      [
+        "label",
+        "Witness Statements",
+        1181
+      ]
+    ],
+    "src\\components\\legal\\LegalComplaintGenerator.tsx": [
+      [
+        "jsx",
+        "AL-ARAF CAR RENTAL L.L.C",
+        493
+      ]
+    ],
+    "src\\components\\legal\\NoticeTemplateManager.tsx": [
+      [
+        "description",
+        "Final demand with legal language",
+        343
+      ],
+      [
+        "description",
+        "Legal documents for court filing",
+        350
+      ],
+      [
+        "description",
+        "Settlement agreement with payment terms",
+        357
+      ],
+      [
+        "description",
+        "Receipt acknowledgment for payments",
+        364
+      ]
+    ],
+    "src\\components\\mobile\\employee\\dialogs\\QuickPaymentModal.tsx": [
+      [
+        "jsx",
+        "QAR",
+        235
+      ]
+    ],
+    "src\\components\\mobile\\employee\\layout\\MobileEmployeeLayout.tsx": [
+      [
+        "label",
+        "Home",
+        41
+      ],
+      [
+        "label",
+        "Collections",
+        48
+      ],
+      [
+        "label",
+        "Contracts",
+        55
+      ],
+      [
+        "label",
+        "Tasks",
+        62
+      ],
+      [
+        "label",
+        "Performance",
+        69
+      ]
+    ],
+    "src\\components\\mobile\\MobileDetailLayout.tsx": [
+      [
+        "label",
+        "Home",
+        20
+      ],
+      [
+        "label",
+        "Contracts",
+        21
+      ],
+      [
+        "label",
+        "Cars",
+        22
+      ],
+      [
+        "label",
+        "Overdue",
+        23
+      ]
+    ],
+    "src\\components\\mobile\\MobileLayout.tsx": [
+      [
+        "label",
+        "Home",
+        19
+      ],
+      [
+        "label",
+        "Contracts",
+        20
+      ],
+      [
+        "label",
+        "Cars",
+        21
+      ],
+      [
+        "label",
+        "Customers",
+        22
+      ],
+      [
+        "label",
+        "Overdue",
+        23
+      ]
+    ],
+    "src\\components\\payments\\PaymentReceipt.tsx": [
+      [
+        "jsx",
+        "Al-Araf Car Rental",
+        340
+      ],
+      [
+        "jsx",
+        "Umm Salal Mohammed, Commercial St.",
+        344
+      ],
+      [
+        "jsx",
+        "Received From Mr.",
+        378
+      ],
+      [
+        "jsx",
+        "Vehicle No.",
+        390
+      ],
+      [
+        "jsx",
+        "The Sum of",
+        402
+      ],
+      [
+        "jsx",
+        "Total Amount",
+        435
+      ],
+      [
+        "jsx",
+        "Paid Amount",
+        447
+      ],
+      [
+        "jsx",
+        "Remaining",
+        459
+      ],
+      [
+        "jsx",
+        "Being",
+        479
+      ],
+      [
+        "jsx",
+        "Al-Araf Car Rental System - Generated Document",
+        617
+      ]
+    ],
+    "src\\components\\premium-landing\\FeaturesGrid.tsx": [
+      [
+        "description",
+        "GDPR متوافق، تحكم كامل في بياناتك، وحق النسيان والتصدير",
+        78
+      ]
+    ],
+    "src\\components\\premium-landing\\PremiumFooter.tsx": [
+      [
+        "jsx",
+        "GDPR",
+        196
+      ],
+      [
+        "label",
+        "API",
+        42
+      ],
+      [
+        "label",
+        "Facebook",
+        49
+      ],
+      [
+        "label",
+        "Twitter",
+        50
+      ],
+      [
+        "label",
+        "LinkedIn",
+        51
+      ],
+      [
+        "label",
+        "Instagram",
+        52
+      ]
+    ],
+    "src\\components\\reports\\PropertyExportManager.tsx": [
+      [
+        "jsx",
+        "Promise",
+        44
+      ]
+    ],
+    "src\\components\\router\\RouteRenderer.tsx": [
+      [
+        "jsx",
+        "Page not found",
+        162
+      ],
+      [
+        "jsx",
+        "Go to Dashboard",
+        166
+      ]
+    ],
+    "src\\components\\shared\\ExportButton.tsx": [
+      [
+        "jsx",
+        "Promise",
+        19
+      ],
+      [
+        "jsx",
+        "Promise",
+        20
+      ],
+      [
+        "jsx",
+        "Promise",
+        21
+      ],
+      [
+        "jsx",
+        "Promise",
+        39
+      ],
+      [
+        "jsx",
+        "Promise",
+        67
+      ],
+      [
+        "label",
+        "Excel",
+        64
+      ],
+      [
+        "label",
+        "PDF",
+        65
+      ],
+      [
+        "label",
+        "CSV",
+        66
+      ]
+    ],
+    "src\\components\\super-admin\\BusinessTypeSelector.tsx": [
+      [
+        "description",
+        "Vehicle rental and fleet management",
+        34
+      ],
+      [
+        "description",
+        "Property management and rentals",
+        44
+      ],
+      [
+        "description",
+        "Retail sales and inventory management",
+        54
+      ],
+      [
+        "description",
+        "Healthcare and medical services",
+        64
+      ],
+      [
+        "description",
+        "Manufacturing and production",
+        74
+      ],
+      [
+        "description",
+        "Restaurant and food service",
+        84
+      ],
+      [
+        "description",
+        "Logistics and transportation",
+        94
+      ],
+      [
+        "description",
+        "Educational institutions",
+        104
+      ],
+      [
+        "description",
+        "Professional consulting services",
+        114
+      ],
+      [
+        "description",
+        "Construction and building",
+        124
+      ]
+    ],
+    "src\\components\\super-admin\\CreateUserDialog.tsx": [
+      [
+        "jsx",
+        "Promise",
+        21
+      ]
+    ],
+    "src\\components\\super-admin\\landing\\LandingABTesting.tsx": [
+      [
+        "jsx",
+        "All Companies (Global)",
+        160
+      ],
+      [
+        "jsx",
+        "Start",
+        251
+      ],
+      [
+        "jsx",
+        "Pause",
+        263
+      ],
+      [
+        "jsx",
+        "Declare Winner",
+        272
+      ],
+      [
+        "jsx",
+        "Variant A (Control)",
+        301
+      ],
+      [
+        "jsx",
+        "Visitors",
+        311
+      ],
+      [
+        "jsx",
+        "Conversions",
+        315
+      ],
+      [
+        "jsx",
+        "Conversion Rate",
+        321
+      ],
+      [
+        "jsx",
+        "Variant B (Test)",
+        338
+      ],
+      [
+        "jsx",
+        "Visitors",
+        348
+      ],
+      [
+        "jsx",
+        "Conversions",
+        352
+      ],
+      [
+        "jsx",
+        "Conversion Rate",
+        358
+      ],
+      [
+        "jsx",
+        "Test Name (English)",
+        418
+      ],
+      [
+        "jsx",
+        "Test Name (Arabic)",
+        428
+      ],
+      [
+        "jsx",
+        "Description",
+        438
+      ],
+      [
+        "jsx",
+        "Conversion Goal",
+        462
+      ],
+      [
+        "jsx",
+        "Button Clicks",
+        471
+      ],
+      [
+        "jsx",
+        "Form Submissions",
+        472
+      ],
+      [
+        "jsx",
+        "Page Views",
+        473
+      ],
+      [
+        "jsx",
+        "Time on Page",
+        474
+      ],
+      [
+        "jsx",
+        "Scroll Depth",
+        475
+      ]
+    ],
+    "src\\components\\super-admin\\landing\\LandingAnalytics.tsx": [
+      [
+        "jsx",
+        "All Companies",
+        324
+      ],
+      [
+        "jsx",
+        "Loading companies...",
+        326
+      ],
+      [
+        "jsx",
+        "Export Report",
+        345
+      ],
+      [
+        "jsx",
+        "Export to CSV",
+        351
+      ],
+      [
+        "jsx",
+        "Export to PDF",
+        355
+      ],
+      [
+        "jsx",
+        "Total Views",
+        366
+      ],
+      [
+        "jsx",
+        "Unique Visitors",
+        381
+      ],
+      [
+        "jsx",
+        "Conversion Rate",
+        396
+      ],
+      [
+        "jsx",
+        "Avg. Time on Page",
+        411
+      ],
+      [
+        "jsx",
+        "Bounce Rate",
+        426
+      ],
+      [
+        "jsx",
+        "Top Pages",
+        444
+      ],
+      [
+        "jsx",
+        "No page data available",
+        449
+      ],
+      [
+        "jsx",
+        "Device Breakdown",
+        471
+      ],
+      [
+        "jsx",
+        "Traffic Sources",
+        496
+      ],
+      [
+        "jsx",
+        "Real-time Activity",
+        519
+      ],
+      [
+        "jsx",
+        "Active users now",
+        524
+      ],
+      [
+        "jsx",
+        "Recent Events",
+        529
+      ],
+      [
+        "jsx",
+        "No recent events",
+        541
+      ],
+      [
+        "jsx",
+        "Event Tracking",
+        553
+      ],
+      [
+        "jsx",
+        "Event",
+        560
+      ],
+      [
+        "jsx",
+        "Category",
+        561
+      ],
+      [
+        "jsx",
+        "Count",
+        562
+      ],
+      [
+        "jsx",
+        "Conversion Rate",
+        563
+      ],
+      [
+        "jsx",
+        "No event data available for the selected period",
+        578
+      ]
+    ],
+    "src\\components\\super-admin\\landing\\LandingContentManager.tsx": [
+      [
+        "jsx",
+        "All Companies (Global)",
+        118
+      ],
+      [
+        "jsx",
+        "Loading companies...",
+        120
+      ],
+      [
+        "jsx",
+        "Configure the section properties and content.",
+        144
+      ],
+      [
+        "jsx",
+        "Loading sections...",
+        163
+      ],
+      [
+        "jsx",
+        "No sections found. Create your first section to get started.",
+        167
+      ],
+      [
+        "jsx",
+        "Section Type",
+        272
+      ],
+      [
+        "jsx",
+        "Section Name (English)",
+        290
+      ],
+      [
+        "jsx",
+        "Section Name (Arabic)",
+        300
+      ],
+      [
+        "jsx",
+        "Sort Order",
+        309
+      ],
+      [
+        "jsx",
+        "Active",
+        325
+      ],
+      [
+        "label",
+        "Hero Section",
+        39
+      ],
+      [
+        "label",
+        "Features",
+        40
+      ],
+      [
+        "label",
+        "Testimonials",
+        41
+      ],
+      [
+        "label",
+        "Call to Action",
+        42
+      ],
+      [
+        "label",
+        "About Us",
+        43
+      ],
+      [
+        "label",
+        "Contact",
+        44
+      ]
+    ],
+    "src\\components\\super-admin\\landing\\LandingMediaLibrary.tsx": [
+      [
+        "jsx",
+        "Upload Media",
+        136
+      ],
+      [
+        "jsx",
+        "Upload Media Files",
+        142
+      ],
+      [
+        "jsx",
+        "Select files to upload to the media library.",
+        143
+      ],
+      [
+        "jsx",
+        "Click to select files or drag and drop",
+        159
+      ],
+      [
+        "jsx",
+        "Supports images, videos, and documents",
+        162
+      ],
+      [
+        "jsx",
+        "Loading media files...",
+        175
+      ],
+      [
+        "jsx",
+        "Edit Media File",
+        278
+      ],
+      [
+        "jsx",
+        "Update the metadata for this media file.",
+        279
+      ],
+      [
+        "jsx",
+        "Alt Text (English)",
+        318
+      ],
+      [
+        "jsx",
+        "Alt Text (Arabic)",
+        328
+      ],
+      [
+        "jsx",
+        "Update Media",
+        348
+      ],
+      [
+        "label",
+        "All Files",
+        36
+      ],
+      [
+        "label",
+        "Images",
+        37
+      ],
+      [
+        "label",
+        "Videos",
+        38
+      ],
+      [
+        "label",
+        "Documents",
+        39
+      ]
+    ],
+    "src\\components\\super-admin\\landing\\LandingPreview.tsx": [
+      [
+        "jsx",
+        "All Companies (Global)",
+        60
+      ],
+      [
+        "jsx",
+        "Loading companies...",
+        62
+      ],
+      [
+        "jsx",
+        "Default",
+        82
+      ],
+      [
+        "jsx",
+        "Refresh",
+        92
+      ],
+      [
+        "jsx",
+        "Open in New Tab",
+        97
+      ],
+      [
+        "jsx",
+        "Preview Settings",
+        107
+      ],
+      [
+        "jsx",
+        "Device View",
+        111
+      ],
+      [
+        "jsx",
+        "Show Rulers",
+        143
+      ],
+      [
+        "jsx",
+        "Theme Info",
+        162
+      ],
+      [
+        "jsx",
+        "Loading preview...",
+        223
+      ],
+      [
+        "jsx",
+        "Add sections in the Content tab to see them here",
+        231
+      ],
+      [
+        "jsx",
+        "Welcome to Our Platform",
+        297
+      ],
+      [
+        "jsx",
+        "Experience the future of business management",
+        300
+      ],
+      [
+        "jsx",
+        "Get Started Today",
+        309
+      ],
+      [
+        "jsx",
+        "Key Features",
+        318
+      ],
+      [
+        "jsx",
+        "Feature {i}",
+        328
+      ],
+      [
+        "jsx",
+        "Description of this amazing feature that will help your business grow.",
+        329
+      ],
+      [
+        "jsx",
+        "What Our Customers Say",
+        339
+      ],
+      [
+        "jsx",
+        "Customer {i}",
+        349
+      ],
+      [
+        "jsx",
+        "CEO, Company {i}",
+        350
+      ],
+      [
+        "jsx",
+        "Ready to Get Started?",
+        362
+      ],
+      [
+        "jsx",
+        "Join thousands of satisfied customers today",
+        363
+      ],
+      [
+        "jsx",
+        "Start Free Trial",
+        373
+      ],
+      [
+        "jsx",
+        "Learn More",
+        376
+      ]
+    ],
+    "src\\components\\super-admin\\landing\\LandingThemeSettings.tsx": [
+      [
+        "jsx",
+        "Default",
+        212
+      ],
+      [
+        "jsx",
+        "Create New Theme",
+        219
+      ],
+      [
+        "jsx",
+        "Save Changes",
+        235
+      ],
+      [
+        "jsx",
+        "Colors",
+        248
+      ],
+      [
+        "jsx",
+        "Typography",
+        252
+      ],
+      [
+        "jsx",
+        "Spacing",
+        256
+      ],
+      [
+        "jsx",
+        "Custom CSS",
+        260
+      ],
+      [
+        "jsx",
+        "Typography Settings",
+        293
+      ],
+      [
+        "jsx",
+        "Spacing Configuration",
+        313
+      ],
+      [
+        "jsx",
+        "Custom CSS",
+        333
+      ],
+      [
+        "jsx",
+        "Theme Settings",
+        354
+      ],
+      [
+        "jsx",
+        "Theme Name (English)",
+        358
+      ],
+      [
+        "jsx",
+        "Theme Name (Arabic)",
+        369
+      ],
+      [
+        "jsx",
+        "Default Theme",
+        387
+      ],
+      [
+        "jsx",
+        "Active",
+        398
+      ],
+      [
+        "jsx",
+        "Theme Actions",
+        405
+      ],
+      [
+        "jsx",
+        "Duplicate Theme",
+        412
+      ],
+      [
+        "jsx",
+        "Export Theme",
+        420
+      ],
+      [
+        "jsx",
+        "No Theme Selected",
+        439
+      ],
+      [
+        "jsx",
+        "Select an existing theme to edit or create a new one to get started.",
+        440
+      ],
+      [
+        "jsx",
+        "Create Your First Theme",
+        443
+      ]
+    ],
+    "src\\components\\super-admin\\settings\\BulkOperations.tsx": [
+      [
+        "jsx",
+        "Bulk Operations",
+        130
+      ],
+      [
+        "jsx",
+        "Data Migration",
+        131
+      ],
+      [
+        "jsx",
+        "Company Selection",
+        139
+      ],
+      [
+        "jsx",
+        "Select companies to perform bulk operations",
+        142
+      ],
+      [
+        "jsx",
+        "Select All ({companies.length} companies)",
+        153
+      ],
+      [
+        "jsx",
+        "Available Operations",
+        188
+      ],
+      [
+        "jsx",
+        "Perform bulk operations on selected companies",
+        191
+      ],
+      [
+        "jsx",
+        "Operation in progress...",
+        199
+      ],
+      [
+        "jsx",
+        "Input",
+        229
+      ],
+      [
+        "jsx",
+        "Execute",
+        253
+      ],
+      [
+        "jsx",
+        "Data Migration Tools",
+        269
+      ],
+      [
+        "jsx",
+        "Import Companies",
+        279
+      ],
+      [
+        "jsx",
+        "Export All Data",
+        283
+      ],
+      [
+        "jsx",
+        "Migrate Schema",
+        287
+      ],
+      [
+        "jsx",
+        "Migration History",
+        293
+      ],
+      [
+        "title",
+        "No companies selected",
+        97
+      ],
+      [
+        "description",
+        "Change subscription plan for selected companies",
+        40
+      ],
+      [
+        "description",
+        "Send system notification to selected companies",
+        49
+      ],
+      [
+        "description",
+        "Export data for selected companies",
+        57
+      ],
+      [
+        "description",
+        "Reset trial period for selected companies",
+        64
+      ],
+      [
+        "description",
+        "Suspend access for selected companies",
+        71
+      ],
+      [
+        "description",
+        "Please select at least one company to perform the operation.",
+        98
+      ]
+    ],
+    "src\\components\\super-admin\\settings\\DatabaseManagement.tsx": [
+      [
+        "jsx",
+        "Total Size",
+        85
+      ],
+      [
+        "jsx",
+        "Across {dbStats.tableCount} tables",
+        91
+      ],
+      [
+        "jsx",
+        "Total Records",
+        98
+      ],
+      [
+        "jsx",
+        "Last Backup",
+        111
+      ],
+      [
+        "jsx",
+        "Automated daily backup",
+        117
+      ],
+      [
+        "jsx",
+        "Connections",
+        124
+      ],
+      [
+        "jsx",
+        "Backups & Recovery",
+        142
+      ],
+      [
+        "jsx",
+        "Maintenance",
+        143
+      ],
+      [
+        "jsx",
+        "Monitoring",
+        144
+      ],
+      [
+        "jsx",
+        "Backup Management",
+        152
+      ],
+      [
+        "jsx",
+        "Create and manage database backups for disaster recovery",
+        155
+      ],
+      [
+        "jsx",
+        "Full Backup",
+        162
+      ],
+      [
+        "jsx",
+        "Incremental Backup",
+        166
+      ],
+      [
+        "jsx",
+        "Recent Backups",
+        172
+      ],
+      [
+        "jsx",
+        "Restore",
+        192
+      ],
+      [
+        "jsx",
+        "Database Maintenance",
+        208
+      ],
+      [
+        "jsx",
+        "Optimize database performance and manage table statistics",
+        211
+      ],
+      [
+        "jsx",
+        "Optimize Database",
+        218
+      ],
+      [
+        "jsx",
+        "Rebuild Indexes",
+        222
+      ],
+      [
+        "jsx",
+        "Update Statistics",
+        226
+      ],
+      [
+        "jsx",
+        "Table Statistics",
+        232
+      ],
+      [
+        "jsx",
+        "Performance Monitoring",
+        258
+      ],
+      [
+        "jsx",
+        "Monitor database performance and resource usage",
+        261
+      ],
+      [
+        "jsx",
+        "Query Performance",
+        268
+      ],
+      [
+        "jsx",
+        "Average Query Time",
+        271
+      ],
+      [
+        "jsx",
+        "Slow Queries",
+        277
+      ],
+      [
+        "jsx",
+        "Cache Hit Rate",
+        283
+      ],
+      [
+        "jsx",
+        "Resource Usage",
+        291
+      ],
+      [
+        "jsx",
+        "CPU Usage",
+        294
+      ],
+      [
+        "jsx",
+        "Memory Usage",
+        300
+      ],
+      [
+        "jsx",
+        "Disk Usage",
+        306
+      ],
+      [
+        "jsx",
+        "View Detailed Performance Report",
+        314
+      ],
+      [
+        "title",
+        "Backup initiated",
+        59
+      ],
+      [
+        "title",
+        "Restore initiated",
+        66
+      ],
+      [
+        "title",
+        "Database optimization started",
+        73
+      ],
+      [
+        "description",
+        "Database restore has been started. This may take several minutes.",
+        67
+      ],
+      [
+        "description",
+        "The system is optimizing database performance. This may take a few minutes.",
+        74
+      ]
+    ],
+    "src\\components\\super-admin\\settings\\FeatureManagement.tsx": [
+      [
+        "jsx",
+        "Feature Gates",
+        126
+      ],
+      [
+        "jsx",
+        "Subscription Plans",
+        127
+      ],
+      [
+        "jsx",
+        "System Feature Gates",
+        135
+      ],
+      [
+        "jsx",
+        "Edit Plan",
+        227
+      ],
+      [
+        "jsx",
+        "Plan Management",
+        238
+      ],
+      [
+        "jsx",
+        "Global subscription plan settings and configurations",
+        239
+      ],
+      [
+        "jsx",
+        "Free Trial Period (days)",
+        246
+      ],
+      [
+        "jsx",
+        "Payment Grace Period (days)",
+        250
+      ],
+      [
+        "jsx",
+        "Save Settings",
+        256
+      ],
+      [
+        "jsx",
+        "Export Plan Data",
+        259
+      ],
+      [
+        "title",
+        "Plan updated",
+        117
+      ],
+      [
+        "description",
+        "Basic features for small teams",
+        29
+      ],
+      [
+        "description",
+        "Essential features for growing businesses",
+        38
+      ],
+      [
+        "description",
+        "Advanced features for established companies",
+        47
+      ],
+      [
+        "description",
+        "Vehicle tracking, maintenance, and fleet analytics",
+        69
+      ],
+      [
+        "description",
+        "Employee management, payroll, and attendance tracking",
+        75
+      ],
+      [
+        "description",
+        "Accounting, invoicing, and financial analytics",
+        81
+      ],
+      [
+        "description",
+        "Business intelligence and advanced reporting",
+        87
+      ],
+      [
+        "description",
+        "Manage multiple companies from one dashboard",
+        93
+      ],
+      [
+        "description",
+        "REST API access for custom integrations",
+        99
+      ]
+    ],
+    "src\\components\\super-admin\\settings\\GlobalNotificationSettings.tsx": [
+      [
+        "jsx",
+        "Email Configuration",
+        96
+      ],
+      [
+        "jsx",
+        "Configure SMTP settings for system-wide email delivery",
+        99
+      ],
+      [
+        "jsx",
+        "SMTP Host",
+        107
+      ],
+      [
+        "jsx",
+        "SMTP Port",
+        116
+      ],
+      [
+        "jsx",
+        "Security",
+        125
+      ],
+      [
+        "jsx",
+        "SMTP Username",
+        144
+      ],
+      [
+        "jsx",
+        "SMTP Password",
+        153
+      ],
+      [
+        "jsx",
+        "From Email",
+        163
+      ],
+      [
+        "jsx",
+        "Save Email Settings",
+        175
+      ],
+      [
+        "jsx",
+        "Test Configuration",
+        178
+      ],
+      [
+        "jsx",
+        "Global Notification Preferences",
+        189
+      ],
+      [
+        "jsx",
+        "Email",
+        207
+      ],
+      [
+        "jsx",
+        "Email Templates",
+        247
+      ],
+      [
+        "jsx",
+        "Manage system-wide email templates used for notifications",
+        250
+      ],
+      [
+        "jsx",
+        "Edit",
+        269
+      ],
+      [
+        "jsx",
+        "Create New Template",
+        278
+      ],
+      [
+        "jsx",
+        "Import Templates",
+        279
+      ],
+      [
+        "title",
+        "Email settings saved",
+        68
+      ],
+      [
+        "title",
+        "Test email sent",
+        85
+      ],
+      [
+        "description",
+        "SMTP configuration has been updated successfully.",
+        69
+      ],
+      [
+        "description",
+        "A test email has been sent to verify the configuration.",
+        86
+      ]
+    ],
+    "src\\components\\super-admin\\settings\\SystemIntegrations.tsx": [
+      [
+        "jsx",
+        "Integrations",
+        115
+      ],
+      [
+        "jsx",
+        "API Management",
+        116
+      ],
+      [
+        "jsx",
+        "Webhooks",
+        117
+      ],
+      [
+        "jsx",
+        "System Integrations",
+        125
+      ],
+      [
+        "jsx",
+        "Manage third-party integrations and external services",
+        128
+      ],
+      [
+        "jsx",
+        "Configure",
+        168
+      ],
+      [
+        "jsx",
+        "API Configuration",
+        185
+      ],
+      [
+        "jsx",
+        "Manage API access, rate limiting, and security settings",
+        188
+      ],
+      [
+        "jsx",
+        "Enable CORS",
+        206
+      ],
+      [
+        "jsx",
+        "Require Authentication",
+        214
+      ],
+      [
+        "jsx",
+        "API Key Management",
+        224
+      ],
+      [
+        "jsx",
+        "Generate New Key",
+        226
+      ],
+      [
+        "jsx",
+        "View Keys",
+        229
+      ],
+      [
+        "jsx",
+        "API Documentation",
+        236
+      ],
+      [
+        "jsx",
+        "View Docs",
+        238
+      ],
+      [
+        "jsx",
+        "Download OpenAPI",
+        241
+      ],
+      [
+        "jsx",
+        "API Usage Statistics",
+        251
+      ],
+      [
+        "jsx",
+        "Total Requests",
+        255
+      ],
+      [
+        "jsx",
+        "Success Rate",
+        259
+      ],
+      [
+        "jsx",
+        "Avg Response",
+        263
+      ],
+      [
+        "jsx",
+        "Active Keys",
+        267
+      ],
+      [
+        "jsx",
+        "Webhook Configuration",
+        280
+      ],
+      [
+        "jsx",
+        "Manage webhook endpoints for real-time event notifications",
+        283
+      ],
+      [
+        "jsx",
+        "Enable Webhooks",
+        290
+      ],
+      [
+        "jsx",
+        "Allow the system to send webhook notifications",
+        291
+      ],
+      [
+        "jsx",
+        "Webhook Secret",
+        302
+      ],
+      [
+        "jsx",
+        "Configured Webhooks",
+        313
+      ],
+      [
+        "jsx",
+        "Add Webhook",
+        314
+      ],
+      [
+        "jsx",
+        "Test",
+        335
+      ],
+      [
+        "jsx",
+        "Edit",
+        338
+      ],
+      [
+        "jsx",
+        "Logs",
+        341
+      ],
+      [
+        "title",
+        "Webhook test sent",
+        99
+      ],
+      [
+        "title",
+        "API key generated",
+        106
+      ],
+      [
+        "description",
+        "Payment processing and subscription management",
+        20
+      ],
+      [
+        "description",
+        "Email delivery and transactional emails",
+        29
+      ],
+      [
+        "description",
+        "Team notifications and alerts",
+        38
+      ],
+      [
+        "description",
+        "Workflow automation and integrations",
+        47
+      ],
+      [
+        "description",
+        "A test payload has been sent to the webhook endpoint.",
+        100
+      ],
+      [
+        "description",
+        "A new API key has been generated. Please store it securely.",
+        107
+      ]
+    ],
+    "src\\components\\super-admin\\settings\\SystemSecuritySettings.tsx": [
+      [
+        "jsx",
+        "Authentication & Access Control",
+        71
+      ],
+      [
+        "jsx",
+        "Configure system-wide authentication policies and access controls",
+        74
+      ],
+      [
+        "jsx",
+        "Enforce Strong Password Policy",
+        82
+      ],
+      [
+        "jsx",
+        "Minimum Password Length",
+        93
+      ],
+      [
+        "jsx",
+        "Require Special Characters",
+        105
+      ],
+      [
+        "jsx",
+        "Require Numbers",
+        116
+      ],
+      [
+        "jsx",
+        "Enable Two-Factor Authentication",
+        129
+      ],
+      [
+        "jsx",
+        "Session Timeout (hours)",
+        140
+      ],
+      [
+        "jsx",
+        "Max Failed Login Attempts",
+        157
+      ],
+      [
+        "jsx",
+        "Allow Anonymous Users",
+        169
+      ],
+      [
+        "jsx",
+        "Audit & Monitoring",
+        187
+      ],
+      [
+        "jsx",
+        "Configure system monitoring and audit logging settings",
+        190
+      ],
+      [
+        "jsx",
+        "Enable System Audit Logging",
+        197
+      ],
+      [
+        "jsx",
+        "Log all system actions and user activities",
+        198
+      ],
+      [
+        "jsx",
+        "Auto-confirm Email Signups",
+        213
+      ],
+      [
+        "jsx",
+        "Automatically confirm user email addresses upon signup",
+        214
+      ],
+      [
+        "jsx",
+        "Save Security Settings",
+        232
+      ],
+      [
+        "title",
+        "Security settings updated",
+        29
+      ],
+      [
+        "description",
+        "System security configuration has been saved successfully.",
+        30
+      ],
+      [
+        "description",
+        "Minimum 8 characters with special chars",
+        35
+      ],
+      [
+        "description",
+        "Account lockout after 5 attempts",
+        37
+      ],
+      [
+        "description",
+        "All system actions are logged",
+        38
+      ]
+    ],
+    "src\\components\\super-admin\\UserDetailsDialog.tsx": [
+      [
+        "jsx",
+        "Promise",
+        37
+      ],
+      [
+        "jsx",
+        "Promise",
+        38
+      ],
+      [
+        "jsx",
+        "Promise",
+        39
+      ]
+    ],
+    "src\\components\\team\\LeaderboardWidget.tsx": [
+      [
+        "jsx",
+        "Top {topEmployees.length}",
+        103
+      ]
+    ],
+    "src\\components\\ui\\CommandPalette.tsx": [
+      [
+        "jsx",
+        "Enter",
+        221
+      ]
+    ],
+    "src\\components\\ui\\dialog.tsx": [
+      [
+        "jsx",
+        "Close",
+        47
+      ]
+    ],
+    "src\\components\\ui\\loading-spinner.tsx": [
+      [
+        "jsx",
+        "Loading...",
+        26
+      ]
+    ],
+    "src\\components\\ui\\sheet.tsx": [
+      [
+        "jsx",
+        "Close",
+        76
+      ]
+    ],
+    "src\\components\\ui\\sidebar.tsx": [
+      [
+        "jsx",
+        "Navigation Sidebar",
+        207
+      ],
+      [
+        "jsx",
+        "Toggle Sidebar",
+        282
+      ]
+    ],
+    "src\\modules\\properties\\components\\contracts\\PropertyContractWizard.tsx": [
+      [
+        "jsx",
+        "Promise",
+        47
+      ]
+    ],
+    "src\\pages\\AboutUs.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        200
+      ]
+    ],
+    "src\\pages\\admin\\QualityDashboard.tsx": [
+      [
+        "jsx",
+        "Quality & compliance monitoring",
+        169
+      ],
+      [
+        "jsx",
+        "Refresh",
+        182
+      ],
+      [
+        "jsx",
+        "Total Runs",
+        194
+      ],
+      [
+        "jsx",
+        "Pass Rate",
+        206
+      ],
+      [
+        "jsx",
+        "Failed Checks",
+        223
+      ],
+      [
+        "jsx",
+        "Critical Issues",
+        235
+      ],
+      [
+        "jsx",
+        "Overview",
+        247
+      ],
+      [
+        "jsx",
+        "Agents",
+        248
+      ],
+      [
+        "jsx",
+        "Audit Logs",
+        249
+      ],
+      [
+        "jsx",
+        "Quality Trend",
+        258
+      ],
+      [
+        "jsx",
+        "Status Distribution",
+        279
+      ],
+      [
+        "jsx",
+        "Overall check results",
+        280
+      ],
+      [
+        "jsx",
+        "Agent Performance",
+        309
+      ],
+      [
+        "jsx",
+        "Pass Rate",
+        355
+      ],
+      [
+        "jsx",
+        "Recent Audit Logs",
+        384
+      ],
+      [
+        "jsx",
+        "Latest agent activities",
+        385
+      ]
+    ],
+    "src\\pages\\audit\\AuditDashboard.tsx": [
+      [
+        "jsx",
+        "Financial Audit Trail",
+        97
+      ],
+      [
+        "jsx",
+        "Filters",
+        108
+      ],
+      [
+        "jsx",
+        "Refresh",
+        116
+      ],
+      [
+        "jsx",
+        "Export",
+        124
+      ],
+      [
+        "jsx",
+        "Data Integrity Alert",
+        134
+      ],
+      [
+        "jsx",
+        "Run Verification",
+        145
+      ],
+      [
+        "jsx",
+        "Compliance Concern",
+        155
+      ],
+      [
+        "jsx",
+        "Audit Filters",
+        166
+      ],
+      [
+        "jsx",
+        "Overview",
+        181
+      ],
+      [
+        "jsx",
+        "Audit Trail",
+        182
+      ],
+      [
+        "jsx",
+        "Compliance",
+        183
+      ],
+      [
+        "jsx",
+        "Data Integrity",
+        184
+      ],
+      [
+        "jsx",
+        "Search",
+        185
+      ],
+      [
+        "jsx",
+        "Total Transactions",
+        194
+      ],
+      [
+        "jsx",
+        "Total Amount",
+        207
+      ],
+      [
+        "jsx",
+        "Across all transactions",
+        214
+      ],
+      [
+        "jsx",
+        "Success Rate",
+        222
+      ],
+      [
+        "jsx",
+        "Risk Score",
+        237
+      ],
+      [
+        "jsx",
+        "Recent Audit Activity",
+        255
+      ],
+      [
+        "jsx",
+        "Latest financial operations and changes",
+        256
+      ],
+      [
+        "jsx",
+        "No recent audit activity found",
+        285
+      ],
+      [
+        "jsx",
+        "System Health",
+        296
+      ],
+      [
+        "jsx",
+        "Real-time monitoring and alerts",
+        297
+      ],
+      [
+        "jsx",
+        "Data Integrity",
+        302
+      ],
+      [
+        "jsx",
+        "Compliance Score",
+        308
+      ],
+      [
+        "jsx",
+        "Active Alerts",
+        314
+      ],
+      [
+        "jsx",
+        "Audit Trail",
+        329
+      ],
+      [
+        "jsx",
+        "Showing {logs.length} of {totalCount}",
+        335
+      ],
+      [
+        "jsx",
+        "Advanced Search",
+        371
+      ],
+      [
+        "jsx",
+        "Search audit trail with specific criteria",
+        372
+      ]
+    ],
+    "src\\pages\\AuditLogsPage.tsx": [
+      [
+        "jsx",
+        "Audit Logs",
+        137
+      ],
+      [
+        "jsx",
+        "View and track all sensitive operations in the system",
+        138
+      ],
+      [
+        "jsx",
+        "Export CSV",
+        143
+      ],
+      [
+        "jsx",
+        "Filters",
+        152
+      ],
+      [
+        "jsx",
+        "Search",
+        163
+      ],
+      [
+        "jsx",
+        "Action",
+        178
+      ],
+      [
+        "jsx",
+        "All actions",
+        184
+      ],
+      [
+        "jsx",
+        "Create",
+        185
+      ],
+      [
+        "jsx",
+        "Update",
+        186
+      ],
+      [
+        "jsx",
+        "Approve",
+        188
+      ],
+      [
+        "jsx",
+        "Reject",
+        189
+      ],
+      [
+        "jsx",
+        "Cancel",
+        190
+      ],
+      [
+        "jsx",
+        "Archive",
+        191
+      ],
+      [
+        "jsx",
+        "Restore",
+        192
+      ],
+      [
+        "jsx",
+        "Resource Type",
+        199
+      ],
+      [
+        "jsx",
+        "All resources",
+        205
+      ],
+      [
+        "jsx",
+        "Contract",
+        206
+      ],
+      [
+        "jsx",
+        "Customer",
+        207
+      ],
+      [
+        "jsx",
+        "Vehicle",
+        208
+      ],
+      [
+        "jsx",
+        "Invoice",
+        209
+      ],
+      [
+        "jsx",
+        "Payment",
+        210
+      ],
+      [
+        "jsx",
+        "Employee",
+        211
+      ],
+      [
+        "jsx",
+        "Status",
+        219
+      ],
+      [
+        "jsx",
+        "All statuses",
+        225
+      ],
+      [
+        "jsx",
+        "Success",
+        226
+      ],
+      [
+        "jsx",
+        "Failed",
+        227
+      ],
+      [
+        "jsx",
+        "Pending",
+        228
+      ],
+      [
+        "jsx",
+        "From Date",
+        235
+      ],
+      [
+        "jsx",
+        "To Date",
+        246
+      ],
+      [
+        "jsx",
+        "Clear Filters",
+        268
+      ],
+      [
+        "jsx",
+        "Audit Trail",
+        278
+      ],
+      [
+        "jsx",
+        "Failed to load audit logs",
+        292
+      ],
+      [
+        "jsx",
+        "No audit logs found",
+        300
+      ],
+      [
+        "jsx",
+        "Date & Time",
+        309
+      ],
+      [
+        "jsx",
+        "Action",
+        311
+      ],
+      [
+        "jsx",
+        "Resource",
+        312
+      ],
+      [
+        "jsx",
+        "Entity",
+        313
+      ],
+      [
+        "jsx",
+        "Status",
+        314
+      ],
+      [
+        "jsx",
+        "Changes",
+        315
+      ],
+      [
+        "jsx",
+        "Success",
+        348
+      ],
+      [
+        "jsx",
+        "Failed",
+        354
+      ],
+      [
+        "jsx",
+        "Pending",
+        360
+      ]
+    ],
+    "src\\pages\\Careers.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        329
+      ]
+    ],
+    "src\\pages\\customers\\CustomersPageRedesigned.tsx": [
+      [
+        "jsx",
+        "VIP",
+        187
+      ]
+    ],
+    "src\\pages\\finance\\operations\\ReceivePaymentWorkflow.tsx": [
+      [
+        "jsx",
+        "QAR",
+        525
+      ]
+    ],
+    "src\\pages\\fleet\\FleetPageRedesigned.tsx": [
+      [
+        "jsx",
+        "Excel (XLSX)",
+        1132
+      ]
+    ],
+    "src\\pages\\fleet\\reports\\components\\ReportFilters.tsx": [
+      [
+        "label",
+        "PDF",
+        57
+      ],
+      [
+        "label",
+        "Excel",
+        58
+      ],
+      [
+        "label",
+        "CSV",
+        59
+      ]
+    ],
+    "src\\pages\\help\\HelpHub.tsx": [
+      [
+        "jsx",
+        "PDF, Excel, CSV",
+        503
+      ]
+    ],
+    "src\\pages\\HelpCenter.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        395
+      ]
+    ],
+    "src\\pages\\InvoiceScannerPage.tsx": [
+      [
+        "jsx",
+        "AI-Powered",
+        80
+      ]
+    ],
+    "src\\pages\\legal\\FinancialDelinquency.tsx": [
+      [
+        "label",
+        "Kanban",
+        1148
+      ]
+    ],
+    "src\\pages\\legal\\LawsuitPreparation\\components\\DocumentList\\DocumentItem.tsx": [
+      [
+        "jsx",
+        "PDF",
+        155
+      ],
+      [
+        "jsx",
+        "Word",
+        167
+      ]
+    ],
+    "src\\pages\\legal\\LawsuitPreparation\\components\\LegalDocuments.tsx": [
+      [
+        "jsx",
+        "PDF",
+        302
+      ],
+      [
+        "jsx",
+        "Word",
+        320
+      ]
+    ],
+    "src\\pages\\legal\\LawsuitPreparation\\store\\LawsuitPreparationContext.tsx": [
+      [
+        "jsx",
+        "Al-Araf Car Rental Company",
+        701
+      ]
+    ],
+    "src\\pages\\legal\\PrivacyPolicy.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        230
+      ]
+    ],
+    "src\\pages\\legal\\TermsAndConditions.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        309
+      ]
+    ],
+    "src\\pages\\legal\\WhatsAppReminders.tsx": [
+      [
+        "jsx",
+        "Edge Function",
+        222
+      ],
+      [
+        "jsx",
+        "Database Migration",
+        226
+      ],
+      [
+        "jsx",
+        "React Components",
+        230
+      ]
+    ],
+    "src\\pages\\mobile\\MobileContractDetails.tsx": [
+      [
+        "jsx",
+        "QAR {payment.amount.toLocaleString()}",
+        461
+      ]
+    ],
+    "src\\pages\\mobile\\MobileContractWizard.tsx": [
+      [
+        "jsx",
+        "QAR {formData.monthlyAmount.toLocaleString()}",
+        846
+      ],
+      [
+        "jsx",
+        "QAR {total.toLocaleString()}",
+        850
+      ]
+    ],
+    "src\\pages\\mobile\\MobileHome.tsx": [
+      [
+        "jsx",
+        "QAR {stats.monthlyRevenue.toLocaleString()}",
+        264
+      ]
+    ],
+    "src\\pages\\mobile\\MobileOverdue.tsx": [
+      [
+        "jsx",
+        "QAR {totalOverdue.toLocaleString()}",
+        246
+      ]
+    ],
+    "src\\pages\\NativeMobileDemo.tsx": [
+      [
+        "jsx",
+        "Bottom Sheet",
+        194
+      ],
+      [
+        "jsx",
+        "Spinners",
+        250
+      ],
+      [
+        "jsx",
+        "Label Text",
+        294
+      ],
+      [
+        "jsx",
+        "Primary",
+        307
+      ],
+      [
+        "jsx",
+        "Success",
+        308
+      ],
+      [
+        "jsx",
+        "Danger",
+        310
+      ]
+    ],
+    "src\\pages\\NotFound.tsx": [
+      [
+        "jsx",
+        "Oops! Page not found",
+        22
+      ],
+      [
+        "jsx",
+        "Return to Home",
+        23
+      ]
+    ],
+    "src\\pages\\onboarding\\Onboarding.tsx": [
+      [
+        "jsx",
+        "Fleetify",
+        197
+      ]
+    ],
+    "src\\pages\\Quotations.tsx": [
+      [
+        "jsx",
+        "PDF",
+        553
+      ]
+    ],
+    "src\\pages\\reports\\ReportsHub.tsx": [
+      [
+        "description",
+        "Revenue vs expenses summary",
+        28
+      ],
+      [
+        "description",
+        "Assets, liabilities, equity",
+        29
+      ],
+      [
+        "description",
+        "Cash inflows and outflows",
+        30
+      ],
+      [
+        "description",
+        "Revenue breakdown by category",
+        31
+      ],
+      [
+        "description",
+        "Operating expenses summary",
+        32
+      ],
+      [
+        "description",
+        "Net profit breakdown",
+        33
+      ],
+      [
+        "description",
+        "Fleet usage statistics",
+        35
+      ],
+      [
+        "description",
+        "Service and repair costs",
+        36
+      ],
+      [
+        "description",
+        "Fuel usage breakdown",
+        37
+      ],
+      [
+        "description",
+        "Vehicle availability status",
+        38
+      ],
+      [
+        "description",
+        "Driver metrics report",
+        39
+      ],
+      [
+        "description",
+        "Salary and wages summary",
+        41
+      ],
+      [
+        "description",
+        "Employee attendance data",
+        42
+      ],
+      [
+        "description",
+        "Employee leave tracking",
+        43
+      ],
+      [
+        "description",
+        "Staff performance stats",
+        44
+      ],
+      [
+        "description",
+        "Legal cases overview",
+        46
+      ],
+      [
+        "description",
+        "Upcoming renewals",
+        47
+      ],
+      [
+        "description",
+        "Traffic violations list",
+        48
+      ]
+    ],
+    "src\\pages\\settings\\WhatsAppSettings.tsx": [
+      [
+        "jsx",
+        "Instance ID",
+        485
+      ],
+      [
+        "jsx",
+        "Token",
+        495
+      ]
+    ],
+    "src\\pages\\super-admin\\Payments.tsx": [
+      [
+        "jsx",
+        "Stripe",
+        170
+      ]
+    ],
+    "src\\pages\\super-admin\\Settings.tsx": [
+      [
+        "jsx",
+        "System Settings",
+        90
+      ],
+      [
+        "jsx",
+        "Configure system-wide settings and manage platform features",
+        93
+      ],
+      [
+        "jsx",
+        "Configuration Management",
+        107
+      ],
+      [
+        "jsx",
+        "Manage all system-wide settings from this centralized control panel",
+        110
+      ],
+      [
+        "label",
+        "Security & Access",
+        19
+      ],
+      [
+        "label",
+        "Feature Management",
+        26
+      ],
+      [
+        "label",
+        "Company Management",
+        33
+      ],
+      [
+        "label",
+        "Global Branding",
+        40
+      ],
+      [
+        "label",
+        "Template Management",
+        47
+      ],
+      [
+        "label",
+        "Notifications",
+        54
+      ],
+      [
+        "label",
+        "Database",
+        61
+      ],
+      [
+        "label",
+        "Integrations",
+        68
+      ],
+      [
+        "description",
+        "System security, authentication, and access control",
+        21
+      ],
+      [
+        "description",
+        "Enable/disable features and manage subscription plans",
+        28
+      ],
+      [
+        "description",
+        "Manage company settings and configurations",
+        35
+      ],
+      [
+        "description",
+        "System-wide branding and appearance settings",
+        42
+      ],
+      [
+        "description",
+        "Manage global templates and document settings",
+        49
+      ],
+      [
+        "description",
+        "Global notification settings and email configurations",
+        56
+      ],
+      [
+        "description",
+        "Database management, backups, and maintenance",
+        63
+      ],
+      [
+        "description",
+        "Third-party integrations and API management",
+        70
+      ]
+    ]
+  }
+}

@@ -39,7 +39,6 @@ const AccountingWizard = lazyWithRetry(() => import("./finance/AccountingWizard"
 const FinancialCalculator = lazyWithRetry(() => import("./finance/Calculator"), "FinancialCalculator");
 const Deposits = lazyWithRetry(() => import("./finance/Deposits"), "Deposits");
 const CashReceiptDemo = lazyWithRetry(() => import("../pages/CashReceiptDemo"), "CashReceiptDemo");
-const ProfessionalInvoiceDemo = lazyWithRetry(() => import("../pages/ProfessionalInvoiceDemo"), "ProfessionalInvoiceDemo");
 const JournalEntriesDemo = lazyWithRetry(() => import("../pages/finance/JournalEntriesDemo"), "JournalEntriesDemo");
 const MonthlyRentTracking = lazyWithRetry(() => import("./finance/MonthlyRentTracking"), "MonthlyRentTracking");
 const UnifiedReports = lazyWithRetry(() => import("./finance/UnifiedReports"), "UnifiedReports");
@@ -437,17 +436,6 @@ const Finance = () => {
         } 
       />
       
-      {/* نموذج الفاتورة الاحترافية */}
-      <Route 
-        path="professional-invoice" 
-        element={
-          <ProtectedFinanceRoute permission="finance.invoices.view">
-            <Suspense fallback={<PageSkeletonFallback />}>
-              <ProfessionalInvoiceDemo />
-            </Suspense>
-          </ProtectedFinanceRoute>
-        } 
-      />
       
       {/* نموذج القيود المحاسبية المُعاد تصميمها */}
       <Route 

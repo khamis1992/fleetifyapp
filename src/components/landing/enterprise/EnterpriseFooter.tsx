@@ -1,7 +1,9 @@
 import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export function EnterpriseFooter() {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
@@ -49,7 +51,7 @@ export function EnterpriseFooter() {
               <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-xl">F</span>
               </div>
-              <span className="text-2xl font-bold text-white">Fleetify</span>
+              <span className="text-2xl font-bold text-white">{t("fleetify")}</span>
             </div>
             <p className="text-slate-400 leading-relaxed mb-6 max-w-md">
               نظام إدارة الأساطيل الأول في قطر. نساعد شركات تأجير السيارات وإدارة الأساطيل على تحسين كفاءتها وزيادة أرباحها.

@@ -1257,3 +1257,64 @@ All colors MUST be HSL.
     touch-action: pan-y pan-x !important;
   }
 }
+
+/* === Mobile Dialog → Bottom Sheet === */
+@media (max-width: 768px) {
+  [data-state="open"] [role="dialog"] {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    transform: none !important;
+    max-height: 90vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 1rem 1rem 0 0 !important;
+    overflow-y: auto !important;
+    animation: slide-up 0.3s ease-out !important;
+  }
+
+  [data-state="open"] [role="dialog"]::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: hsl(var(--muted-foreground, 0 0% 40%));
+    border-radius: 2px;
+    margin: 8px auto 16px auto;
+  }
+
+  /* Dialog overlay stays full screen */
+  [data-state="open"]::before {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 49;
+  }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* === Responsive Table mobile hint === */
+.responsive-table-hint {
+  position: relative;
+}
+.responsive-table-hint::after {
+  content: "→";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.3;
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}
+@media (min-width: 769px) {
+  .responsive-table-hint::after { display: none; }
+}

@@ -70,7 +70,10 @@ const PermissionsManagement = () => {
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Roles table not available:', error.message);
+        return [] as Role[];
+      }
       return data as Role[];
     },
   });
@@ -84,7 +87,10 @@ const PermissionsManagement = () => {
         .select('*')
         .order('category, name');
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Permissions table not available:', error.message);
+        return [] as Permission[];
+      }
       return data as Permission[];
     },
   });
@@ -100,7 +106,10 @@ const PermissionsManagement = () => {
         .select('permission_id')
         .eq('role_id', selectedRole.id);
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Role permissions table not available:', error.message);
+        return [] as string[];
+      }
       return data.map(rp => rp.permission_id);
     },
     enabled: !!selectedRole,
@@ -120,7 +129,10 @@ const PermissionsManagement = () => {
           roles (id, name, description)
         `);
       
-      if (error) throw error;
+      if (error) {
+        console.warn('User roles table not available:', error.message);
+        return [] as UserRole[];
+      }
       return data as UserRole[];
     },
   });

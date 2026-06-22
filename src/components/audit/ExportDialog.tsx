@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   Download,
   FileText,
@@ -35,6 +36,7 @@ interface ExportDialogProps {
 }
 
 export function ExportDialog({ open, onClose, onExport, isExporting, totalCount }: ExportDialogProps) {
+  const { t } = useFleetifyTranslation("ui");
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'pdf' | 'json'>('csv');
   const [exportOptions, setExportOptions] = useState({
     includeIntegrityData: false,
@@ -50,26 +52,26 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
   const formatOptions = [
     {
       value: 'csv',
-      label: 'CSV',
-      description: 'Comma-separated values for spreadsheet applications',
+      label: t("csv"),
+      description: t("commaseparatedValuesForSpreadsheet"),
       icon: <Database className="h-4 w-4" />
     },
     {
       value: 'excel',
-      label: 'Excel',
-      description: 'Microsoft Excel format with formatting',
+      label: t("excel"),
+      description: t("microsoftExcelFormatWith"),
       icon: <FileText className="h-4 w-4" />
     },
     {
       value: 'pdf',
-      label: 'PDF',
-      description: 'Portable Document Format for reports and sharing',
+      label: t("pdf"),
+      description: t("portableDocumentFormatFor"),
       icon: <FileText className="h-4 w-4" />
     },
     {
       value: 'json',
-      label: 'JSON',
-      description: 'Machine-readable format for data processing',
+      label: t("json"),
+      description: t("machinereadableFormatForData"),
       icon: <Code className="h-4 w-4" />
     }
   ];
@@ -79,18 +81,14 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Export Audit Data
-          </DialogTitle>
-          <DialogDescription>
-            Export {totalCount.toLocaleString()} audit records in your preferred format
-          </DialogDescription>
+            <Download className="h-5 w-5" />{t("exportAuditData")}</DialogTitle>
+          <DialogDescription>{t("exportTotalcounttolocalestringAuditRecords")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Format Selection */}
           <div className="space-y-3">
-            <Label className="text-base font-medium">Export Format</Label>
+            <Label className="text-base font-medium">{t("exportFormat")}</Label>
             <div className="grid gap-2">
               {formatOptions.map((format) => (
                 <Card
@@ -127,8 +125,8 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
           {/* Export Options */}
           <Tabs defaultValue="options" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="options">Options</TabsTrigger>
-              <TabsTrigger value="compliance">Compliance</TabsTrigger>
+              <TabsTrigger value="options">{t("options")}</TabsTrigger>
+              <TabsTrigger value="compliance">{t("compliance")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="options" className="space-y-4">
@@ -141,13 +139,9 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                       setExportOptions(prev => ({ ...prev, includeIntegrityData: checked }))
                     }
                   />
-                  <Label htmlFor="integrity-data" className="text-sm font-medium cursor-pointer">
-                    Include integrity data
-                  </Label>
+                  <Label htmlFor="integrity-data" className="text-sm font-medium cursor-pointer">{t("includeIntegrityData")}</Label>
                 </div>
-                <p className="text-xs text-muted-foreground ml-6">
-                  Include hash signatures and verification status
-                </p>
+                <p className="text-xs text-muted-foreground ml-6">{t("includeHashSignaturesAnd")}</p>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -157,13 +151,9 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                       setExportOptions(prev => ({ ...prev, includeFinancialData: checked }))
                     }
                   />
-                  <Label htmlFor="financial-data" className="text-sm font-medium cursor-pointer">
-                    Include financial data
-                  </Label>
+                  <Label htmlFor="financial-data" className="text-sm font-medium cursor-pointer">{t("includeFinancialData")}</Label>
                 </div>
-                <p className="text-xs text-muted-foreground ml-6">
-                  Include amounts, currencies, and transaction details
-                </p>
+                <p className="text-xs text-muted-foreground ml-6">{t("includeAmountsCurrenciesAnd")}</p>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -173,13 +163,9 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                       setExportOptions(prev => ({ ...prev, anonymizeUserData: checked }))
                     }
                   />
-                  <Label htmlFor="anonymize-data" className="text-sm font-medium cursor-pointer">
-                    Anonymize user data
-                  </Label>
+                  <Label htmlFor="anonymize-data" className="text-sm font-medium cursor-pointer">{t("anonymizeUserData")}</Label>
                 </div>
-                <p className="text-xs text-muted-foreground ml-6">
-                  Remove user names and email addresses for privacy
-                </p>
+                <p className="text-xs text-muted-foreground ml-6">{t("removeUserNamesAnd")}</p>
               </div>
             </TabsContent>
 
@@ -193,20 +179,16 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
                       setExportOptions(prev => ({ ...prev, complianceMode: checked }))
                     }
                   />
-                  <Label htmlFor="compliance-mode" className="text-sm font-medium cursor-pointer">
-                    Compliance mode
-                  </Label>
+                  <Label htmlFor="compliance-mode" className="text-sm font-medium cursor-pointer">{t("complianceMode")}</Label>
                 </div>
-                <p className="text-xs text-muted-foreground ml-6">
-                  Include compliance flags, retention periods, and audit metadata
-                </p>
+                <p className="text-xs text-muted-foreground ml-6">{t("includeComplianceFlagsRetention")}</p>
 
                 <Card className="border-blue-200 bg-blue-50">
                   <CardContent className="p-4">
                     <div className="flex items-start space-x-2">
                       <Shield className="h-4 w-4 text-blue-600 mt-0.5" />
                       <div>
-                        <h4 className="font-medium text-blue-800">Compliance Features</h4>
+                        <h4 className="font-medium text-blue-800">{t("complianceFeatures")}</h4>
                         <p className="text-sm text-blue-700 mt-1">
                           Compliance mode exports include additional fields required for regulatory reporting
                           and audit trail verification.
@@ -222,7 +204,7 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
           {/* Export Summary */}
           <Card className="border-slate-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Export Summary</CardTitle>
+              <CardTitle className="text-base">{t("exportSummary")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -249,20 +231,14 @@ export function ExportDialog({ open, onClose, onExport, isExporting, totalCount 
 
           {/* Actions */}
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose} disabled={isExporting}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={onClose} disabled={isExporting}>{t("cancel")}</Button>
             <Button onClick={handleExport} disabled={isExporting}>
               {isExporting ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Exporting...
-                </>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />{t("exporting")}</>
               ) : (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export {selectedFormat.toUpperCase()}
-                </>
+                  <Download className="h-4 w-4 mr-2" />{t("exportSelectedformattouppercase")}</>
               )}
             </Button>
           </div>

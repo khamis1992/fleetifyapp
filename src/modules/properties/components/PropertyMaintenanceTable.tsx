@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -80,7 +81,8 @@ export const PropertyMaintenanceTable: React.FC<PropertyMaintenanceTableProps> =
   if (loading) {
     return (
       <div className="rounded-md border">
-        <Table>
+        <ResponsiveTable>
+<Table>
           <TableHeader>
             <TableRow>
               <TableHead>رقم الصيانة</TableHead>
@@ -127,6 +129,7 @@ export const PropertyMaintenanceTable: React.FC<PropertyMaintenanceTableProps> =
             ))}
           </TableBody>
         </Table>
+</ResponsiveTable>
       </div>
     );
   }
@@ -134,7 +137,8 @@ export const PropertyMaintenanceTable: React.FC<PropertyMaintenanceTableProps> =
   if (maintenance.length === 0) {
     return (
       <div className="rounded-md border">
-        <Table>
+        <ResponsiveTable>
+<Table>
           <TableHeader>
             <TableRow>
               <TableHead>رقم الصيانة</TableHead>
@@ -155,13 +159,15 @@ export const PropertyMaintenanceTable: React.FC<PropertyMaintenanceTableProps> =
             </TableRow>
           </TableBody>
         </Table>
+</ResponsiveTable>
       </div>
     );
   }
 
   return (
     <div className="rounded-md border">
-      <Table>
+      <ResponsiveTable>
+<Table>
         <TableHeader>
           <TableRow>
             <TableHead>رقم الصيانة</TableHead>
@@ -309,6 +315,7 @@ export const PropertyMaintenanceTable: React.FC<PropertyMaintenanceTableProps> =
           ))}
         </TableBody>
       </Table>
+</ResponsiveTable>
     </div>
   );
 };

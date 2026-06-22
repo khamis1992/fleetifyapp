@@ -4,7 +4,7 @@
  */
 
 import React, { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { RouteConfig } from '@/routes/types';
 import { PageSkeletonFallback } from '@/components/common/LazyPageWrapper';
 import { LazyLoadErrorBoundary } from '@/components/common/LazyLoadErrorBoundary';
@@ -17,6 +17,7 @@ import { CompanyBrowserLayout } from '@/components/layouts/CompanyBrowserLayout'
 import { BentoLayout } from '@/components/layouts/BentoLayout';
 
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface RouteRendererProps {
   routes: RouteConfig[];
   fallback?: React.ComponentType;
@@ -30,8 +31,18 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 }) => {
 
 
+  const { t } = useFleetifyTranslation("ui");
   const renderRoute = React.useCallback((route: RouteConfig) => {
+    if (route.redirectTo) {
+      return <Navigate to={route.redirectTo} replace />;
+    }
+
     const Component = route.component;
+    if (!Component) {
+      console.warn(`Route "${route.path}" has no component and no redirectTo`);
+      return null;
+    }
+
     const isProtected = route.protected;
     const requiredRole = route.requiredRole;
     const layout = route.layout || 'none';
@@ -159,13 +170,11 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
                   <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
                       <h1 className="text-4xl font-bold text-slate-900 mb-4">404</h1>
-                      <p className="text-lg text-slate-600 mb-8">Page not found</p>
+                      <p className="text-lg text-slate-600 mb-8">{t("pageNotFound")}</p>
                       <a
                         href="/dashboard"
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        Go to Dashboard
-                      </a>
+                      >{t("goToDashboard")}</a>
                     </div>
                   </div>
                 </RouteWrapper>

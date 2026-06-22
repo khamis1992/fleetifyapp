@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import {
   DollarSign,
   Download,
@@ -394,7 +395,8 @@ export const ARAgingReport: React.FC = () => {
               {customerLoading ? (
                 <p>جاري التحميل...</p>
               ) : customerAging && customerAging.length > 0 ? (
-                <Table>
+                <ResponsiveTable>
+<Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>العميل</TableHead>
@@ -452,6 +454,7 @@ export const ARAgingReport: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+</ResponsiveTable>
               ) : (
                 <Alert>
                   <AlertDescription>
@@ -472,7 +475,8 @@ export const ARAgingReport: React.FC = () => {
               {priorityLoading ? (
                 <p>جاري التحميل...</p>
               ) : priorityList && priorityList.length > 0 ? (
-                <Table>
+                <ResponsiveTable>
+<Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>العميل</TableHead>
@@ -536,6 +540,7 @@ export const ARAgingReport: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+</ResponsiveTable>
               ) : (
                 <Alert>
                   <AlertDescription>

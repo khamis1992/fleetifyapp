@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
+import { QuickSearch } from "@/components/navigation/QuickSearch";
 import { 
   Building2, 
   Users, 
@@ -61,6 +63,7 @@ const navigationItems = [
 ];
 
 const Sidebar = ({ className = "" }: { className?: string }) => {
+  const { t } = useFleetifyTranslation("ui");
   const location = useLocation();
   const { user, signOut } = useAuth();
 
@@ -72,12 +75,11 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
     <div className={`h-screen bg-card/80 backdrop-blur-xl border-l border-border/50 p-6 ${className}`}>
       <div className="mb-8">
         <div className="flex items-center justify-center gap-3 mb-2">
+        <QuickSearch />
           <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
             <Crown className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Super Admin
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("superAdmin")}</h1>
         </div>
         <p className="text-sm text-center text-muted-foreground">
           لوحة تحكم مزود الخدمة
@@ -143,6 +145,7 @@ const Sidebar = ({ className = "" }: { className?: string }) => {
 };
 
 export const SuperAdminLayout: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { user, loading } = useAuth();
   const [hasMounted, setHasMounted] = React.useState(false);
 
@@ -182,7 +185,7 @@ export const SuperAdminLayout: React.FC = () => {
           <div className="p-1.5 rounded-lg bg-destructive/10 text-destructive">
             <Crown className="h-5 w-5" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">Super Admin</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("superAdmin")}</h1>
         </div>
         <Sheet>
           <SheetTrigger asChild>

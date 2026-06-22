@@ -1,1 +1,22 @@
-{}
+{
+  "title": "المالية",
+  "invoices": "الفواتير",
+  "payments": "المدفوعات",
+  "chartOfAccounts": "دليل الحسابات",
+  "ledger": "دفتر الأستاذ",
+  "treasury": "الخزينة",
+  "reports": "التقارير المالية",
+  "vendor": "المورد",
+  "invoiceNumber": "رقم الفاتورة",
+  "invoiceDate": "تاريخ الفاتورة",
+  "dueDate": "تاريخ الاستحقاق",
+  "amount": "المبلغ",
+  "paid": "مدفوع",
+  "unpaid": "غير مدفوع",
+  "partial": "مدفوع جزئيا",
+  "search": "بحث في الفواتير",
+  "noResults": "لا توجد فواتير",
+  "totalRevenue": "إجمالي الإيرادات",
+  "totalExpenses": "إجمالي المصروفات",
+  "netProfit": "صافي الربح"
+}

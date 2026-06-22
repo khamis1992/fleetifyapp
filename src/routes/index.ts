@@ -11,7 +11,7 @@ import type { RouteConfig, RouteGroup } from './types';
 // Critical pages - loaded immediately
 import PremiumLanding from '@/pages/PremiumLanding';
 import EnterpriseLanding from '@/pages/landing/EnterpriseLanding';
-const Auth = lazy(() => import('@/pages/Auth'));
+import Auth from '@/pages/Auth';
 import Onboarding from '@/pages/onboarding/Onboarding';
 import ResetPassword from '@/pages/ResetPassword';
 import DemoTrial from '@/pages/DemoTrial';
@@ -590,15 +590,15 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     path: '/dashboard-landing',
-    component: DashboardLanding,
+    redirectTo: '/dashboard',
     lazy: true,
     exact: true,
     title: 'Dashboard Landing',
-    description: 'Landing-page inspired dashboard design',
+    description: 'Redirects to main dashboard',
     group: 'dashboard',
     priority: 12,
     protected: true,
-    layout: 'bento', // Use bento layout with sidebar
+    layout: 'bento',
     requiredRole: 'admin',
   },
   {
@@ -1527,10 +1527,10 @@ const routeConfigs: RouteConfig[] = [
 
   // === Inventory Management ===
   {
-    path: '/inventory',
+    path: '/inventory/*',
     component: Inventory,
     lazy: true,
-    exact: true,
+    exact: false,
     title: 'Inventory',
     description: 'Inventory management',
     group: 'inventory',

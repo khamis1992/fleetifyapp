@@ -35,6 +35,7 @@ import { FinancialAuditLog } from '@/types/auditLog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface AuditLogDetailsDialogProps {
   log: FinancialAuditLog;
   open: boolean;
@@ -42,6 +43,7 @@ interface AuditLogDetailsDialogProps {
 }
 
 export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDialogProps) {
+  const { t } = useFleetifyTranslation("ui");
   const formatAmount = (amount?: number, currency?: string) => {
     if (!amount) return 'N/A';
     return new Intl.NumberFormat('en-US', {
@@ -100,20 +102,16 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Audit Log Details
-          </DialogTitle>
-          <DialogDescription>
-            Comprehensive view of the audit trail entry
-          </DialogDescription>
+            <FileText className="h-5 w-5" />{t("auditLogDetails")}</DialogTitle>
+          <DialogDescription>{t("comprehensiveViewOfThe")}</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="flex-1">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="changes">Changes</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
-            <TabsTrigger value="technical">Technical</TabsTrigger>
+            <TabsTrigger value="overview">{t("overview")}</TabsTrigger>
+            <TabsTrigger value="changes">{t("changes")}</TabsTrigger>
+            <TabsTrigger value="financial">{t("financial")}</TabsTrigger>
+            <TabsTrigger value="technical">{t("technical")}</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 mt-4">
@@ -125,9 +123,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Info className="h-5 w-5" />
-                        Basic Information
-                      </CardTitle>
+                        <Info className="h-5 w-5" />{t("basicInformation")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex justify-between">
@@ -180,9 +176,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        User Information
-                      </CardTitle>
+                        <User className="h-5 w-5" />{t("userInformation")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex justify-between">
@@ -212,7 +206,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                 {/* Entity Details */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Entity Details</CardTitle>
+                    <CardTitle className="text-lg">{t("entityDetails")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid gap-3 md:grid-cols-2">
@@ -248,9 +242,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      Data Integrity
-                    </CardTitle>
+                      <Shield className="h-5 w-5" />{t("dataIntegrity")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between items-center">
@@ -295,7 +287,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
               <TabsContent value="changes" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Data Changes</CardTitle>
+                    <CardTitle className="text-lg">{t("dataChanges")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {log.old_values || log.new_values ? (
@@ -318,9 +310,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                         )}
                       </div>
                     ) : (
-                      <p className="text-center text-muted-foreground py-8">
-                        No change data available for this entry
-                      </p>
+                      <p className="text-center text-muted-foreground py-8">{t("noChangeDataAvailable")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -328,7 +318,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                 {log.metadata && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Additional Metadata</CardTitle>
+                      <CardTitle className="text-lg">{t("additionalMetadata")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-64">
@@ -344,9 +334,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
-                      Financial Information
-                    </CardTitle>
+                      <DollarSign className="h-5 w-5" />{t("financialInformation")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid gap-3 md:grid-cols-2">
@@ -444,9 +432,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Technical Details
-                    </CardTitle>
+                      <Activity className="h-5 w-5" />{t("technicalDetails")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid gap-3 md:grid-cols-2">
@@ -544,7 +530,7 @@ export function AuditLogDetailsDialog({ log, open, onClose }: AuditLogDetailsDia
           </ScrollArea>
 
           <div className="flex justify-end pt-4 border-t">
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose}>{t("close")}</Button>
           </div>
         </Tabs>
       </DialogContent>

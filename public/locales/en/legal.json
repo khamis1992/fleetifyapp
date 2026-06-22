@@ -1,1 +1,16 @@
-{}
+{
+  "title": "Legal Affairs",
+  "cases": "Cases",
+  "newCase": "New Case",
+  "caseNumber": "Case Number",
+  "court": "Court",
+  "status": "Status",
+  "open": "Open",
+  "closed": "Closed",
+  "pending": "Pending",
+  "search": "Search cases",
+  "noResults": "No cases found",
+  "filingDate": "Filing Date",
+  "hearingDate": "Hearing Date",
+  "verdict": "Verdict"
+}

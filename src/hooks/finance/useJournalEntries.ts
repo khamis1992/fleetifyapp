@@ -131,11 +131,15 @@ export const useCreateJournalEntry = () => {
 
       // Create journal entry lines
       if (lines && lines.length > 0) {
-        const linesWithJournalId = lines.map((line, index) => ({
-          ...line,
-          journal_entry_id: journalEntry.id,
-          line_number: index + 1,
-        }));
+        const linesWithJournalId = lines.map((line: Record<string, unknown>, index: number) => {
+          // Remove company_id — it doesn't exist on journal_entry_lines (it's on journal_entries parent)
+          const { company_id: _companyId, ...lineWithoutCompanyId } = line;
+          return {
+            ...lineWithoutCompanyId,
+            journal_entry_id: journalEntry.id,
+            line_number: index + 1,
+          };
+        });
 
         const { error: linesError } = await supabase
           .from("journal_entry_lines")

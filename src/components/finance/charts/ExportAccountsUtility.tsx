@@ -12,6 +12,7 @@ import {
 import { ChartOfAccount } from '@/hooks/useChartOfAccounts';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ExportAccountsUtilityProps {
   accounts: ChartOfAccount[];
   expandedNodes: Set<string>;
@@ -19,12 +20,11 @@ interface ExportAccountsUtilityProps {
   filterType: string;
 }
 
-export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({
-  accounts,
+export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({ accounts,
   expandedNodes,
   searchTerm,
-  filterType
-}) => {
+  filterType }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   
   const exportToPDF = async () => {
@@ -311,9 +311,7 @@ export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({
             onClick={exportToPDF}
             className="flex items-center gap-2 text-xs"
           >
-            <FileText className="h-3 w-3" />
-            PDF
-          </Button>
+            <FileText className="h-3 w-3" />{t("pdf")}</Button>
           
           <Button
             variant="outline"
@@ -321,9 +319,7 @@ export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({
             onClick={exportToCSV}
             className="flex items-center gap-2 text-xs"
           >
-            <FileSpreadsheet className="h-3 w-3" />
-            CSV
-          </Button>
+            <FileSpreadsheet className="h-3 w-3" />{t("csv")}</Button>
           
           <Button
             variant="outline"
@@ -331,9 +327,7 @@ export const ExportAccountsUtility: React.FC<ExportAccountsUtilityProps> = ({
             onClick={exportToJSON}
             className="flex items-center gap-2 text-xs"
           >
-            <FileText className="h-3 w-3" />
-            JSON
-          </Button>
+            <FileText className="h-3 w-3" />{t("json")}</Button>
           
           <Button
             variant="outline"

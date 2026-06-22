@@ -1,9 +1,11 @@
 import React from 'react';
 import { HelpSection, HelpStep, HelpList, HelpNote } from '../HelpContent';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const ReportsPageHelpContent = () => (
   <>
-    {/* نظرة عامة */}
+    {
+  /* نظرة عامة */}
     <HelpSection title="نظرة عامة على صفحة التقارير" icon="info">
       <p>
         تُعد صفحة <strong>التقارير (Reports)</strong> المركز الرئيسي لإنشاء وعرض وتصدير جميع التقارير المالية والتشغيلية في النظام.
@@ -162,7 +164,7 @@ export const ReportsPageHelpContent = () => (
         </div>
 
         <div>
-          <h5 className="font-semibold">Excel (XLSX)</h5>
+          <h5 className="font-semibold">{t("excelXlsx")}</h5>
           <p className="text-sm text-muted-foreground">
             مناسب للتحليل والتعديل. يمكنك إجراء حسابات إضافية ورسوم بيانية مخصصة.
           </p>

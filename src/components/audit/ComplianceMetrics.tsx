@@ -25,6 +25,7 @@ import {
 import { ComplianceReport } from '@/types/auditLog';
 import { format } from 'date-fns';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ComplianceMetricsProps {
   complianceReport: ComplianceReport | null;
   isLoading: boolean;
@@ -38,6 +39,8 @@ export function ComplianceMetrics({
   reportPeriod,
   onPeriodChange
 }: ComplianceMetricsProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const [selectedPeriod, setSelectedPeriod] = useState('30');
 
   const handlePeriodChange = (days: string) => {
@@ -71,8 +74,8 @@ export function ComplianceMetrics({
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Compliance Metrics</CardTitle>
-            <CardDescription>Loading compliance data...</CardDescription>
+            <CardTitle>{t("complianceMetrics")}</CardTitle>
+            <CardDescription>{t("loadingComplianceData")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="animate-pulse space-y-4">
@@ -94,7 +97,7 @@ export function ComplianceMetrics({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Compliance Monitoring</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("complianceMonitoring")}</h2>
           <p className="text-muted-foreground">
             Track regulatory compliance and audit trail completeness
           </p>
@@ -107,9 +110,7 @@ export function ComplianceMetrics({
             </span>
           </div>
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
+            <Download className="h-4 w-4 mr-2" />{t("exportReport")}</Button>
         </div>
       </div>
 
@@ -134,9 +135,7 @@ export function ComplianceMetrics({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Overall Compliance Score
-          </CardTitle>
+            <Shield className="h-5 w-5" />{t("overallComplianceScore")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -169,22 +168,20 @@ export function ComplianceMetrics({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalTransactions")}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {report?.total_transactions?.toLocaleString() || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Analyzed in this period
-            </p>
+            <p className="text-xs text-muted-foreground">{t("analyzedInThisPeriod")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">High Risk Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("highRiskTransactions")}</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -202,31 +199,27 @@ export function ComplianceMetrics({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Compliance Violations</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("complianceViolations")}</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {report?.compliance_violations?.length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Types of violations detected
-            </p>
+            <p className="text-xs text-muted-foreground">{t("typesOfViolationsDetected")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Audit Trail Status</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("auditTrailStatus")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {report?.audit_trail_complete ? 'Complete' : 'Incomplete'}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Traceability status
-            </p>
+            <p className="text-xs text-muted-foreground">{t("traceabilityStatus")}</p>
           </CardContent>
         </Card>
       </div>
@@ -236,9 +229,7 @@ export function ComplianceMetrics({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Compliance Violations
-            </CardTitle>
+              <AlertTriangle className="h-5 w-5" />{t("complianceViolations")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -273,14 +264,12 @@ export function ComplianceMetrics({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Segregation of Duties
-            </CardTitle>
+              <Users className="h-5 w-5" />{t("segregationOfDuties")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Segregation of Duties Violations Detected</AlertTitle>
+              <AlertTitle>{t("segregationOfDutiesViolations")}</AlertTitle>
               <AlertDescription>
                 {report.segregation_duties_violations.length} users have been flagged for potential
                 segregation of duties violations.
@@ -312,7 +301,7 @@ export function ComplianceMetrics({
       {report?.required_approvals_missing && report.required_approvals_missing > 0 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Missing Required Approvals</AlertTitle>
+          <AlertTitle>{t("missingRequiredApprovals")}</AlertTitle>
           <AlertDescription>
             {report.required_approvals_missing} transactions are missing required approvals.
             This may indicate a gap in your approval workflow.
@@ -323,16 +312,16 @@ export function ComplianceMetrics({
       {/* Detailed Compliance Tabs */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="violations">Violations</TabsTrigger>
-          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="overview">{t("overview")}</TabsTrigger>
+          <TabsTrigger value="violations">{t("violations")}</TabsTrigger>
+          <TabsTrigger value="recommendations">{t("recommendations")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Compliance Status</CardTitle>
+                <CardTitle className="text-lg">{t("complianceStatus")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -358,7 +347,7 @@ export function ComplianceMetrics({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Period Analysis</CardTitle>
+                <CardTitle className="text-lg">{t("periodAnalysis")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -385,13 +374,13 @@ export function ComplianceMetrics({
         <TabsContent value="violations" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Violation Breakdown</CardTitle>
+              <CardTitle>{t("violationBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent>
               {report?.compliance_violations.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                  <p>No compliance violations detected in this period.</p>
+                  <p>{t("noComplianceViolationsDetected")}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -422,14 +411,14 @@ export function ComplianceMetrics({
         <TabsContent value="recommendations" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Compliance Recommendations</CardTitle>
+              <CardTitle>{t("complianceRecommendations")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {report?.compliance_score >= 90 ? (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
-                    <AlertTitle>Excellent Compliance</AlertTitle>
+                    <AlertTitle>{t("excellentCompliance")}</AlertTitle>
                     <AlertDescription>
                       Your compliance score is excellent. Continue monitoring and maintaining current practices.
                     </AlertDescription>
@@ -437,15 +426,13 @@ export function ComplianceMetrics({
                 ) : report?.compliance_score >= 80 ? (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Good with Room for Improvement</AlertTitle>
-                    <AlertDescription>
-                      Consider reviewing the identified violations and implementing additional controls.
-                    </AlertDescription>
+                    <AlertTitle>{t("goodWithRoomFor")}</AlertTitle>
+                    <AlertDescription>{t("considerReviewingTheIdentified")}</AlertDescription>
                   </Alert>
                 ) : (
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Immediate Action Required</AlertTitle>
+                    <AlertTitle>{t("immediateActionRequired")}</AlertTitle>
                     <AlertDescription>
                       Multiple compliance issues detected. Immediate review and remediation is recommended.
                     </AlertDescription>
@@ -456,25 +443,15 @@ export function ComplianceMetrics({
                   <h4 className="font-medium">Recommended Actions:</h4>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      Review and strengthen approval workflows
-                    </li>
+                      <span className="text-blue-500 mr-2">•</span>{t("reviewAndStrengthenApproval")}</li>
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      Implement additional segregation of duties controls
-                    </li>
+                      <span className="text-blue-500 mr-2">•</span>{t("implementAdditionalSegregationOf")}</li>
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      Enhanced monitoring of high-risk transactions
-                    </li>
+                      <span className="text-blue-500 mr-2">•</span>{t("enhancedMonitoringOfHighrisk")}</li>
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      Regular compliance training for staff
-                    </li>
+                      <span className="text-blue-500 mr-2">•</span>{t("regularComplianceTrainingFor")}</li>
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      Automate compliance checking and alerting
-                    </li>
+                      <span className="text-blue-500 mr-2">•</span>{t("automateComplianceCheckingAnd")}</li>
                   </ul>
                 </div>
               </div>

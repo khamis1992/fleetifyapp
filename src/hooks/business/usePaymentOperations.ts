@@ -78,17 +78,21 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
 
       // ========== DUPLICATE PREVENTION LAYER ==========
       // 1. Check for existing idempotency key (retry detection)
+      // Note: payments table doesn't have idempotency_key column — use reference_number as fallback
       if (data.idempotencyKey) {
-        const { data: existingPayment } = await supabase
+        const { data: existingPayment, error: idempotencyError } = await supabase
           .from('payments')
           .select('*')
-          .eq('idempotency_key', data.idempotencyKey)
+          .eq('reference_number', data.idempotencyKey)
           .eq('company_id', companyId)
           .maybeSingle();
 
         if (existingPayment) {
           console.log('♻️ [usePaymentOperations] Idempotency key found, returning existing payment:', existingPayment.payment_number);
           return existingPayment; // Return existing payment instead of creating duplicate
+        }
+        if (idempotencyError) {
+          console.warn('⚠️ [usePaymentOperations] Idempotency check query failed (non-fatal):', idempotencyError.message);
         }
       }
 
@@ -175,9 +179,9 @@ export const usePaymentOperations = (options: PaymentOperationsOptions = {}) => 
         paymentData.created_by = user.id;
       }
 
-      // Add idempotency key if provided
+      // Add idempotency key if provided (stored as reference_number for dedup)
       if (data.idempotencyKey) {
-        paymentData.idempotency_key = data.idempotencyKey;
+        paymentData.reference_number = data.idempotencyKey;
       }
 
       console.log('📝 Prepared payment data:', paymentData);

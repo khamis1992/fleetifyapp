@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -266,7 +267,8 @@ const [periodEnd, setPeriodEnd] = useState('');
           </div>
 
           <div className="border rounded-lg overflow-hidden">
-            <Table>
+            <ResponsiveTable>
+<Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">رقم الراتب</TableHead>
@@ -354,6 +356,7 @@ const [periodEnd, setPeriodEnd] = useState('');
                 )}
               </TableBody>
             </Table>
+</ResponsiveTable>
           </div>
         </CardContent>
       </Card>

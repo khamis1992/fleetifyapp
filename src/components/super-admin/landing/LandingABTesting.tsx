@@ -13,6 +13,7 @@ import { useLandingABTests } from '@/hooks/useLandingABTests';
 import { useCompanies } from '@/hooks/useCompanies';
 import { toast } from 'sonner';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface ABTest {
   id: string;
   test_name: string;
@@ -31,6 +32,7 @@ interface ABTest {
 }
 
 export const LandingABTesting: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { tests, loading, createTest, updateTest, deleteTest } = useLandingABTests();
   const { companies } = useCompanies();
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
@@ -157,7 +159,7 @@ export const LandingABTesting: React.FC = () => {
               <SelectValue placeholder="Select Company" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Companies (Global)</SelectItem>
+              <SelectItem value="all">{t("allCompaniesGlobal")}</SelectItem>
               {companies?.map((company) => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.company_name || company.company_name_ar || 'Unnamed Company'}
@@ -248,9 +250,7 @@ export const LandingABTesting: React.FC = () => {
                           size="sm"
                           onClick={() => handleStartTest(test)}
                         >
-                          <Play className="h-4 w-4 mr-1" />
-                          Start
-                        </Button>
+                          <Play className="h-4 w-4 mr-1" />{t("start")}</Button>
                       )}
                       
                       {test.status === 'active' && (
@@ -260,18 +260,14 @@ export const LandingABTesting: React.FC = () => {
                             size="sm"
                             onClick={() => handlePauseTest(test)}
                           >
-                            <Pause className="h-4 w-4 mr-1" />
-                            Pause
-                          </Button>
+                            <Pause className="h-4 w-4 mr-1" />{t("pause")}</Button>
                           
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => handleCompleteTest(test, isWinnerA ? 'a' : 'b')}
                           >
-                            <Trophy className="h-4 w-4 mr-1" />
-                            Declare Winner
-                          </Button>
+                            <Trophy className="h-4 w-4 mr-1" />{t("declareWinner")}</Button>
                         </>
                       )}
                       
@@ -298,7 +294,7 @@ export const LandingABTesting: React.FC = () => {
                     {/* Variant A */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">Variant A (Control)</h4>
+                        <h4 className="font-semibold">{t("variantAControl")}</h4>
                         {test.winner_variant === 'a' && (
                           <Trophy className="h-4 w-4 text-green-600" />
                         )}
@@ -308,17 +304,17 @@ export const LandingABTesting: React.FC = () => {
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div>
                             <p className="text-2xl font-bold">{performance.variant_a.visitors}</p>
-                            <p className="text-sm text-muted-foreground">Visitors</p>
+                            <p className="text-sm text-muted-foreground">{t("visitors")}</p>
                           </div>
                           <div>
                             <p className="text-2xl font-bold">{performance.variant_a.conversions}</p>
-                            <p className="text-sm text-muted-foreground">Conversions</p>
+                            <p className="text-sm text-muted-foreground">{t("conversions")}</p>
                           </div>
                           <div>
                             <p className="text-2xl font-bold text-primary">
                               {performance.variant_a.conversion_rate}%
                             </p>
-                            <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                            <p className="text-sm text-muted-foreground">{t("conversionRate")}</p>
                           </div>
                         </div>
                       </div>
@@ -335,7 +331,7 @@ export const LandingABTesting: React.FC = () => {
                     {/* Variant B */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold">Variant B (Test)</h4>
+                        <h4 className="font-semibold">{t("variantBTest")}</h4>
                         {test.winner_variant === 'b' && (
                           <Trophy className="h-4 w-4 text-green-600" />
                         )}
@@ -345,17 +341,17 @@ export const LandingABTesting: React.FC = () => {
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div>
                             <p className="text-2xl font-bold">{performance.variant_b.visitors}</p>
-                            <p className="text-sm text-muted-foreground">Visitors</p>
+                            <p className="text-sm text-muted-foreground">{t("visitors")}</p>
                           </div>
                           <div>
                             <p className="text-2xl font-bold">{performance.variant_b.conversions}</p>
-                            <p className="text-sm text-muted-foreground">Conversions</p>
+                            <p className="text-sm text-muted-foreground">{t("conversions")}</p>
                           </div>
                           <div>
                             <p className="text-2xl font-bold text-primary">
                               {performance.variant_b.conversion_rate}%
                             </p>
-                            <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                            <p className="text-sm text-muted-foreground">{t("conversionRate")}</p>
                           </div>
                         </div>
                       </div>
@@ -415,7 +411,7 @@ const ABTestForm: React.FC<ABTestFormProps> = ({ test, onSubmit }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="test_name">Test Name (English)</Label>
+          <Label htmlFor="test_name">{t("testNameEnglish")}</Label>
           <Input
             id="test_name"
             value={formData.test_name}
@@ -425,7 +421,7 @@ const ABTestForm: React.FC<ABTestFormProps> = ({ test, onSubmit }) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="test_name_ar">Test Name (Arabic)</Label>
+          <Label htmlFor="test_name_ar">{t("testNameArabic")}</Label>
           <Input
             id="test_name_ar"
             value={formData.test_name_ar}
@@ -435,7 +431,7 @@ const ABTestForm: React.FC<ABTestFormProps> = ({ test, onSubmit }) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">{t("description")}</Label>
         <Textarea
           id="description"
           value={formData.description}
@@ -459,7 +455,7 @@ const ABTestForm: React.FC<ABTestFormProps> = ({ test, onSubmit }) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="conversion_goal">Conversion Goal</Label>
+          <Label htmlFor="conversion_goal">{t("conversionGoal")}</Label>
           <Select 
             value={formData.conversion_goal} 
             onValueChange={(value) => setFormData(prev => ({ ...prev, conversion_goal: value }))}
@@ -468,11 +464,11 @@ const ABTestForm: React.FC<ABTestFormProps> = ({ test, onSubmit }) => {
               <SelectValue placeholder="Select goal" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="button_clicks">Button Clicks</SelectItem>
-              <SelectItem value="form_submissions">Form Submissions</SelectItem>
-              <SelectItem value="page_views">Page Views</SelectItem>
-              <SelectItem value="time_on_page">Time on Page</SelectItem>
-              <SelectItem value="scroll_depth">Scroll Depth</SelectItem>
+              <SelectItem value="button_clicks">{t("buttonClicks")}</SelectItem>
+              <SelectItem value="form_submissions">{t("formSubmissions")}</SelectItem>
+              <SelectItem value="page_views">{t("pageViews")}</SelectItem>
+              <SelectItem value="time_on_page">{t("timeOnPage")}</SelectItem>
+              <SelectItem value="scroll_depth">{t("scrollDepth")}</SelectItem>
             </SelectContent>
           </Select>
         </div>

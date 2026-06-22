@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MobileDetailLayout } from '@/components/mobile/MobileDetailLayout';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Payment {
   id: string;
   amount: number;
@@ -52,6 +53,7 @@ interface ContractDetails {
 }
 
 export const MobileContractDetails: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -458,9 +460,7 @@ export const MobileContractDetails: React.FC = () => {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-slate-900">
-                                QAR {payment.amount.toLocaleString()}
-                              </span>
+                              <span className="font-semibold text-slate-900">{t("qarPaymentamounttolocalestring")}</span>
                               <span
                                 className={cn(
                                   "px-2 py-0.5 rounded-full text-xs font-medium",

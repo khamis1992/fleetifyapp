@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { DocumentState, DocumentsState } from '../../store';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface DocumentItemProps {
   document: DocumentState;
   onGenerate?: () => void;
@@ -39,6 +40,8 @@ export function DocumentItem({
   onDownloadDocx,
   index,
 }: DocumentItemProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const getStatusIcon = () => {
     switch (document.status) {
       case 'ready':
@@ -152,9 +155,7 @@ export function DocumentItem({
                 title="تحميل PDF"
                 className="text-red-600 border-red-200 hover:bg-red-50"
               >
-                <File className="h-4 w-4 ml-1" />
-                PDF
-              </Button>
+                <File className="h-4 w-4 ml-1" />{t("pdf")}</Button>
             )}
             {onDownloadDocx && (
               <Button
@@ -164,9 +165,7 @@ export function DocumentItem({
                 title="تحميل Word"
                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
               >
-                <FileType className="h-4 w-4 ml-1" />
-                Word
-              </Button>
+                <FileType className="h-4 w-4 ml-1" />{t("word")}</Button>
             )}
           </>
         )}

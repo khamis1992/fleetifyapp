@@ -19,17 +19,17 @@ import {
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 import { EnhancedPaymentData } from "@/schemas/payment.schema";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface CashReceiptVoucherProps {
   payment?: EnhancedPaymentData;
   onPrint?: () => void;
   className?: string;
 }
 
-export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
-  payment,
+export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({ payment,
   onPrint,
-  className = ""
-}) => {
+  className = "" }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { formatCurrency } = useCurrencyFormatter();
   const [isCheque, setIsCheque] = useState(payment?.payment_method === 'check');
   const [amountInWords, setAmountInWords] = useState("");
@@ -140,14 +140,14 @@ export const CashReceiptVoucher: React.FC<CashReceiptVoucherProps> = ({
       {/* Header Section */}
       <CardHeader className="bg-[#004d40] text-white p-6 flex justify-between items-center flex-wrap">
         <div className="space-y-1 text-left rtl:text-right">
-          <h1 className="text-4xl font-black tracking-tighter">AL ARRAF</h1>
+          <h1 className="text-4xl font-black tracking-tighter">{t("alArraf")}</h1>
           <h2 className="text-2xl font-bold">العراف لتأجير السيارات ذ.م.م</h2>
-          <p className="text-sm font-light">CAR RENTAL L.L.C</p>
+          <p className="text-sm font-light">{t("carRentalLlc")}</p>
           <div className="text-xs font-mono mt-2 pt-1 border-t border-white/30">C.R: 146832 | DOHA-QATAR</div>
         </div>
         <div className="text-left rtl:text-right pt-4 sm:pt-0 flex flex-col items-start rtl:items-end">
           <h1 className="text-3xl font-extrabold tracking-tight">سند قبض</h1>
-          <h2 className="text-xl font-light">Receipt Voucher</h2>
+          <h2 className="text-xl font-light">{t("receiptVoucher")}</h2>
           <div className="mt-4 p-2 bg-white text-[#004d40] rounded-lg text-center">
             <span className="text-sm font-medium block">رقم | NO.</span>
             <span className="text-2xl font-extrabold block">

@@ -51,6 +51,7 @@ import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { LegalComplaintGenerator } from './LegalComplaintGenerator';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface LegalCaseWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -103,6 +104,7 @@ const LegalCaseCreationWizard: React.FC<LegalCaseWizardProps> = ({
   onOpenChange,
   onSuccess,
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [currentStep, setCurrentStep] = useState<WizardStep>('details');
   const [showComplaintGenerator, setShowComplaintGenerator] = useState(false);
   const [formData, setFormData] = useState<CaseFormData>({
@@ -1169,16 +1171,17 @@ const EvidenceUploadStep: React.FC<EvidenceUploadStepProps> = ({
   formData,
   setFormData,
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [dragActive, setDragActive] = React.useState(false);
 
   const evidenceCategories = [
     { value: 'contract', label: 'العقود' },
     { value: 'invoice', label: 'الفواتير' },
-    { value: 'receipt', label: 'Payment Receipts' },
+    { value: 'receipt', label: t("paymentReceipts") },
     { value: 'communication', label: 'البريد الإلكتروني/SMS Communications' },
-    { value: 'photo', label: 'Photos (Vehicle/Damage)' },
-    { value: 'recording', label: 'Voice Recordings' },
-    { value: 'witness', label: 'Witness Statements' },
+    { value: 'photo', label: t("photosVehicledamage") },
+    { value: 'recording', label: t("voiceRecordings") },
+    { value: 'witness', label: t("witnessStatements") },
   ];
 
   const handleDrag = (e: React.DragEvent) => {

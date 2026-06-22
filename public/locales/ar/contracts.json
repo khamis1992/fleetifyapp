@@ -1,1 +1,27 @@
-{}
+{
+  "title": "العقود",
+  "new": "عقد جديد",
+  "create": "إنشاء عقد",
+  "edit": "تعديل العقد",
+  "delete": "حذف العقد",
+  "customer": "العميل",
+  "vehicle": "المركبة",
+  "startDate": "تاريخ البداية",
+  "endDate": "تاريخ النهاية",
+  "amount": "المبلغ",
+  "status": "الحالة",
+  "active": "نشط",
+  "expired": "منتهي",
+  "draft": "مسودة",
+  "pending": "قيد الانتظار",
+  "search": "بحث في العقود",
+  "noResults": "لا توجد عقود",
+  "contractNumber": "رقم العقد",
+  "dailyRate": "السعر اليومي",
+  "totalAmount": "المبلغ الإجمالي",
+  "paymentStatus": "حالة الدفع",
+  "paid": "مدفوع",
+  "unpaid": "غير مدفوع",
+  "partial": "مدفوع جزئيا",
+  "overdue": "متأخر"
+}

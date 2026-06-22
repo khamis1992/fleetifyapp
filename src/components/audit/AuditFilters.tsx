@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { FinancialAuditFilters, AuditResourceType, AuditStatus, AuditSeverity } from '@/types/auditLog';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface AuditFiltersProps {
   filters: FinancialAuditFilters;
   onFiltersChange: (filters: FinancialAuditFilters) => void;
@@ -63,6 +64,7 @@ const VERIFICATION_STATUSES = [
 ];
 
 export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFiltersProps) {
+  const { t } = useFleetifyTranslation("ui");
   const [localFilters, setLocalFilters] = React.useState<FinancialAuditFilters>(filters);
 
   const handleFilterChange = (key: keyof FinancialAuditFilters, value: any) => {
@@ -101,23 +103,21 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Filter Options</h3>
+          <h3 className="text-lg font-semibold">{t("filterOptions")}</h3>
           <p className="text-sm text-muted-foreground">
             {activeFilters} active filter{activeFilters !== 1 ? 's' : ''}
           </p>
         </div>
         {onReset && activeFilters > 0 && (
           <Button variant="outline" size="sm" onClick={onReset}>
-            <X className="h-4 w-4 mr-2" />
-            Clear All
-          </Button>
+            <X className="h-4 w-4 mr-2" />{t("clearAll")}</Button>
         )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Entity Type Filter */}
         <div className="space-y-2">
-          <Label>Entity Type</Label>
+          <Label>{t("entityType")}</Label>
           <Select
             value={localFilters.resource_type || ''}
             onValueChange={(value) =>
@@ -128,7 +128,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
               <SelectValue placeholder="All entity types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Entity Types</SelectItem>
+              <SelectItem value="all">{t("allEntityTypes")}</SelectItem>
               {RESOURCE_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -140,7 +140,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Action Filter */}
         <div className="space-y-2">
-          <Label>Action</Label>
+          <Label>{t("action")}</Label>
           <Select
             value={localFilters.action || ''}
             onValueChange={(value) =>
@@ -151,7 +151,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
               <SelectValue placeholder="All actions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Actions</SelectItem>
+              <SelectItem value="all">{t("allActions")}</SelectItem>
               {ACTIONS.map((action) => (
                 <SelectItem key={action} value={action}>
                   {action.charAt(0) + action.slice(1).toLowerCase()}
@@ -163,7 +163,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Status Filter */}
         <div className="space-y-2">
-          <Label>Status</Label>
+          <Label>{t("status")}</Label>
           <Select
             value={localFilters.status || ''}
             onValueChange={(value) =>
@@ -174,7 +174,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
               {STATUSES.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
@@ -186,7 +186,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Severity Filter */}
         <div className="space-y-2">
-          <Label>Severity</Label>
+          <Label>{t("severity")}</Label>
           <Select
             value={localFilters.severity || ''}
             onValueChange={(value) =>
@@ -197,7 +197,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
               <SelectValue placeholder="All severities" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Severities</SelectItem>
+              <SelectItem value="all">{t("allSeverities")}</SelectItem>
               {SEVERITIES.map((severity) => (
                 <SelectItem key={severity.value} value={severity.value}>
                   {severity.label}
@@ -209,7 +209,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Verification Status Filter */}
         <div className="space-y-2">
-          <Label>Verification Status</Label>
+          <Label>{t("verificationStatus")}</Label>
           <Select
             value={localFilters.verification_status || ''}
             onValueChange={(value) =>
@@ -220,7 +220,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
               <SelectValue placeholder="All verification statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
               {VERIFICATION_STATUSES.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
@@ -232,7 +232,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Currency Filter */}
         <div className="space-y-2">
-          <Label>Currency</Label>
+          <Label>{t("currency")}</Label>
           <Select
             value={localFilters.currency || ''}
             onValueChange={(value) =>
@@ -243,7 +243,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
               <SelectValue placeholder="All currencies" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Currencies</SelectItem>
+              <SelectItem value="all">{t("allCurrencies")}</SelectItem>
               <SelectItem value="USD">USD</SelectItem>
               <SelectItem value="EUR">EUR</SelectItem>
               <SelectItem value="GBP">GBP</SelectItem>
@@ -254,7 +254,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Date Range */}
         <div className="space-y-2">
-          <Label>Date Range</Label>
+          <Label>{t("dateRange")}</Label>
           <div className="grid grid-cols-2 gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -311,7 +311,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Amount Range */}
         <div className="space-y-2">
-          <Label>Amount Range</Label>
+          <Label>{t("amountRange")}</Label>
           <div className="grid grid-cols-2 gap-2">
             <Input
               type="number"
@@ -330,7 +330,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Search */}
         <div className="space-y-2">
-          <Label>Search</Label>
+          <Label>{t("search")}</Label>
           <Input
             placeholder="Search in entity name, notes..."
             value={localFilters.search || ''}
@@ -340,7 +340,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Reference Number */}
         <div className="space-y-2">
-          <Label>Reference Number</Label>
+          <Label>{t("referenceNumber")}</Label>
           <Input
             placeholder="Invoice, contract, or payment number"
             value={localFilters.reference_number || ''}
@@ -350,7 +350,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Account Code */}
         <div className="space-y-2">
-          <Label>Account Code</Label>
+          <Label>{t("accountCode")}</Label>
           <Input
             placeholder="Chart of accounts code"
             value={localFilters.account_code || ''}
@@ -360,7 +360,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
 
         {/* Has Compliance Flags */}
         <div className="space-y-2">
-          <Label>Compliance Flags</Label>
+          <Label>{t("complianceFlags")}</Label>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="compliance-flags"
@@ -369,9 +369,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
                 handleFilterChange('has_compliance_flags', checked ? true : undefined)
               }
             />
-            <Label htmlFor="compliance-flags" className="text-sm">
-              Only show records with compliance violations
-            </Label>
+            <Label htmlFor="compliance-flags" className="text-sm">{t("onlyShowRecordsWith")}</Label>
           </div>
         </div>
       </div>
@@ -380,7 +378,7 @@ export function AuditFilters({ filters, onFiltersChange, onReset }: AuditFilters
       {activeFilters > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Active Filters</CardTitle>
+            <CardTitle className="text-sm">{t("activeFilters")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">

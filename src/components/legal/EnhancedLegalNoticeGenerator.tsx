@@ -9,15 +9,15 @@ import { toast } from 'sonner';
 import { NoticeAutoFiller } from './NoticeAutoFiller';
 import { NoticeTemplates, getTemplateList, type NoticeVariables } from './NoticeTemplateManager';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface EnhancedLegalNoticeGeneratorProps {
   companyId: string;
   onDocumentGenerated?: (document: { content: string; type: string; variables: NoticeVariables }) => void;
 }
 
-export const EnhancedLegalNoticeGenerator: React.FC<EnhancedLegalNoticeGeneratorProps> = ({
-  companyId,
-  onDocumentGenerated,
-}) => {
+export const EnhancedLegalNoticeGenerator: React.FC<EnhancedLegalNoticeGeneratorProps> = ({ companyId,
+  onDocumentGenerated, }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [noticeVariables, setNoticeVariables] = useState<NoticeVariables | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('pre_warning');
   const [generatedContent, setGeneratedContent] = useState('');
@@ -279,9 +279,7 @@ export const EnhancedLegalNoticeGenerator: React.FC<EnhancedLegalNoticeGenerator
                       }}
                       size="sm"
                     >
-                      <FileJson className="ml-2 h-4 w-4" />
-                      PDF
-                    </Button>
+                      <FileJson className="ml-2 h-4 w-4" />{t("pdf")}</Button>
                   </div>
                 </CardContent>
               </Card>

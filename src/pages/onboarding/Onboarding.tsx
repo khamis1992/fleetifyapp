@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   Rocket,
   Building2,
@@ -65,6 +66,7 @@ const INDUSTRIES = [
 ];
 
 export default function Onboarding() {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(0);
@@ -194,7 +196,7 @@ export default function Onboarding() {
               <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
-              <span className="text-white font-bold">Fleetify</span>
+              <span className="text-white font-bold">{t("fleetify")}</span>
             </div>
             <span className="text-slate-400 text-sm">
               الخطوة {currentStep} من {totalSteps}

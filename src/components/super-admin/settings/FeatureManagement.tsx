@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Users, Car, DollarSign, FileText, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const FeatureManagement: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   const [features, setFeatures] = useState({
     fleetManagement: { enabled: true, plans: ['professional', 'enterprise'] },
@@ -26,7 +28,7 @@ export const FeatureManagement: React.FC = () => {
     {
       id: 'free',
       name: 'Free',
-      description: 'Basic features for small teams',
+      description: t("basicFeaturesForSmall"),
       price: '$0',
       features: ['Basic dashboard', 'Limited users (5)', 'Basic reporting'],
       userLimit: 5,
@@ -35,7 +37,7 @@ export const FeatureManagement: React.FC = () => {
     {
       id: 'basic',
       name: 'Basic',
-      description: 'Essential features for growing businesses',
+      description: t("essentialFeaturesForGrowing"),
       price: '$29',
       features: ['Full dashboard', 'Up to 25 users', 'Standard reporting', 'Email support'],
       userLimit: 25,
@@ -44,7 +46,7 @@ export const FeatureManagement: React.FC = () => {
     {
       id: 'professional',
       name: 'Professional',
-      description: 'Advanced features for established companies',
+      description: t("advancedFeaturesForEstablished"),
       price: '$79',
       features: ['All basic features', 'Up to 100 users', 'Advanced analytics', 'Priority support', 'API access'],
       userLimit: 100,
@@ -66,37 +68,37 @@ export const FeatureManagement: React.FC = () => {
       name: 'Fleet Management',
       key: 'fleetManagement',
       icon: Car,
-      description: 'Vehicle tracking, maintenance, and fleet analytics',
+      description: t("vehicleTrackingMaintenanceAnd"),
     },
     {
       name: 'HR Management',
       key: 'hrManagement',
       icon: Users,
-      description: 'Employee management, payroll, and attendance tracking',
+      description: t("employeeManagementPayrollAnd"),
     },
     {
       name: 'Financial Reporting',
       key: 'financialReporting',
       icon: DollarSign,
-      description: 'Accounting, invoicing, and financial analytics',
+      description: t("accountingInvoicingAndFinancial"),
     },
     {
       name: 'Advanced Analytics',
       key: 'advancedAnalytics',
       icon: BarChart3,
-      description: 'Business intelligence and advanced reporting',
+      description: t("businessIntelligenceAndAdvanced"),
     },
     {
       name: 'Multi-Company',
       key: 'multiCompany',
       icon: Settings,
-      description: 'Manage multiple companies from one dashboard',
+      description: t("manageMultipleCompaniesFrom"),
     },
     {
       name: 'API Access',
       key: 'apiAccess',
       icon: FileText,
-      description: 'REST API access for custom integrations',
+      description: t("restApiAccessFor"),
     },
   ];
 
@@ -114,7 +116,7 @@ export const FeatureManagement: React.FC = () => {
 
   const handlePlanUpdate = (planId: string) => {
     toast({
-      title: "Plan updated",
+      title: t("planUpdated"),
       description: `${planId} plan configuration has been saved.`,
     });
   };
@@ -123,8 +125,8 @@ export const FeatureManagement: React.FC = () => {
     <div className="space-y-6">
       <Tabs defaultValue="features" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="features">Feature Gates</TabsTrigger>
-          <TabsTrigger value="plans">Subscription Plans</TabsTrigger>
+          <TabsTrigger value="features">{t("featureGates")}</TabsTrigger>
+          <TabsTrigger value="plans">{t("subscriptionPlans")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="features" className="space-y-6">
@@ -132,9 +134,7 @@ export const FeatureManagement: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-primary" />
-                System Feature Gates
-              </CardTitle>
+                <Settings className="h-5 w-5 text-primary" />{t("systemFeatureGates")}</CardTitle>
               <CardDescription>
                 Control which features are available across the platform and which plans they require
               </CardDescription>
@@ -224,9 +224,7 @@ export const FeatureManagement: React.FC = () => {
                     size="sm" 
                     className="w-full"
                     onClick={() => handlePlanUpdate(plan.id)}
-                  >
-                    Edit Plan
-                  </Button>
+                  >{t("editPlan")}</Button>
                 </CardContent>
               </Card>
             ))}
@@ -235,30 +233,24 @@ export const FeatureManagement: React.FC = () => {
           {/* Plan Management Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Plan Management</CardTitle>
-              <CardDescription>
-                Global subscription plan settings and configurations
-              </CardDescription>
+              <CardTitle>{t("planManagement")}</CardTitle>
+              <CardDescription>{t("globalSubscriptionPlanSettings")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="trial-period">Free Trial Period (days)</Label>
+                  <Label htmlFor="trial-period">{t("freeTrialPeriodDays")}</Label>
                   <Input id="trial-period" type="number" defaultValue="14" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="grace-period">Payment Grace Period (days)</Label>
+                  <Label htmlFor="grace-period">{t("paymentGracePeriodDays")}</Label>
                   <Input id="grace-period" type="number" defaultValue="3" />
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={() => handlePlanUpdate('global')}>
-                  Save Settings
-                </Button>
-                <Button variant="outline">
-                  Export Plan Data
-                </Button>
+                <Button onClick={() => handlePlanUpdate('global')}>{t("saveSettings")}</Button>
+                <Button variant="outline">{t("exportPlanData")}</Button>
               </div>
             </CardContent>
           </Card>

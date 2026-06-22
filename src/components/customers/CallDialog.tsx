@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Phone, Clock, Check, X, PhoneOff, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface CallDialogProps {
   /** حالة فتح/إغلاق النافذة */
   open: boolean;
@@ -34,6 +35,8 @@ export function CallDialog({
   customerPhone, 
   onSaveCall 
 }: CallDialogProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   // State management
   const [timer, setTimer] = useState(0);
   const [notes, setNotes] = useState('');

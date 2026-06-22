@@ -15,6 +15,7 @@ import { CalendarDays, MapPin, Gauge, Fuel, Car, ClipboardList, AlertTriangle, C
 import { useCreateVehicleReturn, useUpdateVehicleReturn, useVehicleReturnByPermit, type CreateVehicleReturnData } from "@/hooks/useVehicleReturn";
 import { useUpdateOdometerForOperation } from "@/hooks/useUnifiedOdometerManagement";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const returnFormSchema = z.object({
   return_odometer_reading: z.number().min(0).optional(),
   fuel_level_percentage: z.number().min(0).max(100),
@@ -67,11 +68,11 @@ const getConditionColor = (condition: string) => {
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'approved':
-      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
+      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />{t("approved")}</Badge>;
     case 'rejected':
-      return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Rejected</Badge>;
+      return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />{t("rejected")}</Badge>;
     default:
-      return <Badge variant="secondary"><ClipboardList className="h-3 w-3 mr-1" />Pending</Badge>;
+      return <Badge variant="secondary"><ClipboardList className="h-3 w-3 mr-1" />{t("pending")}</Badge>;
   }
 };
 
@@ -79,8 +80,8 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
   permitId,
   vehicleId,
   vehicleName,
-  onSuccess
-}) => {
+  onSuccess }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [odometerReading, setOdometerReading] = useState<number>(0);
   const [fuelLevel, setFuelLevel] = useState<number>(100);
@@ -174,9 +175,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Car className="h-5 w-5" />
-                Vehicle Return - {vehicleName}
-              </CardTitle>
+                <Car className="h-5 w-5" />{t("vehicleReturnVehiclename")}</CardTitle>
               <CardDescription>Return form has been completed and approved</CardDescription>
             </div>
             {getStatusBadge(existingReturn.status)}
@@ -185,28 +184,28 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Return Date</label>
+              <label className="text-sm font-medium">{t("returnDate")}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CalendarDays className="h-4 w-4" />
                 {new Date(existingReturn.return_date).toLocaleString()}
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Odometer Reading</label>
+              <label className="text-sm font-medium">{t("odometerReading")}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Gauge className="h-4 w-4" />
                 {existingReturn.return_odometer_reading || "Not recorded"} km
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Fuel Level</label>
+              <label className="text-sm font-medium">{t("fuelLevel")}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Fuel className="h-4 w-4" />
                 {existingReturn.fuel_level_percentage}%
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Condition</label>
+              <label className="text-sm font-medium">{t("vehicleCondition")}</label>
               <div className={`flex items-center gap-2 text-sm font-medium ${getConditionColor(existingReturn.vehicle_condition)}`}>
                 <Car className="h-4 w-4" />
                 {existingReturn.vehicle_condition.charAt(0).toUpperCase() + existingReturn.vehicle_condition.slice(1)}
@@ -216,7 +215,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
           
           {existingReturn.return_location && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Return Location</label>
+              <label className="text-sm font-medium">{t("returnLocation")}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 {existingReturn.return_location}
@@ -226,20 +225,20 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
 
           {existingReturn.damages_reported && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-red-600">Damages Reported</label>
+              <label className="text-sm font-medium text-red-600">{t("damagesReported")}</label>
               <p className="text-sm text-red-600 bg-red-50 p-3 rounded">{existingReturn.damages_reported}</p>
             </div>
           )}
 
           {existingReturn.notes && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Notes</label>
+              <label className="text-sm font-medium">{t("notes")}</label>
               <p className="text-sm text-muted-foreground bg-muted p-3 rounded">{existingReturn.notes}</p>
             </div>
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Items Returned</label>
+            <label className="text-sm font-medium">{t("itemsReturned")}</label>
             <div className="flex flex-wrap gap-2">
               {existingReturn.items_returned.map((item) => (
                 <Badge key={item} variant="outline">
@@ -259,9 +258,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Car className="h-5 w-5" />
-              Vehicle Return - {vehicleName}
-            </CardTitle>
+              <Car className="h-5 w-5" />{t("vehicleReturnVehiclename")}</CardTitle>
             <CardDescription>
               {existingReturn ? "Update vehicle return details" : "Complete the vehicle return process"}
             </CardDescription>
@@ -292,9 +289,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Car className="h-4 w-4" />
-                      Vehicle Condition
-                    </FormLabel>
+                      <Car className="h-4 w-4" />{t("vehicleCondition")}</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
@@ -306,11 +301,11 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="excellent">Excellent</SelectItem>
+                        <SelectItem value="excellent">{t("excellent")}</SelectItem>
                         <SelectItem value="good">Good</SelectItem>
                         <SelectItem value="fair">Fair</SelectItem>
                         <SelectItem value="poor">Poor</SelectItem>
-                        <SelectItem value="damaged">Damaged</SelectItem>
+                        <SelectItem value="damaged">{t("damaged")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -324,9 +319,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Return Location
-                    </FormLabel>
+                      <MapPin className="h-4 w-4" />{t("returnLocation")}</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Where was the vehicle returned?"
@@ -346,9 +339,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2 text-orange-600">
-                    <AlertTriangle className="h-4 w-4" />
-                    Damages Reported (if any)
-                  </FormLabel>
+                    <AlertTriangle className="h-4 w-4" />{t("damagesReportedIfAny")}</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Describe any damages or issues found..."
@@ -368,9 +359,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" />
-                    Additional Notes
-                  </FormLabel>
+                    <ClipboardList className="h-4 w-4" />{t("additionalNotes")}</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Any additional notes or observations..."
@@ -386,9 +375,7 @@ export const VehicleReturnForm: React.FC<VehicleReturnFormProps> = ({
 
             <div className="space-y-3">
               <FormLabel className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Items Returned
-              </FormLabel>
+                <CheckCircle className="h-4 w-4" />{t("itemsReturned")}</FormLabel>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {standardItems.map((item) => (
                   <div key={item} className="flex items-center space-x-2">

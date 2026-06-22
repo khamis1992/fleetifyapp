@@ -138,14 +138,14 @@ export const CustomerSplitView: React.FC<CustomerSplitViewProps> = ({
       
       const { data, error } = await supabase
         .from('payments')
-        .select('amount, status')
+        .select('amount, payment_status')
         .eq('customer_id', selectedCustomer.id)
         .eq('company_id', companyId);
       
       if (error) return null;
       
       const total = data?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-      const completed = data?.filter(p => p.status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const completed = data?.filter(p => p.payment_status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
       
       return { total, completed, pending: total - completed };
     },

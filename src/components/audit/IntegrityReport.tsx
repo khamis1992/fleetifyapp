@@ -22,6 +22,7 @@ import {
 import { DataIntegrityReport } from '@/types/auditLog';
 import { format } from 'date-fns';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface IntegrityReportProps {
   integrityReport: DataIntegrityReport | null;
   isLoading: boolean;
@@ -29,6 +30,7 @@ interface IntegrityReportProps {
 }
 
 export function IntegrityReport({ integrityReport, isLoading, onVerify }: IntegrityReportProps) {
+  const { t } = useFleetifyTranslation("ui");
   const getIntegrityScoreColor = (score: number) => {
     if (score >= 95) return 'text-green-600';
     if (score >= 90) return 'text-yellow-600';
@@ -49,10 +51,8 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Data Integrity Verification
-            </CardTitle>
-            <CardDescription>Verifying audit trail integrity...</CardDescription>
+              <Shield className="h-5 w-5" />{t("dataIntegrityVerification")}</CardTitle>
+            <CardDescription>{t("verifyingAuditTrailIntegrity")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="animate-pulse space-y-4">
@@ -73,24 +73,18 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Data Integrity Report</h2>
-          <p className="text-muted-foreground">
-            Cryptographic verification of audit trail records
-          </p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("dataIntegrityReport")}</h2>
+          <p className="text-muted-foreground">{t("cryptographicVerificationOfAudit")}</p>
         </div>
         <Button onClick={onVerify} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Run Verification
-        </Button>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />{t("runVerification")}</Button>
       </div>
 
       {/* Overall Integrity Score */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Overall Integrity Score
-          </CardTitle>
+            <Shield className="h-5 w-5" />{t("overallIntegrityScore")}</CardTitle>
           <CardDescription>
             Last verified: {report?.last_verification
               ? format(new Date(report.last_verification), 'PPpp')
@@ -129,22 +123,20 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Records</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalRecords")}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {report?.total_records?.toLocaleString() || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Audit entries analyzed
-            </p>
+            <p className="text-xs text-muted-foreground">{t("auditEntriesAnalyzed")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verified</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("verified")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -161,31 +153,27 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tampered</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("tampered")}</CardTitle>
             <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
               {report?.tampered_records?.toLocaleString() || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Records with integrity issues
-            </p>
+            <p className="text-xs text-muted-foreground">{t("recordsWithIntegrityIssues")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Suspicious</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("suspicious")}</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
               {report?.suspicious_records?.toLocaleString() || 0}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Records requiring review
-            </p>
+            <p className="text-xs text-muted-foreground">{t("recordsRequiringReview")}</p>
           </CardContent>
         </Card>
       </div>
@@ -195,9 +183,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Verification Errors
-            </CardTitle>
+              <AlertTriangle className="h-5 w-5" />{t("verificationErrors")}</CardTitle>
             <CardDescription>
               {report.verification_errors.length} integrity issues detected
             </CardDescription>
@@ -205,7 +191,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
           <CardContent>
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Integrity Issues Detected</AlertTitle>
+              <AlertTitle>{t("integrityIssuesDetected")}</AlertTitle>
               <AlertDescription>
                 The following records have integrity verification failures and should be reviewed immediately.
               </AlertDescription>
@@ -247,9 +233,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Recommendations
-            </CardTitle>
+              <Info className="h-5 w-5" />{t("recommendations")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -267,30 +251,26 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
       {/* Status Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Integrity Status Summary</CardTitle>
+          <CardTitle>{t("integrityStatusSummary")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {report?.integrity_score === 100 ? (
               <Alert>
                 <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Excellent Integrity</AlertTitle>
-                <AlertDescription>
-                  All audit records have been verified successfully. No integrity issues detected.
-                </AlertDescription>
+                <AlertTitle>{t("excellentIntegrity")}</AlertTitle>
+                <AlertDescription>{t("allAuditRecordsHave")}</AlertDescription>
               </Alert>
             ) : report?.integrity_score >= 90 ? (
               <Alert>
                 <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Good Integrity</AlertTitle>
-                <AlertDescription>
-                  Most audit records have been verified successfully. Some minor issues may exist.
-                </AlertDescription>
+                <AlertTitle>{t("goodIntegrity")}</AlertTitle>
+                <AlertDescription>{t("mostAuditRecordsHave")}</AlertDescription>
               </Alert>
             ) : report?.integrity_score >= 80 ? (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Moderate Integrity Concerns</AlertTitle>
+                <AlertTitle>{t("moderateIntegrityConcerns")}</AlertTitle>
                 <AlertDescription>
                   Several integrity issues have been detected. Immediate review and action recommended.
                 </AlertDescription>
@@ -298,7 +278,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
             ) : (
               <Alert>
                 <XCircle className="h-4 w-4" />
-                <AlertTitle>Critical Integrity Issues</AlertTitle>
+                <AlertTitle>{t("criticalIntegrityIssues")}</AlertTitle>
                 <AlertDescription>
                   Significant integrity issues detected. Immediate investigation and remediation required.
                 </AlertDescription>
@@ -307,7 +287,7 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <h4 className="font-medium">Verification Statistics</h4>
+                <h4 className="font-medium">{t("verificationStatistics")}</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span>Success Rate:</span>
@@ -329,20 +309,14 @@ export function IntegrityReport({ integrityReport, isLoading, onVerify }: Integr
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">Quick Actions</h4>
+                <h4 className="font-medium">{t("quickActions")}</h4>
                 <div className="space-y-1 text-sm">
                   <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Review Tampered Records
-                  </Button>
+                    <Activity className="h-4 w-4 mr-2" />{t("reviewTamperedRecords")}</Button>
                   <Button variant="outline" size="sm" className="w-full justify-start">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Restore from Backup
-                  </Button>
+                    <RefreshCw className="h-4 w-4 mr-2" />{t("restoreFromBackup")}</Button>
                   <Button variant="outline" size="sm" className="w-full justify-start">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generate Investigation Report
-                  </Button>
+                    <FileText className="h-4 w-4 mr-2" />{t("generateInvestigationReport")}</Button>
                 </div>
               </div>
             </div>

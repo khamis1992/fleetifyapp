@@ -9,7 +9,6 @@ import {
   StatsSection,
   FeaturesGrid,
   PricingSection,
-  TestimonialsSection,
   IntegrationsSection,
   CTASection,
   PremiumFooter
@@ -84,7 +83,7 @@ const PremiumLanding = () => {
         <PricingSection />
 
         {/* Testimonials */}
-        <TestimonialsSection />
+        
 
         {/* Final CTA */}
         <CTASection />

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   Shield, 
   Database, 
@@ -59,6 +60,7 @@ const AGENTS = [
 const COLORS = ['#22c55e', '#ef4444', '#f59e0b', '#6b7280'];
 
 export default function QualityDashboard() {
+  const { t } = useFleetifyTranslation("ui");
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
@@ -166,7 +168,7 @@ export default function QualityDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">🤖 CTO Agent Dashboard</h1>
-          <p className="text-slate-500">Quality & compliance monitoring</p>
+          <p className="text-slate-500">{t("qualityComplianceMonitoring")}</p>
         </div>
         <div className="flex items-center gap-4">
           <select 
@@ -179,9 +181,7 @@ export default function QualityDashboard() {
             <option value="30d">Last 30 days</option>
           </select>
           <Button onClick={() => refetch()} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+            <RefreshCw className="h-4 w-4 mr-2" />{t("refresh")}</Button>
         </div>
       </div>
 
@@ -191,7 +191,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Total Runs</p>
+                <p className="text-sm text-slate-500">{t("totalRuns")}</p>
                 <p className="text-3xl font-bold">{metrics?.total || 0}</p>
               </div>
               <Activity className="h-8 w-8 text-blue-500" />
@@ -203,7 +203,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Pass Rate</p>
+                <p className="text-sm text-slate-500">{t("passRate")}</p>
                 <p className="text-3xl font-bold text-green-600">{metrics?.passRate || 0}%</p>
               </div>
               {(metrics?.passRate || 0) >= 80 ? (
@@ -220,7 +220,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Failed Checks</p>
+                <p className="text-sm text-slate-500">{t("failedChecks")}</p>
                 <p className="text-3xl font-bold text-red-600">{metrics?.failed || 0}</p>
               </div>
               <XCircle className="h-8 w-8 text-red-500" />
@@ -232,7 +232,7 @@ export default function QualityDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Critical Issues</p>
+                <p className="text-sm text-slate-500">{t("criticalIssues")}</p>
                 <p className="text-3xl font-bold text-red-600">{metrics?.critical || 0}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -244,9 +244,9 @@ export default function QualityDashboard() {
       {/* Main Content */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="agents">Agents</TabsTrigger>
-          <TabsTrigger value="logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="overview">{t("overview")}</TabsTrigger>
+          <TabsTrigger value="agents">{t("agents")}</TabsTrigger>
+          <TabsTrigger value="logs">{t("auditLogs")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -255,7 +255,7 @@ export default function QualityDashboard() {
             {/* Trend Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Quality Trend</CardTitle>
+                <CardTitle>{t("qualityTrend")}</CardTitle>
                 <CardDescription>Pass/Fail over time</CardDescription>
               </CardHeader>
               <CardContent>
@@ -276,8 +276,8 @@ export default function QualityDashboard() {
             {/* Status Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>Status Distribution</CardTitle>
-                <CardDescription>Overall check results</CardDescription>
+                <CardTitle>{t("statusDistribution")}</CardTitle>
+                <CardDescription>{t("overallCheckResults")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -306,7 +306,7 @@ export default function QualityDashboard() {
           {/* Agent Performance Bar Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Agent Performance</CardTitle>
+              <CardTitle>{t("agentPerformance")}</CardTitle>
               <CardDescription>Pass/Fail by agent type</CardDescription>
             </CardHeader>
             <CardContent>
@@ -352,7 +352,7 @@ export default function QualityDashboard() {
                     
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Pass Rate</span>
+                        <span>{t("passRate")}</span>
                         <span className={passRate >= 80 ? 'text-green-600' : 'text-red-600'}>
                           {passRate}%
                         </span>
@@ -381,8 +381,8 @@ export default function QualityDashboard() {
         <TabsContent value="logs" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Audit Logs</CardTitle>
-              <CardDescription>Latest agent activities</CardDescription>
+              <CardTitle>{t("recentAuditLogs")}</CardTitle>
+              <CardDescription>{t("latestAgentActivities")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-h-[500px] overflow-y-auto">

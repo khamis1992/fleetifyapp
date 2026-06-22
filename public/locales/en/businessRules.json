@@ -1,1 +1,6 @@
-{}
+{
+  "minRentalDays": "Minimum rental period is one day",
+  "maxRentalDays": "Maximum rental period is 365 days",
+  "minDailyRate": "Minimum daily rate is 50 QAR",
+  "depositRequired": "Deposit required"
+}

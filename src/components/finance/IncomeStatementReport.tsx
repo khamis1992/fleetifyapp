@@ -27,6 +27,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // Extend jsPDF type
 declare module 'jspdf' {
   interface jsPDF {
@@ -35,6 +36,7 @@ declare module 'jspdf' {
 }
 
 export function IncomeStatementReport() {
+  const { t } = useFleetifyTranslation("ui");
   const [viewMode, setViewMode] = useState<'single' | 'comparative'>('single');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -379,27 +381,21 @@ export function IncomeStatementReport() {
                 size="sm"
                 disabled={isLoading || !reportData}
               >
-                <Download className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
+                <Download className="h-4 w-4 mr-2" />{t("pdf")}</Button>
               <Button
                 onClick={handleExportExcel}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />{t("excel")}</Button>
               <Button
                 onClick={handleExportCSV}
                 variant="outline"
                 size="sm"
                 disabled={isLoading || !reportData}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
+                <FileText className="h-4 w-4 mr-2" />{t("csv")}</Button>
             </div>
           </div>
         </CardHeader>

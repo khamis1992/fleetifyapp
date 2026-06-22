@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { Sparkles, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export function PremiumFooter() {
+  const { t } = useFleetifyTranslation("ui");
   const footerLinks = {
     product: {
       title: 'المنتج',
@@ -39,17 +41,17 @@ export function PremiumFooter() {
         { label: 'التوثيق', href: '#' },
         { label: 'مركز المساعدة', href: '#' },
         { label: 'فيديوهات تعليمية', href: '#' },
-        { label: 'API', href: '#' },
+        { label: t("api"), href: '#' },
         { label: 'الحالة', href: '#' },
       ],
     },
   };
 
   const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Facebook, href: '#', label: t("facebook") },
+    { icon: Twitter, href: '#', label: t("twitter") },
+    { icon: Linkedin, href: '#', label: t("linkedin") },
+    { icon: Instagram, href: '#', label: t("instagram") },
   ];
 
   return (
@@ -193,9 +195,7 @@ export function PremiumFooter() {
                 سياسة الكوكيز
               </a>
               <span className="text-border">•</span>
-              <a href="#" className="hover:text-primary transition-colors">
-                GDPR
-              </a>
+              <a href="#" className="hover:text-primary transition-colors">{t("gdpr")}</a>
             </div>
 
             {/* Made with love */}

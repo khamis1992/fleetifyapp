@@ -36,6 +36,7 @@ import {
 import { PageCustomizer } from '@/components/PageCustomizer'
 
 export default function NativeMobileDemo() {
+  const { t } = useFleetifyTranslation("ui");
   const { isMobile } = useSimpleBreakpoint()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -191,7 +192,7 @@ export default function NativeMobileDemo() {
 
         {/* Section: Bottom Sheet */}
         <div className="space-y-4 px-4">
-          <h2 className="native-heading">Bottom Sheet</h2>
+          <h2 className="native-heading">{t("bottomSheet")}</h2>
           
           <NativeBottomSheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <NativeBottomSheetTrigger asChild>
@@ -247,7 +248,7 @@ export default function NativeMobileDemo() {
           
           <NativeCard>
             <NativeCardHeader>
-              <NativeCardTitle>Spinners</NativeCardTitle>
+              <NativeCardTitle>{t("spinners")}</NativeCardTitle>
             </NativeCardHeader>
             <NativeCardContent>
               <div className="flex items-center justify-around">
@@ -291,7 +292,7 @@ export default function NativeMobileDemo() {
               <h3 className="native-subheading">عنوان صغير (Subheading)</h3>
               <p className="native-body">نص عادي (Body)</p>
               <p className="native-caption">نص توضيحي (Caption)</p>
-              <span className="native-label">Label Text</span>
+              <span className="native-label">{t("labelText")}</span>
             </NativeCardContent>
           </NativeCard>
         </div>
@@ -304,10 +305,10 @@ export default function NativeMobileDemo() {
             <NativeCardContent>
               <div className="flex flex-wrap gap-2">
                 <span className="native-badge">عادي</span>
-                <span className="native-badge native-badge-primary">Primary</span>
-                <span className="native-badge native-badge-success">Success</span>
+                <span className="native-badge native-badge-primary">{t("primary")}</span>
+                <span className="native-badge native-badge-success">{t("success")}</span>
                 <span className="native-badge native-badge-warning">Warning</span>
-                <span className="native-badge native-badge-danger">Danger</span>
+                <span className="native-badge native-badge-danger">{t("danger")}</span>
               </div>
             </NativeCardContent>
           </NativeCard>

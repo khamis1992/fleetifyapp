@@ -38,7 +38,9 @@ import { AuditSearch } from '@/components/audit/AuditSearch';
 import { ExportDialog } from '@/components/audit/ExportDialog';
 import { RealTimeAlerts } from '@/components/audit/RealTimeAlerts';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export function AuditDashboard() {
+  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -94,7 +96,7 @@ export function AuditDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Financial Audit Trail</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("financialAuditTrail")}</h1>
           <p className="text-muted-foreground">
             Monitor and analyze all financial operations with complete audit visibility
           </p>
@@ -105,25 +107,19 @@ export function AuditDashboard() {
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
+            <Filter className="h-4 w-4 mr-2" />{t("filters")}</Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
           >
-            <Activity className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+            <Activity className="h-4 w-4 mr-2" />{t("refresh")}</Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowExportDialog(true)}
           >
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+            <Download className="h-4 w-4 mr-2" />{t("export")}</Button>
         </div>
       </div>
 
@@ -131,7 +127,7 @@ export function AuditDashboard() {
       {(integrityReport?.integrity_score || 100) < 90 && (
         <Alert className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Data Integrity Alert</AlertTitle>
+          <AlertTitle>{t("dataIntegrityAlert")}</AlertTitle>
           <AlertDescription>
             Audit integrity score is {integrityReport?.integrity_score}%.
             {integrityReport?.tampered_records > 0 && (
@@ -142,9 +138,7 @@ export function AuditDashboard() {
               size="sm"
               className="ml-4"
               onClick={verifyNow}
-            >
-              Run Verification
-            </Button>
+            >{t("runVerification")}</Button>
           </AlertDescription>
         </Alert>
       )}
@@ -152,7 +146,7 @@ export function AuditDashboard() {
       {(complianceReport?.compliance_score || 100) < 80 && (
         <Alert className="border-orange-200 bg-orange-50">
           <Shield className="h-4 w-4" />
-          <AlertTitle>Compliance Concern</AlertTitle>
+          <AlertTitle>{t("complianceConcern")}</AlertTitle>
           <AlertDescription>
             Compliance score is {complianceReport?.compliance_score}% with {complianceReport?.compliance_violations?.length || 0} violations detected.
           </AlertDescription>
@@ -163,7 +157,7 @@ export function AuditDashboard() {
       {showFilters && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Audit Filters</CardTitle>
+            <CardTitle className="text-lg">{t("auditFilters")}</CardTitle>
           </CardHeader>
           <CardContent>
             <AuditFilters
@@ -178,11 +172,11 @@ export function AuditDashboard() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="trail">Audit Trail</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
-          <TabsTrigger value="search">Search</TabsTrigger>
+          <TabsTrigger value="overview">{t("overview")}</TabsTrigger>
+          <TabsTrigger value="trail">{t("auditTrail")}</TabsTrigger>
+          <TabsTrigger value="compliance">{t("compliance")}</TabsTrigger>
+          <TabsTrigger value="integrity">{t("dataIntegrity")}</TabsTrigger>
+          <TabsTrigger value="search">{t("search")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -191,7 +185,7 @@ export function AuditDashboard() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("totalTransactions")}</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -204,22 +198,20 @@ export function AuditDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("totalAmount")}</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   ${((metrics?.total_amount || 0) / 1000).toFixed(1)}K
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Across all transactions
-                </p>
+                <p className="text-xs text-muted-foreground">{t("acrossAllTransactions")}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("successRate")}</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -234,7 +226,7 @@ export function AuditDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Risk Score</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("riskScore")}</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -252,8 +244,8 @@ export function AuditDashboard() {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Audit Activity</CardTitle>
-                <CardDescription>Latest financial operations and changes</CardDescription>
+                <CardTitle>{t("recentAuditActivity")}</CardTitle>
+                <CardDescription>{t("latestFinancialOperationsAnd")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {auditLoading ? (
@@ -282,9 +274,7 @@ export function AuditDashboard() {
                       </div>
                     ))}
                     {logs.length === 0 && (
-                      <p className="text-center text-muted-foreground py-4">
-                        No recent audit activity found
-                      </p>
+                      <p className="text-center text-muted-foreground py-4">{t("noRecentAuditActivity")}</p>
                     )}
                   </div>
                 )}
@@ -293,25 +283,25 @@ export function AuditDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>System Health</CardTitle>
-                <CardDescription>Real-time monitoring and alerts</CardDescription>
+                <CardTitle>{t("systemHealth")}</CardTitle>
+                <CardDescription>{t("realtimeMonitoringAndAlerts")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Data Integrity</span>
+                    <span className="text-sm font-medium">{t("dataIntegrity")}</span>
                     <Badge variant={integrityReport?.integrity_score || 100 > 90 ? 'default' : 'destructive'}>
                       {integrityReport?.integrity_score || 100}% Verified
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Compliance Score</span>
+                    <span className="text-sm font-medium">{t("complianceScore")}</span>
                     <Badge variant={complianceReport?.compliance_score || 100 > 80 ? 'default' : 'secondary'}>
                       {complianceReport?.compliance_score || 100}%
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Active Alerts</span>
+                    <span className="text-sm font-medium">{t("activeAlerts")}</span>
                     <Badge variant={integrityReport?.tampered_records || 0 > 0 ? 'destructive' : 'default'}>
                       {integrityReport?.tampered_records || 0}
                     </Badge>
@@ -326,15 +316,13 @@ export function AuditDashboard() {
         <TabsContent value="trail" className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight">Audit Trail</h2>
+              <h2 className="text-2xl font-bold tracking-tight">{t("auditTrail")}</h2>
               <p className="text-muted-foreground">
                 Complete history of all financial operations ({totalCount} records)
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="outline">
-                Showing {logs.length} of {totalCount}
-              </Badge>
+              <Badge variant="outline">{t("showingLogslengthOfTotalcount")}</Badge>
             </div>
           </div>
 
@@ -368,8 +356,8 @@ export function AuditDashboard() {
         <TabsContent value="search" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Advanced Search</CardTitle>
-              <CardDescription>Search audit trail with specific criteria</CardDescription>
+              <CardTitle>{t("advancedSearch")}</CardTitle>
+              <CardDescription>{t("searchAuditTrailWith1")}</CardDescription>
             </CardHeader>
             <CardContent>
               <AuditSearch companyId={user?.company_id || ''} />
@@ -390,3 +378,5 @@ export function AuditDashboard() {
     </div>
   );
 }
+
+export default AuditDashboard;

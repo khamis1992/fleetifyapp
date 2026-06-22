@@ -46,7 +46,7 @@ export const useTrafficViolationJournalIntegration = () => {
       const isCustomerResponsible = violation.charged_to_customer || false;
       
       let description = '';
-      let lines: unknown[] = [];
+      let lines: Record<string, unknown>[] = [];
 
       if (isCustomerResponsible) {
         // Customer pays - treat as revenue
@@ -55,13 +55,17 @@ export const useTrafficViolationJournalIntegration = () => {
         lines = [
           {
             account_id: accountMap['1200'], // Accounts Receivable
-            debit: violation.fine_amount,
-            credit: 0,
+            line_description: `ذمم العميل - مخالفة مرورية`,
+            debit_amount: violation.fine_amount,
+            credit_amount: 0,
+            line_number: 1,
           },
           {
             account_id: accountMap['4300'], // Other Revenue
-            debit: 0,
-            credit: violation.fine_amount,
+            line_description: `إيراد مخالفة مرورية - يتحملها العميل`,
+            debit_amount: 0,
+            credit_amount: violation.fine_amount,
+            line_number: 2,
           },
         ];
       } else {
@@ -71,13 +75,17 @@ export const useTrafficViolationJournalIntegration = () => {
         lines = [
           {
             account_id: accountMap['5700'], // Traffic Violations Expense
-            debit: violation.fine_amount,
-            credit: 0,
+            line_description: `مصروف مخالفة مرورية - تتحملها الشركة`,
+            debit_amount: violation.fine_amount,
+            credit_amount: 0,
+            line_number: 1,
           },
           {
             account_id: accountMap['1010'], // Cash
-            debit: 0,
-            credit: violation.fine_amount,
+            line_description: `دفع مخالفة مرورية`,
+            debit_amount: 0,
+            credit_amount: violation.fine_amount,
+            line_number: 2,
           },
         ];
       }
@@ -106,7 +114,6 @@ export const useTrafficViolationJournalIntegration = () => {
       const linesWithEntry = lines.map((line) => ({
         ...line,
         journal_entry_id: entry.id,
-        company_id: violation.company_id,
       }));
 
       const { error: linesError } = await supabase

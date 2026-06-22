@@ -1,1 +1,13 @@
-{}
+{
+  "title": "Human Resources",
+  "employees": "Employees",
+  "attendance": "Attendance",
+  "payroll": "Payroll",
+  "reports": "Reports",
+  "newEmployee": "New Employee",
+  "name": "Name",
+  "position": "Position",
+  "salary": "Salary",
+  "search": "Search employees",
+  "noResults": "No employees found"
+}

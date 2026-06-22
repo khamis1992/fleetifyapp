@@ -20,6 +20,7 @@ import { preprocessImage, quickPreprocess, analyzeImage } from '@/utils/imagePre
 import { LazyImage } from '@/components/common/LazyImage';
 import EnhancedMobileCamera from './EnhancedMobileCamera';
 import { useBackgroundQueue } from '@/utils/backgroundProcessingQueue';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   Camera, 
   Upload, 
@@ -84,6 +85,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
   onScanComplete, 
   className = "" 
 }) => {
+  const { t } = useFleetifyTranslation("ui");
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [progress, setProgress] = useState(0);
@@ -252,7 +254,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
     const limitedFiles = files.slice(0, 10);
     
     toast({
-      title: "Bulk Processing Started",
+      title: t("bulkProcessingStarted"),
       description: `Adding ${limitedFiles.length} invoices to background processing queue`,
       variant: "default"
     });
@@ -285,7 +287,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
       }, 'high');
 
       toast({
-        title: "Batch Job Created",
+        title: t("batchJobCreated"),
         description: `Job ID: ${jobId}. Processing in background...`,
         variant: "default"
       });
@@ -304,7 +306,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
           } else if (job.status === 'failed') {
             clearInterval(monitorInterval);
             toast({
-              title: "Batch Processing Failed",
+              title: t("batchProcessingFailed"),
               description: job.error || 'Unknown error occurred',
               variant: "destructive"
             });
@@ -317,7 +319,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
       
     } catch (error) {
       toast({
-        title: "Error Processing Files",
+        title: t("errorProcessingFiles"),
         description: error instanceof Error ? error.message : 'Failed to process files',
         variant: "destructive"
       });
@@ -398,9 +400,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
             <Brain className="h-6 w-6 text-primary" />
             ماسح الفواتير الذكي
             <Badge variant="secondary" className="text-xs">
-              <Zap className="h-3 w-3 mr-1" />
-              AI-Powered
-            </Badge>
+              <Zap className="h-3 w-3 mr-1" />{t("aipowered")}</Badge>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             مسح ذكي للفواتير المكتوبة باليد أو المطبوعة بالعربية والإنجليزية مع تطابق تلقائي للعملاء
@@ -426,7 +426,7 @@ const IntelligentInvoiceScanner: React.FC<InvoiceScannerProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="gemini">Gemini 2.5 Flash (الأفضل للخط اليدوي)</SelectItem>
-                  <SelectItem value="google-vision">Google Vision API</SelectItem>
+                  <SelectItem value="google-vision">{t("googleVisionApi")}</SelectItem>
                   <SelectItem value="hybrid">هجين (أعلى دقة)</SelectItem>
                 </SelectContent>
               </Select>

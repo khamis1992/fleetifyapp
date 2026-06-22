@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAllTrafficViolationPayments, useTrafficViolationPaymentsStats } from '@/hooks/useTrafficViolationPayments';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
@@ -233,7 +234,8 @@ export default function TrafficViolationPayments() {
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
-            <Table>
+            <ResponsiveTable>
+<Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">رقم الدفع</TableHead>
@@ -294,6 +296,7 @@ export default function TrafficViolationPayments() {
                 )}
               </TableBody>
             </Table>
+</ResponsiveTable>
           </div>
         </CardContent>
       </Card>

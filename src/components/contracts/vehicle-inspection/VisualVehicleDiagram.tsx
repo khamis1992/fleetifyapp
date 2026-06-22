@@ -11,6 +11,7 @@ import { Car, Truck, ChevronDown, ChevronUp, ZoomIn, ZoomOut, RotateCw } from 'l
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   VehicleType,
   ZoneCategory,
@@ -86,7 +87,7 @@ const CATEGORY_TABS: { value: ZoneCategory; label: string; label_ar: string; ico
 // ===== Vehicle Type Configuration =====
 const VEHICLE_TYPES: { value: VehicleType; label: string; label_ar: string; icon: any }[] = [
   { value: 'sedan', label: 'Sedan', label_ar: 'سيدان', icon: Car },
-  { value: 'suv', label: 'SUV', label_ar: 'أر 维 landfill', icon: Car },
+  { value: 'suv', label: 'SUV', label_ar: 'أر وي landfill', icon: Car },
   { value: 'truck', label: 'Truck', label_ar: 'شاحنة', icon: Truck },
 ];
 
@@ -100,6 +101,8 @@ export function VisualVehicleDiagram({
   className,
   defaultCategory = 'exterior',
 }: VisualVehicleDiagramProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const [activeCategory, setActiveCategory] = useState<ZoneCategory>(defaultCategory);
   const [scale, setScale] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);

@@ -22,6 +22,7 @@ import { QuickCreateFAB } from '@/components/common/QuickCreateFAB';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // Lazy load AI Chat Widget for performance
 const AIChatWidget = lazy(() => import('@/components/ai-chat-assistant/AIChatWidget'));
 
@@ -36,6 +37,7 @@ const bottomNavItems = [
 
 // Mobile Bottom Navigation Component
 const MobileBottomNav: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -75,6 +77,7 @@ interface BentoLayoutProps {
 }
 
 export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
+  const { t } = useFleetifyTranslation("ui");
   const { user, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -140,7 +143,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
-          <span className="font-bold text-neutral-900">Fleetify</span>
+          <span className="font-bold text-neutral-900">{t("fleetify")}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}

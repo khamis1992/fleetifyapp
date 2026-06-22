@@ -38,6 +38,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useTourGuide } from '@/components/tour-guide';
 import { useSystemStats, generateStatsPrompt } from '@/hooks/useSystemStats';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== أنواع الإجراءات =====
 interface ActionButton {
   type: 'nav' | 'tour' | 'action';
@@ -394,7 +395,8 @@ const WelcomeMessage: React.FC<{
 };
 
 // Main Chat Widget
-export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideFloatingButton = false }) => {
+export const AIChatWidget: React.FC<{
+   hideFloatingButton?: boolean }> = ({ hideFloatingButton = false }) => {
   const externalAIChat = useAIChat();
   // Use external state if available, otherwise use local state
   const [localIsOpen, setLocalIsOpen] = useState(false);
@@ -632,7 +634,7 @@ export const AIChatWidget: React.FC<{ hideFloatingButton?: boolean }> = ({ hideF
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-sm">المساعد الذكي</h3>
-                    <p className="text-white/80 text-xs">Fleetify AI Assistant</p>
+                    <p className="text-white/80 text-xs">{t("fleetifyAiAssistant")}</p>
                   </div>
                 </div>
                 

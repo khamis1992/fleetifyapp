@@ -292,18 +292,16 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
           // سطور القيد: من ذمم التحصيل القانوني إلى ذمم العملاء
           await supabase.from('journal_entry_lines').insert([
             {
-              entry_id: transferEntry.id,
-              company_id: profile.company_id,
-              account_code: '1203', // ذمم تحت التحصيل القانوني
+              journal_entry_id: transferEntry.id,
+              account_id: '1203', // TODO: look up UUID from chart_of_accounts by account_code
               line_description: `نقل ذمم ${delinquentCustomer.customer_name} للتحصيل القانوني`,
               debit_amount: delinquentCustomer.total_debt,
               credit_amount: 0,
               line_number: 1,
             },
             {
-              entry_id: transferEntry.id,
-              company_id: profile.company_id,
-              account_code: '1200', // ذمم العملاء
+              journal_entry_id: transferEntry.id,
+              account_id: '1200', // TODO: look up UUID from chart_of_accounts by account_code
               line_description: `نقل ذمم ${delinquentCustomer.customer_name} للتحصيل القانوني`,
               debit_amount: 0,
               credit_amount: delinquentCustomer.total_debt,
@@ -335,18 +333,16 @@ ${additionalNotes ? `\nملاحظات إضافية:\n${additionalNotes}` : ''}
         if (!provisionError && provisionEntry) {
           await supabase.from('journal_entry_lines').insert([
             {
-              entry_id: provisionEntry.id,
-              company_id: profile.company_id,
-              account_code: '5401', // مصروف الديون المشكوك فيها
+              journal_entry_id: provisionEntry.id,
+              account_id: '5401', // TODO: look up UUID from chart_of_accounts by account_code
               line_description: `مخصص ديون ${delinquentCustomer.customer_name} (${Math.round(provisionRate * 100)}%)`,
               debit_amount: provisionAmount,
               credit_amount: 0,
               line_number: 1,
             },
             {
-              entry_id: provisionEntry.id,
-              company_id: profile.company_id,
-              account_code: '1204', // مخصص الديون المشكوك فيها
+              journal_entry_id: provisionEntry.id,
+              account_id: '1204', // TODO: look up UUID from chart_of_accounts by account_code
               line_description: `مخصص ديون ${delinquentCustomer.customer_name} (${Math.round(provisionRate * 100)}%)`,
               debit_amount: 0,
               credit_amount: provisionAmount,

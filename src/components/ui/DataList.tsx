@@ -30,11 +30,11 @@ export function DataList<T>({
   className,
   loading = false,
   loadingCount = 4,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  emptyAction,
   emptyTitle,
   emptyDescription,
-  emptyAction,
+  emptyType,
+  emptyActionLabel,
+  onEmptyAction,
 }: DataListProps<T>) {
   if (loading) {
     return (

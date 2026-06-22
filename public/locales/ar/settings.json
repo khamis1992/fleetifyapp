@@ -1,1 +1,11 @@
-{}
+{
+  "title": "الإعدادات",
+  "general": "عام",
+  "security": "الأمان",
+  "notifications": "الإشعارات",
+  "language": "اللغة",
+  "theme": "المظهر",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "search": "بحث"
+}

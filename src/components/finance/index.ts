@@ -11,8 +11,7 @@ export { PayablesReport } from './PayablesReport';
 export { ReceivablesReport } from './ReceivablesReport';
 export { InvoiceCard } from './InvoiceCard';
 export { PayInvoiceDialog } from './PayInvoiceDialog';
-export { JournalEntryForm } from './JournalEntryForm';
-// export { PaymentForm } from './payments/PaymentForm'; // Removed - using UnifiedPaymentForm instead
+export { JournalEntryForm } from './JournalEntryForm'; // Removed - using UnifiedPaymentForm instead
 export { InvoiceForm } from './InvoiceForm';
 export { EnhancedChartOfAccountsManagement } from './EnhancedChartOfAccountsManagement';
 export { CustomerAccountSelector } from './CustomerAccountSelector';

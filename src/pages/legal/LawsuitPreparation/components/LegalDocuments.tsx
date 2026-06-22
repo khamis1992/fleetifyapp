@@ -40,6 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   useLawsuitPreparationContext, 
   type DocumentsState, 
@@ -147,6 +148,8 @@ function LegalDocumentItem({
   onDownloadDocx,
   index,
 }: LegalDocumentItemProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const status = statusConfig[document.status];
   const StatusIcon = status.icon;
 
@@ -299,9 +302,7 @@ function LegalDocumentItem({
                       onClick={onDownloadPdf}
                       className="text-red-500 border-red-500/30 hover:bg-red-500/10 hover:text-red-600"
                     >
-                      <File className="h-4 w-4 ml-1.5" />
-                      PDF
-                    </Button>
+                      <File className="h-4 w-4 ml-1.5" />{t("pdf")}</Button>
                   </motion.div>
                 )}
                 {onDownloadDocx && (
@@ -317,9 +318,7 @@ function LegalDocumentItem({
                       onClick={onDownloadDocx}
                       className="text-teal-500 border-teal-500/30 hover:bg-teal-500/10 hover:text-teal-600"
                     >
-                      <FileType className="h-4 w-4 ml-1.5" />
-                      Word
-                    </Button>
+                      <FileType className="h-4 w-4 ml-1.5" />{t("word")}</Button>
                   </motion.div>
                 )}
               </>

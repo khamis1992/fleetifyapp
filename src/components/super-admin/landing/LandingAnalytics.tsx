@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface RecentEvent {
   id: string;
   event_type?: string;
@@ -27,6 +28,7 @@ interface EventStats {
 }
 
 export const LandingAnalytics: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [selectedCompany, setSelectedCompany] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
@@ -321,9 +323,9 @@ export const LandingAnalytics: React.FC = () => {
               <SelectValue placeholder="Select Company" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Companies</SelectItem>
+              <SelectItem value="all">{t("allCompanies")}</SelectItem>
               {companiesLoading ? (
-                <SelectItem value="" disabled>Loading companies...</SelectItem>
+                <SelectItem value="" disabled>{t("loadingCompanies")}</SelectItem>
               ) : (
                 companies?.map(company => (
                   <SelectItem key={company.id} value={company.id}>
@@ -342,19 +344,13 @@ export const LandingAnalytics: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button>
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
+              <Download className="h-4 w-4 mr-2" />{t("exportReport")}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleExportCSV}>
-              <FileText className="h-4 w-4 mr-2" />
-              Export to CSV
-            </DropdownMenuItem>
+              <FileText className="h-4 w-4 mr-2" />{t("exportToCsv")}</DropdownMenuItem>
             <DropdownMenuItem onClick={handleExportPDF}>
-              <Download className="h-4 w-4 mr-2" />
-              Export to PDF
-            </DropdownMenuItem>
+              <Download className="h-4 w-4 mr-2" />{t("exportToPdf")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -363,7 +359,7 @@ export const LandingAnalytics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalViews")}</CardTitle>
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -378,7 +374,7 @@ export const LandingAnalytics: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unique Visitors</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("uniqueVisitors")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -393,7 +389,7 @@ export const LandingAnalytics: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("conversionRate")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -408,7 +404,7 @@ export const LandingAnalytics: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Time on Page</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("avgTimeOnPage")}</CardTitle>
             <MousePointer className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -423,7 +419,7 @@ export const LandingAnalytics: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bounce Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("bounceRate")}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -441,12 +437,12 @@ export const LandingAnalytics: React.FC = () => {
         {/* Top Pages */}
         <Card>
           <CardHeader>
-            <CardTitle>Top Pages</CardTitle>
+            <CardTitle>{t("topPages")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {metrics.topPages.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No page data available</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t("noPageDataAvailable")}</p>
               ) : (
                 metrics.topPages.map((page, index) => (
                 <div key={page.path} className="flex items-center justify-between">
@@ -468,7 +464,7 @@ export const LandingAnalytics: React.FC = () => {
         {/* Device Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>Device Breakdown</CardTitle>
+            <CardTitle>{t("deviceBreakdown")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -493,7 +489,7 @@ export const LandingAnalytics: React.FC = () => {
         {/* Traffic Sources */}
         <Card>
           <CardHeader>
-            <CardTitle>Traffic Sources</CardTitle>
+            <CardTitle>{t("trafficSources")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -516,17 +512,17 @@ export const LandingAnalytics: React.FC = () => {
         {/* Real-time Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>Real-time Activity</CardTitle>
+            <CardTitle>{t("realtimeActivity")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span>Active users now</span>
+                <span>{t("activeUsersNow")}</span>
                 <Badge variant="default">{activeUsers}</Badge>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">Recent Events</h4>
+                <h4 className="font-medium">{t("recentEvents")}</h4>
                 <div className="space-y-2 text-sm">
                   {recentEvents.length > 0 ? (
                     recentEvents.slice(0, 5).map((event) => (
@@ -538,7 +534,7 @@ export const LandingAnalytics: React.FC = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground">No recent events</p>
+                    <p className="text-muted-foreground">{t("noRecentEvents")}</p>
                   )}
                 </div>
               </div>
@@ -550,17 +546,17 @@ export const LandingAnalytics: React.FC = () => {
       {/* Event Tracking */}
       <Card>
         <CardHeader>
-          <CardTitle>Event Tracking</CardTitle>
+          <CardTitle>{t("eventTracking")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-2">Event</th>
-                  <th className="text-left p-2">Category</th>
-                  <th className="text-left p-2">Count</th>
-                  <th className="text-left p-2">Conversion Rate</th>
+                  <th className="text-left p-2">{t("event")}</th>
+                  <th className="text-left p-2">{t("category")}</th>
+                  <th className="text-left p-2">{t("count")}</th>
+                  <th className="text-left p-2">{t("conversionRate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -575,9 +571,7 @@ export const LandingAnalytics: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                      No event data available for the selected period
-                    </td>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">{t("noEventDataAvailable")}</td>
                   </tr>
                 )}
               </tbody>

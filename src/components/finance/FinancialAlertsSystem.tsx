@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle, XCircle, TrendingDown, TrendingUp } from "lucide-react";
 import { useCurrencyFormatter } from "@/hooks/useCurrencyFormatter";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface BudgetAlert {
   id: string;
   alert_type: string;
@@ -38,6 +39,7 @@ interface FinancialAlert {
 }
 
 export const FinancialAlertsSystem = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { user } = useAuth();
   const { formatCurrency } = useCurrencyFormatter();
   const companyId = user?.profile?.company_id || user?.company?.id || '';
@@ -105,8 +107,8 @@ export const FinancialAlertsSystem = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Financial Alerts</CardTitle>
-          <CardDescription>Loading alerts...</CardDescription>
+          <CardTitle>{t("financialAlerts")}</CardTitle>
+          <CardDescription>{t("loadingAlerts")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -129,13 +131,9 @@ export const FinancialAlertsSystem = () => {
         <Card className="border-destructive/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Active Financial Alerts
-              <Badge variant="destructive">{unacknowledgedAlerts.length}</Badge>
+              <AlertTriangle className="h-5 w-5 text-destructive" />{t("activeFinancialAlerts")}<Badge variant="destructive">{unacknowledgedAlerts.length}</Badge>
             </CardTitle>
-            <CardDescription>
-              These alerts require your immediate attention
-            </CardDescription>
+            <CardDescription>{t("theseAlertsRequireYour")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {unacknowledgedAlerts.map((alert) => (
@@ -164,9 +162,7 @@ export const FinancialAlertsSystem = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleAcknowledgeAlert(alert.id)}
-                  >
-                    Acknowledge
-                  </Button>
+                  >{t("acknowledge")}</Button>
                 </div>
               </Alert>
             ))}
@@ -179,12 +175,8 @@ export const FinancialAlertsSystem = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              Recent Acknowledged Alerts
-            </CardTitle>
-            <CardDescription>
-              Previously resolved financial alerts
-            </CardDescription>
+              <CheckCircle className="h-5 w-5 text-success" />{t("recentAcknowledgedAlerts")}</CardTitle>
+            <CardDescription>{t("previouslyResolvedFinancialAlerts")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {acknowledgedAlerts.slice(0, 5).map((alert) => (
@@ -201,9 +193,7 @@ export const FinancialAlertsSystem = () => {
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-success">
-                  Resolved
-                </Badge>
+                <Badge variant="outline" className="text-success">{t("resolved")}</Badge>
               </div>
             ))}
           </CardContent>
@@ -215,19 +205,13 @@ export const FinancialAlertsSystem = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              All Clear
-            </CardTitle>
-            <CardDescription>
-              No financial alerts at this time
-            </CardDescription>
+              <CheckCircle className="h-5 w-5 text-success" />{t("allClear")}</CardTitle>
+            <CardDescription>{t("noFinancialAlertsAt")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">
               <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Your financial metrics are within normal ranges
-              </p>
+              <p className="text-muted-foreground">{t("yourFinancialMetricsAre")}</p>
             </div>
           </CardContent>
         </Card>

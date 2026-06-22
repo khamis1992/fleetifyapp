@@ -7,7 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, HardDrive, Shield, Download, Upload, RefreshCw, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const DatabaseManagement: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   
   const [dbStats] = useState({
@@ -56,22 +58,22 @@ export const DatabaseManagement: React.FC = () => {
 
   const handleBackup = (type: 'full' | 'incremental') => {
     toast({
-      title: "Backup initiated",
+      title: t("backupInitiated"),
       description: `${type} backup has been started. You'll be notified when complete.`,
     });
   };
 
   const handleRestore = (backupId: string) => {
     toast({
-      title: "Restore initiated",
-      description: "Database restore has been started. This may take several minutes.",
+      title: t("restoreInitiated"),
+      description: t("databaseRestoreHasBeen"),
     });
   };
 
   const optimizeDatabase = () => {
     toast({
-      title: "Database optimization started",
-      description: "The system is optimizing database performance. This may take a few minutes.",
+      title: t("databaseOptimizationStarted"),
+      description: t("theSystemIsOptimizing"),
     });
   };
 
@@ -82,22 +84,18 @@ export const DatabaseManagement: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Database className="h-4 w-4 text-primary" />
-              Total Size
-            </CardTitle>
+              <Database className="h-4 w-4 text-primary" />{t("totalSize")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dbStats.totalSize}</div>
-            <p className="text-xs text-muted-foreground">Across {dbStats.tableCount} tables</p>
+            <p className="text-xs text-muted-foreground">{t("acrossDbstatstablecountTables")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <HardDrive className="h-4 w-4 text-primary" />
-              Total Records
-            </CardTitle>
+              <HardDrive className="h-4 w-4 text-primary" />{t("totalRecords")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dbStats.totalRows}</div>
@@ -108,22 +106,18 @@ export const DatabaseManagement: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
-              Last Backup
-            </CardTitle>
+              <Shield className="h-4 w-4 text-primary" />{t("lastBackup")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm font-medium">{dbStats.lastBackup}</div>
-            <p className="text-xs text-muted-foreground">Automated daily backup</p>
+            <p className="text-xs text-muted-foreground">{t("automatedDailyBackup")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 text-primary" />
-              Connections
-            </CardTitle>
+              <RefreshCw className="h-4 w-4 text-primary" />{t("connections")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm font-medium">
@@ -139,9 +133,9 @@ export const DatabaseManagement: React.FC = () => {
 
       <Tabs defaultValue="backups" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="backups">Backups & Recovery</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+          <TabsTrigger value="backups">{t("backupsRecovery")}</TabsTrigger>
+          <TabsTrigger value="maintenance">{t("maintenance")}</TabsTrigger>
+          <TabsTrigger value="monitoring">{t("monitoring")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="backups" className="space-y-6">
@@ -149,27 +143,19 @@ export const DatabaseManagement: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5 text-primary" />
-                Backup Management
-              </CardTitle>
-              <CardDescription>
-                Create and manage database backups for disaster recovery
-              </CardDescription>
+                <Download className="h-5 w-5 text-primary" />{t("backupManagement")}</CardTitle>
+              <CardDescription>{t("createAndManageDatabase")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex gap-2">
                 <Button onClick={() => handleBackup('full')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Full Backup
-                </Button>
+                  <Download className="h-4 w-4 mr-2" />{t("fullBackup")}</Button>
                 <Button variant="outline" onClick={() => handleBackup('incremental')}>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Incremental Backup
-                </Button>
+                  <Clock className="h-4 w-4 mr-2" />{t("incrementalBackup")}</Button>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium">Recent Backups</h4>
+                <h4 className="font-medium">{t("recentBackups")}</h4>
                 {backups.map((backup) => (
                   <div key={backup.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
@@ -189,9 +175,7 @@ export const DatabaseManagement: React.FC = () => {
                         size="sm"
                         onClick={() => handleRestore(backup.id)}
                       >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Restore
-                      </Button>
+                        <Upload className="h-4 w-4 mr-2" />{t("restore")}</Button>
                     </div>
                   </div>
                 ))}
@@ -205,31 +189,21 @@ export const DatabaseManagement: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 text-primary" />
-                Database Maintenance
-              </CardTitle>
-              <CardDescription>
-                Optimize database performance and manage table statistics
-              </CardDescription>
+                <RefreshCw className="h-5 w-5 text-primary" />{t("databaseMaintenance")}</CardTitle>
+              <CardDescription>{t("optimizeDatabasePerformanceAnd")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button onClick={optimizeDatabase} className="h-20 flex-col">
-                  <RefreshCw className="h-6 w-6 mb-2" />
-                  Optimize Database
-                </Button>
+                  <RefreshCw className="h-6 w-6 mb-2" />{t("optimizeDatabase")}</Button>
                 <Button variant="outline" className="h-20 flex-col">
-                  <Database className="h-6 w-6 mb-2" />
-                  Rebuild Indexes
-                </Button>
+                  <Database className="h-6 w-6 mb-2" />{t("rebuildIndexes")}</Button>
                 <Button variant="outline" className="h-20 flex-col">
-                  <HardDrive className="h-6 w-6 mb-2" />
-                  Update Statistics
-                </Button>
+                  <HardDrive className="h-6 w-6 mb-2" />{t("updateStatistics")}</Button>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium">Table Statistics</h4>
+                <h4 className="font-medium">{t("tableStatistics")}</h4>
                 <div className="space-y-2">
                   {tables.map((table) => (
                     <div key={table.name} className="flex items-center justify-between p-3 border rounded">
@@ -255,32 +229,28 @@ export const DatabaseManagement: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <HardDrive className="h-5 w-5 text-primary" />
-                Performance Monitoring
-              </CardTitle>
-              <CardDescription>
-                Monitor database performance and resource usage
-              </CardDescription>
+                <HardDrive className="h-5 w-5 text-primary" />{t("performanceMonitoring")}</CardTitle>
+              <CardDescription>{t("monitorDatabasePerformanceAnd")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h4 className="font-medium">Query Performance</h4>
+                  <h4 className="font-medium">{t("queryPerformance")}</h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm">Average Query Time</span>
+                      <span className="text-sm">{t("averageQueryTime")}</span>
                       <span className="text-sm font-medium">45ms</span>
                     </div>
                     <Progress value={25} className="h-2" />
                     
                     <div className="flex justify-between">
-                      <span className="text-sm">Slow Queries</span>
+                      <span className="text-sm">{t("slowQueries")}</span>
                       <span className="text-sm font-medium">3</span>
                     </div>
                     <Progress value={15} className="h-2" />
                     
                     <div className="flex justify-between">
-                      <span className="text-sm">Cache Hit Rate</span>
+                      <span className="text-sm">{t("cacheHitRate")}</span>
                       <span className="text-sm font-medium">98.5%</span>
                     </div>
                     <Progress value={98.5} className="h-2" />
@@ -288,22 +258,22 @@ export const DatabaseManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="font-medium">Resource Usage</h4>
+                  <h4 className="font-medium">{t("resourceUsage")}</h4>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm">CPU Usage</span>
+                      <span className="text-sm">{t("cpuUsage")}</span>
                       <span className="text-sm font-medium">23%</span>
                     </div>
                     <Progress value={23} className="h-2" />
                     
                     <div className="flex justify-between">
-                      <span className="text-sm">Memory Usage</span>
+                      <span className="text-sm">{t("memoryUsage")}</span>
                       <span className="text-sm font-medium">67%</span>
                     </div>
                     <Progress value={67} className="h-2" />
                     
                     <div className="flex justify-between">
-                      <span className="text-sm">Disk Usage</span>
+                      <span className="text-sm">{t("diskUsage")}</span>
                       <span className="text-sm font-medium">45%</span>
                     </div>
                     <Progress value={45} className="h-2" />
@@ -311,9 +281,7 @@ export const DatabaseManagement: React.FC = () => {
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full">
-                View Detailed Performance Report
-              </Button>
+              <Button variant="outline" className="w-full">{t("viewDetailedPerformanceReport")}</Button>
             </CardContent>
           </Card>
         </TabsContent>

@@ -263,12 +263,12 @@ const TaskCard: React.FC<{
 };
 
 // Sortable Task Card
-const SortableTaskCard: React.FC<{
+const SortableTaskCard = React.forwardRef<HTMLDivElement, {
   task: Task;
   onClick: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}> = ({ task, onClick, onEdit, onDelete }) => {
+}>(({ task, onClick, onEdit, onDelete }, _ref) => {
   const {
     attributes,
     listeners,
@@ -294,7 +294,8 @@ const SortableTaskCard: React.FC<{
       />
     </div>
   );
-};
+});
+SortableTaskCard.displayName = 'SortableTaskCard';
 
 // Kanban Column
 const KanbanColumn: React.FC<{

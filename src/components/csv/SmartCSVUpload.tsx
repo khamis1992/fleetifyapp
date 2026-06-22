@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeCsvHeaders } from "@/utils/csv";
 import { CSVArchiveSelector } from "./CSVArchiveSelector";
 import { CSVArchiveEntry } from "@/hooks/useCSVArchive";
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface SmartCSVUploadProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -45,6 +46,8 @@ export function SmartCSVUpload({
   archiveFile = false,
   onArchiveChange
 }: SmartCSVUploadProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const [file, setFile] = useState<File | null>(null);
   const [fixes, setFixes] = useState<CSVRowFix[]>([]);
   const [showPreview, setShowPreview] = useState(false);

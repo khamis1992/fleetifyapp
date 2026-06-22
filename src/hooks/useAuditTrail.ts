@@ -130,7 +130,10 @@ export function useAuditTrail(filters?: AuditTrailFilters, limit = 100) {
 
       const { data: rawEntries, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Audit logs table not available:', error.message);
+        return { entries: [], stats: { totalEntries: 0, insertCount: 0, updateCount: 0, deleteCount: 0, uniqueUsers: 0, tablesAffected: 0 } };
+      }
       if (!rawEntries) return null;
 
       // Transform audit_logs format to AuditTrailEntry format

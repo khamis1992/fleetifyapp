@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Home, FileText, Car, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface MobileDetailLayoutProps {
   children: ReactNode;
   currentTab?: 'home' | 'contracts' | 'cars' | 'overdue';
@@ -23,10 +24,9 @@ const dockItems: DockItem[] = [
   { id: 'overdue', icon: AlertCircle, label: 'Overdue', labelAr: 'المتأخرات', path: '/mobile/overdue' },
 ];
 
-export const MobileDetailLayout: React.FC<MobileDetailLayoutProps> = ({
-  children,
-  currentTab = 'home',
-}) => {
+export const MobileDetailLayout: React.FC<MobileDetailLayoutProps> = ({ children,
+  currentTab = 'home', }) => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
 
   return (

@@ -1,1 +1,10 @@
-{}
+{
+  "required": "This field is required",
+  "invalid": "Invalid value",
+  "network": "Network error",
+  "unauthorized": "Unauthorized",
+  "forbidden": "Forbidden",
+  "notFound": "Not found",
+  "server": "Server error",
+  "timeout": "Request timeout"
+}

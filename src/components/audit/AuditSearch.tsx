@@ -17,11 +17,13 @@ import { useAuditSearch } from '@/hooks/useFinancialAudit';
 import { FinancialAuditLog } from '@/types/auditLog';
 import { AuditLogDetailsDialog } from './AuditLogDetailsDialog';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface AuditSearchProps {
   companyId: string;
 }
 
 export function AuditSearch({ companyId }: AuditSearchProps) {
+  const { t } = useFleetifyTranslation("ui");
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState<FinancialAuditLog | null>(null);
   const [searchFilters, setSearchFilters] = useState({
@@ -66,12 +68,8 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Advanced Audit Search
-            </CardTitle>
-            <CardDescription>
-              Search audit trail with advanced filters and criteria
-            </CardDescription>
+              <Search className="h-5 w-5" />{t("advancedAuditSearch")}</CardTitle>
+            <CardDescription>{t("searchAuditTrailWith")}</CardDescription>
           </CardHeader>
           <CardContent>
             {/* Search Input */}
@@ -90,15 +88,13 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
                 {isSearching ? 'Searching...' : 'Search'}
               </Button>
               <Button variant="outline" onClick={clearAll}>
-                <X className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
+                <X className="h-4 w-4 mr-2" />{t("clear")}</Button>
             </div>
 
             {/* Advanced Filters */}
             <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Entity Type</label>
+                <label className="text-sm font-medium">{t("entityType")}</label>
                 <Select
                   value={searchFilters.entity_type}
                   onValueChange={(value) => handleFilterChange('entity_type', value)}
@@ -107,19 +103,19 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
                     <SelectValue placeholder="All entities" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Entity Types</SelectItem>
-                    <SelectItem value="payment">Payment</SelectItem>
-                    <SelectItem value="invoice">Invoice</SelectItem>
-                    <SelectItem value="contract">Contract</SelectItem>
-                    <SelectItem value="journal_entry">Journal Entry</SelectItem>
-                    <SelectItem value="account">Account</SelectItem>
-                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="">{t("allEntityTypes")}</SelectItem>
+                    <SelectItem value="payment">{t("payment")}</SelectItem>
+                    <SelectItem value="invoice">{t("invoice")}</SelectItem>
+                    <SelectItem value="contract">{t("contract")}</SelectItem>
+                    <SelectItem value="journal_entry">{t("journalEntry")}</SelectItem>
+                    <SelectItem value="account">{t("account")}</SelectItem>
+                    <SelectItem value="customer">{t("customer")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date Range</label>
+                <label className="text-sm font-medium">{t("dateRange")}</label>
                 <div className="grid grid-cols-2 gap-2">
                   <Popover>
                     <PopoverTrigger asChild>
@@ -169,7 +165,7 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Results Limit</label>
+                <label className="text-sm font-medium">{t("resultsLimit")}</label>
                 <Select
                   value={searchFilters.limit.toString()}
                   onValueChange={(value) => handleFilterChange('limit', parseInt(value))}
@@ -198,9 +194,7 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
                     limit: 50
                   })}
                 >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Reset Filters
-                </Button>
+                  <Filter className="h-4 w-4 mr-2" />{t("resetFilters")}</Button>
               </div>
             </div>
           </CardContent>
@@ -210,10 +204,8 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
         {searchResults.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Search Results</CardTitle>
-              <CardDescription>
-                Found {searchResults.length} matching audit entries
-              </CardDescription>
+              <CardTitle className="text-lg">{t("searchResults")}</CardTitle>
+              <CardDescription>{t("foundSearchresultslengthMatchingAudit")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -277,7 +269,7 @@ export function AuditSearch({ companyId }: AuditSearchProps) {
           <Card>
             <CardContent className="text-center py-8">
               <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No results found</h3>
+              <h3 className="text-lg font-medium mb-2">{t("noResultsFound")}</h3>
               <p className="text-muted-foreground">
                 No audit entries match your search criteria. Try adjusting your filters or search terms.
               </p>

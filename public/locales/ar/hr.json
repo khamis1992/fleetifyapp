@@ -1,1 +1,13 @@
-{}
+{
+  "title": "الموارد البشرية",
+  "employees": "الموظفون",
+  "attendance": "الحضور",
+  "payroll": "الرواتب",
+  "reports": "التقارير",
+  "newEmployee": "موظف جديد",
+  "name": "الاسم",
+  "position": "المنصب",
+  "salary": "الراتب",
+  "search": "بحث في الموظفين",
+  "noResults": "لا يوجد موظفون"
+}

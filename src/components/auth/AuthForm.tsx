@@ -10,7 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const AuthForm: FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -237,7 +239,7 @@ export const AuthForm: FC = () => {
               <span className="text-white font-bold text-3xl">F</span>
             </motion.div>
             <div>
-              <span className="text-3xl font-bold text-slate-900 dark:text-white block">Fleetify</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white block">{t("fleetify")}</span>
               <span className="text-teal-600 dark:text-teal-400 text-sm">نظام إدارة الأساطيل</span>
             </div>
           </motion.div>
@@ -343,7 +345,7 @@ export const AuthForm: FC = () => {
               <div className="w-14 h-14 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-2xl">F</span>
               </div>
-              <span className="text-2xl font-bold text-slate-900 dark:text-white">Fleetify</span>
+              <span className="text-2xl font-bold text-slate-900 dark:text-white">{t("fleetify")}</span>
             </motion.div>
             <p className="text-slate-600 dark:text-slate-400">نظام إدارة تأجير السيارات المتكامل</p>
           </motion.div>

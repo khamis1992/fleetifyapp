@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -45,7 +46,8 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   if (loading) {
     return (
       <div className="rounded-md border">
-        <Table>
+        <ResponsiveTable>
+<Table>
           <TableHeader>
             <TableRow>
               <TableHead>العقار</TableHead>
@@ -92,6 +94,7 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
             ))}
           </TableBody>
         </Table>
+</ResponsiveTable>
       </div>
     );
   }
@@ -99,7 +102,8 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   if (properties.length === 0) {
     return (
       <div className="rounded-md border">
-        <Table>
+        <ResponsiveTable>
+<Table>
           <TableHeader>
             <TableRow>
               <TableHead>العقار</TableHead>
@@ -119,13 +123,15 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
             </TableRow>
           </TableBody>
         </Table>
+</ResponsiveTable>
       </div>
     );
   }
 
   return (
     <div className="rounded-md border">
-      <Table>
+      <ResponsiveTable>
+<Table>
         <TableHeader>
           <TableRow>
             <TableHead>العقار</TableHead>
@@ -280,6 +286,7 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
           ))}
         </TableBody>
       </Table>
+</ResponsiveTable>
     </div>
   );
 };

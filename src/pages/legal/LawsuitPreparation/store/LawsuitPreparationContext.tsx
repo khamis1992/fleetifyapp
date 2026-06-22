@@ -17,6 +17,7 @@ import { lawsuitService } from '@/services/LawsuitService';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { toast } from 'sonner';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   lawsuitPreparationReducer, 
   createInitialState 
@@ -38,6 +39,7 @@ const LawsuitPreparationContext = createContext<LawsuitPreparationContextValue |
 // ==========================================
 
 export function useLawsuitPreparationContext() {
+  const { t } = useFleetifyTranslation("ui");
   const context = useContext(LawsuitPreparationContext);
   if (!context) {
     throw new Error('useLawsuitPreparationContext must be used within LawsuitPreparationProvider');
@@ -698,7 +700,7 @@ export function LawsuitPreparationProvider({
     <div class="header">
       <h1>فاتورة مستحقة</h1>
       <p>شركة العراف لتأجير السيارات</p>
-      <p>Al-Araf Car Rental Company</p>
+      <p>{t("alarafCarRentalCompany")}</p>
     </div>
     
     <div class="content">

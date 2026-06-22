@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { useLatePaymentCustomers, useAutoCreateLegalCases } from '@/hooks/usePaymentLegalIntegration';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -204,7 +205,8 @@ export const DefaultersList: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <Table>
+            <ResponsiveTable>
+<Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
@@ -301,6 +303,7 @@ export const DefaultersList: React.FC = () => {
                 )}
               </TableBody>
             </Table>
+</ResponsiveTable>
           </div>
         </CardContent>
       </Card>

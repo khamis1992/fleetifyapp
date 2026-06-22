@@ -12,6 +12,7 @@ import { ar } from 'date-fns/locale';
 import type { Contract } from '@/types/contracts';
 import { toHijri, toHijriWithMonthName } from '@/lib/hijriDate';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface AlarafOfficialContractCompleteProps {
   contract: Contract & {
     customer?: any;
@@ -19,7 +20,9 @@ interface AlarafOfficialContractCompleteProps {
   };
 }
 
-export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContractCompleteProps) => {
+export const AlarafOfficialContractComplete = ({
+   contract }: AlarafOfficialContractCompleteProps) => {
+  const { t } = useFleetifyTranslation("ui");
   // حساب جدول الدفعات تلقائياً
   const paymentSchedule = useMemo(() => {
     if (!contract.start_date || !contract.monthly_amount) return [];
@@ -161,7 +164,7 @@ export const AlarafOfficialContractComplete = ({ contract }: AlarafOfficialContr
         <div className="header">
           <div className="header-right">
             <div className="company-name">شركة العراف لتأجير السيارات ذ.م.م</div>
-            <div className="company-name-en">AL-ARAF CAR RENTAL L.L.C</div>
+            <div className="company-name-en">{t("alarafCarRentalLlc")}</div>
             <div className="company-details">
               السجل التجاري: 179973 • دولة قطر<br />
               المقر: أم صلال محمد - الشارع التجاري - مبنى رقم 79 - الطابق الأول - مكتب 2

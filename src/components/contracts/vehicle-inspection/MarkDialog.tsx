@@ -24,6 +24,7 @@ import { Camera, X, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import {
   VehicleMark,
   ZoneCondition,
@@ -73,6 +74,8 @@ export function MarkDialog({
   existingMark,
   contractId = '',
 }: MarkDialogProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
 
   // Form state

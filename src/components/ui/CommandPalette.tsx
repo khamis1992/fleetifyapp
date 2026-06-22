@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const iconMap: Record<string, React.ElementType> = {
   Home,
   Users,
@@ -56,6 +57,7 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export const CommandPalette: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const {
     open,
     setOpen,
@@ -218,9 +220,7 @@ export const CommandPalette: React.FC = () => {
                       <span>للتنقل</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-                        Enter
-                      </kbd>
+                      <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">{t("enter")}</kbd>
                       <span>للاختيار</span>
                     </div>
                   </div>

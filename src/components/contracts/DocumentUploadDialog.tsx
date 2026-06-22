@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export interface DocumentUploadData {
   document_type: string;
   document_name: string;
@@ -85,6 +86,8 @@ export function DocumentUploadDialog({
   onSubmit,
   isSubmitting = false
 }: DocumentUploadDialogProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const [documentType, setDocumentType] = useState<string>('general');
   const [documentName, setDocumentName] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);

@@ -15,6 +15,7 @@ import { PropertyContract } from "@/modules/properties/types";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "sonner";
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // Form validation schema
 const contractSchema = z.object({
   property_id: z.string().min(1, "يجب اختيار العقار"),
@@ -56,6 +57,8 @@ export function PropertyContractWizard({
   initialData,
   isEditing = false
 }: PropertyContractWizardProps) {
+  const { t } = useFleetifyTranslation("ui");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const companyId = useCurrentCompanyId();
   

@@ -12,6 +12,7 @@ import { Palette, Type, Layout, Code, Save, Eye } from 'lucide-react';
 import { useLandingThemes } from '@/hooks/useLandingThemes';
 import { toast } from 'sonner';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface Theme {
   id: string;
   theme_name: string;
@@ -26,6 +27,7 @@ interface Theme {
 }
 
 export const LandingThemeSettings: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { themes, loading, createTheme, updateTheme, deleteTheme } = useLandingThemes();
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
@@ -209,16 +211,14 @@ export const LandingThemeSettings: React.FC = () => {
                 <SelectItem key={theme.id} value={theme.id}>
                   <div className="flex items-center gap-2">
                     {theme.theme_name}
-                    {theme.is_default && <Badge variant="outline">Default</Badge>}
+                    {theme.is_default && <Badge variant="outline">{t("default")}</Badge>}
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Button onClick={handleCreateTheme}>
-            Create New Theme
-          </Button>
+          <Button onClick={handleCreateTheme}>{t("createNewTheme")}</Button>
         </div>
         
         <div className="flex items-center gap-2">
@@ -232,9 +232,7 @@ export const LandingThemeSettings: React.FC = () => {
           
           {selectedTheme && (
             <Button onClick={() => handleUpdateTheme(selectedTheme)}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
+              <Save className="h-4 w-4 mr-2" />{t("saveChanges")}</Button>
           )}
         </div>
       </div>
@@ -245,21 +243,13 @@ export const LandingThemeSettings: React.FC = () => {
             <Tabs defaultValue="colors" className="space-y-4">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="colors" className="flex items-center gap-2">
-                  <Palette className="h-4 w-4" />
-                  Colors
-                </TabsTrigger>
+                  <Palette className="h-4 w-4" />{t("colors")}</TabsTrigger>
                 <TabsTrigger value="fonts" className="flex items-center gap-2">
-                  <Type className="h-4 w-4" />
-                  Typography
-                </TabsTrigger>
+                  <Type className="h-4 w-4" />{t("typography")}</TabsTrigger>
                 <TabsTrigger value="spacing" className="flex items-center gap-2">
-                  <Layout className="h-4 w-4" />
-                  Spacing
-                </TabsTrigger>
+                  <Layout className="h-4 w-4" />{t("spacing")}</TabsTrigger>
                 <TabsTrigger value="custom" className="flex items-center gap-2">
-                  <Code className="h-4 w-4" />
-                  Custom CSS
-                </TabsTrigger>
+                  <Code className="h-4 w-4" />{t("customCss")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="colors" className="space-y-4">
@@ -290,7 +280,7 @@ export const LandingThemeSettings: React.FC = () => {
               <TabsContent value="fonts" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Typography Settings</CardTitle>
+                    <CardTitle>{t("typographySettings")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {Object.entries(selectedTheme.fonts).map(([key, value]) => (
@@ -310,7 +300,7 @@ export const LandingThemeSettings: React.FC = () => {
               <TabsContent value="spacing" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Spacing Configuration</CardTitle>
+                    <CardTitle>{t("spacingConfiguration")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {Object.entries(selectedTheme.spacing).map(([key, value]) => (
@@ -330,7 +320,7 @@ export const LandingThemeSettings: React.FC = () => {
               <TabsContent value="custom" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Custom CSS</CardTitle>
+                    <CardTitle>{t("customCss")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Textarea
@@ -351,11 +341,11 @@ export const LandingThemeSettings: React.FC = () => {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Theme Settings</CardTitle>
+                <CardTitle>{t("themeSettings")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Theme Name (English)</Label>
+                  <Label>{t("themeNameEnglish")}</Label>
                   <Input
                     value={selectedTheme.theme_name}
                     onChange={(e) => setSelectedTheme({
@@ -366,7 +356,7 @@ export const LandingThemeSettings: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Theme Name (Arabic)</Label>
+                  <Label>{t("themeNameArabic")}</Label>
                   <Input
                     value={selectedTheme.theme_name_ar || ''}
                     onChange={(e) => setSelectedTheme({
@@ -384,7 +374,7 @@ export const LandingThemeSettings: React.FC = () => {
                       is_default: checked
                     })}
                   />
-                  <Label>Default Theme</Label>
+                  <Label>{t("defaultTheme")}</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -395,31 +385,27 @@ export const LandingThemeSettings: React.FC = () => {
                       is_active: checked
                     })}
                   />
-                  <Label>Active</Label>
+                  <Label>{t("active")}</Label>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Theme Actions</CardTitle>
+                <CardTitle>{t("themeActions")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button
                   variant="outline"
                   className="w-full"
                   onClick={handleDuplicateTheme}
-                >
-                  Duplicate Theme
-                </Button>
+                >{t("duplicateTheme")}</Button>
 
                 <Button
                   variant="outline"
                   className="w-full"
                   onClick={handleExportTheme}
-                >
-                  Export Theme
-                </Button>
+                >{t("exportTheme")}</Button>
                 
                 <Button 
                   variant="destructive" 
@@ -436,13 +422,9 @@ export const LandingThemeSettings: React.FC = () => {
       ) : (
         <div className="text-center py-12">
           <Palette className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Theme Selected</h3>
-          <p className="text-muted-foreground mb-4">
-            Select an existing theme to edit or create a new one to get started.
-          </p>
-          <Button onClick={handleCreateTheme}>
-            Create Your First Theme
-          </Button>
+          <h3 className="text-lg font-semibold mb-2">{t("noThemeSelected")}</h3>
+          <p className="text-muted-foreground mb-4">{t("selectAnExistingTheme")}</p>
+          <Button onClick={handleCreateTheme}>{t("createYourFirstTheme")}</Button>
         </div>
       )}
     </div>

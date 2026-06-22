@@ -12,62 +12,64 @@ import { FeatureManagement } from '@/components/super-admin/settings/FeatureMana
 import { SystemIntegrations } from '@/components/super-admin/settings/SystemIntegrations';
 import { BulkOperations } from '@/components/super-admin/settings/BulkOperations';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 const SuperAdminSettings: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const settingsTabs = [
     {
       id: 'security',
-      label: 'Security & Access',
+      label: t("securityAccess"),
       icon: Shield,
-      description: 'System security, authentication, and access control',
+      description: t("systemSecurityAuthenticationAnd"),
       component: SystemSecuritySettings,
     },
     {
       id: 'features',
-      label: 'Feature Management',
+      label: t("featureManagement"),
       icon: Settings,
-      description: 'Enable/disable features and manage subscription plans',
+      description: t("enabledisableFeaturesAndManage"),
       component: FeatureManagement,
     },
     {
       id: 'companies',
-      label: 'Company Management',
+      label: t("companyManagement"),
       icon: Building2,
-      description: 'Manage company settings and configurations',
+      description: t("manageCompanySettingsAnd"),
       component: BulkOperations,
     },
     {
       id: 'branding',
-      label: 'Global Branding',
+      label: t("globalBranding"),
       icon: Palette,
-      description: 'System-wide branding and appearance settings',
+      description: t("systemwideBrandingAndAppearance"),
       component: CompanyBrandingSettings,
     },
     {
       id: 'templates',
-      label: 'Template Management',
+      label: t("templateManagement"),
       icon: FileText,
-      description: 'Manage global templates and document settings',
+      description: t("manageGlobalTemplatesAnd"),
       component: TemplateManagement,
     },
     {
       id: 'notifications',
-      label: 'Notifications',
+      label: t("notifications"),
       icon: Bell,
-      description: 'Global notification settings and email configurations',
+      description: t("globalNotificationSettingsAnd"),
       component: GlobalNotificationSettings,
     },
     {
       id: 'database',
-      label: 'Database',
+      label: t("database"),
       icon: Database,
-      description: 'Database management, backups, and maintenance',
+      description: t("databaseManagementBackupsAnd"),
       component: DatabaseManagement,
     },
     {
       id: 'integrations',
-      label: 'Integrations',
+      label: t("integrations"),
       icon: Users,
-      description: 'Third-party integrations and API management',
+      description: t("thirdpartyIntegrationsAndApi"),
       component: SystemIntegrations,
     },
   ];
@@ -87,12 +89,8 @@ const SuperAdminSettings: React.FC = () => {
                   <Settings className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-teal-600 bg-clip-text text-transparent">
-                    System Settings
-                  </h1>
-                  <p className="text-slate-600 text-lg">
-                    Configure system-wide settings and manage platform features
-                  </p>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-teal-600 bg-clip-text text-transparent">{t("systemSettings")}</h1>
+                  <p className="text-slate-600 text-lg">{t("configureSystemwideSettingsAnd")}</p>
                 </div>
               </div>
             </div>
@@ -104,12 +102,8 @@ const SuperAdminSettings: React.FC = () => {
       <Card className="border-0 shadow-lg bg-white border border-slate-200 rounded-xl hover:border-teal-500/50 hover:shadow-sm transition-all">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-900">
-            <Settings className="h-5 w-5 text-teal-600" />
-            Configuration Management
-          </CardTitle>
-          <CardDescription className="text-slate-600">
-            Manage all system-wide settings from this centralized control panel
-          </CardDescription>
+            <Settings className="h-5 w-5 text-teal-600" />{t("configurationManagement")}</CardTitle>
+          <CardDescription className="text-slate-600">{t("manageAllSystemwideSettings")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="security" className="space-y-6">

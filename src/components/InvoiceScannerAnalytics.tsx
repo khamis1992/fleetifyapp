@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -51,6 +52,7 @@ interface AnalyticsData {
 }
 
 const InvoiceScannerAnalytics: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const [timeRange, setTimeRange] = useState('7d');
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -142,7 +144,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
-              <span className="ml-2 text-lg">Loading analytics data...</span>
+              <span className="ml-2 text-lg">{t("loadingAnalyticsData")}</span>
             </div>
           </CardContent>
         </Card>
@@ -155,8 +157,8 @@ const InvoiceScannerAnalytics: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Invoice Scanner Analytics</h1>
-          <p className="text-slate-600">Comprehensive performance metrics and insights</p>
+          <h1 className="text-3xl font-bold">{t("invoiceScannerAnalytics")}</h1>
+          <p className="text-slate-600">{t("comprehensivePerformanceMetricsAnd")}</p>
         </div>
         <div className="flex gap-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -171,13 +173,9 @@ const InvoiceScannerAnalytics: React.FC = () => {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={refreshData} disabled={isLoading}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+            <RefreshCw className="h-4 w-4 mr-2" />{t("refresh")}</Button>
           <Button onClick={exportReport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
+            <Download className="h-4 w-4 mr-2" />{t("exportReport")}</Button>
         </div>
       </div>
 
@@ -187,7 +185,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Total Scans</p>
+                <p className="text-sm font-medium text-slate-600">{t("totalScans")}</p>
                 <p className="text-3xl font-bold text-blue-600">{analytics.processingMetrics.totalScans.toLocaleString()}</p>
                 <p className="text-xs text-slate-500">+12.5% vs last period</p>
               </div>
@@ -200,7 +198,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Avg Processing Time</p>
+                <p className="text-sm font-medium text-slate-600">{t("avgProcessingTime")}</p>
                 <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.avgProcessingTime, 'time')}`}>
                   {analytics.processingMetrics.avgProcessingTime}s
                 </p>
@@ -215,7 +213,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Success Rate</p>
+                <p className="text-sm font-medium text-slate-600">{t("successRate")}</p>
                 <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.successRate, 'percentage')}`}>
                   {analytics.processingMetrics.successRate}%
                 </p>
@@ -230,7 +228,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Avg Accuracy</p>
+                <p className="text-sm font-medium text-slate-600">{t("avgAccuracy")}</p>
                 <p className={`text-3xl font-bold ${getMetricColor(analytics.processingMetrics.avgAccuracy, 'percentage')}`}>
                   {analytics.processingMetrics.avgAccuracy}%
                 </p>
@@ -245,10 +243,10 @@ const InvoiceScannerAnalytics: React.FC = () => {
       {/* Detailed Analytics Tabs */}
       <Tabs defaultValue="performance" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
-          <TabsTrigger value="productivity">User Productivity</TabsTrigger>
-          <TabsTrigger value="financial">Financial Impact</TabsTrigger>
-          <TabsTrigger value="trends">Quality Trends</TabsTrigger>
+          <TabsTrigger value="performance">{t("performanceMetrics")}</TabsTrigger>
+          <TabsTrigger value="productivity">{t("userProductivity")}</TabsTrigger>
+          <TabsTrigger value="financial">{t("financialImpact")}</TabsTrigger>
+          <TabsTrigger value="trends">{t("qualityTrends")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="performance">
@@ -256,9 +254,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Daily Processing Volume
-                </CardTitle>
+                  <BarChart3 className="h-5 w-5" />{t("dailyProcessingVolume")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -282,12 +278,12 @@ const InvoiceScannerAnalytics: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Processing Efficiency</CardTitle>
+                <CardTitle>{t("processingEfficiency")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span>OCR Accuracy</span>
+                    <span>{t("ocrAccuracy")}</span>
                     <span className="font-medium">{analytics.processingMetrics.avgAccuracy}%</span>
                   </div>
                   <Progress value={analytics.processingMetrics.avgAccuracy} className="h-2" />
@@ -295,7 +291,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span>Success Rate</span>
+                    <span>{t("successRate")}</span>
                     <span className="font-medium">{analytics.processingMetrics.successRate}%</span>
                   </div>
                   <Progress value={analytics.processingMetrics.successRate} className="h-2" />
@@ -303,7 +299,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span>Speed Performance</span>
+                    <span>{t("speedPerformance")}</span>
                     <span className="font-medium">{100 - (analytics.processingMetrics.avgProcessingTime * 10)}%</span>
                   </div>
                   <Progress value={100 - (analytics.processingMetrics.avgProcessingTime * 10)} className="h-2" />
@@ -318,14 +314,12 @@ const InvoiceScannerAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-blue-500" />
-                  Time Savings
-                </CardTitle>
+                  <Clock className="h-5 w-5 text-blue-500" />{t("timeSavings")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <p className="text-4xl font-bold text-blue-600">{analytics.userProductivity.timeSaved}</p>
-                  <p className="text-lg font-medium">Hours Saved</p>
+                  <p className="text-lg font-medium">{t("hoursSaved")}</p>
                   <p className="text-sm text-slate-500 mt-2">
                     Equivalent to {Math.round(analytics.userProductivity.timeSaved / 8)} working days
                   </p>
@@ -339,20 +333,14 @@ const InvoiceScannerAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-orange-500" />
-                  Error Reduction
-                </CardTitle>
+                  <AlertTriangle className="h-5 w-5 text-orange-500" />{t("errorReduction")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <p className="text-4xl font-bold text-orange-600">{analytics.userProductivity.errorReduction}%</p>
-                  <p className="text-lg font-medium">Fewer Errors</p>
-                  <p className="text-sm text-slate-500 mt-2">
-                    Manual entry error rate dropped significantly
-                  </p>
-                  <Badge className="mt-3 bg-orange-100 text-orange-800">
-                    Excellent improvement
-                  </Badge>
+                  <p className="text-lg font-medium">{t("fewerErrors")}</p>
+                  <p className="text-sm text-slate-500 mt-2">{t("manualEntryErrorRate")}</p>
+                  <Badge className="mt-3 bg-orange-100 text-orange-800">{t("excellentImprovement")}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -360,17 +348,13 @@ const InvoiceScannerAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-purple-500" />
-                  Automation Rate
-                </CardTitle>
+                  <Zap className="h-5 w-5 text-purple-500" />{t("automationRate")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center">
                   <p className="text-4xl font-bold text-purple-600">{analytics.userProductivity.automationRate}%</p>
-                  <p className="text-lg font-medium">Auto-Processed</p>
-                  <p className="text-sm text-slate-500 mt-2">
-                    Invoices processed without manual intervention
-                  </p>
+                  <p className="text-lg font-medium">{t("autoprocessed")}</p>
+                  <p className="text-sm text-slate-500 mt-2">{t("invoicesProcessedWithoutManual")}</p>
                   <Badge className="mt-3 bg-purple-100 text-purple-800">
                     Target: 85%
                   </Badge>
@@ -385,16 +369,14 @@ const InvoiceScannerAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-green-500" />
-                  Cost Savings Analysis
-                </CardTitle>
+                  <DollarSign className="h-5 w-5 text-green-500" />{t("costSavingsAnalysis")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center">
                   <p className="text-5xl font-bold text-green-600">
                     ${analytics.financialImpact.costSavings.toLocaleString()}
                   </p>
-                  <p className="text-xl font-medium">Total Savings</p>
+                  <p className="text-xl font-medium">{t("totalSavings")}</p>
                 </div>
 
                 <div className="space-y-3">
@@ -417,14 +399,12 @@ const InvoiceScannerAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-blue-500" />
-                  ROI & Efficiency
-                </CardTitle>
+                  <TrendingUp className="h-5 w-5 text-blue-500" />{t("roiEfficiency")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span>Return on Investment</span>
+                    <span>{t("returnOnInvestment")}</span>
                     <span className="font-bold text-2xl text-green-600">{analytics.financialImpact.roi}%</span>
                   </div>
                   <Progress value={Math.min(analytics.financialImpact.roi, 100)} className="h-3" />
@@ -433,11 +413,11 @@ const InvoiceScannerAnalytics: React.FC = () => {
 
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span>Efficiency Gain</span>
+                    <span>{t("efficiencyGain")}</span>
                     <span className="font-bold text-2xl text-blue-600">{analytics.financialImpact.efficiencyGain}%</span>
                   </div>
                   <Progress value={analytics.financialImpact.efficiencyGain} className="h-3" />
-                  <p className="text-sm text-slate-500 mt-1">Faster invoice processing workflow</p>
+                  <p className="text-sm text-slate-500 mt-1">{t("fasterInvoiceProcessingWorkflow")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -448,33 +428,31 @@ const InvoiceScannerAnalytics: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Quality & Accuracy Trends
-              </CardTitle>
+                <Calendar className="h-5 w-5" />{t("qualityAccuracyTrends")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-600">+{analytics.qualityTrends.accuracyImprovement}%</p>
-                  <p className="font-medium">Accuracy Improvement</p>
-                  <p className="text-sm text-slate-500">Since system deployment</p>
+                  <p className="font-medium">{t("accuracyImprovement")}</p>
+                  <p className="text-sm text-slate-500">{t("sinceSystemDeployment")}</p>
                 </div>
                 
                 <div className="text-center">
                   <p className="text-3xl font-bold text-blue-600">{analytics.qualityTrends.confidenceScore}%</p>
-                  <p className="font-medium">Avg Confidence Score</p>
-                  <p className="text-sm text-slate-500">Quality of matches</p>
+                  <p className="font-medium">{t("avgConfidenceScore")}</p>
+                  <p className="text-sm text-slate-500">{t("qualityOfMatches")}</p>
                 </div>
                 
                 <div className="text-center">
                   <p className="text-3xl font-bold text-orange-600">{analytics.qualityTrends.failureRate}%</p>
-                  <p className="font-medium">Failure Rate</p>
-                  <p className="text-sm text-slate-500">Processing failures</p>
+                  <p className="font-medium">{t("failureRate")}</p>
+                  <p className="text-sm text-slate-500">{t("processingFailures")}</p>
                 </div>
               </div>
               
               <div className="mt-8 p-4 bg-slate-50 rounded-lg">
-                <h4 className="font-medium mb-3">Key Insights & Recommendations</h4>
+                <h4 className="font-medium mb-3">{t("keyInsightsRecommendations")}</h4>
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
@@ -486,7 +464,7 @@ const InvoiceScannerAnalytics: React.FC = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
-                    <span>Consider adding more Arabic handwriting training data to improve accuracy</span>
+                    <span>{t("considerAddingMoreArabic")}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <TrendingUp className="h-4 w-4 text-blue-500 mt-0.5" />

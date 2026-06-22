@@ -82,7 +82,9 @@ import { VehicleStatusChangeDialog } from '@/components/fleet/VehicleStatusChang
 import VehicleDocumentDistributionDialog from '@/components/fleet/VehicleDocumentDistributionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { openVehicleFleetHTMLReport } from '@/components/fleet/VehicleFleetHTMLReport';
+import { EmptyState } from '@/components/ui/EmptyState';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 // ===== Helper Functions for Missing Data Detection =====
 
 const getMissingVehicleFields = (vehicle: Vehicle): string[] => {
@@ -645,7 +647,9 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   onCopy,
   onStatusChange,
   onQuickAction,
-}) => {
+}) => 
+ {
+  const { t } = useFleetifyTranslation("ui");
   const config = statusConfig[vehicle.status as keyof typeof statusConfig] || statusConfig.available;
 
   const handleCopyVin = (e: React.MouseEvent) => {
@@ -888,6 +892,7 @@ const StatusChip: React.FC<StatusChipProps> = ({ label, count, status, active, o
 
 // ===== Main Component =====
 const FleetPageRedesigned: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -1128,7 +1133,7 @@ const FleetPageRedesigned: React.FC = () => {
                   <DropdownMenuItem onClick={() => handleExport()} className="gap-2">
                     <FileText className="w-4 h-4 text-green-600" />
                     <div className="flex flex-col">
-                      <span className="font-medium">Excel (XLSX)</span>
+                      <span className="font-medium">{t("excelXlsx")}</span>
                       <span className="text-xs text-slate-500 dark:text-slate-400">ملف جدول بيانات</span>
                     </div>
                   </DropdownMenuItem>

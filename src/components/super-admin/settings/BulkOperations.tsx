@@ -11,7 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Building2, Settings, Download, Upload, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const BulkOperations: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
@@ -37,7 +39,7 @@ export const BulkOperations: React.FC = () => {
     {
       id: 'update_plan',
       name: 'Update Subscription Plan',
-      description: 'Change subscription plan for selected companies',
+      description: t("changeSubscriptionPlanFor"),
       icon: Settings,
       requiresInput: true,
       inputType: 'select',
@@ -46,7 +48,7 @@ export const BulkOperations: React.FC = () => {
     {
       id: 'send_notification',
       name: 'Send Notification',
-      description: 'Send system notification to selected companies',
+      description: t("sendSystemNotificationTo"),
       icon: AlertCircle,
       requiresInput: true,
       inputType: 'text',
@@ -54,21 +56,21 @@ export const BulkOperations: React.FC = () => {
     {
       id: 'export_data',
       name: 'Export Company Data',
-      description: 'Export data for selected companies',
+      description: t("exportDataForSelected"),
       icon: Download,
       requiresInput: false,
     },
     {
       id: 'reset_trial',
       name: 'Reset Trial Period',
-      description: 'Reset trial period for selected companies',
+      description: t("resetTrialPeriodFor"),
       icon: RefreshCw,
       requiresInput: false,
     },
     {
       id: 'suspend_companies',
       name: 'Suspend Companies',
-      description: 'Suspend access for selected companies',
+      description: t("suspendAccessForSelected"),
       icon: Users,
       requiresInput: false,
       dangerous: true,
@@ -94,8 +96,8 @@ export const BulkOperations: React.FC = () => {
   const executeBulkOperation = (operationId: string, input?: string) => {
     if (selectedCompanies.length === 0) {
       toast({
-        title: "No companies selected",
-        description: "Please select at least one company to perform the operation.",
+        title: t("noCompaniesSelected"),
+        description: t("pleaseSelectAtLeast"),
         variant: "destructive",
       });
       return;
@@ -127,8 +129,8 @@ export const BulkOperations: React.FC = () => {
     <div className="space-y-6">
       <Tabs defaultValue="operations" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="operations">Bulk Operations</TabsTrigger>
-          <TabsTrigger value="migration">Data Migration</TabsTrigger>
+          <TabsTrigger value="operations">{t("bulkOperations")}</TabsTrigger>
+          <TabsTrigger value="migration">{t("dataMigration")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="operations" className="space-y-6">
@@ -136,12 +138,8 @@ export const BulkOperations: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                Company Selection
-              </CardTitle>
-              <CardDescription>
-                Select companies to perform bulk operations
-              </CardDescription>
+                <Building2 className="h-5 w-5 text-primary" />{t("companySelection")}</CardTitle>
+              <CardDescription>{t("selectCompaniesToPerform")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
@@ -150,7 +148,7 @@ export const BulkOperations: React.FC = () => {
                     checked={selectedCompanies.length === companies.length}
                     onCheckedChange={handleSelectAll}
                   />
-                  <Label>Select All ({companies.length} companies)</Label>
+                  <Label>{t("selectAllCompanieslengthCompanies")}</Label>
                 </div>
                 <Badge variant="outline">
                   {selectedCompanies.length} selected
@@ -185,18 +183,14 @@ export const BulkOperations: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-primary" />
-                Available Operations
-              </CardTitle>
-              <CardDescription>
-                Perform bulk operations on selected companies
-              </CardDescription>
+                <Settings className="h-5 w-5 text-primary" />{t("availableOperations")}</CardTitle>
+              <CardDescription>{t("performBulkOperationsOn")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {operationProgress.isRunning && (
                 <div className="p-4 border rounded-lg bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">Operation in progress...</span>
+                    <span className="font-medium">{t("operationInProgress")}</span>
                     <span className="text-sm text-muted-foreground">
                       {operationProgress.progress}%
                     </span>
@@ -226,7 +220,7 @@ export const BulkOperations: React.FC = () => {
                     <CardContent className="space-y-3">
                       {operation.requiresInput && (
                         <div className="space-y-2">
-                          <Label>Input</Label>
+                          <Label>{t("input")}</Label>
                           {operation.inputType === 'select' ? (
                             <Select>
                               <SelectTrigger>
@@ -250,9 +244,7 @@ export const BulkOperations: React.FC = () => {
                         variant={operation.dangerous ? 'destructive' : 'default'}
                         onClick={() => executeBulkOperation(operation.id)}
                         disabled={operationProgress.isRunning || selectedCompanies.length === 0}
-                      >
-                        Execute
-                      </Button>
+                      >{t("execute")}</Button>
                     </CardContent>
                   </Card>
                 ))}
@@ -266,9 +258,7 @@ export const BulkOperations: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 text-primary" />
-                Data Migration Tools
-              </CardTitle>
+                <RefreshCw className="h-5 w-5 text-primary" />{t("dataMigrationTools")}</CardTitle>
               <CardDescription>
                 Import/export data and manage system migrations
               </CardDescription>
@@ -276,21 +266,15 @@ export const BulkOperations: React.FC = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button className="h-20 flex-col" variant="outline">
-                  <Upload className="h-6 w-6 mb-2" />
-                  Import Companies
-                </Button>
+                  <Upload className="h-6 w-6 mb-2" />{t("importCompanies")}</Button>
                 <Button className="h-20 flex-col" variant="outline">
-                  <Download className="h-6 w-6 mb-2" />
-                  Export All Data
-                </Button>
+                  <Download className="h-6 w-6 mb-2" />{t("exportAllData")}</Button>
                 <Button className="h-20 flex-col" variant="outline">
-                  <RefreshCw className="h-6 w-6 mb-2" />
-                  Migrate Schema
-                </Button>
+                  <RefreshCw className="h-6 w-6 mb-2" />{t("migrateSchema")}</Button>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium">Migration History</h4>
+                <h4 className="font-medium">{t("migrationHistory")}</h4>
                 <div className="space-y-2">
                   {[
                     { date: '2024-01-15', operation: 'Schema Migration v2.1', status: 'completed' },

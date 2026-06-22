@@ -10,7 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, Mail, MessageSquare, Phone, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 export const GlobalNotificationSettings: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const { toast } = useToast();
   const [emailSettings, setEmailSettings] = useState({
     smtpHost: 'smtp.example.com',
@@ -65,8 +67,8 @@ export const GlobalNotificationSettings: React.FC = () => {
 
   const handleSaveEmailSettings = () => {
     toast({
-      title: "Email settings saved",
-      description: "SMTP configuration has been updated successfully.",
+      title: t("emailSettingsSaved"),
+      description: t("smtpConfigurationHasBeen"),
     });
   };
 
@@ -82,8 +84,8 @@ export const GlobalNotificationSettings: React.FC = () => {
 
   const testEmailConfiguration = () => {
     toast({
-      title: "Test email sent",
-      description: "A test email has been sent to verify the configuration.",
+      title: t("testEmailSent"),
+      description: t("aTestEmailHas"),
     });
   };
 
@@ -93,18 +95,14 @@ export const GlobalNotificationSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
-            Email Configuration
-          </CardTitle>
-          <CardDescription>
-            Configure SMTP settings for system-wide email delivery
-          </CardDescription>
+            <Mail className="h-5 w-5 text-primary" />{t("emailConfiguration")}</CardTitle>
+          <CardDescription>{t("configureSmtpSettingsFor")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="smtp-host">SMTP Host</Label>
+                <Label htmlFor="smtp-host">{t("smtpHost")}</Label>
                 <Input
                   id="smtp-host"
                   value={emailSettings.smtpHost}
@@ -113,7 +111,7 @@ export const GlobalNotificationSettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="smtp-port">SMTP Port</Label>
+                <Label htmlFor="smtp-port">{t("smtpPort")}</Label>
                 <Input
                   id="smtp-port"
                   value={emailSettings.smtpPort}
@@ -122,7 +120,7 @@ export const GlobalNotificationSettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="smtp-security">Security</Label>
+                <Label htmlFor="smtp-security">{t("security")}</Label>
                 <Select 
                   value={emailSettings.smtpSecurity} 
                   onValueChange={(value) => setEmailSettings(prev => ({ ...prev, smtpSecurity: value }))}
@@ -141,7 +139,7 @@ export const GlobalNotificationSettings: React.FC = () => {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="smtp-username">SMTP Username</Label>
+                <Label htmlFor="smtp-username">{t("smtpUsername")}</Label>
                 <Input
                   id="smtp-username"
                   value={emailSettings.smtpUsername}
@@ -150,7 +148,7 @@ export const GlobalNotificationSettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="smtp-password">SMTP Password</Label>
+                <Label htmlFor="smtp-password">{t("smtpPassword")}</Label>
                 <Input
                   id="smtp-password"
                   type="password"
@@ -160,7 +158,7 @@ export const GlobalNotificationSettings: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="from-email">From Email</Label>
+                <Label htmlFor="from-email">{t("fromEmail")}</Label>
                 <Input
                   id="from-email"
                   type="email"
@@ -172,12 +170,8 @@ export const GlobalNotificationSettings: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={handleSaveEmailSettings}>
-              Save Email Settings
-            </Button>
-            <Button variant="outline" onClick={testEmailConfiguration}>
-              Test Configuration
-            </Button>
+            <Button onClick={handleSaveEmailSettings}>{t("saveEmailSettings")}</Button>
+            <Button variant="outline" onClick={testEmailConfiguration}>{t("testConfiguration")}</Button>
           </div>
         </CardContent>
       </Card>
@@ -186,9 +180,7 @@ export const GlobalNotificationSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
-            Global Notification Preferences
-          </CardTitle>
+            <Bell className="h-5 w-5 text-primary" />{t("globalNotificationPreferences")}</CardTitle>
           <CardDescription>
             Configure which notification types are sent through different channels
           </CardDescription>
@@ -204,7 +196,7 @@ export const GlobalNotificationSettings: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <Label>Email</Label>
+                      <Label>{t("email")}</Label>
                     </div>
                     <Switch
                       checked={channels.email}
@@ -244,12 +236,8 @@ export const GlobalNotificationSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Email Templates
-          </CardTitle>
-          <CardDescription>
-            Manage system-wide email templates used for notifications
-          </CardDescription>
+            <Globe className="h-5 w-5 text-primary" />{t("emailTemplates")}</CardTitle>
+          <CardDescription>{t("manageSystemwideEmailTemplates")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -266,17 +254,15 @@ export const GlobalNotificationSettings: React.FC = () => {
                   <Badge variant={template.status === 'active' ? 'default' : 'secondary'}>
                     {template.status}
                   </Badge>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
+                  <Button variant="outline" size="sm">{t("edit")}</Button>
                 </div>
               </div>
             ))}
           </div>
           
           <div className="flex gap-2 mt-6">
-            <Button>Create New Template</Button>
-            <Button variant="outline">Import Templates</Button>
+            <Button>{t("createNewTemplate")}</Button>
+            <Button variant="outline">{t("importTemplates")}</Button>
           </div>
         </CardContent>
       </Card>

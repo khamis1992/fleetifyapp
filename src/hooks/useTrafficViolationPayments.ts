@@ -77,39 +77,34 @@ export function useAllTrafficViolationPayments() {
 
       const { data, error } = await supabase
         .from('traffic_violation_payments')
-        .select(`
-          *,
-          penalties:traffic_violation_id (
-            penalty_number,
-            violation_type,
-            amount,
-            vehicle_id,
-            contract_id,
-            customer_id,
-            customers (
-              first_name,
-              last_name,
-              company_name
-            ),
-            contracts (
-              id,
-              contract_number,
-              status,
-              start_date,
-              end_date,
-              customer_id
-            )
-          )
-        `)
+        .select('*')
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching traffic violations:', error);
+        console.error('Error fetching traffic violation payments:', error);
         throw error;
       }
 
-      return data;
+      // Fetch related violation data separately since no FK relationship is defined
+      const violationIds = Array.from(new Set((data || []).map(p => p.traffic_violation_id).filter(Boolean)));
+      let violationsMap: Record<string, any> = {};
+      if (violationIds.length > 0) {
+        const { data: violations } = await supabase
+          .from('traffic_violations')
+          .select('id, violation_number, violation_type, fine_amount, total_amount, vehicle_id, contract_id, status')
+          .in('id', violationIds);
+        
+        if (violations) {
+          violationsMap = violations.reduce((acc, v) => { acc[v.id] = v; return acc; }, {} as Record<string, any>);
+        }
+      }
+
+      // Enrich payments with violation data
+      return (data || []).map(payment => ({
+        ...payment,
+        penalties: violationsMap[payment.traffic_violation_id] || null,
+      }));
     }
   });
 }

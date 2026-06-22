@@ -1,0 +1,6624 @@
+{
+  "other": {
+    "files": [
+      "src\\components\\ai-chat-assistant\\AIChatWidget.tsx",
+      "src\\components\\auth\\AuthForm.tsx",
+      "src\\components\\command-palette\\CommandPalette.tsx",
+      "src\\components\\common\\LazyLoadErrorBoundary.tsx",
+      "src\\components\\common\\LazyPageWrapper.tsx",
+      "src\\components\\contracts\\AlarafOfficialContractComplete.tsx",
+      "src\\components\\contracts\\ContractDetailsPageRedesigned.tsx",
+      "src\\components\\contracts\\ContractExportDialog.tsx",
+      "src\\components\\contracts\\ContractPrintView.tsx",
+      "src\\components\\contracts\\ContractViolationsTabRedesigned.tsx",
+      "src\\components\\contracts\\DocumentUploadDialog.tsx",
+      "src\\components\\contracts\\ExpressContractForm.tsx",
+      "src\\components\\contracts\\SimpleContractWizard.tsx",
+      "src\\components\\contracts\\vehicle-inspection\\MarkDialog.tsx",
+      "src\\components\\contracts\\vehicle-inspection\\VehicleConditionDialog.tsx",
+      "src\\components\\contracts\\vehicle-inspection\\VisualVehicleDiagram.tsx",
+      "src\\components\\csv\\SmartCSVUpload.tsx",
+      "src\\components\\customers\\CallDialog.tsx",
+      "src\\components\\customers\\CustomerDetailsPageNew.tsx",
+      "src\\components\\customers\\CustomerDocumentDistributionDialog.tsx",
+      "src\\components\\customers\\CustomerExportDialog.tsx",
+      "src\\components\\customers\\tabs\\MissingDataWarnings.tsx",
+      "src\\components\\dashboard\\bento\\BentoDashboard.tsx",
+      "src\\components\\dashboard\\bento\\BentoSidebar.tsx",
+      "src\\components\\finance\\BalanceSheetReport.tsx",
+      "src\\components\\finance\\CashReceiptVoucher.tsx",
+      "src\\components\\finance\\charts\\ExportAccountsUtility.tsx",
+      "src\\components\\finance\\ConflictResolutionDialog.tsx",
+      "src\\components\\finance\\EnhancedJournalEntriesTab.tsx",
+      "src\\components\\finance\\IncomeStatementReport.tsx",
+      "src\\components\\finance\\JournalEntryPermissionsManager.tsx",
+      "src\\components\\finance\\ProfessionalInvoiceTemplate.tsx",
+      "src\\components\\finance\\TrialBalanceReport.tsx",
+      "src\\components\\finance\\UnifiedPrintableDocument.tsx",
+      "src\\components\\fleet\\VehicleConditionDiagram.tsx",
+      "src\\components\\fleet\\VehicleForm.tsx",
+      "src\\components\\fleet\\VehicleGroupManagement.tsx",
+      "src\\components\\help\\content\\ReportsPageHelp.tsx",
+      "src\\components\\i18n\\I18nProvider.tsx",
+      "src\\components\\IntelligentInvoiceScanner.tsx",
+      "src\\components\\invoices\\LateFeeManagement.tsx",
+      "src\\components\\InvoiceScannerAnalytics.tsx",
+      "src\\components\\landing\\enterprise\\EnterpriseFooter.tsx",
+      "src\\components\\landing\\enterprise\\EnterpriseNavbar.tsx",
+      "src\\components\\layouts\\AppSidebar.tsx",
+      "src\\components\\layouts\\BentoLayout.tsx",
+      "src\\components\\layouts\\SuperAdminLayout.tsx",
+      "src\\components\\legal\\EnhancedLegalNoticeGenerator.tsx",
+      "src\\components\\legal\\LegalCaseCreationWizard.tsx",
+      "src\\components\\legal\\LegalComplaintGenerator.tsx",
+      "src\\components\\legal\\NoticeTemplateManager.tsx",
+      "src\\components\\mobile\\employee\\dialogs\\QuickPaymentModal.tsx",
+      "src\\components\\mobile\\employee\\layout\\MobileEmployeeLayout.tsx",
+      "src\\components\\mobile\\MobileDetailLayout.tsx",
+      "src\\components\\mobile\\MobileLayout.tsx",
+      "src\\components\\premium-landing\\FeaturesGrid.tsx",
+      "src\\components\\premium-landing\\PremiumFooter.tsx",
+      "src\\components\\reports\\PropertyExportManager.tsx",
+      "src\\components\\router\\RouteRenderer.tsx",
+      "src\\components\\team\\LeaderboardWidget.tsx",
+      "src\\components\\ui\\CommandPalette.tsx",
+      "src\\components\\ui\\dialog.tsx",
+      "src\\components\\ui\\loading-spinner.tsx",
+      "src\\components\\ui\\sheet.tsx",
+      "src\\components\\ui\\sidebar.tsx",
+      "src\\modules\\properties\\components\\contracts\\PropertyContractWizard.tsx",
+      "src\\pages\\AboutUs.tsx",
+      "src\\pages\\admin\\QualityDashboard.tsx",
+      "src\\pages\\Careers.tsx",
+      "src\\pages\\customers\\CustomersPageRedesigned.tsx",
+      "src\\pages\\finance\\operations\\ReceivePaymentWorkflow.tsx",
+      "src\\pages\\fleet\\FleetPageRedesigned.tsx",
+      "src\\pages\\fleet\\reports\\components\\ReportFilters.tsx",
+      "src\\pages\\help\\HelpHub.tsx",
+      "src\\pages\\HelpCenter.tsx",
+      "src\\pages\\InvoiceScannerPage.tsx",
+      "src\\pages\\legal\\FinancialDelinquency.tsx",
+      "src\\pages\\legal\\LawsuitPreparation\\components\\DocumentList\\DocumentItem.tsx",
+      "src\\pages\\legal\\LawsuitPreparation\\components\\LegalDocuments.tsx",
+      "src\\pages\\legal\\LawsuitPreparation\\store\\LawsuitPreparationContext.tsx",
+      "src\\pages\\legal\\PrivacyPolicy.tsx",
+      "src\\pages\\legal\\TermsAndConditions.tsx",
+      "src\\pages\\legal\\WhatsAppReminders.tsx",
+      "src\\pages\\mobile\\MobileContractDetails.tsx",
+      "src\\pages\\mobile\\MobileContractWizard.tsx",
+      "src\\pages\\mobile\\MobileHome.tsx",
+      "src\\pages\\mobile\\MobileOverdue.tsx",
+      "src\\pages\\NativeMobileDemo.tsx",
+      "src\\pages\\NotFound.tsx",
+      "src\\pages\\onboarding\\Onboarding.tsx",
+      "src\\pages\\Quotations.tsx",
+      "src\\pages\\reports\\ReportsHub.tsx",
+      "src\\pages\\settings\\WhatsAppSettings.tsx"
+    ],
+    "file_key_map": {
+      "src\\components\\ai-chat-assistant\\AIChatWidget.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify AI Assistant",
+          "key": "fleetifyAiAssistant",
+          "line": 635
+        }
+      ],
+      "src\\components\\auth\\AuthForm.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 240
+        },
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 346
+        }
+      ],
+      "src\\components\\command-palette\\CommandPalette.tsx": [
+        {
+          "type": "jsx",
+          "text": "ESC",
+          "key": "esc",
+          "line": 369
+        },
+        {
+          "type": "jsx",
+          "text": "Enter",
+          "key": "enter",
+          "line": 458
+        }
+      ],
+      "src\\components\\common\\LazyLoadErrorBoundary.tsx": [
+        {
+          "type": "jsx",
+          "text": "Loading...",
+          "key": "loading",
+          "line": 191
+        }
+      ],
+      "src\\components\\common\\LazyPageWrapper.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 53
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 62
+        }
+      ],
+      "src\\components\\contracts\\AlarafOfficialContractComplete.tsx": [
+        {
+          "type": "jsx",
+          "text": "AL-ARAF CAR RENTAL L.L.C",
+          "key": "alarafCarRentalLlc",
+          "line": 164
+        }
+      ],
+      "src\\components\\contracts\\ContractDetailsPageRedesigned.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 798
+        }
+      ],
+      "src\\components\\contracts\\ContractExportDialog.tsx": [
+        {
+          "type": "label",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 59
+        },
+        {
+          "type": "label",
+          "text": "Excel",
+          "key": "excel",
+          "line": 67
+        },
+        {
+          "type": "label",
+          "text": "JSON",
+          "key": "json",
+          "line": 75
+        }
+      ],
+      "src\\components\\contracts\\ContractPrintView.tsx": [
+        {
+          "type": "jsx",
+          "text": "Alaraf Car Rental",
+          "key": "alarafCarRental1",
+          "line": 151
+        },
+        {
+          "type": "jsx",
+          "text": "Contract Details Summary",
+          "key": "contractDetailsSummary",
+          "line": 179
+        }
+      ],
+      "src\\components\\contracts\\ContractViolationsTabRedesigned.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 110
+        }
+      ],
+      "src\\components\\contracts\\DocumentUploadDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 40
+        }
+      ],
+      "src\\components\\contracts\\ExpressContractForm.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 48
+        }
+      ],
+      "src\\components\\contracts\\SimpleContractWizard.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 81
+        }
+      ],
+      "src\\components\\contracts\\vehicle-inspection\\MarkDialog.tsx": [
+        {
+          "type": "label",
+          "text": "Minor",
+          "key": "minor",
+          "line": 62
+        },
+        {
+          "type": "label",
+          "text": "Moderate",
+          "key": "moderate",
+          "line": 63
+        },
+        {
+          "type": "label",
+          "text": "Severe",
+          "key": "severe",
+          "line": 64
+        }
+      ],
+      "src\\components\\contracts\\vehicle-inspection\\VehicleConditionDialog.tsx": [
+        {
+          "type": "label",
+          "text": "Minor",
+          "key": "minor",
+          "line": 60
+        },
+        {
+          "type": "label",
+          "text": "Moderate",
+          "key": "moderate",
+          "line": 61
+        },
+        {
+          "type": "label",
+          "text": "Severe",
+          "key": "severe",
+          "line": 62
+        }
+      ],
+      "src\\components\\contracts\\vehicle-inspection\\VisualVehicleDiagram.tsx": [
+        {
+          "type": "label",
+          "text": "Exterior",
+          "key": "exterior",
+          "line": 81
+        },
+        {
+          "type": "label",
+          "text": "Interior",
+          "key": "interior",
+          "line": 82
+        },
+        {
+          "type": "label",
+          "text": "Mechanical",
+          "key": "mechanical",
+          "line": 83
+        },
+        {
+          "type": "label",
+          "text": "Sedan",
+          "key": "sedan",
+          "line": 88
+        },
+        {
+          "type": "label",
+          "text": "SUV",
+          "key": "suv",
+          "line": 89
+        },
+        {
+          "type": "label",
+          "text": "Truck",
+          "key": "truck",
+          "line": 90
+        }
+      ],
+      "src\\components\\csv\\SmartCSVUpload.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 28
+        }
+      ],
+      "src\\components\\customers\\CallDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 23
+        }
+      ],
+      "src\\components\\customers\\CustomerDetailsPageNew.tsx": [
+        {
+          "type": "jsx",
+          "text": "VIP",
+          "key": "vip",
+          "line": 620
+        }
+      ],
+      "src\\components\\customers\\CustomerDocumentDistributionDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 544
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 578
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 637
+        }
+      ],
+      "src\\components\\customers\\CustomerExportDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Excel",
+          "key": "excel",
+          "line": 977
+        }
+      ],
+      "src\\components\\customers\\tabs\\MissingDataWarnings.tsx": [
+        {
+          "type": "label",
+          "text": "QID غير صحيح",
+          "key": "qid",
+          "line": 18
+        }
+      ],
+      "src\\components\\dashboard\\bento\\BentoDashboard.tsx": [
+        {
+          "type": "jsx",
+          "text": "AI Assistant",
+          "key": "aiAssistant",
+          "line": 453
+        }
+      ],
+      "src\\components\\dashboard\\bento\\BentoSidebar.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 382
+        }
+      ],
+      "src\\components\\finance\\BalanceSheetReport.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 424
+        },
+        {
+          "type": "jsx",
+          "text": "Excel",
+          "key": "excel",
+          "line": 433
+        },
+        {
+          "type": "jsx",
+          "text": "CSV",
+          "key": "csv",
+          "line": 442
+        }
+      ],
+      "src\\components\\finance\\CashReceiptVoucher.tsx": [
+        {
+          "type": "jsx",
+          "text": "AL ARRAF",
+          "key": "alArraf",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "CAR RENTAL L.L.C",
+          "key": "carRentalLlc",
+          "line": 145
+        },
+        {
+          "type": "jsx",
+          "text": "Receipt Voucher",
+          "key": "receiptVoucher",
+          "line": 150
+        }
+      ],
+      "src\\components\\finance\\charts\\ExportAccountsUtility.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 314
+        },
+        {
+          "type": "jsx",
+          "text": "CSV",
+          "key": "csv",
+          "line": 324
+        },
+        {
+          "type": "jsx",
+          "text": "JSON",
+          "key": "json",
+          "line": 334
+        }
+      ],
+      "src\\components\\finance\\ConflictResolutionDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 25
+        }
+      ],
+      "src\\components\\finance\\EnhancedJournalEntriesTab.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 98
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 99
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 100
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 101
+        }
+      ],
+      "src\\components\\finance\\IncomeStatementReport.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 382
+        },
+        {
+          "type": "jsx",
+          "text": "Excel",
+          "key": "excel",
+          "line": 391
+        },
+        {
+          "type": "jsx",
+          "text": "CSV",
+          "key": "csv",
+          "line": 400
+        }
+      ],
+      "src\\components\\finance\\JournalEntryPermissionsManager.tsx": [
+        {
+          "type": "jsx",
+          "text": "Draft",
+          "key": "draft",
+          "line": 180
+        },
+        {
+          "type": "jsx",
+          "text": "Review",
+          "key": "review",
+          "line": 186
+        },
+        {
+          "type": "jsx",
+          "text": "Approved",
+          "key": "approved",
+          "line": 192
+        },
+        {
+          "type": "jsx",
+          "text": "Posted",
+          "key": "posted",
+          "line": 198
+        }
+      ],
+      "src\\components\\finance\\ProfessionalInvoiceTemplate.tsx": [
+        {
+          "type": "jsx",
+          "text": "Invoice",
+          "key": "invoice",
+          "line": 194
+        },
+        {
+          "type": "jsx",
+          "text": "This invoice was generated by Fleetify Financial System",
+          "key": "thisInvoiceWasGenerated",
+          "line": 337
+        }
+      ],
+      "src\\components\\finance\\TrialBalanceReport.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 291
+        },
+        {
+          "type": "jsx",
+          "text": "Excel",
+          "key": "excel",
+          "line": 300
+        },
+        {
+          "type": "jsx",
+          "text": "CSV",
+          "key": "csv",
+          "line": 309
+        }
+      ],
+      "src\\components\\finance\\UnifiedPrintableDocument.tsx": [
+        {
+          "type": "jsx",
+          "text": "AL ARRAF",
+          "key": "alArraf",
+          "line": 240
+        }
+      ],
+      "src\\components\\fleet\\VehicleConditionDiagram.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 24
+        }
+      ],
+      "src\\components\\fleet\\VehicleForm.tsx": [
+        {
+          "type": "jsx",
+          "text": "Cost Center",
+          "key": "costCenter",
+          "line": 1450
+        }
+      ],
+      "src\\components\\fleet\\VehicleGroupManagement.tsx": [
+        {
+          "type": "jsx",
+          "text": "Loading groups...",
+          "key": "loadingGroups",
+          "line": 77
+        }
+      ],
+      "src\\components\\help\\content\\ReportsPageHelp.tsx": [
+        {
+          "type": "jsx",
+          "text": "Excel (XLSX)",
+          "key": "excelXlsx",
+          "line": 165
+        }
+      ],
+      "src\\components\\i18n\\I18nProvider.tsx": [
+        {
+          "type": "jsx",
+          "text": "Internationalization Error",
+          "key": "internationalizationError",
+          "line": 236
+        },
+        {
+          "type": "jsx",
+          "text": "Reload Page",
+          "key": "reloadPage",
+          "line": 245
+        },
+        {
+          "type": "jsx",
+          "text": "Loading internationalization...",
+          "key": "loadingInternationalization",
+          "line": 259
+        }
+      ],
+      "src\\components\\IntelligentInvoiceScanner.tsx": [
+        {
+          "type": "jsx",
+          "text": "AI-Powered",
+          "key": "aipowered",
+          "line": 401
+        },
+        {
+          "type": "jsx",
+          "text": "Google Vision API",
+          "key": "googleVisionApi",
+          "line": 429
+        },
+        {
+          "type": "title",
+          "text": "Bulk Processing Started",
+          "key": "bulkProcessingStarted",
+          "line": 255
+        },
+        {
+          "type": "title",
+          "text": "Batch Job Created",
+          "key": "batchJobCreated",
+          "line": 288
+        },
+        {
+          "type": "title",
+          "text": "Batch Processing Failed",
+          "key": "batchProcessingFailed",
+          "line": 307
+        },
+        {
+          "type": "title",
+          "text": "Error Processing Files",
+          "key": "errorProcessingFiles",
+          "line": 320
+        }
+      ],
+      "src\\components\\invoices\\LateFeeManagement.tsx": [
+        {
+          "type": "description",
+          "text": "Fee has been added to the invoice",
+          "key": "feeHasBeenAdded",
+          "line": 119
+        },
+        {
+          "type": "description",
+          "text": "Fee has been waived successfully",
+          "key": "feeHasBeenWaived",
+          "line": 157
+        }
+      ],
+      "src\\components\\InvoiceScannerAnalytics.tsx": [
+        {
+          "type": "jsx",
+          "text": "Loading analytics data...",
+          "key": "loadingAnalyticsData",
+          "line": 145
+        },
+        {
+          "type": "jsx",
+          "text": "Invoice Scanner Analytics",
+          "key": "invoiceScannerAnalytics",
+          "line": 158
+        },
+        {
+          "type": "jsx",
+          "text": "Comprehensive performance metrics and insights",
+          "key": "comprehensivePerformanceMetricsAnd",
+          "line": 159
+        },
+        {
+          "type": "jsx",
+          "text": "Refresh",
+          "key": "refresh",
+          "line": 174
+        },
+        {
+          "type": "jsx",
+          "text": "Export Report",
+          "key": "exportReport",
+          "line": 178
+        },
+        {
+          "type": "jsx",
+          "text": "Total Scans",
+          "key": "totalScans",
+          "line": 190
+        },
+        {
+          "type": "jsx",
+          "text": "Avg Processing Time",
+          "key": "avgProcessingTime",
+          "line": 203
+        },
+        {
+          "type": "jsx",
+          "text": "Success Rate",
+          "key": "successRate",
+          "line": 218
+        },
+        {
+          "type": "jsx",
+          "text": "Avg Accuracy",
+          "key": "avgAccuracy",
+          "line": 233
+        },
+        {
+          "type": "jsx",
+          "text": "Performance Metrics",
+          "key": "performanceMetrics",
+          "line": 248
+        },
+        {
+          "type": "jsx",
+          "text": "User Productivity",
+          "key": "userProductivity",
+          "line": 249
+        },
+        {
+          "type": "jsx",
+          "text": "Financial Impact",
+          "key": "financialImpact",
+          "line": 250
+        },
+        {
+          "type": "jsx",
+          "text": "Quality Trends",
+          "key": "qualityTrends",
+          "line": 251
+        },
+        {
+          "type": "jsx",
+          "text": "Daily Processing Volume",
+          "key": "dailyProcessingVolume",
+          "line": 259
+        },
+        {
+          "type": "jsx",
+          "text": "Processing Efficiency",
+          "key": "processingEfficiency",
+          "line": 285
+        },
+        {
+          "type": "jsx",
+          "text": "OCR Accuracy",
+          "key": "ocrAccuracy",
+          "line": 290
+        },
+        {
+          "type": "jsx",
+          "text": "Success Rate",
+          "key": "successRate",
+          "line": 298
+        },
+        {
+          "type": "jsx",
+          "text": "Speed Performance",
+          "key": "speedPerformance",
+          "line": 306
+        },
+        {
+          "type": "jsx",
+          "text": "Time Savings",
+          "key": "timeSavings",
+          "line": 321
+        },
+        {
+          "type": "jsx",
+          "text": "Hours Saved",
+          "key": "hoursSaved",
+          "line": 328
+        },
+        {
+          "type": "jsx",
+          "text": "Error Reduction",
+          "key": "errorReduction",
+          "line": 342
+        },
+        {
+          "type": "jsx",
+          "text": "Fewer Errors",
+          "key": "fewerErrors",
+          "line": 349
+        },
+        {
+          "type": "jsx",
+          "text": "Manual entry error rate dropped significantly",
+          "key": "manualEntryErrorRate",
+          "line": 350
+        },
+        {
+          "type": "jsx",
+          "text": "Excellent improvement",
+          "key": "excellentImprovement",
+          "line": 353
+        },
+        {
+          "type": "jsx",
+          "text": "Automation Rate",
+          "key": "automationRate",
+          "line": 363
+        },
+        {
+          "type": "jsx",
+          "text": "Auto-Processed",
+          "key": "autoprocessed",
+          "line": 370
+        },
+        {
+          "type": "jsx",
+          "text": "Invoices processed without manual intervention",
+          "key": "invoicesProcessedWithoutManual",
+          "line": 371
+        },
+        {
+          "type": "jsx",
+          "text": "Cost Savings Analysis",
+          "key": "costSavingsAnalysis",
+          "line": 388
+        },
+        {
+          "type": "jsx",
+          "text": "Total Savings",
+          "key": "totalSavings",
+          "line": 397
+        },
+        {
+          "type": "jsx",
+          "text": "ROI & Efficiency",
+          "key": "roiEfficiency",
+          "line": 420
+        },
+        {
+          "type": "jsx",
+          "text": "Return on Investment",
+          "key": "returnOnInvestment",
+          "line": 427
+        },
+        {
+          "type": "jsx",
+          "text": "Efficiency Gain",
+          "key": "efficiencyGain",
+          "line": 436
+        },
+        {
+          "type": "jsx",
+          "text": "Faster invoice processing workflow",
+          "key": "fasterInvoiceProcessingWorkflow",
+          "line": 440
+        },
+        {
+          "type": "jsx",
+          "text": "Quality & Accuracy Trends",
+          "key": "qualityAccuracyTrends",
+          "line": 451
+        },
+        {
+          "type": "jsx",
+          "text": "Accuracy Improvement",
+          "key": "accuracyImprovement",
+          "line": 459
+        },
+        {
+          "type": "jsx",
+          "text": "Since system deployment",
+          "key": "sinceSystemDeployment",
+          "line": 460
+        },
+        {
+          "type": "jsx",
+          "text": "Avg Confidence Score",
+          "key": "avgConfidenceScore",
+          "line": 465
+        },
+        {
+          "type": "jsx",
+          "text": "Quality of matches",
+          "key": "qualityOfMatches",
+          "line": 466
+        },
+        {
+          "type": "jsx",
+          "text": "Failure Rate",
+          "key": "failureRate",
+          "line": 471
+        },
+        {
+          "type": "jsx",
+          "text": "Processing failures",
+          "key": "processingFailures",
+          "line": 472
+        },
+        {
+          "type": "jsx",
+          "text": "Key Insights & Recommendations",
+          "key": "keyInsightsRecommendations",
+          "line": 477
+        },
+        {
+          "type": "jsx",
+          "text": "Consider adding more Arabic handwriting training data to improve accuracy",
+          "key": "considerAddingMoreArabic",
+          "line": 489
+        }
+      ],
+      "src\\components\\landing\\enterprise\\EnterpriseFooter.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 52
+        }
+      ],
+      "src\\components\\landing\\enterprise\\EnterpriseNavbar.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 36
+        }
+      ],
+      "src\\components\\layouts\\AppSidebar.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 263
+        }
+      ],
+      "src\\components\\layouts\\BentoLayout.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 143
+        }
+      ],
+      "src\\components\\layouts\\SuperAdminLayout.tsx": [
+        {
+          "type": "jsx",
+          "text": "Super Admin",
+          "key": "superAdmin",
+          "line": 78
+        },
+        {
+          "type": "jsx",
+          "text": "Super Admin",
+          "key": "superAdmin",
+          "line": 185
+        }
+      ],
+      "src\\components\\legal\\EnhancedLegalNoticeGenerator.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 282
+        }
+      ],
+      "src\\components\\legal\\LegalCaseCreationWizard.tsx": [
+        {
+          "type": "label",
+          "text": "Payment Receipts",
+          "key": "paymentReceipts",
+          "line": 1177
+        },
+        {
+          "type": "label",
+          "text": "Photos (Vehicle/Damage)",
+          "key": "photosVehicledamage",
+          "line": 1179
+        },
+        {
+          "type": "label",
+          "text": "Voice Recordings",
+          "key": "voiceRecordings",
+          "line": 1180
+        },
+        {
+          "type": "label",
+          "text": "Witness Statements",
+          "key": "witnessStatements",
+          "line": 1181
+        }
+      ],
+      "src\\components\\legal\\LegalComplaintGenerator.tsx": [
+        {
+          "type": "jsx",
+          "text": "AL-ARAF CAR RENTAL L.L.C",
+          "key": "alarafCarRentalLlc",
+          "line": 493
+        }
+      ],
+      "src\\components\\legal\\NoticeTemplateManager.tsx": [
+        {
+          "type": "description",
+          "text": "Final demand with legal language",
+          "key": "finalDemandWithLegal",
+          "line": 343
+        },
+        {
+          "type": "description",
+          "text": "Legal documents for court filing",
+          "key": "legalDocumentsForCourt",
+          "line": 350
+        },
+        {
+          "type": "description",
+          "text": "Settlement agreement with payment terms",
+          "key": "settlementAgreementWithPayment",
+          "line": 357
+        },
+        {
+          "type": "description",
+          "text": "Receipt acknowledgment for payments",
+          "key": "receiptAcknowledgmentForPayments",
+          "line": 364
+        }
+      ],
+      "src\\components\\mobile\\employee\\dialogs\\QuickPaymentModal.tsx": [
+        {
+          "type": "jsx",
+          "text": "QAR",
+          "key": "qar",
+          "line": 235
+        }
+      ],
+      "src\\components\\mobile\\employee\\layout\\MobileEmployeeLayout.tsx": [
+        {
+          "type": "label",
+          "text": "Home",
+          "key": "home",
+          "line": 41
+        },
+        {
+          "type": "label",
+          "text": "Collections",
+          "key": "collections",
+          "line": 48
+        },
+        {
+          "type": "label",
+          "text": "Contracts",
+          "key": "contracts",
+          "line": 55
+        },
+        {
+          "type": "label",
+          "text": "Tasks",
+          "key": "tasks",
+          "line": 62
+        },
+        {
+          "type": "label",
+          "text": "Performance",
+          "key": "performance",
+          "line": 69
+        }
+      ],
+      "src\\components\\mobile\\MobileDetailLayout.tsx": [
+        {
+          "type": "label",
+          "text": "Home",
+          "key": "home",
+          "line": 20
+        },
+        {
+          "type": "label",
+          "text": "Contracts",
+          "key": "contracts",
+          "line": 21
+        },
+        {
+          "type": "label",
+          "text": "Cars",
+          "key": "cars",
+          "line": 22
+        },
+        {
+          "type": "label",
+          "text": "Overdue",
+          "key": "overdue",
+          "line": 23
+        }
+      ],
+      "src\\components\\mobile\\MobileLayout.tsx": [
+        {
+          "type": "label",
+          "text": "Home",
+          "key": "home",
+          "line": 19
+        },
+        {
+          "type": "label",
+          "text": "Contracts",
+          "key": "contracts",
+          "line": 20
+        },
+        {
+          "type": "label",
+          "text": "Cars",
+          "key": "cars",
+          "line": 21
+        },
+        {
+          "type": "label",
+          "text": "Customers",
+          "key": "customers",
+          "line": 22
+        },
+        {
+          "type": "label",
+          "text": "Overdue",
+          "key": "overdue",
+          "line": 23
+        }
+      ],
+      "src\\components\\premium-landing\\FeaturesGrid.tsx": [
+        {
+          "type": "description",
+          "text": "GDPR متوافق، تحكم كامل في بياناتك، وحق النسيان والتصدير",
+          "key": "gdpr1",
+          "line": 78
+        }
+      ],
+      "src\\components\\premium-landing\\PremiumFooter.tsx": [
+        {
+          "type": "jsx",
+          "text": "GDPR",
+          "key": "gdpr",
+          "line": 196
+        },
+        {
+          "type": "label",
+          "text": "API",
+          "key": "api",
+          "line": 42
+        },
+        {
+          "type": "label",
+          "text": "Facebook",
+          "key": "facebook",
+          "line": 49
+        },
+        {
+          "type": "label",
+          "text": "Twitter",
+          "key": "twitter",
+          "line": 50
+        },
+        {
+          "type": "label",
+          "text": "LinkedIn",
+          "key": "linkedin",
+          "line": 51
+        },
+        {
+          "type": "label",
+          "text": "Instagram",
+          "key": "instagram",
+          "line": 52
+        }
+      ],
+      "src\\components\\reports\\PropertyExportManager.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 44
+        }
+      ],
+      "src\\components\\router\\RouteRenderer.tsx": [
+        {
+          "type": "jsx",
+          "text": "Page not found",
+          "key": "pageNotFound",
+          "line": 162
+        },
+        {
+          "type": "jsx",
+          "text": "Go to Dashboard",
+          "key": "goToDashboard",
+          "line": 166
+        }
+      ],
+      "src\\components\\team\\LeaderboardWidget.tsx": [
+        {
+          "type": "jsx",
+          "text": "Top {topEmployees.length}",
+          "key": "topTopemployeeslength",
+          "line": 103
+        }
+      ],
+      "src\\components\\ui\\CommandPalette.tsx": [
+        {
+          "type": "jsx",
+          "text": "Enter",
+          "key": "enter",
+          "line": 221
+        }
+      ],
+      "src\\components\\ui\\dialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Close",
+          "key": "close",
+          "line": 47
+        }
+      ],
+      "src\\components\\ui\\loading-spinner.tsx": [
+        {
+          "type": "jsx",
+          "text": "Loading...",
+          "key": "loading",
+          "line": 26
+        }
+      ],
+      "src\\components\\ui\\sheet.tsx": [
+        {
+          "type": "jsx",
+          "text": "Close",
+          "key": "close",
+          "line": 76
+        }
+      ],
+      "src\\components\\ui\\sidebar.tsx": [
+        {
+          "type": "jsx",
+          "text": "Navigation Sidebar",
+          "key": "navigationSidebar",
+          "line": 207
+        },
+        {
+          "type": "jsx",
+          "text": "Toggle Sidebar",
+          "key": "toggleSidebar",
+          "line": 282
+        }
+      ],
+      "src\\modules\\properties\\components\\contracts\\PropertyContractWizard.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 47
+        }
+      ],
+      "src\\pages\\AboutUs.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 200
+        }
+      ],
+      "src\\pages\\admin\\QualityDashboard.tsx": [
+        {
+          "type": "jsx",
+          "text": "Quality & compliance monitoring",
+          "key": "qualityComplianceMonitoring",
+          "line": 169
+        },
+        {
+          "type": "jsx",
+          "text": "Refresh",
+          "key": "refresh",
+          "line": 182
+        },
+        {
+          "type": "jsx",
+          "text": "Total Runs",
+          "key": "totalRuns",
+          "line": 194
+        },
+        {
+          "type": "jsx",
+          "text": "Pass Rate",
+          "key": "passRate",
+          "line": 206
+        },
+        {
+          "type": "jsx",
+          "text": "Failed Checks",
+          "key": "failedChecks",
+          "line": 223
+        },
+        {
+          "type": "jsx",
+          "text": "Critical Issues",
+          "key": "criticalIssues",
+          "line": 235
+        },
+        {
+          "type": "jsx",
+          "text": "Overview",
+          "key": "overview",
+          "line": 247
+        },
+        {
+          "type": "jsx",
+          "text": "Agents",
+          "key": "agents",
+          "line": 248
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Logs",
+          "key": "auditLogs",
+          "line": 249
+        },
+        {
+          "type": "jsx",
+          "text": "Quality Trend",
+          "key": "qualityTrend",
+          "line": 258
+        },
+        {
+          "type": "jsx",
+          "text": "Status Distribution",
+          "key": "statusDistribution",
+          "line": 279
+        },
+        {
+          "type": "jsx",
+          "text": "Overall check results",
+          "key": "overallCheckResults",
+          "line": 280
+        },
+        {
+          "type": "jsx",
+          "text": "Agent Performance",
+          "key": "agentPerformance",
+          "line": 309
+        },
+        {
+          "type": "jsx",
+          "text": "Pass Rate",
+          "key": "passRate",
+          "line": 355
+        },
+        {
+          "type": "jsx",
+          "text": "Recent Audit Logs",
+          "key": "recentAuditLogs",
+          "line": 384
+        },
+        {
+          "type": "jsx",
+          "text": "Latest agent activities",
+          "key": "latestAgentActivities",
+          "line": 385
+        }
+      ],
+      "src\\pages\\Careers.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 329
+        }
+      ],
+      "src\\pages\\customers\\CustomersPageRedesigned.tsx": [
+        {
+          "type": "jsx",
+          "text": "VIP",
+          "key": "vip",
+          "line": 187
+        }
+      ],
+      "src\\pages\\finance\\operations\\ReceivePaymentWorkflow.tsx": [
+        {
+          "type": "jsx",
+          "text": "QAR",
+          "key": "qar",
+          "line": 525
+        }
+      ],
+      "src\\pages\\fleet\\FleetPageRedesigned.tsx": [
+        {
+          "type": "jsx",
+          "text": "Excel (XLSX)",
+          "key": "excelXlsx",
+          "line": 1132
+        }
+      ],
+      "src\\pages\\fleet\\reports\\components\\ReportFilters.tsx": [
+        {
+          "type": "label",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 57
+        },
+        {
+          "type": "label",
+          "text": "Excel",
+          "key": "excel",
+          "line": 58
+        },
+        {
+          "type": "label",
+          "text": "CSV",
+          "key": "csv",
+          "line": 59
+        }
+      ],
+      "src\\pages\\help\\HelpHub.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF, Excel, CSV",
+          "key": "pdfExcelCsv",
+          "line": 503
+        }
+      ],
+      "src\\pages\\HelpCenter.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 395
+        }
+      ],
+      "src\\pages\\InvoiceScannerPage.tsx": [
+        {
+          "type": "jsx",
+          "text": "AI-Powered",
+          "key": "aipowered",
+          "line": 80
+        }
+      ],
+      "src\\pages\\legal\\FinancialDelinquency.tsx": [
+        {
+          "type": "label",
+          "text": "Kanban",
+          "key": "kanban",
+          "line": 1148
+        }
+      ],
+      "src\\pages\\legal\\LawsuitPreparation\\components\\DocumentList\\DocumentItem.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 155
+        },
+        {
+          "type": "jsx",
+          "text": "Word",
+          "key": "word",
+          "line": 167
+        }
+      ],
+      "src\\pages\\legal\\LawsuitPreparation\\components\\LegalDocuments.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 302
+        },
+        {
+          "type": "jsx",
+          "text": "Word",
+          "key": "word",
+          "line": 320
+        }
+      ],
+      "src\\pages\\legal\\LawsuitPreparation\\store\\LawsuitPreparationContext.tsx": [
+        {
+          "type": "jsx",
+          "text": "Al-Araf Car Rental Company",
+          "key": "alarafCarRentalCompany",
+          "line": 701
+        }
+      ],
+      "src\\pages\\legal\\PrivacyPolicy.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 230
+        }
+      ],
+      "src\\pages\\legal\\TermsAndConditions.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 309
+        }
+      ],
+      "src\\pages\\legal\\WhatsAppReminders.tsx": [
+        {
+          "type": "jsx",
+          "text": "Edge Function",
+          "key": "edgeFunction",
+          "line": 222
+        },
+        {
+          "type": "jsx",
+          "text": "Database Migration",
+          "key": "databaseMigration",
+          "line": 226
+        },
+        {
+          "type": "jsx",
+          "text": "React Components",
+          "key": "reactComponents",
+          "line": 230
+        }
+      ],
+      "src\\pages\\mobile\\MobileContractDetails.tsx": [
+        {
+          "type": "jsx",
+          "text": "QAR {payment.amount.toLocaleString()}",
+          "key": "qarPaymentamounttolocalestring",
+          "line": 461
+        }
+      ],
+      "src\\pages\\mobile\\MobileContractWizard.tsx": [
+        {
+          "type": "jsx",
+          "text": "QAR {formData.monthlyAmount.toLocaleString()}",
+          "key": "qarFormdatamonthlyamounttolocalestring",
+          "line": 846
+        },
+        {
+          "type": "jsx",
+          "text": "QAR {total.toLocaleString()}",
+          "key": "qarTotaltolocalestring",
+          "line": 850
+        }
+      ],
+      "src\\pages\\mobile\\MobileHome.tsx": [
+        {
+          "type": "jsx",
+          "text": "QAR {stats.monthlyRevenue.toLocaleString()}",
+          "key": "qarStatsmonthlyrevenuetolocalestring",
+          "line": 264
+        }
+      ],
+      "src\\pages\\mobile\\MobileOverdue.tsx": [
+        {
+          "type": "jsx",
+          "text": "QAR {totalOverdue.toLocaleString()}",
+          "key": "qarTotaloverduetolocalestring",
+          "line": 246
+        }
+      ],
+      "src\\pages\\NativeMobileDemo.tsx": [
+        {
+          "type": "jsx",
+          "text": "Bottom Sheet",
+          "key": "bottomSheet",
+          "line": 194
+        },
+        {
+          "type": "jsx",
+          "text": "Spinners",
+          "key": "spinners",
+          "line": 250
+        },
+        {
+          "type": "jsx",
+          "text": "Label Text",
+          "key": "labelText",
+          "line": 294
+        },
+        {
+          "type": "jsx",
+          "text": "Primary",
+          "key": "primary",
+          "line": 307
+        },
+        {
+          "type": "jsx",
+          "text": "Success",
+          "key": "success",
+          "line": 308
+        },
+        {
+          "type": "jsx",
+          "text": "Danger",
+          "key": "danger",
+          "line": 310
+        }
+      ],
+      "src\\pages\\NotFound.tsx": [
+        {
+          "type": "jsx",
+          "text": "Oops! Page not found",
+          "key": "oopsPageNotFound",
+          "line": 22
+        },
+        {
+          "type": "jsx",
+          "text": "Return to Home",
+          "key": "returnToHome",
+          "line": 23
+        }
+      ],
+      "src\\pages\\onboarding\\Onboarding.tsx": [
+        {
+          "type": "jsx",
+          "text": "Fleetify",
+          "key": "fleetify",
+          "line": 197
+        }
+      ],
+      "src\\pages\\Quotations.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 553
+        }
+      ],
+      "src\\pages\\reports\\ReportsHub.tsx": [
+        {
+          "type": "description",
+          "text": "Revenue vs expenses summary",
+          "key": "revenueVsExpensesSummary",
+          "line": 28
+        },
+        {
+          "type": "description",
+          "text": "Assets, liabilities, equity",
+          "key": "assetsLiabilitiesEquity",
+          "line": 29
+        },
+        {
+          "type": "description",
+          "text": "Cash inflows and outflows",
+          "key": "cashInflowsAndOutflows",
+          "line": 30
+        },
+        {
+          "type": "description",
+          "text": "Revenue breakdown by category",
+          "key": "revenueBreakdownByCategory",
+          "line": 31
+        },
+        {
+          "type": "description",
+          "text": "Operating expenses summary",
+          "key": "operatingExpensesSummary",
+          "line": 32
+        },
+        {
+          "type": "description",
+          "text": "Net profit breakdown",
+          "key": "netProfitBreakdown",
+          "line": 33
+        },
+        {
+          "type": "description",
+          "text": "Fleet usage statistics",
+          "key": "fleetUsageStatistics",
+          "line": 35
+        },
+        {
+          "type": "description",
+          "text": "Service and repair costs",
+          "key": "serviceAndRepairCosts",
+          "line": 36
+        },
+        {
+          "type": "description",
+          "text": "Fuel usage breakdown",
+          "key": "fuelUsageBreakdown",
+          "line": 37
+        },
+        {
+          "type": "description",
+          "text": "Vehicle availability status",
+          "key": "vehicleAvailabilityStatus",
+          "line": 38
+        },
+        {
+          "type": "description",
+          "text": "Driver metrics report",
+          "key": "driverMetricsReport",
+          "line": 39
+        },
+        {
+          "type": "description",
+          "text": "Salary and wages summary",
+          "key": "salaryAndWagesSummary",
+          "line": 41
+        },
+        {
+          "type": "description",
+          "text": "Employee attendance data",
+          "key": "employeeAttendanceData",
+          "line": 42
+        },
+        {
+          "type": "description",
+          "text": "Employee leave tracking",
+          "key": "employeeLeaveTracking",
+          "line": 43
+        },
+        {
+          "type": "description",
+          "text": "Staff performance stats",
+          "key": "staffPerformanceStats",
+          "line": 44
+        },
+        {
+          "type": "description",
+          "text": "Legal cases overview",
+          "key": "legalCasesOverview",
+          "line": 46
+        },
+        {
+          "type": "description",
+          "text": "Upcoming renewals",
+          "key": "upcomingRenewals",
+          "line": 47
+        },
+        {
+          "type": "description",
+          "text": "Traffic violations list",
+          "key": "trafficViolationsList",
+          "line": 48
+        }
+      ],
+      "src\\pages\\settings\\WhatsAppSettings.tsx": [
+        {
+          "type": "jsx",
+          "text": "Instance ID",
+          "key": "instanceId",
+          "line": 485
+        },
+        {
+          "type": "jsx",
+          "text": "Token",
+          "key": "token",
+          "line": 495
+        }
+      ]
+    },
+    "string_to_key": {
+      "AI Assistant": "aiAssistant",
+      "AI-Powered": "aipowered",
+      "AL ARRAF": "alArraf",
+      "AL-ARAF CAR RENTAL L.L.C": "alarafCarRentalLlc",
+      "API": "api",
+      "Accuracy Improvement": "accuracyImprovement",
+      "Agent Performance": "agentPerformance",
+      "Agents": "agents",
+      "Al-Araf Car Rental Company": "alarafCarRentalCompany",
+      "Alaraf Car Rental": "alarafCarRental1",
+      "Approved": "approved",
+      "Assets, liabilities, equity": "assetsLiabilitiesEquity",
+      "Audit Logs": "auditLogs",
+      "Auto-Processed": "autoprocessed",
+      "Automation Rate": "automationRate",
+      "Avg Accuracy": "avgAccuracy",
+      "Avg Confidence Score": "avgConfidenceScore",
+      "Avg Processing Time": "avgProcessingTime",
+      "Batch Job Created": "batchJobCreated",
+      "Batch Processing Failed": "batchProcessingFailed",
+      "Bottom Sheet": "bottomSheet",
+      "Bulk Processing Started": "bulkProcessingStarted",
+      "CAR RENTAL L.L.C": "carRentalLlc",
+      "CSV": "csv",
+      "Cars": "cars",
+      "Cash inflows and outflows": "cashInflowsAndOutflows",
+      "Close": "close",
+      "Collections": "collections",
+      "Comprehensive performance metrics and insights": "comprehensivePerformanceMetricsAnd",
+      "Consider adding more Arabic handwriting training data to improve accuracy": "considerAddingMoreArabic",
+      "Contract Details Summary": "contractDetailsSummary",
+      "Contracts": "contracts",
+      "Cost Center": "costCenter",
+      "Cost Savings Analysis": "costSavingsAnalysis",
+      "Critical Issues": "criticalIssues",
+      "Customers": "customers",
+      "Daily Processing Volume": "dailyProcessingVolume",
+      "Danger": "danger",
+      "Database Migration": "databaseMigration",
+      "Draft": "draft",
+      "Driver metrics report": "driverMetricsReport",
+      "ESC": "esc",
+      "Edge Function": "edgeFunction",
+      "Efficiency Gain": "efficiencyGain",
+      "Employee attendance data": "employeeAttendanceData",
+      "Employee leave tracking": "employeeLeaveTracking",
+      "Enter": "enter",
+      "Error Processing Files": "errorProcessingFiles",
+      "Error Reduction": "errorReduction",
+      "Excel": "excel",
+      "Excel (XLSX)": "excelXlsx",
+      "Excellent improvement": "excellentImprovement",
+      "Export Report": "exportReport",
+      "Exterior": "exterior",
+      "Facebook": "facebook",
+      "Failed Checks": "failedChecks",
+      "Failure Rate": "failureRate",
+      "Faster invoice processing workflow": "fasterInvoiceProcessingWorkflow",
+      "Fee has been added to the invoice": "feeHasBeenAdded",
+      "Fee has been waived successfully": "feeHasBeenWaived",
+      "Fewer Errors": "fewerErrors",
+      "Final demand with legal language": "finalDemandWithLegal",
+      "Financial Impact": "financialImpact",
+      "Fleet usage statistics": "fleetUsageStatistics",
+      "Fleetify": "fleetify",
+      "Fleetify AI Assistant": "fleetifyAiAssistant",
+      "Fuel usage breakdown": "fuelUsageBreakdown",
+      "GDPR": "gdpr",
+      "GDPR متوافق، تحكم كامل في بياناتك، وحق النسيان والتصدير": "gdpr1",
+      "Go to Dashboard": "goToDashboard",
+      "Google Vision API": "googleVisionApi",
+      "Home": "home",
+      "Hours Saved": "hoursSaved",
+      "Instagram": "instagram",
+      "Instance ID": "instanceId",
+      "Interior": "interior",
+      "Internationalization Error": "internationalizationError",
+      "Invoice": "invoice",
+      "Invoice Scanner Analytics": "invoiceScannerAnalytics",
+      "Invoices processed without manual intervention": "invoicesProcessedWithoutManual",
+      "JSON": "json",
+      "Kanban": "kanban",
+      "Key Insights & Recommendations": "keyInsightsRecommendations",
+      "Label Text": "labelText",
+      "Latest agent activities": "latestAgentActivities",
+      "Legal cases overview": "legalCasesOverview",
+      "Legal documents for court filing": "legalDocumentsForCourt",
+      "LinkedIn": "linkedin",
+      "Loading analytics data...": "loadingAnalyticsData",
+      "Loading groups...": "loadingGroups",
+      "Loading internationalization...": "loadingInternationalization",
+      "Loading...": "loading",
+      "Manual entry error rate dropped significantly": "manualEntryErrorRate",
+      "Mechanical": "mechanical",
+      "Minor": "minor",
+      "Moderate": "moderate",
+      "Navigation Sidebar": "navigationSidebar",
+      "Net profit breakdown": "netProfitBreakdown",
+      "OCR Accuracy": "ocrAccuracy",
+      "Oops! Page not found": "oopsPageNotFound",
+      "Operating expenses summary": "operatingExpensesSummary",
+      "Overall check results": "overallCheckResults",
+      "Overdue": "overdue",
+      "Overview": "overview",
+      "PDF": "pdf",
+      "PDF, Excel, CSV": "pdfExcelCsv",
+      "Page not found": "pageNotFound",
+      "Pass Rate": "passRate",
+      "Payment Receipts": "paymentReceipts",
+      "Performance": "performance",
+      "Performance Metrics": "performanceMetrics",
+      "Photos (Vehicle/Damage)": "photosVehicledamage",
+      "Posted": "posted",
+      "Primary": "primary",
+      "Processing Efficiency": "processingEfficiency",
+      "Processing failures": "processingFailures",
+      "Promise": "promise",
+      "QAR": "qar",
+      "QAR {formData.monthlyAmount.toLocaleString()}": "qarFormdatamonthlyamounttolocalestring",
+      "QAR {payment.amount.toLocaleString()}": "qarPaymentamounttolocalestring",
+      "QAR {stats.monthlyRevenue.toLocaleString()}": "qarStatsmonthlyrevenuetolocalestring",
+      "QAR {total.toLocaleString()}": "qarTotaltolocalestring",
+      "QAR {totalOverdue.toLocaleString()}": "qarTotaloverduetolocalestring",
+      "QID غير صحيح": "qid",
+      "Quality & Accuracy Trends": "qualityAccuracyTrends",
+      "Quality & compliance monitoring": "qualityComplianceMonitoring",
+      "Quality Trend": "qualityTrend",
+      "Quality Trends": "qualityTrends",
+      "Quality of matches": "qualityOfMatches",
+      "ROI & Efficiency": "roiEfficiency",
+      "React Components": "reactComponents",
+      "Receipt Voucher": "receiptVoucher",
+      "Receipt acknowledgment for payments": "receiptAcknowledgmentForPayments",
+      "Recent Audit Logs": "recentAuditLogs",
+      "Refresh": "refresh",
+      "Reload Page": "reloadPage",
+      "Return on Investment": "returnOnInvestment",
+      "Return to Home": "returnToHome",
+      "Revenue breakdown by category": "revenueBreakdownByCategory",
+      "Revenue vs expenses summary": "revenueVsExpensesSummary",
+      "Review": "review",
+      "SUV": "suv",
+      "Salary and wages summary": "salaryAndWagesSummary",
+      "Sedan": "sedan",
+      "Service and repair costs": "serviceAndRepairCosts",
+      "Settlement agreement with payment terms": "settlementAgreementWithPayment",
+      "Severe": "severe",
+      "Since system deployment": "sinceSystemDeployment",
+      "Speed Performance": "speedPerformance",
+      "Spinners": "spinners",
+      "Staff performance stats": "staffPerformanceStats",
+      "Status Distribution": "statusDistribution",
+      "Success": "success",
+      "Success Rate": "successRate",
+      "Super Admin": "superAdmin",
+      "Tasks": "tasks",
+      "This invoice was generated by Fleetify Financial System": "thisInvoiceWasGenerated",
+      "Time Savings": "timeSavings",
+      "Toggle Sidebar": "toggleSidebar",
+      "Token": "token",
+      "Top {topEmployees.length}": "topTopemployeeslength",
+      "Total Runs": "totalRuns",
+      "Total Savings": "totalSavings",
+      "Total Scans": "totalScans",
+      "Traffic violations list": "trafficViolationsList",
+      "Truck": "truck",
+      "Twitter": "twitter",
+      "Upcoming renewals": "upcomingRenewals",
+      "User Productivity": "userProductivity",
+      "VIP": "vip",
+      "Vehicle availability status": "vehicleAvailabilityStatus",
+      "Voice Recordings": "voiceRecordings",
+      "Witness Statements": "witnessStatements",
+      "Word": "word"
+    }
+  },
+  "audit": {
+    "files": [
+      "src\\components\\audit\\AuditFilters.tsx",
+      "src\\components\\audit\\AuditLogDetailsDialog.tsx",
+      "src\\components\\audit\\AuditSearch.tsx",
+      "src\\components\\audit\\AuditTrailTable.tsx",
+      "src\\components\\audit\\ComplianceMetrics.tsx",
+      "src\\components\\audit\\ExportDialog.tsx",
+      "src\\components\\audit\\IntegrityReport.tsx",
+      "src\\components\\audit\\RealTimeAlerts.tsx",
+      "src\\pages\\audit\\AuditDashboard.tsx",
+      "src\\pages\\AuditLogsPage.tsx"
+    ],
+    "file_key_map": {
+      "src\\components\\audit\\AuditFilters.tsx": [
+        {
+          "type": "jsx",
+          "text": "Filter Options",
+          "key": "filterOptions",
+          "line": 104
+        },
+        {
+          "type": "jsx",
+          "text": "Clear All",
+          "key": "clearAll",
+          "line": 111
+        },
+        {
+          "type": "jsx",
+          "text": "Entity Type",
+          "key": "entityType",
+          "line": 120
+        },
+        {
+          "type": "jsx",
+          "text": "All Entity Types",
+          "key": "allEntityTypes",
+          "line": 131
+        },
+        {
+          "type": "jsx",
+          "text": "Action",
+          "key": "action",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "All Actions",
+          "key": "allActions",
+          "line": 154
+        },
+        {
+          "type": "jsx",
+          "text": "Status",
+          "key": "status",
+          "line": 166
+        },
+        {
+          "type": "jsx",
+          "text": "All Statuses",
+          "key": "allStatuses",
+          "line": 177
+        },
+        {
+          "type": "jsx",
+          "text": "Severity",
+          "key": "severity",
+          "line": 189
+        },
+        {
+          "type": "jsx",
+          "text": "All Severities",
+          "key": "allSeverities",
+          "line": 200
+        },
+        {
+          "type": "jsx",
+          "text": "Verification Status",
+          "key": "verificationStatus",
+          "line": 212
+        },
+        {
+          "type": "jsx",
+          "text": "All Statuses",
+          "key": "allStatuses",
+          "line": 223
+        },
+        {
+          "type": "jsx",
+          "text": "Currency",
+          "key": "currency",
+          "line": 235
+        },
+        {
+          "type": "jsx",
+          "text": "All Currencies",
+          "key": "allCurrencies",
+          "line": 246
+        },
+        {
+          "type": "jsx",
+          "text": "Date Range",
+          "key": "dateRange",
+          "line": 257
+        },
+        {
+          "type": "jsx",
+          "text": "Amount Range",
+          "key": "amountRange",
+          "line": 314
+        },
+        {
+          "type": "jsx",
+          "text": "Search",
+          "key": "search",
+          "line": 333
+        },
+        {
+          "type": "jsx",
+          "text": "Reference Number",
+          "key": "referenceNumber",
+          "line": 343
+        },
+        {
+          "type": "jsx",
+          "text": "Account Code",
+          "key": "accountCode",
+          "line": 353
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Flags",
+          "key": "complianceFlags",
+          "line": 363
+        },
+        {
+          "type": "jsx",
+          "text": "Only show records with compliance violations",
+          "key": "onlyShowRecordsWith",
+          "line": 372
+        },
+        {
+          "type": "jsx",
+          "text": "Active Filters",
+          "key": "activeFilters",
+          "line": 383
+        },
+        {
+          "type": "label",
+          "text": "Payment",
+          "key": "payment",
+          "line": 34
+        },
+        {
+          "type": "label",
+          "text": "Invoice",
+          "key": "invoice",
+          "line": 35
+        },
+        {
+          "type": "label",
+          "text": "Contract",
+          "key": "contract",
+          "line": 36
+        },
+        {
+          "type": "label",
+          "text": "Journal Entry",
+          "key": "journalEntry",
+          "line": 37
+        },
+        {
+          "type": "label",
+          "text": "Account",
+          "key": "account",
+          "line": 38
+        },
+        {
+          "type": "label",
+          "text": "Customer",
+          "key": "customer",
+          "line": 39
+        },
+        {
+          "type": "label",
+          "text": "Success",
+          "key": "success",
+          "line": 47
+        },
+        {
+          "type": "label",
+          "text": "Failed",
+          "key": "failed",
+          "line": 48
+        },
+        {
+          "type": "label",
+          "text": "Pending",
+          "key": "pending",
+          "line": 49
+        },
+        {
+          "type": "label",
+          "text": "Low",
+          "key": "low",
+          "line": 53
+        },
+        {
+          "type": "label",
+          "text": "Medium",
+          "key": "medium",
+          "line": 54
+        },
+        {
+          "type": "label",
+          "text": "High",
+          "key": "high",
+          "line": 55
+        },
+        {
+          "type": "label",
+          "text": "Critical",
+          "key": "critical",
+          "line": 56
+        },
+        {
+          "type": "label",
+          "text": "Verified",
+          "key": "verified",
+          "line": 60
+        },
+        {
+          "type": "label",
+          "text": "Tampered",
+          "key": "tampered",
+          "line": 61
+        },
+        {
+          "type": "label",
+          "text": "Suspicious",
+          "key": "suspicious",
+          "line": 62
+        }
+      ],
+      "src\\components\\audit\\AuditLogDetailsDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Audit Log Details",
+          "key": "auditLogDetails",
+          "line": 103
+        },
+        {
+          "type": "jsx",
+          "text": "Comprehensive view of the audit trail entry",
+          "key": "comprehensiveViewOfThe",
+          "line": 106
+        },
+        {
+          "type": "jsx",
+          "text": "Overview",
+          "key": "overview",
+          "line": 113
+        },
+        {
+          "type": "jsx",
+          "text": "Changes",
+          "key": "changes",
+          "line": 114
+        },
+        {
+          "type": "jsx",
+          "text": "Financial",
+          "key": "financial",
+          "line": 115
+        },
+        {
+          "type": "jsx",
+          "text": "Technical",
+          "key": "technical",
+          "line": 116
+        },
+        {
+          "type": "jsx",
+          "text": "Basic Information",
+          "key": "basicInformation",
+          "line": 128
+        },
+        {
+          "type": "jsx",
+          "text": "User Information",
+          "key": "userInformation",
+          "line": 183
+        },
+        {
+          "type": "jsx",
+          "text": "Entity Details",
+          "key": "entityDetails",
+          "line": 215
+        },
+        {
+          "type": "jsx",
+          "text": "Data Integrity",
+          "key": "dataIntegrity",
+          "line": 251
+        },
+        {
+          "type": "jsx",
+          "text": "Data Changes",
+          "key": "dataChanges",
+          "line": 298
+        },
+        {
+          "type": "jsx",
+          "text": "No change data available for this entry",
+          "key": "noChangeDataAvailable",
+          "line": 321
+        },
+        {
+          "type": "jsx",
+          "text": "Additional Metadata",
+          "key": "additionalMetadata",
+          "line": 331
+        },
+        {
+          "type": "jsx",
+          "text": "Financial Information",
+          "key": "financialInformation",
+          "line": 347
+        },
+        {
+          "type": "jsx",
+          "text": "Technical Details",
+          "key": "technicalDetails",
+          "line": 447
+        },
+        {
+          "type": "jsx",
+          "text": "Close",
+          "key": "close",
+          "line": 547
+        }
+      ],
+      "src\\components\\audit\\AuditSearch.tsx": [
+        {
+          "type": "jsx",
+          "text": "Advanced Audit Search",
+          "key": "advancedAuditSearch",
+          "line": 69
+        },
+        {
+          "type": "jsx",
+          "text": "Search audit trail with advanced filters and criteria",
+          "key": "searchAuditTrailWith",
+          "line": 72
+        },
+        {
+          "type": "jsx",
+          "text": "Clear",
+          "key": "clear",
+          "line": 93
+        },
+        {
+          "type": "jsx",
+          "text": "Entity Type",
+          "key": "entityType",
+          "line": 101
+        },
+        {
+          "type": "jsx",
+          "text": "All Entity Types",
+          "key": "allEntityTypes",
+          "line": 110
+        },
+        {
+          "type": "jsx",
+          "text": "Payment",
+          "key": "payment",
+          "line": 111
+        },
+        {
+          "type": "jsx",
+          "text": "Invoice",
+          "key": "invoice",
+          "line": 112
+        },
+        {
+          "type": "jsx",
+          "text": "Contract",
+          "key": "contract",
+          "line": 113
+        },
+        {
+          "type": "jsx",
+          "text": "Journal Entry",
+          "key": "journalEntry",
+          "line": 114
+        },
+        {
+          "type": "jsx",
+          "text": "Account",
+          "key": "account",
+          "line": 115
+        },
+        {
+          "type": "jsx",
+          "text": "Customer",
+          "key": "customer",
+          "line": 116
+        },
+        {
+          "type": "jsx",
+          "text": "Date Range",
+          "key": "dateRange",
+          "line": 122
+        },
+        {
+          "type": "jsx",
+          "text": "Results Limit",
+          "key": "resultsLimit",
+          "line": 172
+        },
+        {
+          "type": "jsx",
+          "text": "Reset Filters",
+          "key": "resetFilters",
+          "line": 201
+        },
+        {
+          "type": "jsx",
+          "text": "Search Results",
+          "key": "searchResults",
+          "line": 213
+        },
+        {
+          "type": "jsx",
+          "text": "Found {searchResults.length} matching audit entries",
+          "key": "foundSearchresultslengthMatchingAudit",
+          "line": 214
+        },
+        {
+          "type": "jsx",
+          "text": "No results found",
+          "key": "noResultsFound",
+          "line": 280
+        }
+      ],
+      "src\\components\\audit\\AuditTrailTable.tsx": [
+        {
+          "type": "jsx",
+          "text": "Audit Trail",
+          "key": "auditTrail",
+          "line": 148
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Trail",
+          "key": "auditTrail",
+          "line": 167
+        },
+        {
+          "type": "jsx",
+          "text": "Refresh",
+          "key": "refresh",
+          "line": 183
+        },
+        {
+          "type": "jsx",
+          "text": "Entity",
+          "key": "entity",
+          "line": 219
+        },
+        {
+          "type": "jsx",
+          "text": "Amount",
+          "key": "amount",
+          "line": 221
+        },
+        {
+          "type": "jsx",
+          "text": "Status",
+          "key": "status",
+          "line": 222
+        },
+        {
+          "type": "jsx",
+          "text": "Severity",
+          "key": "severity",
+          "line": 223
+        },
+        {
+          "type": "jsx",
+          "text": "Integrity",
+          "key": "integrity",
+          "line": 224
+        },
+        {
+          "type": "jsx",
+          "text": "Details",
+          "key": "details",
+          "line": 225
+        },
+        {
+          "type": "jsx",
+          "text": "Verified",
+          "key": "verified",
+          "line": 283
+        },
+        {
+          "type": "jsx",
+          "text": "Tampered",
+          "key": "tampered",
+          "line": 288
+        },
+        {
+          "type": "jsx",
+          "text": "Unknown",
+          "key": "unknown",
+          "line": 293
+        },
+        {
+          "type": "jsx",
+          "text": "View Details",
+          "key": "viewDetails",
+          "line": 307
+        }
+      ],
+      "src\\components\\audit\\ComplianceMetrics.tsx": [
+        {
+          "type": "jsx",
+          "text": "Compliance Metrics",
+          "key": "complianceMetrics",
+          "line": 74
+        },
+        {
+          "type": "jsx",
+          "text": "Loading compliance data...",
+          "key": "loadingComplianceData",
+          "line": 75
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Monitoring",
+          "key": "complianceMonitoring",
+          "line": 97
+        },
+        {
+          "type": "jsx",
+          "text": "Export Report",
+          "key": "exportReport",
+          "line": 110
+        },
+        {
+          "type": "jsx",
+          "text": "Overall Compliance Score",
+          "key": "overallComplianceScore",
+          "line": 137
+        },
+        {
+          "type": "jsx",
+          "text": "Total Transactions",
+          "key": "totalTransactions",
+          "line": 172
+        },
+        {
+          "type": "jsx",
+          "text": "Analyzed in this period",
+          "key": "analyzedInThisPeriod",
+          "line": 179
+        },
+        {
+          "type": "jsx",
+          "text": "High Risk Transactions",
+          "key": "highRiskTransactions",
+          "line": 187
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Violations",
+          "key": "complianceViolations",
+          "line": 205
+        },
+        {
+          "type": "jsx",
+          "text": "Types of violations detected",
+          "key": "typesOfViolationsDetected",
+          "line": 212
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Trail Status",
+          "key": "auditTrailStatus",
+          "line": 220
+        },
+        {
+          "type": "jsx",
+          "text": "Traceability status",
+          "key": "traceabilityStatus",
+          "line": 227
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Violations",
+          "key": "complianceViolations",
+          "line": 239
+        },
+        {
+          "type": "jsx",
+          "text": "Segregation of Duties",
+          "key": "segregationOfDuties",
+          "line": 276
+        },
+        {
+          "type": "jsx",
+          "text": "Segregation of Duties Violations Detected",
+          "key": "segregationOfDutiesViolations",
+          "line": 283
+        },
+        {
+          "type": "jsx",
+          "text": "Missing Required Approvals",
+          "key": "missingRequiredApprovals",
+          "line": 315
+        },
+        {
+          "type": "jsx",
+          "text": "Overview",
+          "key": "overview",
+          "line": 326
+        },
+        {
+          "type": "jsx",
+          "text": "Violations",
+          "key": "violations",
+          "line": 327
+        },
+        {
+          "type": "jsx",
+          "text": "Recommendations",
+          "key": "recommendations",
+          "line": 328
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Status",
+          "key": "complianceStatus",
+          "line": 335
+        },
+        {
+          "type": "jsx",
+          "text": "Period Analysis",
+          "key": "periodAnalysis",
+          "line": 361
+        },
+        {
+          "type": "jsx",
+          "text": "Violation Breakdown",
+          "key": "violationBreakdown",
+          "line": 388
+        },
+        {
+          "type": "jsx",
+          "text": "No compliance violations detected in this period.",
+          "key": "noComplianceViolationsDetected",
+          "line": 394
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Recommendations",
+          "key": "complianceRecommendations",
+          "line": 425
+        },
+        {
+          "type": "jsx",
+          "text": "Excellent Compliance",
+          "key": "excellentCompliance",
+          "line": 432
+        },
+        {
+          "type": "jsx",
+          "text": "Good with Room for Improvement",
+          "key": "goodWithRoomFor",
+          "line": 440
+        },
+        {
+          "type": "jsx",
+          "text": "Consider reviewing the identified violations and implementing additional controls.",
+          "key": "considerReviewingTheIdentified",
+          "line": 441
+        },
+        {
+          "type": "jsx",
+          "text": "Immediate Action Required",
+          "key": "immediateActionRequired",
+          "line": 448
+        },
+        {
+          "type": "jsx",
+          "text": "Review and strengthen approval workflows",
+          "key": "reviewAndStrengthenApproval",
+          "line": 459
+        },
+        {
+          "type": "jsx",
+          "text": "Implement additional segregation of duties controls",
+          "key": "implementAdditionalSegregationOf",
+          "line": 463
+        },
+        {
+          "type": "jsx",
+          "text": "Enhanced monitoring of high-risk transactions",
+          "key": "enhancedMonitoringOfHighrisk",
+          "line": 467
+        },
+        {
+          "type": "jsx",
+          "text": "Regular compliance training for staff",
+          "key": "regularComplianceTrainingFor",
+          "line": 471
+        },
+        {
+          "type": "jsx",
+          "text": "Automate compliance checking and alerting",
+          "key": "automateComplianceCheckingAnd",
+          "line": 475
+        }
+      ],
+      "src\\components\\audit\\ExportDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Export Audit Data",
+          "key": "exportAuditData",
+          "line": 82
+        },
+        {
+          "type": "jsx",
+          "text": "Export {totalCount.toLocaleString()} audit records in your preferred format",
+          "key": "exportTotalcounttolocalestringAuditRecords",
+          "line": 85
+        },
+        {
+          "type": "jsx",
+          "text": "Export Format",
+          "key": "exportFormat",
+          "line": 93
+        },
+        {
+          "type": "jsx",
+          "text": "Options",
+          "key": "options",
+          "line": 130
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance",
+          "key": "compliance",
+          "line": 131
+        },
+        {
+          "type": "jsx",
+          "text": "Include integrity data",
+          "key": "includeIntegrityData",
+          "line": 144
+        },
+        {
+          "type": "jsx",
+          "text": "Include hash signatures and verification status",
+          "key": "includeHashSignaturesAnd",
+          "line": 148
+        },
+        {
+          "type": "jsx",
+          "text": "Include financial data",
+          "key": "includeFinancialData",
+          "line": 160
+        },
+        {
+          "type": "jsx",
+          "text": "Include amounts, currencies, and transaction details",
+          "key": "includeAmountsCurrenciesAnd",
+          "line": 164
+        },
+        {
+          "type": "jsx",
+          "text": "Anonymize user data",
+          "key": "anonymizeUserData",
+          "line": 176
+        },
+        {
+          "type": "jsx",
+          "text": "Remove user names and email addresses for privacy",
+          "key": "removeUserNamesAnd",
+          "line": 180
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance mode",
+          "key": "complianceMode",
+          "line": 196
+        },
+        {
+          "type": "jsx",
+          "text": "Include compliance flags, retention periods, and audit metadata",
+          "key": "includeComplianceFlagsRetention",
+          "line": 200
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Features",
+          "key": "complianceFeatures",
+          "line": 209
+        },
+        {
+          "type": "jsx",
+          "text": "Export Summary",
+          "key": "exportSummary",
+          "line": 225
+        },
+        {
+          "type": "jsx",
+          "text": "Cancel",
+          "key": "cancel",
+          "line": 252
+        },
+        {
+          "type": "jsx",
+          "text": "Exporting...",
+          "key": "exporting",
+          "line": 258
+        },
+        {
+          "type": "jsx",
+          "text": "Export {selectedFormat.toUpperCase()}",
+          "key": "exportSelectedformattouppercase",
+          "line": 263
+        },
+        {
+          "type": "label",
+          "text": "CSV",
+          "key": "csv",
+          "line": 53
+        },
+        {
+          "type": "label",
+          "text": "Excel",
+          "key": "excel",
+          "line": 59
+        },
+        {
+          "type": "label",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 65
+        },
+        {
+          "type": "label",
+          "text": "JSON",
+          "key": "json",
+          "line": 71
+        },
+        {
+          "type": "description",
+          "text": "Comma-separated values for spreadsheet applications",
+          "key": "commaseparatedValuesForSpreadsheet",
+          "line": 54
+        },
+        {
+          "type": "description",
+          "text": "Microsoft Excel format with formatting",
+          "key": "microsoftExcelFormatWith",
+          "line": 60
+        },
+        {
+          "type": "description",
+          "text": "Portable Document Format for reports and sharing",
+          "key": "portableDocumentFormatFor",
+          "line": 66
+        },
+        {
+          "type": "description",
+          "text": "Machine-readable format for data processing",
+          "key": "machinereadableFormatForData",
+          "line": 72
+        }
+      ],
+      "src\\components\\audit\\IntegrityReport.tsx": [
+        {
+          "type": "jsx",
+          "text": "Data Integrity Verification",
+          "key": "dataIntegrityVerification",
+          "line": 52
+        },
+        {
+          "type": "jsx",
+          "text": "Verifying audit trail integrity...",
+          "key": "verifyingAuditTrailIntegrity",
+          "line": 55
+        },
+        {
+          "type": "jsx",
+          "text": "Data Integrity Report",
+          "key": "dataIntegrityReport",
+          "line": 76
+        },
+        {
+          "type": "jsx",
+          "text": "Cryptographic verification of audit trail records",
+          "key": "cryptographicVerificationOfAudit",
+          "line": 77
+        },
+        {
+          "type": "jsx",
+          "text": "Run Verification",
+          "key": "runVerification",
+          "line": 82
+        },
+        {
+          "type": "jsx",
+          "text": "Overall Integrity Score",
+          "key": "overallIntegrityScore",
+          "line": 91
+        },
+        {
+          "type": "jsx",
+          "text": "Total Records",
+          "key": "totalRecords",
+          "line": 132
+        },
+        {
+          "type": "jsx",
+          "text": "Audit entries analyzed",
+          "key": "auditEntriesAnalyzed",
+          "line": 139
+        },
+        {
+          "type": "jsx",
+          "text": "Verified",
+          "key": "verified",
+          "line": 147
+        },
+        {
+          "type": "jsx",
+          "text": "Tampered",
+          "key": "tampered",
+          "line": 164
+        },
+        {
+          "type": "jsx",
+          "text": "Records with integrity issues",
+          "key": "recordsWithIntegrityIssues",
+          "line": 171
+        },
+        {
+          "type": "jsx",
+          "text": "Suspicious",
+          "key": "suspicious",
+          "line": 179
+        },
+        {
+          "type": "jsx",
+          "text": "Records requiring review",
+          "key": "recordsRequiringReview",
+          "line": 186
+        },
+        {
+          "type": "jsx",
+          "text": "Verification Errors",
+          "key": "verificationErrors",
+          "line": 198
+        },
+        {
+          "type": "jsx",
+          "text": "Integrity Issues Detected",
+          "key": "integrityIssuesDetected",
+          "line": 208
+        },
+        {
+          "type": "jsx",
+          "text": "Recommendations",
+          "key": "recommendations",
+          "line": 250
+        },
+        {
+          "type": "jsx",
+          "text": "Integrity Status Summary",
+          "key": "integrityStatusSummary",
+          "line": 270
+        },
+        {
+          "type": "jsx",
+          "text": "Excellent Integrity",
+          "key": "excellentIntegrity",
+          "line": 277
+        },
+        {
+          "type": "jsx",
+          "text": "All audit records have been verified successfully. No integrity issues detected.",
+          "key": "allAuditRecordsHave",
+          "line": 278
+        },
+        {
+          "type": "jsx",
+          "text": "Good Integrity",
+          "key": "goodIntegrity",
+          "line": 285
+        },
+        {
+          "type": "jsx",
+          "text": "Most audit records have been verified successfully. Some minor issues may exist.",
+          "key": "mostAuditRecordsHave",
+          "line": 286
+        },
+        {
+          "type": "jsx",
+          "text": "Moderate Integrity Concerns",
+          "key": "moderateIntegrityConcerns",
+          "line": 293
+        },
+        {
+          "type": "jsx",
+          "text": "Critical Integrity Issues",
+          "key": "criticalIntegrityIssues",
+          "line": 301
+        },
+        {
+          "type": "jsx",
+          "text": "Verification Statistics",
+          "key": "verificationStatistics",
+          "line": 310
+        },
+        {
+          "type": "jsx",
+          "text": "Quick Actions",
+          "key": "quickActions",
+          "line": 332
+        },
+        {
+          "type": "jsx",
+          "text": "Review Tampered Records",
+          "key": "reviewTamperedRecords",
+          "line": 335
+        },
+        {
+          "type": "jsx",
+          "text": "Restore from Backup",
+          "key": "restoreFromBackup",
+          "line": 339
+        },
+        {
+          "type": "jsx",
+          "text": "Generate Investigation Report",
+          "key": "generateInvestigationReport",
+          "line": 343
+        }
+      ],
+      "src\\components\\audit\\RealTimeAlerts.tsx": [
+        {
+          "type": "jsx",
+          "text": "Real-time Alerts",
+          "key": "realtimeAlerts",
+          "line": 121
+        },
+        {
+          "type": "jsx",
+          "text": "Monitor audit events in real-time",
+          "key": "monitorAuditEventsIn",
+          "line": 124
+        },
+        {
+          "type": "jsx",
+          "text": "All Clear",
+          "key": "allClear",
+          "line": 130
+        },
+        {
+          "type": "jsx",
+          "text": "No recent audit alerts detected",
+          "key": "noRecentAuditAlerts",
+          "line": 131
+        },
+        {
+          "type": "jsx",
+          "text": "Real-time Alerts",
+          "key": "realtimeAlerts",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "Clear All",
+          "key": "clearAll",
+          "line": 159
+        }
+      ],
+      "src\\pages\\audit\\AuditDashboard.tsx": [
+        {
+          "type": "jsx",
+          "text": "Financial Audit Trail",
+          "key": "financialAuditTrail",
+          "line": 97
+        },
+        {
+          "type": "jsx",
+          "text": "Filters",
+          "key": "filters",
+          "line": 108
+        },
+        {
+          "type": "jsx",
+          "text": "Refresh",
+          "key": "refresh",
+          "line": 116
+        },
+        {
+          "type": "jsx",
+          "text": "Export",
+          "key": "export",
+          "line": 124
+        },
+        {
+          "type": "jsx",
+          "text": "Data Integrity Alert",
+          "key": "dataIntegrityAlert",
+          "line": 134
+        },
+        {
+          "type": "jsx",
+          "text": "Run Verification",
+          "key": "runVerification",
+          "line": 145
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Concern",
+          "key": "complianceConcern",
+          "line": 155
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Filters",
+          "key": "auditFilters",
+          "line": 166
+        },
+        {
+          "type": "jsx",
+          "text": "Overview",
+          "key": "overview",
+          "line": 181
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Trail",
+          "key": "auditTrail",
+          "line": 182
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance",
+          "key": "compliance",
+          "line": 183
+        },
+        {
+          "type": "jsx",
+          "text": "Data Integrity",
+          "key": "dataIntegrity",
+          "line": 184
+        },
+        {
+          "type": "jsx",
+          "text": "Search",
+          "key": "search",
+          "line": 185
+        },
+        {
+          "type": "jsx",
+          "text": "Total Transactions",
+          "key": "totalTransactions",
+          "line": 194
+        },
+        {
+          "type": "jsx",
+          "text": "Total Amount",
+          "key": "totalAmount",
+          "line": 207
+        },
+        {
+          "type": "jsx",
+          "text": "Across all transactions",
+          "key": "acrossAllTransactions",
+          "line": 214
+        },
+        {
+          "type": "jsx",
+          "text": "Success Rate",
+          "key": "successRate",
+          "line": 222
+        },
+        {
+          "type": "jsx",
+          "text": "Risk Score",
+          "key": "riskScore",
+          "line": 237
+        },
+        {
+          "type": "jsx",
+          "text": "Recent Audit Activity",
+          "key": "recentAuditActivity",
+          "line": 255
+        },
+        {
+          "type": "jsx",
+          "text": "Latest financial operations and changes",
+          "key": "latestFinancialOperationsAnd",
+          "line": 256
+        },
+        {
+          "type": "jsx",
+          "text": "No recent audit activity found",
+          "key": "noRecentAuditActivity",
+          "line": 285
+        },
+        {
+          "type": "jsx",
+          "text": "System Health",
+          "key": "systemHealth",
+          "line": 296
+        },
+        {
+          "type": "jsx",
+          "text": "Real-time monitoring and alerts",
+          "key": "realtimeMonitoringAndAlerts",
+          "line": 297
+        },
+        {
+          "type": "jsx",
+          "text": "Data Integrity",
+          "key": "dataIntegrity",
+          "line": 302
+        },
+        {
+          "type": "jsx",
+          "text": "Compliance Score",
+          "key": "complianceScore",
+          "line": 308
+        },
+        {
+          "type": "jsx",
+          "text": "Active Alerts",
+          "key": "activeAlerts",
+          "line": 314
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Trail",
+          "key": "auditTrail",
+          "line": 329
+        },
+        {
+          "type": "jsx",
+          "text": "Showing {logs.length} of {totalCount}",
+          "key": "showingLogslengthOfTotalcount",
+          "line": 335
+        },
+        {
+          "type": "jsx",
+          "text": "Advanced Search",
+          "key": "advancedSearch",
+          "line": 371
+        },
+        {
+          "type": "jsx",
+          "text": "Search audit trail with specific criteria",
+          "key": "searchAuditTrailWith1",
+          "line": 372
+        }
+      ],
+      "src\\pages\\AuditLogsPage.tsx": [
+        {
+          "type": "jsx",
+          "text": "Audit Logs",
+          "key": "auditLogs",
+          "line": 137
+        },
+        {
+          "type": "jsx",
+          "text": "View and track all sensitive operations in the system",
+          "key": "viewAndTrackAll",
+          "line": 138
+        },
+        {
+          "type": "jsx",
+          "text": "Export CSV",
+          "key": "exportCsv",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "Filters",
+          "key": "filters",
+          "line": 152
+        },
+        {
+          "type": "jsx",
+          "text": "Search",
+          "key": "search",
+          "line": 163
+        },
+        {
+          "type": "jsx",
+          "text": "Action",
+          "key": "action",
+          "line": 178
+        },
+        {
+          "type": "jsx",
+          "text": "All actions",
+          "key": "allActions1",
+          "line": 184
+        },
+        {
+          "type": "jsx",
+          "text": "Create",
+          "key": "create",
+          "line": 185
+        },
+        {
+          "type": "jsx",
+          "text": "Update",
+          "key": "update",
+          "line": 186
+        },
+        {
+          "type": "jsx",
+          "text": "Approve",
+          "key": "approve",
+          "line": 188
+        },
+        {
+          "type": "jsx",
+          "text": "Reject",
+          "key": "reject",
+          "line": 189
+        },
+        {
+          "type": "jsx",
+          "text": "Cancel",
+          "key": "cancel",
+          "line": 190
+        },
+        {
+          "type": "jsx",
+          "text": "Archive",
+          "key": "archive",
+          "line": 191
+        },
+        {
+          "type": "jsx",
+          "text": "Restore",
+          "key": "restore",
+          "line": 192
+        },
+        {
+          "type": "jsx",
+          "text": "Resource Type",
+          "key": "resourceType",
+          "line": 199
+        },
+        {
+          "type": "jsx",
+          "text": "All resources",
+          "key": "allResources",
+          "line": 205
+        },
+        {
+          "type": "jsx",
+          "text": "Contract",
+          "key": "contract",
+          "line": 206
+        },
+        {
+          "type": "jsx",
+          "text": "Customer",
+          "key": "customer",
+          "line": 207
+        },
+        {
+          "type": "jsx",
+          "text": "Vehicle",
+          "key": "vehicle",
+          "line": 208
+        },
+        {
+          "type": "jsx",
+          "text": "Invoice",
+          "key": "invoice",
+          "line": 209
+        },
+        {
+          "type": "jsx",
+          "text": "Payment",
+          "key": "payment",
+          "line": 210
+        },
+        {
+          "type": "jsx",
+          "text": "Employee",
+          "key": "employee",
+          "line": 211
+        },
+        {
+          "type": "jsx",
+          "text": "Status",
+          "key": "status",
+          "line": 219
+        },
+        {
+          "type": "jsx",
+          "text": "All statuses",
+          "key": "allStatuses1",
+          "line": 225
+        },
+        {
+          "type": "jsx",
+          "text": "Success",
+          "key": "success",
+          "line": 226
+        },
+        {
+          "type": "jsx",
+          "text": "Failed",
+          "key": "failed",
+          "line": 227
+        },
+        {
+          "type": "jsx",
+          "text": "Pending",
+          "key": "pending",
+          "line": 228
+        },
+        {
+          "type": "jsx",
+          "text": "From Date",
+          "key": "fromDate",
+          "line": 235
+        },
+        {
+          "type": "jsx",
+          "text": "To Date",
+          "key": "toDate",
+          "line": 246
+        },
+        {
+          "type": "jsx",
+          "text": "Clear Filters",
+          "key": "clearFilters",
+          "line": 268
+        },
+        {
+          "type": "jsx",
+          "text": "Audit Trail",
+          "key": "auditTrail",
+          "line": 278
+        },
+        {
+          "type": "jsx",
+          "text": "Failed to load audit logs",
+          "key": "failedToLoadAudit",
+          "line": 292
+        },
+        {
+          "type": "jsx",
+          "text": "No audit logs found",
+          "key": "noAuditLogsFound",
+          "line": 300
+        },
+        {
+          "type": "jsx",
+          "text": "Date & Time",
+          "key": "dateTime",
+          "line": 309
+        },
+        {
+          "type": "jsx",
+          "text": "Action",
+          "key": "action",
+          "line": 311
+        },
+        {
+          "type": "jsx",
+          "text": "Resource",
+          "key": "resource",
+          "line": 312
+        },
+        {
+          "type": "jsx",
+          "text": "Entity",
+          "key": "entity",
+          "line": 313
+        },
+        {
+          "type": "jsx",
+          "text": "Status",
+          "key": "status",
+          "line": 314
+        },
+        {
+          "type": "jsx",
+          "text": "Changes",
+          "key": "changes",
+          "line": 315
+        },
+        {
+          "type": "jsx",
+          "text": "Success",
+          "key": "success",
+          "line": 348
+        },
+        {
+          "type": "jsx",
+          "text": "Failed",
+          "key": "failed",
+          "line": 354
+        },
+        {
+          "type": "jsx",
+          "text": "Pending",
+          "key": "pending",
+          "line": 360
+        }
+      ]
+    },
+    "string_to_key": {
+      "Account": "account",
+      "Account Code": "accountCode",
+      "Across all transactions": "acrossAllTransactions",
+      "Action": "action",
+      "Active Alerts": "activeAlerts",
+      "Active Filters": "activeFilters",
+      "Additional Metadata": "additionalMetadata",
+      "Advanced Audit Search": "advancedAuditSearch",
+      "Advanced Search": "advancedSearch",
+      "All Actions": "allActions",
+      "All Clear": "allClear",
+      "All Currencies": "allCurrencies",
+      "All Entity Types": "allEntityTypes",
+      "All Severities": "allSeverities",
+      "All Statuses": "allStatuses",
+      "All actions": "allActions1",
+      "All audit records have been verified successfully. No integrity issues detected.": "allAuditRecordsHave",
+      "All resources": "allResources",
+      "All statuses": "allStatuses1",
+      "Amount": "amount",
+      "Amount Range": "amountRange",
+      "Analyzed in this period": "analyzedInThisPeriod",
+      "Anonymize user data": "anonymizeUserData",
+      "Approve": "approve",
+      "Archive": "archive",
+      "Audit Filters": "auditFilters",
+      "Audit Log Details": "auditLogDetails",
+      "Audit Logs": "auditLogs",
+      "Audit Trail": "auditTrail",
+      "Audit Trail Status": "auditTrailStatus",
+      "Audit entries analyzed": "auditEntriesAnalyzed",
+      "Automate compliance checking and alerting": "automateComplianceCheckingAnd",
+      "Basic Information": "basicInformation",
+      "CSV": "csv",
+      "Cancel": "cancel",
+      "Changes": "changes",
+      "Clear": "clear",
+      "Clear All": "clearAll",
+      "Clear Filters": "clearFilters",
+      "Close": "close",
+      "Comma-separated values for spreadsheet applications": "commaseparatedValuesForSpreadsheet",
+      "Compliance": "compliance",
+      "Compliance Concern": "complianceConcern",
+      "Compliance Features": "complianceFeatures",
+      "Compliance Flags": "complianceFlags",
+      "Compliance Metrics": "complianceMetrics",
+      "Compliance Monitoring": "complianceMonitoring",
+      "Compliance Recommendations": "complianceRecommendations",
+      "Compliance Score": "complianceScore",
+      "Compliance Status": "complianceStatus",
+      "Compliance Violations": "complianceViolations",
+      "Compliance mode": "complianceMode",
+      "Comprehensive view of the audit trail entry": "comprehensiveViewOfThe",
+      "Consider reviewing the identified violations and implementing additional controls.": "considerReviewingTheIdentified",
+      "Contract": "contract",
+      "Create": "create",
+      "Critical": "critical",
+      "Critical Integrity Issues": "criticalIntegrityIssues",
+      "Cryptographic verification of audit trail records": "cryptographicVerificationOfAudit",
+      "Currency": "currency",
+      "Customer": "customer",
+      "Data Changes": "dataChanges",
+      "Data Integrity": "dataIntegrity",
+      "Data Integrity Alert": "dataIntegrityAlert",
+      "Data Integrity Report": "dataIntegrityReport",
+      "Data Integrity Verification": "dataIntegrityVerification",
+      "Date & Time": "dateTime",
+      "Date Range": "dateRange",
+      "Details": "details",
+      "Employee": "employee",
+      "Enhanced monitoring of high-risk transactions": "enhancedMonitoringOfHighrisk",
+      "Entity": "entity",
+      "Entity Details": "entityDetails",
+      "Entity Type": "entityType",
+      "Excel": "excel",
+      "Excellent Compliance": "excellentCompliance",
+      "Excellent Integrity": "excellentIntegrity",
+      "Export": "export",
+      "Export Audit Data": "exportAuditData",
+      "Export CSV": "exportCsv",
+      "Export Format": "exportFormat",
+      "Export Report": "exportReport",
+      "Export Summary": "exportSummary",
+      "Export {selectedFormat.toUpperCase()}": "exportSelectedformattouppercase",
+      "Export {totalCount.toLocaleString()} audit records in your preferred format": "exportTotalcounttolocalestringAuditRecords",
+      "Exporting...": "exporting",
+      "Failed": "failed",
+      "Failed to load audit logs": "failedToLoadAudit",
+      "Filter Options": "filterOptions",
+      "Filters": "filters",
+      "Financial": "financial",
+      "Financial Audit Trail": "financialAuditTrail",
+      "Financial Information": "financialInformation",
+      "Found {searchResults.length} matching audit entries": "foundSearchresultslengthMatchingAudit",
+      "From Date": "fromDate",
+      "Generate Investigation Report": "generateInvestigationReport",
+      "Good Integrity": "goodIntegrity",
+      "Good with Room for Improvement": "goodWithRoomFor",
+      "High": "high",
+      "High Risk Transactions": "highRiskTransactions",
+      "Immediate Action Required": "immediateActionRequired",
+      "Implement additional segregation of duties controls": "implementAdditionalSegregationOf",
+      "Include amounts, currencies, and transaction details": "includeAmountsCurrenciesAnd",
+      "Include compliance flags, retention periods, and audit metadata": "includeComplianceFlagsRetention",
+      "Include financial data": "includeFinancialData",
+      "Include hash signatures and verification status": "includeHashSignaturesAnd",
+      "Include integrity data": "includeIntegrityData",
+      "Integrity": "integrity",
+      "Integrity Issues Detected": "integrityIssuesDetected",
+      "Integrity Status Summary": "integrityStatusSummary",
+      "Invoice": "invoice",
+      "JSON": "json",
+      "Journal Entry": "journalEntry",
+      "Latest financial operations and changes": "latestFinancialOperationsAnd",
+      "Loading compliance data...": "loadingComplianceData",
+      "Low": "low",
+      "Machine-readable format for data processing": "machinereadableFormatForData",
+      "Medium": "medium",
+      "Microsoft Excel format with formatting": "microsoftExcelFormatWith",
+      "Missing Required Approvals": "missingRequiredApprovals",
+      "Moderate Integrity Concerns": "moderateIntegrityConcerns",
+      "Monitor audit events in real-time": "monitorAuditEventsIn",
+      "Most audit records have been verified successfully. Some minor issues may exist.": "mostAuditRecordsHave",
+      "No audit logs found": "noAuditLogsFound",
+      "No change data available for this entry": "noChangeDataAvailable",
+      "No compliance violations detected in this period.": "noComplianceViolationsDetected",
+      "No recent audit activity found": "noRecentAuditActivity",
+      "No recent audit alerts detected": "noRecentAuditAlerts",
+      "No results found": "noResultsFound",
+      "Only show records with compliance violations": "onlyShowRecordsWith",
+      "Options": "options",
+      "Overall Compliance Score": "overallComplianceScore",
+      "Overall Integrity Score": "overallIntegrityScore",
+      "Overview": "overview",
+      "PDF": "pdf",
+      "Payment": "payment",
+      "Pending": "pending",
+      "Period Analysis": "periodAnalysis",
+      "Portable Document Format for reports and sharing": "portableDocumentFormatFor",
+      "Quick Actions": "quickActions",
+      "Real-time Alerts": "realtimeAlerts",
+      "Real-time monitoring and alerts": "realtimeMonitoringAndAlerts",
+      "Recent Audit Activity": "recentAuditActivity",
+      "Recommendations": "recommendations",
+      "Records requiring review": "recordsRequiringReview",
+      "Records with integrity issues": "recordsWithIntegrityIssues",
+      "Reference Number": "referenceNumber",
+      "Refresh": "refresh",
+      "Regular compliance training for staff": "regularComplianceTrainingFor",
+      "Reject": "reject",
+      "Remove user names and email addresses for privacy": "removeUserNamesAnd",
+      "Reset Filters": "resetFilters",
+      "Resource": "resource",
+      "Resource Type": "resourceType",
+      "Restore": "restore",
+      "Restore from Backup": "restoreFromBackup",
+      "Results Limit": "resultsLimit",
+      "Review Tampered Records": "reviewTamperedRecords",
+      "Review and strengthen approval workflows": "reviewAndStrengthenApproval",
+      "Risk Score": "riskScore",
+      "Run Verification": "runVerification",
+      "Search": "search",
+      "Search Results": "searchResults",
+      "Search audit trail with advanced filters and criteria": "searchAuditTrailWith",
+      "Search audit trail with specific criteria": "searchAuditTrailWith1",
+      "Segregation of Duties": "segregationOfDuties",
+      "Segregation of Duties Violations Detected": "segregationOfDutiesViolations",
+      "Severity": "severity",
+      "Showing {logs.length} of {totalCount}": "showingLogslengthOfTotalcount",
+      "Status": "status",
+      "Success": "success",
+      "Success Rate": "successRate",
+      "Suspicious": "suspicious",
+      "System Health": "systemHealth",
+      "Tampered": "tampered",
+      "Technical": "technical",
+      "Technical Details": "technicalDetails",
+      "To Date": "toDate",
+      "Total Amount": "totalAmount",
+      "Total Records": "totalRecords",
+      "Total Transactions": "totalTransactions",
+      "Traceability status": "traceabilityStatus",
+      "Types of violations detected": "typesOfViolationsDetected",
+      "Unknown": "unknown",
+      "Update": "update",
+      "User Information": "userInformation",
+      "Vehicle": "vehicle",
+      "Verification Errors": "verificationErrors",
+      "Verification Statistics": "verificationStatistics",
+      "Verification Status": "verificationStatus",
+      "Verified": "verified",
+      "Verifying audit trail integrity...": "verifyingAuditTrailIntegrity",
+      "View Details": "viewDetails",
+      "View and track all sensitive operations in the system": "viewAndTrackAll",
+      "Violation Breakdown": "violationBreakdown",
+      "Violations": "violations"
+    }
+  },
+  "finance": {
+    "files": [
+      "src\\components\\finance\\CashFlowStatementReport.tsx",
+      "src\\components\\finance\\FinancialAlertsSystem.tsx",
+      "src\\components\\payments\\PaymentReceipt.tsx"
+    ],
+    "file_key_map": {
+      "src\\components\\finance\\CashFlowStatementReport.tsx": [
+        {
+          "type": "jsx",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 462
+        },
+        {
+          "type": "jsx",
+          "text": "Excel",
+          "key": "excel",
+          "line": 471
+        },
+        {
+          "type": "jsx",
+          "text": "CSV",
+          "key": "csv",
+          "line": 480
+        },
+        {
+          "type": "jsx",
+          "text": "Operating Cash Flow Ratio",
+          "key": "operatingCashFlowRatio",
+          "line": 762
+        },
+        {
+          "type": "jsx",
+          "text": "Free Cash Flow",
+          "key": "freeCashFlow",
+          "line": 781
+        },
+        {
+          "type": "jsx",
+          "text": "Cash Flow Adequacy",
+          "key": "cashFlowAdequacy",
+          "line": 800
+        },
+        {
+          "type": "jsx",
+          "text": "Financing Dependency",
+          "key": "financingDependency",
+          "line": 819
+        }
+      ],
+      "src\\components\\finance\\FinancialAlertsSystem.tsx": [
+        {
+          "type": "jsx",
+          "text": "Financial Alerts",
+          "key": "financialAlerts",
+          "line": 108
+        },
+        {
+          "type": "jsx",
+          "text": "Loading alerts...",
+          "key": "loadingAlerts",
+          "line": 109
+        },
+        {
+          "type": "jsx",
+          "text": "Active Financial Alerts",
+          "key": "activeFinancialAlerts",
+          "line": 132
+        },
+        {
+          "type": "jsx",
+          "text": "These alerts require your immediate attention",
+          "key": "theseAlertsRequireYour",
+          "line": 136
+        },
+        {
+          "type": "jsx",
+          "text": "Acknowledge",
+          "key": "acknowledge",
+          "line": 167
+        },
+        {
+          "type": "jsx",
+          "text": "Recent Acknowledged Alerts",
+          "key": "recentAcknowledgedAlerts",
+          "line": 182
+        },
+        {
+          "type": "jsx",
+          "text": "Previously resolved financial alerts",
+          "key": "previouslyResolvedFinancialAlerts",
+          "line": 185
+        },
+        {
+          "type": "jsx",
+          "text": "Resolved",
+          "key": "resolved",
+          "line": 204
+        },
+        {
+          "type": "jsx",
+          "text": "All Clear",
+          "key": "allClear",
+          "line": 218
+        },
+        {
+          "type": "jsx",
+          "text": "No financial alerts at this time",
+          "key": "noFinancialAlertsAt",
+          "line": 221
+        },
+        {
+          "type": "jsx",
+          "text": "Your financial metrics are within normal ranges",
+          "key": "yourFinancialMetricsAre",
+          "line": 228
+        }
+      ],
+      "src\\components\\payments\\PaymentReceipt.tsx": [
+        {
+          "type": "jsx",
+          "text": "Al-Araf Car Rental",
+          "key": "alarafCarRental",
+          "line": 340
+        },
+        {
+          "type": "jsx",
+          "text": "Umm Salal Mohammed, Commercial St.",
+          "key": "ummSalalMohammedCommercial",
+          "line": 344
+        },
+        {
+          "type": "jsx",
+          "text": "Received From Mr.",
+          "key": "receivedFromMr",
+          "line": 378
+        },
+        {
+          "type": "jsx",
+          "text": "Vehicle No.",
+          "key": "vehicleNo",
+          "line": 390
+        },
+        {
+          "type": "jsx",
+          "text": "The Sum of",
+          "key": "theSumOf",
+          "line": 402
+        },
+        {
+          "type": "jsx",
+          "text": "Total Amount",
+          "key": "totalAmount",
+          "line": 435
+        },
+        {
+          "type": "jsx",
+          "text": "Paid Amount",
+          "key": "paidAmount",
+          "line": 447
+        },
+        {
+          "type": "jsx",
+          "text": "Remaining",
+          "key": "remaining",
+          "line": 459
+        },
+        {
+          "type": "jsx",
+          "text": "Being",
+          "key": "being",
+          "line": 479
+        },
+        {
+          "type": "jsx",
+          "text": "Al-Araf Car Rental System - Generated Document",
+          "key": "alarafCarRentalSystem",
+          "line": 617
+        }
+      ]
+    },
+    "string_to_key": {
+      "Acknowledge": "acknowledge",
+      "Active Financial Alerts": "activeFinancialAlerts",
+      "Al-Araf Car Rental": "alarafCarRental",
+      "Al-Araf Car Rental System - Generated Document": "alarafCarRentalSystem",
+      "All Clear": "allClear",
+      "Being": "being",
+      "CSV": "csv",
+      "Cash Flow Adequacy": "cashFlowAdequacy",
+      "Excel": "excel",
+      "Financial Alerts": "financialAlerts",
+      "Financing Dependency": "financingDependency",
+      "Free Cash Flow": "freeCashFlow",
+      "Loading alerts...": "loadingAlerts",
+      "No financial alerts at this time": "noFinancialAlertsAt",
+      "Operating Cash Flow Ratio": "operatingCashFlowRatio",
+      "PDF": "pdf",
+      "Paid Amount": "paidAmount",
+      "Previously resolved financial alerts": "previouslyResolvedFinancialAlerts",
+      "Received From Mr.": "receivedFromMr",
+      "Recent Acknowledged Alerts": "recentAcknowledgedAlerts",
+      "Remaining": "remaining",
+      "Resolved": "resolved",
+      "The Sum of": "theSumOf",
+      "These alerts require your immediate attention": "theseAlertsRequireYour",
+      "Total Amount": "totalAmount",
+      "Umm Salal Mohammed, Commercial St.": "ummSalalMohammedCommercial",
+      "Vehicle No.": "vehicleNo",
+      "Your financial metrics are within normal ranges": "yourFinancialMetricsAre"
+    }
+  },
+  "fleet": {
+    "files": [
+      "src\\components\\fleet\\TrafficViolationPDFImport.tsx",
+      "src\\components\\fleet\\VehicleReturnForm.tsx"
+    ],
+    "file_key_map": {
+      "src\\components\\fleet\\TrafficViolationPDFImport.tsx": [
+        {
+          "type": "jsx",
+          "text": "Review & Save",
+          "key": "reviewSave",
+          "line": 510
+        },
+        {
+          "type": "jsx",
+          "text": "Statistics",
+          "key": "statistics",
+          "line": 513
+        },
+        {
+          "type": "jsx",
+          "text": "Drag files here...",
+          "key": "dragFilesHere",
+          "line": 529
+        },
+        {
+          "type": "jsx",
+          "text": "Drag files here or click to select",
+          "key": "dragFilesHereOr",
+          "line": 532
+        },
+        {
+          "type": "jsx",
+          "text": "Supports PDF and images (JPG, PNG, GIF, WEBP)",
+          "key": "supportsPdfAndImages",
+          "line": 533
+        },
+        {
+          "type": "jsx",
+          "text": "Uploaded Files ({uploadedFiles.length})",
+          "key": "uploadedFilesUploadedfileslength",
+          "line": 541
+        },
+        {
+          "type": "jsx",
+          "text": "Extracting data from files...",
+          "key": "extractingDataFromFiles",
+          "line": 608
+        },
+        {
+          "type": "jsx",
+          "text": "Please wait, this may take a few minutes",
+          "key": "pleaseWaitThisMay",
+          "line": 609
+        },
+        {
+          "type": "jsx",
+          "text": "Document Information",
+          "key": "documentInformation",
+          "line": 622
+        },
+        {
+          "type": "jsx",
+          "text": "Total",
+          "key": "total",
+          "line": 655
+        },
+        {
+          "type": "jsx",
+          "text": "Matched",
+          "key": "matched",
+          "line": 667
+        },
+        {
+          "type": "jsx",
+          "text": "Duplicates",
+          "key": "duplicates",
+          "line": 679
+        },
+        {
+          "type": "jsx",
+          "text": "Errors",
+          "key": "errors",
+          "line": 691
+        },
+        {
+          "type": "jsx",
+          "text": "Total (QR)",
+          "key": "totalQr",
+          "line": 703
+        },
+        {
+          "type": "jsx",
+          "text": "Extracted Violations",
+          "key": "extractedViolations",
+          "line": 745
+        },
+        {
+          "type": "jsx",
+          "text": "Select",
+          "key": "select",
+          "line": 752
+        },
+        {
+          "type": "jsx",
+          "text": "Date & Time",
+          "key": "dateTime",
+          "line": 754
+        },
+        {
+          "type": "jsx",
+          "text": "Plate",
+          "key": "plate",
+          "line": 755
+        },
+        {
+          "type": "jsx",
+          "text": "Location",
+          "key": "location",
+          "line": 756
+        },
+        {
+          "type": "jsx",
+          "text": "Customer",
+          "key": "customer",
+          "line": 758
+        },
+        {
+          "type": "jsx",
+          "text": "Contract",
+          "key": "contract",
+          "line": 759
+        },
+        {
+          "type": "jsx",
+          "text": "Confidence",
+          "key": "confidence",
+          "line": 760
+        },
+        {
+          "type": "jsx",
+          "text": "Amount",
+          "key": "amount",
+          "line": 761
+        },
+        {
+          "type": "jsx",
+          "text": "Status",
+          "key": "status",
+          "line": 762
+        },
+        {
+          "type": "jsx",
+          "text": "Duplicate",
+          "key": "duplicate",
+          "line": 851
+        },
+        {
+          "type": "title",
+          "text": "Error",
+          "key": "error",
+          "line": 259
+        },
+        {
+          "type": "title",
+          "text": "Warning",
+          "key": "warning",
+          "line": 282
+        },
+        {
+          "type": "title",
+          "text": "Data extracted successfully",
+          "key": "dataExtractedSuccessfully",
+          "line": 320
+        },
+        {
+          "type": "title",
+          "text": "Processing error",
+          "key": "processingError",
+          "line": 326
+        },
+        {
+          "type": "title",
+          "text": "Error",
+          "key": "error",
+          "line": 392
+        },
+        {
+          "type": "title",
+          "text": "Saved successfully",
+          "key": "savedSuccessfully",
+          "line": 411
+        },
+        {
+          "type": "title",
+          "text": "Warning",
+          "key": "warning",
+          "line": 432
+        },
+        {
+          "type": "title",
+          "text": "Export Report",
+          "key": "exportReport",
+          "line": 1013
+        },
+        {
+          "type": "description",
+          "text": "Extracting text from file",
+          "key": "extractingTextFromFile",
+          "line": 145
+        },
+        {
+          "type": "description",
+          "text": "Converting file to images for visual analysis",
+          "key": "convertingFileToImages",
+          "line": 216
+        },
+        {
+          "type": "description",
+          "text": "Please upload a file (image or PDF) first",
+          "key": "pleaseUploadAFile",
+          "line": 260
+        },
+        {
+          "type": "description",
+          "text": "Please select violations to save",
+          "key": "pleaseSelectViolationsTo",
+          "line": 393
+        },
+        {
+          "type": "description",
+          "text": "Only PDF and image files accepted (JPG, PNG, GIF, WEBP)",
+          "key": "onlyPdfAndImage",
+          "line": 433
+        }
+      ],
+      "src\\components\\fleet\\VehicleReturnForm.tsx": [
+        {
+          "type": "jsx",
+          "text": "Approved",
+          "key": "approved",
+          "line": 70
+        },
+        {
+          "type": "jsx",
+          "text": "Rejected",
+          "key": "rejected",
+          "line": 72
+        },
+        {
+          "type": "jsx",
+          "text": "Pending",
+          "key": "pending",
+          "line": 74
+        },
+        {
+          "type": "jsx",
+          "text": "Vehicle Return - {vehicleName}",
+          "key": "vehicleReturnVehiclename",
+          "line": 177
+        },
+        {
+          "type": "jsx",
+          "text": "Return Date",
+          "key": "returnDate",
+          "line": 188
+        },
+        {
+          "type": "jsx",
+          "text": "Odometer Reading",
+          "key": "odometerReading",
+          "line": 195
+        },
+        {
+          "type": "jsx",
+          "text": "Fuel Level",
+          "key": "fuelLevel",
+          "line": 202
+        },
+        {
+          "type": "jsx",
+          "text": "Vehicle Condition",
+          "key": "vehicleCondition",
+          "line": 209
+        },
+        {
+          "type": "jsx",
+          "text": "Return Location",
+          "key": "returnLocation",
+          "line": 219
+        },
+        {
+          "type": "jsx",
+          "text": "Damages Reported",
+          "key": "damagesReported",
+          "line": 229
+        },
+        {
+          "type": "jsx",
+          "text": "Notes",
+          "key": "notes",
+          "line": 236
+        },
+        {
+          "type": "jsx",
+          "text": "Items Returned",
+          "key": "itemsReturned",
+          "line": 242
+        },
+        {
+          "type": "jsx",
+          "text": "Vehicle Return - {vehicleName}",
+          "key": "vehicleReturnVehiclename",
+          "line": 262
+        },
+        {
+          "type": "jsx",
+          "text": "Vehicle Condition",
+          "key": "vehicleCondition",
+          "line": 295
+        },
+        {
+          "type": "jsx",
+          "text": "Excellent",
+          "key": "excellent",
+          "line": 309
+        },
+        {
+          "type": "jsx",
+          "text": "Damaged",
+          "key": "damaged",
+          "line": 313
+        },
+        {
+          "type": "jsx",
+          "text": "Return Location",
+          "key": "returnLocation",
+          "line": 327
+        },
+        {
+          "type": "jsx",
+          "text": "Damages Reported (if any)",
+          "key": "damagesReportedIfAny",
+          "line": 349
+        },
+        {
+          "type": "jsx",
+          "text": "Additional Notes",
+          "key": "additionalNotes",
+          "line": 371
+        },
+        {
+          "type": "jsx",
+          "text": "Items Returned",
+          "key": "itemsReturned",
+          "line": 389
+        }
+      ]
+    },
+    "string_to_key": {
+      "Additional Notes": "additionalNotes",
+      "Amount": "amount",
+      "Approved": "approved",
+      "Confidence": "confidence",
+      "Contract": "contract",
+      "Converting file to images for visual analysis": "convertingFileToImages",
+      "Customer": "customer",
+      "Damaged": "damaged",
+      "Damages Reported": "damagesReported",
+      "Damages Reported (if any)": "damagesReportedIfAny",
+      "Data extracted successfully": "dataExtractedSuccessfully",
+      "Date & Time": "dateTime",
+      "Document Information": "documentInformation",
+      "Drag files here or click to select": "dragFilesHereOr",
+      "Drag files here...": "dragFilesHere",
+      "Duplicate": "duplicate",
+      "Duplicates": "duplicates",
+      "Error": "error",
+      "Errors": "errors",
+      "Excellent": "excellent",
+      "Export Report": "exportReport",
+      "Extracted Violations": "extractedViolations",
+      "Extracting data from files...": "extractingDataFromFiles",
+      "Extracting text from file": "extractingTextFromFile",
+      "Fuel Level": "fuelLevel",
+      "Items Returned": "itemsReturned",
+      "Location": "location",
+      "Matched": "matched",
+      "Notes": "notes",
+      "Odometer Reading": "odometerReading",
+      "Only PDF and image files accepted (JPG, PNG, GIF, WEBP)": "onlyPdfAndImage",
+      "Pending": "pending",
+      "Plate": "plate",
+      "Please select violations to save": "pleaseSelectViolationsTo",
+      "Please upload a file (image or PDF) first": "pleaseUploadAFile",
+      "Please wait, this may take a few minutes": "pleaseWaitThisMay",
+      "Processing error": "processingError",
+      "Rejected": "rejected",
+      "Return Date": "returnDate",
+      "Return Location": "returnLocation",
+      "Review & Save": "reviewSave",
+      "Saved successfully": "savedSuccessfully",
+      "Select": "select",
+      "Statistics": "statistics",
+      "Status": "status",
+      "Supports PDF and images (JPG, PNG, GIF, WEBP)": "supportsPdfAndImages",
+      "Total": "total",
+      "Total (QR)": "totalQr",
+      "Uploaded Files ({uploadedFiles.length})": "uploadedFilesUploadedfileslength",
+      "Vehicle Condition": "vehicleCondition",
+      "Vehicle Return - {vehicleName}": "vehicleReturnVehiclename",
+      "Warning": "warning"
+    }
+  },
+  "shared": {
+    "files": [
+      "src\\components\\shared\\ExportButton.tsx"
+    ],
+    "file_key_map": {
+      "src\\components\\shared\\ExportButton.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 19
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 20
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 21
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 39
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 67
+        },
+        {
+          "type": "label",
+          "text": "Excel",
+          "key": "excel",
+          "line": 64
+        },
+        {
+          "type": "label",
+          "text": "PDF",
+          "key": "pdf",
+          "line": 65
+        },
+        {
+          "type": "label",
+          "text": "CSV",
+          "key": "csv",
+          "line": 66
+        }
+      ]
+    },
+    "string_to_key": {
+      "CSV": "csv",
+      "Excel": "excel",
+      "PDF": "pdf",
+      "Promise": "promise"
+    }
+  },
+  "super-admin": {
+    "files": [
+      "src\\components\\super-admin\\BusinessTypeSelector.tsx",
+      "src\\components\\super-admin\\CreateUserDialog.tsx",
+      "src\\components\\super-admin\\landing\\LandingABTesting.tsx",
+      "src\\components\\super-admin\\landing\\LandingAnalytics.tsx",
+      "src\\components\\super-admin\\landing\\LandingContentManager.tsx",
+      "src\\components\\super-admin\\landing\\LandingMediaLibrary.tsx",
+      "src\\components\\super-admin\\landing\\LandingPreview.tsx",
+      "src\\components\\super-admin\\landing\\LandingThemeSettings.tsx",
+      "src\\components\\super-admin\\settings\\BulkOperations.tsx",
+      "src\\components\\super-admin\\settings\\DatabaseManagement.tsx",
+      "src\\components\\super-admin\\settings\\FeatureManagement.tsx",
+      "src\\components\\super-admin\\settings\\GlobalNotificationSettings.tsx",
+      "src\\components\\super-admin\\settings\\SystemIntegrations.tsx",
+      "src\\components\\super-admin\\settings\\SystemSecuritySettings.tsx",
+      "src\\components\\super-admin\\UserDetailsDialog.tsx",
+      "src\\pages\\super-admin\\Payments.tsx",
+      "src\\pages\\super-admin\\Settings.tsx"
+    ],
+    "file_key_map": {
+      "src\\components\\super-admin\\BusinessTypeSelector.tsx": [
+        {
+          "type": "description",
+          "text": "Vehicle rental and fleet management",
+          "key": "vehicleRentalAndFleet",
+          "line": 34
+        },
+        {
+          "type": "description",
+          "text": "Property management and rentals",
+          "key": "propertyManagementAndRentals",
+          "line": 44
+        },
+        {
+          "type": "description",
+          "text": "Retail sales and inventory management",
+          "key": "retailSalesAndInventory",
+          "line": 54
+        },
+        {
+          "type": "description",
+          "text": "Healthcare and medical services",
+          "key": "healthcareAndMedicalServices",
+          "line": 64
+        },
+        {
+          "type": "description",
+          "text": "Manufacturing and production",
+          "key": "manufacturingAndProduction",
+          "line": 74
+        },
+        {
+          "type": "description",
+          "text": "Restaurant and food service",
+          "key": "restaurantAndFoodService",
+          "line": 84
+        },
+        {
+          "type": "description",
+          "text": "Logistics and transportation",
+          "key": "logisticsAndTransportation",
+          "line": 94
+        },
+        {
+          "type": "description",
+          "text": "Educational institutions",
+          "key": "educationalInstitutions",
+          "line": 104
+        },
+        {
+          "type": "description",
+          "text": "Professional consulting services",
+          "key": "professionalConsultingServices",
+          "line": 114
+        },
+        {
+          "type": "description",
+          "text": "Construction and building",
+          "key": "constructionAndBuilding",
+          "line": 124
+        }
+      ],
+      "src\\components\\super-admin\\CreateUserDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 21
+        }
+      ],
+      "src\\components\\super-admin\\landing\\LandingABTesting.tsx": [
+        {
+          "type": "jsx",
+          "text": "All Companies (Global)",
+          "key": "allCompaniesGlobal",
+          "line": 160
+        },
+        {
+          "type": "jsx",
+          "text": "Start",
+          "key": "start",
+          "line": 251
+        },
+        {
+          "type": "jsx",
+          "text": "Pause",
+          "key": "pause",
+          "line": 263
+        },
+        {
+          "type": "jsx",
+          "text": "Declare Winner",
+          "key": "declareWinner",
+          "line": 272
+        },
+        {
+          "type": "jsx",
+          "text": "Variant A (Control)",
+          "key": "variantAControl",
+          "line": 301
+        },
+        {
+          "type": "jsx",
+          "text": "Visitors",
+          "key": "visitors",
+          "line": 311
+        },
+        {
+          "type": "jsx",
+          "text": "Conversions",
+          "key": "conversions",
+          "line": 315
+        },
+        {
+          "type": "jsx",
+          "text": "Conversion Rate",
+          "key": "conversionRate",
+          "line": 321
+        },
+        {
+          "type": "jsx",
+          "text": "Variant B (Test)",
+          "key": "variantBTest",
+          "line": 338
+        },
+        {
+          "type": "jsx",
+          "text": "Visitors",
+          "key": "visitors",
+          "line": 348
+        },
+        {
+          "type": "jsx",
+          "text": "Conversions",
+          "key": "conversions",
+          "line": 352
+        },
+        {
+          "type": "jsx",
+          "text": "Conversion Rate",
+          "key": "conversionRate",
+          "line": 358
+        },
+        {
+          "type": "jsx",
+          "text": "Test Name (English)",
+          "key": "testNameEnglish",
+          "line": 418
+        },
+        {
+          "type": "jsx",
+          "text": "Test Name (Arabic)",
+          "key": "testNameArabic",
+          "line": 428
+        },
+        {
+          "type": "jsx",
+          "text": "Description",
+          "key": "description",
+          "line": 438
+        },
+        {
+          "type": "jsx",
+          "text": "Conversion Goal",
+          "key": "conversionGoal",
+          "line": 462
+        },
+        {
+          "type": "jsx",
+          "text": "Button Clicks",
+          "key": "buttonClicks",
+          "line": 471
+        },
+        {
+          "type": "jsx",
+          "text": "Form Submissions",
+          "key": "formSubmissions",
+          "line": 472
+        },
+        {
+          "type": "jsx",
+          "text": "Page Views",
+          "key": "pageViews",
+          "line": 473
+        },
+        {
+          "type": "jsx",
+          "text": "Time on Page",
+          "key": "timeOnPage",
+          "line": 474
+        },
+        {
+          "type": "jsx",
+          "text": "Scroll Depth",
+          "key": "scrollDepth",
+          "line": 475
+        }
+      ],
+      "src\\components\\super-admin\\landing\\LandingAnalytics.tsx": [
+        {
+          "type": "jsx",
+          "text": "All Companies",
+          "key": "allCompanies",
+          "line": 324
+        },
+        {
+          "type": "jsx",
+          "text": "Loading companies...",
+          "key": "loadingCompanies",
+          "line": 326
+        },
+        {
+          "type": "jsx",
+          "text": "Export Report",
+          "key": "exportReport",
+          "line": 345
+        },
+        {
+          "type": "jsx",
+          "text": "Export to CSV",
+          "key": "exportToCsv",
+          "line": 351
+        },
+        {
+          "type": "jsx",
+          "text": "Export to PDF",
+          "key": "exportToPdf",
+          "line": 355
+        },
+        {
+          "type": "jsx",
+          "text": "Total Views",
+          "key": "totalViews",
+          "line": 366
+        },
+        {
+          "type": "jsx",
+          "text": "Unique Visitors",
+          "key": "uniqueVisitors",
+          "line": 381
+        },
+        {
+          "type": "jsx",
+          "text": "Conversion Rate",
+          "key": "conversionRate",
+          "line": 396
+        },
+        {
+          "type": "jsx",
+          "text": "Avg. Time on Page",
+          "key": "avgTimeOnPage",
+          "line": 411
+        },
+        {
+          "type": "jsx",
+          "text": "Bounce Rate",
+          "key": "bounceRate",
+          "line": 426
+        },
+        {
+          "type": "jsx",
+          "text": "Top Pages",
+          "key": "topPages",
+          "line": 444
+        },
+        {
+          "type": "jsx",
+          "text": "No page data available",
+          "key": "noPageDataAvailable",
+          "line": 449
+        },
+        {
+          "type": "jsx",
+          "text": "Device Breakdown",
+          "key": "deviceBreakdown",
+          "line": 471
+        },
+        {
+          "type": "jsx",
+          "text": "Traffic Sources",
+          "key": "trafficSources",
+          "line": 496
+        },
+        {
+          "type": "jsx",
+          "text": "Real-time Activity",
+          "key": "realtimeActivity",
+          "line": 519
+        },
+        {
+          "type": "jsx",
+          "text": "Active users now",
+          "key": "activeUsersNow",
+          "line": 524
+        },
+        {
+          "type": "jsx",
+          "text": "Recent Events",
+          "key": "recentEvents",
+          "line": 529
+        },
+        {
+          "type": "jsx",
+          "text": "No recent events",
+          "key": "noRecentEvents",
+          "line": 541
+        },
+        {
+          "type": "jsx",
+          "text": "Event Tracking",
+          "key": "eventTracking",
+          "line": 553
+        },
+        {
+          "type": "jsx",
+          "text": "Event",
+          "key": "event",
+          "line": 560
+        },
+        {
+          "type": "jsx",
+          "text": "Category",
+          "key": "category",
+          "line": 561
+        },
+        {
+          "type": "jsx",
+          "text": "Count",
+          "key": "count",
+          "line": 562
+        },
+        {
+          "type": "jsx",
+          "text": "Conversion Rate",
+          "key": "conversionRate",
+          "line": 563
+        },
+        {
+          "type": "jsx",
+          "text": "No event data available for the selected period",
+          "key": "noEventDataAvailable",
+          "line": 578
+        }
+      ],
+      "src\\components\\super-admin\\landing\\LandingContentManager.tsx": [
+        {
+          "type": "jsx",
+          "text": "All Companies (Global)",
+          "key": "allCompaniesGlobal",
+          "line": 118
+        },
+        {
+          "type": "jsx",
+          "text": "Loading companies...",
+          "key": "loadingCompanies",
+          "line": 120
+        },
+        {
+          "type": "jsx",
+          "text": "Configure the section properties and content.",
+          "key": "configureTheSectionProperties",
+          "line": 144
+        },
+        {
+          "type": "jsx",
+          "text": "Loading sections...",
+          "key": "loadingSections",
+          "line": 163
+        },
+        {
+          "type": "jsx",
+          "text": "No sections found. Create your first section to get started.",
+          "key": "noSectionsFoundCreate",
+          "line": 167
+        },
+        {
+          "type": "jsx",
+          "text": "Section Type",
+          "key": "sectionType",
+          "line": 272
+        },
+        {
+          "type": "jsx",
+          "text": "Section Name (English)",
+          "key": "sectionNameEnglish",
+          "line": 290
+        },
+        {
+          "type": "jsx",
+          "text": "Section Name (Arabic)",
+          "key": "sectionNameArabic",
+          "line": 300
+        },
+        {
+          "type": "jsx",
+          "text": "Sort Order",
+          "key": "sortOrder",
+          "line": 309
+        },
+        {
+          "type": "jsx",
+          "text": "Active",
+          "key": "active",
+          "line": 325
+        },
+        {
+          "type": "label",
+          "text": "Hero Section",
+          "key": "heroSection",
+          "line": 39
+        },
+        {
+          "type": "label",
+          "text": "Features",
+          "key": "features",
+          "line": 40
+        },
+        {
+          "type": "label",
+          "text": "Testimonials",
+          "key": "testimonials",
+          "line": 41
+        },
+        {
+          "type": "label",
+          "text": "Call to Action",
+          "key": "callToAction",
+          "line": 42
+        },
+        {
+          "type": "label",
+          "text": "About Us",
+          "key": "aboutUs",
+          "line": 43
+        },
+        {
+          "type": "label",
+          "text": "Contact",
+          "key": "contact",
+          "line": 44
+        }
+      ],
+      "src\\components\\super-admin\\landing\\LandingMediaLibrary.tsx": [
+        {
+          "type": "jsx",
+          "text": "Upload Media",
+          "key": "uploadMedia",
+          "line": 136
+        },
+        {
+          "type": "jsx",
+          "text": "Upload Media Files",
+          "key": "uploadMediaFiles",
+          "line": 142
+        },
+        {
+          "type": "jsx",
+          "text": "Select files to upload to the media library.",
+          "key": "selectFilesToUpload",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "Click to select files or drag and drop",
+          "key": "clickToSelectFiles",
+          "line": 159
+        },
+        {
+          "type": "jsx",
+          "text": "Supports images, videos, and documents",
+          "key": "supportsImagesVideosAnd",
+          "line": 162
+        },
+        {
+          "type": "jsx",
+          "text": "Loading media files...",
+          "key": "loadingMediaFiles",
+          "line": 175
+        },
+        {
+          "type": "jsx",
+          "text": "Edit Media File",
+          "key": "editMediaFile",
+          "line": 278
+        },
+        {
+          "type": "jsx",
+          "text": "Update the metadata for this media file.",
+          "key": "updateTheMetadataFor",
+          "line": 279
+        },
+        {
+          "type": "jsx",
+          "text": "Alt Text (English)",
+          "key": "altTextEnglish",
+          "line": 318
+        },
+        {
+          "type": "jsx",
+          "text": "Alt Text (Arabic)",
+          "key": "altTextArabic",
+          "line": 328
+        },
+        {
+          "type": "jsx",
+          "text": "Update Media",
+          "key": "updateMedia",
+          "line": 348
+        },
+        {
+          "type": "label",
+          "text": "All Files",
+          "key": "allFiles",
+          "line": 36
+        },
+        {
+          "type": "label",
+          "text": "Images",
+          "key": "images",
+          "line": 37
+        },
+        {
+          "type": "label",
+          "text": "Videos",
+          "key": "videos",
+          "line": 38
+        },
+        {
+          "type": "label",
+          "text": "Documents",
+          "key": "documents",
+          "line": 39
+        }
+      ],
+      "src\\components\\super-admin\\landing\\LandingPreview.tsx": [
+        {
+          "type": "jsx",
+          "text": "All Companies (Global)",
+          "key": "allCompaniesGlobal",
+          "line": 60
+        },
+        {
+          "type": "jsx",
+          "text": "Loading companies...",
+          "key": "loadingCompanies",
+          "line": 62
+        },
+        {
+          "type": "jsx",
+          "text": "Default",
+          "key": "default",
+          "line": 82
+        },
+        {
+          "type": "jsx",
+          "text": "Refresh",
+          "key": "refresh",
+          "line": 92
+        },
+        {
+          "type": "jsx",
+          "text": "Open in New Tab",
+          "key": "openInNewTab",
+          "line": 97
+        },
+        {
+          "type": "jsx",
+          "text": "Preview Settings",
+          "key": "previewSettings",
+          "line": 107
+        },
+        {
+          "type": "jsx",
+          "text": "Device View",
+          "key": "deviceView",
+          "line": 111
+        },
+        {
+          "type": "jsx",
+          "text": "Show Rulers",
+          "key": "showRulers",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "Theme Info",
+          "key": "themeInfo",
+          "line": 162
+        },
+        {
+          "type": "jsx",
+          "text": "Loading preview...",
+          "key": "loadingPreview",
+          "line": 223
+        },
+        {
+          "type": "jsx",
+          "text": "Add sections in the Content tab to see them here",
+          "key": "addSectionsInThe",
+          "line": 231
+        },
+        {
+          "type": "jsx",
+          "text": "Welcome to Our Platform",
+          "key": "welcomeToOurPlatform",
+          "line": 297
+        },
+        {
+          "type": "jsx",
+          "text": "Experience the future of business management",
+          "key": "experienceTheFutureOf",
+          "line": 300
+        },
+        {
+          "type": "jsx",
+          "text": "Get Started Today",
+          "key": "getStartedToday",
+          "line": 309
+        },
+        {
+          "type": "jsx",
+          "text": "Key Features",
+          "key": "keyFeatures",
+          "line": 318
+        },
+        {
+          "type": "jsx",
+          "text": "Feature {i}",
+          "key": "featureI",
+          "line": 328
+        },
+        {
+          "type": "jsx",
+          "text": "Description of this amazing feature that will help your business grow.",
+          "key": "descriptionOfThisAmazing",
+          "line": 329
+        },
+        {
+          "type": "jsx",
+          "text": "What Our Customers Say",
+          "key": "whatOurCustomersSay",
+          "line": 339
+        },
+        {
+          "type": "jsx",
+          "text": "Customer {i}",
+          "key": "customerI",
+          "line": 349
+        },
+        {
+          "type": "jsx",
+          "text": "CEO, Company {i}",
+          "key": "ceoCompanyI",
+          "line": 350
+        },
+        {
+          "type": "jsx",
+          "text": "Ready to Get Started?",
+          "key": "readyToGetStarted",
+          "line": 362
+        },
+        {
+          "type": "jsx",
+          "text": "Join thousands of satisfied customers today",
+          "key": "joinThousandsOfSatisfied",
+          "line": 363
+        },
+        {
+          "type": "jsx",
+          "text": "Start Free Trial",
+          "key": "startFreeTrial",
+          "line": 373
+        },
+        {
+          "type": "jsx",
+          "text": "Learn More",
+          "key": "learnMore",
+          "line": 376
+        }
+      ],
+      "src\\components\\super-admin\\landing\\LandingThemeSettings.tsx": [
+        {
+          "type": "jsx",
+          "text": "Default",
+          "key": "default",
+          "line": 212
+        },
+        {
+          "type": "jsx",
+          "text": "Create New Theme",
+          "key": "createNewTheme",
+          "line": 219
+        },
+        {
+          "type": "jsx",
+          "text": "Save Changes",
+          "key": "saveChanges",
+          "line": 235
+        },
+        {
+          "type": "jsx",
+          "text": "Colors",
+          "key": "colors",
+          "line": 248
+        },
+        {
+          "type": "jsx",
+          "text": "Typography",
+          "key": "typography",
+          "line": 252
+        },
+        {
+          "type": "jsx",
+          "text": "Spacing",
+          "key": "spacing",
+          "line": 256
+        },
+        {
+          "type": "jsx",
+          "text": "Custom CSS",
+          "key": "customCss",
+          "line": 260
+        },
+        {
+          "type": "jsx",
+          "text": "Typography Settings",
+          "key": "typographySettings",
+          "line": 293
+        },
+        {
+          "type": "jsx",
+          "text": "Spacing Configuration",
+          "key": "spacingConfiguration",
+          "line": 313
+        },
+        {
+          "type": "jsx",
+          "text": "Custom CSS",
+          "key": "customCss",
+          "line": 333
+        },
+        {
+          "type": "jsx",
+          "text": "Theme Settings",
+          "key": "themeSettings",
+          "line": 354
+        },
+        {
+          "type": "jsx",
+          "text": "Theme Name (English)",
+          "key": "themeNameEnglish",
+          "line": 358
+        },
+        {
+          "type": "jsx",
+          "text": "Theme Name (Arabic)",
+          "key": "themeNameArabic",
+          "line": 369
+        },
+        {
+          "type": "jsx",
+          "text": "Default Theme",
+          "key": "defaultTheme",
+          "line": 387
+        },
+        {
+          "type": "jsx",
+          "text": "Active",
+          "key": "active",
+          "line": 398
+        },
+        {
+          "type": "jsx",
+          "text": "Theme Actions",
+          "key": "themeActions",
+          "line": 405
+        },
+        {
+          "type": "jsx",
+          "text": "Duplicate Theme",
+          "key": "duplicateTheme",
+          "line": 412
+        },
+        {
+          "type": "jsx",
+          "text": "Export Theme",
+          "key": "exportTheme",
+          "line": 420
+        },
+        {
+          "type": "jsx",
+          "text": "No Theme Selected",
+          "key": "noThemeSelected",
+          "line": 439
+        },
+        {
+          "type": "jsx",
+          "text": "Select an existing theme to edit or create a new one to get started.",
+          "key": "selectAnExistingTheme",
+          "line": 440
+        },
+        {
+          "type": "jsx",
+          "text": "Create Your First Theme",
+          "key": "createYourFirstTheme",
+          "line": 443
+        }
+      ],
+      "src\\components\\super-admin\\settings\\BulkOperations.tsx": [
+        {
+          "type": "jsx",
+          "text": "Bulk Operations",
+          "key": "bulkOperations",
+          "line": 130
+        },
+        {
+          "type": "jsx",
+          "text": "Data Migration",
+          "key": "dataMigration",
+          "line": 131
+        },
+        {
+          "type": "jsx",
+          "text": "Company Selection",
+          "key": "companySelection",
+          "line": 139
+        },
+        {
+          "type": "jsx",
+          "text": "Select companies to perform bulk operations",
+          "key": "selectCompaniesToPerform",
+          "line": 142
+        },
+        {
+          "type": "jsx",
+          "text": "Select All ({companies.length} companies)",
+          "key": "selectAllCompanieslengthCompanies",
+          "line": 153
+        },
+        {
+          "type": "jsx",
+          "text": "Available Operations",
+          "key": "availableOperations",
+          "line": 188
+        },
+        {
+          "type": "jsx",
+          "text": "Perform bulk operations on selected companies",
+          "key": "performBulkOperationsOn",
+          "line": 191
+        },
+        {
+          "type": "jsx",
+          "text": "Operation in progress...",
+          "key": "operationInProgress",
+          "line": 199
+        },
+        {
+          "type": "jsx",
+          "text": "Input",
+          "key": "input",
+          "line": 229
+        },
+        {
+          "type": "jsx",
+          "text": "Execute",
+          "key": "execute",
+          "line": 253
+        },
+        {
+          "type": "jsx",
+          "text": "Data Migration Tools",
+          "key": "dataMigrationTools",
+          "line": 269
+        },
+        {
+          "type": "jsx",
+          "text": "Import Companies",
+          "key": "importCompanies",
+          "line": 279
+        },
+        {
+          "type": "jsx",
+          "text": "Export All Data",
+          "key": "exportAllData",
+          "line": 283
+        },
+        {
+          "type": "jsx",
+          "text": "Migrate Schema",
+          "key": "migrateSchema",
+          "line": 287
+        },
+        {
+          "type": "jsx",
+          "text": "Migration History",
+          "key": "migrationHistory",
+          "line": 293
+        },
+        {
+          "type": "title",
+          "text": "No companies selected",
+          "key": "noCompaniesSelected",
+          "line": 97
+        },
+        {
+          "type": "description",
+          "text": "Change subscription plan for selected companies",
+          "key": "changeSubscriptionPlanFor",
+          "line": 40
+        },
+        {
+          "type": "description",
+          "text": "Send system notification to selected companies",
+          "key": "sendSystemNotificationTo",
+          "line": 49
+        },
+        {
+          "type": "description",
+          "text": "Export data for selected companies",
+          "key": "exportDataForSelected",
+          "line": 57
+        },
+        {
+          "type": "description",
+          "text": "Reset trial period for selected companies",
+          "key": "resetTrialPeriodFor",
+          "line": 64
+        },
+        {
+          "type": "description",
+          "text": "Suspend access for selected companies",
+          "key": "suspendAccessForSelected",
+          "line": 71
+        },
+        {
+          "type": "description",
+          "text": "Please select at least one company to perform the operation.",
+          "key": "pleaseSelectAtLeast",
+          "line": 98
+        }
+      ],
+      "src\\components\\super-admin\\settings\\DatabaseManagement.tsx": [
+        {
+          "type": "jsx",
+          "text": "Total Size",
+          "key": "totalSize",
+          "line": 85
+        },
+        {
+          "type": "jsx",
+          "text": "Across {dbStats.tableCount} tables",
+          "key": "acrossDbstatstablecountTables",
+          "line": 91
+        },
+        {
+          "type": "jsx",
+          "text": "Total Records",
+          "key": "totalRecords",
+          "line": 98
+        },
+        {
+          "type": "jsx",
+          "text": "Last Backup",
+          "key": "lastBackup",
+          "line": 111
+        },
+        {
+          "type": "jsx",
+          "text": "Automated daily backup",
+          "key": "automatedDailyBackup",
+          "line": 117
+        },
+        {
+          "type": "jsx",
+          "text": "Connections",
+          "key": "connections",
+          "line": 124
+        },
+        {
+          "type": "jsx",
+          "text": "Backups & Recovery",
+          "key": "backupsRecovery",
+          "line": 142
+        },
+        {
+          "type": "jsx",
+          "text": "Maintenance",
+          "key": "maintenance",
+          "line": 143
+        },
+        {
+          "type": "jsx",
+          "text": "Monitoring",
+          "key": "monitoring",
+          "line": 144
+        },
+        {
+          "type": "jsx",
+          "text": "Backup Management",
+          "key": "backupManagement",
+          "line": 152
+        },
+        {
+          "type": "jsx",
+          "text": "Create and manage database backups for disaster recovery",
+          "key": "createAndManageDatabase",
+          "line": 155
+        },
+        {
+          "type": "jsx",
+          "text": "Full Backup",
+          "key": "fullBackup",
+          "line": 162
+        },
+        {
+          "type": "jsx",
+          "text": "Incremental Backup",
+          "key": "incrementalBackup",
+          "line": 166
+        },
+        {
+          "type": "jsx",
+          "text": "Recent Backups",
+          "key": "recentBackups",
+          "line": 172
+        },
+        {
+          "type": "jsx",
+          "text": "Restore",
+          "key": "restore",
+          "line": 192
+        },
+        {
+          "type": "jsx",
+          "text": "Database Maintenance",
+          "key": "databaseMaintenance",
+          "line": 208
+        },
+        {
+          "type": "jsx",
+          "text": "Optimize database performance and manage table statistics",
+          "key": "optimizeDatabasePerformanceAnd",
+          "line": 211
+        },
+        {
+          "type": "jsx",
+          "text": "Optimize Database",
+          "key": "optimizeDatabase",
+          "line": 218
+        },
+        {
+          "type": "jsx",
+          "text": "Rebuild Indexes",
+          "key": "rebuildIndexes",
+          "line": 222
+        },
+        {
+          "type": "jsx",
+          "text": "Update Statistics",
+          "key": "updateStatistics",
+          "line": 226
+        },
+        {
+          "type": "jsx",
+          "text": "Table Statistics",
+          "key": "tableStatistics",
+          "line": 232
+        },
+        {
+          "type": "jsx",
+          "text": "Performance Monitoring",
+          "key": "performanceMonitoring",
+          "line": 258
+        },
+        {
+          "type": "jsx",
+          "text": "Monitor database performance and resource usage",
+          "key": "monitorDatabasePerformanceAnd",
+          "line": 261
+        },
+        {
+          "type": "jsx",
+          "text": "Query Performance",
+          "key": "queryPerformance",
+          "line": 268
+        },
+        {
+          "type": "jsx",
+          "text": "Average Query Time",
+          "key": "averageQueryTime",
+          "line": 271
+        },
+        {
+          "type": "jsx",
+          "text": "Slow Queries",
+          "key": "slowQueries",
+          "line": 277
+        },
+        {
+          "type": "jsx",
+          "text": "Cache Hit Rate",
+          "key": "cacheHitRate",
+          "line": 283
+        },
+        {
+          "type": "jsx",
+          "text": "Resource Usage",
+          "key": "resourceUsage",
+          "line": 291
+        },
+        {
+          "type": "jsx",
+          "text": "CPU Usage",
+          "key": "cpuUsage",
+          "line": 294
+        },
+        {
+          "type": "jsx",
+          "text": "Memory Usage",
+          "key": "memoryUsage",
+          "line": 300
+        },
+        {
+          "type": "jsx",
+          "text": "Disk Usage",
+          "key": "diskUsage",
+          "line": 306
+        },
+        {
+          "type": "jsx",
+          "text": "View Detailed Performance Report",
+          "key": "viewDetailedPerformanceReport",
+          "line": 314
+        },
+        {
+          "type": "title",
+          "text": "Backup initiated",
+          "key": "backupInitiated",
+          "line": 59
+        },
+        {
+          "type": "title",
+          "text": "Restore initiated",
+          "key": "restoreInitiated",
+          "line": 66
+        },
+        {
+          "type": "title",
+          "text": "Database optimization started",
+          "key": "databaseOptimizationStarted",
+          "line": 73
+        },
+        {
+          "type": "description",
+          "text": "Database restore has been started. This may take several minutes.",
+          "key": "databaseRestoreHasBeen",
+          "line": 67
+        },
+        {
+          "type": "description",
+          "text": "The system is optimizing database performance. This may take a few minutes.",
+          "key": "theSystemIsOptimizing",
+          "line": 74
+        }
+      ],
+      "src\\components\\super-admin\\settings\\FeatureManagement.tsx": [
+        {
+          "type": "jsx",
+          "text": "Feature Gates",
+          "key": "featureGates",
+          "line": 126
+        },
+        {
+          "type": "jsx",
+          "text": "Subscription Plans",
+          "key": "subscriptionPlans",
+          "line": 127
+        },
+        {
+          "type": "jsx",
+          "text": "System Feature Gates",
+          "key": "systemFeatureGates",
+          "line": 135
+        },
+        {
+          "type": "jsx",
+          "text": "Edit Plan",
+          "key": "editPlan",
+          "line": 227
+        },
+        {
+          "type": "jsx",
+          "text": "Plan Management",
+          "key": "planManagement",
+          "line": 238
+        },
+        {
+          "type": "jsx",
+          "text": "Global subscription plan settings and configurations",
+          "key": "globalSubscriptionPlanSettings",
+          "line": 239
+        },
+        {
+          "type": "jsx",
+          "text": "Free Trial Period (days)",
+          "key": "freeTrialPeriodDays",
+          "line": 246
+        },
+        {
+          "type": "jsx",
+          "text": "Payment Grace Period (days)",
+          "key": "paymentGracePeriodDays",
+          "line": 250
+        },
+        {
+          "type": "jsx",
+          "text": "Save Settings",
+          "key": "saveSettings",
+          "line": 256
+        },
+        {
+          "type": "jsx",
+          "text": "Export Plan Data",
+          "key": "exportPlanData",
+          "line": 259
+        },
+        {
+          "type": "title",
+          "text": "Plan updated",
+          "key": "planUpdated",
+          "line": 117
+        },
+        {
+          "type": "description",
+          "text": "Basic features for small teams",
+          "key": "basicFeaturesForSmall",
+          "line": 29
+        },
+        {
+          "type": "description",
+          "text": "Essential features for growing businesses",
+          "key": "essentialFeaturesForGrowing",
+          "line": 38
+        },
+        {
+          "type": "description",
+          "text": "Advanced features for established companies",
+          "key": "advancedFeaturesForEstablished",
+          "line": 47
+        },
+        {
+          "type": "description",
+          "text": "Vehicle tracking, maintenance, and fleet analytics",
+          "key": "vehicleTrackingMaintenanceAnd",
+          "line": 69
+        },
+        {
+          "type": "description",
+          "text": "Employee management, payroll, and attendance tracking",
+          "key": "employeeManagementPayrollAnd",
+          "line": 75
+        },
+        {
+          "type": "description",
+          "text": "Accounting, invoicing, and financial analytics",
+          "key": "accountingInvoicingAndFinancial",
+          "line": 81
+        },
+        {
+          "type": "description",
+          "text": "Business intelligence and advanced reporting",
+          "key": "businessIntelligenceAndAdvanced",
+          "line": 87
+        },
+        {
+          "type": "description",
+          "text": "Manage multiple companies from one dashboard",
+          "key": "manageMultipleCompaniesFrom",
+          "line": 93
+        },
+        {
+          "type": "description",
+          "text": "REST API access for custom integrations",
+          "key": "restApiAccessFor",
+          "line": 99
+        }
+      ],
+      "src\\components\\super-admin\\settings\\GlobalNotificationSettings.tsx": [
+        {
+          "type": "jsx",
+          "text": "Email Configuration",
+          "key": "emailConfiguration",
+          "line": 96
+        },
+        {
+          "type": "jsx",
+          "text": "Configure SMTP settings for system-wide email delivery",
+          "key": "configureSmtpSettingsFor",
+          "line": 99
+        },
+        {
+          "type": "jsx",
+          "text": "SMTP Host",
+          "key": "smtpHost",
+          "line": 107
+        },
+        {
+          "type": "jsx",
+          "text": "SMTP Port",
+          "key": "smtpPort",
+          "line": 116
+        },
+        {
+          "type": "jsx",
+          "text": "Security",
+          "key": "security",
+          "line": 125
+        },
+        {
+          "type": "jsx",
+          "text": "SMTP Username",
+          "key": "smtpUsername",
+          "line": 144
+        },
+        {
+          "type": "jsx",
+          "text": "SMTP Password",
+          "key": "smtpPassword",
+          "line": 153
+        },
+        {
+          "type": "jsx",
+          "text": "From Email",
+          "key": "fromEmail",
+          "line": 163
+        },
+        {
+          "type": "jsx",
+          "text": "Save Email Settings",
+          "key": "saveEmailSettings",
+          "line": 175
+        },
+        {
+          "type": "jsx",
+          "text": "Test Configuration",
+          "key": "testConfiguration",
+          "line": 178
+        },
+        {
+          "type": "jsx",
+          "text": "Global Notification Preferences",
+          "key": "globalNotificationPreferences",
+          "line": 189
+        },
+        {
+          "type": "jsx",
+          "text": "Email",
+          "key": "email",
+          "line": 207
+        },
+        {
+          "type": "jsx",
+          "text": "Email Templates",
+          "key": "emailTemplates",
+          "line": 247
+        },
+        {
+          "type": "jsx",
+          "text": "Manage system-wide email templates used for notifications",
+          "key": "manageSystemwideEmailTemplates",
+          "line": 250
+        },
+        {
+          "type": "jsx",
+          "text": "Edit",
+          "key": "edit",
+          "line": 269
+        },
+        {
+          "type": "jsx",
+          "text": "Create New Template",
+          "key": "createNewTemplate",
+          "line": 278
+        },
+        {
+          "type": "jsx",
+          "text": "Import Templates",
+          "key": "importTemplates",
+          "line": 279
+        },
+        {
+          "type": "title",
+          "text": "Email settings saved",
+          "key": "emailSettingsSaved",
+          "line": 68
+        },
+        {
+          "type": "title",
+          "text": "Test email sent",
+          "key": "testEmailSent",
+          "line": 85
+        },
+        {
+          "type": "description",
+          "text": "SMTP configuration has been updated successfully.",
+          "key": "smtpConfigurationHasBeen",
+          "line": 69
+        },
+        {
+          "type": "description",
+          "text": "A test email has been sent to verify the configuration.",
+          "key": "aTestEmailHas",
+          "line": 86
+        }
+      ],
+      "src\\components\\super-admin\\settings\\SystemIntegrations.tsx": [
+        {
+          "type": "jsx",
+          "text": "Integrations",
+          "key": "integrations",
+          "line": 115
+        },
+        {
+          "type": "jsx",
+          "text": "API Management",
+          "key": "apiManagement",
+          "line": 116
+        },
+        {
+          "type": "jsx",
+          "text": "Webhooks",
+          "key": "webhooks",
+          "line": 117
+        },
+        {
+          "type": "jsx",
+          "text": "System Integrations",
+          "key": "systemIntegrations",
+          "line": 125
+        },
+        {
+          "type": "jsx",
+          "text": "Manage third-party integrations and external services",
+          "key": "manageThirdpartyIntegrationsAnd",
+          "line": 128
+        },
+        {
+          "type": "jsx",
+          "text": "Configure",
+          "key": "configure",
+          "line": 168
+        },
+        {
+          "type": "jsx",
+          "text": "API Configuration",
+          "key": "apiConfiguration",
+          "line": 185
+        },
+        {
+          "type": "jsx",
+          "text": "Manage API access, rate limiting, and security settings",
+          "key": "manageApiAccessRate",
+          "line": 188
+        },
+        {
+          "type": "jsx",
+          "text": "Enable CORS",
+          "key": "enableCors",
+          "line": 206
+        },
+        {
+          "type": "jsx",
+          "text": "Require Authentication",
+          "key": "requireAuthentication",
+          "line": 214
+        },
+        {
+          "type": "jsx",
+          "text": "API Key Management",
+          "key": "apiKeyManagement",
+          "line": 224
+        },
+        {
+          "type": "jsx",
+          "text": "Generate New Key",
+          "key": "generateNewKey",
+          "line": 226
+        },
+        {
+          "type": "jsx",
+          "text": "View Keys",
+          "key": "viewKeys",
+          "line": 229
+        },
+        {
+          "type": "jsx",
+          "text": "API Documentation",
+          "key": "apiDocumentation",
+          "line": 236
+        },
+        {
+          "type": "jsx",
+          "text": "View Docs",
+          "key": "viewDocs",
+          "line": 238
+        },
+        {
+          "type": "jsx",
+          "text": "Download OpenAPI",
+          "key": "downloadOpenapi",
+          "line": 241
+        },
+        {
+          "type": "jsx",
+          "text": "API Usage Statistics",
+          "key": "apiUsageStatistics",
+          "line": 251
+        },
+        {
+          "type": "jsx",
+          "text": "Total Requests",
+          "key": "totalRequests",
+          "line": 255
+        },
+        {
+          "type": "jsx",
+          "text": "Success Rate",
+          "key": "successRate",
+          "line": 259
+        },
+        {
+          "type": "jsx",
+          "text": "Avg Response",
+          "key": "avgResponse",
+          "line": 263
+        },
+        {
+          "type": "jsx",
+          "text": "Active Keys",
+          "key": "activeKeys",
+          "line": 267
+        },
+        {
+          "type": "jsx",
+          "text": "Webhook Configuration",
+          "key": "webhookConfiguration",
+          "line": 280
+        },
+        {
+          "type": "jsx",
+          "text": "Manage webhook endpoints for real-time event notifications",
+          "key": "manageWebhookEndpointsFor",
+          "line": 283
+        },
+        {
+          "type": "jsx",
+          "text": "Enable Webhooks",
+          "key": "enableWebhooks",
+          "line": 290
+        },
+        {
+          "type": "jsx",
+          "text": "Allow the system to send webhook notifications",
+          "key": "allowTheSystemTo",
+          "line": 291
+        },
+        {
+          "type": "jsx",
+          "text": "Webhook Secret",
+          "key": "webhookSecret",
+          "line": 302
+        },
+        {
+          "type": "jsx",
+          "text": "Configured Webhooks",
+          "key": "configuredWebhooks",
+          "line": 313
+        },
+        {
+          "type": "jsx",
+          "text": "Add Webhook",
+          "key": "addWebhook",
+          "line": 314
+        },
+        {
+          "type": "jsx",
+          "text": "Test",
+          "key": "test",
+          "line": 335
+        },
+        {
+          "type": "jsx",
+          "text": "Edit",
+          "key": "edit",
+          "line": 338
+        },
+        {
+          "type": "jsx",
+          "text": "Logs",
+          "key": "logs",
+          "line": 341
+        },
+        {
+          "type": "title",
+          "text": "Webhook test sent",
+          "key": "webhookTestSent",
+          "line": 99
+        },
+        {
+          "type": "title",
+          "text": "API key generated",
+          "key": "apiKeyGenerated",
+          "line": 106
+        },
+        {
+          "type": "description",
+          "text": "Payment processing and subscription management",
+          "key": "paymentProcessingAndSubscription",
+          "line": 20
+        },
+        {
+          "type": "description",
+          "text": "Email delivery and transactional emails",
+          "key": "emailDeliveryAndTransactional",
+          "line": 29
+        },
+        {
+          "type": "description",
+          "text": "Team notifications and alerts",
+          "key": "teamNotificationsAndAlerts",
+          "line": 38
+        },
+        {
+          "type": "description",
+          "text": "Workflow automation and integrations",
+          "key": "workflowAutomationAndIntegrations",
+          "line": 47
+        },
+        {
+          "type": "description",
+          "text": "A test payload has been sent to the webhook endpoint.",
+          "key": "aTestPayloadHas",
+          "line": 100
+        },
+        {
+          "type": "description",
+          "text": "A new API key has been generated. Please store it securely.",
+          "key": "aNewApiKey",
+          "line": 107
+        }
+      ],
+      "src\\components\\super-admin\\settings\\SystemSecuritySettings.tsx": [
+        {
+          "type": "jsx",
+          "text": "Authentication & Access Control",
+          "key": "authenticationAccessControl",
+          "line": 71
+        },
+        {
+          "type": "jsx",
+          "text": "Configure system-wide authentication policies and access controls",
+          "key": "configureSystemwideAuthenticationPolicies",
+          "line": 74
+        },
+        {
+          "type": "jsx",
+          "text": "Enforce Strong Password Policy",
+          "key": "enforceStrongPasswordPolicy",
+          "line": 82
+        },
+        {
+          "type": "jsx",
+          "text": "Minimum Password Length",
+          "key": "minimumPasswordLength",
+          "line": 93
+        },
+        {
+          "type": "jsx",
+          "text": "Require Special Characters",
+          "key": "requireSpecialCharacters",
+          "line": 105
+        },
+        {
+          "type": "jsx",
+          "text": "Require Numbers",
+          "key": "requireNumbers",
+          "line": 116
+        },
+        {
+          "type": "jsx",
+          "text": "Enable Two-Factor Authentication",
+          "key": "enableTwofactorAuthentication",
+          "line": 129
+        },
+        {
+          "type": "jsx",
+          "text": "Session Timeout (hours)",
+          "key": "sessionTimeoutHours",
+          "line": 140
+        },
+        {
+          "type": "jsx",
+          "text": "Max Failed Login Attempts",
+          "key": "maxFailedLoginAttempts",
+          "line": 157
+        },
+        {
+          "type": "jsx",
+          "text": "Allow Anonymous Users",
+          "key": "allowAnonymousUsers",
+          "line": 169
+        },
+        {
+          "type": "jsx",
+          "text": "Audit & Monitoring",
+          "key": "auditMonitoring",
+          "line": 187
+        },
+        {
+          "type": "jsx",
+          "text": "Configure system monitoring and audit logging settings",
+          "key": "configureSystemMonitoringAnd",
+          "line": 190
+        },
+        {
+          "type": "jsx",
+          "text": "Enable System Audit Logging",
+          "key": "enableSystemAuditLogging",
+          "line": 197
+        },
+        {
+          "type": "jsx",
+          "text": "Log all system actions and user activities",
+          "key": "logAllSystemActions",
+          "line": 198
+        },
+        {
+          "type": "jsx",
+          "text": "Auto-confirm Email Signups",
+          "key": "autoconfirmEmailSignups",
+          "line": 213
+        },
+        {
+          "type": "jsx",
+          "text": "Automatically confirm user email addresses upon signup",
+          "key": "automaticallyConfirmUserEmail",
+          "line": 214
+        },
+        {
+          "type": "jsx",
+          "text": "Save Security Settings",
+          "key": "saveSecuritySettings",
+          "line": 232
+        },
+        {
+          "type": "title",
+          "text": "Security settings updated",
+          "key": "securitySettingsUpdated",
+          "line": 29
+        },
+        {
+          "type": "description",
+          "text": "System security configuration has been saved successfully.",
+          "key": "systemSecurityConfigurationHas",
+          "line": 30
+        },
+        {
+          "type": "description",
+          "text": "Minimum 8 characters with special chars",
+          "key": "minimum8CharactersWith",
+          "line": 35
+        },
+        {
+          "type": "description",
+          "text": "Account lockout after 5 attempts",
+          "key": "accountLockoutAfter5",
+          "line": 37
+        },
+        {
+          "type": "description",
+          "text": "All system actions are logged",
+          "key": "allSystemActionsAre",
+          "line": 38
+        }
+      ],
+      "src\\components\\super-admin\\UserDetailsDialog.tsx": [
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 37
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 38
+        },
+        {
+          "type": "jsx",
+          "text": "Promise",
+          "key": "promise",
+          "line": 39
+        }
+      ],
+      "src\\pages\\super-admin\\Payments.tsx": [
+        {
+          "type": "jsx",
+          "text": "Stripe",
+          "key": "stripe",
+          "line": 170
+        }
+      ],
+      "src\\pages\\super-admin\\Settings.tsx": [
+        {
+          "type": "jsx",
+          "text": "System Settings",
+          "key": "systemSettings",
+          "line": 90
+        },
+        {
+          "type": "jsx",
+          "text": "Configure system-wide settings and manage platform features",
+          "key": "configureSystemwideSettingsAnd",
+          "line": 93
+        },
+        {
+          "type": "jsx",
+          "text": "Configuration Management",
+          "key": "configurationManagement",
+          "line": 107
+        },
+        {
+          "type": "jsx",
+          "text": "Manage all system-wide settings from this centralized control panel",
+          "key": "manageAllSystemwideSettings",
+          "line": 110
+        },
+        {
+          "type": "label",
+          "text": "Security & Access",
+          "key": "securityAccess",
+          "line": 19
+        },
+        {
+          "type": "label",
+          "text": "Feature Management",
+          "key": "featureManagement",
+          "line": 26
+        },
+        {
+          "type": "label",
+          "text": "Company Management",
+          "key": "companyManagement",
+          "line": 33
+        },
+        {
+          "type": "label",
+          "text": "Global Branding",
+          "key": "globalBranding",
+          "line": 40
+        },
+        {
+          "type": "label",
+          "text": "Template Management",
+          "key": "templateManagement",
+          "line": 47
+        },
+        {
+          "type": "label",
+          "text": "Notifications",
+          "key": "notifications",
+          "line": 54
+        },
+        {
+          "type": "label",
+          "text": "Database",
+          "key": "database",
+          "line": 61
+        },
+        {
+          "type": "label",
+          "text": "Integrations",
+          "key": "integrations",
+          "line": 68
+        },
+        {
+          "type": "description",
+          "text": "System security, authentication, and access control",
+          "key": "systemSecurityAuthenticationAnd",
+          "line": 21
+        },
+        {
+          "type": "description",
+          "text": "Enable/disable features and manage subscription plans",
+          "key": "enabledisableFeaturesAndManage",
+          "line": 28
+        },
+        {
+          "type": "description",
+          "text": "Manage company settings and configurations",
+          "key": "manageCompanySettingsAnd",
+          "line": 35
+        },
+        {
+          "type": "description",
+          "text": "System-wide branding and appearance settings",
+          "key": "systemwideBrandingAndAppearance",
+          "line": 42
+        },
+        {
+          "type": "description",
+          "text": "Manage global templates and document settings",
+          "key": "manageGlobalTemplatesAnd",
+          "line": 49
+        },
+        {
+          "type": "description",
+          "text": "Global notification settings and email configurations",
+          "key": "globalNotificationSettingsAnd",
+          "line": 56
+        },
+        {
+          "type": "description",
+          "text": "Database management, backups, and maintenance",
+          "key": "databaseManagementBackupsAnd",
+          "line": 63
+        },
+        {
+          "type": "description",
+          "text": "Third-party integrations and API management",
+          "key": "thirdpartyIntegrationsAndApi",
+          "line": 70
+        }
+      ]
+    },
+    "string_to_key": {
+      "A new API key has been generated. Please store it securely.": "aNewApiKey",
+      "A test email has been sent to verify the configuration.": "aTestEmailHas",
+      "A test payload has been sent to the webhook endpoint.": "aTestPayloadHas",
+      "API Configuration": "apiConfiguration",
+      "API Documentation": "apiDocumentation",
+      "API Key Management": "apiKeyManagement",
+      "API Management": "apiManagement",
+      "API Usage Statistics": "apiUsageStatistics",
+      "API key generated": "apiKeyGenerated",
+      "About Us": "aboutUs",
+      "Account lockout after 5 attempts": "accountLockoutAfter5",
+      "Accounting, invoicing, and financial analytics": "accountingInvoicingAndFinancial",
+      "Across {dbStats.tableCount} tables": "acrossDbstatstablecountTables",
+      "Active": "active",
+      "Active Keys": "activeKeys",
+      "Active users now": "activeUsersNow",
+      "Add Webhook": "addWebhook",
+      "Add sections in the Content tab to see them here": "addSectionsInThe",
+      "Advanced features for established companies": "advancedFeaturesForEstablished",
+      "All Companies": "allCompanies",
+      "All Companies (Global)": "allCompaniesGlobal",
+      "All Files": "allFiles",
+      "All system actions are logged": "allSystemActionsAre",
+      "Allow Anonymous Users": "allowAnonymousUsers",
+      "Allow the system to send webhook notifications": "allowTheSystemTo",
+      "Alt Text (Arabic)": "altTextArabic",
+      "Alt Text (English)": "altTextEnglish",
+      "Audit & Monitoring": "auditMonitoring",
+      "Authentication & Access Control": "authenticationAccessControl",
+      "Auto-confirm Email Signups": "autoconfirmEmailSignups",
+      "Automated daily backup": "automatedDailyBackup",
+      "Automatically confirm user email addresses upon signup": "automaticallyConfirmUserEmail",
+      "Available Operations": "availableOperations",
+      "Average Query Time": "averageQueryTime",
+      "Avg Response": "avgResponse",
+      "Avg. Time on Page": "avgTimeOnPage",
+      "Backup Management": "backupManagement",
+      "Backup initiated": "backupInitiated",
+      "Backups & Recovery": "backupsRecovery",
+      "Basic features for small teams": "basicFeaturesForSmall",
+      "Bounce Rate": "bounceRate",
+      "Bulk Operations": "bulkOperations",
+      "Business intelligence and advanced reporting": "businessIntelligenceAndAdvanced",
+      "Button Clicks": "buttonClicks",
+      "CEO, Company {i}": "ceoCompanyI",
+      "CPU Usage": "cpuUsage",
+      "Cache Hit Rate": "cacheHitRate",
+      "Call to Action": "callToAction",
+      "Category": "category",
+      "Change subscription plan for selected companies": "changeSubscriptionPlanFor",
+      "Click to select files or drag and drop": "clickToSelectFiles",
+      "Colors": "colors",
+      "Company Management": "companyManagement",
+      "Company Selection": "companySelection",
+      "Configuration Management": "configurationManagement",
+      "Configure": "configure",
+      "Configure SMTP settings for system-wide email delivery": "configureSmtpSettingsFor",
+      "Configure system monitoring and audit logging settings": "configureSystemMonitoringAnd",
+      "Configure system-wide authentication policies and access controls": "configureSystemwideAuthenticationPolicies",
+      "Configure system-wide settings and manage platform features": "configureSystemwideSettingsAnd",
+      "Configure the section properties and content.": "configureTheSectionProperties",
+      "Configured Webhooks": "configuredWebhooks",
+      "Connections": "connections",
+      "Construction and building": "constructionAndBuilding",
+      "Contact": "contact",
+      "Conversion Goal": "conversionGoal",
+      "Conversion Rate": "conversionRate",
+      "Conversions": "conversions",
+      "Count": "count",
+      "Create New Template": "createNewTemplate",
+      "Create New Theme": "createNewTheme",
+      "Create Your First Theme": "createYourFirstTheme",
+      "Create and manage database backups for disaster recovery": "createAndManageDatabase",
+      "Custom CSS": "customCss",
+      "Customer {i}": "customerI",
+      "Data Migration": "dataMigration",
+      "Data Migration Tools": "dataMigrationTools",
+      "Database": "database",
+      "Database Maintenance": "databaseMaintenance",
+      "Database management, backups, and maintenance": "databaseManagementBackupsAnd",
+      "Database optimization started": "databaseOptimizationStarted",
+      "Database restore has been started. This may take several minutes.": "databaseRestoreHasBeen",
+      "Declare Winner": "declareWinner",
+      "Default": "default",
+      "Default Theme": "defaultTheme",
+      "Description": "description",
+      "Description of this amazing feature that will help your business grow.": "descriptionOfThisAmazing",
+      "Device Breakdown": "deviceBreakdown",
+      "Device View": "deviceView",
+      "Disk Usage": "diskUsage",
+      "Documents": "documents",
+      "Download OpenAPI": "downloadOpenapi",
+      "Duplicate Theme": "duplicateTheme",
+      "Edit": "edit",
+      "Edit Media File": "editMediaFile",
+      "Edit Plan": "editPlan",
+      "Educational institutions": "educationalInstitutions",
+      "Email": "email",
+      "Email Configuration": "emailConfiguration",
+      "Email Templates": "emailTemplates",
+      "Email delivery and transactional emails": "emailDeliveryAndTransactional",
+      "Email settings saved": "emailSettingsSaved",
+      "Employee management, payroll, and attendance tracking": "employeeManagementPayrollAnd",
+      "Enable CORS": "enableCors",
+      "Enable System Audit Logging": "enableSystemAuditLogging",
+      "Enable Two-Factor Authentication": "enableTwofactorAuthentication",
+      "Enable Webhooks": "enableWebhooks",
+      "Enable/disable features and manage subscription plans": "enabledisableFeaturesAndManage",
+      "Enforce Strong Password Policy": "enforceStrongPasswordPolicy",
+      "Essential features for growing businesses": "essentialFeaturesForGrowing",
+      "Event": "event",
+      "Event Tracking": "eventTracking",
+      "Execute": "execute",
+      "Experience the future of business management": "experienceTheFutureOf",
+      "Export All Data": "exportAllData",
+      "Export Plan Data": "exportPlanData",
+      "Export Report": "exportReport",
+      "Export Theme": "exportTheme",
+      "Export data for selected companies": "exportDataForSelected",
+      "Export to CSV": "exportToCsv",
+      "Export to PDF": "exportToPdf",
+      "Feature Gates": "featureGates",
+      "Feature Management": "featureManagement",
+      "Feature {i}": "featureI",
+      "Features": "features",
+      "Form Submissions": "formSubmissions",
+      "Free Trial Period (days)": "freeTrialPeriodDays",
+      "From Email": "fromEmail",
+      "Full Backup": "fullBackup",
+      "Generate New Key": "generateNewKey",
+      "Get Started Today": "getStartedToday",
+      "Global Branding": "globalBranding",
+      "Global Notification Preferences": "globalNotificationPreferences",
+      "Global notification settings and email configurations": "globalNotificationSettingsAnd",
+      "Global subscription plan settings and configurations": "globalSubscriptionPlanSettings",
+      "Healthcare and medical services": "healthcareAndMedicalServices",
+      "Hero Section": "heroSection",
+      "Images": "images",
+      "Import Companies": "importCompanies",
+      "Import Templates": "importTemplates",
+      "Incremental Backup": "incrementalBackup",
+      "Input": "input",
+      "Integrations": "integrations",
+      "Join thousands of satisfied customers today": "joinThousandsOfSatisfied",
+      "Key Features": "keyFeatures",
+      "Last Backup": "lastBackup",
+      "Learn More": "learnMore",
+      "Loading companies...": "loadingCompanies",
+      "Loading media files...": "loadingMediaFiles",
+      "Loading preview...": "loadingPreview",
+      "Loading sections...": "loadingSections",
+      "Log all system actions and user activities": "logAllSystemActions",
+      "Logistics and transportation": "logisticsAndTransportation",
+      "Logs": "logs",
+      "Maintenance": "maintenance",
+      "Manage API access, rate limiting, and security settings": "manageApiAccessRate",
+      "Manage all system-wide settings from this centralized control panel": "manageAllSystemwideSettings",
+      "Manage company settings and configurations": "manageCompanySettingsAnd",
+      "Manage global templates and document settings": "manageGlobalTemplatesAnd",
+      "Manage multiple companies from one dashboard": "manageMultipleCompaniesFrom",
+      "Manage system-wide email templates used for notifications": "manageSystemwideEmailTemplates",
+      "Manage third-party integrations and external services": "manageThirdpartyIntegrationsAnd",
+      "Manage webhook endpoints for real-time event notifications": "manageWebhookEndpointsFor",
+      "Manufacturing and production": "manufacturingAndProduction",
+      "Max Failed Login Attempts": "maxFailedLoginAttempts",
+      "Memory Usage": "memoryUsage",
+      "Migrate Schema": "migrateSchema",
+      "Migration History": "migrationHistory",
+      "Minimum 8 characters with special chars": "minimum8CharactersWith",
+      "Minimum Password Length": "minimumPasswordLength",
+      "Monitor database performance and resource usage": "monitorDatabasePerformanceAnd",
+      "Monitoring": "monitoring",
+      "No Theme Selected": "noThemeSelected",
+      "No companies selected": "noCompaniesSelected",
+      "No event data available for the selected period": "noEventDataAvailable",
+      "No page data available": "noPageDataAvailable",
+      "No recent events": "noRecentEvents",
+      "No sections found. Create your first section to get started.": "noSectionsFoundCreate",
+      "Notifications": "notifications",
+      "Open in New Tab": "openInNewTab",
+      "Operation in progress...": "operationInProgress",
+      "Optimize Database": "optimizeDatabase",
+      "Optimize database performance and manage table statistics": "optimizeDatabasePerformanceAnd",
+      "Page Views": "pageViews",
+      "Pause": "pause",
+      "Payment Grace Period (days)": "paymentGracePeriodDays",
+      "Payment processing and subscription management": "paymentProcessingAndSubscription",
+      "Perform bulk operations on selected companies": "performBulkOperationsOn",
+      "Performance Monitoring": "performanceMonitoring",
+      "Plan Management": "planManagement",
+      "Plan updated": "planUpdated",
+      "Please select at least one company to perform the operation.": "pleaseSelectAtLeast",
+      "Preview Settings": "previewSettings",
+      "Professional consulting services": "professionalConsultingServices",
+      "Promise": "promise",
+      "Property management and rentals": "propertyManagementAndRentals",
+      "Query Performance": "queryPerformance",
+      "REST API access for custom integrations": "restApiAccessFor",
+      "Ready to Get Started?": "readyToGetStarted",
+      "Real-time Activity": "realtimeActivity",
+      "Rebuild Indexes": "rebuildIndexes",
+      "Recent Backups": "recentBackups",
+      "Recent Events": "recentEvents",
+      "Refresh": "refresh",
+      "Require Authentication": "requireAuthentication",
+      "Require Numbers": "requireNumbers",
+      "Require Special Characters": "requireSpecialCharacters",
+      "Reset trial period for selected companies": "resetTrialPeriodFor",
+      "Resource Usage": "resourceUsage",
+      "Restaurant and food service": "restaurantAndFoodService",
+      "Restore": "restore",
+      "Restore initiated": "restoreInitiated",
+      "Retail sales and inventory management": "retailSalesAndInventory",
+      "SMTP Host": "smtpHost",
+      "SMTP Password": "smtpPassword",
+      "SMTP Port": "smtpPort",
+      "SMTP Username": "smtpUsername",
+      "SMTP configuration has been updated successfully.": "smtpConfigurationHasBeen",
+      "Save Changes": "saveChanges",
+      "Save Email Settings": "saveEmailSettings",
+      "Save Security Settings": "saveSecuritySettings",
+      "Save Settings": "saveSettings",
+      "Scroll Depth": "scrollDepth",
+      "Section Name (Arabic)": "sectionNameArabic",
+      "Section Name (English)": "sectionNameEnglish",
+      "Section Type": "sectionType",
+      "Security": "security",
+      "Security & Access": "securityAccess",
+      "Security settings updated": "securitySettingsUpdated",
+      "Select All ({companies.length} companies)": "selectAllCompanieslengthCompanies",
+      "Select an existing theme to edit or create a new one to get started.": "selectAnExistingTheme",
+      "Select companies to perform bulk operations": "selectCompaniesToPerform",
+      "Select files to upload to the media library.": "selectFilesToUpload",
+      "Send system notification to selected companies": "sendSystemNotificationTo",
+      "Session Timeout (hours)": "sessionTimeoutHours",
+      "Show Rulers": "showRulers",
+      "Slow Queries": "slowQueries",
+      "Sort Order": "sortOrder",
+      "Spacing": "spacing",
+      "Spacing Configuration": "spacingConfiguration",
+      "Start": "start",
+      "Start Free Trial": "startFreeTrial",
+      "Stripe": "stripe",
+      "Subscription Plans": "subscriptionPlans",
+      "Success Rate": "successRate",
+      "Supports images, videos, and documents": "supportsImagesVideosAnd",
+      "Suspend access for selected companies": "suspendAccessForSelected",
+      "System Feature Gates": "systemFeatureGates",
+      "System Integrations": "systemIntegrations",
+      "System Settings": "systemSettings",
+      "System security configuration has been saved successfully.": "systemSecurityConfigurationHas",
+      "System security, authentication, and access control": "systemSecurityAuthenticationAnd",
+      "System-wide branding and appearance settings": "systemwideBrandingAndAppearance",
+      "Table Statistics": "tableStatistics",
+      "Team notifications and alerts": "teamNotificationsAndAlerts",
+      "Template Management": "templateManagement",
+      "Test": "test",
+      "Test Configuration": "testConfiguration",
+      "Test Name (Arabic)": "testNameArabic",
+      "Test Name (English)": "testNameEnglish",
+      "Test email sent": "testEmailSent",
+      "Testimonials": "testimonials",
+      "The system is optimizing database performance. This may take a few minutes.": "theSystemIsOptimizing",
+      "Theme Actions": "themeActions",
+      "Theme Info": "themeInfo",
+      "Theme Name (Arabic)": "themeNameArabic",
+      "Theme Name (English)": "themeNameEnglish",
+      "Theme Settings": "themeSettings",
+      "Third-party integrations and API management": "thirdpartyIntegrationsAndApi",
+      "Time on Page": "timeOnPage",
+      "Top Pages": "topPages",
+      "Total Records": "totalRecords",
+      "Total Requests": "totalRequests",
+      "Total Size": "totalSize",
+      "Total Views": "totalViews",
+      "Traffic Sources": "trafficSources",
+      "Typography": "typography",
+      "Typography Settings": "typographySettings",
+      "Unique Visitors": "uniqueVisitors",
+      "Update Media": "updateMedia",
+      "Update Statistics": "updateStatistics",
+      "Update the metadata for this media file.": "updateTheMetadataFor",
+      "Upload Media": "uploadMedia",
+      "Upload Media Files": "uploadMediaFiles",
+      "Variant A (Control)": "variantAControl",
+      "Variant B (Test)": "variantBTest",
+      "Vehicle rental and fleet management": "vehicleRentalAndFleet",
+      "Vehicle tracking, maintenance, and fleet analytics": "vehicleTrackingMaintenanceAnd",
+      "Videos": "videos",
+      "View Detailed Performance Report": "viewDetailedPerformanceReport",
+      "View Docs": "viewDocs",
+      "View Keys": "viewKeys",
+      "Visitors": "visitors",
+      "Webhook Configuration": "webhookConfiguration",
+      "Webhook Secret": "webhookSecret",
+      "Webhook test sent": "webhookTestSent",
+      "Webhooks": "webhooks",
+      "Welcome to Our Platform": "welcomeToOurPlatform",
+      "What Our Customers Say": "whatOurCustomersSay",
+      "Workflow automation and integrations": "workflowAutomationAndIntegrations"
+    }
+  }
+}

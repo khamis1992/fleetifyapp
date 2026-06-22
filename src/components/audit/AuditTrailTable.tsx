@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/ResponsiveTable'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ import { FinancialAuditLog } from '@/types/auditLog';
 import { format } from 'date-fns';
 import { AuditLogDetailsDialog } from './AuditLogDetailsDialog';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface AuditTrailTableProps {
   logs: FinancialAuditLog[];
   isLoading: boolean;
@@ -57,6 +59,8 @@ export function AuditTrailTable({
   currentPage = 1,
   onPageChange
 }: AuditTrailTableProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState<FinancialAuditLog | null>(null);
   const [sortConfig, setSortConfig] = useState<{
@@ -144,7 +148,7 @@ export function AuditTrailTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Audit Trail</CardTitle>
+          <CardTitle>{t("auditTrail")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
@@ -163,7 +167,7 @@ export function AuditTrailTable({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Audit Trail</CardTitle>
+              <CardTitle>{t("auditTrail")}</CardTitle>
               <p className="text-sm text-muted-foreground">
                 {totalCount} total records
               </p>
@@ -179,15 +183,14 @@ export function AuditTrailTable({
                 />
               </div>
               <Button variant="outline" size="sm" onClick={onRefresh}>
-                <Filter className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+                <Filter className="h-4 w-4 mr-2" />{t("refresh")}</Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
-            <Table>
+            <ResponsiveTable>
+<Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">
@@ -214,13 +217,13 @@ export function AuditTrailTable({
                       )}
                     </Button>
                   </TableHead>
-                  <TableHead className="w-[100px]">Entity</TableHead>
+                  <TableHead className="w-[100px]">{t("entity")}</TableHead>
                   <TableHead className="w-[120px]">User</TableHead>
-                  <TableHead className="w-[100px]">Amount</TableHead>
-                  <TableHead className="w-[80px]">Status</TableHead>
-                  <TableHead className="w-[80px]">Severity</TableHead>
-                  <TableHead className="w-[120px]">Integrity</TableHead>
-                  <TableHead className="w-[100px]">Details</TableHead>
+                  <TableHead className="w-[100px]">{t("amount")}</TableHead>
+                  <TableHead className="w-[80px]">{t("status")}</TableHead>
+                  <TableHead className="w-[80px]">{t("severity")}</TableHead>
+                  <TableHead className="w-[120px]">{t("integrity")}</TableHead>
+                  <TableHead className="w-[100px]">{t("details")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -278,19 +281,13 @@ export function AuditTrailTable({
                       <TableCell>
                         {log.verification_status === 'verified' ? (
                           <Badge variant="default" className="bg-green-100 text-green-800">
-                            <Eye className="h-3 w-3 mr-1" />
-                            Verified
-                          </Badge>
+                            <Eye className="h-3 w-3 mr-1" />{t("verified")}</Badge>
                         ) : log.verification_status === 'tampered' ? (
                           <Badge variant="destructive">
-                            <Eye className="h-3 w-3 mr-1" />
-                            Tampered
-                          </Badge>
+                            <Eye className="h-3 w-3 mr-1" />{t("tampered")}</Badge>
                         ) : (
                           <Badge variant="outline">
-                            <Eye className="h-3 w-3 mr-1" />
-                            Unknown
-                          </Badge>
+                            <Eye className="h-3 w-3 mr-1" />{t("unknown")}</Badge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -302,9 +299,7 @@ export function AuditTrailTable({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => setSelectedLog(log)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />{t("viewDetails")}</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -313,6 +308,7 @@ export function AuditTrailTable({
                 )}
               </TableBody>
             </Table>
+</ResponsiveTable>
           </div>
 
           {/* Pagination */}

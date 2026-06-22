@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface OverdueContract {
   id: string;
   contract_id: string;
@@ -33,6 +34,7 @@ interface OverdueContract {
 type FilterType = 'all' | 'critical' | 'moderate' | 'minor';
 
 const MobileOverdue: React.FC = () => {
+  const { t } = useFleetifyTranslation("ui");
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -173,7 +175,7 @@ const MobileOverdue: React.FC = () => {
           payment_date: new Date().toISOString(),
           payment_method: paymentMethod,
           reference_number: paymentReference,
-          status: 'verified',
+          payment_status: 'verified',
           notes: 'Recorded via mobile app',
         });
 
@@ -243,7 +245,7 @@ const MobileOverdue: React.FC = () => {
           </div>
           <div className="flex-1">
             <p className="text-sm text-slate-500">إجمالي المتأخرات</p>
-            <p className="text-2xl font-bold text-slate-900">QAR {totalOverdue.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-slate-900">{t("qarTotaloverduetolocalestring")}</p>
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-4 text-center">

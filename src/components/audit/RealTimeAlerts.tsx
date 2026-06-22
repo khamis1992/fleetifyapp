@@ -24,6 +24,7 @@ import { FinancialAuditLog } from '@/types/auditLog';
 import { format } from 'date-fns';
 import { relativeTime } from '@/lib/utils';
 
+import { useFleetifyTranslation } from "@/hooks/useTranslation";
 interface RealTimeAlertsProps {
   companyId: string;
   onHighRiskTransaction?: (log: FinancialAuditLog) => void;
@@ -37,6 +38,8 @@ export function RealTimeAlerts({
   onComplianceViolation,
   onTamperDetection
 }: RealTimeAlertsProps) {
+
+  const { t } = useFleetifyTranslation("ui");
   const { recentAlerts, clearAlerts } = useRealtimeAuditMonitoring(companyId, {
     onHighRiskTransaction,
     onComplianceViolation,
@@ -118,17 +121,13 @@ export function RealTimeAlerts({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Real-time Alerts
-          </CardTitle>
-          <CardDescription>
-            Monitor audit events in real-time
-          </CardDescription>
+            <Bell className="h-5 w-5" />{t("realtimeAlerts")}</CardTitle>
+          <CardDescription>{t("monitorAuditEventsIn")}</CardDescription>
         </CardHeader>
         <CardContent className="text-center py-8">
           <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-          <h3 className="text-lg font-medium text-green-800">All Clear</h3>
-          <p className="text-green-600">No recent audit alerts detected</p>
+          <h3 className="text-lg font-medium text-green-800">{t("allClear")}</h3>
+          <p className="text-green-600">{t("noRecentAuditAlerts")}</p>
         </CardContent>
       </Card>
     );
@@ -140,9 +139,7 @@ export function RealTimeAlerts({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Real-time Alerts
-            </CardTitle>
+              <Bell className="h-5 w-5" />{t("realtimeAlerts")}</CardTitle>
             <CardDescription>
               {visibleAlerts.length} recent alert{visibleAlerts.length !== 1 ? 's' : ''}
             </CardDescription>
@@ -156,9 +153,7 @@ export function RealTimeAlerts({
               size="sm"
               onClick={clearAlerts}
               disabled={visibleAlerts.length === 0}
-            >
-              Clear All
-            </Button>
+            >{t("clearAll")}</Button>
           </div>
         </div>
       </CardHeader>
