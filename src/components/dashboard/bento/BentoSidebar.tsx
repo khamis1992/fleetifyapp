@@ -280,27 +280,26 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
           <button
             onClick={() => toggleExpanded(item.id)}
             className={cn(
-              'group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300',
-              'hover:bg-slate-100/80 dark:hover:bg-neutral-800/60',
+              'group relative w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200',
+              'hover:bg-amber-50/60 dark:hover:bg-amber-500/5',
               isParentItemActive
-                ? 'text-slate-900 dark:text-white'
-                : 'text-slate-600 dark:text-neutral-300'
+                ? 'text-stone-900 dark:text-amber-50'
+                : 'text-stone-500 dark:text-stone-400'
             )}
             aria-expanded={isExpanded}
           >
-            {/* Active accent bar */}
             {isParentItemActive && (
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-l-full bg-gradient-to-b from-teal-400 to-emerald-500" />
+              <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-amber-500 dark:bg-amber-400" />
             )}
-            {/* Icon with subtle container */}
             <span className={cn(
-              'flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300',
-              'bg-slate-100 dark:bg-neutral-800 group-hover:bg-slate-200/80 dark:group-hover:bg-neutral-700',
-              isParentItemActive && 'bg-gradient-to-br from-teal-500/15 to-emerald-500/15 ring-1 ring-teal-500/20'
+              'flex-shrink-0 flex items-center justify-center w-8 h-8 transition-all duration-200',
+              'border border-stone-200 dark:border-stone-700/50',
+              'group-hover:border-amber-300 dark:group-hover:border-amber-500/40',
+              isParentItemActive && 'border-amber-400 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-500/10'
             )}>
               <item.icon className={cn(
                 'w-4 h-4 transition-colors',
-                isParentItemActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-neutral-400'
+                isParentItemActive ? 'text-amber-600 dark:text-amber-400' : 'text-stone-400 dark:text-stone-500 group-hover:text-amber-500 dark:group-hover:text-amber-400'
               )} />
             </span>
             {(!collapsed || isMobile) && (
@@ -310,9 +309,9 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                 </span>
                 <ChevronDown
                   className={cn(
-                    'w-4 h-4 text-slate-400 transition-transform duration-300',
+                    'w-3.5 h-3.5 transition-transform duration-200',
                     isExpanded && 'rotate-180',
-                    isParentItemActive && 'text-teal-500'
+                    isParentItemActive ? 'text-amber-500 dark:text-amber-400' : 'text-stone-300 dark:text-stone-600'
                   )}
                 />
               </>
@@ -324,8 +323,8 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="overflow-hidden mr-3 mt-1 space-y-0.5 border-r-2 border-slate-100 dark:border-neutral-800"
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="overflow-hidden mr-4 mt-0.5 space-y-px border-r border-amber-200/60 dark:border-amber-500/15"
               >
                 {item.children!.map((child) => {
                   const ChildIcon = child.icon;
@@ -336,20 +335,19 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                         to={child.href}
                         onClick={handleLinkClick}
                         className={cn(
-                          'group flex items-center gap-2.5 px-3 py-2 mr-2 rounded-lg text-sm transition-all duration-300 relative',
+                          'group flex items-center gap-2.5 px-3 py-2 mr-2 text-sm transition-all duration-200 relative',
                           isChildActive
-                            ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/25 font-semibold'
-                            : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800/60 hover:text-slate-800 dark:hover:text-neutral-100'
+                            ? 'bg-amber-500 text-stone-900 dark:text-amber-50 font-semibold'
+                            : 'text-stone-400 dark:text-stone-500 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 hover:text-stone-700 dark:hover:text-amber-50'
                         )}
                       >
-                        {/* Active connector dot */}
                         {isChildActive && (
-                          <span className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-teal-500 ring-2 ring-white dark:ring-neutral-900" />
+                          <span className="absolute right-[-9px] top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400" />
                         )}
                         <span className="flex-shrink-0 flex items-center justify-center">
                           <ChildIcon className={cn(
-                            'w-4 h-4 transition-transform group-hover:scale-110',
-                            isChildActive ? 'text-white' : 'text-slate-400 dark:text-neutral-500'
+                            'w-3.5 h-3.5 transition-transform group-hover:scale-110',
+                            isChildActive ? 'text-stone-900 dark:text-amber-50' : 'text-stone-300 dark:text-stone-600'
                           )} />
                         </span>
                         <span>{child.label}</span>
@@ -370,26 +368,25 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
         to={item.href!}
         onClick={handleLinkClick}
         className={cn(
-          'group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300',
+          'group relative w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200',
           isDirectActive
-            ? 'bg-gradient-to-l from-teal-500 via-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/20'
-            : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100/80 dark:hover:bg-neutral-800/60 hover:text-slate-900 dark:hover:text-white'
+            ? 'bg-amber-500 text-stone-900 dark:text-amber-50 font-semibold'
+            : 'text-stone-500 dark:text-stone-400 hover:bg-amber-50/60 dark:hover:bg-amber-500/5 hover:text-stone-800 dark:hover:text-amber-50'
         )}
       >
-        {/* Active accent bar */}
         {isDirectActive && (
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-7 rounded-l-full bg-white/40" />
+          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-amber-600 dark:bg-amber-300" />
         )}
-        {/* Icon container */}
         <span className={cn(
-          'flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300',
+          'flex-shrink-0 flex items-center justify-center w-8 h-8 transition-all duration-200',
+          'border border-stone-200 dark:border-stone-700/50',
           isDirectActive
-            ? 'bg-white/15'
-            : 'bg-slate-100 dark:bg-neutral-800 group-hover:bg-slate-200/80 dark:group-hover:bg-neutral-700'
+            ? 'border-amber-600 dark:border-amber-400 bg-amber-100/50 dark:bg-amber-400/10'
+            : 'group-hover:border-amber-300 dark:group-hover:border-amber-500/40'
         )}>
           <item.icon className={cn(
             'w-4 h-4',
-            isDirectActive ? 'text-white' : 'text-slate-500 dark:text-neutral-400'
+            isDirectActive ? 'text-amber-700 dark:text-amber-300' : 'text-stone-400 dark:text-stone-500 group-hover:text-amber-500 dark:group-hover:text-amber-400'
           )} />
         </span>
         {(!collapsed || isMobile) && (
@@ -399,48 +396,60 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
     );
   };
 
+  const categoryEntries = Object.entries(groupedNavigation);
+
   return (
     <motion.aside
       initial={false}
       animate={{ width: isMobile ? 288 : (collapsed ? 76 : 264) }}
       className={cn(
         "fixed top-0 right-0 h-screen z-40",
-        "flex flex-col bg-white dark:bg-neutral-900",
-        "shadow-[0_0_40px_-12px_rgba(15,118,110,0.18)] dark:shadow-[0_0_40px_-12px_rgba(20,184,166,0.15)]",
-        isMobile ? "border-none" : "border-l border-slate-200/70 dark:border-neutral-800"
+        "flex flex-col",
+        "bg-stone-50 dark:bg-stone-950",
+        "border-l border-stone-200 dark:border-stone-800",
+        isMobile && "border-none"
       )}
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%2300000000'/%3E%3Ccircle cx='2' cy='2' r='0.4' fill='%2300000005'/%3E%3C/svg%3E")`,
+      }}
     >
-      {/* Decorative top gradient line */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-l from-teal-500 via-emerald-500 to-transparent" />
+      {/* Top accent line — thin gold gradient */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-l from-amber-500 via-amber-400 to-transparent dark:from-amber-400 dark:via-amber-500" />
 
       {/* === Header: Logo & Collapse Button === */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100/80 dark:border-neutral-800 flex-shrink-0">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-stone-200 dark:border-stone-800 flex-shrink-0">
         {(!collapsed || isMobile) && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2.5"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="flex items-center gap-3"
           >
-            <div className="relative w-9 h-9 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-              <span className="text-white font-bold text-lg tracking-tight">F</span>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-neutral-900" />
+            <div className="relative w-9 h-9 border-2 border-amber-500 dark:border-amber-400 flex items-center justify-center bg-stone-900 dark:bg-stone-900">
+              <span className="text-amber-400 dark:text-amber-300 font-bold text-lg tracking-tight" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>F</span>
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 dark:bg-amber-300" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="font-bold text-slate-900 dark:text-white text-base tracking-tight">{t("fleetify")}</span>
-              <span className="text-[9px] text-teal-600 dark:text-teal-400 font-medium mt-0.5 tracking-wider">FLEET MANAGEMENT</span>
+              <span className="font-bold text-stone-900 dark:text-amber-50 text-base tracking-tight">{t("fleetify")}</span>
+              <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 tracking-[0.2em] uppercase" style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace' }}>Fleet Mgmt</span>
             </div>
           </motion.div>
         )}
         {(collapsed && !isMobile) && (
-          <div className="w-9 h-9 mx-auto bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/30">
-            <span className="text-white font-bold text-lg">F</span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="w-9 h-9 mx-auto border-2 border-amber-500 dark:border-amber-400 flex items-center justify-center bg-stone-900 dark:bg-stone-900"
+          >
+            <span className="text-amber-400 dark:text-amber-300 font-bold text-lg" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>F</span>
+          </motion.div>
         )}
         {!isMobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={cn(
-              'p-1.5 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400',
+              'p-1.5 transition-all text-stone-400 dark:text-stone-500 hover:text-amber-600 dark:hover:text-amber-400',
               collapsed && 'absolute left-2 top-4'
             )}
             title={collapsed ? 'توسيع' : 'تصغير'}
@@ -453,48 +462,49 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
 
       {/* === Search Trigger === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2.5 border-b border-slate-100/80 dark:border-neutral-800">
+        <div className="px-3 py-2.5 border-b border-stone-200 dark:border-stone-800">
           <button
             onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
             className={cn(
-              'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
-              'bg-gradient-to-l from-slate-50 to-slate-100/70 dark:from-neutral-800 dark:to-neutral-800/60',
-              'hover:from-teal-50/60 hover:to-emerald-50/40 dark:hover:from-neutral-800 dark:hover:to-neutral-700',
-              'border border-slate-200/60 dark:border-neutral-700/60 hover:border-teal-300/50',
-              'text-slate-400 dark:text-neutral-400 text-xs transition-all duration-300'
+              'group w-full flex items-center gap-2.5 px-3 py-2.5',
+              'border border-stone-200 dark:border-stone-700/60',
+              'hover:border-amber-400 dark:hover:border-amber-500/50',
+              'bg-stone-100/50 dark:bg-stone-900/50',
+              'hover:bg-amber-50/40 dark:hover:bg-amber-500/5',
+              'text-stone-400 dark:text-stone-500 text-xs transition-all duration-200'
             )}
             aria-label="بحث سريع"
           >
-            <Search className="w-3.5 h-3.5 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
+            <Search className="w-3.5 h-3.5 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
             <span className="flex-1 text-right">بحث سريع...</span>
-            <kbd className="text-[10px] bg-white dark:bg-neutral-700 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-neutral-600 font-mono text-slate-500 dark:text-neutral-300 shadow-sm">⌘K</kbd>
+            <kbd className="text-[10px] bg-stone-200/60 dark:bg-stone-800 px-1.5 py-0.5 border border-stone-300 dark:border-stone-700 font-mono text-stone-500 dark:text-stone-400" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>⌘K</kbd>
           </button>
         </div>
       )}
 
       {/* === Recent Pages === */}
       {(!collapsed || isMobile) && recentPages.length > 0 && (
-        <div className="px-3 py-2 border-b border-slate-100/80 dark:border-neutral-800">
+        <div className="px-3 py-2 border-b border-stone-200 dark:border-stone-800">
           <div className="flex items-center justify-between mb-1.5 px-1">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider flex items-center gap-1">
-              <CircleDot className="w-2.5 h-2.5 text-teal-400" />
+            <span className="text-[10px] font-bold text-stone-400 dark:text-stone-600 uppercase tracking-[0.15em] flex items-center gap-1.5" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>
+              <span className="w-1 h-1 bg-amber-500 dark:bg-amber-400" />
               المؤخر
             </span>
             <button
               onClick={() => setRecentPages([])}
-              className="text-slate-300 hover:text-slate-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors"
+              className="text-stone-300 hover:text-stone-500 dark:text-stone-700 dark:hover:text-stone-400 transition-colors"
               aria-label="مسح الصفحات الأخيرة"
             >
               <X className="w-3 h-3" />
             </button>
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-px">
             {recentPages.map(page => (
               <Link
                 key={page.href}
                 to={page.href}
                 onClick={handleLinkClick}
-                className="group flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800/60 hover:text-teal-600 dark:hover:text-teal-400 transition-all"
+                className="group flex items-center gap-2 px-2 py-1.5 text-xs text-stone-500 dark:text-stone-400 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 hover:text-amber-700 dark:hover:text-amber-400 transition-all"
               >
                 {page.icon && <page.icon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />}
                 {page.label}
@@ -506,16 +516,16 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
 
       {/* === Start Tour Button === */}
       {(!collapsed || isMobile) && (
-        <div className="px-3 py-2 border-b border-slate-100/80 dark:border-neutral-800">
+        <div className="px-3 py-2 border-b border-stone-200 dark:border-stone-800">
           <button
             onClick={() => startTour('dashboard-overview')}
             className={cn(
-              'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
-              'bg-gradient-to-l from-teal-500/90 via-emerald-500/90 to-teal-600/90',
-              'hover:from-teal-600 hover:via-emerald-600 hover:to-teal-700',
-              'text-white text-xs font-semibold transition-all duration-300',
-              'shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30',
-              'hover:scale-[1.02]'
+              'group w-full flex items-center gap-2.5 px-3 py-2.5',
+              'border border-amber-400 dark:border-amber-500/50',
+              'bg-amber-50 dark:bg-amber-500/5',
+              'hover:bg-amber-100 dark:hover:bg-amber-500/10',
+              'text-amber-700 dark:text-amber-400 text-xs font-semibold transition-all duration-200',
+              'hover:tracking-wider'
             )}
           >
             <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
@@ -525,77 +535,85 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       )}
 
       {/* === Navigation with Categories === */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-3 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
-        {Object.entries(groupedNavigation).map(([category, items], categoryIndex) => (
-          <div key={category} className={cn(categoryIndex > 0 && 'mt-5')}>
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-3 scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-stone-800 scrollbar-track-transparent">
+        {categoryEntries.map(([category, items], categoryIndex) => (
+          <motion.div
+            key={category}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: categoryIndex * 0.06, ease: 'easeOut' }}
+            className={cn(categoryIndex > 0 && 'mt-5')}
+          >
             {/* Category Label */}
             {categoryLabels[category] && (!collapsed || isMobile) && (
               <div className="flex items-center gap-2 px-2 py-1.5 mb-1.5">
-                <span className="h-px w-4 bg-gradient-to-l from-slate-300 to-transparent dark:from-neutral-600" />
-                <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
+                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-500 tabular-nums" style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace' }}>
+                  {String(categoryIndex).padStart(2, '0')}
+                </span>
+                <span className="text-[10px] font-bold text-stone-400 dark:text-stone-600 uppercase tracking-[0.15em]" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>
                   {categoryLabels[category]}
                 </span>
-                <span className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent dark:via-neutral-700/60" />
+                <span className="flex-1 h-px bg-gradient-to-l from-transparent via-stone-200 dark:via-stone-800 to-transparent" />
               </div>
             )}
 
             {/* Category Items */}
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {items.map((item) => (
                 <li key={item.id}>{renderNavItem(item)}</li>
               ))}
             </ul>
 
-            {/* Separator between categories */}
-            {categoryIndex < Object.keys(groupedNavigation).length - 1 && (collapsed && !isMobile) && (
-              <div className="mt-4 mx-3 border-b border-slate-100 dark:border-neutral-800" />
+            {/* Separator between categories (collapsed) */}
+            {categoryIndex < categoryEntries.length - 1 && (collapsed && !isMobile) && (
+              <div className="mt-4 mx-3 border-b border-stone-200 dark:border-stone-800" />
             )}
-          </div>
+          </motion.div>
         ))}
       </nav>
 
-      {/* === Footer: Theme Toggle + User Profile Card === */}
+      {/* === Footer: Theme Toggle === */}
       {!isMobile && (
-        <div className="px-3 py-1.5 border-t border-slate-100/80 dark:border-neutral-800 flex items-center justify-between">
+        <div className="px-3 py-1.5 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between">
           <ThemeToggle />
           {(!collapsed) && (
-            <span className="text-[10px] text-slate-400 dark:text-neutral-500 uppercase tracking-wider">النظام</span>
+            <span className="text-[10px] text-stone-400 dark:text-stone-600 uppercase tracking-[0.15em]" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>النظام</span>
           )}
         </div>
       )}
 
-      <div className="p-2.5 border-t border-slate-100/80 dark:border-neutral-800 flex-shrink-0 bg-gradient-to-l from-slate-50/80 to-teal-50/30 dark:from-neutral-900 dark:to-neutral-900">
+      {/* === User Profile Card === */}
+      <div className="p-2.5 border-t border-stone-200 dark:border-stone-800 flex-shrink-0 bg-stone-100/50 dark:bg-stone-900/50">
         <div
           className={cn(
-            'group relative flex items-center gap-2.5 p-2 rounded-xl',
-            'bg-white dark:bg-neutral-800/40 shadow-sm border border-slate-200/60 dark:border-neutral-700/40',
-            'hover:border-teal-300/40 hover:shadow-md transition-all duration-300',
+            'group relative flex items-center gap-2.5 p-2',
+            'border border-stone-200 dark:border-stone-800',
+            'hover:border-amber-300 dark:hover:border-amber-500/40 transition-all duration-200',
             collapsed && !isMobile && 'justify-center'
           )}
         >
-          {/* Online status dot */}
           {(!collapsed || isMobile) && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-neutral-900 z-10" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 dark:bg-amber-300 ring-2 ring-stone-100 dark:ring-stone-900 z-10" />
           )}
 
-          {/* Avatar - Clickable to go to Profile */}
+          {/* Avatar */}
           <button
             onClick={() => {
               handleLinkClick();
               navigate('/profile');
             }}
             className={cn(
-              'relative flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 transition-all cursor-pointer',
-              'w-9 h-9 rounded-full',
-              'bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-600',
-              'shadow-lg shadow-teal-500/30 hover:from-teal-600 hover:to-emerald-700 hover:scale-105'
+              'relative flex items-center justify-center font-semibold text-xs flex-shrink-0 transition-all cursor-pointer',
+              'w-9 h-9',
+              'border-2 border-amber-500 dark:border-amber-400',
+              'bg-stone-900 dark:bg-stone-900 text-amber-400 dark:text-amber-300',
+              'hover:scale-105'
             )}
+            style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
             title="الملف الشخصي"
             aria-label="الملف الشخصي"
           >
-            <span className="ring-2 ring-white/30 rounded-full w-full h-full flex items-center justify-center">
-              {userInitials}
-            </span>
+            {userInitials}
           </button>
 
           {/* User Info + Logout */}
@@ -609,14 +627,14 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
                 className="min-w-0 text-right transition-colors cursor-pointer"
                 title="الملف الشخصي"
               >
-                <p className="text-xs font-semibold text-slate-800 dark:text-neutral-100 truncate">{userName}</p>
-                <p className="text-[10px] text-slate-400 dark:text-neutral-500 truncate">{user?.email}</p>
+                <p className="text-xs font-semibold text-stone-800 dark:text-amber-50 truncate">{userName}</p>
+                <p className="text-[10px] text-stone-400 dark:text-stone-500 truncate" style={{ fontFamily: 'ui-monospace, "Cascadia Code", monospace' }}>{user?.email}</p>
               </button>
               <button
                 onClick={handleSignOut}
                 className={cn(
-                  'p-2 rounded-lg transition-all duration-300 flex-shrink-0',
-                  'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'
+                  'p-2 transition-all duration-200 flex-shrink-0',
+                  'text-stone-400 hover:text-red-500 dark:hover:text-red-400'
                 )}
                 title="تسجيل الخروج"
                 aria-label="تسجيل الخروج"
@@ -630,7 +648,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
           {collapsed && !isMobile && (
             <button
               onClick={handleSignOut}
-              className="absolute -top-1 -left-1 p-1.5 rounded-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 shadow-sm text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+              className="absolute -top-1 -left-1 p-1.5 bg-stone-100 dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
               title="تسجيل الخروج"
               aria-label="تسجيل الخروج"
             >

@@ -221,15 +221,15 @@ All colors MUST be HSL.
     
     --radius: 0.75rem;
 
-    /* Sidebar — Deep Navy #020617 */
-    --sidebar-background: 222 75% 5%;
-    --sidebar-foreground: 216 38% 97%;
-    --sidebar-primary: 166 71% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 75% 10%;
-    --sidebar-accent-foreground: 215 30% 92%;
-    --sidebar-border: 222 75% 12%;
-    --sidebar-ring: 166 71% 46%;
+    /* Sidebar — Midnight Desert (deep navy + warm gold) */
+    --sidebar-background: 225 50% 8%;
+    --sidebar-foreground: 40 30% 90%;
+    --sidebar-primary: 35 55% 65%;
+    --sidebar-primary-foreground: 225 50% 8%;
+    --sidebar-accent: 225 50% 12%;
+    --sidebar-accent-foreground: 40 30% 85%;
+    --sidebar-border: 225 40% 15%;
+    --sidebar-ring: 35 55% 65%;
     
     /* Mobile-specific colors */
     --mobile-navbar: var(--background);
@@ -320,15 +320,15 @@ All colors MUST be HSL.
     --gradient-hero: linear-gradient(135deg, hsl(166 71% 46%) 0%, hsl(166 71% 36%) 50%, hsl(236 87% 63%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(222 75% 8%) 0%, hsl(222 75% 5%) 100%);
     
-    /* Dark mode sidebar */
-    --sidebar-background: 222 75% 3%;
-    --sidebar-foreground: 216 38% 97%;
-    --sidebar-primary: 166 71% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 75% 8%;
-    --sidebar-accent-foreground: 215 30% 92%;
-    --sidebar-border: 222 75% 12%;
-    --sidebar-ring: 166 71% 46%;
+    /* Dark mode sidebar — Midnight Desert */
+    --sidebar-background: 225 60% 4%;
+    --sidebar-foreground: 40 30% 90%;
+    --sidebar-primary: 35 60% 62%;
+    --sidebar-primary-foreground: 225 50% 8%;
+    --sidebar-accent: 225 50% 8%;
+    --sidebar-accent-foreground: 40 30% 85%;
+    --sidebar-border: 225 40% 12%;
+    --sidebar-ring: 35 60% 62%;
     
     /* Dark mode touch and responsive colors */
     --touch-target: var(--primary);
