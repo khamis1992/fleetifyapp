@@ -70,6 +70,7 @@ interface BentoSidebarProps {
 
 // === Navigation Configuration with Icons for Sub-items ===
 const navigation: NavItem[] = [
+  // --- Section: "الرئيسية" (Main) — category: 'main' ---
   {
     id: 'dashboard',
     label: 'الرئيسية',
@@ -77,21 +78,13 @@ const navigation: NavItem[] = [
     href: '/dashboard',
     category: 'main',
   },
-  {
-    id: 'customers',
-    label: 'إدارة العملاء',
-    icon: Users,
-    category: 'operations',
-    children: [
-      { id: 'customers-list', label: 'قائمة العملاء', href: '/customers', icon: List },
-      { id: 'customers-crm', label: 'إدارة العلاقات (CRM)', href: '/customers/crm', icon: HeartHandshake },
-    ],
-  },
+
+  // --- Section: "العمليات الأساسية" (Core Operations) — category: 'core' ---
   {
     id: 'fleet',
     label: 'إدارة الأسطول',
     icon: Car,
-    category: 'operations',
+    category: 'core',
     children: [
       { id: 'vehicles', label: 'المركبات', href: '/fleet', icon: Car },
       { id: 'maintenance', label: 'الصيانة', href: '/fleet/maintenance', icon: Wrench },
@@ -104,17 +97,29 @@ const navigation: NavItem[] = [
     id: 'quotations-contracts',
     label: 'العروض والعقود',
     icon: FileText,
-    category: 'operations',
+    category: 'core',
     children: [
-      { id: 'quotations', label: 'عروض الأسعار', href: '/quotations', icon: ClipboardList },
       { id: 'contracts', label: 'العقود', href: '/contracts', icon: FileCheck },
+      { id: 'quotations', label: 'عروض الأسعار', href: '/quotations', icon: ClipboardList },
     ],
   },
+  {
+    id: 'customers',
+    label: 'إدارة العملاء',
+    icon: Users,
+    category: 'core',
+    children: [
+      { id: 'customers-list', label: 'قائمة العملاء', href: '/customers', icon: List },
+      { id: 'customers-crm', label: 'إدارة العلاقات (CRM)', href: '/customers/crm', icon: HeartHandshake },
+    ],
+  },
+
+  // --- Section: "المالية والإدارة" (Finance & Admin) — category: 'finance-admin' ---
   {
     id: 'finance',
     label: 'المالية',
     icon: Banknote,
-    category: 'management',
+    category: 'finance-admin',
     children: [
       { id: 'finance-overview', label: 'لوحة التحكم', href: '/finance/overview', icon: LayoutDashboard },
       { id: 'finance-billing', label: 'الفواتير والمدفوعات', href: '/finance/billing', icon: Receipt },
@@ -122,18 +127,13 @@ const navigation: NavItem[] = [
       { id: 'finance-ledger', label: 'دفتر الأستاذ', href: '/finance/general-ledger', icon: BookOpen },
       { id: 'finance-chart-of-accounts', label: 'دليل الحسابات', href: '/finance/chart-of-accounts', icon: Scale },
       { id: 'finance-reports', label: 'التقارير المالية', href: '/finance/reports', icon: BarChart3 },
-      { id: 'finance-budgets', label: 'الموازنات', href: '/finance/budgets', icon: Target },
-      { id: 'finance-cost-centers', label: 'مراكز التكلفة', href: '/finance/cost-centers', icon: Clock },
-      { id: 'finance-vendors', label: 'الموردين', href: '/finance/vendors', icon: Truck },
-      { id: 'finance-assets', label: 'الأصول الثابتة', href: '/finance/assets', icon: Building2 },
-      { id: 'finance-settings', label: 'إعدادات المالية', href: '/finance/settings', icon: Settings },
     ],
   },
   {
     id: 'hr',
     label: 'الموارد البشرية',
     icon: UserCheck,
-    category: 'management',
+    category: 'finance-admin',
     children: [
       { id: 'hr-employees', label: 'إدارة الموظفين', href: '/hr/employees', icon: UserCog },
       { id: 'hr-attendance', label: 'الحضور والإجازات', href: '/hr/attendance', icon: Clock },
@@ -141,11 +141,13 @@ const navigation: NavItem[] = [
       { id: 'hr-reports', label: 'التقارير', href: '/hr/reports', icon: BarChart3 },
     ],
   },
+
+  // --- Section: "الامتثال والمتابعة" (Compliance & Tracking) — category: 'compliance' ---
   {
     id: 'legal',
     label: 'الشؤون القانونية',
     icon: Shield,
-    category: 'management',
+    category: 'compliance',
     children: [
       { id: 'legal-cases', label: 'تتبع القضايا', href: '/legal/cases', icon: Gavel },
       { id: 'legal-document-generator', label: 'مساعد الكتب الذكي', href: '/legal/document-generator', icon: BookOpen },
@@ -154,43 +156,44 @@ const navigation: NavItem[] = [
     ],
   },
   {
-    id: 'operations',
-    label: 'العمليات',
-    icon: Truck,
-    category: 'management',
-    children: [
-      { id: 'dispatch', label: 'أذونات الصرف', href: '/fleet/dispatch-permits', icon: PackageCheck },
-    ],
-  },
-  {
     id: 'tasks',
     label: 'إدارة المهام',
     icon: ListTodo,
     href: '/tasks',
-    category: 'system',
+    category: 'compliance',
   },
+  {
+    id: 'dispatch-permits',
+    label: 'أذونات الصرف',
+    icon: PackageCheck,
+    href: '/fleet/dispatch-permits',
+    category: 'compliance',
+  },
+
+  // --- Section: "الأدوات والنظام" (Tools & System) — category: 'tools' ---
   {
     id: 'reports',
     label: 'التقارير',
     icon: BarChart3,
     href: '/reports',
-    category: 'system',
+    category: 'tools',
   },
   {
     id: 'settings',
     label: 'الإعدادات',
     icon: Settings,
     href: '/settings',
-    category: 'system',
+    category: 'tools',
   },
 ];
 
 // === Category Labels ===
 const categoryLabels: Record<string, string> = {
   main: '',
-  operations: 'التشغيل',
-  management: 'الإدارة',
-  system: 'النظام',
+  core: 'العمليات الأساسية',
+  'finance-admin': 'المالية والإدارة',
+  compliance: 'الامتثال والمتابعة',
+  tools: 'الأدوات والنظام',
 };
 
 // === Group navigation by category ===

@@ -15,6 +15,7 @@ import {
   CreditCard,
   Receipt,
   Building,
+  Building2,
   Link,
   Calculator,
   Landmark,
@@ -27,9 +28,11 @@ import {
   Users,
   Clock,
   Calendar,
+  CalendarDays,
   UserCog,
   AlertCircle,
   Package,
+  PackageCheck,
   Tags,
   ArrowUpDown,
   UserPlus,
@@ -37,6 +40,16 @@ import {
   TrendingDown,
   LayoutDashboard,
   BookOpen as BookOpenIcon,
+  Banknote,
+  Scale,
+  Gavel,
+  FolderOpen,
+  FileWarning,
+  FileCheck,
+  ClipboardList,
+  ListTodo,
+  List,
+  HeartHandshake,
   HelpCircle,
   PlayCircle,
   MessageSquare,
@@ -89,37 +102,16 @@ export interface NavDrawer {
 // ============================================================================
 
 export const PRIMARY_NAVIGATION: NavSection[] = [
+  // --- Main ---
   {
     id: 'dashboard',
-    name: 'لوحة التحكم',
+    name: 'الرئيسية',
     name_en: 'Dashboard',
     href: '/dashboard',
-    icon: Home,
+    icon: LayoutDashboard,
   },
 
-  // Customer Management (CRM)
-  {
-    id: 'customers',
-    name: 'إدارة العملاء',
-    name_en: 'Customer Management',
-    icon: Users,
-    submenu: [
-      {
-        id: 'customers-list',
-        name: 'قائمة العملاء',
-        href: '/customers',
-        icon: Users,
-      },
-      {
-        id: 'customers-crm',
-        name: 'إدارة العلاقات (CRM)',
-        href: '/customers/crm',
-        icon: PhoneCall,
-      },
-    ],
-  },
-
-  // Fleet Management
+  // --- Core Operations: Fleet Management ---
   {
     id: 'fleet',
     name: 'إدارة الأسطول',
@@ -127,178 +119,130 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     icon: Car,
     submenu: [
       {
-        id: 'fleet-vehicles',
-        name: 'إدارة المركبات',
+        id: 'vehicles',
+        name: 'المركبات',
         href: '/fleet',
         icon: Car,
       },
       {
-        id: 'fleet-maintenance',
+        id: 'maintenance',
         name: 'الصيانة',
         href: '/fleet/maintenance',
         icon: Wrench,
       },
       {
-        id: 'fleet-dispatch',
-        name: 'تصاريح الحركة',
-        href: '/fleet/dispatch-permits',
-        icon: FileText,
+        id: 'reservations',
+        name: 'الحجوزات',
+        href: '/fleet/reservations',
+        icon: CalendarDays,
       },
       {
-        id: 'fleet-violations',
-        name: 'المخالفات والمدفوعات',
+        id: 'violations',
+        name: 'المخالفات المرورية',
         href: '/fleet/traffic-violations',
         icon: AlertTriangle,
       },
       {
         id: 'fleet-reports',
-        name: 'التقارير والتحليلات',
+        name: 'تقارير الأسطول',
         href: '/fleet/reports',
         icon: BarChart3,
-      },
-      {
-        id: 'fleet-installments',
-        name: 'أقساط المركبات',
-        href: '/fleet/vehicle-installments',
-        icon: TrendingUp,
-      },
-      {
-        id: 'fleet-reservation-system',
-        name: 'نظام الحجوزات',
-        href: '/fleet/reservation-system',
-        icon: Calendar,
       },
     ],
   },
 
-  // Quotations & Contracts
+  // --- Core Operations: Contracts & Quotations ---
   {
     id: 'quotations-contracts',
     name: 'العروض والعقود',
-    name_en: 'Quotations & Contracts',
+    name_en: 'Contracts & Quotations',
     icon: FileText,
     submenu: [
-      {
-        id: 'quotations',
-        name: 'عروض الأسعار',
-        href: '/quotations',
-        icon: FileText,
-      },
       {
         id: 'contracts',
         name: 'العقود',
         href: '/contracts',
-        icon: FileText,
+        icon: FileCheck,
+      },
+      {
+        id: 'quotations',
+        name: 'عروض الأسعار',
+        href: '/quotations',
+        icon: ClipboardList,
       },
     ],
   },
 
-  // Finance & Sales
+  // --- Core Operations: Customers ---
+  {
+    id: 'customers',
+    name: 'إدارة العملاء',
+    name_en: 'Customers',
+    icon: Users,
+    submenu: [
+      {
+        id: 'customers-list',
+        name: 'قائمة العملاء',
+        href: '/customers',
+        icon: List,
+      },
+      {
+        id: 'customers-crm',
+        name: 'إدارة العلاقات (CRM)',
+        href: '/customers/crm',
+        icon: HeartHandshake,
+      },
+    ],
+  },
+
+  // --- Finance & Admin: Finance ---
   {
     id: 'finance',
-    name: 'المالية والمبيعات',
-    name_en: 'Finance & Sales',
-    icon: DollarSign,
+    name: 'المالية',
+    name_en: 'Finance',
+    icon: Banknote,
     requiresAdmin: true,
     submenu: [
       {
-        id: 'finance-chart',
-        name: 'دليل الحسابات',
-        href: '/finance/chart-of-accounts',
-        icon: BookOpen,
+        id: 'finance-overview',
+        name: 'لوحة التحكم',
+        href: '/finance/overview',
+        icon: LayoutDashboard,
       },
       {
-        id: 'finance-ledger',
-        name: 'دفتر الأستاذ',
-        href: '/finance/ledger',
-        icon: Calculator,
-      },
-      {
-        id: 'finance-invoices',
+        id: 'finance-billing',
         name: 'الفواتير والمدفوعات',
-        href: '/finance/invoices',
+        href: '/finance/billing',
         icon: Receipt,
       },
       {
         id: 'finance-treasury',
         name: 'الخزينة والبنوك',
         href: '/finance/treasury',
-        icon: Landmark,
+        icon: Building2,
       },
       {
-        id: 'finance-ar-aging',
-        name: 'الذمم المدينة',
-        href: '/finance/ar-aging',
-        icon: TrendingDown,
+        id: 'finance-ledger',
+        name: 'دفتر الأستاذ',
+        href: '/finance/general-ledger',
+        icon: BookOpenIcon,
       },
       {
-        id: 'finance-payment-tracking',
-        name: 'تتبع الدفعات',
-        href: '/finance/payment-tracking',
-        icon: Timeline,
+        id: 'finance-chart-of-accounts',
+        name: 'دليل الحسابات',
+        href: '/finance/chart-of-accounts',
+        icon: Scale,
       },
       {
         id: 'finance-reports',
-        name: 'التحليل والتقارير',
+        name: 'التقارير المالية',
         href: '/finance/reports',
-        icon: PieChart,
-      },
-      {
-        id: 'sales-pipeline',
-        name: 'مسار المبيعات',
-        href: '/sales/pipeline',
-        icon: TrendingUp,
-      },
-      {
-        id: 'sales-leads',
-        name: 'العملاء المحتملين والعروض',
-        href: '/sales/leads',
-        icon: UserPlus,
-      },
-      {
-        id: 'sales-orders',
-        name: 'الطلبات',
-        href: '/sales/orders',
-        icon: ShoppingCart,
-      },
-      {
-        id: 'sales-analytics',
-        name: 'تحليلات المبيعات',
-        href: '/sales/analytics',
         icon: BarChart3,
       },
     ],
   },
 
-  // Inventory
-  {
-    id: 'inventory',
-    name: 'المخزون',
-    name_en: 'Inventory',
-    icon: Boxes,
-    submenu: [
-      {
-        id: 'inventory-items',
-        name: 'الأصناف والتصنيفات',
-        href: '/inventory',
-        icon: Package,
-      },
-      {
-        id: 'inventory-warehouses',
-        name: 'المستودعات',
-        href: '/inventory/warehouses',
-        icon: Boxes,
-      },
-      {
-        id: 'inventory-movements',
-        name: 'حركات المخزون والتقارير',
-        href: '/inventory/movements',
-        icon: ArrowUpDown,
-      },
-    ],
-  },
-
-  // Human Resources
+  // --- Finance & Admin: Human Resources ---
   {
     id: 'hr',
     name: 'الموارد البشرية',
@@ -310,7 +254,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         id: 'hr-employees',
         name: 'إدارة الموظفين',
         href: '/hr/employees',
-        icon: Users,
+        icon: UserCog,
       },
       {
         id: 'hr-attendance',
@@ -322,7 +266,7 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
         id: 'hr-payroll',
         name: 'الرواتب',
         href: '/hr/payroll',
-        icon: DollarSign,
+        icon: Receipt,
       },
       {
         id: 'hr-reports',
@@ -333,13 +277,74 @@ export const PRIMARY_NAVIGATION: NavSection[] = [
     ],
   },
 
-  // Reports
+  // --- Compliance & Tracking: Legal Affairs ---
+  {
+    id: 'legal',
+    name: 'الشؤون القانونية',
+    name_en: 'Legal Affairs',
+    icon: Shield,
+    submenu: [
+      {
+        id: 'legal-cases',
+        name: 'تتبع القضايا',
+        href: '/legal/cases',
+        icon: Gavel,
+      },
+      {
+        id: 'legal-document-generator',
+        name: 'مساعد الكتب الذكي',
+        href: '/legal/document-generator',
+        icon: BookOpenIcon,
+      },
+      {
+        id: 'legal-documents',
+        name: 'مستندات الشركة',
+        href: '/legal/documents',
+        icon: FolderOpen,
+      },
+      {
+        id: 'legal-delinquency',
+        name: 'إدارة المتعثرات',
+        href: '/legal/delinquency',
+        icon: FileWarning,
+      },
+    ],
+  },
+
+  // --- Compliance & Tracking: Tasks ---
+  {
+    id: 'tasks',
+    name: 'إدارة المهام',
+    name_en: 'Tasks',
+    href: '/tasks',
+    icon: ListTodo,
+  },
+
+  // --- Compliance & Tracking: Dispatch Permits ---
+  {
+    id: 'dispatch-permits',
+    name: 'أذونات الصرف',
+    name_en: 'Dispatch Permits',
+    href: '/fleet/dispatch-permits',
+    icon: PackageCheck,
+  },
+
+  // --- Tools & System: Reports ---
   {
     id: 'reports',
     name: 'التقارير',
     name_en: 'Reports',
     href: '/reports',
     icon: BarChart3,
+  },
+
+  // --- Tools & System: Settings ---
+  {
+    id: 'settings',
+    name: 'الإعدادات',
+    name_en: 'Settings',
+    href: '/settings',
+    icon: Settings,
   },
 ]
 
