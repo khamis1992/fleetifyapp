@@ -120,19 +120,19 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Coral accent color for Bento design
-				coral: {
-					50: '#fef5f3',
-					100: '#fde8e4',
-					200: '#fcd5cd',
-					300: '#f9b5a8',
-					400: '#f38b75',
-					500: '#e85a4f',
-					600: '#d44332',
-					700: '#b23526',
-					800: '#932f23',
-					900: '#7a2c23',
-				},
+				// Indigo accent color (replaces coral)
+					indigo: {
+						50: '#f3f3fe',
+						100: '#e4e4fd',
+						200: '#cecdfb',
+						300: '#aca7f8',
+						400: '#8f87f4',
+						500: '#7C83F6',
+						600: '#6565e8',
+						700: '#5450d5',
+						800: '#4642ad',
+						900: '#3b388e',
+					},
 				// Mobile-specific colors
 				mobile: {
 					navbar: 'hsl(var(--mobile-navbar, var(--background)))',

@@ -84,6 +84,8 @@ import { EnhancedPaymentScheduleTabRedesigned as EnhancedPaymentScheduleTab } fr
 import { VehiclePickupReturnTabRedesigned } from './VehiclePickupReturnTabRedesigned';
 import { ContractViolationsTabRedesigned } from './ContractViolationsTabRedesigned';
 import { ContractHeaderRedesigned as ContractHeader } from './ContractHeaderRedesigned';
+import { ContractDocuments } from './ContractDocuments';
+import { OfficialContractView } from './OfficialContractView';
 import { formatCustomerName } from '@/utils/formatCustomerName';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
