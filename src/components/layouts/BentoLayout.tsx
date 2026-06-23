@@ -186,7 +186,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         </AnimatePresence>
 
         {/* Desktop Sidebar - Fixed Position */}
-        <div className="hidden lg:block fixed top-0 right-0 h-full z-30">
+        <div className="hidden lg:block fixed top-3 right-3 bottom-3 z-30">
           <aside role="complementary" aria-label="القائمة الجانبية">
             <BentoSidebar />
           </aside>
@@ -196,7 +196,7 @@ export const BentoLayout: React.FC<BentoLayoutProps> = ({ children }) => {
         <main
           role="main"
           aria-label="المحتوى الرئيسي"
-          className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0 lg:mr-[260px]"
+          className="flex-1 overflow-y-auto overflow-x-hidden pt-14 lg:pt-0 pb-20 lg:pb-0 lg:mr-[288px]"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="p-4 md:p-6 min-h-screen">
