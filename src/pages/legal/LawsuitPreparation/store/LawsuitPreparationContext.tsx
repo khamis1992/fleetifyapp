@@ -174,17 +174,26 @@ export function LawsuitPreparationProvider({
       if (!contractId || !companyId) return [];
       
       const { data, error } = await supabase
-        .from('traffic_violations')
+        .from('penalties')
         .select('*')
         .eq('contract_id', contractId)
         .eq('company_id', companyId)
-        .neq('status', 'paid')
-        .order('violation_date', { ascending: false });
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled')
+        .order('penalty_date', { ascending: false });
       
       if (error) throw error;
       
-      dispatch({ type: 'SET_VIOLATIONS', payload: data || [] });
-      return data || [];
+      const normalizedViolations = (data || []).map((violation) => ({
+        ...violation,
+        violation_number: violation.penalty_number,
+        violation_date: violation.penalty_date,
+        fine_amount: violation.amount,
+        total_amount: violation.amount,
+      }));
+
+      dispatch({ type: 'SET_VIOLATIONS', payload: normalizedViolations });
+      return normalizedViolations;
     },
     enabled: !!contractId && !!companyId,
   });

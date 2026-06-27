@@ -169,6 +169,7 @@ const GeneralAccounting = () => {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           className="accounting-command"
+          data-tour="accounting-header"
         >
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
@@ -220,7 +221,7 @@ const GeneralAccounting = () => {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div data-tour="accounting-metrics" className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               title="الأصول"
               value={formatCurrency(stats.totalAssets)}
@@ -253,7 +254,7 @@ const GeneralAccounting = () => {
         </motion.section>
 
         <Tabs value={currentTab} onValueChange={handleTabChange} className="accounting-workspace">
-          <section className="accounting-tabs-shell">
+          <section data-tour="accounting-tabs" className="accounting-tabs-shell">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: accountingColors.muted }}>
                 Workspace
@@ -275,6 +276,7 @@ const GeneralAccounting = () => {
                     key={tab.id}
                     value={tab.id}
                     className="accounting-tab-trigger"
+                    data-tour={`accounting-tab-${tab.id}`}
                     style={{
                       "--tab-accent": tab.accent,
                     } as CSSProperties}
@@ -294,7 +296,7 @@ const GeneralAccounting = () => {
             </TabsList>
           </section>
 
-          <section className="accounting-context-strip">
+          <section data-tour="accounting-context" className="accounting-context-strip">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: `${activeTab.accent}14`, color: activeTab.accent }}>
                 <activeTab.icon className="h-5 w-5" />
@@ -315,7 +317,7 @@ const GeneralAccounting = () => {
           </section>
 
           <TabsContent value="chart" className="mt-0">
-            <motion.div className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div data-tour="accounting-chart-panel" className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Suspense fallback={<PageSkeletonFallback />}>
                 <ChartOfAccounts />
               </Suspense>
@@ -323,7 +325,7 @@ const GeneralAccounting = () => {
           </TabsContent>
 
           <TabsContent value="ledger" className="mt-0">
-            <motion.div className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div data-tour="accounting-ledger-panel" className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Suspense fallback={<PageSkeletonFallback />}>
                 <GeneralLedger />
               </Suspense>
@@ -331,7 +333,7 @@ const GeneralAccounting = () => {
           </TabsContent>
 
           <TabsContent value="entries" className="mt-0">
-            <motion.div className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div data-tour="accounting-entries-panel" className="accounting-tab-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Suspense fallback={<PageSkeletonFallback />}>
                 <Ledger />
               </Suspense>

@@ -1,41 +1,24 @@
-/**
- * نظام الإرشاد التفاعلي - Interactive Tour Guide
- * يوفر تجربة تعليمية تفاعلية للمستخدمين
- */
-
-import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Check, MousePointer } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check, ChevronLeft, ChevronRight, MousePointer2, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
 
 export interface TourStep {
-  /** معرف العنصر المستهدف (CSS selector) */
   target: string;
-  /** عنوان الخطوة */
   title: string;
-  /** محتوى الشرح */
   content: string;
-  /** موقع التلميح */
   placement?: 'top' | 'bottom' | 'left' | 'right';
-  /** إجراء عند الوصول لهذه الخطوة */
   onEnter?: () => void;
-  /** هل يجب النقر على العنصر للمتابعة؟ */
   waitForClick?: boolean;
-  /** رسالة إضافية */
   hint?: string;
 }
 
 export interface TourConfig {
-  /** معرف الجولة */
   id: string;
-  /** اسم الجولة */
   name: string;
-  /** الخطوات */
   steps: TourStep[];
-  /** عند الانتهاء */
   onComplete?: () => void;
-  /** عند الإلغاء */
   onCancel?: () => void;
 }
 
@@ -45,119 +28,138 @@ interface TourGuideProps {
   onEnd: () => void;
 }
 
-// حساب موقع التلميح بناءً على العنصر المستهدف
-const calculatePosition = (
-  target: HTMLElement,
-  placement: 'top' | 'bottom' | 'left' | 'right' = 'bottom'
-) => {
-  const rect = target.getBoundingClientRect();
-  const scrollY = window.scrollY;
-  const scrollX = window.scrollX;
+type TourPosition = {
+  top: number;
+  left: number;
+  width: number;
+};
 
-  const positions = {
+const colors = {
+  text: systemColorPattern.colors.text,
+  inner: systemColorPattern.colors.innerSurface,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  focus: systemColorPattern.colors.focus,
+  success: systemColorPattern.colors.success,
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getTargetRect(target: HTMLElement) {
+  return target.getBoundingClientRect();
+}
+
+function calculatePosition(target: HTMLElement, placement: TourStep['placement'] = 'bottom'): TourPosition {
+  const rect = getTargetRect(target);
+  const cardWidth = Math.min(390, window.innerWidth - 32);
+  const estimatedCardHeight = 288;
+  const gap = 18;
+
+  const viewportMaxLeft = window.innerWidth - cardWidth - 16;
+  const viewportMaxTop = window.innerHeight - estimatedCardHeight - 16;
+
+  const centeredLeft = rect.left + rect.width / 2 - cardWidth / 2;
+  const centeredTop = rect.top + rect.height / 2 - estimatedCardHeight / 2;
+
+  const candidates: Record<NonNullable<TourStep['placement']>, TourPosition> = {
     top: {
-      top: rect.top + scrollY - 16,
-      left: rect.left + scrollX + rect.width / 2,
-      transform: 'translate(-50%, -100%)',
+      top: rect.top - estimatedCardHeight - gap,
+      left: centeredLeft,
+      width: cardWidth,
     },
     bottom: {
-      top: rect.bottom + scrollY + 16,
-      left: rect.left + scrollX + rect.width / 2,
-      transform: 'translate(-50%, 0)',
+      top: rect.bottom + gap,
+      left: centeredLeft,
+      width: cardWidth,
     },
     left: {
-      top: rect.top + scrollY + rect.height / 2,
-      left: rect.left + scrollX - 16,
-      transform: 'translate(-100%, -50%)',
+      top: centeredTop,
+      left: rect.left - cardWidth - gap,
+      width: cardWidth,
     },
     right: {
-      top: rect.top + scrollY + rect.height / 2,
-      left: rect.right + scrollX + 16,
-      transform: 'translate(0, -50%)',
+      top: centeredTop,
+      left: rect.right + gap,
+      width: cardWidth,
     },
   };
 
-  return positions[placement];
-};
+  const preferred = candidates[placement];
+  return {
+    top: clamp(preferred.top, 16, Math.max(16, viewportMaxTop)),
+    left: clamp(preferred.left, 16, Math.max(16, viewportMaxLeft)),
+    width: cardWidth,
+  };
+}
 
-// مكون Spotlight - تسليط الضوء على العنصر
-const Spotlight: React.FC<{ target: HTMLElement }> = ({ target }) => {
-  const rect = target.getBoundingClientRect();
-  const padding = 8;
+const Spotlight = ({ target }: { target: HTMLElement }) => {
+  const [rect, setRect] = useState(() => getTargetRect(target));
+  const padding = 10;
+
+  useEffect(() => {
+    const updateRect = () => setRect(getTargetRect(target));
+    updateRect();
+    window.addEventListener('resize', updateRect);
+    window.addEventListener('scroll', updateRect, true);
+    return () => {
+      window.removeEventListener('resize', updateRect);
+      window.removeEventListener('scroll', updateRect, true);
+    };
+  }, [target]);
 
   return (
     <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* الخلفية المعتمة مع فتحة للعنصر المستهدف */}
-      <svg className="w-full h-full">
+      <svg className="h-full w-full">
         <defs>
-          <mask id="spotlight-mask">
+          <mask id="fleetify-tour-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
             <rect
               x={rect.left - padding}
               y={rect.top - padding}
               width={rect.width + padding * 2}
               height={rect.height + padding * 2}
-              rx="8"
+              rx="14"
               fill="black"
             />
           </mask>
         </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(0, 0, 0, 0.7)"
-          mask="url(#spotlight-mask)"
-        />
+        <rect width="100%" height="100%" fill="rgba(2, 6, 23, 0.58)" mask="url(#fleetify-tour-mask)" />
       </svg>
 
-      {/* إطار حول العنصر المستهدف */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="absolute border-2 border-rose-500 rounded-lg shadow-[0_0_0_4px_rgba(241,85,85,0.3)]"
+        className="absolute rounded-[14px] border-2 bg-white/5 shadow-[0_20px_55px_rgba(34,199,161,0.26)]"
         style={{
           top: rect.top - padding,
           left: rect.left - padding,
           width: rect.width + padding * 2,
           height: rect.height + padding * 2,
+          borderColor: colors.success,
         }}
       />
 
-      {/* نقطة متحركة للفت الانتباه */}
       <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.5, 1, 0.5],
-        }}
-        transition={{
-          duration: 1.5,
-          repeat: Infinity,
-        }}
-        className="absolute w-6 h-6 bg-rose-500 rounded-full"
+        animate={{ y: [0, -4, 0], opacity: [0.72, 1, 0.72] }}
+        transition={{ duration: 1.6, repeat: Infinity }}
+        className="absolute flex h-9 w-9 items-center justify-center rounded-full text-white shadow-lg"
         style={{
-          top: rect.top - 12,
-          left: rect.left + rect.width / 2 - 12,
+          top: clamp(rect.top - 18, 14, window.innerHeight - 50),
+          left: clamp(rect.left + rect.width / 2 - 18, 14, window.innerWidth - 50),
+          backgroundColor: colors.success,
         }}
       >
-        <MousePointer className="w-4 h-4 text-white absolute top-1 left-1" />
+        <MousePointer2 className="h-4 w-4" />
       </motion.div>
     </div>
   );
 };
 
-// مكون بطاقة التلميح
-const TooltipCard: React.FC<{
-  step: TourStep;
-  currentStep: number;
-  totalSteps: number;
-  targetElement: HTMLElement;
-  onNext: () => void;
-  onPrev: () => void;
-  onClose: () => void;
-  isLastStep: boolean;
-}> = ({
+const TourCard = ({
   step,
   currentStep,
   totalSteps,
@@ -166,159 +168,193 @@ const TooltipCard: React.FC<{
   onPrev,
   onClose,
   isLastStep,
+}: {
+  step: TourStep;
+  currentStep: number;
+  totalSteps: number;
+  targetElement: HTMLElement;
+  onNext: () => void;
+  onPrev: () => void;
+  onClose: () => void;
+  isLastStep: boolean;
 }) => {
-  const [position, setPosition] = useState({ top: 0, left: 0, transform: '' });
+  const [position, setPosition] = useState<TourPosition>(() => calculatePosition(targetElement, step.placement));
+  const progress = Math.round(((currentStep + 1) / totalSteps) * 100);
 
   useEffect(() => {
-    const updatePosition = () => {
-      const pos = calculatePosition(targetElement, step.placement);
-      setPosition(pos);
-    };
-
+    const updatePosition = () => setPosition(calculatePosition(targetElement, step.placement));
     updatePosition();
     window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition);
-
+    window.addEventListener('scroll', updatePosition, true);
     return () => {
       window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
     };
   }, [targetElement, step.placement]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="fixed z-[9999] w-80 bg-white rounded-xl shadow-2xl border border-neutral-200 overflow-hidden"
+    <motion.aside
+      dir="rtl"
+      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="fixed z-[9999] overflow-hidden rounded-xl border bg-white shadow-[0_24px_70px_rgba(2,6,23,0.22)]"
       style={{
         top: position.top,
         left: position.left,
-        transform: position.transform,
+        width: position.width,
+        borderColor: colors.border,
       }}
     >
-      {/* Header */}
-      <div className="bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-full">
-            {currentStep + 1} / {totalSteps}
-          </span>
-          <h3 className="text-white font-bold text-sm">{step.title}</h3>
+      <div className="border-b px-4 pb-3 pt-4" style={{ borderColor: colors.border, backgroundColor: colors.inner }}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: `${colors.success}16`, color: colors.success }}
+            >
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-normal" style={{ color: colors.muted }}>
+                جولة تعريفية
+              </p>
+              <h3 className="truncate text-base font-black tracking-normal" style={{ color: colors.text }}>
+                {step.title}
+              </h3>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border bg-white transition-colors hover:bg-slate-50"
+            style={{ borderColor: colors.border, color: colors.muted }}
+            aria-label="إغلاق الجولة"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="text-white/80 hover:text-white transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-white">
+            <motion.div
+              className="h-full rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              style={{ backgroundColor: colors.success }}
+            />
+          </div>
+          <span className="rounded-lg bg-white px-2.5 py-1 text-xs font-black" style={{ color: colors.text }}>
+            {currentStep + 1}/{totalSteps}
+          </span>
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        <p className="text-neutral-700 text-sm leading-relaxed mb-3">
+      <div className="space-y-3 px-4 py-4">
+        <p className="text-sm font-medium leading-7" style={{ color: colors.text }}>
           {step.content}
         </p>
-        
+
         {step.hint && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
-            <p className="text-amber-800 text-xs">💡 {step.hint}</p>
+          <div className="rounded-lg border px-3 py-2 text-xs font-bold leading-6" style={{ borderColor: `${colors.info}40`, backgroundColor: `${colors.info}10`, color: colors.text }}>
+            {step.hint}
           </div>
         )}
 
         {step.waitForClick && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-            <p className="text-blue-800 text-xs flex items-center gap-1">
-              <MousePointer className="w-3 h-3" />
-              اضغط على العنصر المُضاء للمتابعة
-            </p>
+          <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold" style={{ backgroundColor: `${colors.success}12`, color: colors.success }}>
+            <MousePointer2 className="h-4 w-4" />
+            اضغط على العنصر المحدد للمتابعة
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      <div className="px-4 pb-4 flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className="flex items-center justify-between gap-3 border-t px-4 py-3" style={{ borderColor: colors.border }}>
+        <button
+          type="button"
           onClick={onPrev}
           disabled={currentStep === 0}
-          className="text-neutral-600"
+          className={cn(
+            'inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-black transition-colors',
+            currentStep === 0 ? 'cursor-not-allowed opacity-45' : 'hover:bg-slate-50'
+          )}
+          style={{ borderColor: colors.border, color: colors.muted }}
         >
-          <ChevronRight className="w-4 h-4 ml-1" />
+          <ChevronRight className="h-4 w-4" />
           السابق
-        </Button>
+        </button>
 
-        {/* Progress dots */}
-        <div className="flex gap-1">
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div
-              key={i}
-              className={cn(
-                'w-2 h-2 rounded-full transition-colors',
-                i === currentStep ? 'bg-rose-500' : 'bg-neutral-200'
-              )}
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: totalSteps }).map((_, index) => (
+            <span
+              key={index}
+              className="h-2 rounded-full transition-all"
+              style={{
+                width: index === currentStep ? 18 : 7,
+                backgroundColor: index === currentStep ? colors.success : '#E5EAF1',
+              }}
             />
           ))}
         </div>
 
-        <Button
-          size="sm"
+        <button
+          type="button"
           onClick={onNext}
-          className={cn(
-            'text-white',
-            isLastStep
-              ? 'bg-green-500 hover:bg-green-600'
-              : 'bg-rose-500 hover:bg-coral-600'
-          )}
+          className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-black text-white shadow-sm transition-transform hover:-translate-y-0.5"
+          style={{ backgroundColor: isLastStep ? colors.success : colors.text }}
         >
           {isLastStep ? (
             <>
-              <Check className="w-4 h-4 ml-1" />
+              <Check className="h-4 w-4" />
               إنهاء
             </>
           ) : (
             <>
               التالي
-              <ChevronLeft className="w-4 h-4 mr-1" />
+              <ChevronLeft className="h-4 w-4" />
             </>
           )}
-        </Button>
+        </button>
       </div>
-    </motion.div>
+    </motion.aside>
   );
 };
 
-// المكون الرئيسي
 export const TourGuide: React.FC<TourGuideProps> = ({ tour, isActive, onEnd }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
-
   const currentStepData = tour?.steps[currentStep];
 
-  // البحث عن العنصر المستهدف مع إعادة المحاولة
+  useEffect(() => {
+    if (!isActive) {
+      setCurrentStep(0);
+      setTargetElement(null);
+    }
+  }, [isActive, tour?.id]);
+
   useEffect(() => {
     if (!isActive || !currentStepData) return;
 
     let cancelled = false;
     let retryCount = 0;
-    const maxRetries = 10;
+    const maxRetries = 12;
 
     const findElement = () => {
       if (cancelled) return;
-      
-      const element = document.querySelector(currentStepData.target) as HTMLElement;
+
+      const element = document.querySelector(currentStepData.target) as HTMLElement | null;
       if (element) {
         setTargetElement(element);
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         currentStepData.onEnter?.();
         return;
       }
 
-      retryCount++;
+      retryCount += 1;
       if (retryCount >= maxRetries) {
-        // Skip step after max retries
         if (tour && currentStep < tour.steps.length - 1) {
-          setCurrentStep(prev => prev + 1);
+          setCurrentStep((previous) => previous + 1);
         } else {
           tour?.onComplete?.();
           setCurrentStep(0);
@@ -327,79 +363,75 @@ export const TourGuide: React.FC<TourGuideProps> = ({ tour, isActive, onEnd }) =
         return;
       }
 
-      // Retry with increasing delay (500ms, 600ms, 700ms... up to 2s)
-      setTimeout(findElement, 500 + retryCount * 150);
+      window.setTimeout(findElement, 250 + retryCount * 120);
     };
 
-    // Wait for page to load, then start looking
-    const timer = setTimeout(findElement, 1000);
-
+    const timer = window.setTimeout(findElement, 250);
     return () => {
       cancelled = true;
-      clearTimeout(timer);
+      window.clearTimeout(timer);
     };
-  }, [isActive, currentStepData, currentStep]);
+  }, [isActive, currentStepData, currentStep, tour, onEnd]);
 
   const handleNext = useCallback(() => {
     if (!tour) return;
-
     if (currentStep < tour.steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      // انتهت الجولة
-      tour.onComplete?.();
-      setCurrentStep(0);
-      onEnd();
+      setCurrentStep((previous) => previous + 1);
+      setTargetElement(null);
+      return;
     }
+    tour.onComplete?.();
+    setCurrentStep(0);
+    setTargetElement(null);
+    onEnd();
   }, [tour, currentStep, onEnd]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((previous) => previous - 1);
+      setTargetElement(null);
     }
   }, [currentStep]);
 
   const handleClose = useCallback(() => {
     tour?.onCancel?.();
     setCurrentStep(0);
+    setTargetElement(null);
     onEnd();
   }, [tour, onEnd]);
 
-  // معالجة النقر على العنصر المستهدف
   useEffect(() => {
     if (!isActive || !targetElement || !currentStepData?.waitForClick) return;
 
-    const handleClick = () => {
-      handleNext();
-    };
-
+    const handleClick = () => handleNext();
     targetElement.addEventListener('click', handleClick);
     return () => targetElement.removeEventListener('click', handleClick);
   }, [isActive, targetElement, currentStepData, handleNext]);
 
-  if (!isActive || !tour || !currentStepData) return null;
+  const activeTourCard = useMemo(() => {
+    if (!isActive || !tour || !currentStepData || !targetElement) return null;
+    return (
+      <TourCard
+        step={currentStepData}
+        currentStep={currentStep}
+        totalSteps={tour.steps.length}
+        targetElement={targetElement}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        onClose={handleClose}
+        isLastStep={currentStep === tour.steps.length - 1}
+      />
+    );
+  }, [isActive, tour, currentStepData, targetElement, currentStep, handleNext, handlePrev, handleClose]);
+
+  if (!isActive || !tour || !currentStepData || !targetElement) return null;
 
   return (
     <AnimatePresence>
-      {/* Spotlight overlay */}
-      {targetElement && <Spotlight target={targetElement} />}
-
-      {/* Tooltip card */}
-      {targetElement && (
-        <TooltipCard
-          step={currentStepData}
-          currentStep={currentStep}
-          totalSteps={tour.steps.length}
-          targetElement={targetElement}
-          onNext={handleNext}
-          onPrev={handlePrev}
-          onClose={handleClose}
-          isLastStep={currentStep === tour.steps.length - 1}
-        />
-      )}
+      <Spotlight target={targetElement} />
+      {activeTourCard}
     </AnimatePresence>
   );
 };
 
 export default TourGuide;
-

@@ -1,242 +1,171 @@
-/**
- * صفحة تقارير الأسطول - التصميم المطابق للداشبورد
- * Fleet Reports Page - Dashboard-Matched Design
- */
-
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { toast } from 'sonner';
 import {
-  BarChart3,
-  RefreshCw,
-  Bell,
-  Wrench,
-  FileText,
-  TrendingUp,
-  TrendingDown,
-  MessageSquare,
-  Send,
-  Settings,
-  Users,
-  Clock,
-  ChevronRight,
-  Wifi,
-  WifiOff,
-  Car,
-  Calendar,
-  Download,
-  Filter,
-  PieChart,
   Activity,
-  DollarSign,
-  Percent,
-  ArrowUpRight,
-  Sparkles,
-  Shield,
-  AlertCircle,
+  AlertTriangle,
+  BarChart3,
+  CalendarDays,
+  Car,
   CheckCircle2,
-  XCircle,
+  ChevronLeft,
+  Clock,
+  Download,
+  FileSpreadsheet,
+  Gauge,
+  RefreshCw,
+  ShieldCheck,
+  TrendingUp,
+  Wallet,
+  Wrench,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNavigate } from 'react-router-dom';
-import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
-
-// Import Financial Analysis components
 import {
-  useFleetFinancialOverview,
-  useFleetFinancialSummary,
-  useMonthlyRevenueData,
-  useTopProfitableVehicles,
-} from '@/hooks/useFleetFinancialAnalytics';
-import { 
-  useWhatsAppSettings, 
-  useWhatsAppReports, 
-  useWhatsAppConnectionStatus,
-  useWhatsAppRecipients,
-} from '@/hooks/useWhatsAppReports';
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
-// Import custom components
-import { FleetKPICards } from './components/FleetKPICards';
-import { 
-  RevenueChart, 
-  FleetStatusChart, 
-  UtilizationChart,
-  TopVehiclesChart,
-  MonthlyContractsChart,
-} from './components/FleetCharts';
-import { ReportFilters } from './components/ReportFilters';
-import { ReportGenerator } from './components/ReportGenerator';
-
-// Import custom hooks
+import { Button } from '@/components/ui/button';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { cn } from '@/lib/utils';
+import { systemColorPattern } from '@/lib/design-system/systemColorPattern';
+import type { DateFilterPeriod, ExportFormat, ReportFilters as IReportFilters } from './types/reports.types';
 import {
   useFleetAnalytics,
-  useVehiclesReport,
-  useMaintenanceReport,
-  useMonthlyRevenue,
   useFleetStatus,
-  useTopPerformingVehicles,
-  useVehiclesNeedingMaintenance,
   useInsuranceRegistrationReport,
   useInsuranceRegistrationSummary,
+  useMaintenanceReport,
+  useMonthlyRevenue,
+  useTopPerformingVehicles,
+  useVehiclesNeedingMaintenance,
+  useVehiclesReport,
 } from './hooks/useFleetReports';
 
-import type { ReportFilters as IReportFilters, ExportFormat } from './types/reports.types';
-
-// ===== Stat Card Component (Dashboard Style) =====
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  icon: React.ElementType;
-  iconBg: string;
-  description?: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  change,
-  icon: Icon,
-  iconBg,
-  description,
-}) => {
-  const isPositive = change?.includes('+');
-  
-  return (
-    <motion.div 
-      className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all"
-      whileHover={{ y: -4, scale: 1.02 }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <motion.div 
-          className={cn('w-10 h-10 rounded-xl flex items-center justify-center', iconBg)}
-          whileHover={{ rotate: 10, scale: 1.1 }}
-        >
-          <Icon className="w-5 h-5" />
-        </motion.div>
-        {change && (
-          <span className={cn(
-            'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold',
-            isPositive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-          )}>
-            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {change}
-          </span>
-        )}
-      </div>
-      <h3 className="text-xs text-neutral-500 font-medium mb-1">{title}</h3>
-      <p className="text-2xl font-bold text-neutral-900">{value}</p>
-      {description && (
-        <p className="text-xs text-neutral-400 mt-1">{description}</p>
-      )}
-    </motion.div>
-  );
+const theme = {
+  text: systemColorPattern.colors.text,
+  muted: systemColorPattern.colors.secondaryText,
+  border: systemColorPattern.colors.border,
+  surface: '#FFFFFF',
+  page: '#F4F7FA',
+  navy: '#173A63',
+  success: systemColorPattern.colors.success,
+  info: systemColorPattern.colors.info,
+  alert: systemColorPattern.colors.alert,
+  amber: '#F59E0B',
+  focus: systemColorPattern.colors.focus,
 };
 
-// ===== Section Card Component =====
-interface SectionCardProps {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-  className?: string;
-}
+const periodOptions: Array<{ label: string; value: DateFilterPeriod }> = [
+  { label: 'اليوم', value: 'today' },
+  { label: 'الأسبوع', value: 'week' },
+  { label: 'الشهر', value: 'month' },
+  { label: 'الربع', value: 'quarter' },
+  { label: 'السنة', value: 'year' },
+];
 
-const SectionCard: React.FC<SectionCardProps> = ({
-  title,
-  icon: Icon,
-  children,
-  action,
-  className,
-}) => (
+const statusLabels: Record<string, string> = {
+  available: 'متاحة',
+  rented: 'مؤجرة',
+  maintenance: 'صيانة',
+  reserved: 'محجوزة',
+  pending: 'معلقة',
+  in_progress: 'قيد التنفيذ',
+  completed: 'مكتملة',
+};
+
+type ReportView = 'overview' | 'financial' | 'maintenance' | 'compliance';
+
+const viewOptions: Array<{ label: string; value: ReportView; icon: React.ElementType }> = [
+  { label: 'لوحة الأداء', value: 'overview', icon: Gauge },
+  { label: 'التحليل المالي', value: 'financial', icon: Wallet },
+  { label: 'الصيانة', value: 'maintenance', icon: Wrench },
+  { label: 'التأمين والتسجيل', value: 'compliance', icon: ShieldCheck },
+];
+
+const chartColors = [theme.success, theme.info, theme.amber, theme.focus, theme.alert];
+
+const formatPercent = (value?: number) => `${Math.round(value || 0)}%`;
+
+const ShellCard: React.FC<React.PropsWithChildren<{ className?: string }>> = ({ children, className }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 14 }}
     animate={{ opacity: 1, y: 0 }}
-    className={cn("bg-white rounded-xl p-6 shadow-sm", className)}
+    transition={{ duration: 0.25 }}
+    className={cn('rounded-lg border bg-white shadow-sm', className)}
+    style={{ borderColor: theme.border }}
   >
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-coral-600" />
-        </div>
-        <h3 className="text-lg font-semibold text-neutral-900">{title}</h3>
-      </div>
-      {action}
-    </div>
     {children}
   </motion.div>
 );
 
-// ===== Maintenance Alert Item =====
-const MaintenanceAlertItem: React.FC<{
-  plateNumber: string;
-  type: string;
-  date: string;
-  status: string;
-  cost: string;
-}> = ({ plateNumber, type, date, status, cost }) => (
-  <motion.div
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors"
-  >
-    <div className="flex items-center gap-3">
-      <div className={cn(
-        "p-2 rounded-lg",
-        status === 'completed' ? "bg-green-100 text-green-600" :
-        status === 'in_progress' ? "bg-blue-100 text-blue-600" :
-        "bg-amber-100 text-amber-600"
-      )}>
-        <Wrench className="w-4 h-4" />
+const MetricCard: React.FC<{
+  label: string;
+  value: string | number;
+  hint: string;
+  icon: React.ElementType;
+  tone: 'navy' | 'success' | 'info' | 'warning' | 'danger';
+}> = ({ label, value, hint, icon: Icon, tone }) => {
+  const color =
+    tone === 'success' ? theme.success :
+    tone === 'info' ? theme.info :
+    tone === 'warning' ? theme.amber :
+    tone === 'danger' ? theme.alert :
+    theme.navy;
+
+  return (
+    <ShellCard className="min-h-[132px] p-4">
+      <div className="flex h-full items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold" style={{ color: theme.muted }}>{label}</p>
+          <p className="mt-2 text-2xl font-black tracking-normal" style={{ color: theme.text }}>{value}</p>
+          <p className="mt-2 text-xs font-medium leading-5" style={{ color: theme.muted }}>{hint}</p>
+        </div>
+        <span className="rounded-lg p-3" style={{ backgroundColor: `${color}14`, color }}>
+          <Icon className="h-5 w-5" />
+        </span>
       </div>
+    </ShellCard>
+  );
+};
+
+const SectionTitle: React.FC<{ title: string; subtitle?: string; icon: React.ElementType; action?: React.ReactNode }> = ({
+  title,
+  subtitle,
+  icon: Icon,
+  action,
+}) => (
+  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div className="flex items-start gap-3">
+      <span className="rounded-lg p-2.5" style={{ backgroundColor: `${theme.navy}10`, color: theme.navy }}>
+        <Icon className="h-5 w-5" />
+      </span>
       <div>
-        <p className="text-sm font-medium text-neutral-900">{plateNumber}</p>
-        <p className="text-xs text-neutral-500">{type} • {date}</p>
+        <h2 className="text-xl font-black" style={{ color: theme.text }}>{title}</h2>
+        {subtitle && <p className="mt-1 text-sm font-medium" style={{ color: theme.muted }}>{subtitle}</p>}
       </div>
     </div>
-    <div className="text-left">
-      <p className="text-sm font-bold text-neutral-900">{cost}</p>
-      <Badge 
-        variant="outline"
-        className={cn(
-          "text-[10px]",
-          status === 'completed' && "text-green-600 border-green-200 bg-green-50",
-          status === 'in_progress' && "text-blue-600 border-blue-200 bg-blue-50",
-          status === 'pending' && "text-amber-600 border-amber-200 bg-amber-50"
-        )}
-      >
-        {status === 'completed' ? 'مكتملة' : 
-         status === 'in_progress' ? 'قيد التنفيذ' : 'معلقة'}
-      </Badge>
-    </div>
-  </motion.div>
+    {action}
+  </div>
 );
 
-// ===== Main Component =====
 const FleetReportsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const reportsTheme = systemColorPattern.colors;
-  const [activeTab, setActiveTab] = useState('overview');
+  const { formatCurrency } = useCurrencyFormatter();
+  const [activeView, setActiveView] = useState<ReportView>('overview');
   const [filters, setFilters] = useState<IReportFilters>({
     period: 'month',
     compareWithPrevious: false,
   });
-  
-  const { formatCurrency } = useCurrencyFormatter();
-  
-  // Financial Analysis hooks
-  const { data: financialOverview, isLoading: financialLoading } = useFleetFinancialOverview();
-  const { data: financialSummary } = useFleetFinancialSummary();
-  const { data: monthlyRevenueFinancial } = useMonthlyRevenueData('2024');
-  const { data: topProfitableVehicles } = useTopProfitableVehicles(10);
-  
-  // Fetch data using custom hooks
+
   const { data: analytics, isLoading: analyticsLoading } = useFleetAnalytics();
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehiclesReport(filters);
   const { data: maintenance = [], isLoading: maintenanceLoading } = useMaintenanceReport(filters);
@@ -246,1052 +175,445 @@ const FleetReportsPage: React.FC = () => {
   const maintenanceAlerts = useVehiclesNeedingMaintenance();
   const { data: insuranceReport = [], isLoading: insuranceLoading } = useInsuranceRegistrationReport();
   const { data: insuranceSummary } = useInsuranceRegistrationSummary();
-  
-  // WhatsApp hooks
-  const { settings: whatsappSettings } = useWhatsAppSettings();
-  const { recipients } = useWhatsAppRecipients();
-  const { sendDailyReport, sendWeeklyReport, isSending } = useWhatsAppReports();
-  const { connected: whatsappConnected } = useWhatsAppConnectionStatus();
-  
-  const isLoading = analyticsLoading || vehiclesLoading || maintenanceLoading || revenueLoading || statusLoading;
-  
-  // Handle export
+
+  const isLoading = analyticsLoading || vehiclesLoading || maintenanceLoading || revenueLoading || statusLoading || insuranceLoading;
+
+  const healthScore = useMemo(() => {
+    if (!analytics || !insuranceSummary) return 0;
+    const utilization = Math.min(analytics.utilizationRate || 0, 100);
+    const availability = analytics.totalVehicles > 0 ? ((analytics.availableVehicles + analytics.rentedVehicles) / analytics.totalVehicles) * 100 : 0;
+    const compliance = insuranceSummary.total_vehicles > 0 ? (insuranceSummary.fully_compliant / insuranceSummary.total_vehicles) * 100 : 0;
+    const maintenancePenalty = Math.min(analytics.maintenanceRate || 0, 40);
+    return Math.max(0, Math.round((utilization * 0.35) + (availability * 0.25) + (compliance * 0.3) + (100 - maintenancePenalty) * 0.1));
+  }, [analytics, insuranceSummary]);
+
+  const fleetStatusData = useMemo(() => ([
+    { name: 'متاحة', value: fleetStatus?.available || 0, color: theme.success },
+    { name: 'مؤجرة', value: fleetStatus?.rented || 0, color: theme.info },
+    { name: 'صيانة', value: fleetStatus?.maintenance || 0, color: theme.amber },
+    { name: 'محجوزة', value: fleetStatus?.reserved || 0, color: theme.focus },
+  ]), [fleetStatus]);
+
+  const decisionItems = [
+    {
+      title: 'مركبات تحتاج صيانة',
+      value: maintenanceAlerts.length,
+      detail: maintenanceAlerts.length > 0 ? 'راجع أوامر الصيانة قبل تأثيرها على الجاهزية' : 'لا توجد تنبيهات صيانة حرجة',
+      tone: maintenanceAlerts.length > 0 ? theme.amber : theme.success,
+      icon: Wrench,
+      view: 'maintenance' as ReportView,
+    },
+    {
+      title: 'التأمين والتسجيل',
+      value: insuranceSummary?.needs_attention || 0,
+      detail: 'مركبات تحتاج متابعة وثائق أو تجديدات',
+      tone: (insuranceSummary?.needs_attention || 0) > 0 ? theme.alert : theme.success,
+      icon: ShieldCheck,
+      view: 'compliance' as ReportView,
+    },
+    {
+      title: 'صحة الأسطول',
+      value: `${healthScore}/100`,
+      detail: healthScore >= 75 ? 'الأداء التشغيلي جيد' : 'هناك فرصة لتحسين الجاهزية والتحصيل',
+      tone: healthScore >= 75 ? theme.success : theme.info,
+      icon: Gauge,
+      view: 'overview' as ReportView,
+    },
+  ];
+
   const handleExport = useCallback((format: ExportFormat) => {
-    toast.success(`جاري تصدير التقرير بصيغة ${format.toUpperCase()}...`);
+    toast.success(`جاري تجهيز تقرير الأسطول بصيغة ${format.toUpperCase()}`);
   }, []);
-  
-  // Handle refresh
+
   const handleRefresh = useCallback(() => {
-    toast.success('جاري تحديث البيانات...');
+    toast.success('تم طلب تحديث بيانات التقارير');
   }, []);
 
   if (isLoading && !analytics) {
     return (
-      <div className="min-h-screen bg-[#F6F8FB] flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: theme.page }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#22C7A1] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[#94A3B8] font-medium">جاري تحميل التقارير...</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: `${theme.success}55`, borderTopColor: 'transparent' }} />
+          <p className="text-sm font-bold" style={{ color: theme.muted }}>جاري تحميل تقارير الأسطول...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="fleet-reports-system min-h-screen bg-[#F6F8FB] text-[#020617]"
-      style={{
-        '--fr-text': reportsTheme.text,
-        '--fr-surface': reportsTheme.surface,
-        '--fr-inner': reportsTheme.innerSurface,
-        '--fr-muted': reportsTheme.secondaryText,
-        '--fr-border': reportsTheme.border,
-        '--fr-info': reportsTheme.info,
-        '--fr-alert': reportsTheme.alert,
-        '--fr-focus': reportsTheme.focus,
-        '--fr-success': reportsTheme.success,
-      } as React.CSSProperties}
-    >
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-7 h-7 text-white" />
+    <div dir="rtl" className="min-h-screen" style={{ backgroundColor: theme.page }}>
+      <main className="w-full space-y-6 px-6 py-6">
+        <section className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <ShellCard className="overflow-hidden">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="p-6">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-lg text-white" style={{ backgroundColor: theme.navy }}>
+                      <BarChart3 className="h-7 w-7" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-black" style={{ color: theme.success }}>مركز تقارير الأسطول</p>
+                      <h1 className="mt-1 text-3xl font-black tracking-normal" style={{ color: theme.text }}>
+                        اقرأ أداء الأسطول واتخذ القرار بسرعة
+                      </h1>
+                      <p className="mt-2 max-w-3xl text-sm font-medium leading-6" style={{ color: theme.muted }}>
+                        لوحة جديدة تجمع التشغيل، الإيراد، الصيانة، والامتثال في مكان واحد بدل التنقل بين تقارير منفصلة.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" className="gap-2 bg-white" onClick={handleRefresh}>
+                      <RefreshCw className="h-4 w-4" />
+                      تحديث
+                    </Button>
+                    <Button className="gap-2 text-white" style={{ backgroundColor: theme.navy }} onClick={() => handleExport('pdf')}>
+                      <Download className="h-4 w-4" />
+                      تصدير PDF
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  {decisionItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        type="button"
+                        key={item.title}
+                        onClick={() => setActiveView(item.view)}
+                        className="group rounded-lg border bg-white p-4 text-right transition-all hover:-translate-y-0.5 hover:shadow-md"
+                        style={{ borderColor: `${item.tone}45` }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-black" style={{ color: theme.text }}>{item.title}</p>
+                            <p className="mt-2 text-xs font-medium leading-5" style={{ color: theme.muted }}>{item.detail}</p>
+                          </div>
+                          <span className="rounded-lg p-2.5" style={{ backgroundColor: `${item.tone}14`, color: item.tone }}>
+                            <Icon className="h-5 w-5" />
+                          </span>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="text-2xl font-black" style={{ color: item.tone }}>{item.value}</span>
+                          <span className="inline-flex items-center gap-1 text-xs font-black" style={{ color: theme.navy }}>
+                            فتح التقرير
+                            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-neutral-900">تقارير وتحليلات الأسطول</h1>
-                <p className="text-neutral-500 text-sm mt-1">
-                  تحليلات شاملة وتقارير مفصلة لأداء الأسطول
-                </p>
+
+              <div className="border-t bg-slate-50 p-6 xl:border-r xl:border-t-0" style={{ borderColor: theme.border }}>
+                <p className="text-sm font-black" style={{ color: theme.text }}>فترة التقرير</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {periodOptions.map((period) => (
+                    <button
+                      type="button"
+                      key={period.value}
+                      onClick={() => setFilters((current) => ({ ...current, period: period.value }))}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-sm font-bold transition-colors',
+                        filters.period === period.value ? 'text-white' : 'bg-white text-slate-700 hover:bg-slate-50'
+                      )}
+                      style={{
+                        borderColor: filters.period === period.value ? theme.navy : theme.border,
+                        backgroundColor: filters.period === period.value ? theme.navy : undefined,
+                      }}
+                    >
+                      {period.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-5 rounded-lg border bg-white p-4" style={{ borderColor: theme.border }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold" style={{ color: theme.muted }}>صحة الأسطول</span>
+                    <span className="text-2xl font-black" style={{ color: healthScore >= 75 ? theme.success : theme.amber }}>{healthScore}</span>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full" style={{ width: `${healthScore}%`, backgroundColor: healthScore >= 75 ? theme.success : theme.amber }} />
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                className="bg-white gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                تحديث
-              </Button>
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-white"
+          </ShellCard>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard label="إجمالي المركبات" value={analytics?.totalVehicles || 0} hint={`${analytics?.availableVehicles || 0} متاحة و ${analytics?.rentedVehicles || 0} مؤجرة`} icon={Car} tone="navy" />
+          <MetricCard label="معدل الاستخدام" value={formatPercent(analytics?.utilizationRate)} hint="نسبة المركبات المؤجرة من إجمالي الأسطول" icon={Activity} tone="success" />
+          <MetricCard label="الإيراد الشهري" value={formatCurrency(analytics?.totalRevenue || 0)} hint={`متوسط ${formatCurrency(analytics?.averageRevenue || 0)} لكل مركبة`} icon={Wallet} tone="info" />
+          <MetricCard label="تكلفة الصيانة" value={formatCurrency(analytics?.monthlyMaintenanceCost || 0)} hint={`${maintenance.length} أوامر صيانة مسجلة`} icon={Wrench} tone={(analytics?.monthlyMaintenanceCost || 0) > 0 ? 'warning' : 'success'} />
+        </section>
+
+        <section className="sticky top-0 z-20 rounded-lg border bg-white/95 p-2 shadow-sm backdrop-blur" style={{ borderColor: theme.border }}>
+          <div className="flex gap-2 overflow-x-auto">
+            {viewOptions.map((view) => {
+              const Icon = view.icon;
+              const active = activeView === view.value;
+              return (
+                <button
+                  type="button"
+                  key={view.value}
+                  onClick={() => setActiveView(view.value)}
+                  className={cn(
+                    'inline-flex min-h-[42px] shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-black transition-colors',
+                    active ? 'text-white' : 'text-slate-600 hover:bg-slate-50'
+                  )}
+                  style={{ backgroundColor: active ? theme.navy : undefined }}
                 >
-                  <Bell className="w-5 h-5" />
-                </Button>
-                {maintenanceAlerts.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
-                    {maintenanceAlerts.length}
-                  </span>
+                  <Icon className="h-4 w-4" />
+                  {view.label}
+                </button>
+              );
+            })}
+            <div className="mr-auto flex shrink-0 gap-2">
+              <button type="button" onClick={() => handleExport('excel')} className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 text-sm font-bold" style={{ borderColor: theme.border }}>
+                <FileSpreadsheet className="h-4 w-4" />
+                Excel
+              </button>
+              <button type="button" onClick={() => handleExport('csv')} className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 text-sm font-bold" style={{ borderColor: theme.border }}>
+                <Download className="h-4 w-4" />
+                CSV
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {activeView === 'overview' && (
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            <ShellCard className="p-5">
+              <SectionTitle title="اتجاه الإيرادات والصيانة" subtitle="آخر ستة أشهر: الإيراد، الربح، وتكلفة الصيانة" icon={TrendingUp} />
+              <div className="h-[340px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyRevenue}>
+                    <defs>
+                      <linearGradient id="fleetRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={theme.success} stopOpacity={0.28} />
+                        <stop offset="95%" stopColor={theme.success} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.border} />
+                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: theme.muted }} />
+                    <YAxis tick={{ fontSize: 12, fill: theme.muted }} tickFormatter={(value) => `${Number(value) / 1000}k`} />
+                    <Tooltip formatter={(value: number, name: string) => [formatCurrency(value), name === 'revenue' ? 'الإيراد' : name === 'profit' ? 'الربح' : 'الصيانة']} contentStyle={{ borderRadius: 8, borderColor: theme.border }} />
+                    <Area type="monotone" dataKey="revenue" stroke={theme.success} strokeWidth={3} fill="url(#fleetRevenueFill)" />
+                    <Area type="monotone" dataKey="profit" stroke={theme.info} strokeWidth={2} fill="transparent" />
+                    <Area type="monotone" dataKey="maintenance" stroke={theme.amber} strokeWidth={2} fill="transparent" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </ShellCard>
+
+            <ShellCard className="p-5">
+              <SectionTitle title="توزيع حالة الأسطول" subtitle="قراءة مباشرة لجاهزية المركبات" icon={Gauge} />
+              <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[220px_1fr] xl:grid-cols-1 2xl:grid-cols-[220px_1fr]">
+                <div className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={fleetStatusData} dataKey="value" innerRadius={58} outerRadius={90} paddingAngle={3}>
+                        {fleetStatusData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: 8, borderColor: theme.border }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-2">
+                  {fleetStatusData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between rounded-lg border px-3 py-3" style={{ borderColor: theme.border }}>
+                      <span className="flex items-center gap-2 text-sm font-bold" style={{ color: theme.text }}>
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                        {item.name}
+                      </span>
+                      <span className="text-lg font-black" style={{ color: item.color }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ShellCard>
+          </section>
+        )}
+
+        {activeView === 'financial' && (
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+            <ShellCard className="p-5">
+              <SectionTitle title="الأداء المالي" subtitle="إيرادات، ربح، وهامش الأسطول" icon={Wallet} />
+              <div className="space-y-3">
+                {[
+                  { label: 'إجمالي الإيرادات', value: formatCurrency(analytics?.totalRevenue || 0), color: theme.success },
+                  { label: 'إجمالي الربح', value: formatCurrency(analytics?.totalProfit || 0), color: theme.info },
+                  { label: 'هامش الربح', value: formatPercent(analytics?.profitMargin), color: theme.navy },
+                  { label: 'قيمة الأسطول الدفترية', value: formatCurrency(analytics?.totalBookValue || 0), color: theme.focus },
+                  { label: 'الاستهلاك المتراكم', value: formatCurrency(analytics?.totalDepreciation || 0), color: theme.alert },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                    <span className="text-sm font-bold" style={{ color: theme.muted }}>{item.label}</span>
+                    <span className="text-lg font-black" style={{ color: item.color }}>{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </ShellCard>
+
+            <ShellCard className="p-5">
+              <SectionTitle title="أفضل المركبات أداءً" subtitle="المركبات الأعلى إيرادًا حسب البيانات الحالية" icon={BarChart3} />
+              <div className="h-[340px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topVehicles.slice(0, 8)} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.border} />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: theme.muted }} />
+                    <YAxis dataKey="plate_number" type="category" tick={{ fontSize: 12, fill: theme.muted }} width={88} />
+                    <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: 8, borderColor: theme.border }} />
+                    <Bar dataKey="revenue" radius={[6, 6, 6, 6]}>
+                      {topVehicles.slice(0, 8).map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </ShellCard>
+          </section>
+        )}
+
+        {activeView === 'maintenance' && (
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+            <ShellCard className="p-5">
+              <SectionTitle title="ملخص الصيانة" subtitle="حالة أوامر الصيانة والتكلفة المقدرة" icon={Wrench} />
+              <div className="space-y-3">
+                {[
+                  { label: 'أوامر الصيانة', value: maintenance.length, icon: Wrench, color: theme.navy },
+                  { label: 'قيد التنفيذ', value: maintenance.filter((item) => item.status === 'in_progress').length, icon: Clock, color: theme.info },
+                  { label: 'معلقة', value: maintenance.filter((item) => item.status === 'pending').length, icon: AlertTriangle, color: theme.amber },
+                  { label: 'مكتملة', value: maintenance.filter((item) => item.status === 'completed').length, icon: CheckCircle2, color: theme.success },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="flex items-center justify-between rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
+                      <span className="flex items-center gap-2 text-sm font-bold" style={{ color: theme.text }}>
+                        <Icon className="h-4 w-4" style={{ color: item.color }} />
+                        {item.label}
+                      </span>
+                      <span className="text-xl font-black" style={{ color: item.color }}>{item.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </ShellCard>
+
+            <ShellCard className="p-5">
+              <SectionTitle title="قائمة الصيانة الأخيرة" subtitle="أحدث المركبات التي تحتاج متابعة" icon={CalendarDays} />
+              <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
+                {(maintenanceAlerts.length > 0 ? maintenanceAlerts : maintenance).slice(0, 8).map((item) => (
+                  <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
+                    <div>
+                      <p className="text-base font-black" style={{ color: theme.text }}>{item.plate_number || 'مركبة غير محددة'}</p>
+                      <p className="mt-1 text-sm font-medium" style={{ color: theme.muted }}>{item.maintenance_type || 'صيانة'} - {item.scheduled_date ? new Date(item.scheduled_date).toLocaleDateString('ar-QA') : '-'}</p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-black" style={{ color: theme.navy }}>{formatCurrency(item.estimated_cost || 0)}</p>
+                      <span className="mt-1 inline-flex rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: `${theme.amber}12`, color: theme.amber }}>
+                        {statusLabels[item.status] || item.status || 'غير محدد'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {maintenance.length === 0 && maintenanceAlerts.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-10 text-center" style={{ borderColor: theme.border }}>
+                    <CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: theme.success }} />
+                    <p className="text-sm font-bold" style={{ color: theme.text }}>لا توجد أوامر صيانة حاليًا</p>
+                  </div>
                 )}
               </div>
+            </ShellCard>
+          </section>
+        )}
+
+        {activeView === 'compliance' && (
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+            <ShellCard className="p-5">
+              <SectionTitle title="التأمين والتسجيل" subtitle="ملخص الامتثال لوثائق المركبات" icon={ShieldCheck} />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {[
+                  { label: 'ملتزمة بالكامل', value: insuranceSummary?.fully_compliant || 0, color: theme.success },
+                  { label: 'تحتاج متابعة', value: insuranceSummary?.needs_attention || 0, color: theme.alert },
+                  { label: 'تأمين منتهي', value: insuranceSummary?.with_expired_insurance || 0, color: theme.amber },
+                  { label: 'استمارة منتهية', value: insuranceSummary?.with_expired_registration || 0, color: theme.focus },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg border bg-white p-4" style={{ borderColor: theme.border }}>
+                    <p className="text-sm font-bold" style={{ color: theme.muted }}>{item.label}</p>
+                    <p className="mt-2 text-2xl font-black" style={{ color: item.color }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </ShellCard>
+
+            <ShellCard className="p-5">
+              <SectionTitle title="المركبات التي تحتاج إجراء" subtitle="أقرب حالات التأمين أو التسجيل التي تحتاج متابعة" icon={AlertTriangle} />
+              <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
+                {insuranceReport
+                  .filter((item) => item.insurance_status !== 'valid' || item.registration_status !== 'valid')
+                  .slice(0, 10)
+                  .map((item) => (
+                    <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
+                      <div>
+                        <p className="text-base font-black" style={{ color: theme.text }}>{item.plate_number}</p>
+                        <p className="mt-1 text-sm font-medium" style={{ color: theme.muted }}>{item.make} {item.model} {item.year}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: item.insurance_status === 'valid' ? `${theme.success}12` : `${theme.alert}12`, color: item.insurance_status === 'valid' ? theme.success : theme.alert }}>
+                          التأمين: {item.insurance_status === 'valid' ? 'ساري' : item.insurance_status === 'expiring_soon' ? 'قريب الانتهاء' : item.insurance_status === 'expired' ? 'منتهي' : 'غير مسجل'}
+                        </span>
+                        <span className="rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: item.registration_status === 'valid' ? `${theme.success}12` : `${theme.amber}12`, color: item.registration_status === 'valid' ? theme.success : theme.amber }}>
+                          التسجيل: {item.registration_status === 'valid' ? 'ساري' : item.registration_status === 'expiring_soon' ? 'قريب الانتهاء' : item.registration_status === 'expired' ? 'منتهي' : 'غير مسجل'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                {insuranceReport.filter((item) => item.insurance_status !== 'valid' || item.registration_status !== 'valid').length === 0 && (
+                  <div className="rounded-lg border border-dashed p-10 text-center" style={{ borderColor: theme.border }}>
+                    <CheckCircle2 className="mx-auto mb-3 h-10 w-10" style={{ color: theme.success }} />
+                    <p className="text-sm font-bold" style={{ color: theme.text }}>كل الوثائق المسجلة سليمة</p>
+                  </div>
+                )}
+              </div>
+            </ShellCard>
+          </section>
+        )}
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <ShellCard className="p-5">
+            <SectionTitle title="أوامر سريعة" subtitle="إجراءات مرتبطة بالتقارير" icon={Download} />
+            <div className="grid grid-cols-1 gap-2">
+              <button type="button" onClick={() => handleExport('pdf')} className="rounded-lg border px-4 py-3 text-sm font-black transition-colors hover:bg-slate-50" style={{ borderColor: theme.border }}>تصدير تقرير تنفيذي PDF</button>
+              <button type="button" onClick={() => handleExport('excel')} className="rounded-lg border px-4 py-3 text-sm font-black transition-colors hover:bg-slate-50" style={{ borderColor: theme.border }}>تصدير بيانات Excel</button>
+              <button type="button" onClick={() => setFilters((current) => ({ ...current, compareWithPrevious: !current.compareWithPrevious }))} className="rounded-lg border px-4 py-3 text-sm font-black transition-colors hover:bg-slate-50" style={{ borderColor: theme.border }}>
+                {filters.compareWithPrevious ? 'إلغاء المقارنة السابقة' : 'تفعيل المقارنة السابقة'}
+              </button>
             </div>
-          </div>
-        </motion.header>
+          </ShellCard>
 
-        {/* Quick Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
-        >
-          <StatCard
-            title="إجمالي المركبات"
-            value={analytics?.totalVehicles || 0}
-            change={`+${Math.round((analytics?.totalVehicles || 0) * 0.02)}`}
-            icon={Car}
-            iconBg="bg-blue-100 text-blue-600"
-          />
-          <StatCard
-            title="المركبات المؤجرة"
-            value={analytics?.rentedVehicles || 0}
-            change={`+${Math.round((analytics?.rentedVehicles || 0) * 0.05)}`}
-            icon={Activity}
-            iconBg="bg-green-100 text-green-600"
-          />
-          <StatCard
-            title="معدل الاستخدام"
-            value={`${(analytics?.utilizationRate || 0).toFixed(0)}%`}
-            change={analytics?.utilizationRate && analytics.utilizationRate >= 50 ? '+3%' : '-2%'}
-            icon={Percent}
-            iconBg="bg-rose-100 text-coral-600"
-          />
-          <StatCard
-            title="إجمالي الإيرادات"
-            value={formatCurrency(analytics?.totalRevenue || 0)}
-            change="+7%"
-            icon={DollarSign}
-            iconBg="bg-amber-100 text-amber-600"
-          />
-        </motion.div>
-
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6"
-        >
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <ReportFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              onExport={handleExport}
-              onRefresh={handleRefresh}
-              isLoading={isLoading}
-              isDark={false}
-            />
-          </div>
-        </motion.div>
-
-        {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="w-full justify-start bg-white rounded-xl p-1 shadow-sm gap-1 overflow-x-auto">
-            <TabsTrigger 
-              value="overview" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
-            >
-              <BarChart3 className="w-4 h-4" />
-              نظرة عامة
-            </TabsTrigger>
-            <TabsTrigger 
-              value="financial" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
-            >
-              <DollarSign className="w-4 h-4" />
-              التحليل المالي
-            </TabsTrigger>
-            <TabsTrigger 
-              value="maintenance" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
-            >
-              <Wrench className="w-4 h-4" />
-              الصيانة
-            </TabsTrigger>
-            <TabsTrigger 
-              value="insurance" 
-              className="px-6 py-3 rounded-xl data-[state=active]:bg-teal-600 data-[state=active]:text-white gap-2"
-            >
-              <Shield className="w-4 h-4" />
-              التأمين والتسجيل
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab Content */}
-          <TabsContent value="overview" className="mt-6">
-        {/* Main Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Revenue Chart - Takes 2 columns */}
-          <div className="lg:col-span-2">
-            <SectionCard title="الإيرادات الشهرية" icon={TrendingUp}>
-              <RevenueChart
-                data={monthlyRevenue}
-                isDark={false}
-                formatCurrency={formatCurrency}
-              />
-            </SectionCard>
-          </div>
-          
-          {/* Fleet Status Chart */}
-          <div>
-            <SectionCard title="حالة الأسطول" icon={PieChart}>
-              {fleetStatus && (
-                <FleetStatusChart
-                  data={fleetStatus}
-                  isDark={false}
-                />
-              )}
-            </SectionCard>
-          </div>
-        </div>
-
-        {/* Secondary Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Top Vehicles Chart - Takes 2 columns */}
-          <div className="lg:col-span-2">
-            <SectionCard title="أفضل المركبات أداءً" icon={Car}>
-              <TopVehiclesChart
-                vehicles={topVehicles}
-                isDark={false}
-                formatCurrency={formatCurrency}
-              />
-            </SectionCard>
-          </div>
-          
-          {/* Utilization Chart */}
-          <div>
-            <SectionCard title="معدل الاستخدام" icon={Activity}>
-              {analytics && (
-                <UtilizationChart
-                  analytics={analytics}
-                  isDark={false}
-                />
-              )}
-            </SectionCard>
-          </div>
-        </div>
-
-        {/* Additional Charts & Maintenance */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Monthly Contracts Chart */}
-          <SectionCard title="العقود الشهرية" icon={FileText}>
-            <MonthlyContractsChart
-              data={monthlyRevenue}
-              isDark={false}
-            />
-          </SectionCard>
-          
-          {/* Maintenance Alerts */}
-          <SectionCard 
-            title="تنبيهات الصيانة" 
-            icon={Wrench}
-            action={
-              maintenanceAlerts.length > 0 && (
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200">
-                  {maintenanceAlerts.length} تنبيه
-                </Badge>
-              )
-            }
-          >
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {maintenanceAlerts.slice(0, 5).map((alert) => (
-                <MaintenanceAlertItem
-                  key={alert.id}
-                  plateNumber={alert.plate_number}
-                  type={alert.maintenance_type}
-                  date={new Date(alert.scheduled_date).toLocaleDateString('en-GB')}
-                  status={alert.status}
-                  cost={formatCurrency(alert.estimated_cost)}
-                />
+          <ShellCard className="p-5 xl:col-span-2">
+            <SectionTitle title="ملخص المركبات" subtitle="قراءة سريعة لأهم المركبات في التقرير" icon={Car} />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {vehicles.slice(0, 6).map((vehicle) => (
+                <div key={vehicle.id} className="flex items-center justify-between rounded-lg border bg-white px-4 py-3" style={{ borderColor: theme.border }}>
+                  <div>
+                    <p className="text-sm font-black" style={{ color: theme.text }}>{vehicle.plate_number}</p>
+                    <p className="mt-1 text-xs font-medium" style={{ color: theme.muted }}>{vehicle.make} {vehicle.model} {vehicle.year}</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black" style={{ color: theme.navy }}>{formatCurrency(vehicle.monthly_rate || 0)}</p>
+                    <span className="text-xs font-bold" style={{ color: theme.muted }}>{statusLabels[vehicle.status] || vehicle.status}</span>
+                  </div>
+                </div>
               ))}
-              {maintenanceAlerts.length === 0 && (
-                <div className="text-center py-8">
-                  <Wrench className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                  <p className="text-sm text-neutral-500">لا توجد تنبيهات صيانة حالياً</p>
-                </div>
-              )}
             </div>
-          </SectionCard>
-        </div>
-          </TabsContent>
-
-          {/* Financial Analysis Tab Content */}
-          <TabsContent value="financial" className="mt-6">
-            {/* Financial KPIs */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <StatCard
-                title="إجمالي قيمة الأسطول"
-                value={formatCurrency(financialOverview?.totalFleetValue || 0)}
-                icon={Car}
-                iconBg="bg-blue-100 text-blue-600"
-                description={`${financialOverview?.activeVehicles || 0} مركبة نشطة`}
-              />
-              <StatCard
-                title="إجمالي الإيرادات"
-                value={formatCurrency(financialOverview?.totalRevenue || 0)}
-                change="+15.2%"
-                icon={TrendingUp}
-                iconBg="bg-green-100 text-green-600"
-              />
-              <StatCard
-                title="تكاليف التشغيل"
-                value={formatCurrency(financialOverview?.totalOperatingCosts || 0)}
-                change="-8.3%"
-                icon={Activity}
-                iconBg="bg-amber-100 text-amber-600"
-              />
-              <StatCard
-                title="تكاليف الصيانة"
-                value={formatCurrency(financialOverview?.totalMaintenanceCosts || 0)}
-                icon={Wrench}
-                iconBg="bg-rose-100 text-coral-600"
-              />
-              <StatCard
-                title="الاستهلاك المتراكم"
-                value={formatCurrency(financialOverview?.totalDepreciation || 0)}
-                icon={TrendingDown}
-                iconBg="bg-purple-100 text-purple-600"
-              />
-              <StatCard
-                title="صافي الربح"
-                value={formatCurrency(financialOverview?.netProfit || 0)}
-                change={`+${((financialOverview?.netProfit || 0) / (financialOverview?.totalRevenue || 1) * 100).toFixed(1)}% ROI`}
-                icon={DollarSign}
-                iconBg="bg-emerald-100 text-emerald-600"
-              />
-            </div>
-
-            {/* Financial Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <SectionCard title="تطور الإيرادات الشهرية" icon={TrendingUp}>
-                <RevenueChart
-                  data={monthlyRevenueFinancial?.map(item => ({
-                    month: item.monthName || '',
-                    revenue: item.revenue || 0,
-                    contracts: 0,
-                  })) || []}
-                  isDark={false}
-                  formatCurrency={formatCurrency}
-                />
-              </SectionCard>
-              
-              <SectionCard title="أعلى 10 مركبات ربحية" icon={BarChart3}>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                  {topProfitableVehicles?.map((vehicle, idx) => (
-                    <div 
-                      key={vehicle.id || `vehicle-${idx}`}
-                      className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold",
-                          idx === 0 ? "bg-amber-100 text-amber-700" :
-                          idx === 1 ? "bg-neutral-200 text-neutral-700" :
-                          idx === 2 ? "bg-orange-100 text-orange-700" :
-                          "bg-neutral-100 text-neutral-500"
-                        )}>
-                          {idx + 1}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">{vehicle.plate_number}</p>
-                          <p className="text-xs text-neutral-500">{vehicle.make} {vehicle.model}</p>
-                        </div>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-green-600">{formatCurrency(vehicle.totalRevenue || 0)}</p>
-                        <p className="text-xs text-neutral-400">إجمالي الإيرادات</p>
-                      </div>
-                    </div>
-                  ))}
-                  {(!topProfitableVehicles || topProfitableVehicles.length === 0) && (
-                    <div className="text-center py-8">
-                      <Car className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                      <p className="text-sm text-neutral-500">لا توجد بيانات متاحة</p>
-                    </div>
-                  )}
-                </div>
-              </SectionCard>
-            </div>
-
-            {/* Financial Summary */}
-            {financialSummary && (
-              <SectionCard title="ملخص الأداء المالي" icon={DollarSign}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl bg-green-50 border border-green-100">
-                    <p className="text-xs text-green-600 font-medium mb-1">متوسط الربح لكل مركبة</p>
-                    <p className="text-xl font-bold text-green-700">{formatCurrency(financialSummary.avgProfitPerVehicle || 0)}</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-                    <p className="text-xs text-blue-600 font-medium mb-1">معدل العائد على الاستثمار</p>
-                    <p className="text-xl font-bold text-blue-700">{(financialSummary.roi || 0).toFixed(1)}%</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-rose-50 border border-rose-100">
-                    <p className="text-xs text-coral-600 font-medium mb-1">هامش الربح</p>
-                    <p className="text-xl font-bold text-coral-700">{(financialSummary.profitMargin || 0).toFixed(1)}%</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
-                    <p className="text-xs text-purple-600 font-medium mb-1">معدل استخدام الأسطول</p>
-                    <p className="text-xl font-bold text-purple-700">{(financialSummary.utilizationRate || 0).toFixed(1)}%</p>
-                  </div>
-                </div>
-              </SectionCard>
-            )}
-          </TabsContent>
-
-          {/* Maintenance Tab Content */}
-          <TabsContent value="maintenance" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Maintenance Summary */}
-              <SectionCard title="ملخص الصيانة" icon={Wrench}>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="w-5 h-5 text-amber-600" />
-                      <span className="text-xs text-amber-600 font-medium">قيد الانتظار</span>
-                    </div>
-                    <p className="text-2xl font-bold text-amber-700">{maintenanceAlerts.filter(a => a.status === 'pending').length}</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Wrench className="w-5 h-5 text-blue-600" />
-                      <span className="text-xs text-blue-600 font-medium">قيد التنفيذ</span>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-700">{maintenanceAlerts.filter(a => a.status === 'in_progress').length}</p>
-                  </div>
-                </div>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                  {maintenanceAlerts.map((alert) => (
-                    <MaintenanceAlertItem
-                      key={alert.id}
-                      plateNumber={alert.plate_number}
-                      type={alert.maintenance_type}
-                      date={new Date(alert.scheduled_date).toLocaleDateString('en-GB')}
-                      status={alert.status}
-                      cost={formatCurrency(alert.estimated_cost)}
-                    />
-                  ))}
-                  {maintenanceAlerts.length === 0 && (
-                    <div className="text-center py-8">
-                      <Wrench className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                      <p className="text-sm text-neutral-500">لا توجد تنبيهات صيانة حالياً</p>
-                    </div>
-                  )}
-                </div>
-              </SectionCard>
-
-              {/* Maintenance Costs */}
-              <SectionCard title="تكاليف الصيانة الشهرية" icon={DollarSign}>
-                <RevenueChart
-                  data={maintenance.slice(-12).map(m => ({
-                    month: m.month || '',
-                    revenue: m.cost || 0,
-                    contracts: m.count || 0,
-                  }))}
-                  isDark={false}
-                  formatCurrency={formatCurrency}
-                />
-              </SectionCard>
-            </div>
-          </TabsContent>
-
-          {/* Insurance Tab Content */}
-          <TabsContent value="insurance" className="mt-6">
-        {/* Insurance & Registration Report Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          className="mb-6"
-        >
-          <SectionCard 
-            title="تقرير التأمين والاستمارة" 
-            icon={Shield}
-            action={
-              insuranceSummary && insuranceSummary.needs_attention > 0 && (
-                <Badge className="bg-red-100 text-red-700 hover:bg-red-200">
-                  {insuranceSummary.needs_attention} يحتاج اهتمام
-                </Badge>
-              )
-            }
-          >
-            {/* Summary Cards */}
-            {insuranceSummary && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="p-4 rounded-xl bg-green-50 border border-green-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-xs text-green-600 font-medium">مكتمل</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-700">{insuranceSummary.fully_compliant}</p>
-                  <p className="text-xs text-green-600">تأمين واستمارة ساريين</p>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="w-5 h-5 text-blue-600" />
-                    <span className="text-xs text-blue-600 font-medium">تأمين ساري</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-700">{insuranceSummary.with_valid_insurance}</p>
-                  <p className="text-xs text-blue-600">من {insuranceSummary.total_vehicles} مركبة</p>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-5 h-5 text-indigo-600" />
-                    <span className="text-xs text-indigo-600 font-medium">استمارة سارية</span>
-                  </div>
-                  <p className="text-2xl font-bold text-indigo-700">{insuranceSummary.with_valid_registration}</p>
-                  <p className="text-xs text-indigo-600">من {insuranceSummary.total_vehicles} مركبة</p>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="w-5 h-5 text-amber-600" />
-                    <span className="text-xs text-amber-600 font-medium">يحتاج اهتمام</span>
-                  </div>
-                  <p className="text-2xl font-bold text-amber-700">{insuranceSummary.needs_attention}</p>
-                  <p className="text-xs text-amber-600">منتهي أو ينتهي قريباً</p>
-                </div>
-              </div>
-            )}
-            
-            {/* Vehicles Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500">المركبة</th>
-                    <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">التأمين</th>
-                    <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">الاستمارة</th>
-                    <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {insuranceReport.slice(0, 10).map((vehicle) => (
-                    <tr key={vehicle.id} className="hover:bg-neutral-50 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center">
-                            <Car className="w-5 h-5 text-neutral-500" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-neutral-900">{vehicle.plate_number}</p>
-                            <p className="text-xs text-neutral-500">{vehicle.make} {vehicle.model} {vehicle.year}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {vehicle.insurance_status === 'valid' && (
-                          <Badge className="bg-green-100 text-green-700">
-                            <CheckCircle2 className="w-3 h-3 ml-1" />
-                            ساري ({vehicle.insurance_days_remaining} يوم)
-                          </Badge>
-                        )}
-                        {vehicle.insurance_status === 'expiring_soon' && (
-                          <Badge className="bg-amber-100 text-amber-700">
-                            <AlertCircle className="w-3 h-3 ml-1" />
-                            ينتهي قريباً ({vehicle.insurance_days_remaining} يوم)
-                          </Badge>
-                        )}
-                        {vehicle.insurance_status === 'expired' && (
-                          <Badge className="bg-red-100 text-red-700">
-                            <XCircle className="w-3 h-3 ml-1" />
-                            منتهي
-                          </Badge>
-                        )}
-                        {vehicle.insurance_status === 'none' && (
-                          <Badge variant="outline" className="text-neutral-500">
-                            لا يوجد
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {vehicle.registration_status === 'valid' && (
-                          <Badge className="bg-green-100 text-green-700">
-                            <CheckCircle2 className="w-3 h-3 ml-1" />
-                            سارية ({vehicle.registration_days_remaining} يوم)
-                          </Badge>
-                        )}
-                        {vehicle.registration_status === 'expiring_soon' && (
-                          <Badge className="bg-amber-100 text-amber-700">
-                            <AlertCircle className="w-3 h-3 ml-1" />
-                            تنتهي قريباً ({vehicle.registration_days_remaining} يوم)
-                          </Badge>
-                        )}
-                        {vehicle.registration_status === 'expired' && (
-                          <Badge className="bg-red-100 text-red-700">
-                            <XCircle className="w-3 h-3 ml-1" />
-                            منتهية
-                          </Badge>
-                        )}
-                        {vehicle.registration_status === 'none' && (
-                          <Badge variant="outline" className="text-neutral-500">
-                            لا يوجد
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {vehicle.insurance_status === 'valid' && vehicle.registration_status === 'valid' ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                            <CheckCircle2 className="w-4 h-4" />
-                            مكتمل
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-amber-600 text-xs font-medium">
-                            <AlertCircle className="w-4 h-4" />
-                            يحتاج مراجعة
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {insuranceReport.length === 0 && !insuranceLoading && (
-                <div className="text-center py-8">
-                  <Shield className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                  <p className="text-sm text-neutral-500">لا توجد بيانات للعرض</p>
-                </div>
-              )}
-              {insuranceReport.length > 10 && (
-                <div className="text-center py-4 border-t border-neutral-100">
-                  <p className="text-xs text-neutral-500">
-                    عرض 10 من {insuranceReport.length} مركبة
-                  </p>
-                </div>
-              )}
-            </div>
-          </SectionCard>
-        </motion.div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Report Generator */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <ReportGenerator
-            analytics={analytics}
-            vehicles={vehicles}
-            maintenance={maintenance}
-            insuranceReport={insuranceReport}
-            insuranceSummary={insuranceSummary}
-            isDark={false}
-            formatCurrency={formatCurrency}
-          />
-        </motion.div>
-
-        {/* WhatsApp Reports Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-6"
-        >
-          <SectionCard 
-            title="تقارير واتساب" 
-            icon={MessageSquare}
-            action={
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "px-3 py-1",
-                    whatsappConnected 
-                      ? "text-green-600 border-green-200 bg-green-50"
-                      : "text-red-600 border-red-200 bg-red-50"
-                  )}
-                >
-                  {whatsappConnected ? <Wifi className="w-3 h-3 ml-1" /> : <WifiOff className="w-3 h-3 ml-1" />}
-                  {whatsappConnected ? 'متصل' : 'غير متصل'}
-                </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/settings/whatsapp')}
-                >
-                  <Settings className="w-4 h-4 ml-2" />
-                  الإعدادات
-                </Button>
-              </div>
-            }
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {/* Recipients Count */}
-              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-violet-100 rounded-lg">
-                    <Users className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-neutral-900">
-                      {recipients.filter(r => r.isActive).length}
-                    </p>
-                    <p className="text-xs text-neutral-500">مستلم نشط</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Daily Report Status */}
-              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "p-2 rounded-lg",
-                    whatsappSettings?.dailyReportEnabled 
-                      ? "bg-green-100" 
-                      : "bg-neutral-100"
-                  )}>
-                    <Clock className={cn(
-                      "w-5 h-5",
-                      whatsappSettings?.dailyReportEnabled 
-                        ? "text-green-600" 
-                        : "text-neutral-400"
-                    )} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">التقرير اليومي</p>
-                    <p className={cn(
-                      "text-xs",
-                      whatsappSettings?.dailyReportEnabled 
-                        ? "text-green-600" 
-                        : "text-neutral-400"
-                    )}>
-                      {whatsappSettings?.dailyReportEnabled 
-                        ? `مفعّل • ${whatsappSettings?.dailyReportTime || '08:00'}` 
-                        : 'معطّل'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Weekly Report Status */}
-              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "p-2 rounded-lg",
-                    whatsappSettings?.weeklyReportEnabled 
-                      ? "bg-blue-100" 
-                      : "bg-neutral-100"
-                  )}>
-                    <FileText className={cn(
-                      "w-5 h-5",
-                      whatsappSettings?.weeklyReportEnabled 
-                        ? "text-blue-600" 
-                        : "text-neutral-400"
-                    )} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">التقرير الأسبوعي</p>
-                    <p className={cn(
-                      "text-xs",
-                      whatsappSettings?.weeklyReportEnabled 
-                        ? "text-blue-600" 
-                        : "text-neutral-400"
-                    )}>
-                      {whatsappSettings?.weeklyReportEnabled 
-                        ? `مفعّل • ${['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][whatsappSettings?.weeklyReportDay || 0]}` 
-                        : 'معطّل'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex flex-wrap gap-3">
-              <Button
-                onClick={() => sendDailyReport()}
-                disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
-                className="bg-gradient-to-l from-rose-500 to-orange-500 hover:from-coral-600 hover:to-orange-600"
-              >
-                <Send className="w-4 h-4 ml-2" />
-                {isSending ? 'جاري الإرسال...' : 'إرسال تقرير الآن'}
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => sendWeeklyReport()}
-                disabled={!whatsappConnected || isSending || recipients.filter(r => r.isActive).length === 0}
-              >
-                <FileText className="w-4 h-4 ml-2" />
-                إرسال التقرير الأسبوعي
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => navigate('/settings/whatsapp')}
-                className="mr-auto"
-              >
-                إدارة المستلمين
-                <ChevronRight className="w-4 h-4 mr-2" />
-              </Button>
-            </div>
-
-            {/* Help Text */}
-            {!whatsappConnected && (
-              <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                <p className="text-sm text-amber-700">
-                  ⚠️ لم يتم الاتصال بواتساب. 
-                  <button 
-                    onClick={() => navigate('/settings/whatsapp')}
-                    className="underline mr-1 hover:no-underline font-medium"
-                  >
-                    اضغط هنا
-                  </button>
-                  لإعداد الاتصال.
-                </p>
-              </div>
-            )}
-          </SectionCard>
-        </motion.div>
-
-        {/* Performance Summary Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="mt-6 bg-gradient-to-l from-rose-50 to-orange-50 rounded-xl p-6 border border-rose-100"
-        >
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-l from-rose-500 to-orange-500 rounded-xl">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-lg font-semibold text-neutral-900">
-                {analytics && analytics.utilizationRate >= 70 
-                  ? '🎉 أداء ممتاز!' 
-                  : analytics && analytics.utilizationRate >= 50 
-                  ? '📈 أداء جيد - هناك فرصة للتحسين'
-                  : '⚠️ يحتاج لتحسين'}
-              </p>
-              <p className="text-sm text-neutral-600">
-                {analytics && `معدل استخدام الأسطول ${analytics.utilizationRate.toFixed(1)}% • هامش الربح ${analytics.profitMargin.toFixed(1)}%`}
-              </p>
-            </div>
-            <div className="hidden md:flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-neutral-900">
-                  {analytics?.totalVehicles || 0}
-                </p>
-                <p className="text-xs text-neutral-500">مركبة</p>
-              </div>
-              <div className="w-px h-12 bg-rose-200" />
-              <div className="text-center">
-                <p className="text-2xl font-bold text-neutral-900">
-                  {analytics?.rentedVehicles || 0}
-                </p>
-                <p className="text-xs text-neutral-500">مؤجرة</p>
-              </div>
-              <div className="w-px h-12 bg-rose-200" />
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(analytics?.totalProfit || 0)}
-                </p>
-                <p className="text-xs text-neutral-500">صافي الربح</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      <style>{`
-        .fleet-reports-system {
-          --fr-radius: 8px;
-        }
-
-        .fleet-reports-system .bg-white,
-        .fleet-reports-system .dark\\:bg-slate-900 {
-          background-color: var(--fr-surface) !important;
-        }
-
-        .fleet-reports-system .bg-neutral-50,
-        .fleet-reports-system .bg-neutral-100,
-        .fleet-reports-system .bg-slate-50,
-        .fleet-reports-system .bg-slate-100 {
-          background-color: var(--fr-inner) !important;
-        }
-
-        .fleet-reports-system .border-slate-200,
-        .fleet-reports-system .border-neutral-100,
-        .fleet-reports-system .border-neutral-200,
-        .fleet-reports-system .divide-neutral-100 > :not([hidden]) ~ :not([hidden]) {
-          border-color: var(--fr-border) !important;
-        }
-
-        .fleet-reports-system .text-neutral-900,
-        .fleet-reports-system .text-slate-900,
-        .fleet-reports-system .text-neutral-800,
-        .fleet-reports-system .text-slate-800,
-        .fleet-reports-system .text-neutral-700,
-        .fleet-reports-system .text-slate-700 {
-          color: var(--fr-text) !important;
-        }
-
-        .fleet-reports-system .text-neutral-600,
-        .fleet-reports-system .text-slate-600,
-        .fleet-reports-system .text-neutral-500,
-        .fleet-reports-system .text-slate-500,
-        .fleet-reports-system .text-neutral-400,
-        .fleet-reports-system .text-slate-400 {
-          color: var(--fr-muted) !important;
-        }
-
-        .fleet-reports-system .rounded-xl,
-        .fleet-reports-system .rounded-lg {
-          border-radius: var(--fr-radius) !important;
-        }
-
-        .fleet-reports-system .shadow-sm,
-        .fleet-reports-system .shadow-lg,
-        .fleet-reports-system .shadow-xl {
-          box-shadow: 0 12px 28px -24px rgba(2, 6, 23, 0.38) !important;
-        }
-
-        .fleet-reports-system .bg-teal-600,
-        .fleet-reports-system .bg-teal-500,
-        .fleet-reports-system .data-\\[state\\=active\\]\\:bg-teal-600[data-state="active"],
-        .fleet-reports-system .bg-green-500 {
-          background-color: var(--fr-success) !important;
-        }
-
-        .fleet-reports-system .hover\\:bg-teal-700:hover,
-        .fleet-reports-system .hover\\:bg-teal-600:hover {
-          background-color: #1DB390 !important;
-        }
-
-        .fleet-reports-system .text-teal-500,
-        .fleet-reports-system .text-teal-600,
-        .fleet-reports-system .text-green-500,
-        .fleet-reports-system .text-green-600,
-        .fleet-reports-system .text-green-700,
-        .fleet-reports-system .text-emerald-500 {
-          color: var(--fr-success) !important;
-        }
-
-        .fleet-reports-system .bg-green-50,
-        .fleet-reports-system .bg-green-100,
-        .fleet-reports-system .bg-emerald-500\\/10 {
-          background-color: rgba(34, 199, 161, 0.1) !important;
-        }
-
-        .fleet-reports-system .border-green-100,
-        .fleet-reports-system .border-green-200,
-        .fleet-reports-system .border-emerald-500\\/30 {
-          border-color: rgba(34, 199, 161, 0.28) !important;
-        }
-
-        .fleet-reports-system .text-blue-500,
-        .fleet-reports-system .text-blue-600,
-        .fleet-reports-system .text-blue-700,
-        .fleet-reports-system .text-indigo-500,
-        .fleet-reports-system .text-indigo-600,
-        .fleet-reports-system .text-indigo-700,
-        .fleet-reports-system .text-violet-500,
-        .fleet-reports-system .text-violet-600,
-        .fleet-reports-system .text-purple-500,
-        .fleet-reports-system .text-purple-600 {
-          color: var(--fr-focus) !important;
-        }
-
-        .fleet-reports-system .bg-blue-50,
-        .fleet-reports-system .bg-blue-100,
-        .fleet-reports-system .bg-indigo-50,
-        .fleet-reports-system .bg-indigo-100,
-        .fleet-reports-system .bg-violet-100,
-        .fleet-reports-system .bg-purple-50 {
-          background-color: rgba(124, 131, 246, 0.1) !important;
-        }
-
-        .fleet-reports-system .border-blue-100,
-        .fleet-reports-system .border-blue-200,
-        .fleet-reports-system .border-indigo-100 {
-          border-color: rgba(124, 131, 246, 0.28) !important;
-        }
-
-        .fleet-reports-system .text-cyan-500,
-        .fleet-reports-system .text-cyan-600,
-        .fleet-reports-system .text-amber-500,
-        .fleet-reports-system .text-amber-600,
-        .fleet-reports-system .text-amber-700,
-        .fleet-reports-system .text-orange-500 {
-          color: var(--fr-info) !important;
-        }
-
-        .fleet-reports-system .bg-amber-50,
-        .fleet-reports-system .bg-amber-100,
-        .fleet-reports-system .bg-orange-50,
-        .fleet-reports-system .bg-orange-100 {
-          background-color: rgba(56, 189, 248, 0.12) !important;
-        }
-
-        .fleet-reports-system .border-amber-100,
-        .fleet-reports-system .border-amber-200 {
-          border-color: rgba(56, 189, 248, 0.3) !important;
-        }
-
-        .fleet-reports-system .text-rose-500,
-        .fleet-reports-system .text-rose-600,
-        .fleet-reports-system .text-coral-600,
-        .fleet-reports-system .text-red-500,
-        .fleet-reports-system .text-red-600,
-        .fleet-reports-system .text-red-700 {
-          color: var(--fr-alert) !important;
-        }
-
-        .fleet-reports-system .bg-rose-50,
-        .fleet-reports-system .bg-rose-100,
-        .fleet-reports-system .bg-red-50,
-        .fleet-reports-system .bg-red-100,
-        .fleet-reports-system .bg-rose-500\\/10 {
-          background-color: rgba(251, 107, 122, 0.1) !important;
-        }
-
-        .fleet-reports-system .bg-red-500,
-        .fleet-reports-system .from-rose-500,
-        .fleet-reports-system .to-orange-500,
-        .fleet-reports-system .bg-gradient-to-l {
-          background: var(--fr-alert) !important;
-        }
-
-        .fleet-reports-system .border-rose-100,
-        .fleet-reports-system .border-rose-200,
-        .fleet-reports-system .border-red-200,
-        .fleet-reports-system .border-rose-500\\/30 {
-          border-color: rgba(251, 107, 122, 0.28) !important;
-        }
-
-        .fleet-reports-system button,
-        .fleet-reports-system [role="tab"],
-        .fleet-reports-system [role="combobox"] {
-          border-radius: var(--fr-radius) !important;
-        }
-
-        .fleet-reports-system [role="combobox"] {
-          background-color: var(--fr-surface) !important;
-          border-color: var(--fr-border) !important;
-          color: var(--fr-text) !important;
-        }
-
-        .fleet-reports-system table thead tr {
-          background-color: var(--fr-inner) !important;
-        }
-
-        .fleet-reports-system tbody tr:hover {
-          background-color: rgba(56, 189, 248, 0.06) !important;
-        }
-      `}</style>
+          </ShellCard>
+        </section>
+      </main>
     </div>
   );
 };

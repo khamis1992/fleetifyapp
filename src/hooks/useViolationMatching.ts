@@ -438,20 +438,20 @@ export function useViolationEnrichment() {
 
     try {
       // استخراج أرقام المرجع وأرقام المخالفات من PDF
-      const referenceNumbers = pdfViolations
-        .map(v => v.reference_number)
-        .filter((r): r is string => !!r);
-      
       const violationNumbers = pdfViolations
         .map(v => v.violation_number)
         .filter((v): v is string => !!v);
 
+      if (violationNumbers.length === 0) {
+        return { total_found: 0, enrichable_count: 0, enrichable_violations: [] };
+      }
+
       // البحث عن المخالفات الموجودة في قاعدة البيانات
       const { data: existingViolations, error: searchError } = await supabase
-        .from('traffic_violations')
-        .select('id, violation_number, reference_number, violation_date, location, violation_description, violation_time, issuing_authority, contract_id')
+        .from('penalties')
+        .select('id, penalty_number, penalty_date, location, reason, notes, contract_id')
         .eq('company_id', companyId)
-        .or(`reference_number.in.(${referenceNumbers.join(',')}),violation_number.in.(${violationNumbers.join(',')})`);
+        .in('penalty_number', violationNumbers);
 
       if (searchError) {
         throw new Error(`خطأ في البحث: ${searchError.message}`);
@@ -468,10 +468,21 @@ export function useViolationEnrichment() {
       // مقارنة وإيجاد البيانات الناقصة
       const enrichableViolations: EnrichableViolation[] = [];
 
-      for (const existing of existingViolations) {
+      const normalizedExistingViolations = existingViolations.map((existing) => ({
+        id: existing.id,
+        violation_number: existing.penalty_number,
+        reference_number: null,
+        violation_date: existing.penalty_date,
+        location: existing.location,
+        violation_description: existing.reason,
+        violation_time: null,
+        issuing_authority: null,
+        contract_id: existing.contract_id,
+      }));
+
+      for (const existing of normalizedExistingViolations) {
         // البحث عن المخالفة المقابلة في بيانات PDF
         const pdfMatch = pdfViolations.find(pdf => 
-          (pdf.reference_number && pdf.reference_number === existing.reference_number) ||
           (pdf.violation_number && pdf.violation_number === existing.violation_number)
         );
 
@@ -571,7 +582,11 @@ export function useViolationEnrichment() {
         
         for (const field of item.missingFields) {
           if (field.newValue) {
-            updateData[field.field] = field.newValue;
+            if (field.field === 'location') {
+              updateData.location = field.newValue;
+            } else if (field.field === 'violation_description') {
+              updateData.reason = field.newValue;
+            }
           }
         }
 
@@ -581,7 +596,7 @@ export function useViolationEnrichment() {
 
         // تحديث المخالفة في قاعدة البيانات
         const { error: updateError } = await supabase
-          .from('traffic_violations')
+          .from('penalties')
           .update(updateData)
           .eq('id', item.existingViolation.id);
 

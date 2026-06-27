@@ -462,11 +462,12 @@ async function calculateDelinquentCustomersDynamically(
     
     if (vehicleIds.length > 0) {
       const { data: violationsData, error: violationsError } = await supabase
-        .from('traffic_violations')
-        .select('vehicle_id, fine_amount, status')
+        .from('penalties')
+        .select('vehicle_id, amount, status, payment_status')
         .eq('company_id', companyId)
         .in('vehicle_id', vehicleIds)
-        .neq('status', 'paid');
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled');
       
       if (!violationsError && violationsData) {
         // Map violations to customer_id through contracts
@@ -479,7 +480,7 @@ async function calculateDelinquentCustomersDynamically(
         
         violations = violationsData.map(v => ({
           customer_id: vehicleToCustomerMap.get(v.vehicle_id) || '',
-          fine_amount: v.fine_amount,
+          fine_amount: v.amount,
           status: v.status,
           vehicle_id: v.vehicle_id,
         })).filter(v => v.customer_id);

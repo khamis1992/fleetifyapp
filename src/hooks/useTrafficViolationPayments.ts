@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export interface TrafficViolationPayment {
@@ -13,13 +13,13 @@ export interface TrafficViolationPayment {
   amount: number;
   payment_method: 'cash' | 'bank_transfer' | 'check' | 'credit_card';
   payment_type: 'full' | 'partial';
-  bank_account?: string;
-  check_number?: string;
-  reference_number?: string;
-  notes?: string;
+  bank_account?: string | null;
+  check_number?: string | null;
+  reference_number?: string | null;
+  notes?: string | null;
   status: 'completed' | 'pending' | 'cancelled';
-  journal_entry_id?: string;
-  created_by?: string;
+  journal_entry_id?: string | null;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,7 +36,55 @@ export interface CreateTrafficViolationPaymentData {
   notes?: string;
 }
 
-// Hook لجلب مدفوعات مخالفة محددة
+async function getCompanyId() {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('user_id', user.user.id)
+    .single();
+
+  if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات الشركة');
+  return { companyId: profile.company_id, userId: user.user.id };
+}
+
+async function refreshPenaltyPaymentStatus(violationId?: string) {
+  if (!violationId) return;
+
+  const [{ data: penalty }, { data: payments }] = await Promise.all([
+    supabase.from('penalties').select('amount').eq('id', violationId).maybeSingle(),
+    supabase.from('traffic_violation_payments').select('amount, status').eq('traffic_violation_id', violationId),
+  ]);
+
+  if (!penalty) return;
+
+  const penaltyAmount = Number(penalty.amount || 0);
+  const paidAmount = (payments || [])
+    .filter((payment) => payment.status === 'completed')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const paymentStatus =
+    paidAmount <= 0
+      ? 'unpaid'
+      : paidAmount >= penaltyAmount
+        ? 'paid'
+        : 'partially_paid';
+
+  await supabase.from('penalties').update({ payment_status: paymentStatus }).eq('id', violationId);
+}
+
+function invalidateTrafficPaymentQueries(queryClient: ReturnType<typeof useQueryClient>, violationId?: string) {
+  queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
+  queryClient.invalidateQueries({ queryKey: ['all-traffic-violation-payments'] });
+  queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+  if (violationId) {
+    queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments', violationId] });
+    queryClient.invalidateQueries({ queryKey: ['traffic-violation', violationId] });
+  }
+}
+
 export function useTrafficViolationPayments(violationId: string) {
   return useQuery({
     queryKey: ['traffic-violation-payments', violationId],
@@ -47,293 +95,186 @@ export function useTrafficViolationPayments(violationId: string) {
         .eq('traffic_violation_id', violationId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching traffic violation payments:', error);
-        throw error;
-      }
-
+      if (error) throw error;
       return data as TrafficViolationPayment[];
     },
-    enabled: !!violationId
+    enabled: !!violationId,
   });
 }
 
-// Hook to fetch all traffic violation payments for the company
 export function useAllTrafficViolationPayments() {
   return useQuery({
     queryKey: ['all-traffic-violation-payments'],
     queryFn: async () => {
-      // الحصول على company_id من المستخدم الحالي
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.user.id)
-        .single();
-      
-      if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
+      const { companyId } = await getCompanyId();
 
       const { data, error } = await supabase
         .from('traffic_violation_payments')
         .select('*')
-        .eq('company_id', profile.company_id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching traffic violation payments:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Fetch related violation data separately since no FK relationship is defined
-      const violationIds = Array.from(new Set((data || []).map(p => p.traffic_violation_id).filter(Boolean)));
+      const violationIds = Array.from(new Set((data || []).map((payment) => payment.traffic_violation_id).filter(Boolean)));
       let violationsMap: Record<string, any> = {};
+
       if (violationIds.length > 0) {
         const { data: violations } = await supabase
-          .from('traffic_violations')
-          .select('id, violation_number, violation_type, fine_amount, total_amount, vehicle_id, contract_id, status')
+          .from('penalties')
+          .select('id, penalty_number, violation_type, amount, vehicle_id, contract_id, status, payment_status')
           .in('id', violationIds);
-        
-        if (violations) {
-          violationsMap = violations.reduce((acc, v) => { acc[v.id] = v; return acc; }, {} as Record<string, any>);
-        }
+
+        violationsMap = (violations || []).reduce((acc, violation) => {
+          acc[violation.id] = {
+            ...violation,
+            violation_number: violation.penalty_number,
+            fine_amount: violation.amount,
+            total_amount: violation.amount,
+          };
+          return acc;
+        }, {} as Record<string, any>);
       }
 
-      // Enrich payments with violation data
-      return (data || []).map(payment => ({
+      return (data || []).map((payment) => ({
         ...payment,
         penalties: violationsMap[payment.traffic_violation_id] || null,
       }));
-    }
+    },
   });
 }
 
-// Hook لإنشاء دفعة جديدة
 export function useCreateTrafficViolationPayment() {
   const queryClient = useQueryClient();
   const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (data: CreateTrafficViolationPaymentData) => {
-      // Permission check
       if (!hasPermission('traffic_payments:create')) {
-        const error = new Error('ليس لديك صلاحية لإنشاء دفعات المخالفات المرورية');
-        Sentry.captureException(error, {
-          tags: { feature: 'traffic_payments', action: 'create' },
-        });
-        throw error;
+        throw new Error('ليس لديك صلاحية لإنشاء دفعات المخالفات المرورية');
       }
 
       try {
-        Sentry.addBreadcrumb({
-          category: 'traffic_payments',
-          message: 'Creating traffic violation payment',
-          level: 'info',
-          data: { violationId: data.traffic_violation_id, amount: data.amount },
+        const { companyId, userId } = await getCompanyId();
+        const { data: paymentNumber, error: numberError } = await supabase.rpc('generate_traffic_payment_number', {
+          company_id_param: companyId,
         });
-      // الحصول على company_id من المستخدم الحالي
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('المستخدم غير مسجل الدخول');
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('user_id', user.user.id)
-        .single();
-      
-      if (!profile) throw new Error('لم يتم العثور على بيانات المستخدم');
+        if (numberError) throw numberError;
 
-      // توليد رقم الدفع
-      const { data: paymentNumber, error: numberError } = await supabase
-        .rpc('generate_traffic_payment_number', {
-          company_id_param: profile.company_id
-        });
+        const { data: payment, error } = await supabase
+          .from('traffic_violation_payments')
+          .insert({
+            company_id: companyId,
+            traffic_violation_id: data.traffic_violation_id,
+            payment_number: paymentNumber,
+            payment_date: data.payment_date || new Date().toISOString().split('T')[0],
+            amount: data.amount,
+            payment_method: data.payment_method,
+            payment_type: data.payment_type || 'full',
+            bank_account: data.bank_account,
+            check_number: data.check_number,
+            reference_number: data.reference_number,
+            notes: data.notes,
+            status: 'completed',
+            created_by: userId,
+          })
+          .select()
+          .single();
 
-      if (numberError) {
-        console.error('Error generating payment number:', numberError);
-        throw numberError;
-      }
-
-      // إنشاء الدفعة
-      const { data: payment, error } = await supabase
-        .from('traffic_violation_payments')
-        .insert([{
-          company_id: profile.company_id,
-          traffic_violation_id: data.traffic_violation_id,
-          payment_number: paymentNumber,
-          payment_date: data.payment_date || new Date().toISOString().split('T')[0],
-          amount: data.amount,
-          payment_method: data.payment_method,
-          payment_type: data.payment_type || 'full',
-          bank_account: data.bank_account,
-          check_number: data.check_number,
-          reference_number: data.reference_number,
-          notes: data.notes,
-          status: 'completed',
-          created_by: user.user.id
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating traffic violation payment:', error);
-        throw error;
-      }
-
-        Sentry.addBreadcrumb({
-          category: 'traffic_payments',
-          message: 'Traffic violation payment created successfully',
-          level: 'info',
-        });
-
-      return payment;
+        if (error) throw error;
+        return payment as TrafficViolationPayment;
       } catch (error) {
-        Sentry.captureException(error, {
-          tags: { feature: 'traffic_payments', action: 'create' },
-          extra: { data },
-        });
+        Sentry.captureException(error, { tags: { feature: 'traffic_payments', action: 'create' }, extra: { data } });
         throw error;
       }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['all-traffic-violation-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+    onSuccess: async (data) => {
+      await refreshPenaltyPaymentStatus(data.traffic_violation_id);
+      invalidateTrafficPaymentQueries(queryClient, data.traffic_violation_id);
       toast.success('تم تسجيل الدفع بنجاح');
     },
     onError: (error) => {
       console.error('Error creating traffic violation payment:', error);
       toast.error('حدث خطأ أثناء تسجيل الدفع');
-    }
+    },
   });
 }
 
-// Hook لتحديث دفعة
 export function useUpdateTrafficViolationPayment() {
   const queryClient = useQueryClient();
   const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async ({ id, ...updateData }: { id: string } & Partial<CreateTrafficViolationPaymentData>) => {
-      // Permission check
       if (!hasPermission('traffic_payments:update')) {
-        const error = new Error('ليس لديك صلاحية لتحديث دفعات المخالفات المرورية');
-        Sentry.captureException(error, {
-          tags: { feature: 'traffic_payments', action: 'update' },
-        });
-        throw error;
+        throw new Error('ليس لديك صلاحية لتحديث دفعات المخالفات المرورية');
       }
 
       try {
-        Sentry.addBreadcrumb({
-          category: 'traffic_payments',
-          message: 'Updating traffic violation payment',
-          level: 'info',
-          data: { paymentId: id },
-        });
-      const { data: payment, error } = await supabase
-        .from('traffic_violation_payments')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
+        const { data: payment, error } = await supabase
+          .from('traffic_violation_payments')
+          .update(updateData)
+          .eq('id', id)
+          .select()
+          .single();
 
-      if (error) {
-        console.error('Error updating traffic violation payment:', error);
-        throw error;
-      }
-
-        Sentry.addBreadcrumb({
-          category: 'traffic_payments',
-          message: 'Traffic violation payment updated successfully',
-          level: 'info',
-        });
-
-      return payment;
+        if (error) throw error;
+        return payment as TrafficViolationPayment;
       } catch (error) {
-        Sentry.captureException(error, {
-          tags: { feature: 'traffic_payments', action: 'update' },
-          extra: { paymentId: id, updateData },
-        });
+        Sentry.captureException(error, { tags: { feature: 'traffic_payments', action: 'update' }, extra: { paymentId: id, updateData } });
         throw error;
       }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['all-traffic-violation-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+    onSuccess: async (data) => {
+      await refreshPenaltyPaymentStatus(data.traffic_violation_id);
+      invalidateTrafficPaymentQueries(queryClient, data.traffic_violation_id);
       toast.success('تم تحديث الدفع بنجاح');
     },
     onError: (error) => {
       console.error('Error updating traffic violation payment:', error);
       toast.error('حدث خطأ أثناء تحديث الدفع');
-    }
+    },
   });
 }
 
-// Hook لحذف دفعة
 export function useDeleteTrafficViolationPayment() {
   const queryClient = useQueryClient();
   const { hasPermission } = usePermissions();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Permission check
       if (!hasPermission('traffic_payments:delete')) {
-        const error = new Error('ليس لديك صلاحية لحذف دفعات المخالفات المرورية');
-        Sentry.captureException(error, {
-          tags: { feature: 'traffic_payments', action: 'delete' },
-        });
-        throw error;
+        throw new Error('ليس لديك صلاحية لحذف دفعات المخالفات المرورية');
       }
 
       try {
-        Sentry.addBreadcrumb({
-          category: 'traffic_payments',
-          message: 'Deleting traffic violation payment',
-          level: 'info',
-          data: { paymentId: id },
-        });
-      const { error } = await supabase
-        .from('traffic_violation_payments')
-        .delete()
-        .eq('id', id);
+        const { data: existingPayment } = await supabase
+          .from('traffic_violation_payments')
+          .select('traffic_violation_id')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error deleting traffic violation payment:', error);
-        throw error;
-      }
+        const { error } = await supabase.from('traffic_violation_payments').delete().eq('id', id);
+        if (error) throw error;
 
-        Sentry.addBreadcrumb({
-          category: 'traffic_payments',
-          message: 'Traffic violation payment deleted successfully',
-          level: 'info',
-        });
-
-      return id;
+        return { id, violationId: existingPayment?.traffic_violation_id };
       } catch (error) {
-        Sentry.captureException(error, {
-          tags: { feature: 'traffic_payments', action: 'delete' },
-          extra: { paymentId: id },
-        });
+        Sentry.captureException(error, { tags: { feature: 'traffic_payments', action: 'delete' }, extra: { paymentId: id } });
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['traffic-violation-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['all-traffic-violation-payments'] });
-      queryClient.invalidateQueries({ queryKey: ['traffic-violations'] });
+    onSuccess: async (data) => {
+      await refreshPenaltyPaymentStatus(data.violationId);
+      invalidateTrafficPaymentQueries(queryClient, data.violationId);
       toast.success('تم حذف الدفع بنجاح');
     },
     onError: (error) => {
       console.error('Error deleting traffic violation payment:', error);
       toast.error('حدث خطأ أثناء حذف الدفع');
-    }
+    },
   });
 }
 
-// Hook للحصول على إحصائيات المدفوعات
 export function useTrafficViolationPaymentsStats() {
   return useQuery({
     queryKey: ['traffic-violation-payments-stats'],
@@ -342,27 +283,25 @@ export function useTrafficViolationPaymentsStats() {
         .from('traffic_violation_payments')
         .select('amount, payment_method, status, created_at');
 
-      if (error) {
-        console.error('Error fetching payment stats:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      const stats = {
-        totalPayments: payments.length,
-        totalAmount: payments.reduce((sum, p) => sum + (p.amount || 0), 0),
-        completedPayments: payments.filter(p => p.status === 'completed').length,
-        completedAmount: payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0),
-        pendingPayments: payments.filter(p => p.status === 'pending').length,
-        pendingAmount: payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + (p.amount || 0), 0),
+      const completedPayments = (payments || []).filter((payment) => payment.status === 'completed');
+      const pendingPayments = (payments || []).filter((payment) => payment.status === 'pending');
+
+      return {
+        totalPayments: payments?.length || 0,
+        totalAmount: (payments || []).reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+        completedPayments: completedPayments.length,
+        completedAmount: completedPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+        pendingPayments: pendingPayments.length,
+        pendingAmount: pendingPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
         methodBreakdown: {
-          cash: payments.filter(p => p.payment_method === 'cash').length,
-          bank_transfer: payments.filter(p => p.payment_method === 'bank_transfer').length,
-          check: payments.filter(p => p.payment_method === 'check').length,
-          credit_card: payments.filter(p => p.payment_method === 'credit_card').length
-        }
+          cash: (payments || []).filter((payment) => payment.payment_method === 'cash').length,
+          bank_transfer: (payments || []).filter((payment) => payment.payment_method === 'bank_transfer').length,
+          check: (payments || []).filter((payment) => payment.payment_method === 'check').length,
+          credit_card: (payments || []).filter((payment) => payment.payment_method === 'credit_card').length,
+        },
       };
-
-      return stats;
-    }
+    },
   });
 }

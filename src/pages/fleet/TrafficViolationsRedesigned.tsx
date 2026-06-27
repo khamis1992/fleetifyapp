@@ -133,6 +133,47 @@ export default function TrafficViolationsRedesigned() {
       const termDigits = rawTerm.replace(/\D/g, '');
       const safeTerm = termNoHash.replace(/[(),]/g, ' ').trim();
       const safeDigits = termDigits.replace(/[(),]/g, ' ').trim();
+      const relatedCustomerIds = new Set<string>();
+      const relatedContractIds = new Set<string>();
+
+      if (safeTerm.length > 0 || safeDigits.length > 0) {
+        const customerSearchParts: string[] = [];
+        const contractSearchParts: string[] = [];
+        const addRelatedSearchTerm = (term: string) => {
+          if (!term) return;
+          customerSearchParts.push(`first_name.ilike.%${term}%`);
+          customerSearchParts.push(`last_name.ilike.%${term}%`);
+          customerSearchParts.push(`company_name.ilike.%${term}%`);
+          customerSearchParts.push(`phone.ilike.%${term}%`);
+          contractSearchParts.push(`contract_number.ilike.%${term}%`);
+        };
+
+        addRelatedSearchTerm(safeTerm);
+        if (safeDigits && safeDigits !== safeTerm) addRelatedSearchTerm(safeDigits);
+
+        if (customerSearchParts.length > 0) {
+          const { data: customersMatches } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('company_id', profile.company_id)
+            .or(customerSearchParts.join(','))
+            .limit(100);
+          (customersMatches || []).forEach((customer) => relatedCustomerIds.add(customer.id));
+        }
+
+        if (contractSearchParts.length > 0) {
+          const { data: contractMatches } = await supabase
+            .from('contracts')
+            .select('id, customer_id')
+            .eq('company_id', profile.company_id)
+            .or(contractSearchParts.join(','))
+            .limit(100);
+          (contractMatches || []).forEach((contract) => {
+            relatedContractIds.add(contract.id);
+            if (contract.customer_id) relatedCustomerIds.add(contract.customer_id);
+          });
+        }
+      }
 
       let query = supabase
         .from('penalties')
@@ -219,6 +260,12 @@ export default function TrafficViolationsRedesigned() {
         };
         addTerm(safeTerm);
         if (safeDigits && safeDigits !== safeTerm) addTerm(safeDigits);
+        if (relatedCustomerIds.size > 0) {
+          orParts.push(`customer_id.in.(${Array.from(relatedCustomerIds).join(',')})`);
+        }
+        if (relatedContractIds.size > 0) {
+          orParts.push(`contract_id.in.(${Array.from(relatedContractIds).join(',')})`);
+        }
         query = query.or(orParts.join(','));
       }
 

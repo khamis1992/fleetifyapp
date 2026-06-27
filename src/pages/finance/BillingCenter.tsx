@@ -532,6 +532,7 @@ const BillingCenter = () => {
     <div className="billing-system min-h-screen" dir="rtl" style={billingStyle}>
       <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
         <motion.section
+          data-tour="billing-header"
           className="billing-command"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -559,7 +560,7 @@ const BillingCenter = () => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div data-tour="billing-create-actions" className="flex flex-wrap gap-2">
               <Button onClick={() => setIsCreateInvoiceOpen(true)} className="gap-2 bg-[#020617] text-white hover:bg-[#020617]/90">
                 <Plus className="h-4 w-4" />
                 فاتورة جديدة
@@ -575,7 +576,7 @@ const BillingCenter = () => {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div data-tour="billing-metrics" className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <BillingMetric title="إجمالي الفواتير" value={formatCurrency(stats.totalInvoices)} helper={`${stats.invoiceCount} فاتورة`} icon={Receipt} accent={billingColors.info} />
             <BillingMetric title="المدفوع" value={formatCurrency(stats.paidInvoices)} helper={`${stats.monthlyChange >= 0 ? "+" : ""}${stats.monthlyChange}%`} icon={CheckCircle} accent={billingColors.success} />
             <BillingMetric title="المستحق" value={formatCurrency(stats.pendingInvoices)} helper="قيد التحصيل" icon={Clock} accent={billingColors.alert} />
@@ -584,7 +585,7 @@ const BillingCenter = () => {
         </motion.section>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="billing-workspace">
-          <section className="billing-tabs-shell">
+          <section data-tour="billing-tabs" className="billing-tabs-shell">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em]" style={{ color: billingColors.muted }}>
                 Billing Workspace
@@ -621,7 +622,7 @@ const BillingCenter = () => {
             </TabsList>
           </section>
 
-          <section className="billing-filter-bar">
+          <section data-tour="billing-filters" className="billing-filter-bar">
             <div className="flex items-center gap-3">
               <span className="billing-filter-icon" style={{ color: activeTabInfo.accent, backgroundColor: `${activeTabInfo.accent}14` }}>
                 <activeTabInfo.icon className="h-5 w-5" />
@@ -661,6 +662,7 @@ const BillingCenter = () => {
         {/* Invoices Tab */}
         <TabsContent value="invoices">
           <motion.div 
+            data-tour="billing-invoices-table"
             className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -773,6 +775,7 @@ const BillingCenter = () => {
         {/* Payments Tab */}
         <TabsContent value="payments">
           <motion.div 
+            data-tour="billing-payments-table"
             className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -886,6 +889,7 @@ const BillingCenter = () => {
         {/* Deposits Tab */}
         <TabsContent value="deposits">
           <motion.div
+            data-tour="billing-deposits-tab"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -899,6 +903,7 @@ const BillingCenter = () => {
         {/* Monthly Rent Tracking Tab */}
         <TabsContent value="rent">
           <motion.div
+            data-tour="billing-rent-tab"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}

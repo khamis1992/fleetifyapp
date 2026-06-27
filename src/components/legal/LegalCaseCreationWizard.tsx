@@ -629,16 +629,22 @@ const InvoiceSelectionStep: React.FC<InvoiceSelectionStepProps> = ({
         if (contractsData && contractsData.length > 0) {
           const contractIds = contractsData.map(c => c.id);
           const { data: violationsData, error: violationsError } = await supabase
-            .from('traffic_violations')
-            .select('id, violation_number, violation_type, total_amount, violation_date, status')
+            .from('penalties')
+            .select('id, penalty_number, violation_type, amount, penalty_date, status, payment_status')
             .in('contract_id', contractIds)
-            .eq('status', 'pending')
-            .order('violation_date', { ascending: false });
+            .neq('payment_status', 'paid')
+            .neq('status', 'cancelled')
+            .order('penalty_date', { ascending: false });
           
           if (violationsError) {
             console.warn('Traffic violations query error:', violationsError);
           } else {
-            setTrafficViolations(violationsData || []);
+            setTrafficViolations((violationsData || []).map((violation) => ({
+              ...violation,
+              violation_number: violation.penalty_number,
+              total_amount: violation.amount,
+              violation_date: violation.penalty_date,
+            })));
           }
         }
         
@@ -1370,11 +1376,16 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
         const violationIds = formData.selected_invoices.filter(id => id.startsWith('violation-')).map(id => id.replace('violation-', ''));
         if (violationIds.length > 0) {
           const { data: violationsData, error: violationsError } = await supabase
-            .from('traffic_violations')
-            .select('id, violation_number, violation_type, total_amount, violation_date')
+            .from('penalties')
+            .select('id, penalty_number, violation_type, amount, penalty_date')
             .in('id', violationIds);
           if (!violationsError) {
-            setSelectedPenaltiesData(violationsData || []);
+            setSelectedPenaltiesData((violationsData || []).map((violation) => ({
+              ...violation,
+              violation_number: violation.penalty_number,
+              total_amount: violation.amount,
+              violation_date: violation.penalty_date,
+            })));
           }
         }
         

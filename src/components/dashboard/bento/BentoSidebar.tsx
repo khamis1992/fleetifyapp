@@ -55,6 +55,7 @@ const sidebarColors = {
   focus: systemColorPattern.colors.focus,
   success: systemColorPattern.colors.success,
 };
+const PENDING_TOUR_STORAGE_KEY = 'fleetify:pending-tour';
 
 const categoryAccents: Record<string, string> = {
   main: sidebarColors.success,
@@ -333,6 +334,38 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
     if (isMobile && onCloseMobile) {
       onCloseMobile();
     }
+  };
+
+  const handleStartDashboardTour = () => {
+    saveSidebarScroll(true);
+    if (location.pathname.startsWith('/finance/accounting')) {
+      startTour('accounting-center');
+      return;
+    }
+
+    if (location.pathname.startsWith('/finance/billing')) {
+      startTour('billing-center');
+      return;
+    }
+
+    if (location.pathname.startsWith('/finance')) {
+      const isFinanceOverviewRoute = location.pathname === '/finance' || location.pathname === '/finance/overview' || location.pathname === '/finance/hub';
+      if (!isFinanceOverviewRoute) {
+        window.sessionStorage.setItem(PENDING_TOUR_STORAGE_KEY, 'finance-overview');
+        navigate('/finance/overview');
+        return;
+      }
+      startTour('finance-overview');
+      return;
+    }
+
+    const isDashboardRoute = location.pathname === '/' || location.pathname === '/dashboard';
+    if (!isDashboardRoute) {
+      window.sessionStorage.setItem(PENDING_TOUR_STORAGE_KEY, 'dashboard-overview');
+      navigate('/dashboard');
+      return;
+    }
+    startTour('dashboard-overview');
   };
 
   const toggleExpanded = (id: string) => {
@@ -615,7 +648,7 @@ const BentoSidebar: React.FC<BentoSidebarProps> = ({
       {(!collapsed || isMobile) && (
         <div className="border-b px-3 py-3" style={{ borderColor: sidebarColors.border }}>
           <button
-            onClick={() => startTour('dashboard-overview')}
+            onClick={handleStartDashboardTour}
             className="group relative w-full overflow-hidden rounded-xl border bg-white p-3 text-right shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
             style={{ borderColor: `${sidebarColors.success}38` }}
             aria-label="ابدأ جولة تعريفية"

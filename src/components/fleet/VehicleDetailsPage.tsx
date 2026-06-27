@@ -165,17 +165,24 @@ const VehicleDetailsPage = () => {
       if (!vehicleId) return [];
 
       const { data, error } = await supabase
-        .from('traffic_violations')
+        .from('penalties')
         .select('*')
         .eq('vehicle_id', vehicleId)
-        .order('violation_date', { ascending: false })
+        .order('penalty_date', { ascending: false })
         .limit(10);
 
       if (error) {
         console.error('Error fetching violations:', error);
         return [];
       }
-      return data || [];
+      return (data || []).map((violation) => ({
+        ...violation,
+        violation_number: violation.penalty_number,
+        violation_date: violation.penalty_date,
+        fine_amount: violation.amount,
+        total_amount: violation.amount,
+        responsible_party: violation.customer_id ? 'customer' : 'company',
+      }));
     },
     enabled: !!vehicleId,
   });

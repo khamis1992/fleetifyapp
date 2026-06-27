@@ -202,13 +202,18 @@ export default function CustomerVerificationPage() {
       if (!task?.contract_id) return [];
 
       const { data, error } = await supabase
-        .from('traffic_violations')
-        .select('id, violation_number, violation_type, fine_amount, status')
+        .from('penalties')
+        .select('id, penalty_number, violation_type, amount, status, payment_status')
         .eq('contract_id', task.contract_id)
-        .eq('status', 'pending'); // فقط المخالفات المعلقة
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled');
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map((violation) => ({
+        ...violation,
+        violation_number: violation.penalty_number,
+        fine_amount: violation.amount,
+      }));
     },
     enabled: !!task?.contract_id,
   });
@@ -391,7 +396,7 @@ export default function CustomerVerificationPage() {
         .eq('contract_id', contractId)
         .or('paid_amount.eq.0,paid_amount.is.null');
       await supabase.from('contract_payment_schedules').delete().eq('contract_id', contractId);
-      await supabase.from('traffic_violations').update({ contract_id: null }).eq('contract_id', contractId);
+      await supabase.from('penalties').update({ contract_id: null, customer_id: null }).eq('contract_id', contractId);
       await supabase.from('contract_documents').delete().eq('contract_id', contractId);
 
       // 2. حذف العقد

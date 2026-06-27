@@ -71,40 +71,18 @@ export function useRelinkViolations() {
       if (!profile?.company_id) throw new Error('لم يتم العثور على بيانات المستخدم');
 
       const companyId = profile.company_id;
-
-      // جلب المخالفات غير المربوطة من جدول traffic_violations
-      const { data: tvUnlinked, error: tvError } = await supabase
-        .from('traffic_violations')
-        .select('id, violation_number, violation_date, vehicle_id, contract_id')
-        .eq('company_id', companyId)
-        .is('contract_id', null);
-
-      // جلب المخالفات غير المربوطة من جدول penalties
       const { data: penaltiesUnlinked, error: penaltiesError } = await supabase
         .from('penalties')
         .select('id, penalty_number, penalty_date, vehicle_id, vehicle_plate, customer_id')
         .eq('company_id', companyId)
         .is('customer_id', null);
 
-      if (tvError && penaltiesError) throw tvError || penaltiesError;
+      if (penaltiesError) throw penaltiesError;
 
-      // تحويل traffic_violations لنفس الصيغة
-      const tvMapped = (tvUnlinked || []).map(v => ({
-        id: v.id,
-        penalty_number: v.violation_number,
-        penalty_date: v.violation_date,
-        vehicle_id: v.vehicle_id,
-        vehicle_plate: null as string | null,
-        customer_id: null as string | null,
-        _source: 'traffic_violations' as const,
-      }));
-      
-      const penaltiesMapped = (penaltiesUnlinked || []).map(v => ({
+      const unlinkedViolations = (penaltiesUnlinked || []).map(v => ({
         ...v,
         _source: 'penalties' as const,
       }));
-
-      const unlinkedViolations = [...tvMapped, ...penaltiesMapped];
 
       if (unlinkedViolations.length === 0) {
         toast.info('لا توجد مخالفات غير مربوطة بعملاء');
@@ -228,17 +206,9 @@ export function useRelinkViolations() {
             noContractFound++;
             continue;
           }
-
-          // تحديث المخالفة حسب الجدول المصدر
-          const isTrafficViolation = (violation as any)._source === 'traffic_violations';
-          
-          const updateData = isTrafficViolation
-            ? { contract_id: matchResult.contract.id, vehicle_id: vehicleId }
-            : { customer_id: matchResult.contract.customer_id, contract_id: matchResult.contract.id, vehicle_id: vehicleId };
-          
-          const tableName = isTrafficViolation ? 'traffic_violations' : 'penalties';
+          const updateData = { customer_id: matchResult.contract.customer_id, contract_id: matchResult.contract.id, vehicle_id: vehicleId };
           const { error: updateError } = await supabase
-            .from(tableName)
+            .from('penalties')
             .update(updateData)
             .eq('id', violation.id);
 

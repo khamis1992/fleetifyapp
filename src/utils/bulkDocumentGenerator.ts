@@ -338,11 +338,12 @@ async function fetchCustomerFullData(contractId: string) {
     
     // جلب المخالفات المرورية
     supabase
-      .from('traffic_violations')
+      .from('penalties')
       .select('*')
       .eq('contract_id', contractId)
-      .neq('status', 'paid')
-      .order('violation_date', { ascending: false })
+      .neq('payment_status', 'paid')
+      .neq('status', 'cancelled')
+      .order('penalty_date', { ascending: false })
   ]);
 
   if (contractResult.error) throw contractResult.error;
@@ -359,7 +360,13 @@ async function fetchCustomerFullData(contractId: string) {
   return { 
     contract: contractResult.data, 
     invoices: invoicesResult.data || [], 
-    violations: violationsResult.data || [],
+    violations: (violationsResult.data || []).map((violation: any) => ({
+      ...violation,
+      violation_number: violation.penalty_number,
+      violation_date: violation.penalty_date,
+      fine_amount: violation.amount,
+      total_amount: violation.amount,
+    })),
     vehicleData: contractResult.data.vehicles,
     companyInfo: companyData || {}
   };

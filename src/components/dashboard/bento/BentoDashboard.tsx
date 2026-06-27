@@ -116,12 +116,14 @@ const getStatNumber = (stats: any, keys: string[], fallback = 0) => {
   return fallback;
 };
 
-const ShellCard: React.FC<React.PropsWithChildren<{ className?: string; onClick?: () => void }>> = ({
+const ShellCard: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>> = ({
   children,
   className,
   onClick,
+  ...props
 }) => (
   <motion.div
+    {...props}
     className={cn(
       'rounded-lg border bg-white shadow-sm transition-all',
       onClick && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md',
@@ -358,6 +360,7 @@ const BentoDashboard: React.FC = () => {
 
   const operationLanes = [
     {
+      id: 'finance',
       title: 'المال والتحصيل',
       subtitle: 'الأموال التي تحتاج حركة الآن',
       icon: Banknote,
@@ -374,6 +377,7 @@ const BentoDashboard: React.FC = () => {
       ],
     },
     {
+      id: 'contracts',
       title: 'العقود والمخاطر',
       subtitle: 'تجديد، تحصيل، أو تحويل قانوني',
       icon: ShieldAlert,
@@ -390,6 +394,7 @@ const BentoDashboard: React.FC = () => {
       ],
     },
     {
+      id: 'fleet',
       title: 'الأسطول',
       subtitle: 'جاهزية المركبات والحجوزات',
       icon: Car,
@@ -406,6 +411,7 @@ const BentoDashboard: React.FC = () => {
       ],
     },
     {
+      id: 'team',
       title: 'الفريق والمتابعة',
       subtitle: 'من المسؤول عن الخطوة التالية؟',
       icon: Briefcase,
@@ -479,7 +485,7 @@ const BentoDashboard: React.FC = () => {
 
       <main className="w-full space-y-6 px-6 py-6">
         <section>
-          <ShellCard className="overflow-hidden">
+          <ShellCard className="overflow-hidden" data-tour="decision-center">
             <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_390px]">
               <div className="p-6">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -579,7 +585,7 @@ const BentoDashboard: React.FC = () => {
           </ShellCard>
         </section>
 
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <section data-tour="stats-cards" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           <MetricCard label="إجمالي المركبات" value={totalVehicles} hint={`${fleetStatus?.available || 0} متاحة الآن`} icon={Car} tone="info" path="/fleet" />
           <MetricCard label="العقود النشطة" value={activeContracts || 0} hint="اضغط لفتح سجل العقود" icon={FileText} tone="navy" path="/contracts" />
           <MetricCard label="العملاء" value={totalCustomers || 0} hint="ملفات العملاء والمتابعة" icon={Users} tone="success" path="/customers" />
@@ -587,11 +593,11 @@ const BentoDashboard: React.FC = () => {
           <MetricCard label="تنبيهات تشغيلية" value={maintenanceData.length + (pendingInvoices || 0)} hint="صيانة وفواتير تحتاج إجراء" icon={ShieldAlert} tone="warning" path="/tasks" />
         </section>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-4">
+        <section data-tour="operation-lanes" className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-4">
           {operationLanes.map((lane) => {
             const Icon = lane.icon;
             return (
-              <ShellCard key={lane.title} className="p-5">
+              <ShellCard key={lane.title} className="p-5" data-tour={`operation-lane-${lane.id}`}>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
                     <div className="mb-2 inline-flex rounded-lg p-2" style={{ backgroundColor: `${lane.color}14`, color: lane.color }}>
@@ -641,7 +647,7 @@ const BentoDashboard: React.FC = () => {
         </section>
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-          <ShellCard className="p-5">
+          <ShellCard className="p-5" data-tour="revenue-trend">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
@@ -678,7 +684,7 @@ const BentoDashboard: React.FC = () => {
             </div>
           </ShellCard>
 
-          <ShellCard className="p-5">
+          <ShellCard className="p-5" data-tour="fleet-readiness">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
@@ -731,7 +737,7 @@ const BentoDashboard: React.FC = () => {
         </section>
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-          <ShellCard className="p-5">
+          <ShellCard className="p-5" data-tour="upcoming-maintenance">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>
@@ -776,7 +782,7 @@ const BentoDashboard: React.FC = () => {
             )}
           </ShellCard>
 
-          <ShellCard className="p-5">
+          <ShellCard className="p-5" data-tour="quick-actions">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-black" style={{ color: dashboardColors.text }}>

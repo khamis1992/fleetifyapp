@@ -1,172 +1,165 @@
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
-/**
- * Hook for integrating traffic violations with the accounting system
- * Creates journal entries automatically when violations are recorded
- */
+type TrafficViolationJournalInput = {
+  id?: string;
+  violationId?: string;
+  company_id?: string;
+  companyId?: string;
+  violation_type?: string | null;
+  fine_amount?: number | null;
+  amount?: number | null;
+  violation_date?: string | null;
+  penalty_date?: string | null;
+  date?: string | null;
+  charged_to_customer?: boolean | null;
+  isCompanyLiability?: boolean | null;
+  customer_id?: string | null;
+  customerId?: string | null;
+};
+
 export const useTrafficViolationJournalIntegration = () => {
-  const { toast } = useToast();
-
-  /**
-   * Create journal entry for a traffic violation
-   * @param violation The traffic violation record
-   */
-  const createJournalEntry = async (violation: any) => {
+  const createJournalEntry = async (violation: TrafficViolationJournalInput) => {
     try {
-      // Get required accounts
+      const violationId = violation.id || violation.violationId;
+      const companyId = violation.company_id || violation.companyId;
+      const amount = Number(violation.fine_amount ?? violation.amount ?? 0);
+      const entryDate =
+        violation.violation_date ||
+        violation.penalty_date ||
+        violation.date ||
+        new Date().toISOString().split('T')[0];
+      const violationType = violation.violation_type || 'مخالفة مرورية';
+      const isCustomerResponsible = Boolean(
+        violation.charged_to_customer ??
+        violation.customer_id ??
+        violation.customerId ??
+        !violation.isCompanyLiability
+      );
+
+      if (!violationId || !companyId || amount <= 0) {
+        console.warn('Traffic violation journal entry skipped: missing required data', violation);
+        return null;
+      }
+
+      const { data: existingEntry } = await supabase
+        .from('journal_entries')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('reference_type', 'traffic_violation')
+        .eq('reference_id', violationId)
+        .maybeSingle();
+
+      if (existingEntry?.id) return existingEntry.id;
+
       const { data: accounts } = await supabase
         .from('chart_of_accounts')
         .select('id, account_code')
-        .eq('company_id', violation.company_id)
+        .eq('company_id', companyId)
         .in('account_code', ['1010', '1200', '4300', '5700']);
 
-      if (!accounts || accounts.length < 2) {
-        console.error('Required accounts not found for traffic violation');
-        return;
+      const accountMap = new Map((accounts || []).map((account) => [account.account_code, account.id]));
+      const requiredCodes = isCustomerResponsible ? ['1200', '4300'] : ['5700', '1010'];
+      if (requiredCodes.some((code) => !accountMap.get(code))) {
+        console.warn('Traffic violation journal entry skipped: required accounts not found', requiredCodes);
+        return null;
       }
 
-      const accountMap: Record<string, string> = {};
-      accounts.forEach((acc) => {
-        accountMap[acc.account_code] = acc.id;
-      });
-
-      // Get next entry number
       const { data: lastEntry } = await supabase
         .from('journal_entries')
         .select('entry_number')
-        .eq('company_id', violation.company_id)
+        .eq('company_id', companyId)
         .order('entry_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      const nextEntryNumber = lastEntry ? parseInt(lastEntry.entry_number) + 1 : 1;
+      const nextEntryNumber = lastEntry?.entry_number
+        ? String(Number.parseInt(lastEntry.entry_number, 10) + 1).padStart(6, '0')
+        : '000001';
 
-      // Determine who pays for the violation
-      const isCustomerResponsible = violation.charged_to_customer || false;
-      
-      let description = '';
-      let lines: Record<string, unknown>[] = [];
+      const description = isCustomerResponsible
+        ? `مخالفة مرورية - ${violationType} - يتحملها العميل`
+        : `مخالفة مرورية - ${violationType} - تتحملها الشركة`;
 
-      if (isCustomerResponsible) {
-        // Customer pays - treat as revenue
-        description = `مخالفة مرورية - ${violation.violation_type} - يتحملها العميل`;
-        
-        lines = [
-          {
-            account_id: accountMap['1200'], // Accounts Receivable
-            line_description: `ذمم العميل - مخالفة مرورية`,
-            debit_amount: violation.fine_amount,
-            credit_amount: 0,
-            line_number: 1,
-          },
-          {
-            account_id: accountMap['4300'], // Other Revenue
-            line_description: `إيراد مخالفة مرورية - يتحملها العميل`,
-            debit_amount: 0,
-            credit_amount: violation.fine_amount,
-            line_number: 2,
-          },
-        ];
-      } else {
-        // Company pays - treat as expense
-        description = `مخالفة مرورية - ${violation.violation_type} - تتحملها الشركة`;
-        
-        lines = [
-          {
-            account_id: accountMap['5700'], // Traffic Violations Expense
-            line_description: `مصروف مخالفة مرورية - تتحملها الشركة`,
-            debit_amount: violation.fine_amount,
-            credit_amount: 0,
-            line_number: 1,
-          },
-          {
-            account_id: accountMap['1010'], // Cash
-            line_description: `دفع مخالفة مرورية`,
-            debit_amount: 0,
-            credit_amount: violation.fine_amount,
-            line_number: 2,
-          },
-        ];
-      }
+      const lines = isCustomerResponsible
+        ? [
+            {
+              account_id: accountMap.get('1200'),
+              line_description: 'ذمم العميل - مخالفة مرورية',
+              debit_amount: amount,
+              credit_amount: 0,
+              line_number: 1,
+            },
+            {
+              account_id: accountMap.get('4300'),
+              line_description: 'إيراد مخالفة مرورية - يتحملها العميل',
+              debit_amount: 0,
+              credit_amount: amount,
+              line_number: 2,
+            },
+          ]
+        : [
+            {
+              account_id: accountMap.get('5700'),
+              line_description: 'مصروف مخالفة مرورية - تتحملها الشركة',
+              debit_amount: amount,
+              credit_amount: 0,
+              line_number: 1,
+            },
+            {
+              account_id: accountMap.get('1010'),
+              line_description: 'دفع مخالفة مرورية',
+              debit_amount: 0,
+              credit_amount: amount,
+              line_number: 2,
+            },
+          ];
 
-      // Create journal entry
       const { data: entry, error: entryError } = await supabase
         .from('journal_entries')
         .insert({
-          company_id: violation.company_id,
-          entry_number: nextEntryNumber.toString().padStart(6, '0'),
-          entry_date: violation.violation_date,
+          company_id: companyId,
+          entry_number: nextEntryNumber,
+          entry_date: entryDate,
           description,
           reference_type: 'traffic_violation',
-          reference_id: violation.id,
+          reference_id: violationId,
           status: 'posted',
         })
         .select()
         .single();
 
-      if (entryError || !entry) {
-        console.error('Failed to create journal entry for traffic violation:', entryError);
-        return;
-      }
-
-      // Create journal entry lines
-      const linesWithEntry = lines.map((line) => ({
-        ...line,
-        journal_entry_id: entry.id,
-      }));
+      if (entryError || !entry) throw entryError;
 
       const { error: linesError } = await supabase
         .from('journal_entry_lines')
-        .insert(linesWithEntry);
+        .insert(lines.map((line) => ({ ...line, journal_entry_id: entry.id })));
 
       if (linesError) {
-        console.error('Failed to create journal entry lines for traffic violation:', linesError);
-        // Rollback journal entry
         await supabase.from('journal_entries').delete().eq('id', entry.id);
-        return;
+        throw linesError;
       }
 
-      console.log('✅ Journal entry created for traffic violation:', entry.entry_number);
+      return entry.id;
     } catch (error) {
       console.error('Error creating journal entry for traffic violation:', error);
+      return null;
     }
   };
 
-  /**
-   * Delete journal entry for a traffic violation
-   * @param violationId The traffic violation ID
-   * @param companyId The company ID
-   */
   const deleteJournalEntry = async (violationId: string, companyId: string) => {
     try {
-      // Find the journal entry
       const { data: entry } = await supabase
         .from('journal_entries')
         .select('id')
         .eq('company_id', companyId)
         .eq('reference_type', 'traffic_violation')
         .eq('reference_id', violationId)
-        .single();
+        .maybeSingle();
 
-      if (!entry) {
-        console.log('No journal entry found for traffic violation');
-        return;
-      }
+      if (!entry?.id) return;
 
-      // Delete journal entry lines first
-      await supabase
-        .from('journal_entry_lines')
-        .delete()
-        .eq('journal_entry_id', entry.id);
-
-      // Delete journal entry
-      await supabase
-        .from('journal_entries')
-        .delete()
-        .eq('id', entry.id);
-
-      console.log('✅ Journal entry deleted for traffic violation');
+      await supabase.from('journal_entry_lines').delete().eq('journal_entry_id', entry.id);
+      await supabase.from('journal_entries').delete().eq('id', entry.id);
     } catch (error) {
       console.error('Error deleting journal entry for traffic violation:', error);
     }
@@ -174,7 +167,7 @@ export const useTrafficViolationJournalIntegration = () => {
 
   return {
     createJournalEntry,
+    createViolationJournalEntry: createJournalEntry,
     deleteJournalEntry,
   };
 };
-

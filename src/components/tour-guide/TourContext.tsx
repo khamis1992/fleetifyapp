@@ -3,8 +3,8 @@
  * Tour Guide Context
  */
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { TourGuide, TourConfig } from './TourGuide';
 import { getTourById, NAVIGATION_ROUTES } from './tours';
 import { useToast } from '@/components/ui/use-toast';
@@ -27,11 +27,13 @@ interface TourContextType {
 }
 
 const TourContext = createContext<TourContextType | null>(null);
+const PENDING_TOUR_STORAGE_KEY = 'fleetify:pending-tour';
 
 export const TourProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isActive, setIsActive] = useState(false);
   const [currentTour, setCurrentTour] = useState<TourConfig | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const startTour = useCallback((tourId: string) => {
@@ -77,13 +79,22 @@ export const TourProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const navigateAndTour = useCallback((routeKey: string, tourId: string) => {
     const route = NAVIGATION_ROUTES[routeKey as keyof typeof NAVIGATION_ROUTES];
     if (route) {
+      window.sessionStorage.setItem(PENDING_TOUR_STORAGE_KEY, tourId);
       navigate(route.path);
-      // تأخير قصير لضمان تحميل الصفحة
-      setTimeout(() => {
-        startTour(tourId);
-      }, 500);
     }
-  }, [navigate, startTour]);
+  }, [navigate]);
+
+  useEffect(() => {
+    const pendingTourId = window.sessionStorage.getItem(PENDING_TOUR_STORAGE_KEY);
+    if (!pendingTourId) return;
+
+    const timer = window.setTimeout(() => {
+      window.sessionStorage.removeItem(PENDING_TOUR_STORAGE_KEY);
+      startTour(pendingTourId);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [location.pathname, startTour]);
 
   return (
     <TourContext.Provider

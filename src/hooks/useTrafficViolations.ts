@@ -278,11 +278,13 @@ export function useCreateTrafficViolation() {
       // Create journal entry for traffic violation
       try {
         await createViolationJournalEntry({
-          violationId: data.id,
+          id: data.id,
+          company_id: data.company_id,
+          violation_type: data.violation_type,
           amount: data.amount,
-          isCompanyLiability: !data.customer_id, // If no customer, company pays
-          customerId: data.customer_id,
-          date: data.penalty_date
+          penalty_date: data.penalty_date,
+          isCompanyLiability: !data.customer_id,
+          customer_id: data.customer_id,
         });
       } catch (error) {
         console.error('Failed to create traffic violation journal entry:', error);

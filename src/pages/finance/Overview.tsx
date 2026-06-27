@@ -271,6 +271,7 @@ const Overview: React.FC = () => {
       <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
         {/* Executive Header */}
         <motion.section
+          data-tour="finance-overview-header"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           className="overflow-hidden rounded-lg border border-[#E5EAF1] bg-white shadow-sm"
@@ -305,7 +306,7 @@ const Overview: React.FC = () => {
               </div>
             </div>
 
-            <div className="border-t border-[#E5EAF1] bg-[#F6F8FB] p-6 lg:border-r lg:border-t-0">
+            <div data-tour="finance-primary-actions" className="border-t border-[#E5EAF1] bg-[#F6F8FB] p-6 lg:border-r lg:border-t-0">
               <div className="grid h-full gap-3">
                 <button
                   onClick={() => navigate('/finance/billing')}
@@ -349,7 +350,7 @@ const Overview: React.FC = () => {
         </motion.section>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div data-tour="finance-kpis" className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {kpiCards.map((kpi, index) => {
             const Icon = kpi.icon;
             const changeValue = Number(kpi.change);
@@ -409,6 +410,7 @@ const Overview: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Revenue Trend Chart */}
           <motion.div
+            data-tour="finance-revenue-chart"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -459,6 +461,7 @@ const Overview: React.FC = () => {
 
           {/* Top Customers - Simplified List */}
           <motion.div
+            data-tour="finance-top-customers"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
@@ -497,6 +500,7 @@ const Overview: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Alerts Panel */}
           <motion.div
+            data-tour="finance-alerts"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -564,6 +568,7 @@ const Overview: React.FC = () => {
 
           {/* Recent Activity */}
           <motion.div
+            data-tour="finance-recent-activity"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
@@ -622,6 +627,7 @@ const Overview: React.FC = () => {
 
         {/* Quick Actions */}
         <motion.div
+          data-tour="finance-quick-actions"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}

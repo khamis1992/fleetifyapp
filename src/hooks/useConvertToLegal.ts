@@ -95,10 +95,11 @@ export const useCalculateCaseValue = (contractId: string, companyId?: string) =>
 
       // جلب المخالفات المرورية غير المدفوعة
       const { data: violations, error: violationsError } = await supabase
-        .from('traffic_violations')
-        .select('total_amount')
+        .from('penalties')
+        .select('amount')
         .eq('contract_id', contractId)
-        .eq('status', 'pending');
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled');
 
       if (violationsError) {
         console.warn('Error fetching violations:', violationsError);
@@ -106,7 +107,7 @@ export const useCalculateCaseValue = (contractId: string, companyId?: string) =>
 
       const balanceDue = contract?.balance_due || 0;
       const lateFines = contract?.late_fine_amount || 0;
-      const trafficViolations = violations?.reduce((sum, v) => sum + (v.total_amount || 0), 0) || 0;
+      const trafficViolations = violations?.reduce((sum, v) => sum + (Number(v.amount) || 0), 0) || 0;
 
       return {
         totalValue: balanceDue + lateFines + trafficViolations,
@@ -148,12 +149,13 @@ export const useConvertToLegal = () => {
 
       // حساب قيمة القضية
       const { data: violations } = await supabase
-        .from('traffic_violations')
-        .select('total_amount')
+        .from('penalties')
+        .select('amount')
         .eq('contract_id', contract.id)
-        .eq('status', 'pending');
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled');
 
-      const trafficViolationsTotal = violations?.reduce((sum, v) => sum + (v.total_amount || 0), 0) || 0;
+      const trafficViolationsTotal = violations?.reduce((sum, v) => sum + (Number(v.amount) || 0), 0) || 0;
       const totalCaseValue = (contract.balance_due || 0) + (contract.late_fine_amount || 0) + trafficViolationsTotal;
 
       // الحصول على اسم العميل
